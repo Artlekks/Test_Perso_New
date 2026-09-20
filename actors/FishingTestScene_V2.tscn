@@ -58,12 +58,13 @@
 [ext_resource type="Script" uid="uid://cx7dasqcwn8j8" path="res://scripts/fishing_catch_view.gd" id="45_kheg5"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="46_hmxwl"]
 [ext_resource type="FontFile" uid="uid://c35wcinto4ik1" path="res://assets/fonts/BOF_Font.fnt" id="48_1gbnc"]
-[ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="51_bqx6j"]
-[ext_resource type="Resource" path="res://data/bof4/lures/straight.tres" id="52_0pfgo"]
 [ext_resource type="Script" uid="uid://c4s43igyy5g0v" path="res://scripts/throw_preview.gd" id="56_bqx6j"]
 [ext_resource type="Script" uid="uid://bikrpbvei4d02" path="res://scripts/fishing_info_controller.gd" id="58_1hrhd"]
-[ext_resource type="Script" uid="uid://duoxl2rtj55jb" path="res://scripts/fishing_loadout.gd" id="60_1gbnc"]
-[ext_resource type="Resource" path="res://data/bof4/rods/wooden_rod.tres" id="62_bqx6j"]
+[ext_resource type="Script" uid="uid://duoxl2rtj55jb" path="res://scripts/fishing_loadout.gd" id="59_loadout"]
+[ext_resource type="Resource" path="res://data/bof4/rods/wooden_rod.tres" id="60_wooden_rod"]
+[ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="61_lure_catalog"]
+[ext_resource type="Resource" uid="uid://b0and5twssxq" path="res://data/bof4/lures/straight.tres" id="62_straight"]
+[ext_resource type="PackedScene" path="res://actors/FishingLureSelectorView.tscn" id="63_lure_selector"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ahm77"]
 shading_mode = 0
@@ -641,6 +642,8 @@ offset_right = 552.0
 offset_bottom = 21.0
 theme_override_fonts/font = ExtResource("48_1gbnc")
 
+[node name="FishingLureSelectorView" parent="UI/FishingHud" unique_id=1859462747 instance=ExtResource("63_lure_selector")]
+
 [node name="FishingCatchView" type="CanvasLayer" parent="UI/FishingHud" unique_id=2015128177]
 script = ExtResource("45_kheg5")
 
@@ -737,13 +740,13 @@ exploration_camera = NodePath("../../CameraRig/Camera3D")
 camera_rig = NodePath("../../CameraRig")
 fish_zone = NodePath("../../World/FishZone_V2")
 
-[node name="FishingLoadout" type="Node" parent="Game" unique_id=779449819]
-script = ExtResource("60_1gbnc")
-lure_catalog = ExtResource("51_bqx6j")
-selected_lure = ExtResource("52_0pfgo")
-selected_rod = ExtResource("62_bqx6j")
+[node name="FishingLoadout" type="Node" parent="Game" unique_id=960102232]
+script = ExtResource("59_loadout")
+lure_catalog = ExtResource("61_lure_catalog")
+selected_lure = ExtResource("62_straight")
+selected_rod = ExtResource("60_wooden_rod")
 
-[node name="Fishing" type="Node" parent="Game" unique_id=1752533199 node_paths=PackedStringArray("game_mode", "camera_rig", "sprite_director", "player", "power_meter_view", "depth_meter_view", "screen_transition", "fishing_catch_view", "loadout")]
+[node name="Fishing" type="Node" parent="Game" unique_id=1752533199 node_paths=PackedStringArray("game_mode", "camera_rig", "sprite_director", "player", "power_meter_view", "depth_meter_view", "screen_transition", "fishing_catch_view", "loadout", "lure_selector_view")]
 script = ExtResource("3_tf5uk")
 game_mode = NodePath("../GameMode")
 camera_rig = NodePath("../../CameraRig")
@@ -754,6 +757,7 @@ depth_meter_view = NodePath("../../UI/FishingHud/PowerMeter/DepthMeter")
 screen_transition = NodePath("../../UI/FishingHud/ScreenTransition")
 fishing_catch_view = NodePath("../../UI/FishingHud/FishingCatchView")
 loadout = NodePath("../FishingLoadout")
+lure_selector_view = NodePath("../../UI/FishingHud/FishingLureSelectorView")
 catch_frame_delay = 0.3
 
 [node name="Aim" type="Node" parent="Game/Fishing" unique_id=1873530056]

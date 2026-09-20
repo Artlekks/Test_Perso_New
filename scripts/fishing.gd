@@ -36,6 +36,7 @@ enum Phase {
 @export var screen_transition: Node
 @export var fishing_catch_view: Node
 @export var loadout: FishingLoadout
+@export var lure_selector_view: Node
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
 
@@ -46,6 +47,7 @@ var bite_opportunity_animation_active: bool = false
 var bite_animation_active: bool = false
 var fish_resisting: bool = false
 var caught_fish: FishInstance = null
+var lure_selector_open: bool = false
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -100,6 +102,47 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not game_mode.is_fishing():
 		return
 
+	if lure_selector_open:
+		if (
+			event.is_action_pressed("ds_left")
+			or event.is_action_pressed("ui_left")
+		):
+			lure_selector_view.move_selection(-1)
+			get_viewport().set_input_as_handled()
+			return
+
+		if (
+			event.is_action_pressed("ds_right")
+			or event.is_action_pressed("ui_right")
+		):
+			lure_selector_view.move_selection(1)
+			get_viewport().set_input_as_handled()
+			return
+
+		if event.is_action_pressed("enter_fishing"):
+			var preview_lure: BaitData = (
+				lure_selector_view.get_preview_lure()
+			)
+
+			if preview_lure != null and loadout != null:
+				loadout.equip_lure(preview_lure)
+
+			_close_lure_selector(true)
+			get_viewport().set_input_as_handled()
+			return
+
+		if (
+			event.is_action_pressed("cancel_fishing")
+			or event.is_action_pressed("lure_menu")
+		):
+			_close_lure_selector(true)
+			get_viewport().set_input_as_handled()
+			return
+
+		# While the selector owns input, nothing beneath it should react.
+		get_viewport().set_input_as_handled()
+		return
+
 	if phase == Phase.WAIT_RESULT:
 		if event.is_action_pressed("enter_fishing"):
 			if caught_fish != null:
@@ -111,6 +154,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 		
 	if phase == Phase.AIM:
+		if event.is_action_pressed("lure_menu"):
+			_open_lure_selector()
+			return
+
 		if event.is_action_pressed("enter_fishing"):
 			phase = Phase.PREP_THROW
 			power.start()
@@ -215,6 +262,7 @@ func _on_mode_changed(new_mode) -> void:
 	set_process_unhandled_input(active)
 
 	if not active:
+		_close_lure_selector(false)
 		return
 
 	phase = Phase.ENTER
@@ -227,6 +275,33 @@ func _on_mode_changed(new_mode) -> void:
 		)
 
 		camera_rig.enter_fishing_view()
+
+
+
+func _open_lure_selector() -> void:
+	if (
+		lure_selector_view == null
+		or loadout == null
+		or phase != Phase.AIM
+	):
+		return
+
+	if not lure_selector_view.open_for_loadout(loadout):
+		return
+
+	lure_selector_open = true
+	aim.stop()
+
+
+func _close_lure_selector(resume_aim: bool) -> void:
+	if lure_selector_view != null:
+		lure_selector_view.close_selector()
+
+	var was_open := lure_selector_open
+	lure_selector_open = false
+
+	if was_open and resume_aim and phase == Phase.AIM:
+		aim.resume()
 
 
 func _on_fishing_view_ready() -> void:

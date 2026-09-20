@@ -1,0 +1,93 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_lure_selector_view.gd" id="1_selector"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.035, 0.043, 0.06, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.69, 0.58, 1)
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[node name="FishingLureSelectorView" type="CanvasLayer"]
+layer = 70
+script = ExtResource("1_selector")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -245.0
+offset_top = 75.0
+offset_right = 245.0
+offset_bottom = 215.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="CounterLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 10.0
+offset_right = 190.0
+offset_bottom = 34.0
+theme_override_fonts/font = ExtResource("2_font")
+text = "LURE  01 / 19"
+
+[node name="NameLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 190.0
+offset_top = 10.0
+offset_right = 476.0
+offset_bottom = 34.0
+theme_override_fonts/font = ExtResource("2_font")
+text = "<   Straight   >"
+horizontal_alignment = 1
+
+[node name="DetailsLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 43.0
+offset_right = 476.0
+offset_bottom = 67.0
+theme_override_fonts/font = ExtResource("2_font")
+text = "Worm    Lv.1"
+
+[node name="DescriptionLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 72.0
+offset_right = 476.0
+offset_bottom = 101.0
+theme_override_fonts/font = ExtResource("2_font")
+text = "Basic worm shape."
+autowrap_mode = 2
+
+[node name="ControlsLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 110.0
+offset_right = 476.0
+offset_bottom = 134.0
+theme_override_fonts/font = ExtResource("2_font")
+text = "A/D or arrows: change    K: equip    I: back"
+horizontal_alignment = 1
