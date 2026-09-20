@@ -66,6 +66,17 @@ var vertical_activity: float = 1.0
 
 var behavior_profile: FishBehaviorProfile = null
 
+# Baseline values are captured before any species profile is applied.
+# If a future FishData has no behavior profile, we restore these instead
+# of accidentally inheriting the previously configured fish's settings.
+var _defaults_captured: bool = false
+var _default_min_change_time: float = 0.0
+var _default_max_change_time: float = 0.0
+var _default_thrash_chance: float = 0.0
+var _default_thrash_multiplier: float = 0.0
+var _default_lateral_activity: float = 1.0
+var _default_vertical_activity: float = 1.0
+
 
 func _process(delta: float) -> void:
 	if not active:
@@ -100,7 +111,7 @@ func _process(delta: float) -> void:
 
 
 func configure(fish: FishInstance) -> void:
-	behavior_profile = null
+	_reset_profile_settings()
 
 	if fish == null:
 		return
@@ -108,6 +119,15 @@ func configure(fish: FishInstance) -> void:
 	var profile: FishBehaviorProfile = fish.behavior_profile
 
 	if profile == null:
+		var fish_name := "Unknown fish"
+
+		if fish.species != null and not fish.species.fish_name.is_empty():
+			fish_name = fish.species.fish_name
+
+		push_warning(
+			"FishBehavior: %s has no behavior profile; using safe defaults."
+			% fish_name
+		)
 		return
 
 	behavior_profile = profile
@@ -120,6 +140,37 @@ func configure(fish: FishInstance) -> void:
 
 	thrash_chance_per_change = profile.thrash_chance
 	thrash_multiplier = profile.thrash_multiplier
+
+
+func _reset_profile_settings() -> void:
+	_capture_default_profile_settings()
+
+	behavior_profile = null
+
+	lateral_activity = _default_lateral_activity
+	vertical_activity = _default_vertical_activity
+
+	min_change_time = _default_min_change_time
+	max_change_time = _default_max_change_time
+
+	thrash_chance_per_change = _default_thrash_chance
+	thrash_multiplier = _default_thrash_multiplier
+
+
+func _capture_default_profile_settings() -> void:
+	if _defaults_captured:
+		return
+
+	_default_lateral_activity = lateral_activity
+	_default_vertical_activity = vertical_activity
+
+	_default_min_change_time = min_change_time
+	_default_max_change_time = max_change_time
+
+	_default_thrash_chance = thrash_chance_per_change
+	_default_thrash_multiplier = thrash_multiplier
+
+	_defaults_captured = true
 
 
 func start(new_intensity: float = 1.0) -> void:
