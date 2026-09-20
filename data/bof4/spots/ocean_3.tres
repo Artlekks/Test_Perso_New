@@ -12,32 +12,32 @@
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 1.0
+weight = 25.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
-weight = 1.0
+weight = 30.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
-weight = 1.0
+weight = 18.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_4"]
 script = ExtResource("2_spawn")
 fish = ExtResource("6_fish")
-weight = 1.0
+weight = 12.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_5"]
 script = ExtResource("2_spawn")
 fish = ExtResource("7_fish")
-weight = 1.0
+weight = 10.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_6"]
 script = ExtResource("2_spawn")
 fish = ExtResource("8_fish")
-weight = 1.0
+weight = 5.0
 
 [resource]
 script = ExtResource("1_spot")

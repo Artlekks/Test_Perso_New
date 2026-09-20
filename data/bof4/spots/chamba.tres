@@ -9,17 +9,17 @@
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 1.0
+weight = 50.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
-weight = 1.0
+weight = 40.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
-weight = 1.0
+weight = 10.0
 
 [resource]
 script = ExtResource("1_spot")
