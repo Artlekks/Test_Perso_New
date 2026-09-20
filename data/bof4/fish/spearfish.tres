@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="FishData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="FishData" format=3 uid="uid://duajalcigas2c"]
 
-[ext_resource type="Script" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
 [ext_resource type="Resource" path="res://data/bof4/fish_behaviors/spearfish_behavior.tres" id="2_behavior"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+[ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_spearfish"]
 atlas = ExtResource("3_atlas")
@@ -16,16 +16,13 @@ king_size = 190.0
 base_stamina = 115.5
 base_strength = 0.83
 preferred_depth_min = 0.65
-preferred_depth_max = 1.00
+preferred_depth_max = 1.0
 max_points = 500
-accepts_all_lures = false
 preferred_lure_types = Array[int]([5, 4, 2, 3])
-preferred_lure_ids = Array[StringName]([])
 locations = Array[StringName]([&"Ocean 2"])
 behavior_profile = ExtResource("2_behavior")
 resistance_rounds = 5
-recovery_time_min = 0.90
-recovery_time_max = 1.50
+recovery_time_min = 0.9
 portrait = SubResource("AtlasTexture_spearfish")
 metadata/source_index = 28
 metadata/source_effect = "Restores 1500 HP to all allies."

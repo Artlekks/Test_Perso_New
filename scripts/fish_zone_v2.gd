@@ -5,7 +5,11 @@ extends Area3D
 @onready var water_facing: Node3D = $WaterFacing
 @onready var water_surface: Node3D = $WaterSurface
 @onready var water_bottom: Node3D = $WaterBottom
-@export_category("Fish Population")
+
+@export_category("Fishing Spot")
+@export var fishing_spot: FishingSpotData
+
+@export_category("Legacy / Fallback")
 @export var fish_population: Array[FishSpawnEntry] = []
 
 func can_player_fish(player: Node3D) -> bool:
@@ -21,7 +25,7 @@ func can_player_fish(player: Node3D) -> bool:
 
 func get_water_forward() -> Vector3:
 	return water_facing.global_transform.basis.z.normalized()
-	
+
 func get_water_y() -> float:
 	return water_surface.global_position.y
 
@@ -32,4 +36,10 @@ func get_water_depth() -> float:
 	return water_surface.global_position.y - water_bottom.global_position.y
 
 func get_fish_population() -> Array[FishSpawnEntry]:
+	if fishing_spot != null:
+		var spot_population := fishing_spot.get_fish_population()
+
+		if not spot_population.is_empty():
+			return spot_population
+
 	return fish_population

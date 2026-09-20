@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://cfv0c214fythq" path="res://assets/models/fbx/River_001_texpage-P8-AA4CF228BD76CD2E-5E1D486985273EC0-128x256-0-0-256x256-P0-189.png" id="4_ue5cn"]
 [ext_resource type="Texture2D" uid="uid://cetbvf5x64wb2" path="res://assets/models/fbx/River_001_texpage-P8-CF0473DC60ADC442-B2C13E420B9C1555-128x256-0-0-256x256-P0-190.png" id="5_10ljf"]
 [ext_resource type="Texture2D" uid="uid://bsxg4tfsykf2o" path="res://assets/models/textures/River_Marsh.png" id="6_lyatm"]
+[ext_resource type="Resource" uid="uid://you17evsccr8" path="res://data/bof4/spots/ocean_2.tres" id="8_0pfgo"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="8_10ljf"]
 [ext_resource type="PackedScene" uid="uid://b7wqcq60h8vqv" path="res://actors/FishZone_V2.tscn" id="8_n1yj2"]
 [ext_resource type="Resource" uid="uid://bhbjocml2b5fy" path="res://data/bof4/fish/sea_bass.tres" id="9_bqx6j"]
@@ -28,7 +29,7 @@
 [ext_resource type="Texture2D" uid="uid://bybktjbfq40mh" path="res://assets/sprites/Fishing_Icon.png" id="16_y5vpm"]
 [ext_resource type="Texture2D" uid="uid://dtsus3jhrfnid" path="res://assets/sprites/bar-bar_Red.png" id="17_0qupg"]
 [ext_resource type="Texture2D" uid="uid://ci8te3gnaliuv" path="res://assets/sprites/Location.png" id="17_f3f7x"]
-[ext_resource type="Resource" path="res://data/baits/default_bait.tres" id="17_n1yj2"]
+[ext_resource type="Resource" uid="uid://c0dx7cuhpacd0" path="res://data/baits/default_bait.tres" id="17_n1yj2"]
 [ext_resource type="Texture2D" uid="uid://bah5u76hap23t" path="res://assets/sprites/bar-bar_Blue.png" id="18_mdf05"]
 [ext_resource type="Texture2D" uid="uid://u3tyt71m2h6" path="res://assets/sprites/Menu.png" id="18_t57di"]
 [ext_resource type="Texture2D" uid="uid://3llccm0knkks" path="res://assets/sprites/Menu_Cast.png" id="19_30w2a"]
@@ -240,6 +241,7 @@ visible = false
 
 [node name="FishZone_V2" parent="World" unique_id=503373627 instance=ExtResource("8_n1yj2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05233705, 0, -0.7409453)
+fishing_spot = ExtResource("8_0pfgo")
 fish_population = Array[ExtResource("8_10ljf")]([SubResource("Resource_56g8v")])
 
 [node name="WaterFacing" parent="World/FishZone_V2" index="0" unique_id=346506334]
