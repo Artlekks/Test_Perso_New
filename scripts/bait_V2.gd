@@ -55,6 +55,7 @@ var bottom_y: float = 0.0
 var reel_target: Node3D = null
 var reeling: bool = false
 var simulation_frozen: bool = false
+var swim_bounds: Node = null
 
 func launch(
 	start_position: Vector3,
@@ -120,6 +121,10 @@ func _update_air_curve(delta: float) -> void:
 	
 func set_reel_target(target: Node3D) -> void:
 	reel_target = target
+
+
+func set_swim_bounds(bounds: Node) -> void:
+	swim_bounds = bounds
 
 
 func set_reeling(active: bool) -> void:
@@ -432,12 +437,26 @@ func _update_fish_pull(delta: float) -> void:
 	# Dive / rise intentionally has no horizontal movement.
 
 	if horizontal_direction.length_squared() > 0.0:
-		global_position += (
+		var fish_step := (
 			horizontal_direction.normalized()
 			* max_fish_pull_speed
 			* fish_pull_strength
 			* delta
 		)
+
+		var proposed_position := global_position + fish_step
+
+		if (
+			swim_bounds != null
+			and swim_bounds.has_method("constrain_fish_motion")
+		):
+			proposed_position = swim_bounds.constrain_fish_motion(
+				global_position,
+				proposed_position
+			)
+
+		global_position.x = proposed_position.x
+		global_position.z = proposed_position.z
 
 	global_position.y += (
 		fish_depth_intent

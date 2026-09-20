@@ -201,16 +201,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			if zone != null:
 				var cast_direction: Vector3 = aim.get_direction()
 				var cast_lure: BaitData = null
+				var cast_swim_bounds: Node = null
 
 				if loadout != null:
 					cast_lure = loadout.get_selected_lure()
+
+				if zone.has_method("get_swim_bounds"):
+					cast_swim_bounds = zone.get_swim_bounds()
 
 				var cast_bait: Node3D = caster.perform_cast(
 					captured_power,
 					cast_direction,
 					zone.get_water_y(),
 					zone.get_bottom_y(),
-					cast_lure
+					cast_lure,
+					cast_swim_bounds
 				)
 
 				if is_instance_valid(cast_bait):

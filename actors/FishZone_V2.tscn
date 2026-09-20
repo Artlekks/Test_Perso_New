@@ -1,9 +1,13 @@
 [gd_scene format=3 uid="uid://b7wqcq60h8vqv"]
 
 [ext_resource type="Script" uid="uid://c1bmrl5liik4y" path="res://scripts/fish_zone_v2.gd" id="1_5tdff"]
+[ext_resource type="Script" path="res://scripts/fish_swim_bounds.gd" id="2_swim_bounds"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_mxd7y"]
 radius = 1.49364
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_swim_bounds"]
+size = Vector3(12, 2, 10)
 
 [node name="FishZone_V2" type="Area3D" unique_id=1206378130 groups=["fish_zone"]]
 script = ExtResource("1_5tdff")
@@ -13,6 +17,19 @@ script = ExtResource("1_5tdff")
 [node name="WaterSurface" type="Node3D" parent="." unique_id=1448358599]
 
 [node name="WaterBottom" type="Node3D" parent="." unique_id=1747705196]
+
+[node name="FishSwimBounds" type="Area3D" parent="."]
+position = Vector3(0, -0.25, -5)
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+script = ExtResource("2_swim_bounds")
+inner_margin = 0.35
+
+[node name="BoundsShape3D" type="CollisionShape3D" parent="FishSwimBounds"]
+shape = SubResource("BoxShape3D_swim_bounds")
+debug_color = Color(0.15, 0.75, 1, 0.24)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1425339664]
 shape = SubResource("SphereShape3D_mxd7y")

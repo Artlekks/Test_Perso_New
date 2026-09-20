@@ -6,6 +6,7 @@ extends Area3D
 @onready var water_facing: Node3D = $WaterFacing
 @onready var water_surface: Node3D = $WaterSurface
 @onready var water_bottom: Node3D = $WaterBottom
+@onready var swim_bounds: Node = get_node_or_null("FishSwimBounds")
 
 
 func can_player_fish(player: Node3D) -> bool:
@@ -33,6 +34,10 @@ func get_bottom_y() -> float:
 
 func get_water_depth() -> float:
 	return water_surface.global_position.y - water_bottom.global_position.y
+
+
+func get_swim_bounds() -> Node:
+	return swim_bounds
 
 
 func get_fish_population() -> Array[FishSpawnEntry]:

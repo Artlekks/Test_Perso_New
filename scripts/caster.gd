@@ -49,7 +49,8 @@ func perform_cast(
 	direction: Vector3,
 	water_y: float,
 	bottom_y: float,
-	bait_data: BaitData
+	bait_data: BaitData,
+	swim_bounds: Node
 ) -> Node3D:
 	if bait_scene == null or spawn_point == null:
 		return null
@@ -76,6 +77,7 @@ func perform_cast(
 	active_bait.returned.connect(_on_bait_returned)
 
 	active_bait.set_reel_target(reel_target)
+	active_bait.set_swim_bounds(swim_bounds)
 	active_bait.gravity = cast_gravity
 	
 	active_bait.launch(
