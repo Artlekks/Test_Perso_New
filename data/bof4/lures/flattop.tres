@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://7dv7u5mo7neu"]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dpffa00genhoc"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
@@ -9,8 +9,10 @@ display_name = "Flattop"
 lure_type = 2
 level = 2
 description = "Shallow mimic."
-sink_speed = 0.2
-reel_speed = 0.05
-reel_rise_speed = 0.5
+sink_depth = 0.08
+sink_speed = 0.05
+reel_speed = 0.055
+reel_rise_speed = 1.1
+reel_steer_strength = 0.85
 metadata/acquisition = "Satchel (? areas); Trade: Wyndia (Blowfish x2) (80z)."
-metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
+metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Shallow surface mimic."

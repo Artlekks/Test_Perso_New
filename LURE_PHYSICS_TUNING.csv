@@ -1,0 +1,20 @@
+lure,slug,target_depth,sink_speed,reel_speed,reel_rise_speed,steering,role
+Straight,straight,1.0,0.2,0.05,0.5,0.8,Baseline worm; full-column sink.
+Tail,tail,0.85,0.18,0.052,0.55,0.85,Balanced worm; slightly shallower and more responsive.
+Crab,crab,1.0,0.26,0.045,0.8,0.65,Bottom-focused; sinks faster and rises strongly on reel.
+Baby Frog,baby_frog,0.2,0.08,0.048,0.85,0.9,Very shallow frog; reluctant to sink.
+Toad,toad,0.3,0.12,0.05,1.0,0.85,Shallow frog; slow sink and quick rise.
+Fat Frog,fat_frog,0.38,0.16,0.052,1.1,0.8,Heavier frog; reaches a little deeper while retaining fast rise.
+Popper,popper,0.02,0.03,0.055,1.2,0.9,Surface lure; effectively stays on top.
+Flattop,flattop,0.08,0.05,0.055,1.1,0.85,Shallow surface mimic.
+Swisher,swisher,0.04,0.04,0.06,1.2,0.8,Fast surface lure; stays near the top.
+Floater,floater,0.3,0.12,0.05,0.7,0.85,Shallow minnow.
+Hanger,hanger,0.48,0.1,0.05,0.8,0.82,Suspending mid-water minnow.
+Deep Diver,deep_diver,0.88,0.28,0.048,0.35,0.72,Deep minnow; dives quickly and stays low.
+Twister,twister,0.45,0.16,0.055,0.58,0.95,Responsive mid-water winder.
+Warbler,warbler,0.65,0.19,0.057,0.52,0.92,Deeper winder with strong lateral control.
+Dancer,dancer,0.85,0.22,0.06,0.45,0.9,"Deep, active winder."
+Silver Top,silver_top,0.35,0.18,0.06,0.5,0.85,Shallow spinner; quick retrieve.
+Gold Top,gold_top,0.5,0.2,0.062,0.46,0.82,Mid-water spinner.
+Platinum Top,platinum_top,0.68,0.22,0.065,0.42,0.8,"Deeper, faster spinner."
+Spoon,spoon,0.6,0.2,0.055,0.55,0.85,Versatile all-rounder.

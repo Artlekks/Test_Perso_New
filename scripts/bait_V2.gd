@@ -128,8 +128,10 @@ func set_reeling(active: bool) -> void:
 	if fight_mode:
 		return
 
-	if not reeling and global_position.y > bottom_y:
-		if state == State.IN_WATER:
+	if not reeling and state == State.IN_WATER:
+		var target_y := _get_sink_target_y()
+
+		if not is_equal_approx(global_position.y, target_y):
 			state = State.SINKING
 
 func set_reel_steering(value: float) -> void:
@@ -153,7 +155,7 @@ func _physics_process(delta: float) -> void:
 		State.SINKING, State.IN_WATER:
 			if reeling:
 				_update_reeling(delta)
-			elif state == State.SINKING:
+			elif not fight_mode:
 				_update_sinking(delta)
 	
 	if twitch_velocity.length_squared() > 0.001:
@@ -187,16 +189,38 @@ func _update_flying(delta: float) -> void:
 
 
 func _update_sinking(delta: float) -> void:
+	if data == null:
+		return
+
+	var target_y := _get_sink_target_y()
+	var previous_y := global_position.y
+
 	global_position.y = move_toward(
 		global_position.y,
-		bottom_y,
+		target_y,
 		data.sink_speed * delta
 	)
 
-	_emit_depth()
+	if not is_equal_approx(previous_y, global_position.y):
+		_emit_depth()
 
-	if is_equal_approx(global_position.y, bottom_y):
+	if is_equal_approx(global_position.y, target_y):
 		state = State.IN_WATER
+	else:
+		state = State.SINKING
+
+
+func _get_sink_target_y() -> float:
+	if data == null:
+		return bottom_y
+
+	var depth_ratio := clampf(data.sink_depth, 0.0, 1.0)
+
+	return lerpf(
+		water_y,
+		bottom_y,
+		depth_ratio
+	)
 
 func _update_reeling(delta: float) -> void:
 	if reel_target == null:

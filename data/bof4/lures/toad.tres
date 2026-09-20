@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://bvovtfh1wdr6f"]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://wdstdo1c83mm"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
@@ -9,8 +9,9 @@ display_name = "Toad"
 lure_type = 1
 level = 2
 description = "Sinks slow, rises quick."
-sink_speed = 0.2
-reel_speed = 0.05
-reel_rise_speed = 0.5
+sink_depth = 0.3
+sink_speed = 0.12
+reel_rise_speed = 1.0
+reel_steer_strength = 0.85
 metadata/acquisition = "Drop: Tadpole (Kyria/Synesta); Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."
-metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
+metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Shallow frog; slow sink and quick rise."

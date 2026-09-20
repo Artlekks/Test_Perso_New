@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dpefomfk2j887"
+
+[deps]
+
+files=["res://LURE_PHYSICS_TUNING.slug.translation", "res://LURE_PHYSICS_TUNING.target.translation", "res://LURE_PHYSICS_TUNING.sink.translation", "res://LURE_PHYSICS_TUNING.reel.translation", "res://LURE_PHYSICS_TUNING.reel.translation", "res://LURE_PHYSICS_TUNING.steering.translation", "res://LURE_PHYSICS_TUNING.role.translation"]
+
+source_file="res://LURE_PHYSICS_TUNING.csv"
+dest_files=["res://LURE_PHYSICS_TUNING.slug.translation", "res://LURE_PHYSICS_TUNING.target.translation", "res://LURE_PHYSICS_TUNING.sink.translation", "res://LURE_PHYSICS_TUNING.reel.translation", "res://LURE_PHYSICS_TUNING.reel.translation", "res://LURE_PHYSICS_TUNING.steering.translation", "res://LURE_PHYSICS_TUNING.role.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

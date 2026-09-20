@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://02i42rgoqcp1"]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://bqnyesia82j1v"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
@@ -9,8 +9,10 @@ display_name = "Deep Diver"
 lure_type = 3
 level = 3
 description = "Sinks deep."
-sink_speed = 0.2
-reel_speed = 0.05
-reel_rise_speed = 0.5
+sink_depth = 0.88
+sink_speed = 0.28
+reel_speed = 0.048
+reel_rise_speed = 0.35
+reel_steer_strength = 0.72
 metadata/acquisition = "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
-metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
+metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Deep minnow; dives quickly and stays low."

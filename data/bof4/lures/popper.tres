@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://qy0rgpyb74hv"]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dovnksw17hay4"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
@@ -8,8 +8,10 @@ lure_id = &"popper"
 display_name = "Popper"
 lure_type = 2
 description = "Noisy, surface."
-sink_speed = 0.2
-reel_speed = 0.05
-reel_rise_speed = 0.5
+sink_depth = 0.02
+sink_speed = 0.03
+reel_speed = 0.055
+reel_rise_speed = 1.2
+reel_steer_strength = 0.9
 metadata/acquisition = "Drop: Ghost (N. Chamba); Buy: Lyp (20z)."
-metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
+metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Surface lure; effectively stays on top."

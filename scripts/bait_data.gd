@@ -12,12 +12,13 @@ var level: int = 1
 @export_multiline var description: String = ""
 
 @export_category("Water Movement")
-@export var sink_depth: float = 1.0
-@export var sink_speed: float = 0.8
+## Normalized target depth: 0.0 = water surface, 1.0 = local bottom.
+@export_range(0.0, 1.0, 0.01) var sink_depth: float = 1.0
+@export var sink_speed: float = 0.2
 
 @export_category("Reeling")
-@export var reel_speed: float = 4.0
-@export var reel_rise_speed: float = 0.8
+@export var reel_speed: float = 0.05
+@export var reel_rise_speed: float = 0.5
 @export var reel_steer_strength: float = 0.8
 
 @export_category("Casting")

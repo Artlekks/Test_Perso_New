@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://ddhfij20li5wo"]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://di5ey3a1pgla"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
@@ -8,8 +8,10 @@ lure_id = &"baby_frog"
 display_name = "Baby Frog"
 lure_type = 1
 description = "Doesn't sink easily."
-sink_speed = 0.2
-reel_speed = 0.05
-reel_rise_speed = 0.5
+sink_depth = 0.2
+sink_speed = 0.08
+reel_speed = 0.048
+reel_rise_speed = 0.85
+reel_steer_strength = 0.9
 metadata/acquisition = "Buy: Sarai/Shyde (20z)."
-metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
+metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Very shallow frog; reluctant to sink."
