@@ -11,7 +11,6 @@ signal bait_distance_changed(distance_meters: float)
 @export var min_speed: float = 1.0
 @export var max_speed: float = 10.0
 @export var launch_angle_degrees: float = 45.0
-@export var selected_bait_data: BaitData
 @export var reel_target: Node3D
 @export_category("Distance Display")
 @export var distance_meter_scale: float = 2.0
@@ -49,7 +48,8 @@ func perform_cast(
 	power: float,
 	direction: Vector3,
 	water_y: float,
-	bottom_y: float
+	bottom_y: float,
+	bait_data: BaitData
 ) -> Node3D:
 	if bait_scene == null or spawn_point == null:
 		return null
@@ -68,8 +68,8 @@ func perform_cast(
 	active_bait = bait_scene.instantiate()
 	add_child(active_bait)
 
-	if selected_bait_data != null:
-		active_bait.set_data(selected_bait_data)
+	if bait_data != null:
+		active_bait.set_data(bait_data)
 
 	active_bait.landed.connect(_on_bait_landed)
 	active_bait.depth_changed.connect(_on_bait_depth_changed)

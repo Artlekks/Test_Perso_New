@@ -61,6 +61,8 @@
 [ext_resource type="FontFile" uid="uid://c35wcinto4ik1" path="res://assets/fonts/BOF_Font.fnt" id="48_1gbnc"]
 [ext_resource type="Script" uid="uid://c4s43igyy5g0v" path="res://scripts/throw_preview.gd" id="56_bqx6j"]
 [ext_resource type="Script" uid="uid://bikrpbvei4d02" path="res://scripts/fishing_info_controller.gd" id="58_1hrhd"]
+[ext_resource type="Script" uid="uid://duoxl2rtj55jb" path="res://scripts/fishing_loadout.gd" id="60_1gbnc"]
+[ext_resource type="Resource" path="res://data/bof4/rods/wooden_rod.tres" id="62_bqx6j"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ahm77"]
 shading_mode = 0
@@ -734,7 +736,12 @@ exploration_camera = NodePath("../../CameraRig/Camera3D")
 camera_rig = NodePath("../../CameraRig")
 fish_zone = NodePath("../../World/FishZone_V2")
 
-[node name="Fishing" type="Node" parent="Game" unique_id=1752533199 node_paths=PackedStringArray("game_mode", "camera_rig", "sprite_director", "player", "power_meter_view", "depth_meter_view", "screen_transition", "fishing_catch_view")]
+[node name="FishingLoadout" type="Node" parent="Game" unique_id=779449819]
+script = ExtResource("60_1gbnc")
+selected_lure = ExtResource("17_n1yj2")
+selected_rod = ExtResource("62_bqx6j")
+
+[node name="Fishing" type="Node" parent="Game" unique_id=1752533199 node_paths=PackedStringArray("game_mode", "camera_rig", "sprite_director", "player", "power_meter_view", "depth_meter_view", "screen_transition", "fishing_catch_view", "loadout")]
 script = ExtResource("3_tf5uk")
 game_mode = NodePath("../GameMode")
 camera_rig = NodePath("../../CameraRig")
@@ -744,6 +751,7 @@ power_meter_view = NodePath("../../UI/FishingHud/PowerMeter")
 depth_meter_view = NodePath("../../UI/FishingHud/PowerMeter/DepthMeter")
 screen_transition = NodePath("../../UI/FishingHud/ScreenTransition")
 fishing_catch_view = NodePath("../../UI/FishingHud/FishingCatchView")
+loadout = NodePath("../FishingLoadout")
 catch_frame_delay = 0.3
 
 [node name="Aim" type="Node" parent="Game/Fishing" unique_id=1873530056]
@@ -768,7 +776,6 @@ bait_scene = ExtResource("16_cxlon")
 spawn_point = NodePath("../../../Player/CharacterBody3D/BaitSpawner")
 min_speed = 2.0
 launch_angle_degrees = 30.0
-selected_bait_data = ExtResource("17_n1yj2")
 reel_target = NodePath("../../../Player/CharacterBody3D/ReelEndPoint")
 distance_meter_scale = 4.0
 

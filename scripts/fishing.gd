@@ -35,6 +35,7 @@ enum Phase {
 @export var depth_meter_view: Node
 @export var screen_transition: Node
 @export var fishing_catch_view: Node
+@export var loadout: FishingLoadout
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
 
@@ -152,15 +153,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			if zone != null:
 				var cast_direction: Vector3 = aim.get_direction()
+				var cast_lure: BaitData = null
+
+				if loadout != null:
+					cast_lure = loadout.get_selected_lure()
 
 				var cast_bait: Node3D = caster.perform_cast(
 					captured_power,
 					cast_direction,
 					zone.get_water_y(),
-					zone.get_bottom_y()
+					zone.get_bottom_y(),
+					cast_lure
 				)
 
 				if is_instance_valid(cast_bait):
+					encounter.set_active_bait_data(cast_lure)
 					camera_rig.arm_fishing_follow(
 						cast_bait,
 						cast_direction,

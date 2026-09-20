@@ -99,6 +99,7 @@ var rounds_remaining: int = 0
 var recovery_time_left: float = 0.0
 var fish_population: Array[FishSpawnEntry] = []
 var pending_fish_entry: FishSpawnEntry = null
+var active_bait_data: BaitData = null
 
 func _ready() -> void:
 	if caster == null:
@@ -125,12 +126,13 @@ func _on_bait_returned() -> void:
 	bite_window_timer.stop()
 	bite_active = false
 	pending_fish_entry = null
+	active_bait_data = null
 	tension.stop()
 	
 func _on_bite_timer_timeout() -> void:
 	var attraction := fish_selector.get_attraction_ratio(
 		fish_population,
-		caster.selected_bait_data,
+		active_bait_data,
 		caster.get_current_bait_depth(),
 		caster.get_current_total_depth()
 	)
@@ -144,7 +146,7 @@ func _on_bite_timer_timeout() -> void:
 		
 	pending_fish_entry = fish_selector.choose(
 		fish_population,
-		caster.selected_bait_data,
+		active_bait_data,
 		caster.get_current_bait_depth(),
 		caster.get_current_total_depth()
 	)
@@ -230,6 +232,7 @@ func catch_fish() -> void:
 	recovery_time_left = 0.0
 	player_reeling = false
 	fish_behavior.stop()
+	active_bait_data = null
 	fish_caught.emit(active_fish)
 
 func _process(delta: float) -> void:
@@ -530,6 +533,9 @@ func _restart_from_spent() -> void:
 func set_fish_population(entries: Array[FishSpawnEntry]) -> void:
 	fish_population = entries.duplicate()
 
+func set_active_bait_data(bait_data: BaitData) -> void:
+	active_bait_data = bait_data
+
 func _on_tension_changed(value: float) -> void:
 	tension_changed.emit(value)
 
@@ -566,6 +572,7 @@ func _fail_fight() -> void:
 
 	active_fish = null
 	pending_fish_entry = null
+	active_bait_data = null
 
 func _on_fish_behavior_pressure_changed(value: float) -> void:
 	fish_behavior_pressure = clampf(value, 0.0, 1.0)
