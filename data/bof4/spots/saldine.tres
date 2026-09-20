@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingSpotData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+
+[resource]
+script = ExtResource("1_spot")
+spot_id = &"saldine"
+spot_name = "Saldine"
+location_description = "Northeast Flats / Saldine Island"
+fish_ids = PackedStringArray("blowfish", "moorfish", "sea_bream", "black_porgy")
+unresolved_fish_names = PackedStringArray()
+depth_notes = "Saldine-only population includes Moorfish and Black Porgy."

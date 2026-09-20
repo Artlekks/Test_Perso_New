@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingSpotData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+
+[resource]
+script = ExtResource("1_spot")
+spot_id = &"ocean_1"
+spot_name = "Ocean 1"
+location_description = "Between Shyde and Ludia"
+fish_ids = PackedStringArray("man_o_war", "flying_fish", "blowfish", "sea_bream")
+unresolved_fish_names = PackedStringArray()
+depth_notes = "First ocean population."

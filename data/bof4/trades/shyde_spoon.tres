@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FishingTradeRecipe" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/trade_recipe.gd" id="1_trade"]
+
+[resource]
+script = ExtResource("1_trade")
+shop_name = "Shyde Manillo"
+reward_item = "Spoon"
+required_fish_ids = PackedStringArray("sea_bream", "man_o_war")
+required_counts = PackedInt32Array(1, 1)

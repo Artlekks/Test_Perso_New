@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="FishData" format=3 uid="uid://cys3woi0lpntp"]
+
+[ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" uid="uid://bersn3l5j3jbo" path="res://data/bof4/fish_behaviors/piranha_behavior.tres" id="2_behavior"]
+[ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_piranha"]
+atlas = ExtResource("3_atlas")
+region = Rect2(82, 5, 72, 48)
+
+[resource]
+script = ExtResource("1_fish")
+fish_name = "Piranha"
+average_size = 30.0
+king_size = 40.0
+base_stamina = 69.9
+base_strength = 0.6
+preferred_depth_min = 0.3
+preferred_depth_max = 0.7
+max_points = 150
+accepts_all_lures = true
+locations = Array[StringName]([&"Lake 1", &"Lake 2"])
+behavior_profile = ExtResource("2_behavior")
+resistance_rounds = 1
+recovery_time_min = 0.72
+recovery_time_max = 1.32
+portrait = SubResource("AtlasTexture_piranha")
+metadata/source_effect = "Restores 150 HP to one ally."
+metadata/source_preferred_lures = "All six standard lure families"
+metadata/source_preferred_depth = "Medium"
+metadata/source_locations = "Lake 1, Lake 2"
+metadata/balance_origin = "Stamina, strength, endurance, normalized depth ranges and movement personality are authored gameplay values, separate from source facts."
+metadata/source_index = 2
+metadata/source_worth_zenny = 30
+metadata/source_revision = "30-fish verified dataset v2"

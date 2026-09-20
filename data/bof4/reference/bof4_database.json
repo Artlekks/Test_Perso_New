@@ -1,0 +1,1942 @@
+{
+  "source": {
+    "revision": "v2-30-fish",
+    "primary_fish_table": "https://bof4.kouryaku.red/entry19.html",
+    "english_cross_checks": [
+      "https://gamefaqs.gamespot.com/ps/196818-breath-of-fire-iv/faqs/13679",
+      "https://gamefaqs.gamespot.com/ps/196818-breath-of-fire-iv/faqs/10937"
+    ],
+    "supplied_project_gdd": "Breath of Fire IV Fishing Minigame - Comprehensive Game Design Document",
+    "note": "The original supplied GDD listed 27 fish and contained several fish-stat discrepancies. v2 uses the verified 30-fish table for fish size/king/max-points/lure/spot facts, with English FAQs used for item effects/worth. Authored gameplay tuning remains explicitly separate."
+  },
+  "source_data": {
+    "fish": [
+      {
+        "index": 1,
+        "id": "jellyfish",
+        "name": "Jellyfish",
+        "average_size_cm": 22,
+        "king_size_cm": 30,
+        "max_points": 80,
+        "effect": "Restores 50 HP to one ally.",
+        "worth_zenny": 4,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 1",
+          "River 2",
+          "Lake 1",
+          "Lake 3",
+          "Chamba"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          5,
+          5,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 65.0,
+          "base_strength": 0.57,
+          "resistance_rounds": 1,
+          "recovery_time_min": 0.7,
+          "recovery_time_max": 1.3
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.4,
+          "vertical_activity": 0.45,
+          "direction_change_min": 1.4,
+          "direction_change_max": 2.6,
+          "surge_weight": 0.1,
+          "side_run_weight": 0.6,
+          "dive_weight": 0.5,
+          "rise_weight": 0.5,
+          "erratic_weight": 2.2,
+          "thrash_chance": 0.05,
+          "thrash_multiplier": 1.15
+        }
+      },
+      {
+        "index": 2,
+        "id": "piranha",
+        "name": "Piranha",
+        "average_size_cm": 30,
+        "king_size_cm": 40,
+        "max_points": 150,
+        "effect": "Restores 150 HP to one ally.",
+        "worth_zenny": 30,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 1",
+          "Lake 2"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          82,
+          5,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 69.9,
+          "base_strength": 0.6,
+          "resistance_rounds": 1,
+          "recovery_time_min": 0.72,
+          "recovery_time_max": 1.32
+        },
+        "authored_behavior": {
+          "lateral_activity": 1.0,
+          "vertical_activity": 0.75,
+          "direction_change_min": 0.35,
+          "direction_change_max": 0.85,
+          "surge_weight": 1.2,
+          "side_run_weight": 1.8,
+          "dive_weight": 0.8,
+          "rise_weight": 0.6,
+          "erratic_weight": 2.2,
+          "thrash_chance": 0.3,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 3,
+        "id": "bass",
+        "name": "Bass",
+        "average_size_cm": 45,
+        "king_size_cm": 60,
+        "max_points": 200,
+        "effect": "Restores 500 HP to one ally.",
+        "worth_zenny": 70,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 1",
+          "Lake 2"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          159,
+          5,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 76.6,
+          "base_strength": 0.63,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.76,
+          "recovery_time_max": 1.36
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.85,
+          "vertical_activity": 0.65,
+          "direction_change_min": 0.65,
+          "direction_change_max": 1.45,
+          "surge_weight": 0.8,
+          "side_run_weight": 2.0,
+          "dive_weight": 1.1,
+          "rise_weight": 0.6,
+          "erratic_weight": 1.0,
+          "thrash_chance": 0.18,
+          "thrash_multiplier": 1.3
+        }
+      },
+      {
+        "index": 4,
+        "id": "blue_gill",
+        "name": "Blue Gill",
+        "average_size_cm": 37,
+        "king_size_cm": 50,
+        "max_points": 250,
+        "effect": "Casts a minor Water attack on one enemy.",
+        "worth_zenny": 150,
+        "preferred_lures": [
+          "Spinner",
+          "Winder",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 1",
+          "Lake 2"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          236,
+          5,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 75.4,
+          "base_strength": 0.62,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.74,
+          "recovery_time_max": 1.34
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.9,
+          "vertical_activity": 0.8,
+          "direction_change_min": 0.5,
+          "direction_change_max": 1.2,
+          "surge_weight": 0.4,
+          "side_run_weight": 1.6,
+          "dive_weight": 0.8,
+          "rise_weight": 0.9,
+          "erratic_weight": 1.8,
+          "thrash_chance": 0.2,
+          "thrash_multiplier": 1.25
+        }
+      },
+      {
+        "index": 5,
+        "id": "sweetfish",
+        "name": "Sweetfish",
+        "average_size_cm": 18,
+        "king_size_cm": 25,
+        "max_points": 150,
+        "effect": "Restores 5 AP to one ally.",
+        "worth_zenny": 20,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 1",
+          "River 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          313,
+          5,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 65.8,
+          "base_strength": 0.58,
+          "resistance_rounds": 1,
+          "recovery_time_min": 0.69,
+          "recovery_time_max": 1.29
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.8,
+          "vertical_activity": 0.9,
+          "direction_change_min": 0.45,
+          "direction_change_max": 1.1,
+          "surge_weight": 0.3,
+          "side_run_weight": 1.2,
+          "dive_weight": 0.4,
+          "rise_weight": 1.7,
+          "erratic_weight": 1.3,
+          "thrash_chance": 0.12,
+          "thrash_multiplier": 1.2
+        }
+      },
+      {
+        "index": 6,
+        "id": "browntail",
+        "name": "Browntail",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 250,
+        "effect": "Temporarily raises one ally's defense.",
+        "worth_zenny": 200,
+        "preferred_lures": [
+          "Spinner",
+          "Winder",
+          "Topper",
+          "Minnow"
+        ],
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 2",
+          "River 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          5,
+          58,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 80.6,
+          "base_strength": 0.65,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.78,
+          "recovery_time_max": 1.38
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.9,
+          "vertical_activity": 0.6,
+          "direction_change_min": 0.65,
+          "direction_change_max": 1.5,
+          "surge_weight": 0.5,
+          "side_run_weight": 2.4,
+          "dive_weight": 0.5,
+          "rise_weight": 0.4,
+          "erratic_weight": 0.8,
+          "thrash_chance": 0.15,
+          "thrash_multiplier": 1.25
+        }
+      },
+      {
+        "index": 7,
+        "id": "black_bass",
+        "name": "Black Bass",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 300,
+        "effect": "Restores 1200 HP to one ally.",
+        "worth_zenny": 250,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 2",
+          "Lake 3"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          82,
+          58,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 82.1,
+          "base_strength": 0.66,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.78,
+          "recovery_time_max": 1.38
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.9,
+          "vertical_activity": 0.75,
+          "direction_change_min": 0.55,
+          "direction_change_max": 1.3,
+          "surge_weight": 1.3,
+          "side_run_weight": 2.2,
+          "dive_weight": 1.2,
+          "rise_weight": 0.4,
+          "erratic_weight": 1.0,
+          "thrash_chance": 0.25,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 8,
+        "id": "angelfish",
+        "name": "Angelfish",
+        "average_size_cm": 22,
+        "king_size_cm": 30,
+        "max_points": 250,
+        "effect": "Revives one KO'd ally.",
+        "worth_zenny": 350,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 3"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          159,
+          58,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 70.1,
+          "base_strength": 0.6,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.7,
+          "recovery_time_max": 1.3
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.65,
+          "vertical_activity": 0.9,
+          "direction_change_min": 0.75,
+          "direction_change_max": 1.6,
+          "surge_weight": 0.2,
+          "side_run_weight": 0.7,
+          "dive_weight": 0.4,
+          "rise_weight": 2.2,
+          "erratic_weight": 1.4,
+          "thrash_chance": 0.1,
+          "thrash_multiplier": 1.2
+        }
+      },
+      {
+        "index": 9,
+        "id": "trout",
+        "name": "Trout",
+        "average_size_cm": 30,
+        "king_size_cm": 40,
+        "max_points": 200,
+        "effect": "Restores 10 AP to one ally.",
+        "worth_zenny": 50,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 1",
+          "River 2",
+          "River 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          236,
+          58,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 71.4,
+          "base_strength": 0.6,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.72,
+          "recovery_time_max": 1.32
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.9,
+          "vertical_activity": 0.85,
+          "direction_change_min": 0.45,
+          "direction_change_max": 1.1,
+          "surge_weight": 0.7,
+          "side_run_weight": 1.5,
+          "dive_weight": 0.6,
+          "rise_weight": 1.6,
+          "erratic_weight": 1.3,
+          "thrash_chance": 0.2,
+          "thrash_multiplier": 1.3
+        }
+      },
+      {
+        "index": 10,
+        "id": "rainbow_trout",
+        "name": "Rainbow Trout",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 350,
+        "effect": "Temporarily raises one ally's attack.",
+        "worth_zenny": 300,
+        "preferred_lures": [
+          "Spinner",
+          "Winder",
+          "Topper",
+          "Minnow"
+        ],
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 1",
+          "River 2",
+          "River 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          313,
+          58,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 83.6,
+          "base_strength": 0.67,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.78,
+          "recovery_time_max": 1.38
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.95,
+          "vertical_activity": 0.95,
+          "direction_change_min": 0.4,
+          "direction_change_max": 1.0,
+          "surge_weight": 0.9,
+          "side_run_weight": 1.5,
+          "dive_weight": 0.5,
+          "rise_weight": 1.8,
+          "erratic_weight": 1.6,
+          "thrash_chance": 0.25,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 11,
+        "id": "bullcat",
+        "name": "Bullcat",
+        "average_size_cm": 60,
+        "king_size_cm": 80,
+        "max_points": 380,
+        "effect": "Casts a minor Fire/Earth attack on all enemies.",
+        "worth_zenny": 600,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 3",
+          "Chamba"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          5,
+          111,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 87.3,
+          "base_strength": 0.68,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.79,
+          "recovery_time_max": 1.39
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.65,
+          "vertical_activity": 0.9,
+          "direction_change_min": 0.8,
+          "direction_change_max": 1.8,
+          "surge_weight": 1.2,
+          "side_run_weight": 0.8,
+          "dive_weight": 2.5,
+          "rise_weight": 0.2,
+          "erratic_weight": 0.5,
+          "thrash_chance": 0.22,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 12,
+        "id": "martian_squid",
+        "name": "Martian Squid",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 350,
+        "effect": "Nullifies positive status effects.",
+        "worth_zenny": 400,
+        "preferred_lures": [
+          "Winder",
+          "Minnow",
+          "Worm"
+        ],
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 1",
+          "Lake 2",
+          "Lake 3"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          82,
+          111,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 83.6,
+          "base_strength": 0.67,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.78,
+          "recovery_time_max": 1.38
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.85,
+          "vertical_activity": 0.9,
+          "direction_change_min": 0.45,
+          "direction_change_max": 1.0,
+          "surge_weight": 0.3,
+          "side_run_weight": 1.0,
+          "dive_weight": 1.4,
+          "rise_weight": 0.7,
+          "erratic_weight": 3.0,
+          "thrash_chance": 0.3,
+          "thrash_multiplier": 1.4
+        }
+      },
+      {
+        "index": 13,
+        "id": "dorado",
+        "name": "Dorado",
+        "average_size_cm": 67,
+        "king_size_cm": 90,
+        "max_points": 400,
+        "effect": "Restores 800 HP to all allies.",
+        "worth_zenny": 800,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Shallow",
+        "locations": [
+          "Lake 2",
+          "Lake 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          159,
+          111,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 90.3,
+          "base_strength": 0.7,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.81,
+          "recovery_time_max": 1.41
+        },
+        "authored_behavior": {
+          "lateral_activity": 1.0,
+          "vertical_activity": 0.7,
+          "direction_change_min": 0.45,
+          "direction_change_max": 1.1,
+          "surge_weight": 2.2,
+          "side_run_weight": 2.0,
+          "dive_weight": 0.8,
+          "rise_weight": 0.4,
+          "erratic_weight": 0.8,
+          "thrash_chance": 0.3,
+          "thrash_multiplier": 1.4
+        }
+      },
+      {
+        "index": 14,
+        "id": "salmon",
+        "name": "Salmon",
+        "average_size_cm": 105,
+        "king_size_cm": 140,
+        "max_points": 400,
+        "effect": "Restores 30 AP to all allies.",
+        "worth_zenny": 1000,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 2",
+          "River 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          236,
+          111,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 103.5,
+          "base_strength": 0.76,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.9,
+          "recovery_time_max": 1.5
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.95,
+          "vertical_activity": 0.9,
+          "direction_change_min": 0.55,
+          "direction_change_max": 1.2,
+          "surge_weight": 1.8,
+          "side_run_weight": 1.5,
+          "dive_weight": 0.6,
+          "rise_weight": 1.7,
+          "erratic_weight": 0.7,
+          "thrash_chance": 0.28,
+          "thrash_multiplier": 1.4
+        }
+      },
+      {
+        "index": 15,
+        "id": "barandy",
+        "name": "Barandy",
+        "average_size_cm": 150,
+        "king_size_cm": 200,
+        "max_points": 700,
+        "effect": "Restores one ally to full HP.",
+        "worth_zenny": 1400,
+        "preferred_lures": [
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Medium",
+        "locations": [
+          "Lake 3"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          313,
+          111,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 128.1,
+          "base_strength": 0.89,
+          "resistance_rounds": 4,
+          "recovery_time_min": 1.01,
+          "recovery_time_max": 1.61
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.55,
+          "vertical_activity": 0.85,
+          "direction_change_min": 1.1,
+          "direction_change_max": 2.3,
+          "surge_weight": 2.5,
+          "side_run_weight": 0.7,
+          "dive_weight": 2.3,
+          "rise_weight": 0.1,
+          "erratic_weight": 0.3,
+          "thrash_chance": 0.32,
+          "thrash_multiplier": 1.5
+        }
+      },
+      {
+        "index": 16,
+        "id": "sturgeon",
+        "name": "Sturgeon",
+        "average_size_cm": 165,
+        "king_size_cm": 220,
+        "max_points": 700,
+        "effect": "Revives all KO'd allies to 25% HP.",
+        "worth_zenny": 1800,
+        "preferred_lures": [
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Shallow",
+        "locations": [
+          "River 3"
+        ],
+        "implementation_depth_ratio": [
+          0.0,
+          0.35
+        ],
+        "portrait_region": [
+          5,
+          164,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 133.4,
+          "base_strength": 0.91,
+          "resistance_rounds": 4,
+          "recovery_time_min": 1.05,
+          "recovery_time_max": 1.65
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.5,
+          "vertical_activity": 0.95,
+          "direction_change_min": 1.2,
+          "direction_change_max": 2.5,
+          "surge_weight": 2.0,
+          "side_run_weight": 0.5,
+          "dive_weight": 3.2,
+          "rise_weight": 0.05,
+          "erratic_weight": 0.2,
+          "thrash_chance": 0.28,
+          "thrash_multiplier": 1.45
+        }
+      },
+      {
+        "index": 17,
+        "id": "man_o_war",
+        "name": "Man-o'-War",
+        "average_size_cm": 22,
+        "king_size_cm": 30,
+        "max_points": 80,
+        "effect": "Restores 50 HP to one ally.",
+        "worth_zenny": 4,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 1",
+          "Ocean 2"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          82,
+          164,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 65.0,
+          "base_strength": 0.57,
+          "resistance_rounds": 1,
+          "recovery_time_min": 0.7,
+          "recovery_time_max": 1.3
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.35,
+          "vertical_activity": 0.4,
+          "direction_change_min": 1.5,
+          "direction_change_max": 2.8,
+          "surge_weight": 0.05,
+          "side_run_weight": 0.4,
+          "dive_weight": 0.5,
+          "rise_weight": 0.5,
+          "erratic_weight": 2.4,
+          "thrash_chance": 0.03,
+          "thrash_multiplier": 1.15
+        }
+      },
+      {
+        "index": 18,
+        "id": "flying_fish",
+        "name": "Flying Fish",
+        "average_size_cm": 26,
+        "king_size_cm": 35,
+        "max_points": 150,
+        "effect": "Restores 100 HP to one ally.",
+        "worth_zenny": 30,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 1",
+          "Ocean 3"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          159,
+          164,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 68.5,
+          "base_strength": 0.59,
+          "resistance_rounds": 1,
+          "recovery_time_min": 0.71,
+          "recovery_time_max": 1.31
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.9,
+          "vertical_activity": 1.0,
+          "direction_change_min": 0.4,
+          "direction_change_max": 0.9,
+          "surge_weight": 0.4,
+          "side_run_weight": 0.8,
+          "dive_weight": 0.2,
+          "rise_weight": 3.5,
+          "erratic_weight": 1.2,
+          "thrash_chance": 0.25,
+          "thrash_multiplier": 1.3
+        }
+      },
+      {
+        "index": 19,
+        "id": "blowfish",
+        "name": "Blowfish",
+        "average_size_cm": 37,
+        "king_size_cm": 50,
+        "max_points": 200,
+        "effect": "Cures Poison.",
+        "worth_zenny": 80,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 1",
+          "Saldine"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          236,
+          164,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 73.9,
+          "base_strength": 0.62,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.74,
+          "recovery_time_max": 1.34
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.75,
+          "vertical_activity": 0.75,
+          "direction_change_min": 0.65,
+          "direction_change_max": 1.35,
+          "surge_weight": 0.2,
+          "side_run_weight": 0.8,
+          "dive_weight": 0.7,
+          "rise_weight": 0.7,
+          "erratic_weight": 2.2,
+          "thrash_chance": 0.15,
+          "thrash_multiplier": 1.25
+        }
+      },
+      {
+        "index": 20,
+        "id": "moorfish",
+        "name": "Moorfish",
+        "average_size_cm": 22,
+        "king_size_cm": 30,
+        "max_points": 200,
+        "effect": "Revives one KO'd ally with 1 HP; may fail.",
+        "worth_zenny": 100,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Deep",
+        "locations": [
+          "Saldine"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          313,
+          164,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 69.0,
+          "base_strength": 0.58,
+          "resistance_rounds": 1,
+          "recovery_time_min": 0.72,
+          "recovery_time_max": 1.3
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.8,
+          "vertical_activity": 0.8,
+          "direction_change_min": 0.45,
+          "direction_change_max": 1.0,
+          "surge_weight": 0.3,
+          "side_run_weight": 0.8,
+          "dive_weight": 0.7,
+          "rise_weight": 0.8,
+          "erratic_weight": 2.5,
+          "thrash_chance": 0.15,
+          "thrash_multiplier": 1.2
+        }
+      },
+      {
+        "index": 21,
+        "id": "sea_bass",
+        "name": "Sea Bass",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 280,
+        "effect": "Restores 400 HP to one ally.",
+        "worth_zenny": 30,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 2",
+          "Ocean 3"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          5,
+          217,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 84.9,
+          "base_strength": 0.67,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.79,
+          "recovery_time_max": 1.39
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.85,
+          "vertical_activity": 0.65,
+          "direction_change_min": 0.7,
+          "direction_change_max": 1.6,
+          "surge_weight": 0.8,
+          "side_run_weight": 2.0,
+          "dive_weight": 1.3,
+          "rise_weight": 0.6,
+          "erratic_weight": 1.0,
+          "thrash_chance": 0.2,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 22,
+        "id": "flatfish",
+        "name": "Flatfish",
+        "average_size_cm": 37,
+        "king_size_cm": 50,
+        "max_points": 280,
+        "effect": "Cures all status ailments on one ally.",
+        "worth_zenny": 300,
+        "preferred_lures": [
+          "Spinner",
+          "Winder",
+          "Topper",
+          "Minnow"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 2",
+          "Ocean 3"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          82,
+          217,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 83.6,
+          "base_strength": 0.67,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.78,
+          "recovery_time_max": 1.38
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.55,
+          "vertical_activity": 1.0,
+          "direction_change_min": 0.8,
+          "direction_change_max": 1.7,
+          "surge_weight": 0.3,
+          "side_run_weight": 0.7,
+          "dive_weight": 3.5,
+          "rise_weight": 0.15,
+          "erratic_weight": 0.5,
+          "thrash_chance": 0.15,
+          "thrash_multiplier": 1.25
+        }
+      },
+      {
+        "index": 23,
+        "id": "sea_bream",
+        "name": "Sea Bream",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 300,
+        "effect": "Restores 30 AP to one ally.",
+        "worth_zenny": 350,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 1",
+          "Saldine"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          159,
+          217,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 78.1,
+          "base_strength": 0.64,
+          "resistance_rounds": 2,
+          "recovery_time_min": 0.76,
+          "recovery_time_max": 1.36
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.8,
+          "vertical_activity": 0.65,
+          "direction_change_min": 0.7,
+          "direction_change_max": 1.5,
+          "surge_weight": 0.6,
+          "side_run_weight": 1.7,
+          "dive_weight": 0.8,
+          "rise_weight": 0.5,
+          "erratic_weight": 1.0,
+          "thrash_chance": 0.16,
+          "thrash_multiplier": 1.25
+        }
+      },
+      {
+        "index": 24,
+        "id": "octopus",
+        "name": "Octopus",
+        "average_size_cm": 60,
+        "king_size_cm": 80,
+        "max_points": 350,
+        "effect": "Blinds all enemies.",
+        "worth_zenny": 400,
+        "preferred_lures": [
+          "Winder",
+          "Minnow",
+          "Worm"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 2",
+          "Ocean 3"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          236,
+          217,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 83.6,
+          "base_strength": 0.67,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.78,
+          "recovery_time_max": 1.38
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.9,
+          "vertical_activity": 0.95,
+          "direction_change_min": 0.4,
+          "direction_change_max": 1.0,
+          "surge_weight": 0.2,
+          "side_run_weight": 1.0,
+          "dive_weight": 1.8,
+          "rise_weight": 0.5,
+          "erratic_weight": 3.2,
+          "thrash_chance": 0.3,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 25,
+        "id": "bonito",
+        "name": "Bonito",
+        "average_size_cm": 90,
+        "king_size_cm": 120,
+        "max_points": 400,
+        "effect": "Restores one ally to full HP.",
+        "worth_zenny": 700,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Worm"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 2",
+          "Ocean 3"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          313,
+          217,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 90.3,
+          "base_strength": 0.7,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.81,
+          "recovery_time_max": 1.41
+        },
+        "authored_behavior": {
+          "lateral_activity": 1.0,
+          "vertical_activity": 0.8,
+          "direction_change_min": 0.35,
+          "direction_change_max": 0.85,
+          "surge_weight": 2.5,
+          "side_run_weight": 1.8,
+          "dive_weight": 0.6,
+          "rise_weight": 0.7,
+          "erratic_weight": 1.2,
+          "thrash_chance": 0.35,
+          "thrash_multiplier": 1.4
+        }
+      },
+      {
+        "index": 26,
+        "id": "black_porgy",
+        "name": "Black Porgy",
+        "average_size_cm": 52,
+        "king_size_cm": 70,
+        "max_points": 400,
+        "effect": "Restores 100 AP to one ally.",
+        "worth_zenny": 1000,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Saldine"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          5,
+          270,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 92.0,
+          "base_strength": 0.74,
+          "resistance_rounds": 3,
+          "recovery_time_min": 0.82,
+          "recovery_time_max": 1.42
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.75,
+          "vertical_activity": 0.85,
+          "direction_change_min": 0.7,
+          "direction_change_max": 1.5,
+          "surge_weight": 0.8,
+          "side_run_weight": 1.4,
+          "dive_weight": 2.0,
+          "rise_weight": 0.3,
+          "erratic_weight": 0.6,
+          "thrash_chance": 0.22,
+          "thrash_multiplier": 1.35
+        }
+      },
+      {
+        "index": 27,
+        "id": "angler",
+        "name": "Angler",
+        "average_size_cm": 105,
+        "king_size_cm": 140,
+        "max_points": 450,
+        "effect": "Casts a major Wind/Water attack on all enemies.",
+        "worth_zenny": 1000,
+        "preferred_lures": [
+          "Topper",
+          "Minnow",
+          "Frog",
+          "Worm"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 3"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          82,
+          270,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 118.0,
+          "base_strength": 0.84,
+          "resistance_rounds": 4,
+          "recovery_time_min": 0.92,
+          "recovery_time_max": 1.55
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.5,
+          "vertical_activity": 0.85,
+          "direction_change_min": 1.0,
+          "direction_change_max": 2.2,
+          "surge_weight": 1.4,
+          "side_run_weight": 0.5,
+          "dive_weight": 2.5,
+          "rise_weight": 0.1,
+          "erratic_weight": 0.4,
+          "thrash_chance": 0.25,
+          "thrash_multiplier": 1.45
+        }
+      },
+      {
+        "index": 28,
+        "id": "spearfish",
+        "name": "Spearfish",
+        "average_size_cm": 142,
+        "king_size_cm": 190,
+        "max_points": 500,
+        "effect": "Restores 1500 HP to all allies.",
+        "worth_zenny": 1500,
+        "preferred_lures": [
+          "Spinner",
+          "Winder",
+          "Topper",
+          "Minnow"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 2"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          159,
+          270,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 115.5,
+          "base_strength": 0.83,
+          "resistance_rounds": 5,
+          "recovery_time_min": 0.9,
+          "recovery_time_max": 1.5
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.8,
+          "vertical_activity": 0.8,
+          "direction_change_min": 0.8,
+          "direction_change_max": 1.7,
+          "surge_weight": 3.8,
+          "side_run_weight": 0.7,
+          "dive_weight": 1.5,
+          "rise_weight": 0.2,
+          "erratic_weight": 0.3,
+          "thrash_chance": 0.35,
+          "thrash_multiplier": 1.55
+        }
+      },
+      {
+        "index": 29,
+        "id": "whale",
+        "name": "Whale",
+        "average_size_cm": 187,
+        "king_size_cm": 250,
+        "max_points": 999,
+        "effect": "Restores full HP and cures status for all allies.",
+        "worth_zenny": 2000,
+        "preferred_lures": [
+          "Spinner",
+          "Winder",
+          "Topper",
+          "Minnow"
+        ],
+        "preferred_depth": "Deep",
+        "locations": [
+          "Ocean 2"
+        ],
+        "implementation_depth_ratio": [
+          0.65,
+          1.0
+        ],
+        "portrait_region": [
+          236,
+          270,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 150.0,
+          "base_strength": 1.0,
+          "resistance_rounds": 5,
+          "recovery_time_min": 1.1,
+          "recovery_time_max": 1.7
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.45,
+          "vertical_activity": 0.55,
+          "direction_change_min": 1.4,
+          "direction_change_max": 2.8,
+          "surge_weight": 4.0,
+          "side_run_weight": 0.6,
+          "dive_weight": 1.4,
+          "rise_weight": 0.1,
+          "erratic_weight": 0.2,
+          "thrash_chance": 0.3,
+          "thrash_multiplier": 1.6
+        }
+      },
+      {
+        "index": 30,
+        "id": "acheron",
+        "name": "Acheron",
+        "average_size_cm": 37,
+        "king_size_cm": 50,
+        "max_points": 300,
+        "effect": "Poisons everyone, allies and enemies.",
+        "worth_zenny": 250,
+        "preferred_lures": "All six standard lure families",
+        "preferred_depth": "Medium",
+        "locations": [
+          "Chamba"
+        ],
+        "implementation_depth_ratio": [
+          0.3,
+          0.7
+        ],
+        "portrait_region": [
+          313,
+          270,
+          72,
+          48
+        ],
+        "authored_balance": {
+          "base_stamina": 97.1,
+          "base_strength": 0.74,
+          "resistance_rounds": 4,
+          "recovery_time_min": 0.84,
+          "recovery_time_max": 1.44
+        },
+        "authored_behavior": {
+          "lateral_activity": 0.85,
+          "vertical_activity": 0.9,
+          "direction_change_min": 0.5,
+          "direction_change_max": 1.2,
+          "surge_weight": 1.5,
+          "side_run_weight": 1.0,
+          "dive_weight": 1.6,
+          "rise_weight": 0.4,
+          "erratic_weight": 2.5,
+          "thrash_chance": 0.35,
+          "thrash_multiplier": 1.45
+        }
+      }
+    ],
+    "lures": [
+      {
+        "id": "straight",
+        "name": "Straight",
+        "type": "Worm",
+        "level": 1,
+        "description": "Basic worm shape.",
+        "acquisition": "Buy: Sarai/Shyde (20z)."
+      },
+      {
+        "id": "tail",
+        "name": "Tail",
+        "type": "Worm",
+        "level": 2,
+        "description": "Balanced, long range.",
+        "acquisition": "Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."
+      },
+      {
+        "id": "crab",
+        "name": "Crab",
+        "type": "Worm",
+        "level": 3,
+        "description": "Rises on reel; for bottom fish.",
+        "acquisition": "Trade: Lyp (Black Bass x1, Blue Gill x1, Piranha x1)."
+      },
+      {
+        "id": "baby_frog",
+        "name": "Baby Frog",
+        "type": "Frog",
+        "level": 1,
+        "description": "Doesn't sink easily.",
+        "acquisition": "Buy: Sarai/Shyde (20z)."
+      },
+      {
+        "id": "toad",
+        "name": "Toad",
+        "type": "Frog",
+        "level": 2,
+        "description": "Sinks slow, rises quick.",
+        "acquisition": "Drop: Tadpole (Kyria/Synesta); Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."
+      },
+      {
+        "id": "fat_frog",
+        "name": "Fat Frog",
+        "type": "Frog",
+        "level": 3,
+        "description": "Best frog; attractive.",
+        "acquisition": "Drop: Mud Pup (Fane); Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
+      },
+      {
+        "id": "popper",
+        "name": "Popper",
+        "type": "Topper",
+        "level": 1,
+        "description": "Noisy, surface.",
+        "acquisition": "Drop: Ghost (N. Chamba); Buy: Lyp (20z)."
+      },
+      {
+        "id": "flattop",
+        "name": "Flattop",
+        "type": "Topper",
+        "level": 2,
+        "description": "Shallow mimic.",
+        "acquisition": "Satchel (? areas); Trade: Wyndia (Blowfish x2) (80z)."
+      },
+      {
+        "id": "swisher",
+        "name": "Swisher",
+        "type": "Topper",
+        "level": 3,
+        "description": "Propeller surface churn.",
+        "acquisition": "Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
+      },
+      {
+        "id": "floater",
+        "name": "Floater",
+        "type": "Minnow",
+        "level": 1,
+        "description": "Small fish shape.",
+        "acquisition": "Buy: Synesta/Shyde (20z)."
+      },
+      {
+        "id": "hanger",
+        "name": "Hanger",
+        "type": "Minnow",
+        "level": 2,
+        "description": "Floats on wind.",
+        "acquisition": "Trade: Shyde (Blowfish x2); Buy: Chiqua (80z)."
+      },
+      {
+        "id": "deep_diver",
+        "name": "Deep Diver",
+        "type": "Minnow",
+        "level": 3,
+        "description": "Sinks deep.",
+        "acquisition": "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
+      },
+      {
+        "id": "twister",
+        "name": "Twister",
+        "type": "Winder",
+        "level": 1,
+        "description": "Twists.",
+        "acquisition": "Buy: Synesta/Shyde (20z)."
+      },
+      {
+        "id": "warbler",
+        "name": "Warbler",
+        "type": "Winder",
+        "level": 2,
+        "description": "Warbles.",
+        "acquisition": "Trade: Shyde (Flying Fish x3); Buy: Chiqua (80z)."
+      },
+      {
+        "id": "dancer",
+        "name": "Dancer",
+        "type": "Winder",
+        "level": 3,
+        "description": "Dances; for deep fish.",
+        "acquisition": "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
+      },
+      {
+        "id": "silver_top",
+        "name": "Silver Top",
+        "type": "Spinner",
+        "level": 1,
+        "description": "Silver spin.",
+        "acquisition": "Buy: Synesta/Shyde (20z)."
+      },
+      {
+        "id": "gold_top",
+        "name": "Gold Top",
+        "type": "Spinner",
+        "level": 2,
+        "description": "Gold spin.",
+        "acquisition": "Trade: Shyde (Sea Bream x1, Man-o'-War x1); Buy: Chiqua (80z)."
+      },
+      {
+        "id": "platinum_top",
+        "name": "Platinum Top",
+        "type": "Spinner",
+        "level": 3,
+        "description": "Platinum spin.",
+        "acquisition": "Trade: Lyp (Angelfish x1, Blue Gill x1, Bass x1)."
+      },
+      {
+        "id": "spoon",
+        "name": "Spoon",
+        "type": "Spoon",
+        "level": 1,
+        "description": "Spoon shape; versatile.",
+        "acquisition": "Trade: Shyde (Sea Bream x1, Man-o'-War x1) (20z)."
+      }
+    ],
+    "rods": [
+      {
+        "id": "wooden_rod",
+        "name": "Wooden Rod",
+        "power_level": "1",
+        "description": "Beginner; easy but fragile.",
+        "acquisition": "Buy: Sarai (50z)."
+      },
+      {
+        "id": "bamboo_rod",
+        "name": "Bamboo Rod",
+        "power_level": "2",
+        "description": "Good range, harder handling.",
+        "acquisition": "Trade: Wyndia Manillo (Sea Bream x2); Buy: Faerie Shop (250z)."
+      },
+      {
+        "id": "deluxe_rod",
+        "name": "Deluxe Rod",
+        "power_level": "2",
+        "description": "Balanced, easy.",
+        "acquisition": "Treasure: Saldine."
+      },
+      {
+        "id": "spanner",
+        "name": "Spanner",
+        "power_level": "3",
+        "description": "Handmade, balanced.",
+        "acquisition": "Master Gyosil: 6000 points."
+      },
+      {
+        "id": "angling_rod",
+        "name": "Angling Rod",
+        "power_level": "MAX",
+        "description": "Long range, powerful.",
+        "acquisition": "Trade: Lyp Manillo (Salmon x2, Dorado x2, Martian Squid x2)."
+      },
+      {
+        "id": "masters_rod",
+        "name": "Master's Rod",
+        "power_level": "MAX",
+        "description": "Ultimate; catches anything.",
+        "acquisition": "Master Gyosil: 9500 points."
+      }
+    ],
+    "spots": [
+      {
+        "id": "river_1",
+        "name": "River 1",
+        "location_description": "East of Sarai (canyon)",
+        "fish_ids": [
+          "jellyfish",
+          "sweetfish",
+          "trout",
+          "rainbow_trout"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Shallow; waterfall area is useful for Rainbow Trout."
+      },
+      {
+        "id": "river_2",
+        "name": "River 2",
+        "location_description": "North of Kasq Woods",
+        "fish_ids": [
+          "jellyfish",
+          "browntail",
+          "trout",
+          "rainbow_trout",
+          "salmon"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Shallow river population."
+      },
+      {
+        "id": "river_3",
+        "name": "River 3",
+        "location_description": "Southwest of the Tomb",
+        "fish_ids": [
+          "sweetfish",
+          "browntail",
+          "trout",
+          "rainbow_trout",
+          "bullcat",
+          "salmon",
+          "sturgeon"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Large river population including Sturgeon."
+      },
+      {
+        "id": "lake_1",
+        "name": "Lake 1",
+        "location_description": "Synesta / Sandflier Wharf",
+        "fish_ids": [
+          "jellyfish",
+          "piranha",
+          "bass",
+          "blue_gill",
+          "martian_squid"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Lake population; Martian Squid is present."
+      },
+      {
+        "id": "lake_2",
+        "name": "Lake 2",
+        "location_description": "South of Lyp",
+        "fish_ids": [
+          "piranha",
+          "bass",
+          "blue_gill",
+          "black_bass",
+          "martian_squid",
+          "dorado"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Lake population including Black Bass and Dorado."
+      },
+      {
+        "id": "lake_3",
+        "name": "Lake 3",
+        "location_description": "North of Chiqua",
+        "fish_ids": [
+          "jellyfish",
+          "black_bass",
+          "angelfish",
+          "martian_squid",
+          "dorado",
+          "barandy"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Lake population including Barandy."
+      },
+      {
+        "id": "ocean_1",
+        "name": "Ocean 1",
+        "location_description": "Between Shyde and Ludia",
+        "fish_ids": [
+          "man_o_war",
+          "flying_fish",
+          "blowfish",
+          "sea_bream"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "First ocean population."
+      },
+      {
+        "id": "ocean_2",
+        "name": "Ocean 2",
+        "location_description": "Northeast world map / Salt Sea",
+        "fish_ids": [
+          "man_o_war",
+          "sea_bass",
+          "flatfish",
+          "octopus",
+          "bonito",
+          "spearfish",
+          "whale"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Deep ocean population including Spearfish and Whale."
+      },
+      {
+        "id": "ocean_3",
+        "name": "Ocean 3",
+        "location_description": "Between Highway and Mountain Path",
+        "fish_ids": [
+          "flying_fish",
+          "sea_bass",
+          "flatfish",
+          "octopus",
+          "bonito",
+          "angler"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Deep ocean population including Angler."
+      },
+      {
+        "id": "saldine",
+        "name": "Saldine",
+        "location_description": "Northeast Flats / Saldine Island",
+        "fish_ids": [
+          "blowfish",
+          "moorfish",
+          "sea_bream",
+          "black_porgy"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Saldine-only population includes Moorfish and Black Porgy."
+      },
+      {
+        "id": "chamba",
+        "name": "Chamba",
+        "location_description": "Southeast of Chamba",
+        "fish_ids": [
+          "jellyfish",
+          "bullcat",
+          "acheron"
+        ],
+        "unresolved_fish_names": [],
+        "depth_notes": "Special Chamba population."
+      }
+    ],
+    "example_manillo_trades": [
+      {
+        "id": "wyndia_tail",
+        "shop": "Wyndia Manillo",
+        "reward": "Tail",
+        "required_fish_ids": [
+          "flying_fish"
+        ],
+        "required_counts": [
+          3
+        ]
+      },
+      {
+        "id": "wyndia_toad",
+        "shop": "Wyndia Manillo",
+        "reward": "Toad",
+        "required_fish_ids": [
+          "flying_fish"
+        ],
+        "required_counts": [
+          3
+        ]
+      },
+      {
+        "id": "wyndia_flattop",
+        "shop": "Wyndia Manillo",
+        "reward": "Flattop",
+        "required_fish_ids": [
+          "blowfish"
+        ],
+        "required_counts": [
+          2
+        ]
+      },
+      {
+        "id": "wyndia_bamboo_rod",
+        "shop": "Wyndia Manillo",
+        "reward": "Bamboo Rod",
+        "required_fish_ids": [
+          "sea_bream"
+        ],
+        "required_counts": [
+          2
+        ]
+      },
+      {
+        "id": "shyde_hanger",
+        "shop": "Shyde Manillo",
+        "reward": "Hanger",
+        "required_fish_ids": [
+          "blowfish"
+        ],
+        "required_counts": [
+          2
+        ]
+      },
+      {
+        "id": "shyde_warbler",
+        "shop": "Shyde Manillo",
+        "reward": "Warbler",
+        "required_fish_ids": [
+          "flying_fish"
+        ],
+        "required_counts": [
+          3
+        ]
+      },
+      {
+        "id": "shyde_gold_top",
+        "shop": "Shyde Manillo",
+        "reward": "Gold Top",
+        "required_fish_ids": [
+          "sea_bream",
+          "man_o_war"
+        ],
+        "required_counts": [
+          1,
+          1
+        ]
+      },
+      {
+        "id": "shyde_spoon",
+        "shop": "Shyde Manillo",
+        "reward": "Spoon",
+        "required_fish_ids": [
+          "sea_bream",
+          "man_o_war"
+        ],
+        "required_counts": [
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "implementation_notes": {
+    "fish_count": 30,
+    "portraits": "All 30 FishData resources contain AtlasTexture portrait regions referencing res://assets/sprites/Atlas_Fishes.png.",
+    "authored_values": "Normalized depth ranges, stamina, strength, resistance rounds, recovery timing and movement personalities are gameplay-authored values and are not presented as canonical BOF4 numeric mechanics.",
+    "unchanged_from_v1": "19 lure resources, 6 rod resources and the 8 GDD-documented example trade resources are carried forward."
+  }
+}

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+
+[resource]
+script = ExtResource("1_bait")
+lure_type = 2
+lure_id = &"flattop"
+metadata/display_name = "Flattop"
+metadata/type_label = "Topper"
+metadata/level = 2
+metadata/description = "Shallow mimic."
+metadata/acquisition = "Satchel (? areas); Trade: Wyndia (Blowfish x2) (80z)."
+metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

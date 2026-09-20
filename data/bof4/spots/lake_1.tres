@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingSpotData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+
+[resource]
+script = ExtResource("1_spot")
+spot_id = &"lake_1"
+spot_name = "Lake 1"
+location_description = "Synesta / Sandflier Wharf"
+fish_ids = PackedStringArray("jellyfish", "piranha", "bass", "blue_gill", "martian_squid")
+unresolved_fish_names = PackedStringArray()
+depth_notes = "Lake population; Martian Squid is present."

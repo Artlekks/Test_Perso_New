@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/acheron_behavior.tres" id="2_behavior"]
+[ext_resource type="Texture2D" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_acheron"]
+atlas = ExtResource("3_atlas")
+region = Rect2(313, 270, 72, 48)
+
+[resource]
+script = ExtResource("1_fish")
+fish_name = "Acheron"
+average_size = 37.0
+king_size = 50.0
+base_stamina = 97.1
+base_strength = 0.74
+preferred_depth_min = 0.30
+preferred_depth_max = 0.70
+max_points = 300
+accepts_all_lures = true
+preferred_lure_types = Array[int]([])
+preferred_lure_ids = Array[StringName]([])
+locations = Array[StringName]([&"Chamba"])
+behavior_profile = ExtResource("2_behavior")
+resistance_rounds = 4
+recovery_time_min = 0.84
+recovery_time_max = 1.44
+portrait = SubResource("AtlasTexture_acheron")
+metadata/source_index = 30
+metadata/source_effect = "Poisons everyone, allies and enemies."
+metadata/source_worth_zenny = 250
+metadata/source_preferred_lures = "All six standard lure families"
+metadata/source_preferred_depth = "Medium"
+metadata/source_locations = "Chamba"
+metadata/source_revision = "30-fish verified dataset v2"
+metadata/balance_origin = "Stamina, strength, endurance, normalized depth ranges and movement personality are authored gameplay values, separate from source facts."

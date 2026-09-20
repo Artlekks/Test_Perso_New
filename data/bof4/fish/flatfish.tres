@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/flatfish_behavior.tres" id="2_behavior"]
+[ext_resource type="Texture2D" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_flatfish"]
+atlas = ExtResource("3_atlas")
+region = Rect2(82, 217, 72, 48)
+
+[resource]
+script = ExtResource("1_fish")
+fish_name = "Flatfish"
+average_size = 37.0
+king_size = 50.0
+base_stamina = 83.6
+base_strength = 0.67
+preferred_depth_min = 0.65
+preferred_depth_max = 1.00
+max_points = 280
+accepts_all_lures = false
+preferred_lure_types = Array[int]([5, 4, 2, 3])
+preferred_lure_ids = Array[StringName]([])
+locations = Array[StringName]([&"Ocean 2", &"Ocean 3"])
+behavior_profile = ExtResource("2_behavior")
+resistance_rounds = 3
+recovery_time_min = 0.78
+recovery_time_max = 1.38
+portrait = SubResource("AtlasTexture_flatfish")
+metadata/source_index = 22
+metadata/source_effect = "Cures all status ailments on one ally."
+metadata/source_worth_zenny = 300
+metadata/source_preferred_lures = "Spinner, Winder, Topper, Minnow"
+metadata/source_preferred_depth = "Deep"
+metadata/source_locations = "Ocean 2, Ocean 3"
+metadata/source_revision = "30-fish verified dataset v2"
+metadata/balance_origin = "Stamina, strength, endurance, normalized depth ranges and movement personality are authored gameplay values, separate from source facts."

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingSpotData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+
+[resource]
+script = ExtResource("1_spot")
+spot_id = &"river_1"
+spot_name = "River 1"
+location_description = "East of Sarai (canyon)"
+fish_ids = PackedStringArray("jellyfish", "sweetfish", "trout", "rainbow_trout")
+unresolved_fish_names = PackedStringArray()
+depth_notes = "Shallow; waterfall area is useful for Rainbow Trout."

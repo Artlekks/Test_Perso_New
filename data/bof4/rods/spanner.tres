@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/rod_data.gd" id="1_rod"]
+
+[resource]
+script = ExtResource("1_rod")
+rod_id = &"spanner"
+rod_name = "Spanner"
+power_level_label = "3"
+description = "Handmade, balanced."
+acquisition_method = "Master Gyosil: 6000 points."

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingSpotData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+
+[resource]
+script = ExtResource("1_spot")
+spot_id = &"ocean_3"
+spot_name = "Ocean 3"
+location_description = "Between Highway and Mountain Path"
+fish_ids = PackedStringArray("flying_fish", "sea_bass", "flatfish", "octopus", "bonito", "angler")
+unresolved_fish_names = PackedStringArray()
+depth_notes = "Deep ocean population including Angler."

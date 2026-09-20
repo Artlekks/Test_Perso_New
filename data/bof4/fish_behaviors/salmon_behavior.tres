@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://c6xp1brbr24kv"]
+
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+lateral_activity = 0.95
+vertical_activity = 0.9
+direction_change_min = 0.55
+direction_change_max = 1.2
+surge_weight = 1.8
+side_run_weight = 1.5
+dive_weight = 0.6
+rise_weight = 1.7
+erratic_weight = 0.7
+thrash_chance = 0.28
+thrash_multiplier = 1.4
+metadata/balance_origin = "Authored gameplay baseline; movement personality is not specified numerically by the source data."

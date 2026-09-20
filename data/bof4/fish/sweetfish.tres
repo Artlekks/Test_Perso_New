@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="FishData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/sweetfish_behavior.tres" id="2_behavior"]
+[ext_resource type="Texture2D" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sweetfish"]
+atlas = ExtResource("3_atlas")
+region = Rect2(313, 5, 72, 48)
+
+[resource]
+script = ExtResource("1_fish")
+fish_name = "Sweetfish"
+average_size = 18.0
+king_size = 25.0
+base_stamina = 65.8
+base_strength = 0.58
+preferred_depth_min = 0.00
+preferred_depth_max = 0.35
+max_points = 150
+accepts_all_lures = true
+preferred_lure_types = Array[int]([])
+preferred_lure_ids = Array[StringName]([])
+locations = Array[StringName]([&"River 1", &"River 3"])
+behavior_profile = ExtResource("2_behavior")
+resistance_rounds = 1
+recovery_time_min = 0.69
+recovery_time_max = 1.29
+portrait = SubResource("AtlasTexture_sweetfish")
+metadata/source_index = 5
+metadata/source_effect = "Restores 5 AP to one ally."
+metadata/source_worth_zenny = 20
+metadata/source_preferred_lures = "All six standard lure families"
+metadata/source_preferred_depth = "Shallow"
+metadata/source_locations = "River 1, River 3"
+metadata/source_revision = "30-fish verified dataset v2"
+metadata/balance_origin = "Stamina, strength, endurance, normalized depth ranges and movement personality are authored gameplay values, separate from source facts."

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingSpotData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+
+[resource]
+script = ExtResource("1_spot")
+spot_id = &"lake_2"
+spot_name = "Lake 2"
+location_description = "South of Lyp"
+fish_ids = PackedStringArray("piranha", "bass", "blue_gill", "black_bass", "martian_squid", "dorado")
+unresolved_fish_names = PackedStringArray()
+depth_notes = "Lake population including Black Bass and Dorado."

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+
+[resource]
+script = ExtResource("1_bait")
+lure_type = 1
+lure_id = &"fat_frog"
+metadata/display_name = "Fat Frog"
+metadata/type_label = "Frog"
+metadata/level = 3
+metadata/description = "Best frog; attractive."
+metadata/acquisition = "Drop: Mud Pup (Fane); Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
+metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

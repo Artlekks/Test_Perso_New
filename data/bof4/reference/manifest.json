@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "fish_resources": 30,
+  "behavior_profiles": 30,
+  "fish_portraits": 30,
+  "lure_resources": 19,
+  "rod_resources": 6,
+  "spot_resources": 11,
+  "trade_resources": 8,
+  "paths": {
+    "fish": "res://data/bof4/fish/",
+    "behaviors": "res://data/bof4/fish_behaviors/",
+    "lures": "res://data/bof4/lures/",
+    "rods": "res://data/bof4/rods/",
+    "spots": "res://data/bof4/spots/",
+    "trades": "res://data/bof4/trades/",
+    "portrait_atlas": "res://assets/sprites/Atlas_Fishes.png"
+  }
+}

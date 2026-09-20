@@ -11,10 +11,9 @@
 [ext_resource type="Texture2D" uid="uid://bsxg4tfsykf2o" path="res://assets/models/textures/River_Marsh.png" id="6_lyatm"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="8_10ljf"]
 [ext_resource type="PackedScene" uid="uid://b7wqcq60h8vqv" path="res://actors/FishZone_V2.tscn" id="8_n1yj2"]
-[ext_resource type="Resource" uid="uid://brj6rcwjearqv" path="res://data/fish/test_fish_uncommon.tres" id="10_lyatm"]
+[ext_resource type="Resource" uid="uid://bhbjocml2b5fy" path="res://data/bof4/fish/sea_bass.tres" id="9_bqx6j"]
 [ext_resource type="PackedScene" uid="uid://cocpfht6p4ai3" path="res://actors/PowerMeter_V2.tscn" id="10_r25je"]
 [ext_resource type="Script" uid="uid://c8vuaolv25gid" path="res://scripts/power_meter_view.gd" id="11_r25je"]
-[ext_resource type="Resource" uid="uid://bliqlnu71ix85" path="res://data/fish/test_fish_rare.tres" id="11_v7stt"]
 [ext_resource type="Script" uid="uid://cb6v6f0ntyhvg" path="res://scripts/depth_meter_view.gd" id="12_7s285"]
 [ext_resource type="Script" uid="uid://bkfjklhkvyb14" path="res://scripts/aim.gd" id="13_k4i7q"]
 [ext_resource type="Script" uid="uid://c1nagc5sqiw7x" path="res://scripts/screen_space_marker.gd" id="14_0pfgo"]
@@ -29,7 +28,7 @@
 [ext_resource type="Texture2D" uid="uid://bybktjbfq40mh" path="res://assets/sprites/Fishing_Icon.png" id="16_y5vpm"]
 [ext_resource type="Texture2D" uid="uid://dtsus3jhrfnid" path="res://assets/sprites/bar-bar_Red.png" id="17_0qupg"]
 [ext_resource type="Texture2D" uid="uid://ci8te3gnaliuv" path="res://assets/sprites/Location.png" id="17_f3f7x"]
-[ext_resource type="Resource" uid="uid://c0dx7cuhpacd0" path="res://data/baits/default_bait.tres" id="17_n1yj2"]
+[ext_resource type="Resource" path="res://data/baits/default_bait.tres" id="17_n1yj2"]
 [ext_resource type="Texture2D" uid="uid://bah5u76hap23t" path="res://assets/sprites/bar-bar_Blue.png" id="18_mdf05"]
 [ext_resource type="Texture2D" uid="uid://u3tyt71m2h6" path="res://assets/sprites/Menu.png" id="18_t57di"]
 [ext_resource type="Texture2D" uid="uid://3llccm0knkks" path="res://assets/sprites/Menu_Cast.png" id="19_30w2a"]
@@ -44,7 +43,6 @@
 [ext_resource type="Texture2D" uid="uid://d024dksf47073" path="res://assets/sprites/BottomSquare.png" id="24_gdibe"]
 [ext_resource type="Script" uid="uid://bmb64s3aug01v" path="res://scripts/game_mode.gd" id="24_w618w"]
 [ext_resource type="Script" uid="uid://0oqq3o4ncao8" path="res://scripts/exploration.gd" id="25_gdibe"]
-[ext_resource type="Resource" uid="uid://c2tpksm5w3pir" path="res://data/fish/test_fish_common.tres" id="25_jr3m6"]
 [ext_resource type="Script" uid="uid://b1bwrn2bluwr5" path="res://scripts/fish_behavior.gd" id="26_56g8v"]
 [ext_resource type="Script" uid="uid://dui1rve4te1sj" path="res://scripts/fish_selector.gd" id="30_lyatm"]
 [ext_resource type="Shader" uid="uid://ctlyjd75jbpoj" path="res://actors/FishingTestScene_V2.gdshader" id="31_sjvdc"]
@@ -106,20 +104,8 @@ texture_filter = 0
 
 [sub_resource type="Resource" id="Resource_56g8v"]
 script = ExtResource("8_10ljf")
-fish = ExtResource("25_jr3m6")
+fish = ExtResource("9_bqx6j")
 weight = 10.0
-metadata/_custom_type_script = "uid://drtr8dooxsml8"
-
-[sub_resource type="Resource" id="Resource_xqdmx"]
-script = ExtResource("8_10ljf")
-fish = ExtResource("10_lyatm")
-weight = 10.0
-metadata/_custom_type_script = "uid://drtr8dooxsml8"
-
-[sub_resource type="Resource" id="Resource_ue5cn"]
-script = ExtResource("8_10ljf")
-fish = ExtResource("11_v7stt")
-weight = 1.5
 metadata/_custom_type_script = "uid://drtr8dooxsml8"
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bp5p2"]
@@ -254,7 +240,7 @@ visible = false
 
 [node name="FishZone_V2" parent="World" unique_id=503373627 instance=ExtResource("8_n1yj2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05233705, 0, -0.7409453)
-fish_population = Array[ExtResource("8_10ljf")]([SubResource("Resource_56g8v"), SubResource("Resource_xqdmx"), SubResource("Resource_ue5cn")])
+fish_population = Array[ExtResource("8_10ljf")]([SubResource("Resource_56g8v")])
 
 [node name="WaterFacing" parent="World/FishZone_V2" index="0" unique_id=346506334]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)

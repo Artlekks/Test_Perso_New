@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="FishData" format=3 uid="uid://cwamaw6pettl8"]
+
+[ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" uid="uid://dfpp0mt7hcj6f" path="res://data/bof4/fish_behaviors/martian_squid_behavior.tres" id="2_behavior"]
+[ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_martian_squid"]
+atlas = ExtResource("3_atlas")
+region = Rect2(82, 111, 72, 48)
+
+[resource]
+script = ExtResource("1_fish")
+fish_name = "Martian Squid"
+average_size = 52.0
+king_size = 70.0
+base_stamina = 83.6
+base_strength = 0.67
+preferred_depth_min = 0.3
+preferred_depth_max = 0.7
+max_points = 350
+preferred_lure_types = Array[int]([4, 3, 0])
+locations = Array[StringName]([&"Lake 1", &"Lake 2", &"Lake 3"])
+behavior_profile = ExtResource("2_behavior")
+resistance_rounds = 3
+recovery_time_min = 0.78
+recovery_time_max = 1.38
+portrait = SubResource("AtlasTexture_martian_squid")
+metadata/source_effect = "Nullifies positive status effects."
+metadata/source_preferred_lures = "Winder, Minnow, Worm"
+metadata/source_preferred_depth = "Medium"
+metadata/source_locations = "Lake 1, Lake 2, Lake 3"
+metadata/balance_origin = "Stamina, strength, endurance, normalized depth ranges and movement personality are authored gameplay values, separate from source facts."
+metadata/source_index = 12
+metadata/source_worth_zenny = 400
+metadata/source_revision = "30-fish verified dataset v2"

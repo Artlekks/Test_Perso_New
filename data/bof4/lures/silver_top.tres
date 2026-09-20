@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+
+[resource]
+script = ExtResource("1_bait")
+lure_type = 5
+lure_id = &"silver_top"
+metadata/display_name = "Silver Top"
+metadata/type_label = "Spinner"
+metadata/level = 1
+metadata/description = "Silver spin."
+metadata/acquisition = "Buy: Synesta/Shyde (20z)."
+metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
