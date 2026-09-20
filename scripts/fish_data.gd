@@ -21,7 +21,6 @@ class_name FishData
 @export var preferred_lure_types: Array[LureType.Type] = []
 
 @export var preferred_lure_ids: Array[StringName] = []
-@export var locations: Array[StringName] = []
 
 @export_category("Fight Behavior")
 @export var behavior_profile: FishBehaviorProfile

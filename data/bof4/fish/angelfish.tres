@@ -21,7 +21,6 @@ max_points = 250
 accepts_all_lures = true
 preferred_lure_types = Array[int]([])
 preferred_lure_ids = Array[StringName]([])
-locations = Array[StringName]([&"Lake 3"])
 behavior_profile = ExtResource("2_behavior")
 resistance_rounds = 2
 recovery_time_min = 0.70

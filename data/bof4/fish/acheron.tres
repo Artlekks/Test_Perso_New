@@ -21,7 +21,6 @@ max_points = 300
 accepts_all_lures = true
 preferred_lure_types = Array[int]([])
 preferred_lure_ids = Array[StringName]([])
-locations = Array[StringName]([&"Chamba"])
 behavior_profile = ExtResource("2_behavior")
 resistance_rounds = 4
 recovery_time_min = 0.84

@@ -18,7 +18,6 @@ base_strength = 0.67
 preferred_depth_max = 0.35
 max_points = 350
 preferred_lure_types = Array[int]([5, 4, 2, 3])
-locations = Array[StringName]([&"River 1", &"River 2", &"River 3"])
 behavior_profile = ExtResource("2_behavior")
 resistance_rounds = 3
 recovery_time_min = 0.78
