@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://6681w8gfd45t"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 5
 lure_id = &"platinum_top"
-metadata/display_name = "Platinum Top"
-metadata/type_label = "Spinner"
-metadata/level = 3
-metadata/description = "Platinum spin."
+display_name = "Platinum Top"
+lure_type = 5
+level = 3
+description = "Platinum spin."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Trade: Lyp (Angelfish x1, Blue Gill x1, Bass x1)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

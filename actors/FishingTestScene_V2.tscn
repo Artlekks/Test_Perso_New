@@ -26,7 +26,6 @@
 [ext_resource type="Texture2D" uid="uid://c7w6ts6bqr8yu" path="res://assets/sprites/TensionMeter.png" id="16_rxc8i"]
 [ext_resource type="Texture2D" uid="uid://bybktjbfq40mh" path="res://assets/sprites/Fishing_Icon.png" id="16_y5vpm"]
 [ext_resource type="Texture2D" uid="uid://ci8te3gnaliuv" path="res://assets/sprites/Location.png" id="17_f3f7x"]
-[ext_resource type="Resource" uid="uid://c0dx7cuhpacd0" path="res://data/baits/default_bait.tres" id="17_n1yj2"]
 [ext_resource type="Texture2D" uid="uid://u3tyt71m2h6" path="res://assets/sprites/Menu.png" id="18_t57di"]
 [ext_resource type="Texture2D" uid="uid://3llccm0knkks" path="res://assets/sprites/Menu_Cast.png" id="19_30w2a"]
 [ext_resource type="Texture2D" uid="uid://bjib07fpfjvsw" path="res://assets/sprites/Depth.png" id="21_0e2yj"]
@@ -59,6 +58,8 @@
 [ext_resource type="Script" uid="uid://cx7dasqcwn8j8" path="res://scripts/fishing_catch_view.gd" id="45_kheg5"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="46_hmxwl"]
 [ext_resource type="FontFile" uid="uid://c35wcinto4ik1" path="res://assets/fonts/BOF_Font.fnt" id="48_1gbnc"]
+[ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="51_bqx6j"]
+[ext_resource type="Resource" path="res://data/bof4/lures/straight.tres" id="52_0pfgo"]
 [ext_resource type="Script" uid="uid://c4s43igyy5g0v" path="res://scripts/throw_preview.gd" id="56_bqx6j"]
 [ext_resource type="Script" uid="uid://bikrpbvei4d02" path="res://scripts/fishing_info_controller.gd" id="58_1hrhd"]
 [ext_resource type="Script" uid="uid://duoxl2rtj55jb" path="res://scripts/fishing_loadout.gd" id="60_1gbnc"]
@@ -738,7 +739,8 @@ fish_zone = NodePath("../../World/FishZone_V2")
 
 [node name="FishingLoadout" type="Node" parent="Game" unique_id=779449819]
 script = ExtResource("60_1gbnc")
-selected_lure = ExtResource("17_n1yj2")
+lure_catalog = ExtResource("51_bqx6j")
+selected_lure = ExtResource("52_0pfgo")
 selected_rod = ExtResource("62_bqx6j")
 
 [node name="Fishing" type="Node" parent="Game" unique_id=1752533199 node_paths=PackedStringArray("game_mode", "camera_rig", "sprite_director", "player", "power_meter_view", "depth_meter_view", "screen_transition", "fishing_catch_view", "loadout")]

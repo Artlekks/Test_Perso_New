@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://cw00bj0m01b6s"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 5
 lure_id = &"gold_top"
-metadata/display_name = "Gold Top"
-metadata/type_label = "Spinner"
-metadata/level = 2
-metadata/description = "Gold spin."
+display_name = "Gold Top"
+lure_type = 5
+level = 2
+description = "Gold spin."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Trade: Shyde (Sea Bream x1, Man-o'-War x1); Buy: Chiqua (80z)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

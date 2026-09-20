@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://cdplqqx58asja"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 2
 lure_id = &"swisher"
-metadata/display_name = "Swisher"
-metadata/type_label = "Topper"
-metadata/level = 3
-metadata/description = "Propeller surface churn."
+display_name = "Swisher"
+lure_type = 2
+level = 3
+description = "Propeller surface churn."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

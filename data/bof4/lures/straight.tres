@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://b0and5twssxq"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 0
 lure_id = &"straight"
-metadata/display_name = "Straight"
-metadata/type_label = "Worm"
-metadata/level = 1
-metadata/description = "Basic worm shape."
+display_name = "Straight"
+description = "Basic worm shape."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Buy: Sarai/Shyde (20z)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

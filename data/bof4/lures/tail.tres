@@ -1,14 +1,15 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://bfcsfsp7wobcs"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 0
 lure_id = &"tail"
-metadata/display_name = "Tail"
-metadata/type_label = "Worm"
-metadata/level = 2
-metadata/description = "Balanced, long range."
+display_name = "Tail"
+level = 2
+description = "Balanced, long range."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

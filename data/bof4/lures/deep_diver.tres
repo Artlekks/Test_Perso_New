@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://02i42rgoqcp1"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 3
 lure_id = &"deep_diver"
-metadata/display_name = "Deep Diver"
-metadata/type_label = "Minnow"
-metadata/level = 3
-metadata/description = "Sinks deep."
+display_name = "Deep Diver"
+lure_type = 3
+level = 3
+description = "Sinks deep."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

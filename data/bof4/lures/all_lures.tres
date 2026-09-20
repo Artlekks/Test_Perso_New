@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="FishingLureCatalog" load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_lure_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/bof4/lures/straight.tres" id="2_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/tail.tres" id="3_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/crab.tres" id="4_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/baby_frog.tres" id="5_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/toad.tres" id="6_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/fat_frog.tres" id="7_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/popper.tres" id="8_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/flattop.tres" id="9_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/swisher.tres" id="10_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/floater.tres" id="11_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/hanger.tres" id="12_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/deep_diver.tres" id="13_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/twister.tres" id="14_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/warbler.tres" id="15_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/dancer.tres" id="16_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/silver_top.tres" id="17_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/gold_top.tres" id="18_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/platinum_top.tres" id="19_lure"]
+[ext_resource type="Resource" path="res://data/bof4/lures/spoon.tres" id="20_lure"]
+
+[resource]
+script = ExtResource("1_catalog")
+lures = Array[Resource]([ExtResource("2_lure"), ExtResource("3_lure"), ExtResource("4_lure"), ExtResource("5_lure"), ExtResource("6_lure"), ExtResource("7_lure"), ExtResource("8_lure"), ExtResource("9_lure"), ExtResource("10_lure"), ExtResource("11_lure"), ExtResource("12_lure"), ExtResource("13_lure"), ExtResource("14_lure"), ExtResource("15_lure"), ExtResource("16_lure"), ExtResource("17_lure"), ExtResource("18_lure"), ExtResource("19_lure"), ExtResource("20_lure")])

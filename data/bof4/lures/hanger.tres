@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://deb47gvftyuqb"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 3
 lure_id = &"hanger"
-metadata/display_name = "Hanger"
-metadata/type_label = "Minnow"
-metadata/level = 2
-metadata/description = "Floats on wind."
+display_name = "Hanger"
+lure_type = 3
+level = 2
+description = "Floats on wind."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Trade: Shyde (Blowfish x2); Buy: Chiqua (80z)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."

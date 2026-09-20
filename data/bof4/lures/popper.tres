@@ -1,14 +1,15 @@
-[gd_resource type="Resource" script_class="BaitData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://qy0rgpyb74hv"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
-lure_type = 2
 lure_id = &"popper"
-metadata/display_name = "Popper"
-metadata/type_label = "Topper"
-metadata/level = 1
-metadata/description = "Noisy, surface."
+display_name = "Popper"
+lure_type = 2
+description = "Noisy, surface."
+sink_speed = 0.2
+reel_speed = 0.05
+reel_rise_speed = 0.5
 metadata/acquisition = "Drop: Ghost (N. Chamba); Buy: Lyp (20z)."
 metadata/mechanics_note = "Sink/reel/cast tuning intentionally left at BaitData defaults because exact numeric lure physics are not specified in the supplied GDD."
