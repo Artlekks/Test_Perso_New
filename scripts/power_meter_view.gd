@@ -12,8 +12,6 @@ extends CanvasLayer
 
 @export_category("Bar Textures")
 @export var bar_green: Texture2D
-@export var bar_red: Texture2D
-@export var bar_blue: Texture2D
 
 @export_category("Transitions")
 @export var slide_time: float = 0.25
@@ -185,17 +183,6 @@ func _set_tension_color(value: float) -> void:
 			color
 		)
 		
-func _on_fishing_ended() -> void:
-	_cancel_to_aim_pending = false
-	showing_tension = false
-	fight_tension_active = false
-	
-	_set_fill(0.0)
-
-	tension_meter.visible = false
-	_slide_out_to_bottom()
-
-
 func _on_bait_returned() -> void:
 	_cancel_to_aim_pending = false
 	showing_tension = false
@@ -209,18 +196,6 @@ func _on_bait_returned() -> void:
 
 func _set_fill(value: float) -> void:
 	fill.scale.x = full_scale_x * clampf(value, 0.0, 1.0)
-
-
-func _on_tension_state_changed(state: int) -> void:
-	match state:
-		FishingTension.State.SLACK:
-			fill.texture = bar_blue
-
-		FishingTension.State.SAFE:
-			fill.texture = bar_green
-
-		FishingTension.State.OVERLOAD:
-			fill.texture = bar_red
 
 
 func _slide_in_from_bottom() -> void:

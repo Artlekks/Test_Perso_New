@@ -43,7 +43,6 @@ var bait_landed_during_throw: bool = false
 var current_reel_animation: StringName = &""
 var bite_opportunity_animation_active: bool = false
 var bite_animation_active: bool = false
-var current_fish_pull: float = 0.0
 var fish_resisting: bool = false
 var caught_fish: FishInstance = null
 
@@ -203,28 +202,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_reel_animation()
 			return
 	
-	if event.is_action_pressed("move_back"):
-		if not bite_animation_active:
-			bite_animation_active = true
-			current_reel_animation = &""
-			sprite_director.play(&"Reel_Bite")
-		return
-
-	if event.is_action_pressed("enter_fishing"):
-		_set_fight_reeling(true)
-		return
-
-	if event.is_action_released("enter_fishing"):
-		_set_fight_reeling(false)
-		return
-
-func _set_fight_reeling(active: bool) -> void:
-	encounter.set_player_reeling(active)
-	caster.set_reeling(active)
-
-	current_reel_animation = &""
-	_update_reel_animation()
-		
 func _on_mode_changed(new_mode) -> void:
 	var active: bool = new_mode == game_mode.Mode.FISHING
 
@@ -311,14 +288,6 @@ func _update_reel_animation() -> void:
 			desired_animation = &"Reel"
 		else:
 			desired_animation = &"Reel_Idle"
-
-	elif phase == Phase.IN_WATER:
-		if is_reeling:
-			# No hooked fish: normal lure retrieval.
-			desired_animation = &"Reel"
-		else:
-			# Default water pose for now, including after MISS.
-			desired_animation = &"Reel_Back"
 
 	else:
 		return
@@ -566,7 +535,6 @@ func _on_fish_pull_changed(value: float) -> void:
 	if phase != Phase.FIGHT:
 		return
 
-	current_fish_pull = value
 	caster.set_fish_pull_strength(value)
 
 func _on_fish_movement_changed(lateral: float) -> void:
@@ -587,7 +555,6 @@ func _on_line_broken() -> void:
 
 	_freeze_failed_fight()
 
-	current_fish_pull = 0.0
 	current_reel_animation = &""
 	fish_resisting = false
 	bite_opportunity_animation_active = false
@@ -607,7 +574,6 @@ func _on_fight_failed() -> void:
 
 	_freeze_failed_fight()
 
-	current_fish_pull = 0.0
 	current_reel_animation = &""
 	fish_resisting = false
 	bite_opportunity_animation_active = false
@@ -643,7 +609,6 @@ func _on_result_screen_covered() -> void:
 	fishing_catch_view.hide_catch()
 	caught_fish = null
 
-	current_fish_pull = 0.0
 	current_reel_animation = &""
 	fish_resisting = false
 	bite_opportunity_animation_active = false
@@ -666,7 +631,6 @@ func _on_catch_view_dismissed() -> void:
 	power_meter_view.reset_to_aim()
 	depth_meter_view.reset_to_aim()
 
-	current_fish_pull = 0.0
 	current_reel_animation = &""
 	fish_resisting = false
 	bite_opportunity_animation_active = false

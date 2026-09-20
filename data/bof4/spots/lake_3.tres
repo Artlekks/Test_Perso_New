@@ -45,6 +45,4 @@ spot_id = &"lake_3"
 spot_name = "Lake 3"
 location_description = "North of Chiqua"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5"), SubResource("FishSpawnEntry_6")])
-fish_ids = PackedStringArray("jellyfish", "black_bass", "angelfish", "martian_squid", "dorado", "barandy")
-unresolved_fish_names = PackedStringArray()
 depth_notes = "Lake population including Barandy."

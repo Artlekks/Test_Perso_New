@@ -10,9 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://cetbvf5x64wb2" path="res://assets/models/fbx/River_001_texpage-P8-CF0473DC60ADC442-B2C13E420B9C1555-128x256-0-0-256x256-P0-190.png" id="5_10ljf"]
 [ext_resource type="Texture2D" uid="uid://bsxg4tfsykf2o" path="res://assets/models/textures/River_Marsh.png" id="6_lyatm"]
 [ext_resource type="Resource" uid="uid://you17evsccr8" path="res://data/bof4/spots/ocean_2.tres" id="8_0pfgo"]
-[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="8_10ljf"]
 [ext_resource type="PackedScene" uid="uid://b7wqcq60h8vqv" path="res://actors/FishZone_V2.tscn" id="8_n1yj2"]
-[ext_resource type="Resource" uid="uid://bhbjocml2b5fy" path="res://data/bof4/fish/sea_bass.tres" id="9_bqx6j"]
 [ext_resource type="PackedScene" uid="uid://cocpfht6p4ai3" path="res://actors/PowerMeter_V2.tscn" id="10_r25je"]
 [ext_resource type="Script" uid="uid://c8vuaolv25gid" path="res://scripts/power_meter_view.gd" id="11_r25je"]
 [ext_resource type="Script" uid="uid://cb6v6f0ntyhvg" path="res://scripts/depth_meter_view.gd" id="12_7s285"]
@@ -27,10 +25,8 @@
 [ext_resource type="PackedScene" uid="uid://b55g00mjd4bs" path="res://actors/bait_V2.tscn" id="16_cxlon"]
 [ext_resource type="Texture2D" uid="uid://c7w6ts6bqr8yu" path="res://assets/sprites/TensionMeter.png" id="16_rxc8i"]
 [ext_resource type="Texture2D" uid="uid://bybktjbfq40mh" path="res://assets/sprites/Fishing_Icon.png" id="16_y5vpm"]
-[ext_resource type="Texture2D" uid="uid://dtsus3jhrfnid" path="res://assets/sprites/bar-bar_Red.png" id="17_0qupg"]
 [ext_resource type="Texture2D" uid="uid://ci8te3gnaliuv" path="res://assets/sprites/Location.png" id="17_f3f7x"]
 [ext_resource type="Resource" uid="uid://c0dx7cuhpacd0" path="res://data/baits/default_bait.tres" id="17_n1yj2"]
-[ext_resource type="Texture2D" uid="uid://bah5u76hap23t" path="res://assets/sprites/bar-bar_Blue.png" id="18_mdf05"]
 [ext_resource type="Texture2D" uid="uid://u3tyt71m2h6" path="res://assets/sprites/Menu.png" id="18_t57di"]
 [ext_resource type="Texture2D" uid="uid://3llccm0knkks" path="res://assets/sprites/Menu_Cast.png" id="19_30w2a"]
 [ext_resource type="Texture2D" uid="uid://bjib07fpfjvsw" path="res://assets/sprites/Depth.png" id="21_0e2yj"]
@@ -103,11 +99,6 @@ shading_mode = 0
 albedo_texture = ExtResource("6_lyatm")
 texture_filter = 0
 
-[sub_resource type="Resource" id="Resource_56g8v"]
-script = ExtResource("8_10ljf")
-fish = ExtResource("9_bqx6j")
-weight = 10.0
-metadata/_custom_type_script = "uid://drtr8dooxsml8"
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bp5p2"]
 size = Vector3(4.426, 1, 2.172)
@@ -242,7 +233,6 @@ visible = false
 [node name="FishZone_V2" parent="World" unique_id=503373627 instance=ExtResource("8_n1yj2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05233705, 0, -0.7409453)
 fishing_spot = ExtResource("8_0pfgo")
-fish_population = Array[ExtResource("8_10ljf")]([SubResource("Resource_56g8v")])
 
 [node name="WaterFacing" parent="World/FishZone_V2" index="0" unique_id=346506334]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
@@ -487,8 +477,6 @@ power = NodePath("../../../Game/Fishing/Power")
 encounter = NodePath("../../../Game/Fishing/Encounter")
 caster = NodePath("../../../Game/Fishing/Caster")
 bar_green = ExtResource("16_0e2yj")
-bar_red = ExtResource("17_0qupg")
-bar_blue = ExtResource("18_mdf05")
 
 [node name="Root" parent="UI/FishingHud/PowerMeter" index="0" unique_id=591532728]
 anchors_preset = 2
@@ -815,13 +803,9 @@ script = ExtResource("30_lyatm")
 
 [node name="Tension" type="Node" parent="Game/Fishing/Encounter" unique_id=634102310]
 script = ExtResource("31_v7stt")
-start_tension = 0.25
 safe_min = 0.32
 safe_max = 0.72
-reel_gain_speed = 0.12
-resistance_gain_speed = 0.05
 line_break_delay = 2.5
-hit_grace_time = 0.5
 
 [node name="FishingInfoController" type="Node" parent="Game/Fishing" unique_id=661892573 node_paths=PackedStringArray("encounter", "info_view", "screen_transition")]
 script = ExtResource("58_1hrhd")

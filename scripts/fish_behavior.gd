@@ -2,8 +2,6 @@ extends Node
 
 signal movement_changed(lateral: float)
 signal depth_changed(value: float)
-signal fight_back_started(fight_back_type: int)
-signal strong_pull_started
 signal pressure_changed(value: float)
 
 
@@ -11,11 +9,6 @@ signal pressure_changed(value: float)
 @export var min_change_time: float = 0.8
 @export var max_change_time: float = 2.0
 
-@export_range(0.0, 1.0, 0.05)
-var pause_chance: float = 0.25
-
-@export var pause_time_min: float = 0.3
-@export var pause_time_max: float = 0.7
 
 
 @export_category("Movement Smoothing")
@@ -146,17 +139,7 @@ func start(new_intensity: float = 1.0) -> void:
 		else 1.0
 	)
 
-	fight_back_started.emit(
-		current_fight_back
-	)
 
-	if current_fight_back == FightBackType.SURGE_AWAY:
-		strong_pull_started.emit()
-
-	print(
-		"FIGHT BACK TYPE: ",
-		FightBackType.keys()[current_fight_back]
-	)
 
 	_choose_new_movement()
 
@@ -204,9 +187,6 @@ func react_to_release(
 		1.0
 	)
 
-	fight_back_started.emit(
-		current_fight_back
-	)
 
 	# Release reactions cannot randomly become
 	# full thrashing events.
@@ -218,13 +198,6 @@ func react_to_release(
 	intensity = previous_intensity
 
 
-# Compatibility with the earlier name.
-# Once Encounter definitely uses react_to_release(),
-# we can remove this later.
-func react_to_slack(
-	new_intensity: float = 0.35
-) -> void:
-	react_to_release(new_intensity)
 
 
 func _choose_new_movement(
@@ -343,7 +316,6 @@ func _choose_new_movement(
 			thrash_time_max
 		)
 
-		strong_pull_started.emit()
 
 	else:
 		time_until_change = randf_range(

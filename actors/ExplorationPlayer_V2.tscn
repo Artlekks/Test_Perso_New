@@ -18,8 +18,6 @@ albedo_color = Color(0, 0, 0, 1)
 albedo_texture = ExtResource("32_ny21r")
 proximity_fade_distance = 0.01
 
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ajpwy"]
-load_path = "res://.godot/imported/Shadow.png-664d1acd115a01e78954003e46fe5e1c.s3tc.ctex"
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=363575400]
 collision_layer = 2
@@ -45,7 +43,7 @@ cast_shadow = 0
 flip_h = true
 alpha_cut = 2
 texture_filter = 0
-texture = SubResource("CompressedTexture2D_ajpwy")
+texture = ExtResource("32_ny21r")
 
 [node name="SpriteDirector" type="Node" parent="." unique_id=1803301219 node_paths=PackedStringArray("sprite")]
 script = ExtResource("29_5cnmj")

@@ -24,8 +24,6 @@ class_name FishData
 @export var locations: Array[StringName] = []
 
 @export_category("Fight Behavior")
-
-@export_category("Fight Behavior")
 @export var behavior_profile: FishBehaviorProfile
 
 @export_category("Endurance")

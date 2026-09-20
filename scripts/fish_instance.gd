@@ -18,6 +18,9 @@ func setup(data: FishData) -> void:
 
 	size = _roll_size(data)
 	behavior_profile = data.behavior_profile
+	resistance_rounds = data.resistance_rounds
+	recovery_time_min = data.recovery_time_min
+	recovery_time_max = data.recovery_time_max
 	
 	var size_ratio := size / data.average_size
 

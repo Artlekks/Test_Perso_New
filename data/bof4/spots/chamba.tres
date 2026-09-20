@@ -27,6 +27,4 @@ spot_id = &"chamba"
 spot_name = "Chamba"
 location_description = "Southeast of Chamba"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
-fish_ids = PackedStringArray("jellyfish", "bullcat", "acheron")
-unresolved_fish_names = PackedStringArray()
 depth_notes = "Special Chamba population."

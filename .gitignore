@@ -1,3 +1,13 @@
-# Godot 4+ specific ignores
+# Godot generated cache
 .godot/
 /android/
+
+# Editor / transient scene saves
+*.tmp
+
+# Blender automatic backup files
+*.blend1
+
+# OS noise
+.DS_Store
+Thumbs.db

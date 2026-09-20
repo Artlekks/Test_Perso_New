@@ -18,7 +18,6 @@ var min_fight_steer_authority: float = 0.20
 @export var fish_vertical_speed: float = 0.8
 @export var twitch_speed: float = 1.8
 @export var twitch_deceleration: float = 12.0
-@export var max_fight_escape_distance: float = 4.0
 @export_category("Fight Distance")
 @export var max_extra_fight_distance: float = 3.0
 @export_category("Free Reeling")
@@ -35,7 +34,6 @@ var fight_mode: bool = false
 var reel_steering: float = 0.0
 var fight_resistance: float = 1.0
 var fish_lateral: float = 0.0
-var fight_start_distance: float = 0.0
 var reel_speed_multiplier: float = 1.0
 var air_curve_input: float = 0.0
 var air_curve_angle: float = 0.0
@@ -431,24 +429,6 @@ func _update_fish_pull(delta: float) -> void:
 	)
 
 	_emit_depth()
-
-	if reel_target != null:
-		var from_player := global_position - reel_target.global_position
-		from_player.y = 0.0
-
-		var max_distance := (
-			fight_start_distance
-			+ max_fight_escape_distance
-		)
-
-		if from_player.length() > max_distance:
-			var clamped_position := (
-				reel_target.global_position
-				+ from_player.normalized() * max_distance
-			)
-
-			global_position.x = clamped_position.x
-			global_position.z = clamped_position.z
 			
 func set_fish_lateral(value: float) -> void:
 	fish_lateral = clampf(value, -1.0, 1.0)

@@ -8,67 +8,50 @@ func choose(
 	current_depth: float,
 	total_depth: float
 ) -> FishSpawnEntry:
-			var total_weight := 0.0
+	var total_weight := 0.0
 
-			for entry in entries:
-				if entry == null:
-					continue
+	for entry in entries:
+		if entry == null or entry.fish == null or entry.weight <= 0.0:
+			continue
 
-				if entry.fish == null:
-					continue
+		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
+		var depth_multiplier := entry.fish.get_depth_match_multiplier(
+			current_depth,
+			total_depth
+		)
 
-				if entry.weight <= 0.0:
-					continue
+		total_weight += (
+			entry.weight
+			* lure_multiplier
+			* depth_multiplier
+		)
 
-				var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
+	if total_weight <= 0.0:
+		return null
 
-				var depth_multiplier := entry.fish.get_depth_match_multiplier(
-					current_depth,
-					total_depth
-				)
+	var roll := randf() * total_weight
 
-				var effective_weight := (
-					entry.weight
-					* lure_multiplier
-					* depth_multiplier
-				)
+	for entry in entries:
+		if entry == null or entry.fish == null or entry.weight <= 0.0:
+			continue
 
-				total_weight += effective_weight
+		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
+		var depth_multiplier := entry.fish.get_depth_match_multiplier(
+			current_depth,
+			total_depth
+		)
 
-			if total_weight <= 0.0:
-				return null
+		roll -= (
+			entry.weight
+			* lure_multiplier
+			* depth_multiplier
+		)
 
-			var roll := randf() * total_weight
+		if roll <= 0.0:
+			return entry
 
-			for entry in entries:
-				if entry == null:
-					continue
+	return null
 
-				if entry.fish == null:
-					continue
-
-				if entry.weight <= 0.0:
-					continue
-
-				var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
-
-				var depth_multiplier := entry.fish.get_depth_match_multiplier(
-					current_depth,
-					total_depth
-				)
-
-				var effective_weight := (
-					entry.weight
-					* lure_multiplier
-					* depth_multiplier
-				)
-
-				roll -= effective_weight
-
-				if roll <= 0.0:
-					return entry
-
-			return null
 
 func get_attraction_ratio(
 	entries: Array[FishSpawnEntry],
@@ -80,19 +63,12 @@ func get_attraction_ratio(
 	var effective_weight_total := 0.0
 
 	for entry in entries:
-		if entry == null:
-			continue
-
-		if entry.fish == null:
-			continue
-
-		if entry.weight <= 0.0:
+		if entry == null or entry.fish == null or entry.weight <= 0.0:
 			continue
 
 		base_weight_total += entry.weight
 
 		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
-
 		var depth_multiplier := entry.fish.get_depth_match_multiplier(
 			current_depth,
 			total_depth

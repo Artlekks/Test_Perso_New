@@ -110,15 +110,15 @@ func predict_cast(
 		# Same integration order as bait_V2.gd.
 		velocity.y -= cast_gravity * step
 
-		var next_position := position + velocity * step
+		var next_position := predicted_position + velocity * step
 
-		if position.y >= water_y and next_position.y <= water_y:
+		if predicted_position.y >= water_y and next_position.y <= water_y:
 			next_position.y = water_y
 			points.append(next_position)
 			break
 
 		points.append(next_position)
-		position = next_position
+		predicted_position = next_position
 
 	return points
 	

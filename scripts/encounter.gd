@@ -11,7 +11,6 @@ signal fish_resistance_changed(value: float)
 signal fish_pull_changed(value: float)
 signal fish_movement_changed(lateral: float)
 signal fish_depth_intent_changed(value: float)
-signal strong_pull_started
 signal tension_changed(value: float)
 signal tension_state_changed(state: int)
 signal hook_off
@@ -111,7 +110,6 @@ func _ready() -> void:
 	bite_window_timer.timeout.connect(_on_bite_window_timeout)
 	fish_behavior.movement_changed.connect(_on_fish_behavior_movement_changed)
 	fish_behavior.depth_changed.connect(_on_fish_behavior_depth_changed)
-	fish_behavior.strong_pull_started.connect(_on_strong_pull_started)
 	tension.tension_changed.connect(_on_tension_changed)
 	tension.state_changed.connect(_on_tension_state_changed)
 	tension.hook_off.connect(_on_hook_off)
@@ -122,12 +120,6 @@ func _on_bait_landed(_point: Vector3) -> void:
 	tension.start_free_reel()
 	bite_timer.start(first_bite_delay)
 
-func _on_strong_pull_started() -> void:
-	if fight_state == FightState.NONE:
-		return
-
-	strong_pull_started.emit()
-	
 func _on_bait_returned() -> void:
 	bite_timer.stop()
 	bite_window_timer.stop()
@@ -146,12 +138,6 @@ func _on_bite_timer_timeout() -> void:
 	var bite_chance := attraction * max_bite_chance_per_check
 
 	if randf() > bite_chance:
-		print(
-			"NO BITE | Attraction: ",
-			attraction,
-			" | Chance: ",
-			bite_chance
-		)
 
 		bite_timer.start(retry_bite_delay)
 		return
@@ -170,10 +156,6 @@ func _on_bite_timer_timeout() -> void:
 		return
 
 	if randf() < direct_hit_chance:
-		print(
-			"DIRECT HIT! Candidate: ",
-			pending_fish_entry.fish.fish_name
-		)
 
 		_confirm_hit()
 		return
@@ -181,10 +163,6 @@ func _on_bite_timer_timeout() -> void:
 
 	bite_active = true
 
-	print(
-		"BITE OPPORTUNITY! Candidate: ",
-		pending_fish_entry.fish.fish_name
-	)
 
 	bite_opportunity_started.emit()
 	bite_window_timer.start()
@@ -213,16 +191,6 @@ func _confirm_hit() -> bool:
 	fish_stamina = active_fish.max_stamina
 	player_reeling = false
 
-	print(
-		"FISH: ",
-		active_fish.species.fish_name,
-		" | Size: ",
-		active_fish.size,
-		" | Stamina: ",
-		active_fish.max_stamina,
-		" | Strength: ",
-		active_fish.strength
-	)
 
 	pending_fish_entry = null
 
@@ -238,8 +206,6 @@ func _confirm_hit() -> bool:
 	tension.start()
 	tension.set_reel_gain_multiplier(1.0)
 
-	print("HIT!")
-
 	bite_triggered.emit()
 	fish_hooked.emit()
 
@@ -248,8 +214,6 @@ func _confirm_hit() -> bool:
 func _on_bite_window_timeout() -> void:
 	bite_active = false
 	pending_fish_entry = null
-
-	print("MISSED!")
 	bite_missed.emit()
 
 	bite_timer.start(retry_bite_delay)
@@ -266,8 +230,6 @@ func catch_fish() -> void:
 	recovery_time_left = 0.0
 	player_reeling = false
 	fish_behavior.stop()
-
-	print("CAUGHT!")
 	fish_caught.emit(active_fish)
 
 func _process(delta: float) -> void:
@@ -414,13 +376,6 @@ func set_player_reeling(active: bool) -> void:
 	if was_reeling and not active:
 		_react_to_reel_release()
 
-	# K has just been released.
-	if was_reeling and not active:
-		if fight_state != FightState.NONE:
-			fish_behavior.react_to_slack(
-				release_movement_intensity
-			)
-
 func _react_to_reel_release() -> void:
 	if fight_state == FightState.NONE:
 		return
@@ -483,10 +438,6 @@ func _start_resistance_round() -> void:
 		resisting_behavior_intensity
 	)
 
-	print(
-		"RESISTANCE STARTED | Rounds remaining: ",
-		rounds_remaining
-	)
 
 
 func _finish_resistance_round() -> void:
@@ -533,10 +484,6 @@ func _finish_resistance_round() -> void:
 		recovery_max
 	)
 
-	print(
-		"FISH EXHAUSTED | Rounds left: ",
-		rounds_remaining
-	)
 
 func _enter_spent() -> void:
 	fight_state = FightState.SPENT
@@ -557,8 +504,6 @@ func _enter_spent() -> void:
 	fish_pull_changed.emit(spent_pull_strength)
 
 	caster.set_reel_speed_multiplier(spent_reel_speed_multiplier)
-
-	print("FISH SPENT!")
 
 func _restart_from_spent() -> void:
 	fight_state = FightState.RESISTING
@@ -581,8 +526,6 @@ func _restart_from_spent() -> void:
 	caster.set_reel_speed_multiplier(1.0)
 
 	fish_behavior.start(spent_restart_intensity)
-
-	print("FISH RECOVERED!")
 	
 func set_fish_population(entries: Array[FishSpawnEntry]) -> void:
 	fish_population = entries.duplicate()
@@ -595,28 +538,15 @@ func _on_tension_state_changed(state: int) -> void:
 	current_tension_state = state
 	tension_state_changed.emit(state)
 
-	match state:
-		FishingTension.State.SLACK:
-			print("TENSION: BLUE / SLACK")
-
-		FishingTension.State.SAFE:
-			print("TENSION: SAFE")
-
-		FishingTension.State.OVERLOAD:
-			print("TENSION: RED / OVERLOAD")
 
 
 func _on_hook_off() -> void:
 	_fail_fight()
-
-	print("HOOK OFF!")
 	hook_off.emit()
 
 
 func _on_line_broken() -> void:
 	_fail_fight()
-
-	print("LINE BROKEN!")
 	line_broken.emit()
 
 func _fail_fight() -> void:
