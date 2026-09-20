@@ -96,7 +96,7 @@ func predict_cast(
 	if spawn_point == null:
 		return points
 
-	var position := spawn_point.global_position
+	var predicted_position := spawn_point.global_position
 	var velocity := calculate_initial_velocity(
 		power,
 		direction
@@ -104,7 +104,7 @@ func predict_cast(
 
 	var step := 1.0 / float(Engine.physics_ticks_per_second)
 
-	points.append(position)
+	points.append(predicted_position)
 
 	for i in range(300):
 		# Same integration order as bait_V2.gd.

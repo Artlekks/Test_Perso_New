@@ -192,8 +192,8 @@ func _process(delta: float) -> void:
 	else:
 		overload_time = 0.0
 
-func set_reel_gain_multiplier(value: float) -> void:
-	reel_gain_multiplier = maxf(value, 0.0)
+func set_reel_gain_multiplier(multiplier: float) -> void:
+	reel_gain_multiplier = maxf(multiplier, 0.0)
 	
 func start() -> void:
 	value = (safe_min + safe_max) * 0.5

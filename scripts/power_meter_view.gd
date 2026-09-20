@@ -66,7 +66,7 @@ func _on_bait_distance_changed(distance_meters: float) -> void:
 		0
 	)
 
-	var whole := int(scaled_distance / 10)
+	var whole := int(scaled_distance / 10.0)
 	var decimal := scaled_distance % 10
 
 	distance_value.set_text(str(whole))

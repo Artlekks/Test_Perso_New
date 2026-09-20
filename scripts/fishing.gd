@@ -210,13 +210,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			sprite_director.play(&"Reel_Bite")
 		return
 
-		if event.is_action_pressed("enter_fishing"):
-			_set_fight_reeling(true)
-			return
+	if event.is_action_pressed("enter_fishing"):
+		_set_fight_reeling(true)
+		return
 
-		if event.is_action_released("enter_fishing"):
-			_set_fight_reeling(false)
-			return
+	if event.is_action_released("enter_fishing"):
+		_set_fight_reeling(false)
+		return
 
 func _set_fight_reeling(active: bool) -> void:
 	encounter.set_player_reeling(active)
