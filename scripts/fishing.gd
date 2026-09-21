@@ -347,6 +347,13 @@ func _on_mode_changed(new_mode) -> void:
 	if not active:
 		_close_lure_selector(false)
 		_close_debug_menu(false)
+
+		if technique_detector != null:
+			technique_detector.reset()
+
+		if technique_view != null:
+			technique_view.clear()
+
 		return
 
 	phase = Phase.ENTER

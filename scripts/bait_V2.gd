@@ -123,6 +123,10 @@ func set_reel_target(target: Node3D) -> void:
 	reel_target = target
 
 
+func get_water_surface_y() -> float:
+	return water_y
+
+
 func set_swim_bounds(bounds: Node) -> void:
 	swim_bounds = bounds
 
@@ -228,7 +232,7 @@ func _get_sink_target_y() -> float:
 	)
 
 func _update_reeling(delta: float) -> void:
-	if reel_target == null:
+	if data == null or reel_target == null:
 		return
 
 	var target_position := reel_target.global_position

@@ -148,6 +148,9 @@ func _on_bait_returned() -> void:
 	tension.stop()
 	
 func _on_bite_timer_timeout() -> void:
+	# Each bite check owns a fresh pending selection.
+	pending_fish_entry = null
+
 	var forced_fish: FishData = null
 
 	if (
@@ -191,10 +194,12 @@ func _on_bite_timer_timeout() -> void:
 			caster.get_current_total_depth()
 		)
 
-	if pending_fish_entry == null:
-		return
-
-	if pending_fish_entry.fish == null:
+	if (
+		pending_fish_entry == null
+		or pending_fish_entry.fish == null
+	):
+		pending_fish_entry = null
+		bite_timer.start(retry_bite_delay)
 		return
 
 	if randf() < direct_hit_chance:

@@ -90,25 +90,26 @@ func _hide() -> void:
 
 func _update_follow_position() -> void:
 	if not is_instance_valid(_follow_target):
+		_hide()
 		return
 
 	var camera := get_viewport().get_camera_3d()
 
 	if camera == null:
+		bubble.hide()
 		return
 
 	# Follow the bait horizontally, but project from the WATER SURFACE.
 	# This means a sinking lure does not drag the bubble underwater.
 	var marker_world_position := _follow_target.global_position
 
-	# bait_V2.gd already owns the authoritative water-surface Y.
-	# The technique view is only given active bait nodes, so this property
-	# is available for the normal fishing path.
-	var target_water_y = _follow_target.get("water_y")
-
-	if target_water_y != null:
+	# Ask the bait through a tiny public interface instead of reaching
+	# into one of its internal variables by string name.
+	if _follow_target.has_method("get_water_surface_y"):
 		marker_world_position.y = (
-			float(target_water_y)
+			float(
+				_follow_target.get_water_surface_y()
+			)
 			+ surface_world_offset_y
 		)
 

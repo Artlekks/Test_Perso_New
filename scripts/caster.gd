@@ -59,6 +59,11 @@ func perform_cast(
 	if is_instance_valid(active_bait):
 		active_bait.queue_free()
 
+	# Never let the next encounter inherit depth information from the
+	# previous cast before the new bait emits its first depth update.
+	current_bait_depth = 0.0
+	current_total_depth = 0.0
+
 	direction.y = 0.0
 	direction = direction.normalized()
 
@@ -174,6 +179,8 @@ func _on_bait_returned() -> void:
 		active_bait.queue_free()
 
 	active_bait = null
+	current_bait_depth = 0.0
+	current_total_depth = 0.0
 	bait_distance_changed.emit(0.0)
 	bait_returned.emit()
 
@@ -222,6 +229,8 @@ func cancel_bait() -> void:
 		active_bait.queue_free()
 
 	active_bait = null
+	current_bait_depth = 0.0
+	current_total_depth = 0.0
 	bait_distance_changed.emit(0.0)
 
 func set_reel_speed_multiplier(value: float) -> void:
