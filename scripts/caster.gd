@@ -19,6 +19,7 @@ signal bait_distance_changed(distance_meters: float)
 var active_bait: Node3D
 var current_bait_depth: float = 0.0
 var current_total_depth: float = 0.0
+var active_rod_data: RodData = null
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(active_bait):
@@ -71,6 +72,10 @@ func perform_cast(
 
 	if bait_data != null:
 		active_bait.set_data(bait_data)
+
+	active_bait.set_reel_speed_multiplier(
+		_get_rod_reel_speed_multiplier()
+	)
 
 	active_bait.landed.connect(_on_bait_landed)
 	active_bait.depth_changed.connect(_on_bait_depth_changed)
@@ -136,6 +141,9 @@ func calculate_initial_velocity(
 		max_speed,
 		clampf(power, 0.0, 1.0)
 	)
+
+	if active_rod_data != null:
+		speed *= active_rod_data.cast_speed_multiplier
 
 	var angle := deg_to_rad(launch_angle_degrees)
 
@@ -218,7 +226,28 @@ func cancel_bait() -> void:
 
 func set_reel_speed_multiplier(value: float) -> void:
 	if is_instance_valid(active_bait):
-		active_bait.set_reel_speed_multiplier(value)
+		active_bait.set_reel_speed_multiplier(
+			value * _get_rod_reel_speed_multiplier()
+		)
+
+
+func set_rod_data(rod_data: RodData) -> void:
+	active_rod_data = rod_data
+
+	if is_instance_valid(active_bait):
+		active_bait.set_reel_speed_multiplier(
+			_get_rod_reel_speed_multiplier()
+		)
+
+
+func _get_rod_reel_speed_multiplier() -> float:
+	if active_rod_data == null:
+		return 1.0
+
+	return maxf(
+		active_rod_data.reel_speed_multiplier,
+		0.0
+	)
 
 func set_air_curve(value: float) -> void:
 	if is_instance_valid(active_bait):

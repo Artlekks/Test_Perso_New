@@ -115,6 +115,12 @@ func _ready() -> void:
 	add_child(debug_menu)
 	debug_menu.configure(loadout, debug_settings)
 
+	if loadout != null:
+		if not loadout.rod_changed.is_connected(_on_rod_changed):
+			loadout.rod_changed.connect(_on_rod_changed)
+
+		_on_rod_changed(loadout.get_selected_rod())
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not game_mode.is_fishing():
 		return
@@ -321,6 +327,12 @@ func _on_mode_changed(new_mode) -> void:
 		camera_rig.enter_fishing_view()
 
 
+
+
+
+func _on_rod_changed(rod: RodData) -> void:
+	caster.set_rod_data(rod)
+	encounter.set_rod_data(rod)
 
 
 func _is_debug_toggle(event: InputEvent) -> bool:

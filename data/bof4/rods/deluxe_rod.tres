@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="RodData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="RodData" format=3 uid="uid://bbv4qgacpmw6p"]
 
-[ext_resource type="Script" path="res://scripts/database/rod_data.gd" id="1_rod"]
+[ext_resource type="Script" uid="uid://dfft7m6b6caxj" path="res://scripts/database/rod_data.gd" id="1_rod"]
 
 [resource]
 script = ExtResource("1_rod")
@@ -9,3 +9,6 @@ rod_name = "Deluxe Rod"
 power_level_label = "2"
 description = "Balanced, easy."
 acquisition_method = "Treasure: Saldine."
+reel_speed_multiplier = 1.05
+line_tolerance_multiplier = 1.05
+counter_steer_multiplier = 1.15

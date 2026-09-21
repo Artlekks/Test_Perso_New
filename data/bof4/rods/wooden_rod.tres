@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="RodData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="RodData" format=3 uid="uid://jfv2tn7hn7lu"]
 
-[ext_resource type="Script" path="res://scripts/database/rod_data.gd" id="1_rod"]
+[ext_resource type="Script" uid="uid://dfft7m6b6caxj" path="res://scripts/database/rod_data.gd" id="1_rod"]
 
 [resource]
 script = ExtResource("1_rod")
@@ -9,3 +9,5 @@ rod_name = "Wooden Rod"
 power_level_label = "1"
 description = "Beginner; easy but fragile."
 acquisition_method = "Buy: Sarai (50z)."
+cast_speed_multiplier = 0.85
+line_tolerance_multiplier = 0.8

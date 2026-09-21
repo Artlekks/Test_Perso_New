@@ -101,6 +101,8 @@ var fish_population: Array[FishSpawnEntry] = []
 var pending_fish_entry: FishSpawnEntry = null
 var active_bait_data: BaitData = null
 var debug_settings = null
+var active_rod_data: RodData = null
+var base_line_break_delay: float = 0.0
 
 func _ready() -> void:
 	if caster == null:
@@ -117,6 +119,9 @@ func _ready() -> void:
 	tension.hook_off.connect(_on_hook_off)
 	tension.line_broken.connect(_on_line_broken)
 	fish_behavior.pressure_changed.connect(_on_fish_behavior_pressure_changed)
+
+	base_line_break_delay = tension.line_break_delay
+	_apply_rod_tension_settings()
 	
 func _on_bait_landed(_point: Vector3) -> void:
 	tension.start_free_reel()
@@ -347,7 +352,17 @@ func _process(delta: float) -> void:
 				)
 
 				if steering_against_fish:
-					drain_speed *= counter_steer_fatigue_multiplier
+					var rod_handling := 1.0
+
+					if active_rod_data != null:
+						rod_handling = (
+							active_rod_data.counter_steer_multiplier
+						)
+
+					drain_speed *= (
+						counter_steer_fatigue_multiplier
+						* rod_handling
+					)
 
 			fish_stamina = maxf(
 				fish_stamina - drain_speed * delta,
@@ -563,6 +578,32 @@ func set_active_bait_data(bait_data: BaitData) -> void:
 
 func set_debug_settings(settings) -> void:
 	debug_settings = settings
+
+func set_rod_data(rod_data: RodData) -> void:
+	active_rod_data = rod_data
+	_apply_rod_tension_settings()
+
+
+func _apply_rod_tension_settings() -> void:
+	if tension == null:
+		return
+
+	var tolerance_multiplier := 1.0
+
+	if active_rod_data != null:
+		tolerance_multiplier = maxf(
+			active_rod_data.line_tolerance_multiplier,
+			0.01
+		)
+
+	if base_line_break_delay <= 0.0:
+		base_line_break_delay = tension.line_break_delay
+
+	tension.line_break_delay = (
+		base_line_break_delay
+		* tolerance_multiplier
+	)
+
 
 func _on_tension_changed(value: float) -> void:
 	tension_changed.emit(value)
