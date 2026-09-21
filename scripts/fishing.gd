@@ -14,6 +14,10 @@ const FishingTechniqueViewScene = preload(
 	"res://actors/FishingTechniqueView.tscn"
 )
 
+const FishingProgressScript = preload(
+	"res://scripts/fishing_progress.gd"
+)
+
 enum Phase {
 	INACTIVE,
 	ENTER,
@@ -67,6 +71,7 @@ var debug_menu: Node = null
 var debug_menu_open: bool = false
 var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
+var fishing_progress: FishingProgress = null
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -120,9 +125,15 @@ func _ready() -> void:
 	debug_settings = FishingDebugSettingsScript.new()
 	encounter.set_debug_settings(debug_settings)
 
+	fishing_progress = _get_or_create_fishing_progress()
+
 	debug_menu = FishingDebugMenuScene.instantiate()
 	add_child(debug_menu)
-	debug_menu.configure(loadout, debug_settings)
+	debug_menu.configure(
+		loadout,
+		debug_settings,
+		fishing_progress
+	)
 
 	technique_detector = FishingTechniqueDetectorScript.new()
 	add_child(technique_detector)
@@ -351,6 +362,37 @@ func _on_mode_changed(new_mode) -> void:
 
 
 
+
+
+
+func get_fishing_progress() -> FishingProgress:
+	return fishing_progress
+
+
+func _get_or_create_fishing_progress() -> FishingProgress:
+	var tree_root := get_tree().root
+	var existing := tree_root.get_node_or_null(
+		"FishingProgress"
+	)
+
+	if existing is FishingProgress:
+		var existing_progress := existing as FishingProgress
+		existing_progress.initialize()
+		return existing_progress
+
+	var new_progress := FishingProgressScript.new()
+	new_progress.name = "FishingProgress"
+
+	# Fishing._ready() can run while SceneTree root is still setting up
+	# its children. Adding another root child immediately at that moment
+	# is rejected by Godot, so defer only the tree attachment.
+	#
+	# The object itself is valid immediately, so we can initialize and use
+	# it now; FishingProgress.initialize() is idempotent when _ready()
+	# later fires after the deferred add.
+	tree_root.add_child.call_deferred(new_progress)
+	new_progress.initialize()
+	return new_progress
 
 
 func _on_technique_triggered(level: int) -> void:
@@ -701,6 +743,27 @@ func _on_fish_exhausted() -> void:
 
 func _on_fish_caught(fish: FishInstance) -> void:
 	caught_fish = fish
+
+	if fish == null or fishing_progress == null:
+		return
+
+	var debug_override_active := false
+	var allow_debug_record := false
+
+	if debug_settings != null:
+		debug_override_active = (
+			debug_settings.is_encounter_override_active()
+		)
+		allow_debug_record = (
+			debug_settings.should_record_debug_catches()
+		)
+
+	# Forced fish / king / technique tests do not pollute the player's
+	# permanent records unless SAVE DBG is explicitly enabled.
+	if debug_override_active and not allow_debug_record:
+		return
+
+	fishing_progress.record_catch(fish)
 	
 func _on_bite_triggered() -> void:
 	if phase != Phase.IN_WATER:

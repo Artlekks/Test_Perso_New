@@ -47,7 +47,8 @@ enum Row {
 	KING,
 	LURE,
 	ROD,
-	TECH
+	TECH,
+	SAVE_DEBUG
 }
 
 @onready var root: Control = $Root
@@ -56,10 +57,12 @@ enum Row {
 @onready var lure_label: Label = $Root/Panel/LureLabel
 @onready var rod_label: Label = $Root/Panel/RodLabel
 @onready var tech_label: Label = $Root/Panel/TechLabel
+@onready var save_debug_label: Label = $Root/Panel/SaveDebugLabel
 @onready var status_label: Label = $Root/Panel/StatusLabel
 
 var _loadout = null
 var _settings = null
+var _progress: FishingProgress = null
 var _selected_row: int = Row.FISH
 var _fish_index: int = 0
 
@@ -68,9 +71,24 @@ func _ready() -> void:
 	root.hide()
 
 
-func configure(loadout, settings) -> void:
+func configure(
+	loadout,
+	settings,
+	progress: FishingProgress = null
+) -> void:
 	_loadout = loadout
 	_settings = settings
+	_progress = progress
+
+	if _progress != null:
+		var callback := Callable(
+			self,
+			"_on_progress_changed"
+		)
+
+		if not _progress.changed.is_connected(callback):
+			_progress.changed.connect(callback)
+
 	_sync_from_runtime()
 	_refresh()
 
@@ -102,7 +120,7 @@ func handle_input(event: InputEvent) -> bool:
 		event.is_action_pressed("ui_up")
 		or event.is_action_pressed("move_forward")
 	):
-		_selected_row = posmod(_selected_row - 1, 5)
+		_selected_row = posmod(_selected_row - 1, 6)
 		_refresh()
 		return false
 
@@ -110,7 +128,7 @@ func handle_input(event: InputEvent) -> bool:
 		event.is_action_pressed("ui_down")
 		or event.is_action_pressed("move_back")
 	):
-		_selected_row = posmod(_selected_row + 1, 5)
+		_selected_row = posmod(_selected_row + 1, 6)
 		_refresh()
 		return false
 
@@ -149,6 +167,8 @@ func _change_value(step: int) -> void:
 			_change_rod(step)
 		Row.TECH:
 			_change_tech(step)
+		Row.SAVE_DEBUG:
+			_change_save_debug()
 
 	_refresh()
 
@@ -230,6 +250,15 @@ func _change_tech(step: int) -> void:
 	_settings.set_forced_tech_level(next_level)
 
 
+func _change_save_debug() -> void:
+	if _settings == null:
+		return
+
+	_settings.set_record_debug_catches(
+		not _settings.should_record_debug_catches()
+	)
+
+
 func _sync_from_runtime() -> void:
 	_fish_index = 0
 
@@ -295,10 +324,77 @@ func _refresh() -> void:
 		_settings.get_forced_tech_label()
 	)
 
-	status_label.text = (
-		"F10 close   W/S or arrows: row   A/D or arrows: change\n"
-		+ "K/I close   Overrides are runtime-only; database files are untouched."
+	save_debug_label.text = _row_text(
+		Row.SAVE_DEBUG,
+		"SAVE DBG",
+		_settings.get_record_debug_label()
 	)
+
+	var progress_text := "Progress: not connected"
+
+	if _progress != null:
+		progress_text = (
+			"Progress: %d / 9999 pts   Catches: %d"
+			% [
+				_progress.get_fishing_points(),
+				_progress.get_total_catches()
+			]
+		)
+
+		if _fish_index > 0:
+			var selected_fish: FishData = (
+				FISH_DATABASE[_fish_index - 1]
+			)
+			var record := _progress.get_species_record(
+				selected_fish
+			)
+
+			if not record.is_empty():
+				progress_text += (
+					"\n%s record: %d cm / %d pts / %d caught / King: %s"
+					% [
+						selected_fish.fish_name,
+						roundi(
+							float(
+								record.get(
+									"best_size",
+									0.0
+								)
+							)
+						),
+						int(
+							record.get(
+								"best_points",
+								0
+							)
+						),
+						int(
+							record.get(
+								"caught_count",
+								0
+							)
+						),
+						(
+							"YES"
+							if bool(
+								record.get(
+									"king_caught",
+									false
+								)
+							)
+							else "NO"
+						)
+					]
+				)
+
+	status_label.text = (
+		progress_text
+		+ "\nF10/K/I close   W/S row   A/D change"
+	)
+
+
+func _on_progress_changed() -> void:
+	_refresh()
 
 
 func _row_text(
