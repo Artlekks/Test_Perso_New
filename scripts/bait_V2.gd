@@ -78,8 +78,23 @@ func launch(
 
 	ripple_view.hide_ripple()
 
+func configure_air_curve(
+	curve_speed_degrees: float,
+	curve_limit_degrees: float
+) -> void:
+	air_curve_speed_degrees = maxf(
+		curve_speed_degrees,
+		0.0
+	)
+	max_air_curve_degrees = maxf(
+		curve_limit_degrees,
+		0.0
+	)
+
+
 func set_air_curve(value: float) -> void:
 	air_curve_input = clampf(value, -1.0, 1.0)
+
 
 func _update_air_curve(delta: float) -> void:
 	if absf(air_curve_input) < 0.01:

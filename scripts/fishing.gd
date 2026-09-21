@@ -25,6 +25,7 @@ enum Phase {
 	AIM,
 	PREP_THROW,
 	CHARGE,
+	CURVE,
 	CANCEL_THROW,
 	THROW,
 	BAIT_FLYING,
@@ -58,6 +59,10 @@ enum Phase {
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
 
+@export_category("Pre-Cast Curve")
+## Seconds of held A/D needed to move from straight to maximum curve.
+@export var curve_adjust_speed: float = 1.25
+
 var phase: int = Phase.INACTIVE
 var bait_landed_during_throw: bool = false
 var current_reel_animation: StringName = &""
@@ -73,6 +78,9 @@ var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
 var catch_record_result: Dictionary = {}
+
+var locked_cast_power: float = 0.0
+var cast_curve_value: float = 0.0
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -233,6 +241,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 		if event.is_action_pressed("enter_fishing"):
+			locked_cast_power = 0.0
+			cast_curve_value = 0.0
+
 			phase = Phase.PREP_THROW
 			power.start()
 			sprite_director.play(&"Prep_Throw")
@@ -246,9 +257,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			sprite_director.play_backwards(&"Prep_Fishing")
 			return
 	
-	if phase == Phase.PREP_THROW or phase == Phase.CHARGE:
+	if (
+		phase == Phase.PREP_THROW
+		or phase == Phase.CHARGE
+		or phase == Phase.CURVE
+	):
 		if event.is_action_pressed("cancel_fishing"):
 			throw_preview.hide_preview()
+
 			if (
 				power_meter_view != null
 				and power_meter_view.has_method("cancel_to_aim")
@@ -257,7 +273,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			# Stop the power mechanic. The HUD has already been told
 			# that this stop is a cancel, not a confirmed cast.
-			power.capture()
+			power.stop()
+
+			locked_cast_power = 0.0
+			cast_curve_value = 0.0
 
 			phase = Phase.CANCEL_THROW
 			sprite_director.play_backwards(&"Prep_Throw")
@@ -265,45 +284,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			
 	if phase == Phase.CHARGE:
 		if event.is_action_pressed("enter_fishing"):
+			# POWER LOCK:
+			# Freeze distance, freeze the base aim heading, but do not
+			# throw yet. The same visible arc now becomes the draw/fade UI.
+			locked_cast_power = power.lock_value()
+			cast_curve_value = 0.0
 			aim.stop()
-			throw_preview.hide_preview()
-			
-			var captured_power: float = power.capture()
 
-			var zone = game_mode.active_fish_zone
+			phase = Phase.CURVE
+			_update_cast_preview(
+				locked_cast_power,
+				cast_curve_value
+			)
+			return
 
-			if zone != null:
-				var cast_direction: Vector3 = aim.get_direction()
-				var cast_lure: BaitData = null
-				var cast_swim_bounds: Node = null
-
-				if loadout != null:
-					cast_lure = loadout.get_selected_lure()
-
-				if zone.has_method("get_swim_bounds"):
-					cast_swim_bounds = zone.get_swim_bounds()
-
-				var cast_bait: Node3D = caster.perform_cast(
-					captured_power,
-					cast_direction,
-					zone.get_water_y(),
-					zone.get_bottom_y(),
-					cast_lure,
-					cast_swim_bounds
-				)
-
-				if is_instance_valid(cast_bait):
-					encounter.set_active_bait_data(cast_lure)
-					camera_rig.arm_fishing_follow(
-						cast_bait,
-						cast_direction,
-						zone.get_water_y()
-					)
-
-
-			bait_landed_during_throw = false
-			phase = Phase.THROW
-			sprite_director.play(&"Throw")
+	if phase == Phase.CURVE:
+		if event.is_action_pressed("enter_fishing"):
+			_commit_curved_cast()
 			return
 
 
@@ -681,16 +678,36 @@ func _on_bait_returned() -> void:
 	sprite_director.play(&"Fishing_Idle")
 	aim.resume()
 	
-func _process(_delta: float) -> void:
-	if phase == Phase.THROW or phase == Phase.BAIT_FLYING:
-		var air_curve := Input.get_axis(
+func _process(delta: float) -> void:
+	if phase == Phase.CURVE:
+		var curve_input := Input.get_axis(
 			"ds_left",
 			"ds_right"
 		)
 
-		caster.set_air_curve(air_curve)
+		if not is_zero_approx(curve_input):
+			var previous_curve := cast_curve_value
+
+			cast_curve_value = clampf(
+				cast_curve_value
+				+ curve_input
+				* curve_adjust_speed
+				* delta,
+				-1.0,
+				1.0
+			)
+
+			if not is_equal_approx(
+				previous_curve,
+				cast_curve_value
+			):
+				_update_cast_preview(
+					locked_cast_power,
+					cast_curve_value
+				)
+
 		return
-		
+
 	if phase != Phase.IN_WATER and phase != Phase.FIGHT:
 		return
 	
@@ -944,9 +961,19 @@ func _on_result_screen_revealed() -> void:
 	aim.resume()
 
 func _on_power_changed(value: float) -> void:
-	if phase != Phase.PREP_THROW and phase != Phase.CHARGE:
+	if (
+		phase != Phase.PREP_THROW
+		and phase != Phase.CHARGE
+	):
 		return
 
+	_update_cast_preview(value, 0.0)
+
+
+func _update_cast_preview(
+	power_value: float,
+	curve_value: float
+) -> void:
 	var zone = game_mode.active_fish_zone
 
 	if zone == null:
@@ -954,9 +981,98 @@ func _on_power_changed(value: float) -> void:
 		return
 
 	var points: PackedVector3Array = caster.predict_cast(
-		value,
+		power_value,
 		aim.get_direction(),
-		zone.get_water_y()
+		zone.get_water_y(),
+		curve_value
 	)
 
 	throw_preview.show_preview(points)
+
+
+func _commit_curved_cast() -> void:
+	if phase != Phase.CURVE:
+		return
+
+	var zone = game_mode.active_fish_zone
+
+	if zone == null:
+		throw_preview.hide_preview()
+		power.stop()
+		locked_cast_power = 0.0
+		cast_curve_value = 0.0
+		phase = Phase.CANCEL_THROW
+		sprite_director.play_backwards(&"Prep_Throw")
+		return
+
+	var captured_power := locked_cast_power
+	var selected_curve := cast_curve_value
+	var cast_direction: Vector3 = aim.get_direction()
+	var cast_lure: BaitData = null
+	var cast_swim_bounds: Node = null
+
+	if loadout != null:
+		cast_lure = loadout.get_selected_lure()
+
+	if zone.has_method("get_swim_bounds"):
+		cast_swim_bounds = zone.get_swim_bounds()
+
+	# Predict once more before launch so camera follow can use the actual
+	# curved landing direction instead of the original straight heading.
+	var predicted_points: PackedVector3Array = (
+		caster.predict_cast(
+			captured_power,
+			cast_direction,
+			zone.get_water_y(),
+			selected_curve
+		)
+	)
+
+	var camera_follow_direction := cast_direction
+
+	if predicted_points.size() >= 2:
+		var first_point: Vector3 = predicted_points[0]
+		var landing_point: Vector3 = (
+			predicted_points[
+				predicted_points.size() - 1
+			]
+		)
+
+		var landing_direction := (
+			landing_point - first_point
+		)
+		landing_direction.y = 0.0
+
+		if landing_direction.length_squared() > 0.0001:
+			camera_follow_direction = (
+				landing_direction.normalized()
+			)
+
+	# Only NOW is the power selection considered a confirmed cast.
+	power.confirm_locked()
+	throw_preview.hide_preview()
+
+	var cast_bait: Node3D = caster.perform_cast(
+		captured_power,
+		cast_direction,
+		zone.get_water_y(),
+		zone.get_bottom_y(),
+		cast_lure,
+		cast_swim_bounds,
+		selected_curve
+	)
+
+	if is_instance_valid(cast_bait):
+		encounter.set_active_bait_data(cast_lure)
+		camera_rig.arm_fishing_follow(
+			cast_bait,
+			camera_follow_direction,
+			zone.get_water_y()
+		)
+
+	locked_cast_power = 0.0
+	cast_curve_value = 0.0
+	bait_landed_during_throw = false
+
+	phase = Phase.THROW
+	sprite_director.play(&"Throw")
