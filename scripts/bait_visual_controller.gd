@@ -35,7 +35,13 @@ var surface_flatten_depth: float = 0.15
 
 ## Small amount of pitch retained right at the surface.
 @export_range(0.0, 0.75, 0.05)
-var surface_vertical_influence: float = 0.18
+var surface_vertical_influence: float = 0.10
+
+@export_category("Underwater Attitude")
+## Even when sinking/reeling vertically, keep the lure mostly horizontal,
+## like a small submarine rather than a dart pointing straight down.
+@export_range(0.0, 45.0, 1.0)
+var max_underwater_pitch_degrees: float = 18.0
 
 var _bait: Node3D = null
 var _previous_world_position: Vector3 = Vector3.ZERO
@@ -62,6 +68,10 @@ func _ready() -> void:
 	initial_direction = _apply_surface_attitude(
 		initial_direction,
 		_bait.global_position
+	)
+
+	initial_direction = _limit_vertical_pitch(
+		initial_direction
 	)
 
 	_head_direction = initial_direction.normalized()
@@ -111,6 +121,10 @@ func _physics_process(delta: float) -> void:
 	desired_direction = _apply_surface_attitude(
 		desired_direction,
 		current_world_position
+	)
+
+	desired_direction = _limit_vertical_pitch(
+		desired_direction
 	)
 
 	_head_direction = _follow_direction(
@@ -303,6 +317,70 @@ func _apply_surface_attitude(
 	return surface_direction.slerp(
 		direction.normalized(),
 		depth_blend
+	).normalized()
+
+
+
+func _limit_vertical_pitch(direction: Vector3) -> Vector3:
+	if direction.length_squared() < 0.0001:
+		return direction
+
+	var normalized := direction.normalized()
+	var horizontal := Vector3(
+		normalized.x,
+		0.0,
+		normalized.z
+	)
+
+	# A pure vertical sink has no heading of its own. Borrow the line heading
+	# so the lure can descend while still reading as a horizontal object.
+	if horizontal.length_squared() < 0.0001:
+		var line_direction := _get_line_direction()
+		horizontal = Vector3(
+			line_direction.x,
+			0.0,
+			line_direction.z
+		)
+
+	if horizontal.length_squared() < 0.0001:
+		horizontal = Vector3(
+			_head_direction.x,
+			0.0,
+			_head_direction.z
+		)
+
+	if horizontal.length_squared() < 0.0001:
+		horizontal = Vector3.FORWARD
+
+	horizontal = horizontal.normalized()
+
+	var max_pitch_radians := deg_to_rad(
+		clampf(
+			max_underwater_pitch_degrees,
+			0.0,
+			89.0
+		)
+	)
+
+	var requested_pitch := asin(
+		clampf(
+			normalized.y,
+			-1.0,
+			1.0
+		)
+	)
+
+	var limited_pitch := clampf(
+		requested_pitch,
+		-max_pitch_radians,
+		max_pitch_radians
+	)
+
+	var horizontal_scale := cos(limited_pitch)
+
+	return (
+		horizontal * horizontal_scale
+		+ Vector3.UP * sin(limited_pitch)
 	).normalized()
 
 

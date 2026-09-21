@@ -396,7 +396,8 @@ line_alignment_weight = 0.2
 segment_length = 0.058
 segment_gap = 0.003
 surface_flatten_depth = 0.15
-surface_vertical_influence = 0.18
+surface_vertical_influence = 0.1
+max_underwater_pitch_degrees = 18.0
 
 [node name="Segment01" type="Node3D" parent="VisualPivot"]
 
