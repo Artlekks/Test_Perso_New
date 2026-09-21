@@ -127,6 +127,10 @@ func get_water_surface_y() -> float:
 	return water_y
 
 
+func get_reel_target_node() -> Node3D:
+	return reel_target
+
+
 func set_swim_bounds(bounds: Node) -> void:
 	swim_bounds = bounds
 
