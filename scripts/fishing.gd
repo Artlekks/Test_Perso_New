@@ -72,6 +72,7 @@ var debug_menu_open: bool = false
 var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
+var catch_record_result: Dictionary = {}
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -400,7 +401,7 @@ func _on_technique_triggered(level: int) -> void:
 		return
 
 	encounter.apply_technique(level)
-	technique_view.show_tech(level)
+	technique_view.show_tech(level, caster.active_bait)
 
 
 func _on_rod_changed(rod: RodData) -> void:
@@ -600,7 +601,10 @@ func _on_animation_finished(animation_name: StringName) -> void:
 			return
 
 		if caught_fish != null:
-			fishing_catch_view.show_catch(caught_fish)
+			fishing_catch_view.show_catch(
+				caught_fish,
+				catch_record_result
+			)
 
 		return
 	
@@ -743,6 +747,7 @@ func _on_fish_exhausted() -> void:
 
 func _on_fish_caught(fish: FishInstance) -> void:
 	caught_fish = fish
+	catch_record_result = {}
 
 	if fish == null or fishing_progress == null:
 		return
@@ -763,7 +768,7 @@ func _on_fish_caught(fish: FishInstance) -> void:
 	if debug_override_active and not allow_debug_record:
 		return
 
-	fishing_progress.record_catch(fish)
+	catch_record_result = fishing_progress.record_catch(fish)
 	
 func _on_bite_triggered() -> void:
 	if phase != Phase.IN_WATER:
@@ -887,6 +892,7 @@ func _on_result_screen_covered() -> void:
 	
 	fishing_catch_view.hide_catch()
 	caught_fish = null
+	catch_record_result = {}
 
 	current_reel_animation = &""
 	fish_resisting = false
@@ -916,6 +922,7 @@ func _on_catch_view_dismissed() -> void:
 	bite_animation_active = false
 
 	caught_fish = null
+	catch_record_result = {}
 
 	sprite_director.play(&"Fishing_Idle")
 

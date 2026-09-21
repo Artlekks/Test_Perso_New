@@ -1,12 +1,20 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://bjtfo2cygy18t"]
 
-[ext_resource type="Script" path="res://scripts/fishing_technique_view.gd" id="1_view"]
+[ext_resource type="Script" uid="uid://cfbm8w7d24mk1" path="res://scripts/fishing_technique_view.gd" id="1_view"]
+[ext_resource type="Texture2D" uid="uid://ymhtmxrmktt0" path="res://assets/ui/tech_bubbles/tec_1.png" id="2_tec1"]
+[ext_resource type="Texture2D" uid="uid://ck4mx1gksfvwt" path="res://assets/ui/tech_bubbles/tec_2.png" id="3_tec2"]
+[ext_resource type="Texture2D" uid="uid://cfuv5g5b8vmg6" path="res://assets/ui/tech_bubbles/tec_3.png" id="4_tec3"]
+[ext_resource type="Texture2D" uid="uid://c7t56sh81umg3" path="res://assets/ui/tech_bubbles/tec_4.png" id="5_tec4"]
 
-[node name="FishingTechniqueView" type="CanvasLayer"]
+[node name="FishingTechniqueView" type="CanvasLayer" unique_id=63448115]
 layer = 65
 script = ExtResource("1_view")
+tec_1_texture = ExtResource("2_tec1")
+tec_2_texture = ExtResource("3_tec2")
+tec_3_texture = ExtResource("4_tec3")
+tec_4_texture = ExtResource("5_tec4")
 
-[node name="Root" type="Control" parent="."]
+[node name="Root" type="Control" parent="." unique_id=929770374]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,20 +23,20 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TechniqueLabel" type="Label" parent="Root"]
+[node name="TechniqueBubble" type="TextureRect" parent="Root" unique_id=418291812]
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -110.0
-offset_top = -150.0
-offset_right = 110.0
-offset_bottom = -110.0
+offset_left = -25.0
+offset_top = -50.0
+offset_right = 25.0
+offset_bottom = -27.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 26
-text = "TEC. 4"
-horizontal_alignment = 1
-vertical_alignment = 1
+scale = Vector2(2, 2)
+mouse_filter = 2
+texture = ExtResource("2_tec1")

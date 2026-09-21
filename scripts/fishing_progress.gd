@@ -48,6 +48,9 @@ func record_catch(fish: FishInstance) -> Dictionary:
 		_create_empty_record(fish.species)
 	).duplicate(true)
 
+	var previous_caught_count := int(
+		record.get("caught_count", 0)
+	)
 	var previous_best_size := float(
 		record.get("best_size", 0.0)
 	)
@@ -57,6 +60,7 @@ func record_catch(fish: FishInstance) -> Dictionary:
 	var previous_king_caught := bool(
 		record.get("king_caught", false)
 	)
+	var previous_fishing_points := fishing_points
 
 	record["fish_name"] = fish.species.fish_name
 	record["caught_count"] = int(
@@ -82,6 +86,9 @@ func record_catch(fish: FishInstance) -> Dictionary:
 	var result := {
 		"species_key": species_key,
 		"record": record.duplicate(true),
+		"new_species": (
+			previous_caught_count <= 0
+		),
 		"new_best_size": (
 			fish.size > previous_best_size
 		),
@@ -92,7 +99,14 @@ func record_catch(fish: FishInstance) -> Dictionary:
 			fish.is_king
 			and not previous_king_caught
 		),
-		"fishing_points": fishing_points
+		"previous_best_size": previous_best_size,
+		"previous_best_points": previous_best_points,
+		"fishing_points_before": previous_fishing_points,
+		"fishing_points": fishing_points,
+		"fishing_points_gained": maxi(
+			fishing_points - previous_fishing_points,
+			0
+		)
 	}
 
 	save_to_disk()

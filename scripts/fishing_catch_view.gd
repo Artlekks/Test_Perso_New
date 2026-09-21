@@ -6,6 +6,11 @@ signal dismissed
 @export var slide_time: float = 0.35
 @export var slide_padding_px: float = 30.0
 @export var king_name_prefix: String = "KING "
+@export_category("Record Result")
+@export var record_text_position: Vector2 = Vector2(205.0, 235.0)
+@export var record_text_size: Vector2 = Vector2(230.0, 88.0)
+@export var record_text_scale: Vector2 = Vector2(1.0, 1.0)
+
 
 @onready var root: Control = $Root
 @onready var fish_portrait: TextureRect = $Root/FishPortrait
@@ -15,12 +20,17 @@ signal dismissed
 
 var _rest_position: Vector2 = Vector2.ZERO
 var _move_tween: Tween = null
+var _record_label: Label = null
 
 func _ready() -> void:
 	_rest_position = root.position
+	_create_record_label()
 	root.visible = false
 
-func show_catch(fish: FishInstance) -> void:
+func show_catch(
+	fish: FishInstance,
+	record_result: Dictionary = {}
+) -> void:
 	_kill_move_tween()
 
 	# Prepare the frame offscreen to the right.
@@ -34,6 +44,8 @@ func show_catch(fish: FishInstance) -> void:
 	fish_name_label.text = ""
 	fish_size_label.text = ""
 	fish_points_label.text = ""
+
+	_set_record_text(record_result)
 
 	if fish == null:
 		push_warning("FishingCatchView: Received a null FishInstance.")
@@ -68,6 +80,81 @@ func show_catch(fish: FishInstance) -> void:
 	)
 
 	_move_tween.tween_callback(_on_show_finished)
+
+
+func _create_record_label() -> void:
+	if _record_label != null:
+		return
+
+	_record_label = Label.new()
+	_record_label.name = "RecordResultLabel"
+	_record_label.position = record_text_position
+	_record_label.size = record_text_size
+	_record_label.scale = record_text_scale
+	_record_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_record_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_record_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_record_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Reuse the exact same font family as the catch frame instead of
+	# introducing a new visual dependency.
+	var catch_font := fish_name_label.get_theme_font("font")
+
+	if catch_font != null:
+		_record_label.add_theme_font_override(
+			"font",
+			catch_font
+		)
+
+	root.add_child(_record_label)
+
+
+func _set_record_text(record_result: Dictionary) -> void:
+	if _record_label == null:
+		return
+
+	_record_label.text = ""
+
+	if record_result.is_empty():
+		return
+
+	var lines: Array[String] = []
+	var is_new_species := bool(
+		record_result.get(
+			"new_species",
+			false
+		)
+	)
+
+	if is_new_species:
+		lines.append("NEW SPECIES!")
+	else:
+		if bool(
+			record_result.get(
+				"new_best_size",
+				false
+			)
+		):
+			lines.append("NEW SIZE RECORD!")
+
+		if bool(
+			record_result.get(
+				"new_best_points",
+				false
+			)
+		):
+			lines.append("NEW POINT RECORD!")
+
+	if bool(
+		record_result.get(
+			"first_king",
+			false
+		)
+	):
+		lines.append("FIRST KING!")
+
+	_record_label.text = "\n".join(lines)
+
 
 func dismiss_catch() -> void:
 	_kill_move_tween()
@@ -117,5 +204,9 @@ func _kill_move_tween() -> void:
 		
 func hide_catch() -> void:
 	_kill_move_tween()
+
+	if _record_label != null:
+		_record_label.text = ""
+
 	root.visible = false
 	root.position = _rest_position
