@@ -17,6 +17,7 @@ signal hook_off
 signal line_broken
 signal fish_resistance_started
 signal fish_spent
+signal technique_applied(level: int)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -55,6 +56,13 @@ var direct_hit_chance: float = 0.5
 
 @export_range(0.0, 1.0, 0.05)
 var max_bite_chance_per_check: float = 1.0
+
+@export_category("Fishing Techniques")
+@export var technique_boost_duration: float = 2.5
+@export var tech_1_attraction_multiplier: float = 1.15
+@export var tech_2_attraction_multiplier: float = 1.35
+@export var tech_3_attraction_multiplier: float = 1.60
+@export var tech_4_attraction_multiplier: float = 2.00
 
 @export_category("Release Movement")
 @export_range(0.0, 1.0, 0.05)
@@ -103,6 +111,8 @@ var active_bait_data: BaitData = null
 var debug_settings = null
 var active_rod_data: RodData = null
 var base_line_break_delay: float = 0.0
+var active_tech_level: int = 0
+var technique_time_left: float = 0.0
 
 func _ready() -> void:
 	if caster == null:
@@ -124,6 +134,7 @@ func _ready() -> void:
 	_apply_rod_tension_settings()
 	
 func _on_bait_landed(_point: Vector3) -> void:
+	_reset_technique()
 	tension.start_free_reel()
 	bite_timer.start(first_bite_delay)
 
@@ -133,6 +144,7 @@ func _on_bait_returned() -> void:
 	bite_active = false
 	pending_fish_entry = null
 	active_bait_data = null
+	_reset_technique()
 	tension.stop()
 	
 func _on_bite_timer_timeout() -> void:
@@ -156,7 +168,17 @@ func _on_bite_timer_timeout() -> void:
 			caster.get_current_total_depth()
 		)
 
-		var bite_chance := attraction * max_bite_chance_per_check
+		var bite_chance := (
+			attraction
+			* max_bite_chance_per_check
+			* _get_tech_attraction_multiplier()
+		)
+
+		bite_chance = clampf(
+			bite_chance,
+			0.0,
+			1.0
+		)
 
 		if randf() > bite_chance:
 			bite_timer.start(retry_bite_delay)
@@ -218,6 +240,7 @@ func _confirm_hit() -> bool:
 		king_override
 	)
 
+	_reset_technique()
 	fish_behavior.configure(active_fish)
 
 	fish_stamina = active_fish.max_stamina
@@ -266,6 +289,8 @@ func catch_fish() -> void:
 	fish_caught.emit(active_fish)
 
 func _process(delta: float) -> void:
+	_update_technique_timer(delta)
+
 	if fight_state == FightState.NONE:
 		return
 
@@ -575,6 +600,64 @@ func set_fish_population(entries: Array[FishSpawnEntry]) -> void:
 
 func set_active_bait_data(bait_data: BaitData) -> void:
 	active_bait_data = bait_data
+
+func apply_technique(level: int) -> void:
+	var clamped_level := clampi(level, 1, 4)
+
+	active_tech_level = clamped_level
+	technique_time_left = maxf(
+		technique_boost_duration,
+		0.0
+	)
+
+	technique_applied.emit(clamped_level)
+
+
+func get_effective_tech_level() -> int:
+	if (
+		debug_settings != null
+		and debug_settings.has_method(
+			"get_forced_tech_level"
+		)
+	):
+		var forced_level: int = (
+			debug_settings.get_forced_tech_level()
+		)
+
+		if forced_level > 0:
+			return forced_level
+
+	return active_tech_level
+
+
+func _get_tech_attraction_multiplier() -> float:
+	match get_effective_tech_level():
+		1:
+			return tech_1_attraction_multiplier
+		2:
+			return tech_2_attraction_multiplier
+		3:
+			return tech_3_attraction_multiplier
+		4:
+			return tech_4_attraction_multiplier
+		_:
+			return 1.0
+
+
+func _update_technique_timer(delta: float) -> void:
+	if active_tech_level <= 0:
+		return
+
+	technique_time_left -= delta
+
+	if technique_time_left <= 0.0:
+		_reset_technique()
+
+
+func _reset_technique() -> void:
+	active_tech_level = 0
+	technique_time_left = 0.0
+
 
 func set_debug_settings(settings) -> void:
 	debug_settings = settings

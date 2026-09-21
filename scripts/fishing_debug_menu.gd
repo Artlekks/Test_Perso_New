@@ -46,7 +46,8 @@ enum Row {
 	FISH,
 	KING,
 	LURE,
-	ROD
+	ROD,
+	TECH
 }
 
 @onready var root: Control = $Root
@@ -54,6 +55,7 @@ enum Row {
 @onready var king_label: Label = $Root/Panel/KingLabel
 @onready var lure_label: Label = $Root/Panel/LureLabel
 @onready var rod_label: Label = $Root/Panel/RodLabel
+@onready var tech_label: Label = $Root/Panel/TechLabel
 @onready var status_label: Label = $Root/Panel/StatusLabel
 
 var _loadout = null
@@ -100,7 +102,7 @@ func handle_input(event: InputEvent) -> bool:
 		event.is_action_pressed("ui_up")
 		or event.is_action_pressed("move_forward")
 	):
-		_selected_row = posmod(_selected_row - 1, 4)
+		_selected_row = posmod(_selected_row - 1, 5)
 		_refresh()
 		return false
 
@@ -108,7 +110,7 @@ func handle_input(event: InputEvent) -> bool:
 		event.is_action_pressed("ui_down")
 		or event.is_action_pressed("move_back")
 	):
-		_selected_row = posmod(_selected_row + 1, 4)
+		_selected_row = posmod(_selected_row + 1, 5)
 		_refresh()
 		return false
 
@@ -145,6 +147,8 @@ func _change_value(step: int) -> void:
 			_change_lure(step)
 		Row.ROD:
 			_change_rod(step)
+		Row.TECH:
+			_change_tech(step)
 
 	_refresh()
 
@@ -214,6 +218,18 @@ func _change_rod(step: int) -> void:
 	)
 
 
+func _change_tech(step: int) -> void:
+	if _settings == null:
+		return
+
+	var next_level := posmod(
+		_settings.get_forced_tech_level() + step,
+		5
+	)
+
+	_settings.set_forced_tech_level(next_level)
+
+
 func _sync_from_runtime() -> void:
 	_fish_index = 0
 
@@ -271,6 +287,12 @@ func _refresh() -> void:
 		Row.ROD,
 		"ROD",
 		rod_text
+	)
+
+	tech_label.text = _row_text(
+		Row.TECH,
+		"TECH",
+		_settings.get_forced_tech_label()
 	)
 
 	status_label.text = (

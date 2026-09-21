@@ -8,6 +8,7 @@ enum KingMode {
 
 var forced_fish: FishData = null
 var king_mode: int = KingMode.DEFAULT
+var forced_tech_level: int = 0
 
 
 func set_forced_fish(fish: FishData) -> void:
@@ -48,3 +49,18 @@ func get_king_mode_label() -> String:
 			return "FORCE KING"
 		_:
 			return "DEFAULT RNG"
+
+
+func set_forced_tech_level(level: int) -> void:
+	forced_tech_level = clampi(level, 0, 4)
+
+
+func get_forced_tech_level() -> int:
+	return forced_tech_level
+
+
+func get_forced_tech_label() -> String:
+	if forced_tech_level <= 0:
+		return "NORMAL RHYTHM"
+
+	return "FORCE TEC %d" % forced_tech_level

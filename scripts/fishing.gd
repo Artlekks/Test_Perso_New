@@ -7,6 +7,13 @@ const FishingDebugMenuScene = preload(
 	"res://actors/FishingDebugMenu.tscn"
 )
 
+const FishingTechniqueDetectorScript = preload(
+	"res://scripts/fishing_technique_detector.gd"
+)
+const FishingTechniqueViewScene = preload(
+	"res://actors/FishingTechniqueView.tscn"
+)
+
 enum Phase {
 	INACTIVE,
 	ENTER,
@@ -58,6 +65,8 @@ var lure_selector_open: bool = false
 var debug_settings = null
 var debug_menu: Node = null
 var debug_menu_open: bool = false
+var technique_detector: FishingTechniqueDetector = null
+var technique_view: FishingTechniqueView = null
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -114,6 +123,15 @@ func _ready() -> void:
 	debug_menu = FishingDebugMenuScene.instantiate()
 	add_child(debug_menu)
 	debug_menu.configure(loadout, debug_settings)
+
+	technique_detector = FishingTechniqueDetectorScript.new()
+	add_child(technique_detector)
+	technique_detector.technique_triggered.connect(
+		_on_technique_triggered
+	)
+
+	technique_view = FishingTechniqueViewScene.instantiate()
+	add_child(technique_view)
 
 	if loadout != null:
 		if not loadout.rod_changed.is_connected(_on_rod_changed):
@@ -279,19 +297,23 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if phase == Phase.IN_WATER:
 		if event.is_action_pressed("ds_left"):
+			technique_detector.record_pulse()
 			caster.twitch_bait(-1.0)
 			encounter.add_lure_tension(0.05)
 			return
 
 		if event.is_action_pressed("ds_right"):
+			technique_detector.record_pulse()
 			caster.twitch_bait(1.0)
 			encounter.add_lure_tension(0.05)
 			return
 
 		if event.is_action_pressed("enter_fishing"):
 			if encounter.try_hook():
+				technique_detector.reset()
 				return
 
+			technique_detector.record_pulse()
 			encounter.set_player_reeling(true)
 			caster.set_reeling(true)
 			current_reel_animation = &""
@@ -328,6 +350,15 @@ func _on_mode_changed(new_mode) -> void:
 
 
 
+
+
+
+func _on_technique_triggered(level: int) -> void:
+	if phase != Phase.IN_WATER:
+		return
+
+	encounter.apply_technique(level)
+	technique_view.show_tech(level)
 
 
 func _on_rod_changed(rod: RodData) -> void:
@@ -572,12 +603,17 @@ func _on_bait_landed(_point: Vector3) -> void:
 		
 func _enter_in_water() -> void:
 	phase = Phase.IN_WATER
+	technique_detector.reset()
+	technique_view.clear()
 	current_reel_animation = &"Reel_Idle"
 	sprite_director.play(&"Reel_Idle")
 
 func _on_bait_returned() -> void:
 	if phase != Phase.IN_WATER and phase != Phase.FIGHT:
 		return
+
+	technique_detector.reset()
+	technique_view.clear()
 
 	if phase == Phase.FIGHT:
 		encounter.catch_fish()
@@ -638,6 +674,8 @@ func _on_fish_hooked() -> void:
 	if phase != Phase.IN_WATER:
 		return
 
+	technique_detector.reset()
+	technique_view.clear()
 	phase = Phase.FIGHT
 	fish_resisting = true
 	caster.set_fight_mode(true)
