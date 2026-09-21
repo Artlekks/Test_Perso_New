@@ -3,9 +3,20 @@ class_name FishData
 
 @export var fish_name: String = ""
 
+@export_category("Size / King")
 @export var average_size: float = 1.0
 @export var king_size: float = 2.0
 
+## Chance that a newly created FishInstance rolls in the king-size band.
+## This is authored gameplay tuning, not claimed canonical BOF4 RNG.
+@export_range(0.0, 1.0, 0.005)
+var king_chance: float = 0.03
+
+## A king can roll from king_size up to king_size * this multiplier.
+@export_range(1.0, 1.25, 0.01)
+var king_max_size_multiplier: float = 1.05
+
+@export_category("Fight Stats")
 @export var base_stamina: float = 100.0
 @export var base_strength: float = 1.0
 

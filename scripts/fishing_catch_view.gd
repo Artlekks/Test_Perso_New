@@ -5,6 +5,7 @@ signal dismissed
 
 @export var slide_time: float = 0.35
 @export var slide_padding_px: float = 30.0
+@export var king_name_prefix: String = "KING "
 
 @onready var root: Control = $Root
 @onready var fish_portrait: TextureRect = $Root/FishPortrait
@@ -30,6 +31,10 @@ func show_catch(fish: FishInstance) -> void:
 	fish_portrait.visible = false
 	fish_portrait.texture = null
 
+	fish_name_label.text = ""
+	fish_size_label.text = ""
+	fish_points_label.text = ""
+
 	if fish == null:
 		push_warning("FishingCatchView: Received a null FishInstance.")
 	else:
@@ -40,7 +45,13 @@ func show_catch(fish: FishInstance) -> void:
 				fish_portrait.texture = fish.species.portrait
 				fish_portrait.visible = true
 
-			fish_name_label.text = fish.species.fish_name
+			if fish.is_king:
+				fish_name_label.text = (
+					king_name_prefix
+					+ fish.species.fish_name
+				)
+			else:
+				fish_name_label.text = fish.species.fish_name
 			fish_size_label.text = "%d" % roundi(fish.size)
 			fish_points_label.text = "%d" % fish.points
 
