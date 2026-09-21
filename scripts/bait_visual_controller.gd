@@ -1,34 +1,48 @@
 extends Node3D
 
-## Presentation-only orientation controller for the bait mesh.
+## Presentation-only 3-segment lure rig.
 ##
-## The parent Bait node still owns all actual cast/sink/reel/fight movement.
-## This node only reads that motion and rotates a replaceable 3D visual.
+## The parent bait node still owns ALL real cast/sink/reel/fight movement.
+## This rig only turns and positions three visual segments so they trail with
+## progressively more delay, producing an articulated / snake-like motion.
+
+@onready var segment_01: Node3D = $Segment01
+@onready var segment_02: Node3D = $Segment02
+@onready var segment_03: Node3D = $Segment03
 
 @export_category("Directional Response")
-@export var turn_speed: float = 10.0
 @export var motion_threshold: float = 0.015
 
-## Even while the lure is moving, retain a little influence from the fishing
-## line so the object feels attached instead of behaving like a free projectile.
+## Head reacts fastest, tail reacts slowest.
+@export var head_turn_speed: float = 14.0
+@export var middle_turn_speed: float = 7.5
+@export var tail_turn_speed: float = 4.5
+
+## Even while moving, retain some influence from the fishing line so the lure
+## still feels attached rather than behaving like a free projectile.
 @export_range(0.0, 0.75, 0.05)
 var line_alignment_weight: float = 0.20
 
+@export_category("Chain Geometry")
+## Total visible length stays close to the previous single-piece lure.
+@export var segment_length: float = 0.058
+@export var segment_gap: float = 0.003
+
 @export_category("Surface Attitude")
-## While the lure is within this distance below the water surface, progressively
-## bias it toward a horizontal posture. Once deeper than this, normal 3D
-## orientation takes over completely.
+## Close to the water surface, keep the whole articulated lure broadly flat.
 @export_range(0.01, 1.0, 0.01)
 var surface_flatten_depth: float = 0.15
 
-## How much vertical pitch remains exactly at the surface.
-## 0.0 = perfectly horizontal, 0.20 = a small visible dip.
+## Small amount of pitch retained right at the surface.
 @export_range(0.0, 0.75, 0.05)
 var surface_vertical_influence: float = 0.18
 
 var _bait: Node3D = null
 var _previous_world_position: Vector3 = Vector3.ZERO
-var _smoothed_direction: Vector3 = Vector3.FORWARD
+
+var _head_direction: Vector3 = Vector3.FORWARD
+var _middle_direction: Vector3 = Vector3.FORWARD
+var _tail_direction: Vector3 = Vector3.FORWARD
 
 
 func _ready() -> void:
@@ -50,8 +64,11 @@ func _ready() -> void:
 		_bait.global_position
 	)
 
-	_smoothed_direction = initial_direction.normalized()
-	_apply_direction(_smoothed_direction)
+	_head_direction = initial_direction.normalized()
+	_middle_direction = _head_direction
+	_tail_direction = _head_direction
+
+	_place_chain()
 
 
 func _physics_process(delta: float) -> void:
@@ -84,10 +101,9 @@ func _physics_process(delta: float) -> void:
 				* line_alignment_weight
 			).normalized()
 	elif line_direction.length_squared() > 0.0001:
-		# At rest, hang naturally along the fishing line.
 		desired_direction = line_direction
 	else:
-		desired_direction = Vector3.DOWN
+		desired_direction = _head_direction
 
 	if desired_direction.length_squared() < 0.0001:
 		return
@@ -97,19 +113,129 @@ func _physics_process(delta: float) -> void:
 		current_world_position
 	)
 
+	_head_direction = _follow_direction(
+		_head_direction,
+		desired_direction,
+		head_turn_speed,
+		delta
+	)
+
+	_middle_direction = _follow_direction(
+		_middle_direction,
+		_head_direction,
+		middle_turn_speed,
+		delta
+	)
+
+	_tail_direction = _follow_direction(
+		_tail_direction,
+		_middle_direction,
+		tail_turn_speed,
+		delta
+	)
+
+	_place_chain()
+
+
+func _follow_direction(
+	current: Vector3,
+	target: Vector3,
+	speed: float,
+	delta: float
+) -> Vector3:
+	if target.length_squared() < 0.0001:
+		return current
+
+	if current.length_squared() < 0.0001:
+		return target.normalized()
+
 	var follow_weight := clampf(
-		1.0 - exp(-turn_speed * delta),
+		1.0 - exp(-speed * delta),
 		0.0,
 		1.0
 	)
 
-	_smoothed_direction = _smoothed_direction.slerp(
-		desired_direction.normalized(),
+	return current.slerp(
+		target.normalized(),
 		follow_weight
 	).normalized()
 
-	_apply_direction(_smoothed_direction)
 
+func _place_chain() -> void:
+	if not is_instance_valid(_bait):
+		return
+
+	# Treat the bait's physical point as the line attachment at the FRONT of
+	# segment 1. Every later segment is chained from the previous segment's tail.
+	var joint_position := _bait.global_position
+
+	joint_position = _place_segment(
+		segment_01,
+		joint_position,
+		_head_direction
+	)
+
+	joint_position = _place_segment(
+		segment_02,
+		joint_position,
+		_middle_direction
+	)
+
+	_place_segment(
+		segment_03,
+		joint_position,
+		_tail_direction
+	)
+
+
+func _place_segment(
+	segment: Node3D,
+	front_joint: Vector3,
+	direction: Vector3
+) -> Vector3:
+	if not is_instance_valid(segment):
+		return front_joint
+
+	var safe_direction := direction.normalized()
+	var basis := _basis_from_direction(safe_direction)
+
+	# Local -Z is the wide/front end of each piece.
+	# Therefore the segment center sits behind the front joint.
+	var center := (
+		front_joint
+		- safe_direction
+		* (segment_length * 0.5)
+	)
+
+	segment.global_transform = Transform3D(
+		basis,
+		center
+	)
+
+	var tail_joint := (
+		center
+		- safe_direction
+		* (segment_length * 0.5)
+	)
+
+	# Tiny separation makes the three-piece articulation readable.
+	return (
+		tail_joint
+		- safe_direction
+		* segment_gap
+	)
+
+
+func _basis_from_direction(direction: Vector3) -> Basis:
+	var safe_up := Vector3.UP
+
+	if absf(direction.dot(Vector3.UP)) > 0.96:
+		safe_up = Vector3.FORWARD
+
+	return Basis.looking_at(
+		direction,
+		safe_up
+	).orthonormalized()
 
 
 func _apply_surface_attitude(
@@ -138,7 +264,6 @@ func _apply_surface_attitude(
 		1.0
 	)
 
-	# Once sufficiently underwater, allow the full 3D movement direction.
 	if depth_blend >= 1.0:
 		return direction.normalized()
 
@@ -148,9 +273,6 @@ func _apply_surface_attitude(
 		direction.z
 	)
 
-	# Pure sink/rise motion has no horizontal component. At the surface we still
-	# want a lure-shaped object to lie along the fishing line rather than stand
-	# vertically, so borrow the line's horizontal heading.
 	if horizontal.length_squared() < 0.0001:
 		var line_direction := _get_line_direction()
 		horizontal = Vector3(
@@ -159,12 +281,11 @@ func _apply_surface_attitude(
 			line_direction.z
 		)
 
-	# Final fallback: preserve whichever horizontal heading we were already using.
 	if horizontal.length_squared() < 0.0001:
 		horizontal = Vector3(
-			_smoothed_direction.x,
+			_head_direction.x,
 			0.0,
-			_smoothed_direction.z
+			_head_direction.z
 		)
 
 	if horizontal.length_squared() < 0.0001:
@@ -172,8 +293,6 @@ func _apply_surface_attitude(
 
 	horizontal = horizontal.normalized()
 
-	# A small amount of the requested vertical movement remains visible at the
-	# surface, giving a slight dip/rise instead of locking the lure dead-flat.
 	var surface_direction := (
 		horizontal
 		+ Vector3.UP
@@ -211,21 +330,3 @@ func _get_line_direction() -> Vector3:
 		return Vector3.ZERO
 
 	return direction.normalized()
-
-
-func _apply_direction(direction: Vector3) -> void:
-	if direction.length_squared() < 0.0001:
-		return
-
-	# Basis.looking_at points local -Z along the requested direction.
-	# In the scene, the WIDE end of the placeholder lure is rotated toward -Z,
-	# so the body/front leads and the pointed end reads as the tail.
-	var safe_up := Vector3.UP
-
-	if absf(direction.dot(Vector3.UP)) > 0.96:
-		safe_up = Vector3.FORWARD
-
-	global_basis = Basis.looking_at(
-		direction,
-		safe_up
-	).orthonormalized()

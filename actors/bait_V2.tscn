@@ -4,19 +4,33 @@
 [ext_resource type="Resource" uid="uid://c0dx7cuhpacd0" path="res://data/baits/default_bait.tres" id="2_gubwk"]
 [ext_resource type="Script" uid="uid://cotilhplni3sn" path="res://scripts/ripple_view.gd" id="3_ehehl"]
 [ext_resource type="Texture2D" uid="uid://brpr2aj23f0v0" path="res://assets/sprites/fish_ripple.png" id="3_q0hg0"]
-[ext_resource type="Script" uid="uid://ddoo7r3r2w4b5" path="res://scripts/bait_visual_controller.gd" id="4_visual"]
+[ext_resource type="Script" path="res://scripts/bait_visual_controller.gd" id="4_visual"]
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_lure"]
-top_radius = 0.0
+[sub_resource type="CylinderMesh" id="CylinderMesh_head"]
+top_radius = 0.026
 bottom_radius = 0.035
-height = 0.18
+height = 0.058
 radial_segments = 4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_middle"]
+top_radius = 0.018
+bottom_radius = 0.028
+height = 0.058
+radial_segments = 4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tail"]
+top_radius = 0.004
+bottom_radius = 0.021
+height = 0.058
+radial_segments = 4
+
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tdw1c"]
 render_priority = 127
+transparency = 1
 no_depth_test = true
-albedo_color = Color(0.78, 0.9, 1, 1)
-roughness = 0.28
+shading_mode = 0
+albedo_color = Color(0.5372549, 1, 1, 0.95)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_xb8r5"]
 
@@ -372,13 +386,37 @@ data = ExtResource("2_gubwk")
 fight_reel_multiplier = 0.5
 free_reel_speed_multiplier = 10.0
 
-[node name="VisualPivot" type="Node3D" parent="." unique_id=1084085071]
+[node name="VisualPivot" type="Node3D" parent="."]
 script = ExtResource("4_visual")
-surface_vertical_influence = 0.15
+motion_threshold = 0.015
+head_turn_speed = 14.0
+middle_turn_speed = 7.5
+tail_turn_speed = 4.5
+line_alignment_weight = 0.2
+segment_length = 0.058
+segment_gap = 0.003
+surface_flatten_depth = 0.15
+surface_vertical_influence = 0.18
 
-[node name="LureMesh" type="MeshInstance3D" parent="VisualPivot" unique_id=458717453]
-transform = Transform3D(1, 0, 0, 0, 7.54979e-08, -1, 0, 1, 7.54979e-08, 0, 0, 0)
-mesh = SubResource("CylinderMesh_lure")
+[node name="Segment01" type="Node3D" parent="VisualPivot"]
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualPivot/Segment01"]
+rotation = Vector3(1.5707963, 0, 0)
+mesh = SubResource("CylinderMesh_head")
+surface_material_override/0 = SubResource("StandardMaterial3D_tdw1c")
+
+[node name="Segment02" type="Node3D" parent="VisualPivot"]
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualPivot/Segment02"]
+rotation = Vector3(1.5707963, 0, 0)
+mesh = SubResource("CylinderMesh_middle")
+surface_material_override/0 = SubResource("StandardMaterial3D_tdw1c")
+
+[node name="Segment03" type="Node3D" parent="VisualPivot"]
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualPivot/Segment03"]
+rotation = Vector3(1.5707963, 0, 0)
+mesh = SubResource("CylinderMesh_tail")
 surface_material_override/0 = SubResource("StandardMaterial3D_tdw1c")
 
 [node name="DepthProbe" type="Area3D" parent="." unique_id=1746504721]
