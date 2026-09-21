@@ -17,10 +17,21 @@ signal bait_distance_changed(distance_meters: float)
 @export var cast_gravity: float = 24.0
 
 @export_category("Pre-Cast Curve")
-## How quickly the airborne heading bends while a curve is applied.
-@export var air_curve_speed_degrees: float = 35.0
-## Maximum total heading change during the cast.
-@export var max_air_curve_degrees: float = 30.0
+## Maximum sideways bow while the landing torus is still locked.
+@export_range(0.0, 0.75, 0.01)
+var max_curve_lateral_ratio: float = 0.32
+@export var max_curve_lateral_distance: float = 1.4
+
+## Up to this normalized curve amount, only the arc bends and the torus stays
+## fixed. Beyond it, the arc has reached its bend limit and extra input starts
+## moving the landing point to the OPPOSITE side.
+@export_range(0.1, 0.95, 0.01)
+var landing_shift_threshold: float = 0.65
+
+## Maximum opposite-side correction of the landing torus.
+@export_range(0.0, 0.5, 0.01)
+var max_landing_shift_ratio: float = 0.22
+@export var max_landing_shift_distance: float = 1.1
 
 var active_bait: Node3D
 var current_bait_depth: float = 0.0
@@ -97,12 +108,6 @@ func perform_cast(
 	active_bait.set_swim_bounds(swim_bounds)
 	active_bait.gravity = cast_gravity
 
-	if active_bait.has_method("configure_air_curve"):
-		active_bait.configure_air_curve(
-			air_curve_speed_degrees,
-			max_air_curve_degrees
-		)
-	
 	active_bait.launch(
 		spawn_point.global_position,
 		initial_velocity,
@@ -110,11 +115,12 @@ func perform_cast(
 		bottom_y
 	)
 
-	# The chosen draw/fade is fixed before launch. It is no longer
-	# controlled manually while the bait is in the air.
-	active_bait.set_air_curve(
-		clampf(curve_amount, -1.0, 1.0)
-	)
+	if absf(curve_amount) >= 0.01:
+		var air_path := predict_cast(
+			power, direction, water_y, curve_amount
+		)
+		if air_path.size() >= 2 and active_bait.has_method("set_air_path"):
+			active_bait.set_air_path(air_path)
 
 	return active_bait
 
@@ -124,75 +130,143 @@ func predict_cast(
 	water_y: float,
 	curve_amount: float = 0.0
 ) -> PackedVector3Array:
-	var points := PackedVector3Array()
-
-	if spawn_point == null:
-		return points
-
-	var predicted_position := spawn_point.global_position
-	var velocity := calculate_initial_velocity(
+	var points := _predict_straight_cast(
 		power,
-		direction
+		direction,
+		water_y
 	)
 
-	var step := 1.0 / float(Engine.physics_ticks_per_second)
-	var curve_angle := 0.0
 	var clamped_curve := clampf(
 		curve_amount,
 		-1.0,
 		1.0
 	)
 
+	if (
+		absf(clamped_curve) < 0.01
+		or points.size() < 3
+	):
+		return points
+
+	var start_point: Vector3 = points[0]
+	var straight_landing: Vector3 = points[
+		points.size() - 1
+	]
+
+	var flat_forward := Vector3(
+		straight_landing.x - start_point.x,
+		0.0,
+		straight_landing.z - start_point.z
+	)
+
+	var cast_distance := flat_forward.length()
+
+	if cast_distance < 0.001:
+		return points
+
+	flat_forward /= cast_distance
+
+	# This is the same lateral basis used by the fixed-landing pass.
+	# The sign of curve_amount decides which side the arc initially bows.
+	var side := Vector3.UP.cross(
+		flat_forward
+	).normalized()
+
+	var threshold := clampf(
+		landing_shift_threshold,
+		0.01,
+		0.99
+	)
+	var curve_abs := absf(clamped_curve)
+	var curve_sign := signf(clamped_curve)
+
+	# PHASE 1: from straight to the bend limit.
+	# The torus is completely frozen in this range.
+	var bend_fraction := clampf(
+		curve_abs / threshold,
+		0.0,
+		1.0
+	)
+	var bend_strength := (
+		curve_sign * bend_fraction
+	)
+
+	var max_bow := minf(
+		cast_distance * max_curve_lateral_ratio,
+		max_curve_lateral_distance
+	)
+
+	# PHASE 2: once the bend limit is reached, extra input shifts the
+	# landing torus to the OPPOSITE side. Smoothstep avoids a visible snap
+	# when crossing the threshold.
+	var excess := 0.0
+
+	if curve_abs > threshold:
+		excess = clampf(
+			(curve_abs - threshold)
+			/ (1.0 - threshold),
+			0.0,
+			1.0
+		)
+
+	var eased_excess := (
+		excess * excess
+		* (3.0 - 2.0 * excess)
+	)
+
+	var max_landing_shift := minf(
+		cast_distance * max_landing_shift_ratio,
+		max_landing_shift_distance
+	)
+
+	var landing_shift := (
+		-side
+		* curve_sign
+		* max_landing_shift
+		* eased_excess
+	)
+
+	var last_index := points.size() - 1
+
+	for i in range(1, points.size()):
+		var t := float(i) / float(last_index)
+
+		# Move progressively toward the corrected landing position.
+		# At t=1 this is exactly the torus offset.
+		points[i] += landing_shift * t
+
+		if i == last_index:
+			continue
+
+		# The actual draw/fade bow is zero at launch and landing and
+		# strongest near the middle of the cast.
+		var bow := sin(PI * t)
+		points[i] += (
+			side
+			* max_bow
+			* bend_strength
+			* bow
+		)
+
+	return points
+
+
+func _predict_straight_cast(
+	power: float,
+	direction: Vector3,
+	water_y: float
+) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	if spawn_point == null:
+		return points
+
+	var predicted_position := spawn_point.global_position
+	var velocity := calculate_initial_velocity(power, direction)
+	var step := 1.0 / float(Engine.physics_ticks_per_second)
 	points.append(predicted_position)
 
 	for i in range(300):
-		# Match bait_V2.gd::_update_flying() exactly:
-		# 1) curve horizontal heading
-		# 2) apply gravity
-		# 3) integrate position
-		if absf(clamped_curve) >= 0.01:
-			var horizontal_velocity := Vector3(
-				velocity.x,
-				0.0,
-				velocity.z
-			)
-
-			if horizontal_velocity.length_squared() >= 0.001:
-				var max_angle := deg_to_rad(
-					max_air_curve_degrees
-				)
-
-				var requested_change := (
-					deg_to_rad(
-						air_curve_speed_degrees
-					)
-					* clamped_curve
-					* step
-				)
-
-				var new_angle := clampf(
-					curve_angle + requested_change,
-					-max_angle,
-					max_angle
-				)
-
-				var applied_change := (
-					new_angle - curve_angle
-				)
-				curve_angle = new_angle
-
-				horizontal_velocity = (
-					horizontal_velocity.rotated(
-						Vector3.UP,
-						applied_change
-					)
-				)
-
-				velocity.x = horizontal_velocity.x
-				velocity.z = horizontal_velocity.z
-
 		velocity.y -= cast_gravity * step
-
 		var next_position := predicted_position + velocity * step
 
 		if predicted_position.y >= water_y and next_position.y <= water_y:
@@ -204,7 +278,7 @@ func predict_cast(
 		predicted_position = next_position
 
 	return points
-	
+
 func calculate_initial_velocity(
 	power: float,
 	direction: Vector3

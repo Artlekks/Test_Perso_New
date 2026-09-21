@@ -285,8 +285,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if phase == Phase.CHARGE:
 		if event.is_action_pressed("enter_fishing"):
 			# POWER LOCK:
-			# Freeze distance, freeze the base aim heading, but do not
-			# throw yet. The same visible arc now becomes the draw/fade UI.
+			# Freeze distance, base heading, and the landing torus.
+			# A/D bends only the middle of the trajectory.
 			locked_cast_power = power.lock_value()
 			cast_curve_value = 0.0
 			aim.stop()

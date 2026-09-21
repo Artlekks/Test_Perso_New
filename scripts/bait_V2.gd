@@ -38,6 +38,9 @@ var reel_speed_multiplier: float = 1.0
 var air_curve_input: float = 0.0
 var air_curve_angle: float = 0.0
 
+var air_path: PackedVector3Array = PackedVector3Array()
+var air_path_index: int = 0
+
 enum State {
 	IDLE,
 	FLYING,
@@ -69,6 +72,8 @@ func launch(
 	bottom_y = water_bottom_y
 	air_curve_input = 0.0
 	air_curve_angle = 0.0
+	air_path = PackedVector3Array()
+	air_path_index = 0
 	state = State.FLYING
 
 	ripple_view.configure(
@@ -77,6 +82,13 @@ func launch(
 	)
 
 	ripple_view.hide_ripple()
+
+func set_air_path(points: PackedVector3Array) -> void:
+	air_path = points
+	air_path_index = 1 if air_path.size() > 1 else 0
+	if not air_path.is_empty():
+		global_position = air_path[0]
+
 
 func configure_air_curve(
 	curve_speed_degrees: float,
@@ -197,6 +209,10 @@ func _physics_process(delta: float) -> void:
 	_enforce_fight_distance()
 	
 func _update_flying(delta: float) -> void:
+	if air_path.size() >= 2:
+		_update_flying_path(delta)
+		return
+
 	_update_air_curve(delta)
 	
 	velocity.y -= gravity * delta
@@ -214,6 +230,31 @@ func _update_flying(delta: float) -> void:
 		return
 
 	global_position = next_position
+
+
+func _update_flying_path(delta: float) -> void:
+	if air_path_index >= air_path.size():
+		air_path = PackedVector3Array()
+		air_path_index = 0
+		return
+
+	var previous_position := global_position
+	var next_position: Vector3 = air_path[air_path_index]
+
+	if delta > 0.0:
+		velocity = (next_position - previous_position) / delta
+
+	global_position = next_position
+	air_path_index += 1
+
+	if air_path_index < air_path.size():
+		return
+
+	global_position.y = water_y
+	air_path = PackedVector3Array()
+	air_path_index = 0
+	landed.emit(global_position)
+	state = State.SINKING
 
 
 func _update_sinking(delta: float) -> void:
