@@ -22,13 +22,13 @@ var recovery_time_max: float = 1.5
 var behavior_profile: FishBehaviorProfile
 
 
-func setup(data: FishData) -> void:
+func setup(data: FishData, king_override: int = -1) -> void:
 	species = data
 
 	if data == null:
 		return
 
-	_roll_size_and_king(data)
+	_roll_size_and_king(data, king_override)
 
 	behavior_profile = data.behavior_profile
 	resistance_rounds = data.resistance_rounds
@@ -52,18 +52,24 @@ func setup(data: FishData) -> void:
 	)
 
 
-func _roll_size_and_king(data: FishData) -> void:
+func _roll_size_and_king(data: FishData, king_override: int) -> void:
 	var safe_average := maxf(data.average_size, 0.01)
 	var king_threshold := maxf(
 		data.king_size,
 		safe_average
 	)
 
-	is_king = randf() < clampf(
-		data.king_chance,
-		0.0,
-		1.0
-	)
+	match king_override:
+		0:
+			is_king = false
+		1:
+			is_king = true
+		_:
+			is_king = randf() < clampf(
+				data.king_chance,
+				0.0,
+				1.0
+			)
 
 	if is_king:
 		var king_max := king_threshold * maxf(

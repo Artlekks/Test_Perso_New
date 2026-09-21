@@ -100,6 +100,7 @@ var recovery_time_left: float = 0.0
 var fish_population: Array[FishSpawnEntry] = []
 var pending_fish_entry: FishSpawnEntry = null
 var active_bait_data: BaitData = null
+var debug_settings = null
 
 func _ready() -> void:
 	if caster == null:
@@ -130,26 +131,38 @@ func _on_bait_returned() -> void:
 	tension.stop()
 	
 func _on_bite_timer_timeout() -> void:
-	var attraction := fish_selector.get_attraction_ratio(
-		fish_population,
-		active_bait_data,
-		caster.get_current_bait_depth(),
-		caster.get_current_total_depth()
-	)
+	var forced_fish: FishData = null
 
-	var bite_chance := attraction * max_bite_chance_per_check
+	if (
+		debug_settings != null
+		and debug_settings.has_method("get_forced_fish")
+	):
+		forced_fish = debug_settings.get_forced_fish()
 
-	if randf() > bite_chance:
+	if forced_fish != null:
+		pending_fish_entry = FishSpawnEntry.new()
+		pending_fish_entry.fish = forced_fish
+		pending_fish_entry.weight = 1.0
+	else:
+		var attraction := fish_selector.get_attraction_ratio(
+			fish_population,
+			active_bait_data,
+			caster.get_current_bait_depth(),
+			caster.get_current_total_depth()
+		)
 
-		bite_timer.start(retry_bite_delay)
-		return
-		
-	pending_fish_entry = fish_selector.choose(
-		fish_population,
-		active_bait_data,
-		caster.get_current_bait_depth(),
-		caster.get_current_total_depth()
-	)
+		var bite_chance := attraction * max_bite_chance_per_check
+
+		if randf() > bite_chance:
+			bite_timer.start(retry_bite_delay)
+			return
+
+		pending_fish_entry = fish_selector.choose(
+			fish_population,
+			active_bait_data,
+			caster.get_current_bait_depth(),
+			caster.get_current_total_depth()
+		)
 
 	if pending_fish_entry == null:
 		return
@@ -186,7 +199,19 @@ func _confirm_hit() -> bool:
 	bite_window_timer.stop()
 
 	active_fish = FishInstance.new()
-	active_fish.setup(pending_fish_entry.fish)
+
+	var king_override := -1
+
+	if (
+		debug_settings != null
+		and debug_settings.has_method("get_king_override")
+	):
+		king_override = debug_settings.get_king_override()
+
+	active_fish.setup(
+		pending_fish_entry.fish,
+		king_override
+	)
 
 	fish_behavior.configure(active_fish)
 
@@ -535,6 +560,9 @@ func set_fish_population(entries: Array[FishSpawnEntry]) -> void:
 
 func set_active_bait_data(bait_data: BaitData) -> void:
 	active_bait_data = bait_data
+
+func set_debug_settings(settings) -> void:
+	debug_settings = settings
 
 func _on_tension_changed(value: float) -> void:
 	tension_changed.emit(value)

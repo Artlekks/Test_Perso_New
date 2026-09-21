@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="FishData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="FishData" format=3 uid="uid://bniuky4cn8clk"]
 
-[ext_resource type="Script" path="res://scripts/fish_data.gd" id="1_fish"]
+[ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
 [ext_resource type="Resource" path="res://data/bof4/fish_behaviors/sea_bream_behavior.tres" id="2_behavior"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+[ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_sea_bream"]
 atlas = ExtResource("3_atlas")
@@ -16,13 +16,10 @@ king_size = 70.0
 base_stamina = 78.1
 base_strength = 0.64
 preferred_depth_min = 0.65
-preferred_depth_max = 1.00
+preferred_depth_max = 1.0
 max_points = 300
-accepts_all_lures = false
 preferred_lure_types = Array[int]([2, 3, 1, 0])
-preferred_lure_ids = Array[StringName]([])
 behavior_profile = ExtResource("2_behavior")
-resistance_rounds = 2
 recovery_time_min = 0.76
 recovery_time_max = 1.36
 portrait = SubResource("AtlasTexture_sea_bream")

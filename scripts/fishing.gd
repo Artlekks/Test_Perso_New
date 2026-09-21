@@ -1,5 +1,12 @@
 extends Node
 
+const FishingDebugSettingsScript = preload(
+	"res://scripts/fishing_debug_settings.gd"
+)
+const FishingDebugMenuScene = preload(
+	"res://actors/FishingDebugMenu.tscn"
+)
+
 enum Phase {
 	INACTIVE,
 	ENTER,
@@ -48,6 +55,9 @@ var bite_animation_active: bool = false
 var fish_resisting: bool = false
 var caught_fish: FishInstance = null
 var lure_selector_open: bool = false
+var debug_settings = null
+var debug_menu: Node = null
+var debug_menu_open: bool = false
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -98,8 +108,36 @@ func _ready() -> void:
 		_on_result_screen_revealed
 	)
 
+	debug_settings = FishingDebugSettingsScript.new()
+	encounter.set_debug_settings(debug_settings)
+
+	debug_menu = FishingDebugMenuScene.instantiate()
+	add_child(debug_menu)
+	debug_menu.configure(loadout, debug_settings)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not game_mode.is_fishing():
+		return
+
+	if _is_debug_toggle(event):
+		if debug_menu_open:
+			_close_debug_menu(true)
+		elif phase == Phase.AIM and not lure_selector_open:
+			_open_debug_menu()
+
+		get_viewport().set_input_as_handled()
+		return
+
+	if debug_menu_open:
+		var close_requested: bool = (
+			debug_menu.handle_input(event)
+		)
+
+		if close_requested:
+			_close_debug_menu(true)
+
+		# Debug overlay owns input completely while open.
+		get_viewport().set_input_as_handled()
 		return
 
 	if lure_selector_open:
@@ -268,6 +306,7 @@ func _on_mode_changed(new_mode) -> void:
 
 	if not active:
 		_close_lure_selector(false)
+		_close_debug_menu(false)
 		return
 
 	phase = Phase.ENTER
@@ -281,6 +320,46 @@ func _on_mode_changed(new_mode) -> void:
 
 		camera_rig.enter_fishing_view()
 
+
+
+
+func _is_debug_toggle(event: InputEvent) -> bool:
+	if not (event is InputEventKey):
+		return false
+
+	if not event.pressed or event.echo:
+		return false
+
+	return (
+		event.keycode == KEY_F10
+		or event.physical_keycode == KEY_F10
+	)
+
+
+func _open_debug_menu() -> void:
+	if (
+		debug_menu == null
+		or phase != Phase.AIM
+		or lure_selector_open
+	):
+		return
+
+	if not debug_menu.open_menu():
+		return
+
+	debug_menu_open = true
+	aim.stop()
+
+
+func _close_debug_menu(resume_aim: bool) -> void:
+	if debug_menu != null:
+		debug_menu.close_menu()
+
+	var was_open := debug_menu_open
+	debug_menu_open = false
+
+	if was_open and resume_aim and phase == Phase.AIM:
+		aim.resume()
 
 
 func _open_lure_selector() -> void:
