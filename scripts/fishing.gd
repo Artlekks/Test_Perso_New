@@ -911,7 +911,17 @@ func _process(delta: float) -> void:
 	if phase == Phase.FIGHT:
 		if Input.is_action_just_pressed("move_back"):
 			if not bite_animation_active:
+				caster.pull_bait_toward_player()
 				_play_manual_pull_animation()
+
+		# A/D already drives continuous counter-steering below. Add a restrained
+		# fight-only physical side tug on the press as well, so the hooked fish
+		# visibly answers the rod input instead of only changing hidden fatigue.
+		if not bite_animation_active:
+			if Input.is_action_just_pressed("ds_left"):
+				caster.twitch_bait(-1.0)
+			elif Input.is_action_just_pressed("ds_right"):
+				caster.twitch_bait(1.0)
 			
 	var steering := Input.get_axis("ds_left", "ds_right")
 	var vertical := Input.get_axis(

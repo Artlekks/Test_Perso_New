@@ -15,7 +15,13 @@ signal snagged(reason: StringName)
 @export var fight_reel_multiplier: float = 0.2
 @export_category("Fight Steering")
 @export_range(0.0, 1.0, 0.05)
-var min_fight_steer_authority: float = 0.20
+var min_fight_steer_authority: float = 0.45
+## A/D keeps the existing free-lure twitch unchanged, but during a fight the
+## visible lateral pulse is intentionally smaller and opposed by resistance.
+@export_range(0.0, 2.0, 0.05)
+var fight_twitch_speed_multiplier: float = 0.85
+@export_range(0.0, 1.0, 0.05)
+var fight_twitch_min_resistance_multiplier: float = 0.55
 @export var max_fish_pull_speed: float = 1.5
 @export var fish_vertical_speed: float = 0.8
 
@@ -70,6 +76,15 @@ var fight_return_pull_threshold: float = 0.12
 @export var manual_pull_speed: float = 1.8
 ## Lets rapid S taps stack a few pulls without building an unlimited queue.
 @export var manual_pull_max_queued_distance: float = 0.42
+## Fight-only master scale for the physical distance gained from S. The free
+## lure keeps the full 0.14 step above; hooked fish only receive this fraction.
+@export_range(0.0, 1.0, 0.05)
+var fight_manual_pull_distance_multiplier: float = 0.40
+## At maximum fish resistance, an S pull still gets this fraction of the
+## already-reduced fight step. As resistance drops, it returns toward the
+## fight-only master scale above, never the full free-lure step.
+@export_range(0.0, 1.0, 0.05)
+var fight_manual_pull_min_multiplier: float = 0.20
 
 @export_category("Snag Risk")
 @export var bottom_snag_clearance: float = 0.12
@@ -746,34 +761,56 @@ func _update_reeling(delta: float) -> void:
 	_emit_depth()
 	
 func queue_manual_pull() -> void:
-	# Manual rod pulls are currently a free-lure interaction only. Fight
-	# movement remains owned by the existing reel/resistance simulation so
-	# this input cannot bypass fish balance.
-	if fight_mode:
-		return
-
 	if state != State.SINKING and state != State.IN_WATER:
 		return
 
 	if reel_target == null:
 		return
 
-	_apply_snag_input_impulse(snag_reel_press_impulse)
+	# Free-lure S pulls still participate in snagging. Once a fish is hooked,
+	# snagging is disabled and the pulse is instead opposed by fish resistance.
+	if not fight_mode:
+		_apply_snag_input_impulse(snag_reel_press_impulse)
 
-	if snag_triggered:
-		return
+		if snag_triggered:
+			return
+
+	var distance_multiplier := 1.0
+
+	if fight_mode:
+		distance_multiplier = (
+			clampf(
+				fight_manual_pull_distance_multiplier,
+				0.0,
+				1.0
+			)
+			* lerpf(
+				1.0,
+				clampf(
+					fight_manual_pull_min_multiplier,
+					0.0,
+					1.0
+				),
+				clampf(fight_resistance, 0.0, 1.0)
+			)
+		)
+
+	var pull_step := (
+		maxf(manual_pull_step_distance, 0.0)
+		* distance_multiplier
+	)
+	var queue_cap := (
+		maxf(manual_pull_max_queued_distance, 0.0)
+		* distance_multiplier
+	)
 
 	manual_pull_remaining = minf(
-		manual_pull_remaining + maxf(manual_pull_step_distance, 0.0),
-		maxf(manual_pull_max_queued_distance, 0.0)
+		manual_pull_remaining + pull_step,
+		queue_cap
 	)
 
 
 func _update_manual_pull(delta: float) -> bool:
-	if fight_mode:
-		manual_pull_remaining = 0.0
-		return false
-
 	if reel_target == null:
 		manual_pull_remaining = 0.0
 		return false
@@ -791,6 +828,12 @@ func _update_manual_pull(delta: float) -> bool:
 	var distance := to_target.length()
 
 	if distance <= return_distance:
+		# A resisting fish can be physically close without being caught yet.
+		# Match normal K reeling: only complete the return once the fish is calm.
+		if fight_mode and not _can_finish_fight_return():
+			manual_pull_remaining = 0.0
+			return false
+
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		manual_pull_remaining = 0.0
@@ -826,13 +869,19 @@ func _update_manual_pull(delta: float) -> bool:
 
 	_emit_depth()
 
-	# A manual pull can finish the retrieve exactly like normal K reeling.
+	# S can complete a normal free retrieve. During a fight it obeys the
+	# exact same final-return gate as K, so repeated taps cannot bypass a
+	# fish that is still actively pulling.
 	var remaining_flat := Vector2(
 		target_position.x - global_position.x,
 		target_position.z - global_position.z
 	).length()
 
 	if remaining_flat <= return_distance:
+		if fight_mode and not _can_finish_fight_return():
+			manual_pull_remaining = 0.0
+			return false
+
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		manual_pull_remaining = 0.0
@@ -1160,21 +1209,22 @@ func set_fish_depth_intent(value: float) -> void:
 	fish_depth_intent = clampf(value, -1.0, 1.0)
 
 func twitch_side(direction: float) -> void:
-	if fight_mode:
-		return
-
 	if state != State.SINKING and state != State.IN_WATER:
 		return
 
 	if reel_target == null:
 		return
 
-	_apply_snag_input_impulse(
-		snag_twitch_impulse
-	)
+	# Free-lure A/D remains exactly as before, including snag interaction.
+	# During a fight the same input becomes a smaller physical side tug whose
+	# visible response is reduced by fish resistance.
+	if not fight_mode:
+		_apply_snag_input_impulse(
+			snag_twitch_impulse
+		)
 
-	if snag_triggered:
-		return
+		if snag_triggered:
+			return
 
 	var toward_player := reel_target.global_position - global_position
 	toward_player.y = 0.0
@@ -1184,11 +1234,27 @@ func twitch_side(direction: float) -> void:
 
 	var forward := toward_player.normalized()
 	var side := Vector3.UP.cross(forward).normalized()
+	var twitch_multiplier := 1.0
+
+	if fight_mode:
+		twitch_multiplier = (
+			maxf(fight_twitch_speed_multiplier, 0.0)
+			* lerpf(
+				1.0,
+				clampf(
+					fight_twitch_min_resistance_multiplier,
+					0.0,
+					1.0
+				),
+				clampf(fight_resistance, 0.0, 1.0)
+			)
+		)
 
 	twitch_velocity = (
 		side
 		* clampf(direction, -1.0, 1.0)
 		* twitch_speed
+		* twitch_multiplier
 	)
 
 func set_reel_speed_multiplier(value: float) -> void:
