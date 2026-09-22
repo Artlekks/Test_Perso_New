@@ -39,7 +39,8 @@ var air_curve_input: float = 0.0
 var air_curve_angle: float = 0.0
 
 var air_path: PackedVector3Array = PackedVector3Array()
-var air_path_index: int = 0
+var air_path_progress: float = 0.0
+var air_path_playback_speed: float = 1.0
 
 enum State {
 	IDLE,
@@ -73,7 +74,8 @@ func launch(
 	air_curve_input = 0.0
 	air_curve_angle = 0.0
 	air_path = PackedVector3Array()
-	air_path_index = 0
+	air_path_progress = 0.0
+	air_path_playback_speed = 1.0
 	state = State.FLYING
 
 	ripple_view.configure(
@@ -83,9 +85,17 @@ func launch(
 
 	ripple_view.hide_ripple()
 
-func set_air_path(points: PackedVector3Array) -> void:
+func set_air_path(
+	points: PackedVector3Array,
+	playback_speed: float = 1.0
+) -> void:
 	air_path = points
-	air_path_index = 1 if air_path.size() > 1 else 0
+	air_path_progress = 0.0
+	air_path_playback_speed = maxf(
+		playback_speed,
+		0.01
+	)
+
 	if not air_path.is_empty():
 		global_position = air_path[0]
 
@@ -233,28 +243,66 @@ func _update_flying(delta: float) -> void:
 
 
 func _update_flying_path(delta: float) -> void:
-	if air_path_index >= air_path.size():
+	if air_path.size() < 2:
 		air_path = PackedVector3Array()
-		air_path_index = 0
+		air_path_progress = 0.0
 		return
 
+	var last_index := air_path.size() - 1
 	var previous_position := global_position
-	var next_position: Vector3 = air_path[air_path_index]
+
+	# Prediction points are authored at the project's physics tick rate.
+	# Advancing fractionally lets us slow the throw without changing the
+	# trajectory itself or introducing visible frame stepping.
+	air_path_progress += (
+		delta
+		* float(Engine.physics_ticks_per_second)
+		* air_path_playback_speed
+	)
+
+	if air_path_progress >= float(last_index):
+		global_position = air_path[last_index]
+
+		if delta > 0.0:
+			velocity = (
+				(global_position - previous_position)
+				/ delta
+			)
+
+		global_position.y = water_y
+		air_path = PackedVector3Array()
+		air_path_progress = 0.0
+
+		landed.emit(global_position)
+		state = State.SINKING
+		return
+
+	var lower_index := int(
+		floor(air_path_progress)
+	)
+	var upper_index := mini(
+		lower_index + 1,
+		last_index
+	)
+	var fraction := (
+		air_path_progress
+		- float(lower_index)
+	)
+
+	var next_position := air_path[
+		lower_index
+	].lerp(
+		air_path[upper_index],
+		fraction
+	)
 
 	if delta > 0.0:
-		velocity = (next_position - previous_position) / delta
+		velocity = (
+			(next_position - previous_position)
+			/ delta
+		)
 
 	global_position = next_position
-	air_path_index += 1
-
-	if air_path_index < air_path.size():
-		return
-
-	global_position.y = water_y
-	air_path = PackedVector3Array()
-	air_path_index = 0
-	landed.emit(global_position)
-	state = State.SINKING
 
 
 func _update_sinking(delta: float) -> void:

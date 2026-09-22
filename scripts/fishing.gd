@@ -62,6 +62,9 @@ enum Phase {
 @export_category("Pre-Cast Curve")
 ## Seconds of held A/D needed to move from straight to maximum curve.
 @export var curve_adjust_speed: float = 1.25
+## Preview-only smoothing so the torus and arc glide instead of updating in visible increments.
+@export_range(1.0, 30.0, 0.5)
+var curve_preview_smoothing_speed: float = 7.0
 
 var phase: int = Phase.INACTIVE
 var bait_landed_during_throw: bool = false
@@ -80,7 +83,15 @@ var fishing_progress: FishingProgress = null
 var catch_record_result: Dictionary = {}
 
 var locked_cast_power: float = 0.0
+# Player input / desired curve amount.
 var cast_curve_value: float = 0.0
+# Smoothed preview curve used by the visible arc + torus and by the actual throw.
+var preview_cast_curve_value: float = 0.0
+
+# Casting uses press -> release -> press semantics. One physical K press can
+# never advance more than one cast stage, even if the key is held or repeats.
+var cast_confirm_ready: bool = true
+var cast_power_locked: bool = false
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -225,6 +236,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# Re-arm cast confirmation only after K has genuinely been released.
+	# This prevents a held key or OS key-repeat from leaking into the next
+	# cast stage.
+	if (
+		_is_cast_input_phase()
+		and event.is_action_released("enter_fishing")
+	):
+		cast_confirm_ready = true
+
+	# During the Prep_Throw transition, a premature K press is deliberately
+	# swallowed. It must be released before CHARGE can accept another press.
+	if (
+		phase == Phase.PREP_THROW
+		and event.is_action_pressed("enter_fishing")
+	):
+		if not _is_key_echo(event):
+			cast_confirm_ready = false
+		return
+
 	if phase == Phase.WAIT_RESULT:
 		if event.is_action_pressed("enter_fishing"):
 			if caught_fish != null:
@@ -240,9 +270,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_open_lure_selector()
 			return
 
-		if event.is_action_pressed("enter_fishing"):
+		if _try_consume_cast_confirm(event):
 			locked_cast_power = 0.0
 			cast_curve_value = 0.0
+			preview_cast_curve_value = 0.0
+			cast_power_locked = false
 
 			phase = Phase.PREP_THROW
 			power.start()
@@ -277,29 +309,36 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			locked_cast_power = 0.0
 			cast_curve_value = 0.0
+			preview_cast_curve_value = 0.0
+			cast_power_locked = false
+			cast_confirm_ready = not Input.is_action_pressed(
+				"enter_fishing"
+			)
 
 			phase = Phase.CANCEL_THROW
 			sprite_director.play_backwards(&"Prep_Throw")
 			return
 			
 	if phase == Phase.CHARGE:
-		if event.is_action_pressed("enter_fishing"):
+		if _try_consume_cast_confirm(event):
 			# POWER LOCK:
 			# Freeze distance, base heading, and the landing torus.
 			# A/D bends only the middle of the trajectory.
 			locked_cast_power = power.lock_value()
+			cast_power_locked = true
 			cast_curve_value = 0.0
+			preview_cast_curve_value = 0.0
 			aim.stop()
 
 			phase = Phase.CURVE
 			_update_cast_preview(
 				locked_cast_power,
-				cast_curve_value
+				preview_cast_curve_value
 			)
 			return
 
 	if phase == Phase.CURVE:
-		if event.is_action_pressed("enter_fishing"):
+		if _try_consume_cast_confirm(event):
 			_commit_curved_cast()
 			return
 
@@ -342,6 +381,12 @@ func _on_mode_changed(new_mode) -> void:
 	set_process_unhandled_input(active)
 
 	if not active:
+		cast_confirm_ready = true
+		cast_power_locked = false
+		locked_cast_power = 0.0
+		cast_curve_value = 0.0
+		preview_cast_curve_value = 0.0
+
 		_close_lure_selector(false)
 		_close_debug_menu(false)
 
@@ -352,6 +397,14 @@ func _on_mode_changed(new_mode) -> void:
 			technique_view.clear()
 
 		return
+
+	cast_confirm_ready = not Input.is_action_pressed(
+		"enter_fishing"
+	)
+	cast_power_locked = false
+	locked_cast_power = 0.0
+	cast_curve_value = 0.0
+	preview_cast_curve_value = 0.0
 
 	phase = Phase.ENTER
 
@@ -411,6 +464,41 @@ func _on_technique_triggered(level: int) -> void:
 func _on_rod_changed(rod: RodData) -> void:
 	caster.set_rod_data(rod)
 	encounter.set_rod_data(rod)
+
+
+func _is_cast_input_phase() -> bool:
+	# AIM must be included here because entering fishing can happen while
+	# the same K button is still held. Its release must re-arm the first
+	# cast confirmation.
+	return (
+		phase == Phase.AIM
+		or phase == Phase.PREP_THROW
+		or phase == Phase.CHARGE
+		or phase == Phase.CURVE
+	)
+
+
+func _is_key_echo(event: InputEvent) -> bool:
+	return (
+		event is InputEventKey
+		and (event as InputEventKey).echo
+	)
+
+
+func _try_consume_cast_confirm(event: InputEvent) -> bool:
+	if not event.is_action_pressed("enter_fishing"):
+		return false
+
+	# Keyboard repeat must never count as a new cast confirmation.
+	if _is_key_echo(event):
+		return false
+
+	# Every accepted press disarms the next stage until K is released.
+	if not cast_confirm_ready:
+		return false
+
+	cast_confirm_ready = false
+	return true
 
 
 func _is_debug_toggle(event: InputEvent) -> bool:
@@ -674,6 +762,14 @@ func _on_bait_returned() -> void:
 	
 	camera_rig.reset_fishing_follow()
 
+	cast_power_locked = false
+	locked_cast_power = 0.0
+	cast_curve_value = 0.0
+	preview_cast_curve_value = 0.0
+	cast_confirm_ready = not Input.is_action_pressed(
+		"enter_fishing"
+	)
+
 	phase = Phase.AIM
 	sprite_director.play(&"Fishing_Idle")
 	aim.resume()
@@ -686,8 +782,6 @@ func _process(delta: float) -> void:
 		)
 
 		if not is_zero_approx(curve_input):
-			var previous_curve := cast_curve_value
-
 			cast_curve_value = clampf(
 				cast_curve_value
 				+ curve_input
@@ -697,14 +791,30 @@ func _process(delta: float) -> void:
 				1.0
 			)
 
-			if not is_equal_approx(
-				previous_curve,
-				cast_curve_value
-			):
-				_update_cast_preview(
-					locked_cast_power,
-					cast_curve_value
-				)
+		var previous_preview_curve := preview_cast_curve_value
+		var blend := 1.0 - exp(
+			-curve_preview_smoothing_speed * delta
+		)
+
+		preview_cast_curve_value = lerpf(
+			preview_cast_curve_value,
+			cast_curve_value,
+			blend
+		)
+
+		if absf(
+			cast_curve_value - preview_cast_curve_value
+		) < 0.0005:
+			preview_cast_curve_value = cast_curve_value
+
+		if not is_equal_approx(
+			previous_preview_curve,
+			preview_cast_curve_value
+		):
+			_update_cast_preview(
+				locked_cast_power,
+				preview_cast_curve_value
+			)
 
 		return
 
@@ -994,6 +1104,9 @@ func _commit_curved_cast() -> void:
 	if phase != Phase.CURVE:
 		return
 
+	if not cast_power_locked:
+		return
+
 	var zone = game_mode.active_fish_zone
 
 	if zone == null:
@@ -1001,12 +1114,18 @@ func _commit_curved_cast() -> void:
 		power.stop()
 		locked_cast_power = 0.0
 		cast_curve_value = 0.0
+		preview_cast_curve_value = 0.0
+		cast_power_locked = false
+		cast_confirm_ready = not Input.is_action_pressed(
+			"enter_fishing"
+		)
 		phase = Phase.CANCEL_THROW
 		sprite_director.play_backwards(&"Prep_Throw")
 		return
 
 	var captured_power := locked_cast_power
-	var selected_curve := cast_curve_value
+	# Throw exactly what the player currently sees on screen.
+	var selected_curve := preview_cast_curve_value
 	var cast_direction: Vector3 = aim.get_direction()
 	var cast_lure: BaitData = null
 	var cast_swim_bounds: Node = null
@@ -1062,16 +1181,35 @@ func _commit_curved_cast() -> void:
 		selected_curve
 	)
 
-	if is_instance_valid(cast_bait):
-		encounter.set_active_bait_data(cast_lure)
-		camera_rig.arm_fishing_follow(
-			cast_bait,
-			camera_follow_direction,
-			zone.get_water_y()
+	if not is_instance_valid(cast_bait):
+		if (
+			power_meter_view != null
+			and power_meter_view.has_method("cancel_to_aim")
+		):
+			power_meter_view.cancel_to_aim()
+
+		locked_cast_power = 0.0
+		cast_curve_value = 0.0
+		preview_cast_curve_value = 0.0
+		cast_power_locked = false
+		cast_confirm_ready = not Input.is_action_pressed(
+			"enter_fishing"
 		)
+		phase = Phase.CANCEL_THROW
+		sprite_director.play_backwards(&"Prep_Throw")
+		return
+
+	encounter.set_active_bait_data(cast_lure)
+	camera_rig.arm_fishing_follow(
+		cast_bait,
+		camera_follow_direction,
+		zone.get_water_y()
+	)
 
 	locked_cast_power = 0.0
 	cast_curve_value = 0.0
+	preview_cast_curve_value = 0.0
+	cast_power_locked = false
 	bait_landed_during_throw = false
 
 	phase = Phase.THROW

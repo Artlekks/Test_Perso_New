@@ -16,6 +16,13 @@ signal bait_distance_changed(distance_meters: float)
 @export var distance_meter_scale: float = 2.0
 @export var cast_gravity: float = 24.0
 
+@export_category("Cast Feel")
+## 1.0 = original flight duration.
+## Lower values make the bait travel the same path more slowly without
+## changing the selected power, trajectory, or landing point.
+@export_range(0.5, 1.25, 0.01)
+var cast_flight_playback_speed: float = 0.85
+
 @export_category("Pre-Cast Curve")
 ## Maximum sideways bow while the landing torus is still locked.
 @export_range(0.0, 0.75, 0.01)
@@ -115,12 +122,24 @@ func perform_cast(
 		bottom_y
 	)
 
-	if absf(curve_amount) >= 0.01:
-		var air_path := predict_cast(
-			power, direction, water_y, curve_amount
+	# Use the exact preview path for every cast, including straight casts.
+	# Playback speed changes only how long the bait takes to traverse it;
+	# power, arc shape, and landing position remain untouched.
+	var air_path := predict_cast(
+		power,
+		direction,
+		water_y,
+		curve_amount
+	)
+
+	if (
+		air_path.size() >= 2
+		and active_bait.has_method("set_air_path")
+	):
+		active_bait.set_air_path(
+			air_path,
+			cast_flight_playback_speed
 		)
-		if air_path.size() >= 2 and active_bait.has_method("set_air_path"):
-			active_bait.set_air_path(air_path)
 
 	return active_bait
 
