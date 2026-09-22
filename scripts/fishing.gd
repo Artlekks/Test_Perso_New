@@ -92,6 +92,7 @@ var preview_cast_curve_value: float = 0.0
 # never advance more than one cast stage, even if the key is held or repeats.
 var cast_confirm_ready: bool = true
 var cast_power_locked: bool = false
+var _quick_cast_cancel_active: bool = false
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -344,6 +345,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 	if phase == Phase.IN_WATER:
+		# BOF4-style quick abandon: while the lure is simply waiting in the
+		# water, I immediately discards the cast and returns to AIM. Do not
+		# allow this to bypass an active bite opportunity.
+		if (
+			event.is_action_pressed("cancel_fishing")
+			and not bite_opportunity_animation_active
+			and not bite_animation_active
+		):
+			_cancel_water_cast_to_aim()
+			get_viewport().set_input_as_handled()
+			return
+
 		if event.is_action_pressed("ds_left"):
 			technique_detector.record_pulse()
 			caster.twitch_bait(-1.0)
@@ -746,6 +759,28 @@ func _enter_in_water() -> void:
 	current_reel_animation = &"Reel_Idle"
 	sprite_director.play(&"Reel_Idle")
 
+
+func _cancel_water_cast_to_aim() -> void:
+	if phase != Phase.IN_WATER:
+		return
+
+	# Stop any held reel state before destroying the lure.
+	encounter.set_player_reeling(false)
+	caster.set_reeling(false)
+
+	# Mark this return as a player-requested quick cancel. The normal
+	# bait_returned signal remains the single cleanup path for Encounter,
+	# HUD and Fishing state; the flag only changes how the camera comes home.
+	_quick_cast_cancel_active = true
+	caster.cancel_bait_to_aim()
+	_quick_cast_cancel_active = false
+
+	# Do NOT hard-hide the fishing HUD here. Power meter, depth meter and
+	# character view all already listen to bait_returned and have approved
+	# slide-out animations. Let those play at the same speed/style as their
+	# normal appearance instead of overriding them with an instant reset.
+
+
 func _on_bait_returned() -> void:
 	if phase != Phase.IN_WATER and phase != Phase.FIGHT:
 		return
@@ -760,7 +795,12 @@ func _on_bait_returned() -> void:
 		sprite_director.play(&"Fishing_Catch")
 		return
 	
-	camera_rig.reset_fishing_follow()
+	if _quick_cast_cancel_active and camera_rig.has_method(
+		"return_fishing_follow_to_target"
+	):
+		camera_rig.return_fishing_follow_to_target()
+	else:
+		camera_rig.reset_fishing_follow()
 
 	cast_power_locked = false
 	locked_cast_power = 0.0

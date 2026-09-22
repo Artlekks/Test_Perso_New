@@ -334,6 +334,13 @@ func _on_bait_depth_changed(
 	current_depth: float,
 	total_depth: float
 ) -> void:
+	# queue_free() is deferred until the end of the frame. During a quick
+	# cancel the old lure can otherwise emit one final depth update after
+	# bait_returned, which makes the depth meter slide back in. Once there is
+	# no active lure, ignore any such stale signal.
+	if not is_instance_valid(active_bait):
+		return
+
 	current_bait_depth = current_depth
 	current_total_depth = total_depth
 
@@ -352,6 +359,10 @@ func _on_bait_snagged(reason: StringName) -> void:
 
 func _on_bait_returned() -> void:
 	if is_instance_valid(active_bait):
+		# Stop the lure immediately before queue_free(). Deletion itself is
+		# deferred, so this prevents a final process tick from producing HUD
+		# updates after the return/cancel signal has already started hiding UI.
+		active_bait.process_mode = Node.PROCESS_MODE_DISABLED
 		active_bait.queue_free()
 
 	active_bait = null
@@ -408,6 +419,17 @@ func cancel_bait() -> void:
 	current_bait_depth = 0.0
 	current_total_depth = 0.0
 	bait_distance_changed.emit(0.0)
+
+
+func cancel_bait_to_aim() -> void:
+	# Immediate player-requested abandon of an unhooked cast. Reuse the
+	# exact same signal path as a lure that was physically reeled home so
+	# Encounter, HUD and Fishing state all reset consistently.
+	if not is_instance_valid(active_bait):
+		return
+
+	_on_bait_returned()
+
 
 func set_reel_speed_multiplier(value: float) -> void:
 	if is_instance_valid(active_bait):
