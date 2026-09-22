@@ -16,6 +16,20 @@ signal depth_changed(current_depth: float, total_depth: float)
 var min_fight_steer_authority: float = 0.20
 @export var max_fish_pull_speed: float = 1.5
 @export var fish_vertical_speed: float = 0.8
+
+@export_category("Fight Micro Movement")
+## Small extra left/right correction layered on top of the main fish intent.
+## This affects physical bait movement only; it does not feed back into
+## stamina, tension, counter-steering, or FishBehavior state.
+@export_range(0.0, 0.5, 0.01)
+var micro_lateral_strength: float = 0.16
+## How often the fish chooses a new tiny correction target.
+@export var micro_change_time_min: float = 0.28
+@export var micro_change_time_max: float = 0.62
+## Higher values make the tiny correction settle faster. Kept deliberately
+## soft so it reads as living movement rather than jitter.
+@export var micro_response_speed: float = 5.0
+
 @export var twitch_speed: float = 1.8
 @export var twitch_deceleration: float = 12.0
 @export_category("Fight Distance")
@@ -35,6 +49,11 @@ var reel_steering: float = 0.0
 var fight_resistance: float = 1.0
 var fish_lateral: float = 0.0
 var reel_speed_multiplier: float = 1.0
+
+# Physical-only micro movement. These values never leave bait_V2.gd.
+var micro_lateral: float = 0.0
+var micro_target_lateral: float = 0.0
+var micro_time_until_change: float = 0.0
 var air_curve_input: float = 0.0
 var air_curve_angle: float = 0.0
 
@@ -76,6 +95,7 @@ func launch(
 	air_path = PackedVector3Array()
 	air_path_progress = 0.0
 	air_path_playback_speed = 1.0
+	_reset_micro_movement()
 	state = State.FLYING
 
 	ripple_view.configure(
@@ -196,6 +216,7 @@ func _physics_process(delta: float) -> void:
 		_update_bottom_from_world()
 	
 	if fight_mode and fish_pull_strength > 0.0:
+		_update_micro_movement(delta)
 		_update_fish_pull(delta)
 	
 	match state:
@@ -464,8 +485,10 @@ func _update_bottom_from_world() -> void:
 		
 func set_fight_mode(active: bool) -> void:
 	fight_mode = active
+	_reset_micro_movement()
 
 	if fight_mode:
+		_choose_micro_target()
 		if reel_target != null:
 			var offset := global_position - reel_target.global_position
 			offset.y = 0.0
@@ -512,6 +535,44 @@ func set_fight_resistance(value: float) -> void:
 func set_fish_pull_strength(value: float) -> void:
 	fish_pull_strength = clampf(value, 0.0, 1.0)
 
+func _reset_micro_movement() -> void:
+	micro_lateral = 0.0
+	micro_target_lateral = 0.0
+	micro_time_until_change = 0.0
+
+
+func _choose_micro_target() -> void:
+	# A restrained random target gives the fish tiny corrections without
+	# producing an obvious repeating sine-wave pattern.
+	micro_target_lateral = randf_range(-1.0, 1.0)
+	micro_time_until_change = randf_range(
+		maxf(micro_change_time_min, 0.05),
+		maxf(
+			micro_change_time_max,
+			micro_change_time_min + 0.05
+		)
+	)
+
+
+func _update_micro_movement(delta: float) -> void:
+	micro_time_until_change -= delta
+
+	if micro_time_until_change <= 0.0:
+		_choose_micro_target()
+
+	# Frame-rate-independent smoothing. The target changes irregularly, but
+	# the physical response glides toward it instead of snapping.
+	var response := 1.0 - exp(
+		-maxf(micro_response_speed, 0.0) * delta
+	)
+
+	micro_lateral = lerpf(
+		micro_lateral,
+		micro_target_lateral,
+		response
+	)
+
+
 func _update_fish_pull(delta: float) -> void:
 	if reel_target == null:
 		return
@@ -546,7 +607,18 @@ func _update_fish_pull(delta: float) -> void:
 			+ away * 0.15
 		).normalized()
 
-	# Dive / rise intentionally has no horizontal movement.
+	# Dive / rise intentionally has no primary horizontal movement.
+
+	# Add only a small physical correction. Because the final movement is
+	# already multiplied by fish_pull_strength below, exhausted/spent fish
+	# naturally receive much less micro movement than resisting fish.
+	var micro_side_amount := (
+		micro_lateral
+		* micro_lateral_strength
+	)
+
+	if absf(micro_side_amount) > 0.001:
+		horizontal_direction += side * micro_side_amount
 
 	if horizontal_direction.length_squared() > 0.0:
 		var fish_step := (

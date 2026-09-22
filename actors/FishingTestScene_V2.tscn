@@ -184,13 +184,13 @@ shadow_blur = 0.0
 [node name="River_001" parent="World" unique_id=615421676 instance=ExtResource("1_jr3m6")]
 transform = Transform3D(0.052192, 0, 0.0670895, 0, 0.085, 0, -0.0670895, 0, 0.052192, -4.468, -0.05848767, -0.029999971)
 
-[node name="Land02" parent="World/River_001" index="0" unique_id=1435290655]
+[node name="Land02" parent="World/River_001" index="0" unique_id=1137289906]
 surface_material_override/0 = SubResource("StandardMaterial3D_ahm77")
 
-[node name="Border2" parent="World/River_001/Land02" index="0" unique_id=1769248389]
+[node name="Border2" parent="World/River_001/Land02" index="0" unique_id=219349166]
 surface_material_override/0 = SubResource("StandardMaterial3D_q0mti")
 
-[node name="Collider_Lands" parent="World/River_001/Land02" index="1" unique_id=1009775182]
+[node name="Collider_Lands" parent="World/River_001/Land02" index="1" unique_id=870592774]
 visible = false
 
 [node name="StaticBody3D" type="StaticBody3D" parent="World/River_001/Land02" index="2" unique_id=1055163119]
@@ -199,10 +199,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.740195, -0.749999, -4.4465
 [node name="CollisionShape3D" type="CollisionShape3D" parent="World/River_001/Land02/StaticBody3D" unique_id=932059006]
 shape = SubResource("ConcavePolygonShape3D_7mysf")
 
-[node name="Bridge" parent="World/River_001" index="1" unique_id=1876462114]
+[node name="Bridge" parent="World/River_001" index="1" unique_id=1206319970]
 surface_material_override/0 = SubResource("StandardMaterial3D_4sj2k")
 
-[node name="Land01" parent="World/River_001" index="2" unique_id=1108579048]
+[node name="Land01" parent="World/River_001" index="2" unique_id=706825862]
 surface_material_override/0 = SubResource("StandardMaterial3D_bj8je")
 surface_material_override/1 = SubResource("StandardMaterial3D_emtsy")
 
@@ -211,26 +211,26 @@ surface_material_override/1 = SubResource("StandardMaterial3D_emtsy")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="World/River_001/Land01/StaticBody3D" unique_id=1364894219]
 shape = SubResource("ConcavePolygonShape3D_m77w1")
 
-[node name="Water" parent="World/River_001" index="3" unique_id=87440894]
+[node name="Water" parent="World/River_001" index="3" unique_id=115305522]
 transform = Transform3D(5.95303, 0, -1.1722, 0, 2.38547, 0, 2.67362, 0, 2.61, 24.7671, -2.60612, 26.8345)
 surface_material_override/0 = SubResource("StandardMaterial3D_00n6f")
 
-[node name="Plane" parent="World/River_001" index="4" unique_id=921913107]
+[node name="Plane" parent="World/River_001" index="4" unique_id=1423406694]
 visible = false
 
-[node name="Plane_001" parent="World/River_001" index="5" unique_id=262093785]
+[node name="Plane_001" parent="World/River_001" index="5" unique_id=842288759]
 visible = false
 
-[node name="Plane_002" parent="World/River_001" index="6" unique_id=1864643844]
+[node name="Plane_002" parent="World/River_001" index="6" unique_id=27523735]
 visible = false
 
-[node name="Plane_003" parent="World/River_001" index="7" unique_id=1514325164]
+[node name="Plane_003" parent="World/River_001" index="7" unique_id=773749211]
 visible = false
 
-[node name="Plane_005" parent="World/River_001" index="8" unique_id=877446787]
+[node name="Plane_005" parent="World/River_001" index="8" unique_id=497840523]
 visible = false
 
-[node name="Plane_008" parent="World/River_001" index="9" unique_id=592613351]
+[node name="Plane_008" parent="World/River_001" index="9" unique_id=2003175849]
 visible = false
 
 [node name="FishZone_V2" parent="World" unique_id=503373627 instance=ExtResource("8_n1yj2")]
