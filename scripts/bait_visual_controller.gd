@@ -211,7 +211,7 @@ func _place_segment(
 		return front_joint
 
 	var safe_direction := direction.normalized()
-	var basis := _basis_from_direction(safe_direction)
+	var segment_basis := _basis_from_direction(safe_direction)
 
 	# Local -Z is the wide/front end of each piece.
 	# Therefore the segment center sits behind the front joint.
@@ -222,7 +222,7 @@ func _place_segment(
 	)
 
 	segment.global_transform = Transform3D(
-		basis,
+		segment_basis,
 		center
 	)
 

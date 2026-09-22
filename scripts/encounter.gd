@@ -57,6 +57,26 @@ var direct_hit_chance: float = 0.5
 @export_range(0.0, 1.0, 0.05)
 var max_bite_chance_per_check: float = 1.0
 
+@export_category("Visible Fish Shadows")
+## A visible interested fish near the lure is a genuine bite candidate, but
+## never a guaranteed bite. Invisible fish continue to use the normal system.
+@export_range(1.0, 2.0, 0.05)
+var shadow_bite_chance_multiplier: float = 1.30
+
+@export_range(0.0, 1.0, 0.05)
+var shadow_species_selection_chance: float = 0.75
+
+@export_range(0.1, 1.5, 0.05)
+var shadow_candidate_radius: float = 0.55
+
+## While a visible fish is WATCHING / APPROACHING / INSPECTING the lure, give
+## that readable pre-bite interaction priority over an unrelated invisible bite.
+@export_range(0.25, 4.0, 0.05)
+var shadow_pre_bite_hold_radius: float = 1.9
+
+@export_range(0.05, 1.0, 0.05)
+var shadow_pre_bite_retry_delay: float = 0.25
+
 @export_category("Fishing Techniques")
 @export var technique_boost_duration: float = 2.5
 @export var tech_1_attraction_multiplier: float = 1.15
@@ -107,6 +127,7 @@ var rounds_remaining: int = 0
 var recovery_time_left: float = 0.0
 var fish_population: Array[FishSpawnEntry] = []
 var pending_fish_entry: FishSpawnEntry = null
+var pending_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
 var active_rod_data: RodData = null
@@ -143,6 +164,7 @@ func _on_bait_returned() -> void:
 	bite_window_timer.stop()
 	bite_active = false
 	pending_fish_entry = null
+	pending_shadow = null
 	active_bait_data = null
 	_reset_technique()
 	tension.stop()
@@ -150,6 +172,7 @@ func _on_bait_returned() -> void:
 func _on_bite_timer_timeout() -> void:
 	# Each bite check owns a fresh pending selection.
 	pending_fish_entry = null
+	pending_shadow = null
 
 	var forced_fish: FishData = null
 
@@ -164,6 +187,15 @@ func _on_bite_timer_timeout() -> void:
 		pending_fish_entry.fish = forced_fish
 		pending_fish_entry.weight = 1.0
 	else:
+		var shadow_candidate := _get_visible_shadow_candidate()
+
+		# If a visible fish is actively performing the pre-bite sequence but has
+		# not finished inspecting yet, do not let a background invisible fish
+		# steal the moment. The visible fish can still reject the lure and leave.
+		if shadow_candidate == null and _has_active_visible_pre_bite():
+			bite_timer.start(shadow_pre_bite_retry_delay)
+			return
+
 		var attraction := fish_selector.get_attraction_ratio(
 			fish_population,
 			active_bait_data,
@@ -177,6 +209,9 @@ func _on_bite_timer_timeout() -> void:
 			* _get_tech_attraction_multiplier()
 		)
 
+		if shadow_candidate != null:
+			bite_chance *= shadow_bite_chance_multiplier
+
 		bite_chance = clampf(
 			bite_chance,
 			0.0,
@@ -187,30 +222,43 @@ func _on_bite_timer_timeout() -> void:
 			bite_timer.start(retry_bite_delay)
 			return
 
-		pending_fish_entry = fish_selector.choose(
-			fish_population,
-			active_bait_data,
-			caster.get_current_bait_depth(),
-			caster.get_current_total_depth()
-		)
+		if (
+			shadow_candidate != null
+			and randf() <= shadow_species_selection_chance
+		):
+			var shadow_fish: FishData = null
+
+			if shadow_candidate.has_method("get_fish_data"):
+				shadow_fish = shadow_candidate.get_fish_data() as FishData
+
+			if shadow_fish != null:
+				pending_fish_entry = FishSpawnEntry.new()
+				pending_fish_entry.fish = shadow_fish
+				pending_fish_entry.weight = 1.0
+				pending_shadow = shadow_candidate
+
+		if pending_fish_entry == null:
+			pending_fish_entry = fish_selector.choose(
+				fish_population,
+				active_bait_data,
+				caster.get_current_bait_depth(),
+				caster.get_current_total_depth()
+			)
 
 	if (
 		pending_fish_entry == null
 		or pending_fish_entry.fish == null
 	):
 		pending_fish_entry = null
+		pending_shadow = null
 		bite_timer.start(retry_bite_delay)
 		return
 
 	if randf() < direct_hit_chance:
-
 		_confirm_hit()
 		return
 
-
 	bite_active = true
-
-
 	bite_opportunity_started.emit()
 	bite_window_timer.start()
 
@@ -252,6 +300,11 @@ func _confirm_hit() -> bool:
 	player_reeling = false
 
 
+	if is_instance_valid(pending_shadow):
+		if pending_shadow.has_method("consume_for_bite"):
+			pending_shadow.consume_for_bite()
+
+	pending_shadow = null
 	pending_fish_entry = null
 
 	var total_rounds := maxi(
@@ -273,13 +326,74 @@ func _confirm_hit() -> bool:
 	
 func _on_bite_window_timeout() -> void:
 	bite_active = false
+
+	if is_instance_valid(pending_shadow):
+		if pending_shadow.has_method("abandon_bait_and_dive"):
+			pending_shadow.abandon_bait_and_dive()
+
+	pending_shadow = null
 	pending_fish_entry = null
 	bite_missed.emit()
 
 	bite_timer.start(retry_bite_delay)
 
+func _get_visible_shadow_candidate() -> Node:
+	var bait := get_tree().get_first_node_in_group("bait") as Node3D
+
+	if not is_instance_valid(bait):
+		return null
+
+	var nearest: Node = null
+	var nearest_distance := shadow_candidate_radius
+
+	for presence in get_tree().get_nodes_in_group("fish_shadow_presence"):
+		if not is_instance_valid(presence):
+			continue
+		if not presence.has_method("get_interested_shadow_near"):
+			continue
+
+		var shadow = presence.get_interested_shadow_near(
+			bait.global_position,
+			shadow_candidate_radius
+		)
+
+		if shadow == null or not is_instance_valid(shadow):
+			continue
+
+		var offset: Vector3 = shadow.global_position - bait.global_position
+		offset.y = 0.0
+		var distance := offset.length()
+
+		if distance <= nearest_distance:
+			nearest = shadow
+			nearest_distance = distance
+
+	return nearest
+
+
+func _has_active_visible_pre_bite() -> bool:
+	var bait := get_tree().get_first_node_in_group("bait") as Node3D
+
+	if not is_instance_valid(bait):
+		return false
+
+	for presence in get_tree().get_nodes_in_group("fish_shadow_presence"):
+		if not is_instance_valid(presence):
+			continue
+		if not presence.has_method("has_active_pre_bite_near"):
+			continue
+		if presence.has_active_pre_bite_near(
+			bait.global_position,
+			shadow_pre_bite_hold_radius
+		):
+			return true
+
+	return false
+
+
 func catch_fish() -> void:
 	bite_active = false
+	pending_shadow = null
 	bite_timer.stop()
 	bite_window_timer.stop()
 

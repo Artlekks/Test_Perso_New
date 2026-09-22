@@ -17,7 +17,7 @@ render_priority = 127
 transparency = 1
 no_depth_test = true
 shading_mode = 0
-albedo_color = Color(0.5372549, 1, 1, 0.95)
+albedo_color = Color(0.88409704, 0.9605996, 0.49596608, 0.9490196)
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_middle"]
 top_radius = 0.013

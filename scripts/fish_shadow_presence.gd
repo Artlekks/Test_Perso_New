@@ -1,0 +1,376 @@
+extends Node3D
+class_name FishShadowPresence
+
+const FishShadowScene := preload("res://actors/FishShadow.tscn")
+
+@export_category("Presence")
+@export var enabled: bool = true
+
+@export_range(1, 3, 1)
+var min_visible_shadows: int = 1
+
+@export_range(1, 3, 1)
+var max_visible_shadows: int = 3
+
+## Relative probabilities when a new ambient population size is chosen.
+@export_range(0.0, 1.0, 0.05)
+var one_shadow_weight: float = 0.55
+
+@export_range(0.0, 1.0, 0.05)
+var two_shadow_weight: float = 0.32
+
+@export_range(0.0, 1.0, 0.05)
+var three_shadow_weight: float = 0.13
+
+@export_range(2.0, 30.0, 0.5)
+var population_reconsider_time_min: float = 10.0
+
+@export_range(2.0, 30.0, 0.5)
+var population_reconsider_time_max: float = 18.0
+
+@export_range(0.1, 8.0, 0.1)
+var respawn_delay_min: float = 1.5
+
+@export_range(0.1, 8.0, 0.1)
+var respawn_delay_max: float = 4.0
+
+@export_range(2.0, 40.0, 0.5)
+var shadow_lifetime_min: float = 16.0
+
+@export_range(2.0, 40.0, 0.5)
+var shadow_lifetime_max: float = 30.0
+
+@export_category("Movement")
+@export_range(0.05, 2.0, 0.05)
+var small_fish_speed: float = 0.44
+
+@export_range(0.05, 2.0, 0.05)
+var large_fish_speed: float = 0.24
+
+@export_range(0.0, 0.5, 0.01)
+var speed_variation: float = 0.10
+
+@export_category("Presentation")
+@export_range(0.1, 3.0, 0.05)
+var small_fish_scale: float = 0.72
+
+@export_range(0.1, 3.0, 0.05)
+var large_fish_scale: float = 1.12
+
+var _fish_zone: Node = null
+var _swim_bounds: FishSwimBounds = null
+var _rng := RandomNumberGenerator.new()
+var _spawned_shadows: Array[FishShadowActor] = []
+var _desired_count: int = 1
+var _population_reconsider_remaining: float = 0.0
+var _spawn_remaining: float = 0.0
+
+
+func _ready() -> void:
+	_fish_zone = get_parent()
+	_rng.randomize()
+
+	if not enabled:
+		visible = false
+		set_process(false)
+		return
+
+	call_deferred("_initialize_presence")
+
+
+func _process(delta: float) -> void:
+	_cleanup_invalid_shadows()
+	_population_reconsider_remaining -= delta
+	_spawn_remaining -= delta
+
+	if _population_reconsider_remaining <= 0.0:
+		_desired_count = _choose_population_count()
+		_population_reconsider_remaining = _rng.randf_range(
+			population_reconsider_time_min,
+			maxf(population_reconsider_time_max, population_reconsider_time_min)
+		)
+		_trim_population_if_needed()
+
+	if _spawned_shadows.size() < _desired_count and _spawn_remaining <= 0.0:
+		_spawn_one_shadow()
+		_spawn_remaining = _rng.randf_range(
+			respawn_delay_min,
+			maxf(respawn_delay_max, respawn_delay_min)
+		)
+
+
+func _initialize_presence() -> void:
+	if _fish_zone == null:
+		return
+
+	if _fish_zone.has_method("get_swim_bounds"):
+		_swim_bounds = _fish_zone.get_swim_bounds() as FishSwimBounds
+
+	if _swim_bounds == null:
+		var fallback_bounds := _fish_zone.get_node_or_null("FishSwimBounds")
+		_swim_bounds = fallback_bounds as FishSwimBounds
+
+	if _swim_bounds == null:
+		push_warning("FishShadowPresence needs FishSwimBounds on its fish zone.")
+		return
+
+	_desired_count = _choose_population_count()
+	_population_reconsider_remaining = _rng.randf_range(
+		population_reconsider_time_min,
+		maxf(population_reconsider_time_max, population_reconsider_time_min)
+	)
+
+	# Spawn the initial population immediately. Later replacements are staggered.
+	for _index in range(_desired_count):
+		_spawn_one_shadow()
+
+
+func get_shadows() -> Array[FishShadowActor]:
+	_cleanup_invalid_shadows()
+	return _spawned_shadows.duplicate()
+
+
+func get_interested_shadow_near(
+	world_position: Vector3,
+	max_distance: float
+) -> FishShadowActor:
+	_cleanup_invalid_shadows()
+
+	var nearest: FishShadowActor = null
+	var nearest_distance := max_distance
+
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if not shadow.is_interested_near(world_position, max_distance):
+			continue
+
+		var offset := shadow.global_position - world_position
+		offset.y = 0.0
+		var distance := offset.length()
+
+		if distance < nearest_distance:
+			nearest = shadow
+			nearest_distance = distance
+
+	return nearest
+
+
+func has_active_pre_bite_near(
+	world_position: Vector3,
+	max_distance: float
+) -> bool:
+	_cleanup_invalid_shadows()
+
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if not shadow.has_method("is_pre_bite_active_near"):
+			continue
+		if shadow.is_pre_bite_active_near(world_position, max_distance):
+			return true
+
+	return false
+
+
+func rebuild_population() -> void:
+	_clear_population()
+	_desired_count = _choose_population_count()
+
+	for _index in range(_desired_count):
+		_spawn_one_shadow()
+
+
+func _spawn_one_shadow() -> void:
+	if _swim_bounds == null:
+		return
+	if _spawned_shadows.size() >= max_visible_shadows:
+		return
+
+	var population := _get_population()
+	var fish := _pick_weighted_fish(population)
+	var shadow := FishShadowScene.instantiate() as FishShadowActor
+
+	if shadow == null:
+		return
+
+	add_child(shadow)
+	shadow.expired.connect(_on_shadow_expired)
+
+	var size_t := _get_size_ratio(fish)
+	var speed := lerpf(small_fish_speed, large_fish_speed, size_t)
+	speed *= _rng.randf_range(1.0 - speed_variation, 1.0 + speed_variation)
+
+	var visual_scale := lerpf(small_fish_scale, large_fish_scale, size_t)
+	var initial_depth := _pick_visual_depth(fish)
+	var lifetime := _rng.randf_range(
+		shadow_lifetime_min,
+		maxf(shadow_lifetime_max, shadow_lifetime_min)
+	)
+
+	shadow.configure(
+		fish,
+		_swim_bounds,
+		_get_water_y(),
+		initial_depth,
+		speed,
+		visual_scale,
+		lifetime,
+		_rng.randi()
+	)
+
+	_spawned_shadows.append(shadow)
+
+
+func _trim_population_if_needed() -> void:
+	var excess := _spawned_shadows.size() - _desired_count
+
+	while excess > 0:
+		var chosen: FishShadowActor = null
+
+		# Prefer fading a fish that is not currently investigating the lure.
+		for shadow in _spawned_shadows:
+			if is_instance_valid(shadow) and not shadow.is_interested_in_bait():
+				chosen = shadow
+				break
+
+		if chosen == null:
+			break
+
+		chosen.request_expire()
+		_spawned_shadows.erase(chosen)
+		excess -= 1
+
+
+func _on_shadow_expired(shadow: FishShadowActor) -> void:
+	_spawned_shadows.erase(shadow)
+
+
+func _cleanup_invalid_shadows() -> void:
+	for index in range(_spawned_shadows.size() - 1, -1, -1):
+		if not is_instance_valid(_spawned_shadows[index]):
+			_spawned_shadows.remove_at(index)
+
+
+func _clear_population() -> void:
+	for shadow in _spawned_shadows:
+		if is_instance_valid(shadow):
+			shadow.queue_free()
+
+	_spawned_shadows.clear()
+
+
+func _choose_population_count() -> int:
+	var minimum := clampi(min_visible_shadows, 1, 3)
+	var maximum := clampi(max_visible_shadows, minimum, 3)
+
+	var options: Array[int] = []
+	var weights: Array[float] = []
+
+	if minimum <= 1 and maximum >= 1:
+		options.append(1)
+		weights.append(maxf(one_shadow_weight, 0.0))
+	if minimum <= 2 and maximum >= 2:
+		options.append(2)
+		weights.append(maxf(two_shadow_weight, 0.0))
+	if minimum <= 3 and maximum >= 3:
+		options.append(3)
+		weights.append(maxf(three_shadow_weight, 0.0))
+
+	if options.is_empty():
+		return minimum
+
+	var total := 0.0
+	for weight in weights:
+		total += weight
+
+	if total <= 0.0:
+		return options[0]
+
+	var roll := _rng.randf_range(0.0, total)
+	var cumulative := 0.0
+
+	for index in range(options.size()):
+		cumulative += weights[index]
+		if roll <= cumulative:
+			return options[index]
+
+	return options[options.size() - 1]
+
+
+func _get_water_y() -> float:
+	if _fish_zone != null and _fish_zone.has_method("get_water_y"):
+		return float(_fish_zone.get_water_y())
+
+	return global_position.y
+
+
+func _get_population() -> Array[FishSpawnEntry]:
+	if _fish_zone != null and _fish_zone.has_method("get_fish_population"):
+		return _fish_zone.get_fish_population()
+
+	return []
+
+
+func _pick_weighted_fish(population: Array[FishSpawnEntry]) -> FishData:
+	if population.is_empty():
+		return null
+
+	var total_weight := 0.0
+
+	for entry in population:
+		if entry == null or entry.fish == null:
+			continue
+		total_weight += maxf(entry.weight, 0.0)
+
+	if total_weight <= 0.0:
+		for entry in population:
+			if entry != null and entry.fish != null:
+				return entry.fish
+		return null
+
+	var roll := _rng.randf_range(0.0, total_weight)
+	var cumulative := 0.0
+
+	for entry in population:
+		if entry == null or entry.fish == null:
+			continue
+		cumulative += maxf(entry.weight, 0.0)
+		if roll <= cumulative:
+			return entry.fish
+
+	for index in range(population.size() - 1, -1, -1):
+		var fallback_entry := population[index]
+		if fallback_entry != null and fallback_entry.fish != null:
+			return fallback_entry.fish
+
+	return null
+
+
+func _get_size_ratio(fish: FishData) -> float:
+	if fish == null:
+		return _rng.randf_range(0.15, 0.55)
+
+	return clampf(inverse_lerp(18.0, 187.0, fish.average_size), 0.0, 1.0)
+
+
+func _pick_visual_depth(fish: FishData) -> float:
+	if fish == null:
+		return _rng.randf_range(0.15, 0.60)
+
+	var depth_min := clampf(
+		minf(fish.preferred_depth_min, fish.preferred_depth_max),
+		0.0,
+		1.0
+	)
+	var depth_max := clampf(
+		maxf(fish.preferred_depth_min, fish.preferred_depth_max),
+		0.0,
+		1.0
+	)
+
+	# Initial ambient shadows must be readable at 320x240. They can dive/fade
+	# naturally after spawning, but do not allow every deep-preferring species
+	# to begin nearly invisible.
+	var sampled := _rng.randf_range(depth_min, depth_max)
+	return clampf(sampled, 0.12, 0.52)

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_shadow_presence.gd" id="1_presence_script"]
+
+[node name="FishShadowPresence" type="Node3D" groups=["fish_shadow_presence"]]
+script = ExtResource("1_presence_script")

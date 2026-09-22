@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c1bmrl5liik4y" path="res://scripts/fish_zone_v2.gd" id="1_5tdff"]
 [ext_resource type="Script" path="res://scripts/fish_swim_bounds.gd" id="2_swim_bounds"]
+[ext_resource type="PackedScene" path="res://actors/FishShadowPresence.tscn" id="3_shadow_presence"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_mxd7y"]
 radius = 1.49364
@@ -30,6 +31,8 @@ inner_margin = 0.35
 [node name="BoundsShape3D" type="CollisionShape3D" parent="FishSwimBounds"]
 shape = SubResource("BoxShape3D_swim_bounds")
 debug_color = Color(0.15, 0.75, 1, 0.24)
+
+[node name="FishShadowPresence" parent="." instance=ExtResource("3_shadow_presence")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1425339664]
 shape = SubResource("SphereShape3D_mxd7y")

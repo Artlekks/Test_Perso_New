@@ -106,6 +106,35 @@ func contains_horizontal(world_position: Vector3) -> bool:
 	)
 
 
+func get_random_horizontal_point(
+	world_y: float,
+	rng: RandomNumberGenerator = null
+) -> Vector3:
+	var box := _get_box_shape()
+
+	if box == null or bounds_shape == null:
+		return Vector3(global_position.x, world_y, global_position.z)
+
+	var half_size := box.size * 0.5
+	var limit_x := maxf(half_size.x - inner_margin, 0.0)
+	var limit_z := maxf(half_size.z - inner_margin, 0.0)
+	var random_source := rng
+
+	if random_source == null:
+		random_source = RandomNumberGenerator.new()
+		random_source.randomize()
+
+	var local_point := Vector3(
+		random_source.randf_range(-limit_x, limit_x),
+		0.0,
+		random_source.randf_range(-limit_z, limit_z)
+	)
+
+	var world_point := bounds_shape.global_transform * local_point
+	world_point.y = world_y
+	return world_point
+
+
 func _is_inside_horizontal(
 	local_position: Vector3,
 	limit_x: float,
