@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_snag_area.gd" id="1_snag"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_snag"]
+size = Vector3(1, 1, 1)
+
+[node name="FishingSnagArea" type="Area3D" groups=["fishing_snag"]]
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("1_snag")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_snag")

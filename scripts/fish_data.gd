@@ -20,8 +20,25 @@ var king_max_size_multiplier: float = 1.05
 @export var base_stamina: float = 100.0
 @export var base_strength: float = 1.0
 
-@export var preferred_depth_min: float = 0.0
-@export var preferred_depth_max: float = 10.0
+@export_category("Depth Preference")
+
+## Normalized lure depth. 0.0 = surface, 1.0 = bottom.
+@export_range(0.0, 1.0, 0.01)
+var preferred_depth_min: float = 0.0
+
+## Normalized lure depth. 0.0 = surface, 1.0 = bottom.
+@export_range(0.0, 1.0, 0.01)
+var preferred_depth_max: float = 1.0
+
+## Distance outside the preferred band over which attraction falls from
+## perfect to the minimum multiplier.
+@export_range(0.01, 1.0, 0.01)
+var depth_falloff_width: float = 0.25
+
+## Fish are still possible outside their ideal depth; they are simply much
+## less likely to be attracted/selected.
+@export_range(0.0, 1.0, 0.01)
+var out_of_depth_multiplier: float = 0.15
 
 @export var max_points: int = 100
 
@@ -76,8 +93,62 @@ func get_depth_match_multiplier(
 		1.0
 	)
 
-	if depth_ratio >= preferred_depth_min \
-	and depth_ratio <= preferred_depth_max:
+	var band_min := clampf(
+		minf(
+			preferred_depth_min,
+			preferred_depth_max
+		),
+		0.0,
+		1.0
+	)
+
+	var band_max := clampf(
+		maxf(
+			preferred_depth_min,
+			preferred_depth_max
+		),
+		0.0,
+		1.0
+	)
+
+	if (
+		depth_ratio >= band_min
+		and depth_ratio <= band_max
+	):
 		return 1.0
 
-	return 0.2
+	var distance_from_band := 0.0
+
+	if depth_ratio < band_min:
+		distance_from_band = (
+			band_min - depth_ratio
+		)
+	else:
+		distance_from_band = (
+			depth_ratio - band_max
+		)
+
+	var falloff := maxf(
+		depth_falloff_width,
+		0.01
+	)
+
+	var t := clampf(
+		distance_from_band / falloff,
+		0.0,
+		1.0
+	)
+
+	# Smoothstep keeps attraction from changing abruptly as the lure crosses
+	# the edge of a preferred depth band.
+	var eased := t * t * (3.0 - 2.0 * t)
+
+	return lerpf(
+		1.0,
+		clampf(
+			out_of_depth_multiplier,
+			0.0,
+			1.0
+		),
+		eased
+	)

@@ -3,6 +3,8 @@ extends Node3D
 signal landed(point: Vector3)
 signal returned
 signal depth_changed(current_depth: float, total_depth: float)
+signal snag_risk_changed(value: float)
+signal snagged(reason: StringName)
 
 @onready var ripple_view: Node3D = $RippleView
 @export var gravity: float = 24.0
@@ -38,12 +40,40 @@ var micro_lateral_strength: float = 0.16
 @export_category("Reel Convergence")
 ## Inside this horizontal distance, lateral freedom begins to fade.
 @export var convergence_start_distance: float = 2.2
-## Inside this distance, fish pull and player steering are fully suppressed
-## so the bait can finish cleanly on the reel target.
+## Inside this distance, fish pull and player steering can fully converge,
+## but only once the fish itself is calm enough.
 @export var convergence_full_distance: float = 0.70
+
+## At or above this pull strength, a fighting fish keeps full movement even
+## right beside the player. Distance alone can never force convergence.
+@export_range(0.0, 1.0, 0.01)
+var convergence_block_pull_strength: float = 0.55
+
+## At or below this pull strength, the normal distance-based convergence can
+## fully engage. Between this and the block threshold it blends smoothly.
+@export_range(0.0, 1.0, 0.01)
+var convergence_full_pull_strength: float = 0.12
+
+## A fighting fish cannot complete the final return while its current pull is
+## above this value. It can be at the player's feet and still surge away.
+@export_range(0.0, 1.0, 0.01)
+var fight_return_pull_threshold: float = 0.12
 
 @export_category("Free Reeling")
 @export var free_reel_speed_multiplier: float = 2.5
+
+@export_category("Snag Risk")
+@export var bottom_snag_clearance: float = 0.12
+@export var snag_build_rate: float = 0.55
+@export var snag_recovery_rate: float = 0.80
+@export_range(0.0, 1.0, 0.01)
+var snag_reel_press_impulse: float = 0.18
+@export_range(0.0, 1.0, 0.01)
+var snag_twitch_impulse: float = 0.24
+@export var snag_threshold: float = 1.0
+@export var snag_probe_radius: float = 0.12
+@export_flags_3d_physics var snag_collision_mask: int = 8
+
 @export_category("Air Curve")
 @export var air_curve_speed_degrees: float = 35.0
 @export var max_air_curve_degrees: float = 30.0
@@ -88,6 +118,36 @@ var reeling: bool = false
 var simulation_frozen: bool = false
 var swim_bounds: Node = null
 
+var snag_probe: Area3D = null
+var snag_risk: float = 0.0
+var snag_triggered: bool = false
+
+func _ready() -> void:
+	_ensure_snag_probe()
+
+
+func _ensure_snag_probe() -> void:
+	if is_instance_valid(snag_probe):
+		return
+
+	snag_probe = Area3D.new()
+	snag_probe.name = "FishingSnagProbe"
+	snag_probe.collision_layer = 0
+	snag_probe.collision_mask = snag_collision_mask
+	snag_probe.monitoring = true
+	snag_probe.monitorable = false
+
+	var shape_node := CollisionShape3D.new()
+	shape_node.name = "CollisionShape3D"
+
+	var sphere := SphereShape3D.new()
+	sphere.radius = maxf(snag_probe_radius, 0.01)
+
+	shape_node.shape = sphere
+	snag_probe.add_child(shape_node)
+	add_child(snag_probe)
+
+
 func launch(
 	start_position: Vector3,
 	initial_velocity: Vector3,
@@ -104,6 +164,8 @@ func launch(
 	air_path_progress = 0.0
 	air_path_playback_speed = 1.0
 	_reset_micro_movement()
+	_reset_snag_state()
+	simulation_frozen = false
 	state = State.FLYING
 
 	ripple_view.configure(
@@ -201,9 +263,16 @@ func set_swim_bounds(bounds: Node) -> void:
 
 
 func set_reeling(active: bool) -> void:
+	var was_reeling := reeling
 	reeling = active
 
 	if fight_mode:
+		return
+
+	if reeling and not was_reeling:
+		_apply_snag_input_impulse(snag_reel_press_impulse)
+
+	if snag_triggered:
 		return
 
 	if not reeling and state == State.IN_WATER:
@@ -222,6 +291,15 @@ func _physics_process(delta: float) -> void:
 
 	if state == State.SINKING or state == State.IN_WATER:
 		_update_bottom_from_world()
+
+	if (
+		(state == State.SINKING or state == State.IN_WATER)
+		and not fight_mode
+	):
+		_update_snag_risk(delta)
+
+		if snag_triggered:
+			return
 	
 	if fight_mode and fish_pull_strength > 0.0:
 		_update_micro_movement(delta)
@@ -334,6 +412,147 @@ func _update_flying_path(delta: float) -> void:
 	global_position = next_position
 
 
+func _reset_snag_state() -> void:
+	snag_risk = 0.0
+	snag_triggered = false
+	snag_risk_changed.emit(0.0)
+
+
+func _is_bottom_snag_hazard() -> bool:
+	if state != State.SINKING and state != State.IN_WATER:
+		return false
+
+	var bottom_gap := global_position.y - bottom_y
+	return bottom_gap <= maxf(bottom_snag_clearance, 0.0)
+
+
+func _get_obstacle_snag_multiplier() -> float:
+	if not is_instance_valid(snag_probe):
+		return 0.0
+
+	var strongest := 0.0
+
+	for area in snag_probe.get_overlapping_areas():
+		if not area.is_in_group("fishing_snag"):
+			continue
+
+		var multiplier := 1.0
+
+		if area.has_method("get_snag_risk_multiplier"):
+			multiplier = float(
+				area.get_snag_risk_multiplier()
+			)
+
+		strongest = maxf(
+			strongest,
+			maxf(multiplier, 0.0)
+		)
+
+	return strongest
+
+
+func _get_current_snag_multiplier() -> float:
+	var multiplier := 0.0
+
+	if _is_bottom_snag_hazard():
+		multiplier = 1.0
+
+	return maxf(
+		multiplier,
+		_get_obstacle_snag_multiplier()
+	)
+
+
+func _get_current_snag_reason() -> StringName:
+	if _get_obstacle_snag_multiplier() > 0.0:
+		return &"obstacle"
+
+	if _is_bottom_snag_hazard():
+		return &"bottom"
+
+	return &"unknown"
+
+
+func _change_snag_risk(amount: float) -> void:
+	if snag_triggered:
+		return
+
+	var threshold := maxf(snag_threshold, 0.01)
+	var previous := snag_risk
+	snag_risk = clampf(
+		snag_risk + amount,
+		0.0,
+		threshold
+	)
+
+	if not is_equal_approx(previous, snag_risk):
+		snag_risk_changed.emit(snag_risk / threshold)
+
+	if snag_risk >= threshold:
+		_trigger_snag_miss(
+			_get_current_snag_reason()
+		)
+
+
+func _apply_snag_input_impulse(amount: float) -> void:
+	if fight_mode or snag_triggered:
+		return
+
+	var hazard_multiplier := (
+		_get_current_snag_multiplier()
+	)
+
+	if hazard_multiplier <= 0.0:
+		return
+
+	_change_snag_risk(
+		maxf(amount, 0.0)
+		* hazard_multiplier
+	)
+
+
+func _update_snag_risk(delta: float) -> void:
+	if snag_triggered:
+		return
+
+	var hazard_multiplier := (
+		_get_current_snag_multiplier()
+	)
+
+	if hazard_multiplier > 0.0 and reeling:
+		_change_snag_risk(
+			maxf(snag_build_rate, 0.0)
+			* hazard_multiplier
+			* delta
+		)
+		return
+
+	if snag_risk > 0.0:
+		_change_snag_risk(
+			-maxf(snag_recovery_rate, 0.0)
+			* delta
+		)
+
+
+func _trigger_snag_miss(reason: StringName) -> void:
+	if snag_triggered:
+		return
+
+	snag_triggered = true
+	reeling = false
+	reel_steering = 0.0
+	twitch_velocity = Vector3.ZERO
+	_reset_micro_movement()
+	simulation_frozen = true
+	hide_ripple()
+
+	snagged.emit(reason)
+
+	# Reuse the existing return cleanup path. This ends the attempt and
+	# returns fishing to AIM without touching the cast/input state machine.
+	returned.emit()
+
+
 func _update_sinking(delta: float) -> void:
 	if data == null:
 		return
@@ -382,9 +601,12 @@ func _update_reeling(delta: float) -> void:
 
 	var distance := to_target.length()
 
-	# Close enough: finish at the exact reel point, not merely somewhere
-	# inside a catch radius.
+	# Being close is not enough during a fight. A fish that is still actively
+	# pulling can remain right beside the player and surge away again.
 	if distance <= return_distance:
+		if fight_mode and not _can_finish_fight_return():
+			return
+
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		reel_steering = 0.0
@@ -437,6 +659,23 @@ func _update_reeling(delta: float) -> void:
 
 	# Never step past the target.
 	if move_distance >= distance:
+		if fight_mode and not _can_finish_fight_return():
+			# Hold the fish at the edge of the final return radius instead of
+			# declaring victory. Its next active pull can still move it away.
+			var hold_distance := minf(
+				return_distance,
+				distance
+			)
+
+			if distance > 0.0001:
+				global_position += (
+					forward
+					* maxf(distance - hold_distance, 0.0)
+				)
+
+			_emit_depth()
+			return
+
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		reel_steering = 0.0
@@ -503,6 +742,53 @@ func _update_bottom_from_world() -> void:
 	if global_position.y < bottom_y:
 		global_position.y = bottom_y
 		
+func _get_fight_calm_factor() -> float:
+	if not fight_mode:
+		return 1.0
+
+	var full_pull := clampf(
+		convergence_full_pull_strength,
+		0.0,
+		1.0
+	)
+
+	var block_pull := clampf(
+		convergence_block_pull_strength,
+		full_pull + 0.01,
+		1.0
+	)
+
+	if fish_pull_strength <= full_pull:
+		return 1.0
+
+	if fish_pull_strength >= block_pull:
+		return 0.0
+
+	var t := inverse_lerp(
+		block_pull,
+		full_pull,
+		fish_pull_strength
+	)
+
+	# Smoothstep: active thrashing keeps freedom, then convergence fades in
+	# naturally as the current pull dies down.
+	return t * t * (3.0 - 2.0 * t)
+
+
+func _can_finish_fight_return() -> bool:
+	if not fight_mode:
+		return true
+
+	return (
+		fish_pull_strength
+		<= clampf(
+			fight_return_pull_threshold,
+			0.0,
+			1.0
+		)
+	)
+
+
 func _get_reel_convergence(distance: float) -> float:
 	var start_distance := maxf(
 		convergence_start_distance,
@@ -515,21 +801,29 @@ func _get_reel_convergence(distance: float) -> float:
 		start_distance - 0.01
 	)
 
-	if distance >= start_distance:
-		return 0.0
+	var distance_convergence := 0.0
 
 	if distance <= full_distance:
-		return 1.0
+		distance_convergence = 1.0
+	elif distance < start_distance:
+		var t := inverse_lerp(
+			start_distance,
+			full_distance,
+			distance
+		)
 
-	var t := inverse_lerp(
-		start_distance,
-		full_distance,
-		distance
+		distance_convergence = (
+			t * t * (3.0 - 2.0 * t)
+		)
+
+	# The old pass used distance alone. Now distance only says how much
+	# convergence is AVAILABLE; the fish's current pull decides how much is
+	# actually allowed. A hard-thrashing fish therefore keeps full freedom
+	# even very close to the player.
+	return (
+		distance_convergence
+		* _get_fight_calm_factor()
 	)
-
-	# Smoothstep keeps the transition invisible instead of creating a hard
-	# change in steering/fish motion at the convergence boundary.
-	return t * t * (3.0 - 2.0 * t)
 
 
 func set_fight_mode(active: bool) -> void:
@@ -726,6 +1020,13 @@ func twitch_side(direction: float) -> void:
 		return
 
 	if reel_target == null:
+		return
+
+	_apply_snag_input_impulse(
+		snag_twitch_impulse
+	)
+
+	if snag_triggered:
 		return
 
 	var toward_player := reel_target.global_position - global_position
