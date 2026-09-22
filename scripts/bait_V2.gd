@@ -34,6 +34,14 @@ var micro_lateral_strength: float = 0.16
 @export var twitch_deceleration: float = 12.0
 @export_category("Fight Distance")
 @export var max_extra_fight_distance: float = 3.0
+
+@export_category("Reel Convergence")
+## Inside this horizontal distance, lateral freedom begins to fade.
+@export var convergence_start_distance: float = 2.2
+## Inside this distance, fish pull and player steering are fully suppressed
+## so the bait can finish cleanly on the reel target.
+@export var convergence_full_distance: float = 0.70
+
 @export_category("Free Reeling")
 @export var free_reel_speed_multiplier: float = 2.5
 @export_category("Air Curve")
@@ -374,8 +382,14 @@ func _update_reeling(delta: float) -> void:
 
 	var distance := to_target.length()
 
-	# Close enough: finish the reel immediately.
+	# Close enough: finish at the exact reel point, not merely somewhere
+	# inside a catch radius.
 	if distance <= return_distance:
+		global_position.x = target_position.x
+		global_position.z = target_position.z
+		reel_steering = 0.0
+		fish_lateral = 0.0
+		_reset_micro_movement()
 		reeling = false
 		returned.emit()
 		return
@@ -383,8 +397,11 @@ func _update_reeling(delta: float) -> void:
 	var forward := to_target.normalized()
 	var side := Vector3.UP.cross(forward).normalized()
 
-	# Steering gradually disappears as the bait approaches Ryu.
-	var steering_fade := clampf(distance / 2.0, 0.0, 1.0)
+	# Near the player, lateral authority progressively disappears. Far away,
+	# steering is unchanged; close in, the reel direction becomes purely
+	# toward the target.
+	var convergence := _get_reel_convergence(distance)
+	var steering_fade := 1.0 - convergence
 
 	var steering_strength := data.reel_steer_strength
 
@@ -422,6 +439,9 @@ func _update_reeling(delta: float) -> void:
 	if move_distance >= distance:
 		global_position.x = target_position.x
 		global_position.z = target_position.z
+		reel_steering = 0.0
+		fish_lateral = 0.0
+		_reset_micro_movement()
 
 		reeling = false
 		returned.emit()
@@ -483,6 +503,35 @@ func _update_bottom_from_world() -> void:
 	if global_position.y < bottom_y:
 		global_position.y = bottom_y
 		
+func _get_reel_convergence(distance: float) -> float:
+	var start_distance := maxf(
+		convergence_start_distance,
+		return_distance + 0.01
+	)
+
+	var full_distance := clampf(
+		convergence_full_distance,
+		return_distance,
+		start_distance - 0.01
+	)
+
+	if distance >= start_distance:
+		return 0.0
+
+	if distance <= full_distance:
+		return 1.0
+
+	var t := inverse_lerp(
+		start_distance,
+		full_distance,
+		distance
+	)
+
+	# Smoothstep keeps the transition invisible instead of creating a hard
+	# change in steering/fish motion at the convergence boundary.
+	return t * t * (3.0 - 2.0 * t)
+
+
 func set_fight_mode(active: bool) -> void:
 	fight_mode = active
 	_reset_micro_movement()
@@ -580,10 +629,15 @@ func _update_fish_pull(delta: float) -> void:
 	var away := global_position - reel_target.global_position
 	away.y = 0.0
 
-	if away.length_squared() == 0.0:
+	var distance := away.length()
+
+	if distance <= 0.0001:
 		return
 
-	away = away.normalized()
+	var convergence := _get_reel_convergence(distance)
+	var lateral_freedom := 1.0 - convergence
+
+	away /= distance
 
 	var side := Vector3.UP.cross(away).normalized()
 
@@ -625,6 +679,7 @@ func _update_fish_pull(delta: float) -> void:
 			horizontal_direction.normalized()
 			* max_fish_pull_speed
 			* fish_pull_strength
+			* lateral_freedom
 			* delta
 		)
 

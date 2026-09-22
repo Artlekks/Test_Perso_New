@@ -287,7 +287,7 @@ screen_offset = Vector2(-25, -90)
 [node name="ReelEndPoint" parent="Player/CharacterBody3D" index="5" unique_id=1454488651 node_paths=PackedStringArray("anchor", "camera")]
 anchor = NodePath("..")
 camera = NodePath("../../../CameraRig/Camera3D")
-screen_offset = Vector2(30, -60)
+screen_offset = Vector2(0, -60)
 
 [node name="RyuScreenNotifier" type="VisibleOnScreenNotifier3D" parent="Player/CharacterBody3D" unique_id=2104172510]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27968735, -0.11015487)
