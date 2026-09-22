@@ -128,6 +128,7 @@ var recovery_time_left: float = 0.0
 var fish_population: Array[FishSpawnEntry] = []
 var pending_fish_entry: FishSpawnEntry = null
 var pending_shadow: Node = null
+var active_fight_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
 var active_rod_data: RodData = null
@@ -160,6 +161,7 @@ func _on_bait_landed(_point: Vector3) -> void:
 	bite_timer.start(first_bite_delay)
 
 func _on_bait_returned() -> void:
+	_end_active_fight_shadow(false)
 	bite_timer.stop()
 	bite_window_timer.stop()
 	bite_active = false
@@ -300,9 +302,11 @@ func _confirm_hit() -> bool:
 	player_reeling = false
 
 
-	if is_instance_valid(pending_shadow):
-		if pending_shadow.has_method("consume_for_bite"):
-			pending_shadow.consume_for_bite()
+	# Every hooked fish now gets a persistent fight shadow. If the bite came
+	# from a visible pre-bite fish, that same shadow becomes the fight shadow.
+	# Invisible bites spawn one at the lure so the fish remains readable through
+	# the entire retrieve.
+	_start_active_fight_shadow(pending_shadow)
 
 	pending_shadow = null
 	pending_fish_entry = null
@@ -391,7 +395,61 @@ func _has_active_visible_pre_bite() -> bool:
 	return false
 
 
+func _start_active_fight_shadow(existing_shadow: Node = null) -> void:
+	var bait := get_tree().get_first_node_in_group("bait") as Node3D
+	if not is_instance_valid(bait) or active_fish == null or active_fish.species == null:
+		return
+
+	var preferred_presence: Node = null
+	var typed_existing := existing_shadow as FishShadowActor
+
+	if is_instance_valid(typed_existing):
+		preferred_presence = typed_existing.get_parent()
+
+	if (
+		preferred_presence == null
+		or not preferred_presence.has_method("start_fight_shadow")
+	):
+		for presence in get_tree().get_nodes_in_group("fish_shadow_presence"):
+			if is_instance_valid(presence) and presence.has_method("start_fight_shadow"):
+				preferred_presence = presence
+				break
+
+	if preferred_presence == null:
+		return
+
+	var size_multiplier := 1.0
+	if active_fish.species.average_size > 0.001:
+		size_multiplier = clampf(
+			active_fish.size / active_fish.species.average_size,
+			0.70,
+			1.45
+		)
+
+	active_fight_shadow = preferred_presence.start_fight_shadow(
+		active_fish.species,
+		bait,
+		typed_existing,
+		size_multiplier
+	)
+
+
+func _end_active_fight_shadow(dive_away: bool) -> void:
+	if not is_instance_valid(active_fight_shadow):
+		active_fight_shadow = null
+		return
+
+	var presence := active_fight_shadow.get_parent()
+	if is_instance_valid(presence) and presence.has_method("end_fight_shadow"):
+		presence.end_fight_shadow(dive_away)
+	elif active_fight_shadow.has_method("release_from_hooked_bait"):
+		active_fight_shadow.release_from_hooked_bait(dive_away)
+
+	active_fight_shadow = null
+
+
 func catch_fish() -> void:
+	_end_active_fight_shadow(false)
 	bite_active = false
 	pending_shadow = null
 	bite_timer.stop()
@@ -827,6 +885,7 @@ func _on_line_broken() -> void:
 	line_broken.emit()
 
 func _fail_fight() -> void:
+	_end_active_fight_shadow(true)
 	tension.stop()
 
 	fight_state = FightState.NONE

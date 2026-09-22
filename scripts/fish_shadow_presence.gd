@@ -64,6 +64,7 @@ var _spawned_shadows: Array[FishShadowActor] = []
 var _desired_count: int = 1
 var _population_reconsider_remaining: float = 0.0
 var _spawn_remaining: float = 0.0
+var _fight_shadow: FishShadowActor = null
 
 
 func _ready() -> void:
@@ -91,7 +92,7 @@ func _process(delta: float) -> void:
 		)
 		_trim_population_if_needed()
 
-	if _spawned_shadows.size() < _desired_count and _spawn_remaining <= 0.0:
+	if _get_ambient_shadow_count() < _desired_count and _spawn_remaining <= 0.0:
 		_spawn_one_shadow()
 		_spawn_remaining = _rng.randf_range(
 			respawn_delay_min,
@@ -173,6 +174,59 @@ func has_active_pre_bite_near(
 	return false
 
 
+func start_fight_shadow(
+	fish: FishData,
+	bait: Node3D,
+	existing_shadow: FishShadowActor = null,
+	size_multiplier: float = 1.0
+) -> FishShadowActor:
+	if _swim_bounds == null or not is_instance_valid(bait):
+		return null
+
+	if is_instance_valid(_fight_shadow) and _fight_shadow != existing_shadow:
+		_fight_shadow.release_from_hooked_bait(false)
+
+	var shadow := existing_shadow
+
+	if not is_instance_valid(shadow):
+		shadow = FishShadowScene.instantiate() as FishShadowActor
+		if shadow == null:
+			return null
+
+		add_child(shadow)
+		shadow.expired.connect(_on_shadow_expired)
+
+		var size_t := _get_size_ratio(fish)
+		var speed := lerpf(small_fish_speed, large_fish_speed, size_t)
+		var visual_scale := lerpf(small_fish_scale, large_fish_scale, size_t)
+
+		shadow.configure(
+			fish,
+			_swim_bounds,
+			_get_water_y(),
+			0.22,
+			speed,
+			visual_scale,
+			9999.0,
+			_rng.randi()
+		)
+
+		_spawned_shadows.append(shadow)
+
+	_fight_shadow = shadow
+	shadow.attach_to_hooked_bait(bait, fish, size_multiplier)
+	return shadow
+
+
+func end_fight_shadow(dive_away: bool = true) -> void:
+	if not is_instance_valid(_fight_shadow):
+		_fight_shadow = null
+		return
+
+	_fight_shadow.release_from_hooked_bait(dive_away)
+	_fight_shadow = null
+
+
 func rebuild_population() -> void:
 	_clear_population()
 	_desired_count = _choose_population_count()
@@ -184,7 +238,7 @@ func rebuild_population() -> void:
 func _spawn_one_shadow() -> void:
 	if _swim_bounds == null:
 		return
-	if _spawned_shadows.size() >= max_visible_shadows:
+	if _get_ambient_shadow_count() >= max_visible_shadows:
 		return
 
 	var population := _get_population()
@@ -223,14 +277,18 @@ func _spawn_one_shadow() -> void:
 
 
 func _trim_population_if_needed() -> void:
-	var excess := _spawned_shadows.size() - _desired_count
+	var excess := _get_ambient_shadow_count() - _desired_count
 
 	while excess > 0:
 		var chosen: FishShadowActor = null
 
 		# Prefer fading a fish that is not currently investigating the lure.
 		for shadow in _spawned_shadows:
-			if is_instance_valid(shadow) and not shadow.is_interested_in_bait():
+			if (
+				is_instance_valid(shadow)
+				and not shadow.is_interested_in_bait()
+				and not shadow.is_hooked_tracking()
+			):
 				chosen = shadow
 				break
 
@@ -244,6 +302,8 @@ func _trim_population_if_needed() -> void:
 
 func _on_shadow_expired(shadow: FishShadowActor) -> void:
 	_spawned_shadows.erase(shadow)
+	if shadow == _fight_shadow:
+		_fight_shadow = null
 
 
 func _cleanup_invalid_shadows() -> void:
@@ -252,12 +312,27 @@ func _cleanup_invalid_shadows() -> void:
 			_spawned_shadows.remove_at(index)
 
 
+func _get_ambient_shadow_count() -> int:
+	_cleanup_invalid_shadows()
+	var count := 0
+
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if shadow.is_hooked_tracking():
+			continue
+		count += 1
+
+	return count
+
+
 func _clear_population() -> void:
 	for shadow in _spawned_shadows:
 		if is_instance_valid(shadow):
 			shadow.queue_free()
 
 	_spawned_shadows.clear()
+	_fight_shadow = null
 
 
 func _choose_population_count() -> int:

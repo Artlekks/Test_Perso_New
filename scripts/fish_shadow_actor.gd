@@ -115,6 +115,25 @@ var rejected_interest_cooldown_max: float = 3.0
 @export_range(0.3, 3.0, 0.05)
 var inspect_speed_multiplier: float = 0.48
 
+@export_category("Hooked Fight")
+## Legacy fallback only. While the head texture is available, the real
+## center-to-nose distance is derived automatically from the Sprite3D width.
+## This avoids hand-tuning the attachment point when the sprite scale changes.
+@export_range(0.0, 0.15, 0.005)
+var fight_nose_anchor_distance: float = 0.065
+
+@export_range(0.5, 12.0, 0.1)
+var fight_sway_speed: float = 4.8
+
+@export_range(0.0, 1.0, 0.05)
+var fight_depth_ratio: float = 0.22
+
+@export_range(0.5, 3.0, 0.05)
+var fight_wave_multiplier: float = 1.35
+
+@export_range(0.1, 2.0, 0.05)
+var fight_release_fade_time: float = 0.55
+
 @export_category("Lifetime")
 @export_range(0.05, 3.0, 0.05)
 var fade_in_time: float = 0.40
@@ -166,6 +185,12 @@ var _bite_ready_timer: float = 0.0
 var _interest_cooldown: float = 0.0
 var _inspect_target_timer: float = 0.0
 var _inspect_offset: Vector3 = Vector3.ZERO
+
+var _fight_tracking: bool = false
+var _fight_bait: Node3D = null
+var _fight_last_bait_position: Vector3 = Vector3.ZERO
+var _fight_motion_direction: Vector3 = Vector3.ZERO
+var _fight_size_multiplier: float = 1.0
 
 
 func configure(
@@ -245,6 +270,72 @@ func get_pre_bite_state_name() -> String:
 			return "ROAM"
 
 
+func is_hooked_tracking() -> bool:
+	return _fight_tracking and is_instance_valid(_fight_bait)
+
+
+func attach_to_hooked_bait(
+	bait: Node3D,
+	hooked_fish_data: FishData = null,
+	size_multiplier: float = 1.0
+) -> void:
+	if not is_instance_valid(bait):
+		return
+
+	if hooked_fish_data != null:
+		fish_data = hooked_fish_data
+
+	_fight_tracking = true
+	_fight_bait = bait
+	_bait = bait
+	_observed_bait_id = bait.get_instance_id()
+	_pre_bite_state = PreBiteState.ROAM
+	_pre_bite_timer = 0.0
+	_bite_ready_timer = 0.0
+	_interest_cooldown = 0.0
+	_inspect_target_timer = 0.0
+	_inspect_offset = Vector3.ZERO
+	_pause_remaining = 0.0
+	_has_target = false
+
+	# A hooked fish must not expire simply because its former ambient lifetime ran out.
+	_expiring = false
+	_expire_fade_override = -1.0
+	_life_remaining = maxf(_life_remaining, 9999.0)
+	_age = maxf(_age, fade_in_time)
+
+	_fight_size_multiplier = clampf(size_multiplier, 0.70, 1.45)
+	_depth_ratio = minf(_depth_ratio, fight_depth_ratio)
+	_target_depth_ratio = fight_depth_ratio
+	_depth_change_remaining = 9999.0
+
+	_fight_last_bait_position = bait.global_position
+	_fight_motion_direction = _head_direction
+
+	var target := bait.global_position
+	target.y = _get_visual_plane_y()
+	global_position = target
+	_current_velocity = Vector3.ZERO
+
+
+func release_from_hooked_bait(dive_away: bool = true) -> void:
+	if not _fight_tracking:
+		return
+
+	_fight_tracking = false
+	_fight_bait = null
+	_bait = null
+	_observed_bait_id = 0
+	_fight_size_multiplier = 1.0
+	_expiring = true
+	_expire_fade_override = fight_release_fade_time
+	_life_remaining = minf(_life_remaining, fight_release_fade_time)
+
+	if dive_away:
+		_target_depth_ratio = 1.0
+		_pick_new_target()
+
+
 func consume_for_bite() -> void:
 	_pre_bite_state = PreBiteState.ROAM
 	_expiring = true
@@ -282,6 +373,13 @@ func _process(delta: float) -> void:
 		return
 
 	_update_depth(delta)
+
+	if _fight_tracking:
+		_update_hooked_motion(delta)
+		_place_body()
+		_update_visuals()
+		return
+
 	_update_bait_interest(delta)
 	_update_motion(delta)
 	_place_body()
@@ -289,6 +387,9 @@ func _process(delta: float) -> void:
 
 
 func _update_lifetime(delta: float) -> void:
+	if _fight_tracking:
+		return
+
 	_life_remaining -= delta
 
 	if _life_remaining > 0.0:
@@ -303,6 +404,12 @@ func _update_lifetime(delta: float) -> void:
 
 
 func _update_depth(delta: float) -> void:
+	if _fight_tracking:
+		_target_depth_ratio = fight_depth_ratio
+		var fight_response := clampf(1.0 - exp(-depth_response * 2.0 * delta), 0.0, 1.0)
+		_depth_ratio = lerpf(_depth_ratio, _target_depth_ratio, fight_response)
+		return
+
 	_depth_change_remaining -= delta
 
 	if _depth_change_remaining <= 0.0 and not _expiring:
@@ -570,6 +677,86 @@ func _update_motion(delta: float) -> void:
 	global_position = proposed_position
 
 
+func _update_hooked_motion(delta: float) -> void:
+	if not is_instance_valid(_fight_bait):
+		release_from_hooked_bait(true)
+		return
+
+	var bait_position := _fight_bait.global_position
+	var bait_delta := bait_position - _fight_last_bait_position
+	bait_delta.y = 0.0
+	_fight_last_bait_position = bait_position
+
+	if bait_delta.length_squared() > 0.000001:
+		var instantaneous_direction := bait_delta.normalized()
+		var direction_response := clampf(1.0 - exp(-8.0 * delta), 0.0, 1.0)
+		_fight_motion_direction = _fight_motion_direction.slerp(
+			instantaneous_direction,
+			direction_response
+		).normalized()
+
+	if _fight_motion_direction.length_squared() <= 0.0001:
+		_fight_motion_direction = _head_direction
+
+	# The bait can be several metres below the water while the shadow is rendered
+	# on a shallow visibility plane. Copying only bait X/Z creates a large
+	# perspective/parallax error: the bait and shadow no longer occupy the same
+	# screen pixel. Project the bait through the active camera onto the shadow
+	# plane instead. This keeps the fish nose visually welded to the bait at any
+	# lure depth while preserving the readable surface-shadow presentation.
+	global_position = _project_bait_to_visual_plane(bait_position)
+
+	# While being retrieved, the fish generally faces against the direction it
+	# is being pulled. Surges/thrashes still show through because the bait itself
+	# moves under the existing fight code; only the shadow anchor stays welded.
+	var desired_facing := -_fight_motion_direction
+	if desired_facing.length_squared() > 0.0001:
+		_head_direction = _head_direction.slerp(
+			desired_facing.normalized(),
+			clampf(1.0 - exp(-turn_response * 1.35 * delta), 0.0, 1.0)
+		).normalized()
+
+
+func _project_bait_to_visual_plane(bait_position: Vector3) -> Vector3:
+	var plane_y := _get_visual_plane_y()
+	var camera := get_viewport().get_camera_3d()
+
+	if camera == null:
+		return Vector3(bait_position.x, plane_y, bait_position.z)
+
+	# Build the camera ray that goes through the bait's exact screen position,
+	# then intersect that ray with the plane on which the shadow is rendered.
+	var screen_position := camera.unproject_position(bait_position)
+	var ray_origin := camera.project_ray_origin(screen_position)
+	var ray_direction := camera.project_ray_normal(screen_position)
+
+	if absf(ray_direction.y) <= 0.00001:
+		return Vector3(bait_position.x, plane_y, bait_position.z)
+
+	var distance_along_ray := (plane_y - ray_origin.y) / ray_direction.y
+
+	# A negative intersection would place the shadow behind the camera. Fall
+	# back safely rather than allowing a bad camera angle to fling it away.
+	if distance_along_ray < 0.0:
+		return Vector3(bait_position.x, plane_y, bait_position.z)
+
+	var projected := ray_origin + ray_direction * distance_along_ray
+	projected.y = plane_y
+	return projected
+
+
+func _get_head_nose_distance() -> float:
+	if head_sprite != null and head_sprite.texture != null:
+		return (
+			float(head_sprite.texture.get_width())
+			* head_sprite.pixel_size
+			* 0.5
+		)
+
+	# Fallback for a temporarily missing texture/import.
+	return fight_nose_anchor_distance
+
+
 func _face_world_position(world_position: Vector3, delta: float, response_scale: float = 1.0) -> void:
 	var direction := world_position - global_position
 	direction.y = 0.0
@@ -626,8 +813,15 @@ func _place_body() -> void:
 	if head_segment == null or middle_segment == null or tail_segment == null:
 		return
 
-	var visual_scale := base_visual_scale * lerpf(1.0, deep_scale_multiplier, _depth_ratio)
-	var phase := _swim_time * swim_wave_speed
+	var visual_scale := (
+		base_visual_scale
+		* _fight_size_multiplier
+		* lerpf(1.0, deep_scale_multiplier, _depth_ratio)
+	)
+	var active_wave_speed := swim_wave_speed
+	if _fight_tracking:
+		active_wave_speed *= fight_wave_multiplier
+	var phase := _swim_time * active_wave_speed
 
 	var head_direction := _head_direction.rotated(
 		Vector3.UP,
@@ -646,6 +840,11 @@ func _place_body() -> void:
 
 	var spacing := segment_spacing * visual_scale
 	var head_center := global_position
+	if _fight_tracking:
+		# global_position is now the screen-correct nose anchor. Derive the real
+		# center-to-nose distance from the texture width instead of guessing an
+		# offset value, then place the rest of the articulated body behind it.
+		head_center -= head_direction * _get_head_nose_distance() * visual_scale
 	var middle_center := head_center - head_direction * spacing
 	var tail_center := middle_center - middle_direction * spacing
 
@@ -684,6 +883,9 @@ func _update_visuals() -> void:
 
 
 func _get_lifecycle_alpha() -> float:
+	if _fight_tracking:
+		return 1.0
+
 	var in_alpha := clampf(_age / maxf(fade_in_time, 0.001), 0.0, 1.0)
 	var active_fade_out := fade_out_time
 
