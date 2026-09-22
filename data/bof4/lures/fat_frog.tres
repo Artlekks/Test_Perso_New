@@ -15,3 +15,5 @@ reel_speed = 0.052
 reel_rise_speed = 1.1
 metadata/acquisition = "Drop: Mud Pup (Fane); Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Heavier frog; reaches a little deeper while retaining fast rise."
+bottom_snag_resistance = 0.35
+obstacle_snag_resistance = 0.75

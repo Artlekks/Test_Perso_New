@@ -15,3 +15,5 @@ reel_rise_speed = 1.2
 reel_steer_strength = 0.9
 metadata/acquisition = "Drop: Ghost (N. Chamba); Buy: Lyp (20z)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Surface lure; effectively stays on top."
+bottom_snag_resistance = 0.10
+obstacle_snag_resistance = 0.55

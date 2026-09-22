@@ -455,11 +455,41 @@ func _get_current_snag_multiplier() -> float:
 	var multiplier := 0.0
 
 	if _is_bottom_snag_hazard():
-		multiplier = 1.0
+		var bottom_multiplier := 1.0
+
+		if (
+			data != null
+			and data.has_method(
+				"get_bottom_snag_multiplier"
+			)
+		):
+			bottom_multiplier *= float(
+				data.get_bottom_snag_multiplier()
+			)
+
+		multiplier = maxf(
+			multiplier,
+			bottom_multiplier
+		)
+
+	var obstacle_multiplier := (
+		_get_obstacle_snag_multiplier()
+	)
+
+	if (
+		obstacle_multiplier > 0.0
+		and data != null
+		and data.has_method(
+			"get_obstacle_snag_multiplier"
+		)
+	):
+		obstacle_multiplier *= float(
+			data.get_obstacle_snag_multiplier()
+		)
 
 	return maxf(
 		multiplier,
-		_get_obstacle_snag_multiplier()
+		obstacle_multiplier
 	)
 
 

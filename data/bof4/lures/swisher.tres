@@ -15,3 +15,5 @@ reel_speed = 0.06
 reel_rise_speed = 1.2
 metadata/acquisition = "Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Fast surface lure; stays near the top."
+bottom_snag_resistance = 0.10
+obstacle_snag_resistance = 0.65

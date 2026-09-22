@@ -16,3 +16,5 @@ reel_rise_speed = 0.35
 reel_steer_strength = 0.72
 metadata/acquisition = "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Deep minnow; dives quickly and stays low."
+bottom_snag_resistance = 0.40
+obstacle_snag_resistance = 0.35

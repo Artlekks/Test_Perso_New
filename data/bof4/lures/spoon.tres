@@ -14,3 +14,5 @@ reel_rise_speed = 0.55
 reel_steer_strength = 0.85
 metadata/acquisition = "Trade: Shyde (Sea Bream x1, Man-o'-War x1) (20z)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Versatile all-rounder."
+bottom_snag_resistance = 0.55
+obstacle_snag_resistance = 0.50

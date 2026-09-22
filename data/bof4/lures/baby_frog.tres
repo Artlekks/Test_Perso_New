@@ -15,3 +15,5 @@ reel_rise_speed = 0.85
 reel_steer_strength = 0.9
 metadata/acquisition = "Buy: Sarai/Shyde (20z)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Very shallow frog; reluctant to sink."
+bottom_snag_resistance = 0.25
+obstacle_snag_resistance = 0.65

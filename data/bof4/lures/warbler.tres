@@ -16,3 +16,5 @@ reel_rise_speed = 0.52
 reel_steer_strength = 0.92
 metadata/acquisition = "Trade: Shyde (Flying Fish x3); Buy: Chiqua (80z)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Deeper winder with strong lateral control."
+bottom_snag_resistance = 0.40
+obstacle_snag_resistance = 0.40

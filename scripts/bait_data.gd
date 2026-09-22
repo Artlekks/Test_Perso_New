@@ -24,6 +24,34 @@ var level: int = 1
 @export_category("Casting")
 @export var cast_weight: float = 1.0
 
+@export_category("Snag Profile")
+## 0.0 = no protection, 1.0 = completely ignores bottom snag pressure.
+## This changes only how quickly snag risk builds; it does not prevent the
+## lure from physically reaching the bottom.
+@export_range(0.0, 0.9, 0.05)
+var bottom_snag_resistance: float = 0.0
+
+## 0.0 = no protection, 1.0 = completely ignores reusable obstacle snag
+## volumes. Kept below 1.0 in current data so no lure is fully immune.
+@export_range(0.0, 0.9, 0.05)
+var obstacle_snag_resistance: float = 0.0
+
+
+func get_bottom_snag_multiplier() -> float:
+	return 1.0 - clampf(
+		bottom_snag_resistance,
+		0.0,
+		0.9
+	)
+
+
+func get_obstacle_snag_multiplier() -> float:
+	return 1.0 - clampf(
+		obstacle_snag_resistance,
+		0.0,
+		0.9
+	)
+
 
 func get_type_label() -> String:
 	match lure_type:

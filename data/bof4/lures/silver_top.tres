@@ -14,3 +14,5 @@ reel_speed = 0.06
 reel_steer_strength = 0.85
 metadata/acquisition = "Buy: Synesta/Shyde (20z)."
 metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Shallow spinner; quick retrieve."
+bottom_snag_resistance = 0.30
+obstacle_snag_resistance = 0.45
