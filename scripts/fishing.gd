@@ -71,6 +71,7 @@ var bait_landed_during_throw: bool = false
 var current_reel_animation: StringName = &""
 var bite_opportunity_animation_active: bool = false
 var bite_animation_active: bool = false
+var manual_pull_animation_active: bool = false
 var fish_resisting: bool = false
 var caught_fish: FishInstance = null
 var lure_selector_open: bool = false
@@ -357,6 +358,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+		# S is a discrete rod pull even before a fish bites. It plays the same
+		# one-shot pull reaction used during a fight and queues a short lure
+		# movement toward Ryu. K remains the smooth continuous retrieve.
+		if (
+			event.is_action_pressed("move_back")
+			and not _is_key_echo(event)
+			and not bite_opportunity_animation_active
+			and not bite_animation_active
+		):
+			caster.pull_bait_toward_player()
+			_play_manual_pull_animation()
+			get_viewport().set_input_as_handled()
+			return
+
 		if event.is_action_pressed("ds_left"):
 			technique_detector.record_pulse()
 			caster.twitch_bait(-1.0)
@@ -595,6 +610,11 @@ func _update_reel_animation() -> void:
 	if bite_animation_active:
 		return
 
+	# A manual S pull is also a one-shot. Do not let the continuous input
+	# resolver replace it with Reel/Reel_Idle before the reaction finishes.
+	if manual_pull_animation_active:
+		return
+
 	var is_reeling := Input.is_action_pressed("enter_fishing")
 	var horizontal := Input.get_axis("ds_left", "ds_right")
 	var vertical := Input.get_axis("move_forward", "move_back")
@@ -641,6 +661,9 @@ func _update_reel_animation() -> void:
 				desired_animation = &"Reel_Idle"
 
 	elif phase == Phase.IN_WATER:
+		# Normal lure-in-water state keeps the original control contract:
+		# no K = true idle; K held = active reel animation. Bite/fight
+		# presentation states above may temporarily override this.
 		if is_reeling:
 			desired_animation = &"Reel"
 		else:
@@ -654,6 +677,14 @@ func _update_reel_animation() -> void:
 
 	current_reel_animation = desired_animation
 	sprite_director.play(desired_animation)
+
+
+func _play_manual_pull_animation() -> void:
+	# The physical pulse is handled by Bait. This flag only gives the one-shot
+	# character reaction temporary ownership of the animation layer.
+	manual_pull_animation_active = true
+	current_reel_animation = &"Reel_Bite"
+	sprite_director.play(&"Reel_Bite")
 	
 func _on_animation_finished(animation_name: StringName) -> void:
 	if animation_name == &"Prep_Fishing":
@@ -718,8 +749,17 @@ func _on_animation_finished(animation_name: StringName) -> void:
 		return
 	
 	if (
-		(animation_name == &"Reel_Bite_Strong"
-		or animation_name == &"Reel_Bite")
+		animation_name == &"Reel_Bite"
+		and manual_pull_animation_active
+	):
+		manual_pull_animation_active = false
+		current_reel_animation = &""
+
+		_update_reel_animation()
+		return
+
+	if (
+		animation_name == &"Reel_Bite_Strong"
 		and bite_animation_active
 	):
 		bite_animation_active = false
@@ -756,6 +796,13 @@ func _enter_in_water() -> void:
 	phase = Phase.IN_WATER
 	technique_detector.reset()
 	technique_view.clear()
+
+	# No K means true idle from the first water frame. Bite/pull reactions may
+	# temporarily own the animation, then resolve back through the normal
+	# reel animation state machine.
+	bite_opportunity_animation_active = false
+	bite_animation_active = false
+	manual_pull_animation_active = false
 	current_reel_animation = &"Reel_Idle"
 	sprite_director.play(&"Reel_Idle")
 
@@ -864,9 +911,7 @@ func _process(delta: float) -> void:
 	if phase == Phase.FIGHT:
 		if Input.is_action_just_pressed("move_back"):
 			if not bite_animation_active:
-				bite_animation_active = true
-				current_reel_animation = &""
-				sprite_director.play(&"Reel_Bite")
+				_play_manual_pull_animation()
 			
 	var steering := Input.get_axis("ds_left", "ds_right")
 	var vertical := Input.get_axis(
@@ -950,9 +995,13 @@ func _on_bite_triggered() -> void:
 
 	caster.hide_bait_ripple()
 
+	# Confirmed hit owns the character until this non-looping animation
+	# finishes. _on_fish_hooked() may switch the gameplay phase to FIGHT
+	# immediately, but it deliberately does not stomp this reaction.
 	bite_opportunity_animation_active = false
+	manual_pull_animation_active = false
 	bite_animation_active = true
-	current_reel_animation = &""
+	current_reel_animation = &"Reel_Bite_Strong"
 
 	sprite_director.play(&"Reel_Bite_Strong")
 
@@ -960,7 +1009,11 @@ func _on_bite_opportunity_started() -> void:
 	if phase != Phase.IN_WATER:
 		return
 
+	# The fish is tugging without being hooked yet: visibly pull Ryu
+	# forward and hold this state for the entire bite window.
+	manual_pull_animation_active = false
 	bite_opportunity_animation_active = true
+	current_reel_animation = &"Reel_Front"
 
 	caster.show_bait_ripple()
 	sprite_director.play(&"Reel_Front")
@@ -971,7 +1024,11 @@ func _on_bite_missed() -> void:
 
 	caster.hide_bait_ripple()
 
+	# Release presentation ownership and immediately resolve back to the
+	# correct current state: Reel_Idle with no K, Reel while K is held.
 	bite_opportunity_animation_active = false
+	bite_animation_active = false
+	manual_pull_animation_active = false
 	current_reel_animation = &""
 
 	_update_reel_animation()
@@ -1017,6 +1074,7 @@ func _on_line_broken() -> void:
 	fish_resisting = false
 	bite_opportunity_animation_active = false
 	bite_animation_active = false
+	manual_pull_animation_active = false
 
 	phase = Phase.LINE_BROKEN
 	sprite_director.play(&"Reel_Broken_Rod")
@@ -1036,6 +1094,7 @@ func _on_fight_failed() -> void:
 	fish_resisting = false
 	bite_opportunity_animation_active = false
 	bite_animation_active = false
+	manual_pull_animation_active = false
 
 	phase = Phase.LINE_BROKEN
 	sprite_director.play(&"Reel_Broken_Rod")
@@ -1072,6 +1131,7 @@ func _on_result_screen_covered() -> void:
 	fish_resisting = false
 	bite_opportunity_animation_active = false
 	bite_animation_active = false
+	manual_pull_animation_active = false
 
 	sprite_director.play(&"Fishing_Idle")
 
@@ -1094,6 +1154,7 @@ func _on_catch_view_dismissed() -> void:
 	fish_resisting = false
 	bite_opportunity_animation_active = false
 	bite_animation_active = false
+	manual_pull_animation_active = false
 
 	caught_fish = null
 	catch_record_result = {}

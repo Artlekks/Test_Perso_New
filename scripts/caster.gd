@@ -384,6 +384,11 @@ func set_reel_steering(value: float) -> void:
 func twitch_bait(direction: float) -> void:
 	if is_instance_valid(active_bait):
 		active_bait.twitch_side(direction)
+
+
+func pull_bait_toward_player() -> void:
+	if is_instance_valid(active_bait):
+		active_bait.queue_manual_pull()
 		
 func set_fight_mode(active: bool) -> void:
 	if is_instance_valid(active_bait):

@@ -62,6 +62,15 @@ var fight_return_pull_threshold: float = 0.12
 @export_category("Free Reeling")
 @export var free_reel_speed_multiplier: float = 2.5
 
+@export_category("Manual Pull")
+## One S press queues this much horizontal travel toward the player.
+## Kept deliberately small so it reads as a rod jerk, not a teleport.
+@export var manual_pull_step_distance: float = 0.14
+## How quickly each queued pull step is played out.
+@export var manual_pull_speed: float = 1.8
+## Lets rapid S taps stack a few pulls without building an unlimited queue.
+@export var manual_pull_max_queued_distance: float = 0.42
+
 @export_category("Snag Risk")
 @export var bottom_snag_clearance: float = 0.12
 @export var snag_build_rate: float = 0.55
@@ -87,6 +96,7 @@ var reel_steering: float = 0.0
 var fight_resistance: float = 1.0
 var fish_lateral: float = 0.0
 var reel_speed_multiplier: float = 1.0
+var manual_pull_remaining: float = 0.0
 
 # Physical-only micro movement. These values never leave bait_V2.gd.
 var micro_lateral: float = 0.0
@@ -165,6 +175,7 @@ func launch(
 	air_path_playback_speed = 1.0
 	_reset_micro_movement()
 	_reset_snag_state()
+	manual_pull_remaining = 0.0
 	simulation_frozen = false
 	state = State.FLYING
 
@@ -304,6 +315,13 @@ func _physics_process(delta: float) -> void:
 	if fight_mode and fish_pull_strength > 0.0:
 		_update_micro_movement(delta)
 		_update_fish_pull(delta)
+
+	# S-pull is a short, discrete retrieve impulse layered on top of the
+	# normal water simulation. It is intentionally separate from K reeling:
+	# repeated taps can therefore retrieve in visible little increments.
+	if manual_pull_remaining > 0.0:
+		if _update_manual_pull(delta):
+			return
 	
 	match state:
 		State.FLYING:
@@ -727,6 +745,104 @@ func _update_reeling(delta: float) -> void:
 
 	_emit_depth()
 	
+func queue_manual_pull() -> void:
+	# Manual rod pulls are currently a free-lure interaction only. Fight
+	# movement remains owned by the existing reel/resistance simulation so
+	# this input cannot bypass fish balance.
+	if fight_mode:
+		return
+
+	if state != State.SINKING and state != State.IN_WATER:
+		return
+
+	if reel_target == null:
+		return
+
+	_apply_snag_input_impulse(snag_reel_press_impulse)
+
+	if snag_triggered:
+		return
+
+	manual_pull_remaining = minf(
+		manual_pull_remaining + maxf(manual_pull_step_distance, 0.0),
+		maxf(manual_pull_max_queued_distance, 0.0)
+	)
+
+
+func _update_manual_pull(delta: float) -> bool:
+	if fight_mode:
+		manual_pull_remaining = 0.0
+		return false
+
+	if reel_target == null:
+		manual_pull_remaining = 0.0
+		return false
+
+	if state != State.SINKING and state != State.IN_WATER:
+		manual_pull_remaining = 0.0
+		return false
+
+	var target_position := reel_target.global_position
+	var to_target := Vector3(
+		target_position.x - global_position.x,
+		0.0,
+		target_position.z - global_position.z
+	)
+	var distance := to_target.length()
+
+	if distance <= return_distance:
+		global_position.x = target_position.x
+		global_position.z = target_position.z
+		manual_pull_remaining = 0.0
+		reeling = false
+		returned.emit()
+		return true
+
+	if distance <= 0.0001:
+		manual_pull_remaining = 0.0
+		return false
+
+	var available_distance := maxf(
+		distance - return_distance,
+		0.0
+	)
+	var move_distance := minf(
+		minf(
+			maxf(manual_pull_speed, 0.0) * delta,
+			manual_pull_remaining
+		),
+		available_distance
+	)
+
+	if move_distance <= 0.0:
+		manual_pull_remaining = 0.0
+		return false
+
+	global_position += to_target.normalized() * move_distance
+	manual_pull_remaining = maxf(
+		manual_pull_remaining - move_distance,
+		0.0
+	)
+
+	_emit_depth()
+
+	# A manual pull can finish the retrieve exactly like normal K reeling.
+	var remaining_flat := Vector2(
+		target_position.x - global_position.x,
+		target_position.z - global_position.z
+	).length()
+
+	if remaining_flat <= return_distance:
+		global_position.x = target_position.x
+		global_position.z = target_position.z
+		manual_pull_remaining = 0.0
+		reeling = false
+		returned.emit()
+		return true
+
+	return false
+
+
 func set_data(new_data: BaitData) -> void:
 	data = new_data
 
@@ -858,6 +974,7 @@ func _get_reel_convergence(distance: float) -> float:
 
 func set_fight_mode(active: bool) -> void:
 	fight_mode = active
+	manual_pull_remaining = 0.0
 	_reset_micro_movement()
 
 	if fight_mode:
