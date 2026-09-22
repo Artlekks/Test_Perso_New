@@ -85,6 +85,7 @@ func _process(delta: float) -> void:
 	time_until_change -= delta
 
 	if time_until_change <= 0.0:
+		_reselect_fight_back_for_next_movement()
 		_choose_new_movement()
 
 	lateral = move_toward(
@@ -249,6 +250,27 @@ func react_to_release(
 	intensity = previous_intensity
 
 
+
+
+func _reselect_fight_back_for_next_movement() -> void:
+	# A species profile describes tendencies, not a one-time dice roll.
+	# Re-evaluating the weighted behavior each movement cycle lets those
+	# tendencies actually emerge over the full resistance phase.
+	var previous_fight_back := current_fight_back
+
+	current_fight_back = _choose_fight_back_type()
+
+	# Keep a continuous side run travelling in the same direction. If the
+	# fish leaves SIDE_RUN and later returns to it, choose a fresh side.
+	if (
+		current_fight_back == FightBackType.SIDE_RUN
+		and previous_fight_back != FightBackType.SIDE_RUN
+	):
+		side_direction = (
+			-1.0
+			if randf() < 0.5
+			else 1.0
+		)
 
 
 func _choose_new_movement(
