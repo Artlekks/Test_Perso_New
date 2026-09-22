@@ -65,6 +65,7 @@
 [ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="61_lure_catalog"]
 [ext_resource type="Resource" uid="uid://bdpul13jusncl" path="res://data/bof4/lures/straight.tres" id="62_straight"]
 [ext_resource type="PackedScene" path="res://actors/FishingLureSelectorView.tscn" id="63_lure_selector"]
+[ext_resource type="PackedScene" path="res://actors/FishingSnagRiskView.tscn" id="64_snag_risk"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ahm77"]
 shading_mode = 0
@@ -617,6 +618,10 @@ grow_horizontal = 2
 grow_vertical = 2
 scale = Vector2(2.4, 2.4)
 stretch_mode = 3
+
+[node name="FishingSnagRiskView" parent="UI/FishingHud" unique_id=1797529856 node_paths=PackedStringArray("caster", "screen_transition") instance=ExtResource("64_snag_risk")]
+caster = NodePath("../../../Game/Fishing/Caster")
+screen_transition = NodePath("../ScreenTransition")
 
 [node name="FishingInfoView" type="CanvasLayer" parent="UI/FishingHud" unique_id=2062759245]
 script = ExtResource("43_jf01x")

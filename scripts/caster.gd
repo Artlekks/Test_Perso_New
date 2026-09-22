@@ -4,6 +4,8 @@ signal bait_landed(point: Vector3)
 signal bait_returned
 signal bait_depth_changed(current_depth: float, total_depth: float)
 signal bait_distance_changed(distance_meters: float)
+signal bait_snag_risk_changed(value: float)
+signal bait_snagged(reason: StringName)
 
 @export var bait_scene: PackedScene
 @export var spawn_point: Node3D
@@ -110,6 +112,8 @@ func perform_cast(
 	active_bait.landed.connect(_on_bait_landed)
 	active_bait.depth_changed.connect(_on_bait_depth_changed)
 	active_bait.returned.connect(_on_bait_returned)
+	active_bait.snag_risk_changed.connect(_on_bait_snag_risk_changed)
+	active_bait.snagged.connect(_on_bait_snagged)
 
 	active_bait.set_reel_target(reel_target)
 	active_bait.set_swim_bounds(swim_bounds)
@@ -337,6 +341,14 @@ func _on_bait_depth_changed(
 		current_depth,
 		total_depth
 	)
+
+func _on_bait_snag_risk_changed(value: float) -> void:
+	bait_snag_risk_changed.emit(clampf(value, 0.0, 1.0))
+
+
+func _on_bait_snagged(reason: StringName) -> void:
+	bait_snagged.emit(reason)
+
 
 func _on_bait_returned() -> void:
 	if is_instance_valid(active_bait):
