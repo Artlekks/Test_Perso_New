@@ -1,0 +1,45 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_shadow_actor.gd" id="1_shadow_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/fish/fish_shadow_wide.png" id="2_head_texture"]
+
+[node name="FishShadowWide" type="Node3D"]
+script = ExtResource("1_shadow_script")
+family_speed_multiplier = 0.76
+family_turn_multiplier = 0.68
+family_scale_multiplier = 0.92
+fight_anchor_fraction = 0.38
+swim_wave_speed = 2.7
+pause_chance = 0.42
+
+[node name="HeadSegment" type="Node3D" parent="."]
+
+[node name="Sprite3D" type="Sprite3D" parent="HeadSegment"]
+rotation = Vector3(-1.5707963, 0, 0)
+texture = ExtResource("2_head_texture")
+pixel_size = 0.0048
+transparent = true
+shaded = false
+double_sided = true
+cast_shadow = 0
+texture_filter = 0
+
+[node name="MiddleSegment" type="Node3D" parent="."]
+[node name="Sprite3D" type="Sprite3D" parent="MiddleSegment"]
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.0048
+transparent = true
+shaded = false
+double_sided = true
+cast_shadow = 0
+texture_filter = 0
+
+[node name="TailSegment" type="Node3D" parent="."]
+[node name="Sprite3D" type="Sprite3D" parent="TailSegment"]
+rotation = Vector3(-1.5707963, 0, 0)
+pixel_size = 0.0048
+transparent = true
+shaded = false
+double_sided = true
+cast_shadow = 0
+texture_filter = 0

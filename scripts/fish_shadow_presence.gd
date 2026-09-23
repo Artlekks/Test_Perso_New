@@ -2,16 +2,20 @@ extends Node3D
 class_name FishShadowPresence
 
 const DefaultLongFishShadowScene := preload("res://actors/FishShadow.tscn")
+const DefaultRoundFishShadowScene := preload("res://actors/FishShadowRound.tscn")
+const DefaultWideFishShadowScene := preload("res://actors/FishShadowWide.tscn")
+const DefaultSquidFishShadowScene := preload("res://actors/FishShadowSquid.tscn")
+const DefaultJellyFishShadowScene := preload("res://actors/FishShadowJelly.tscn")
 
 @export_category("Visual Profiles")
 ## Alternate shadow scenes are optional. Every scene must use FishShadowActor
 ## as its root script so gameplay behavior stays shared across silhouettes.
 ## Missing profiles automatically fall back to the current long-fish shadow.
 @export var long_fish_shadow_scene: PackedScene = DefaultLongFishShadowScene
-@export var round_shadow_scene: PackedScene
-@export var wide_shadow_scene: PackedScene
-@export var squid_shadow_scene: PackedScene
-@export var jelly_shadow_scene: PackedScene
+@export var round_shadow_scene: PackedScene = DefaultRoundFishShadowScene
+@export var wide_shadow_scene: PackedScene = DefaultWideFishShadowScene
+@export var squid_shadow_scene: PackedScene = DefaultSquidFishShadowScene
+@export var jelly_shadow_scene: PackedScene = DefaultJellyFishShadowScene
 
 @export_category("Presence")
 @export var enabled: bool = true
@@ -307,8 +311,9 @@ func set_debug_forced_fish(fish: FishData) -> void:
 
 	_debug_forced_fish = fish
 
-	# The override can be assigned before deferred initialization has resolved
-	# FishSwimBounds. Store it immediately, rebuild only when spawning is ready.
+	# QA profiles/manual FISH overrides can be assigned before deferred
+	# initialization resolves FishSwimBounds. Store immediately, rebuild only
+	# once the presence system is ready to spawn.
 	if _swim_bounds != null:
 		rebuild_population()
 

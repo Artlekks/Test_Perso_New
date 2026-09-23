@@ -22,6 +22,18 @@ var pause_time_min: float = 0.8
 @export_range(0.0, 3.0, 0.05)
 var pause_time_max: float = 2.6
 
+@export_category("Visual Family Tuning")
+## Scene-level multiplier so alternate silhouette families can drift, glide, or
+## pulse differently without changing the shared gameplay lifecycle.
+@export_range(0.25, 1.75, 0.05)
+var family_speed_multiplier: float = 1.0
+
+@export_range(0.25, 2.0, 0.05)
+var family_turn_multiplier: float = 1.0
+
+@export_range(0.5, 1.5, 0.05)
+var family_scale_multiplier: float = 1.0
+
 @export_category("Body Motion")
 @export_range(0.02, 0.25, 0.005)
 var segment_spacing: float = 0.090
@@ -121,6 +133,12 @@ var inspect_speed_multiplier: float = 0.48
 ## This avoids hand-tuning the attachment point when the sprite scale changes.
 @export_range(0.0, 0.15, 0.005)
 var fight_nose_anchor_distance: float = 0.065
+
+## Fraction of the head texture width between its center and the bait anchor.
+## Long fish use 0.5 (nose on bait); round/jelly silhouettes can anchor closer
+## to their center because they do not have the same long nose-to-tail read.
+@export_range(0.0, 0.5, 0.01)
+var fight_anchor_fraction: float = 0.50
 
 @export_range(0.5, 12.0, 0.1)
 var fight_sway_speed: float = 4.8
@@ -755,6 +773,8 @@ func _update_motion(delta: float) -> void:
 
 	var desired_direction := to_target / distance_to_target
 	var speed := move_speed
+	speed *= family_speed_multiplier
+	speed *= _get_profile_speed_pulse()
 
 	if _pre_bite_state == PreBiteState.APPROACH:
 		speed *= seek_speed_multiplier
@@ -765,7 +785,11 @@ func _update_motion(delta: float) -> void:
 	speed *= lerpf(1.0, 0.82, _depth_ratio)
 
 	var desired_velocity := desired_direction * speed
-	var response := clampf(1.0 - exp(-turn_response * delta), 0.0, 1.0)
+	var response := clampf(
+		1.0 - exp(-turn_response * family_turn_multiplier * delta),
+		0.0,
+		1.0
+	)
 
 	_current_velocity = _current_velocity.lerp(desired_velocity, response)
 
@@ -874,7 +898,7 @@ func _update_hooked_motion(delta: float) -> void:
 
 		_head_direction = _head_direction.slerp(
 			desired_facing,
-			clampf(1.0 - exp(-turn_response * turn_multiplier * delta), 0.0, 1.0)
+			clampf(1.0 - exp(-turn_response * family_turn_multiplier * turn_multiplier * delta), 0.0, 1.0)
 		).normalized()
 
 
@@ -911,7 +935,7 @@ func _get_head_nose_distance() -> float:
 		return (
 			float(head_sprite.texture.get_width())
 			* head_sprite.pixel_size
-			* 0.5
+			* clampf(fight_anchor_fraction, 0.0, 0.5)
 		)
 
 	# Fallback for a temporarily missing texture/import.
@@ -926,7 +950,7 @@ func _face_world_position(world_position: Vector3, delta: float, response_scale:
 		return
 
 	var response := clampf(
-		1.0 - exp(-turn_response * response_scale * delta),
+		1.0 - exp(-turn_response * family_turn_multiplier * response_scale * delta),
 		0.0,
 		1.0
 	)
@@ -976,6 +1000,7 @@ func _place_body() -> void:
 
 	var visual_scale := (
 		base_visual_scale
+		* family_scale_multiplier
 		* _fight_size_multiplier
 		* lerpf(1.0, deep_scale_multiplier, _depth_ratio)
 	)
@@ -992,6 +1017,20 @@ func _place_body() -> void:
 			)
 	var phase := _swim_time * active_wave_speed
 
+	match _get_shadow_profile():
+		FishData.ShadowVisualProfile.ROUND:
+			_place_round_body(visual_scale, phase, wave_activity)
+		FishData.ShadowVisualProfile.WIDE:
+			_place_wide_body(visual_scale, phase, wave_activity)
+		FishData.ShadowVisualProfile.SQUID:
+			_place_squid_body(visual_scale, phase, wave_activity)
+		FishData.ShadowVisualProfile.JELLY:
+			_place_jelly_body(visual_scale, phase, wave_activity)
+		_:
+			_place_long_fish_body(visual_scale, phase, wave_activity)
+
+
+func _place_long_fish_body(visual_scale: float, phase: float, wave_activity: float) -> void:
 	var head_direction := _head_direction.rotated(
 		Vector3.UP,
 		deg_to_rad(sin(phase) * head_sway_degrees * wave_activity)
@@ -1008,18 +1047,111 @@ func _place_body() -> void:
 	).normalized()
 
 	var spacing := segment_spacing * visual_scale
-	var head_center := global_position
-	if _fight_tracking:
-		# global_position is now the screen-correct nose anchor. Derive the real
-		# center-to-nose distance from the texture width instead of guessing an
-		# offset value, then place the rest of the articulated body behind it.
-		head_center -= head_direction * _get_head_nose_distance() * visual_scale
+	var head_center := _get_profile_head_center(head_direction, visual_scale)
 	var middle_center := head_center - head_direction * spacing
 	var tail_center := middle_center - middle_direction * spacing
 
 	_place_segment(head_segment, head_center, head_direction, visual_scale)
 	_place_segment(middle_segment, middle_center, middle_direction, visual_scale)
 	_place_segment(tail_segment, tail_center, tail_direction, visual_scale)
+
+
+func _place_round_body(visual_scale: float, phase: float, wave_activity: float) -> void:
+	var wobble := sin(phase * 0.62) * 4.0 * wave_activity
+	var direction := _head_direction.rotated(Vector3.UP, deg_to_rad(wobble)).normalized()
+	var pulse := 1.0 + sin(phase * 0.90) * 0.035 * maxf(wave_activity, 0.25)
+	var head_center := _get_profile_head_center(direction, visual_scale * pulse)
+
+	_place_segment(head_segment, head_center, direction, visual_scale * pulse)
+	_place_segment(middle_segment, head_center, direction, visual_scale)
+	_place_segment(tail_segment, head_center, direction, visual_scale)
+
+
+func _place_wide_body(visual_scale: float, phase: float, wave_activity: float) -> void:
+	var glide_wobble := sin(phase * 0.42) * 2.5 * wave_activity
+	var direction := _head_direction.rotated(Vector3.UP, deg_to_rad(glide_wobble)).normalized()
+	var pulse := 1.0 + sin(phase * 0.55) * 0.015 * maxf(wave_activity, 0.25)
+	var head_center := _get_profile_head_center(direction, visual_scale * pulse)
+
+	_place_segment(head_segment, head_center, direction, visual_scale * pulse)
+	_place_segment(middle_segment, head_center, direction, visual_scale)
+	_place_segment(tail_segment, head_center, direction, visual_scale)
+
+
+func _place_squid_body(visual_scale: float, phase: float, wave_activity: float) -> void:
+	var head_wobble := sin(phase * 0.72) * 2.5 * wave_activity
+	var head_direction := _head_direction.rotated(Vector3.UP, deg_to_rad(head_wobble)).normalized()
+	var middle_direction := _head_direction.rotated(
+		Vector3.UP,
+		deg_to_rad(sin(phase - 0.85) * 5.0 * wave_activity)
+	).normalized()
+	var tail_direction := _head_direction.rotated(
+		Vector3.UP,
+		deg_to_rad(sin(phase - 1.55) * 8.0 * wave_activity)
+	).normalized()
+
+	var contraction := 1.0 + sin(phase * 1.15) * 0.035 * maxf(wave_activity, 0.30)
+	var spacing := segment_spacing * visual_scale * 0.70
+	var head_center := _get_profile_head_center(head_direction, visual_scale * contraction)
+	var middle_center := head_center - head_direction * spacing
+	var tail_center := middle_center - middle_direction * spacing * 0.88
+
+	_place_segment(head_segment, head_center, head_direction, visual_scale * contraction)
+	_place_segment(middle_segment, middle_center, middle_direction, visual_scale * 0.92)
+	_place_segment(tail_segment, tail_center, tail_direction, visual_scale * 0.82)
+
+
+func _place_jelly_body(visual_scale: float, phase: float, wave_activity: float) -> void:
+	# Jelly silhouettes read through contraction/expansion and drifting tentacles,
+	# not through a fish-like tail wave. Keep the bell near the root and let the
+	# two tentacle layers lag behind with gentle opposing sway.
+	var drift_wobble := sin(phase * 0.32) * 7.0 * wave_activity
+	var direction := _head_direction.rotated(Vector3.UP, deg_to_rad(drift_wobble)).normalized()
+	var pulse_wave := sin(phase * 0.78)
+	var bell_scale := visual_scale * (1.0 + pulse_wave * 0.08 * maxf(wave_activity, 0.25))
+	var tentacle_scale := visual_scale * (1.0 - pulse_wave * 0.035 * maxf(wave_activity, 0.25))
+	var head_center := _get_profile_head_center(direction, bell_scale)
+	var middle_center := head_center - direction * (0.028 * visual_scale)
+	var tail_center := head_center - direction * (0.050 * visual_scale)
+	var middle_direction := direction.rotated(
+		Vector3.UP,
+		deg_to_rad(sin(phase - 0.8) * 5.0 * wave_activity)
+	).normalized()
+	var tail_direction := direction.rotated(
+		Vector3.UP,
+		deg_to_rad(sin(phase - 1.6) * -7.0 * wave_activity)
+	).normalized()
+
+	_place_segment(head_segment, head_center, direction, bell_scale)
+	_place_segment(middle_segment, middle_center, middle_direction, tentacle_scale * 0.92)
+	_place_segment(tail_segment, tail_center, tail_direction, tentacle_scale * 0.78)
+
+
+func _get_profile_head_center(forward: Vector3, visual_scale: float) -> Vector3:
+	var center := global_position
+	if _fight_tracking:
+		center -= forward * _get_head_nose_distance() * visual_scale
+	return center
+
+
+func _get_shadow_profile() -> int:
+	if fish_data == null:
+		return FishData.ShadowVisualProfile.LONG_FISH
+	return fish_data.shadow_visual_profile
+
+
+func _get_profile_speed_pulse() -> float:
+	match _get_shadow_profile():
+		FishData.ShadowVisualProfile.ROUND:
+			return lerpf(0.94, 1.04, 0.5 + 0.5 * sin(_swim_time * 2.8))
+		FishData.ShadowVisualProfile.WIDE:
+			return 0.94
+		FishData.ShadowVisualProfile.SQUID:
+			return lerpf(0.72, 1.30, 0.5 + 0.5 * sin(_swim_time * 3.6))
+		FishData.ShadowVisualProfile.JELLY:
+			return lerpf(0.84, 1.08, 0.5 + 0.5 * sin(_swim_time * 2.0))
+		_:
+			return 1.0
 
 
 func _place_segment(
