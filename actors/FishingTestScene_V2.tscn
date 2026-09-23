@@ -282,6 +282,11 @@ shape = SubResource("BoxShape3D_bp5p2")
 [node name="CharacterBody3D" parent="Player" unique_id=363575400 instance=ExtResource("1_43krk")]
 collision_layer = 1
 
+[node name="ShadowSprite3D" parent="Player/CharacterBody3D/AnimatedSprite3D" parent_id_path=PackedInt32Array(363575400, 477032395) index="0" unique_id=1206580126]
+transform = Transform3D(1.166, 0, 0, 0, -6.622275e-08, 0.88, 0, -1.515, -3.8466023e-08, -0.01, -0.05, 0)
+modulate = Color(0.22911215, 0.22911215, 0.22911215, 1)
+shaded = true
+
 [node name="BaitSpawner" parent="Player/CharacterBody3D" index="3" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("14_0pfgo")

@@ -35,8 +35,8 @@ texture_filter = 0
 sprite_frames = ExtResource("2_g2awu")
 animation = &"Fishing_Idle"
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="AnimatedSprite3D" unique_id=1206580126]
-transform = Transform3D(1.125, 0, 0, 0, -4.91753e-08, 1, 0, -1.125, -4.37114e-08, 0.025370726, 0.075, -0.018492207)
+[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=1206580126]
+transform = Transform3D(1.125, 0, 0, 0, -4.91753e-08, 1.125, 0, -1.125, -4.91753e-08, 0, 0.008, 0)
 sorting_offset = -0.25
 material_override = SubResource("StandardMaterial3D_ajpwy")
 cast_shadow = 0
