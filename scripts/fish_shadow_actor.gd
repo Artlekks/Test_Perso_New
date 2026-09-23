@@ -219,6 +219,7 @@ var _rng := RandomNumberGenerator.new()
 var _depth_ratio: float = 0.3
 var _target_depth_ratio: float = 0.3
 var _depth_change_remaining: float = 0.0
+var _ambient_depth_bias: float = 0.0
 
 var _age: float = 0.0
 var _life_remaining: float = 10.0
@@ -282,6 +283,10 @@ func configure(
 
 func get_fish_data() -> FishData:
 	return fish_data
+
+
+func set_ambient_depth_bias(bias: float) -> void:
+	_ambient_depth_bias = clampf(bias, -0.35, 0.35)
 
 
 func is_interested_in_bait() -> bool:
@@ -573,6 +578,12 @@ func _pick_new_depth_target() -> void:
 		_target_depth_ratio = _rng.randf_range(0.72, 1.0)
 	else:
 		_target_depth_ratio = _rng.randf_range(preferred_min, preferred_max)
+
+	_target_depth_ratio = clampf(
+		_target_depth_ratio + _ambient_depth_bias,
+		0.02,
+		1.0
+	)
 
 
 func _update_bait_interest(delta: float) -> void:

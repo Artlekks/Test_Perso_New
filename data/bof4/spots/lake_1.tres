@@ -1,17 +1,15 @@
-[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://cxowvp5a85tsi"]
+[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://c6gvme2h1jc6u"]
 
 [ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
-[ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
-[ext_resource type="Resource" uid="uid://cys3woi0lpntp" path="res://data/bof4/fish/piranha.tres" id="4_fish"]
-[ext_resource type="Resource" uid="uid://dhnueeixwu1d6" path="res://data/bof4/fish/bass.tres" id="5_fish"]
-[ext_resource type="Resource" uid="uid://xygc445jf4oi" path="res://data/bof4/fish/blue_gill.tres" id="6_fish"]
-[ext_resource type="Resource" uid="uid://cwamaw6pettl8" path="res://data/bof4/fish/martian_squid.tres" id="7_fish"]
+[ext_resource type="Resource" uid="uid://cys3woi0lpntp" path="res://data/bof4/fish/piranha.tres" id="3_fish"]
+[ext_resource type="Resource" uid="uid://dhnueeixwu1d6" path="res://data/bof4/fish/bass.tres" id="4_fish"]
+[ext_resource type="Resource" uid="uid://xygc445jf4oi" path="res://data/bof4/fish/blue_gill.tres" id="5_fish"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 15.0
+weight = 35.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
@@ -21,22 +19,18 @@ weight = 30.0
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
-weight = 20.0
-
-[sub_resource type="Resource" id="FishSpawnEntry_4"]
-script = ExtResource("2_spawn")
-fish = ExtResource("6_fish")
-weight = 25.0
-
-[sub_resource type="Resource" id="FishSpawnEntry_5"]
-script = ExtResource("2_spawn")
-fish = ExtResource("7_fish")
-weight = 10.0
+weight = 35.0
 
 [resource]
 script = ExtResource("1_spot")
 spot_id = &"lake_1"
 spot_name = "Lake 1"
 location_description = "Synesta / Sandflier Wharf"
-fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5")])
-depth_notes = "Lake population; Martian Squid is present."
+fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
+ambient_one_shadow_weight = 0.34
+ambient_two_shadow_weight = 0.46
+ambient_three_shadow_weight = 0.2
+ambient_depth_bias = -0.02
+ambient_speed_multiplier = 0.92
+ambient_lifetime_multiplier = 1.08
+depth_notes = "Freshwater lake population; jelly/squid silhouettes excluded from ordinary lake ecology."

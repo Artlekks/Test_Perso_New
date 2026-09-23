@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://chony3vinsxmq"]
+[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://bgpekufv3f7ep"]
 
 [ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
@@ -27,4 +27,11 @@ spot_id = &"chamba"
 spot_name = "Chamba"
 location_description = "Southeast of Chamba"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
+ambient_shadow_min = 2
+ambient_one_shadow_weight = 0.0
+ambient_two_shadow_weight = 0.62
+ambient_three_shadow_weight = 0.38
+ambient_depth_bias = 0.04
+ambient_speed_multiplier = 0.78
+ambient_lifetime_multiplier = 1.25
 depth_notes = "Special Chamba population."

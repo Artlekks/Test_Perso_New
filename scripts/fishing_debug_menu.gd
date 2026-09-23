@@ -266,6 +266,13 @@ func _change_spot(step: int) -> void:
 	else:
 		_spot_index = posmod(_spot_index + step, SPOT_DATABASE.size())
 
+	# A manual spot change means "test this ecosystem". Clear a previous
+	# targeted fish/shadow override so the selected spot population becomes the
+	# source of truth immediately. The FISH row can still override it afterward.
+	_settings.set_forced_fish(null)
+	_settings.set_shadow_fish_override(null)
+	_fish_index = 0
+
 	_mark_custom_profile()
 	spot_requested.emit(SPOT_DATABASE[_spot_index])
 	debug_environment_changed.emit()
@@ -421,8 +428,13 @@ func _refresh() -> void:
 
 	var progress_text := "Progress: not connected"
 	if _progress != null:
-		progress_text = "Progress: %d / 9999 pts   Catches: %d" % [
-			_progress.get_fishing_points(),
+		var fishing_points := _progress.get_fishing_points()
+		var rank_name := _progress.get_rank_name()
+		var next_rank_points := _progress.get_next_rank_threshold()
+		progress_text = "Rank: %s   Progress: %d / %d pts   Catches: %d" % [
+			rank_name,
+			fishing_points,
+			next_rank_points,
 			_progress.get_total_catches(),
 		]
 

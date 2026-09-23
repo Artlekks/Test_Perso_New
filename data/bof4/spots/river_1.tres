@@ -1,36 +1,37 @@
-[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://cm327x0pq6fkd"]
+[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://cphp2pioqjiyv"]
 
 [ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
-[ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
-[ext_resource type="Resource" uid="uid://d0sap4gwweio" path="res://data/bof4/fish/sweetfish.tres" id="4_fish"]
-[ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="5_fish"]
-[ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="6_fish"]
+[ext_resource type="Resource" uid="uid://d0sap4gwweio" path="res://data/bof4/fish/sweetfish.tres" id="3_fish"]
+[ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="4_fish"]
+[ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="5_fish"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 20.0
+weight = 40.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
-weight = 35.0
+weight = 40.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
-weight = 30.0
-
-[sub_resource type="Resource" id="FishSpawnEntry_4"]
-script = ExtResource("2_spawn")
-fish = ExtResource("6_fish")
-weight = 15.0
+weight = 20.0
 
 [resource]
 script = ExtResource("1_spot")
 spot_id = &"river_1"
 spot_name = "River 1"
 location_description = "East of Sarai (canyon)"
-fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4")])
-depth_notes = "Shallow; waterfall area is useful for Rainbow Trout."
+fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
+ambient_shadow_max = 2
+ambient_one_shadow_weight = 0.58
+ambient_two_shadow_weight = 0.42
+ambient_three_shadow_weight = 0.0
+ambient_depth_bias = -0.14
+ambient_speed_multiplier = 1.15
+ambient_lifetime_multiplier = 0.9
+depth_notes = "Freshwater river population; marine jelly species removed for ecosystem plausibility."

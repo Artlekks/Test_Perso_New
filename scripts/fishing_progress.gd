@@ -12,6 +12,21 @@ const SAVE_VERSION: int = 1
 const MAX_FISHING_POINTS: int = 9999
 const SAVE_PATH: String = "user://fishing_progress.json"
 
+# Breath of Fire IV fishing-level thresholds. At an exact threshold the new
+# rank begins (e.g. 200 points = Beginner+).
+const RANK_TABLE: Array[Dictionary] = [
+	{"min_points": 0, "name": "Beginner"},
+	{"min_points": 200, "name": "Beginner+"},
+	{"min_points": 500, "name": "Beginner++"},
+	{"min_points": 1000, "name": "Rodman"},
+	{"min_points": 2000, "name": "Rodman+"},
+	{"min_points": 4000, "name": "Rodman++"},
+	{"min_points": 5000, "name": "Rodmaster"},
+	{"min_points": 7000, "name": "Rodmaster+"},
+	{"min_points": 9000, "name": "Rodmaster++"},
+	{"min_points": 9500, "name": "The Fish"},
+]
+
 var fishing_points: int = 0
 var total_catches: int = 0
 var species_records: Dictionary = {}
@@ -61,6 +76,7 @@ func record_catch(fish: FishInstance) -> Dictionary:
 		record.get("king_caught", false)
 	)
 	var previous_fishing_points := fishing_points
+	var previous_rank_index := get_rank_index(previous_fishing_points)
 
 	record["fish_name"] = fish.species.fish_name
 	record["caught_count"] = int(
@@ -82,6 +98,8 @@ func record_catch(fish: FishInstance) -> Dictionary:
 	species_records[species_key] = record
 	total_catches += 1
 	_recalculate_fishing_points()
+	var current_rank_index := get_rank_index(fishing_points)
+	var current_rank_name := get_rank_name(fishing_points)
 
 	var result := {
 		"species_key": species_key,
@@ -106,7 +124,12 @@ func record_catch(fish: FishInstance) -> Dictionary:
 		"fishing_points_gained": maxi(
 			fishing_points - previous_fishing_points,
 			0
-		)
+		),
+		"rank_before": get_rank_name(previous_fishing_points),
+		"rank_name": current_rank_name,
+		"rank_index": current_rank_index,
+		"rank_up": current_rank_index > previous_rank_index,
+		"next_rank_points": get_next_rank_threshold(fishing_points)
 	}
 
 	save_to_disk()
@@ -122,6 +145,51 @@ func record_catch(fish: FishInstance) -> Dictionary:
 
 func get_fishing_points() -> int:
 	return fishing_points
+
+
+func get_rank_index(points: int = -1) -> int:
+	var value := fishing_points if points < 0 else clampi(points, 0, MAX_FISHING_POINTS)
+	var rank_index := 0
+
+	for index in range(RANK_TABLE.size()):
+		if value < int(RANK_TABLE[index]["min_points"]):
+			break
+		rank_index = index
+
+	return rank_index
+
+
+func get_rank_name(points: int = -1) -> String:
+	if RANK_TABLE.is_empty():
+		return ""
+
+	return str(RANK_TABLE[get_rank_index(points)]["name"])
+
+
+func get_next_rank_threshold(points: int = -1) -> int:
+	var value := fishing_points if points < 0 else clampi(points, 0, MAX_FISHING_POINTS)
+	var current_index := get_rank_index(value)
+
+	if current_index >= RANK_TABLE.size() - 1:
+		return MAX_FISHING_POINTS
+
+	return int(RANK_TABLE[current_index + 1]["min_points"])
+
+
+func get_rank_progress(points: int = -1) -> Dictionary:
+	var value := fishing_points if points < 0 else clampi(points, 0, MAX_FISHING_POINTS)
+	var index := get_rank_index(value)
+	var current_min := int(RANK_TABLE[index]["min_points"])
+	var next_threshold := get_next_rank_threshold(value)
+
+	return {
+		"index": index,
+		"name": str(RANK_TABLE[index]["name"]),
+		"points": value,
+		"current_min": current_min,
+		"next_threshold": next_threshold,
+		"is_max_rank": index >= RANK_TABLE.size() - 1,
+	}
 
 
 func get_total_catches() -> int:

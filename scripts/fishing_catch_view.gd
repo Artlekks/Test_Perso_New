@@ -153,6 +153,13 @@ func _set_record_text(record_result: Dictionary) -> void:
 	):
 		lines.append("FIRST KING!")
 
+	var rank_name := str(record_result.get("rank_name", ""))
+	if not rank_name.is_empty():
+		if bool(record_result.get("rank_up", false)):
+			lines.append("RANK UP! " + rank_name.to_upper())
+		else:
+			lines.append("RANK: " + rank_name.to_upper())
+
 	_record_label.text = "\n".join(lines)
 
 

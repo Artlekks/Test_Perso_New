@@ -89,6 +89,14 @@ var _spawn_remaining: float = 0.0
 var _fight_shadow: FishShadowActor = null
 var _no_readable_shadow_time: float = 0.0
 var _debug_forced_fish: FishData = null
+var _spot_shadow_min: int = -1
+var _spot_shadow_max: int = -1
+var _spot_one_weight: float = -1.0
+var _spot_two_weight: float = -1.0
+var _spot_three_weight: float = -1.0
+var _spot_depth_bias: float = 0.0
+var _spot_speed_multiplier: float = 1.0
+var _spot_lifetime_multiplier: float = 1.0
 
 
 func _ready() -> void:
@@ -141,6 +149,7 @@ func _initialize_presence() -> void:
 		push_warning("FishShadowPresence needs FishSwimBounds on its fish zone.")
 		return
 
+	_refresh_spot_identity()
 	_desired_count = _choose_population_count()
 	_population_reconsider_remaining = _rng.randf_range(
 		population_reconsider_time_min,
@@ -323,6 +332,7 @@ func get_debug_forced_fish() -> FishData:
 
 
 func rebuild_population() -> void:
+	_refresh_spot_identity()
 	_clear_population()
 	_desired_count = _choose_population_count()
 
@@ -333,7 +343,11 @@ func rebuild_population() -> void:
 func _spawn_one_shadow() -> void:
 	if _swim_bounds == null:
 		return
-	if _get_ambient_shadow_count() >= max_visible_shadows:
+	var spawn_cap := max_visible_shadows
+	if _spot_shadow_max >= 1:
+		spawn_cap = _spot_shadow_max
+	spawn_cap = clampi(spawn_cap, 1, 3)
+	if _get_ambient_shadow_count() >= spawn_cap:
 		return
 
 	var population := _get_population()
@@ -353,14 +367,22 @@ func _spawn_one_shadow() -> void:
 	var size_t := _get_size_ratio(fish)
 	var speed := lerpf(small_fish_speed, large_fish_speed, size_t)
 	speed *= _rng.randf_range(1.0 - speed_variation, 1.0 + speed_variation)
+	speed *= _spot_speed_multiplier
 
 	var visual_scale := lerpf(small_fish_scale, large_fish_scale, size_t)
-	var initial_depth := _pick_visual_depth(fish)
+	var initial_depth := clampf(
+		_pick_visual_depth(fish) + _spot_depth_bias,
+		0.05,
+		0.82
+	)
 	var lifetime := _rng.randf_range(
 		shadow_lifetime_min,
 		maxf(shadow_lifetime_max, shadow_lifetime_min)
 	)
+	lifetime *= _spot_lifetime_multiplier
 
+	if shadow.has_method("set_ambient_depth_bias"):
+		shadow.set_ambient_depth_bias(_spot_depth_bias)
 	shadow.configure(
 		fish,
 		_swim_bounds,
@@ -483,21 +505,38 @@ func _clear_population() -> void:
 
 
 func _choose_population_count() -> int:
-	var minimum := clampi(min_visible_shadows, 1, 3)
-	var maximum := clampi(max_visible_shadows, minimum, 3)
+	var configured_min := min_visible_shadows
+	var configured_max := max_visible_shadows
+	var configured_one := one_shadow_weight
+	var configured_two := two_shadow_weight
+	var configured_three := three_shadow_weight
+
+	if _spot_shadow_min >= 1:
+		configured_min = _spot_shadow_min
+	if _spot_shadow_max >= 1:
+		configured_max = _spot_shadow_max
+	if _spot_one_weight >= 0.0:
+		configured_one = _spot_one_weight
+	if _spot_two_weight >= 0.0:
+		configured_two = _spot_two_weight
+	if _spot_three_weight >= 0.0:
+		configured_three = _spot_three_weight
+
+	var minimum := clampi(configured_min, 1, 3)
+	var maximum := clampi(configured_max, minimum, 3)
 
 	var options: Array[int] = []
 	var weights: Array[float] = []
 
 	if minimum <= 1 and maximum >= 1:
 		options.append(1)
-		weights.append(maxf(one_shadow_weight, 0.0))
+		weights.append(maxf(configured_one, 0.0))
 	if minimum <= 2 and maximum >= 2:
 		options.append(2)
-		weights.append(maxf(two_shadow_weight, 0.0))
+		weights.append(maxf(configured_two, 0.0))
 	if minimum <= 3 and maximum >= 3:
 		options.append(3)
-		weights.append(maxf(three_shadow_weight, 0.0))
+		weights.append(maxf(configured_three, 0.0))
 
 	if options.is_empty():
 		return minimum
@@ -518,6 +557,36 @@ func _choose_population_count() -> int:
 			return options[index]
 
 	return options[options.size() - 1]
+
+
+func _refresh_spot_identity() -> void:
+	_spot_shadow_min = -1
+	_spot_shadow_max = -1
+	_spot_one_weight = -1.0
+	_spot_two_weight = -1.0
+	_spot_three_weight = -1.0
+	_spot_depth_bias = 0.0
+	_spot_speed_multiplier = 1.0
+	_spot_lifetime_multiplier = 1.0
+
+	if _fish_zone == null:
+		return
+
+	var spot: FishingSpotData = null
+	if _fish_zone.has_method("get_fishing_spot"):
+		spot = _fish_zone.get_fishing_spot() as FishingSpotData
+
+	if spot == null:
+		return
+
+	_spot_shadow_min = spot.ambient_shadow_min
+	_spot_shadow_max = spot.ambient_shadow_max
+	_spot_one_weight = spot.ambient_one_shadow_weight
+	_spot_two_weight = spot.ambient_two_shadow_weight
+	_spot_three_weight = spot.ambient_three_shadow_weight
+	_spot_depth_bias = spot.ambient_depth_bias
+	_spot_speed_multiplier = spot.ambient_speed_multiplier
+	_spot_lifetime_multiplier = spot.ambient_lifetime_multiplier
 
 
 func _get_water_y() -> float:
