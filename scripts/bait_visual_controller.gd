@@ -10,6 +10,10 @@ extends Node3D
 @onready var segment_02: Node3D = $Segment02
 @onready var segment_03: Node3D = $Segment03
 
+@onready var segment_01_mesh: MeshInstance3D = $Segment01/Mesh
+@onready var segment_02_mesh: MeshInstance3D = $Segment02/Mesh
+@onready var segment_03_mesh: MeshInstance3D = $Segment03/Mesh
+
 @export_category("Directional Response")
 @export var motion_threshold: float = 0.015
 
@@ -43,7 +47,37 @@ var surface_vertical_influence: float = 0.10
 @export_range(0.0, 45.0, 1.0)
 var max_underwater_pitch_degrees: float = 18.0
 
+@export_category("Depth Readability")
+## Presentation only. At this depth the lure reaches its full underwater fade.
+## Slightly shorter than Pass 1 so the depth cue becomes obvious sooner.
+@export_range(0.25, 8.0, 0.05)
+var full_depth_visual_fade_distance: float = 2.35
+
+## Lower than 1.0 makes the depth cue appear earlier; higher delays it.
+@export_range(0.25, 2.5, 0.05)
+var depth_visual_curve_power: float = 0.62
+
+## Preserve the lure color authored in the bait scene/material at the surface.
+## This prevents the readability system from replacing an orange/yellow lure with
+## a hard-coded presentation color.
+@export var preserve_material_surface_color: bool = true
+
+## Used only when preserve_material_surface_color is disabled.
+@export var surface_visual_color_override: Color = Color(1.0, 0.58, 0.10, 0.95)
+
+## At maximum visual depth, darken the authored surface color toward black while
+## keeping its hue family (orange stays dark orange rather than becoming blue).
+@export_range(0.0, 0.95, 0.01)
+var deep_darkening_amount: float = 0.72
+
+## Extra alpha loss at maximum visual depth. Combined with the stronger darkening,
+## this makes a deep lure visibly read as underwater without making it disappear.
+@export_range(0.10, 1.0, 0.01)
+var deep_alpha_multiplier: float = 0.48
+
 var _bait: Node3D = null
+var _visual_material: StandardMaterial3D = null
+var _surface_base_color: Color = Color.WHITE
 var _previous_world_position: Vector3 = Vector3.ZERO
 
 var _head_direction: Vector3 = Vector3.FORWARD
@@ -57,6 +91,9 @@ func _ready() -> void:
 	if _bait == null:
 		set_physics_process(false)
 		return
+
+	_prepare_visual_material()
+	_update_depth_readability()
 
 	_previous_world_position = _bait.global_position
 
@@ -149,6 +186,65 @@ func _physics_process(delta: float) -> void:
 	)
 
 	_place_chain()
+	_update_depth_readability()
+
+
+func _prepare_visual_material() -> void:
+	var source_material: Material = segment_01_mesh.get_active_material(0)
+
+	if source_material is StandardMaterial3D:
+		_visual_material = source_material.duplicate() as StandardMaterial3D
+	else:
+		_visual_material = StandardMaterial3D.new()
+		_visual_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_visual_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	# One duplicated material is intentionally shared by the three visual pieces
+	# of THIS bait instance only. It cannot recolor other active baits/scenes.
+	segment_01_mesh.set_surface_override_material(0, _visual_material)
+	segment_02_mesh.set_surface_override_material(0, _visual_material)
+	segment_03_mesh.set_surface_override_material(0, _visual_material)
+
+	# Capture the authored lure color once. Depth presentation should modulate the
+	# artist/user-selected color, never replace it with a hard-coded hue.
+	if preserve_material_surface_color:
+		_surface_base_color = _visual_material.albedo_color
+	else:
+		_surface_base_color = surface_visual_color_override
+
+
+func _update_depth_readability() -> void:
+	if _visual_material == null or not is_instance_valid(_bait):
+		return
+
+	if not _bait.has_method("get_water_surface_y"):
+		_visual_material.albedo_color = _surface_base_color
+		return
+
+	var water_surface_y: float = float(_bait.get_water_surface_y())
+	var depth_below_surface: float = maxf(
+		water_surface_y - _bait.global_position.y,
+		0.0
+	)
+
+	var normalized_depth: float = clampf(
+		depth_below_surface / maxf(full_depth_visual_fade_distance, 0.001),
+		0.0,
+		1.0
+	)
+
+	var depth_blend: float = pow(
+		normalized_depth,
+		maxf(depth_visual_curve_power, 0.01)
+	)
+
+	var deep_color: Color = _surface_base_color.darkened(deep_darkening_amount)
+	deep_color.a = _surface_base_color.a * deep_alpha_multiplier
+
+	_visual_material.albedo_color = _surface_base_color.lerp(
+		deep_color,
+		depth_blend
+	)
 
 
 func _follow_direction(
