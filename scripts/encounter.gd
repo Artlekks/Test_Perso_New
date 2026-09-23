@@ -18,6 +18,7 @@ signal line_broken
 signal fish_resistance_started
 signal fish_spent
 signal technique_applied(level: int)
+signal fish_thrash_started(intensity: float)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -151,6 +152,7 @@ func _ready() -> void:
 	tension.hook_off.connect(_on_hook_off)
 	tension.line_broken.connect(_on_line_broken)
 	fish_behavior.pressure_changed.connect(_on_fish_behavior_pressure_changed)
+	fish_behavior.thrash_started.connect(_on_fish_behavior_thrash_started)
 
 	base_line_break_delay = tension.line_break_delay
 	_apply_rod_tension_settings()
@@ -903,6 +905,13 @@ func _fail_fight() -> void:
 	active_fish = null
 	pending_fish_entry = null
 	active_bait_data = null
+
+
+func _on_fish_behavior_thrash_started(intensity: float) -> void:
+	if fight_state == FightState.NONE:
+		return
+
+	fish_thrash_started.emit(clampf(intensity, 0.0, 1.0))
 
 func _on_fish_behavior_pressure_changed(value: float) -> void:
 	fish_behavior_pressure = clampf(value, 0.0, 1.0)

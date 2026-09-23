@@ -280,6 +280,16 @@ func get_water_surface_y() -> float:
 	return water_y
 
 
+func get_surface_position() -> Vector3:
+	# Surface-space presentation point above this lure. Keep surface effects
+	# on the water plane even when the lure itself is several metres deep.
+	return Vector3(
+		global_position.x,
+		water_y + 0.025,
+		global_position.z
+	)
+
+
 func get_reel_target_node() -> Node3D:
 	return reel_target
 

@@ -17,6 +17,9 @@ const FishingTechniqueViewScene = preload(
 const FishingProgressScript = preload(
 	"res://scripts/fishing_progress.gd"
 )
+const FishingSurfaceSplashScene = preload(
+	"res://actors/FishingSurfaceSplash.tscn"
+)
 
 enum Phase {
 	INACTIVE,
@@ -59,6 +62,16 @@ enum Phase {
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
 
+@export_category("Surface Splash Presentation")
+## Placeholder strengths only. The event timing stays valid when the final
+## BOF4 splash sprites replace the procedural placeholder.
+@export_range(0.1, 2.0, 0.05)
+var landing_splash_strength: float = 0.55
+@export_range(0.1, 2.0, 0.05)
+var fight_thrash_splash_strength: float = 1.0
+@export_range(0.05, 1.5, 0.05)
+var fight_thrash_splash_cooldown: float = 0.35
+
 @export_category("Pre-Cast Curve")
 ## Seconds of held A/D needed to move from straight to maximum curve.
 @export var curve_adjust_speed: float = 1.25
@@ -94,6 +107,7 @@ var preview_cast_curve_value: float = 0.0
 var cast_confirm_ready: bool = true
 var cast_power_locked: bool = false
 var _quick_cast_cancel_active: bool = false
+var _fight_splash_cooldown_left: float = 0.0
 
 func _ready() -> void:
 	game_mode.mode_changed.connect(_on_mode_changed)
@@ -112,6 +126,7 @@ func _ready() -> void:
 	encounter.fish_pull_changed.connect(_on_fish_pull_changed)
 	encounter.fish_movement_changed.connect(_on_fish_movement_changed)
 	encounter.fish_depth_intent_changed.connect(_on_fish_depth_intent_changed)
+	encounter.fish_thrash_started.connect(_on_fish_thrash_started)
 	encounter.hook_off.connect(_on_fight_failed)
 	encounter.line_broken.connect(_on_line_broken)
 	encounter.fish_caught.connect(_on_fish_caught)
@@ -784,7 +799,13 @@ func _on_exploration_view_ready() -> void:
 func _on_aim_changed(direction: Vector3) -> void:
 	camera_rig.set_fishing_aim_direction(direction)
 
-func _on_bait_landed(_point: Vector3) -> void:
+func _on_bait_landed(point: Vector3) -> void:
+	_spawn_surface_splash(
+		point,
+		landing_splash_strength,
+		false
+	)
+
 	if phase == Phase.THROW:
 		bait_landed_during_throw = true
 		return
@@ -862,6 +883,11 @@ func _on_bait_returned() -> void:
 	aim.resume()
 	
 func _process(delta: float) -> void:
+	_fight_splash_cooldown_left = maxf(
+		_fight_splash_cooldown_left - delta,
+		0.0
+	)
+
 	if phase == Phase.CURVE:
 		var curve_input := Input.get_axis(
 			"ds_left",
@@ -1073,6 +1099,48 @@ func _on_fish_depth_intent_changed(value: float) -> void:
 		return
 
 	caster.set_fish_depth_intent(value)
+
+
+func _on_fish_thrash_started(intensity: float) -> void:
+	if phase != Phase.FIGHT:
+		return
+
+	if _fight_splash_cooldown_left > 0.0:
+		return
+
+	var surface_position: Vector3 = caster.get_active_bait_surface_position()
+	var strength := fight_thrash_splash_strength * lerpf(
+		0.70,
+		1.15,
+		clampf(intensity, 0.0, 1.0)
+	)
+
+	_spawn_surface_splash(surface_position, strength, true)
+	_fight_splash_cooldown_left = fight_thrash_splash_cooldown
+
+
+func _spawn_surface_splash(
+	world_position: Vector3,
+	strength: float,
+	is_fight_splash: bool
+) -> void:
+	if FishingSurfaceSplashScene == null:
+		return
+
+	var splash := FishingSurfaceSplashScene.instantiate()
+	var scene_root := get_tree().current_scene
+
+	if scene_root == null:
+		return
+
+	scene_root.add_child(splash)
+
+	if splash.has_method("configure"):
+		splash.configure(
+			world_position,
+			maxf(strength, 0.05),
+			is_fight_splash
+		)
 
 func _on_line_broken() -> void:
 	if phase != Phase.FIGHT:

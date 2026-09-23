@@ -416,6 +416,16 @@ func get_current_bait_depth() -> float:
 func get_current_total_depth() -> float:
 	return current_total_depth
 
+
+func get_active_bait_surface_position() -> Vector3:
+	if not is_instance_valid(active_bait):
+		return global_position
+
+	if active_bait.has_method("get_surface_position"):
+		return active_bait.get_surface_position()
+
+	return active_bait.global_position
+
 func cancel_bait() -> void:
 	if is_instance_valid(active_bait):
 		active_bait.queue_free()

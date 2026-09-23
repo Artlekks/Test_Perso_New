@@ -3,6 +3,7 @@ extends Node
 signal movement_changed(lateral: float)
 signal depth_changed(value: float)
 signal pressure_changed(value: float)
+signal thrash_started(intensity: float)
 
 
 @export_category("Movement")
@@ -15,6 +16,44 @@ signal pressure_changed(value: float)
 @export var lateral_response_speed: float = 2.5
 @export var depth_response_speed: float = 2.0
 @export var pressure_response_speed: float = 2.5
+
+
+@export_category("Fight Rhythm")
+# These multipliers shape the cadence of each movement archetype without
+# changing fish stamina, strength, or authored profile weights.
+@export_range(0.25, 2.0, 0.05)
+var surge_hold_multiplier: float = 0.90
+
+@export_range(0.25, 2.0, 0.05)
+var side_run_hold_multiplier: float = 1.15
+
+@export_range(0.25, 2.0, 0.05)
+var dive_hold_multiplier: float = 1.15
+
+@export_range(0.25, 2.0, 0.05)
+var rise_hold_multiplier: float = 0.90
+
+@export_range(0.25, 2.0, 0.05)
+var erratic_hold_multiplier: float = 0.55
+
+# A selected behavior that is strongly represented in the species profile
+# lasts a little longer; rare secondary behaviors are intentionally shorter.
+@export_range(0.0, 0.5, 0.05)
+var profile_persistence_amount: float = 0.20
+
+# Movement response is also archetype-aware: runners react sharply sideways,
+# divers/rising fish commit vertically, and erratic fish snap between targets.
+@export_range(1.0, 2.0, 0.05)
+var side_run_lateral_response_multiplier: float = 1.20
+
+@export_range(1.0, 2.0, 0.05)
+var vertical_response_multiplier: float = 1.20
+
+@export_range(1.0, 2.0, 0.05)
+var erratic_response_multiplier: float = 1.40
+
+@export_range(1.0, 2.0, 0.05)
+var surge_pressure_response_multiplier: float = 1.20
 
 
 @export_category("Thrashing")
@@ -59,6 +98,12 @@ var target_lateral: float = 0.0
 var target_depth: float = 0.0
 var target_pressure: float = 0.0
 
+# Per-target response multipliers are reset whenever a new movement is chosen.
+# They affect presentation cadence only; they do not change fight balance.
+var current_lateral_response_multiplier: float = 1.0
+var current_depth_response_multiplier: float = 1.0
+var current_pressure_response_multiplier: float = 1.0
+
 
 # Species-specific movement values.
 var lateral_activity: float = 1.0
@@ -91,19 +136,25 @@ func _process(delta: float) -> void:
 	lateral = move_toward(
 		lateral,
 		target_lateral,
-		lateral_response_speed * delta
+		lateral_response_speed
+		* current_lateral_response_multiplier
+		* delta
 	)
 
 	depth = move_toward(
 		depth,
 		target_depth,
-		depth_response_speed * delta
+		depth_response_speed
+		* current_depth_response_multiplier
+		* delta
 	)
 
 	pressure = move_toward(
 		pressure,
 		target_pressure,
-		pressure_response_speed * delta
+		pressure_response_speed
+		* current_pressure_response_multiplier
+		* delta
 	)
 
 	movement_changed.emit(lateral)
@@ -204,6 +255,10 @@ func stop() -> void:
 	target_depth = 0.0
 	target_pressure = 0.0
 
+	current_lateral_response_multiplier = 1.0
+	current_depth_response_multiplier = 1.0
+	current_pressure_response_multiplier = 1.0
+
 	lateral = 0.0
 	depth = 0.0
 	pressure = 0.0
@@ -279,6 +334,8 @@ func _choose_new_movement(
 	var new_lateral := 0.0
 	var new_depth := 0.0
 	var new_pressure := 0.0
+
+	_apply_response_rhythm_for_current_behavior()
 
 	match current_fight_back:
 
@@ -367,6 +424,10 @@ func _choose_new_movement(
 			1.0
 		)
 
+		# Presentation hook only. The splash/view layer can react to a real
+		# thrash without inferring it from tension or movement values.
+		thrash_started.emit(movement_intensity)
+
 		new_lateral = clampf(
 			new_lateral * thrash_multiplier,
 			-1.0,
@@ -391,9 +452,19 @@ func _choose_new_movement(
 
 
 	else:
-		time_until_change = randf_range(
+		var base_hold_time := randf_range(
 			min_change_time,
 			max_change_time
+		)
+
+		time_until_change = (
+			base_hold_time
+			* _get_behavior_hold_multiplier(
+				current_fight_back
+			)
+			* _get_profile_persistence_multiplier(
+				current_fight_back
+			)
 		)
 
 
@@ -411,6 +482,129 @@ func _choose_new_movement(
 		new_pressure
 		* movement_intensity
 	)
+
+
+func _apply_response_rhythm_for_current_behavior() -> void:
+	current_lateral_response_multiplier = 1.0
+	current_depth_response_multiplier = 1.0
+	current_pressure_response_multiplier = 1.0
+
+	match current_fight_back:
+		FightBackType.SURGE_AWAY:
+			current_pressure_response_multiplier = (
+				surge_pressure_response_multiplier
+			)
+
+		FightBackType.SIDE_RUN:
+			current_lateral_response_multiplier = (
+				side_run_lateral_response_multiplier
+			)
+
+		FightBackType.DIVE, FightBackType.RISE:
+			current_depth_response_multiplier = (
+				vertical_response_multiplier
+			)
+
+		FightBackType.ERRATIC:
+			current_lateral_response_multiplier = (
+				erratic_response_multiplier
+			)
+			current_depth_response_multiplier = (
+				erratic_response_multiplier
+			)
+			current_pressure_response_multiplier = (
+				erratic_response_multiplier
+			)
+
+
+func _get_behavior_hold_multiplier(
+	fight_back_type: int
+) -> float:
+	match fight_back_type:
+		FightBackType.SURGE_AWAY:
+			return surge_hold_multiplier
+
+		FightBackType.SIDE_RUN:
+			return side_run_hold_multiplier
+
+		FightBackType.DIVE:
+			return dive_hold_multiplier
+
+		FightBackType.RISE:
+			return rise_hold_multiplier
+
+		FightBackType.ERRATIC:
+			return erratic_hold_multiplier
+
+	return 1.0
+
+
+func _get_profile_persistence_multiplier(
+	fight_back_type: int
+) -> float:
+	if behavior_profile == null:
+		return 1.0
+
+	var selected_weight := _get_profile_weight_for_type(
+		fight_back_type
+	)
+
+	var max_weight := maxf(
+		behavior_profile.surge_weight,
+		behavior_profile.side_run_weight
+	)
+	max_weight = maxf(
+		max_weight,
+		behavior_profile.dive_weight
+	)
+	max_weight = maxf(
+		max_weight,
+		behavior_profile.rise_weight
+	)
+	max_weight = maxf(
+		max_weight,
+		behavior_profile.erratic_weight
+	)
+
+	if max_weight <= 0.0:
+		return 1.0
+
+	var dominance := clampf(
+		selected_weight / max_weight,
+		0.0,
+		1.0
+	)
+
+	return lerpf(
+		1.0 - profile_persistence_amount,
+		1.0 + profile_persistence_amount,
+		dominance
+	)
+
+
+func _get_profile_weight_for_type(
+	fight_back_type: int
+) -> float:
+	if behavior_profile == null:
+		return 1.0
+
+	match fight_back_type:
+		FightBackType.SURGE_AWAY:
+			return behavior_profile.surge_weight
+
+		FightBackType.SIDE_RUN:
+			return behavior_profile.side_run_weight
+
+		FightBackType.DIVE:
+			return behavior_profile.dive_weight
+
+		FightBackType.RISE:
+			return behavior_profile.rise_weight
+
+		FightBackType.ERRATIC:
+			return behavior_profile.erratic_weight
+
+	return 1.0
 
 
 func _choose_fight_back_type(

@@ -16,7 +16,6 @@ king_size = 70.0
 base_stamina = 84.9
 base_strength = 0.67
 preferred_depth_min = 0.65
-preferred_depth_max = 1.0
 max_points = 280
 accepts_all_lures = true
 behavior_profile = ExtResource("2_behavior")
