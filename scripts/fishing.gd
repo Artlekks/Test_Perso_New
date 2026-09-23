@@ -34,6 +34,7 @@ enum Phase {
 	BAIT_FLYING,
 	IN_WATER,
 	FIGHT,
+	LANDING,
 	CATCH,
 	LINE_BROKEN,
 	WAIT_RESULT,
@@ -61,6 +62,15 @@ enum Phase {
 @export var lure_selector_view: Node
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
+
+@export_category("Catch Landing")
+## Short presentation bridge after the fish has genuinely reached Ryu. Fight
+## mechanics are already over here; this only gives the final splash/shadow a
+## readable beat before the existing Fishing_Catch animation/result view.
+@export_range(0.05, 1.0, 0.05)
+var catch_landing_hold_time: float = 0.32
+@export_range(0.1, 2.0, 0.05)
+var catch_landing_splash_strength: float = 0.90
 
 @export_category("Surface Splash Presentation")
 ## Placeholder strengths only. The event timing stays valid when the final
@@ -858,10 +868,7 @@ func _on_bait_returned() -> void:
 	technique_view.clear()
 
 	if phase == Phase.FIGHT:
-		encounter.catch_fish()
-
-		phase = Phase.CATCH
-		sprite_director.play(&"Fishing_Catch")
+		_begin_catch_landing()
 		return
 	
 	if _quick_cast_cancel_active and camera_rig.has_method(
@@ -883,6 +890,63 @@ func _on_bait_returned() -> void:
 	sprite_director.play(&"Fishing_Idle")
 	aim.resume()
 	
+func _begin_catch_landing() -> void:
+	if phase != Phase.FIGHT:
+		return
+
+	phase = Phase.LANDING
+
+	# The fish has genuinely reached the catch threshold. Stop player/fight
+	# control immediately so a new resistance round cannot start during the
+	# presentation beat.
+	encounter.set_player_reeling(false)
+	caster.set_reeling(false)
+	caster.set_bait_frozen(true)
+	encounter.begin_catch_landing()
+
+	current_reel_animation = &"Reel_Idle"
+	fish_resisting = false
+	bite_opportunity_animation_active = false
+	bite_animation_active = false
+	manual_pull_animation_active = false
+	sprite_director.play(&"Reel_Idle")
+
+	# Keep the close-up stable while the final surface reaction plays. The normal
+	# catch-result cleanup already unfreezes the fishing camera afterwards.
+	camera_rig.set_fishing_camera_frozen(true)
+
+	if is_instance_valid(caster.active_bait):
+		var landing_position: Vector3 = (
+			caster.get_active_bait_visual_surface_position()
+		)
+		_spawn_surface_splash(
+			landing_position,
+			catch_landing_splash_strength,
+			true
+		)
+
+	_run_catch_landing_sequence()
+
+
+func _run_catch_landing_sequence() -> void:
+	await get_tree().create_timer(
+		maxf(catch_landing_hold_time, 0.05)
+	).timeout
+
+	if phase != Phase.LANDING:
+		return
+
+	# This is the actual commit point. Records/CATCH feedback happen here, after
+	# the visual landing beat, not the instant the bait crosses the threshold.
+	encounter.catch_fish()
+
+	if caster.has_method("release_returned_bait_after_landing"):
+		caster.release_returned_bait_after_landing()
+
+	phase = Phase.CATCH
+	sprite_director.play(&"Fishing_Catch")
+
+
 func _process(delta: float) -> void:
 	_fight_splash_cooldown_left = maxf(
 		_fight_splash_cooldown_left - delta,
@@ -981,6 +1045,9 @@ func _on_fish_hooked() -> void:
 	phase = Phase.FIGHT
 	fish_resisting = true
 	caster.set_fight_mode(true)
+
+	if caster.has_method("set_hold_returned_bait_for_landing"):
+		caster.set_hold_returned_bait_for_landing(true)
 
 	var is_reeling := Input.is_action_pressed("enter_fishing")
 
@@ -1175,6 +1242,9 @@ func _on_line_broken() -> void:
 	if phase != Phase.FIGHT:
 		return
 
+	if caster.has_method("set_hold_returned_bait_for_landing"):
+		caster.set_hold_returned_bait_for_landing(false)
+
 	_freeze_failed_fight()
 
 	current_reel_animation = &""
@@ -1194,6 +1264,9 @@ func _freeze_failed_fight() -> void:
 func _on_fight_failed() -> void:
 	if phase != Phase.FIGHT:
 		return
+
+	if caster.has_method("set_hold_returned_bait_for_landing"):
+		caster.set_hold_returned_bait_for_landing(false)
 
 	_freeze_failed_fight()
 
@@ -1222,6 +1295,8 @@ func _on_result_screen_covered() -> void:
 	# Everything ugly happens here where the player cannot see it.
 
 	caster.set_reeling(false)
+	if caster.has_method("set_hold_returned_bait_for_landing"):
+		caster.set_hold_returned_bait_for_landing(false)
 	caster.cancel_bait()
 
 	camera_rig.set_fishing_camera_frozen(false)
@@ -1249,6 +1324,8 @@ func _on_catch_view_dismissed() -> void:
 		return
 
 	caster.set_reeling(false)
+	if caster.has_method("set_hold_returned_bait_for_landing"):
+		caster.set_hold_returned_bait_for_landing(false)
 	caster.cancel_bait()
 
 	camera_rig.set_fishing_camera_frozen(false)

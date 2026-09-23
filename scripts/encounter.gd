@@ -163,6 +163,17 @@ func _on_bait_landed(_point: Vector3) -> void:
 	bite_timer.start(first_bite_delay)
 
 func _on_bait_returned() -> void:
+	# A successful hooked return can enter a short landing presentation. Keep
+	# the fight shadow and active fish alive until Fishing explicitly commits
+	# the catch; otherwise the fish would disappear before the landing splash.
+	if (
+		caster != null
+		and caster.has_method("is_holding_returned_bait_for_landing")
+		and caster.is_holding_returned_bait_for_landing()
+	):
+		begin_catch_landing()
+		return
+
 	_end_active_fight_shadow(false)
 	bite_timer.stop()
 	bite_window_timer.stop()
@@ -456,6 +467,29 @@ func _end_active_fight_shadow(dive_away: bool) -> void:
 		active_fight_shadow.release_from_hooked_bait(dive_away)
 
 	active_fight_shadow = null
+
+
+func begin_catch_landing() -> void:
+	# Freeze the fight without consuming the fish yet. This is intentionally a
+	# presentation-only bridge between the final reel return and catch result.
+	bite_active = false
+	pending_shadow = null
+	bite_timer.stop()
+	bite_window_timer.stop()
+	tension.stop()
+
+	fight_state = FightState.NONE
+	rounds_remaining = 0
+	recovery_time_left = 0.0
+	player_reeling = false
+	fish_behavior.stop()
+
+	_set_active_fight_shadow_visual_state(&"spent")
+	if (
+		is_instance_valid(active_fight_shadow)
+		and active_fight_shadow.has_method("begin_catch_landing")
+	):
+		active_fight_shadow.begin_catch_landing()
 
 
 func catch_fish() -> void:

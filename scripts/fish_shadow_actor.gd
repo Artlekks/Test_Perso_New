@@ -397,6 +397,19 @@ func set_fight_visual_state(state_name: StringName) -> void:
 			_fight_wave_activity = fight_resisting_wave_activity
 
 
+func begin_catch_landing() -> void:
+	if not _fight_tracking:
+		return
+
+	# The fight is over mechanically, but keep the shadow attached for the brief
+	# landing beat. Remove thrash opposition and calm the body so the final
+	# splash can mask a deliberate fade instead of a fish fighting in Ryu's feet.
+	_fight_follow_alignment = 1.0
+	_fight_wave_activity = minf(fight_spent_wave_activity, 0.18)
+	_fight_thrash_time_left = 0.0
+	_fight_thrash_intensity = 0.0
+
+
 func play_fight_thrash(intensity: float) -> void:
 	if not _fight_tracking:
 		return

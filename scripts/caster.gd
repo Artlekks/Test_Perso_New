@@ -47,6 +47,12 @@ var current_bait_depth: float = 0.0
 var current_total_depth: float = 0.0
 var active_rod_data: RodData = null
 
+# During a successful hooked return, keep the bait node alive for a brief
+# landing presentation instead of deleting it the instant it reaches Ryu.
+# Normal free-lure returns/cancels still use the original immediate cleanup.
+var _hold_returned_bait_for_landing: bool = false
+var _returned_bait_waiting_for_release: bool = false
+
 func _process(_delta: float) -> void:
 	if not is_instance_valid(active_bait):
 		return
@@ -85,6 +91,9 @@ func perform_cast(
 
 	if is_instance_valid(active_bait):
 		active_bait.queue_free()
+
+	_hold_returned_bait_for_landing = false
+	_returned_bait_waiting_for_release = false
 
 	# Never let the next encounter inherit depth information from the
 	# previous cast before the new bait emits its first depth update.
@@ -359,17 +368,44 @@ func _on_bait_snagged(reason: StringName) -> void:
 
 func _on_bait_returned() -> void:
 	if is_instance_valid(active_bait):
-		# Stop the lure immediately before queue_free(). Deletion itself is
-		# deferred, so this prevents a final process tick from producing HUD
-		# updates after the return/cancel signal has already started hiding UI.
+		# Stop the lure immediately. Deletion itself is normally deferred, but a
+		# successful hooked return can deliberately keep the frozen bait alive for
+		# a short landing presentation so the fish shadow/splash still have a real
+		# visual anchor.
 		active_bait.process_mode = Node.PROCESS_MODE_DISABLED
-		active_bait.queue_free()
 
-	active_bait = null
+		if _hold_returned_bait_for_landing:
+			_returned_bait_waiting_for_release = true
+		else:
+			active_bait.queue_free()
+			active_bait = null
+
 	current_bait_depth = 0.0
 	current_total_depth = 0.0
 	bait_distance_changed.emit(0.0)
 	bait_returned.emit()
+
+
+func set_hold_returned_bait_for_landing(active: bool) -> void:
+	_hold_returned_bait_for_landing = active
+
+
+func is_holding_returned_bait_for_landing() -> bool:
+	return (
+		_hold_returned_bait_for_landing
+		and _returned_bait_waiting_for_release
+		and is_instance_valid(active_bait)
+	)
+
+
+func release_returned_bait_after_landing() -> void:
+	_hold_returned_bait_for_landing = false
+	_returned_bait_waiting_for_release = false
+
+	if is_instance_valid(active_bait):
+		active_bait.queue_free()
+
+	active_bait = null
 
 
 func set_reeling(active: bool) -> void:
