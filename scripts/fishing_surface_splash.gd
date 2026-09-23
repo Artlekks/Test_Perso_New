@@ -58,6 +58,9 @@ func configure(
 	fight_variant: bool
 ) -> void:
 	global_position = world_position + Vector3.UP * surface_offset
+	# Rotate the placeholder as a whole so repeated splashes do not stamp the
+	# exact same jet/drop silhouette every time. The ring itself is symmetric.
+	rotation.y = randf_range(-PI, PI)
 	_strength = maxf(strength, 0.05)
 	_fight_variant = fight_variant
 	_lifetime = fight_lifetime if fight_variant else landing_lifetime

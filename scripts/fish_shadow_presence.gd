@@ -1,7 +1,17 @@
 extends Node3D
 class_name FishShadowPresence
 
-const FishShadowScene := preload("res://actors/FishShadow.tscn")
+const DefaultLongFishShadowScene := preload("res://actors/FishShadow.tscn")
+
+@export_category("Visual Profiles")
+## Alternate shadow scenes are optional. Every scene must use FishShadowActor
+## as its root script so gameplay behavior stays shared across silhouettes.
+## Missing profiles automatically fall back to the current long-fish shadow.
+@export var long_fish_shadow_scene: PackedScene = DefaultLongFishShadowScene
+@export var round_shadow_scene: PackedScene
+@export var wide_shadow_scene: PackedScene
+@export var squid_shadow_scene: PackedScene
+@export var jelly_shadow_scene: PackedScene
 
 @export_category("Presence")
 @export var enabled: bool = true
@@ -189,7 +199,7 @@ func start_fight_shadow(
 	var shadow := existing_shadow
 
 	if not is_instance_valid(shadow):
-		shadow = FishShadowScene.instantiate() as FishShadowActor
+		shadow = _instantiate_shadow_for_fish(fish)
 		if shadow == null:
 			return null
 
@@ -218,6 +228,58 @@ func start_fight_shadow(
 	return shadow
 
 
+func _instantiate_shadow_for_fish(fish: FishData) -> FishShadowActor:
+	var scene := _get_shadow_scene_for_fish(fish)
+	if scene == null:
+		push_warning("FishShadowPresence has no usable shadow scene.")
+		return null
+
+	var instance := scene.instantiate()
+	var shadow := instance as FishShadowActor
+
+	if shadow == null:
+		if is_instance_valid(instance):
+			instance.queue_free()
+		push_warning(
+			"Fish shadow profile scene must use FishShadowActor as its root script."
+		)
+		return null
+
+	return shadow
+
+
+func _get_shadow_scene_for_fish(fish: FishData) -> PackedScene:
+	var profile := FishData.ShadowVisualProfile.LONG_FISH
+
+	if fish != null:
+		profile = fish.shadow_visual_profile
+
+	var scene: PackedScene = null
+
+	match profile:
+		FishData.ShadowVisualProfile.ROUND:
+			scene = round_shadow_scene
+		FishData.ShadowVisualProfile.WIDE:
+			scene = wide_shadow_scene
+		FishData.ShadowVisualProfile.SQUID:
+			scene = squid_shadow_scene
+		FishData.ShadowVisualProfile.JELLY:
+			scene = jelly_shadow_scene
+		_:
+			scene = long_fish_shadow_scene
+
+	if scene != null:
+		return scene
+
+	# During the architecture pass only LONG_FISH has authored visuals. This
+	# fallback lets us tag unusual species now without changing their current
+	# appearance until their dedicated scenes are added later.
+	if long_fish_shadow_scene != null:
+		return long_fish_shadow_scene
+
+	return DefaultLongFishShadowScene
+
+
 func end_fight_shadow(dive_away: bool = true) -> void:
 	if not is_instance_valid(_fight_shadow):
 		_fight_shadow = null
@@ -243,7 +305,7 @@ func _spawn_one_shadow() -> void:
 
 	var population := _get_population()
 	var fish := _pick_weighted_fish(population)
-	var shadow := FishShadowScene.instantiate() as FishShadowActor
+	var shadow := _instantiate_shadow_for_fish(fish)
 
 	if shadow == null:
 		return

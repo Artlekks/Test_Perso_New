@@ -61,6 +61,21 @@ var resistance_rounds: int = 2
 @export var recovery_time_min: float = 0.8
 @export var recovery_time_max: float = 1.5
 
+@export_category("Shadow Presentation")
+
+## Selects the visual family used by the reusable fish-shadow presence system.
+## Profiles may point to different FishShadowActor scenes while sharing the
+## same pre-bite, fight-tracking, and encounter logic.
+enum ShadowVisualProfile {
+	LONG_FISH,
+	ROUND,
+	WIDE,
+	SQUID,
+	JELLY,
+}
+
+@export var shadow_visual_profile: ShadowVisualProfile = ShadowVisualProfile.LONG_FISH
+
 @export_category("Presentation")
 
 @export var portrait: Texture2D
