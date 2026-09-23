@@ -65,6 +65,8 @@
 [ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="61_lure_catalog"]
 [ext_resource type="Resource" uid="uid://bdpul13jusncl" path="res://data/bof4/lures/straight.tres" id="62_straight"]
 [ext_resource type="PackedScene" path="res://actors/FishingLureSelectorView.tscn" id="63_lure_selector"]
+[ext_resource type="Script" uid="uid://vbd5g476jff" path="res://scripts/fishing_line_view.gd" id="64_fishing_line"]
+[ext_resource type="Script" uid="uid://bna836brpjjnk" path="res://scripts/fishing_rod_tip_tracker.gd" id="65_rod_tip_tracker"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ahm77"]
 shading_mode = 0
@@ -246,12 +248,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.48561275, 0)
 [node name="FishSwimBounds" parent="World/FishZone_V2" index="3"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, -5)
 
-[node name="BoundsShape3D" parent="World/FishZone_V2/FishSwimBounds" index="0"]
-transform = Transform3D(0.37909654, 0, 0.082705885, 0, 1, 0, -0.20739219, 0, 0.1511798, 0.67768085, -1.0262369, 4.4502516)
-
-[node name="FishShadowPresence" parent="World/FishZone_V2" index="4"]
-min_visible_shadows = 2
-
 [node name="DepthZones_V2" type="Node3D" parent="World" unique_id=1945045358]
 
 [node name="DepthFloor_1" type="StaticBody3D" parent="World/DepthZones_V2" unique_id=1617723803]
@@ -294,6 +290,13 @@ screen_offset = Vector2(-25, -90)
 anchor = NodePath("..")
 camera = NodePath("../../../CameraRig/Camera3D")
 screen_offset = Vector2(0, -60)
+
+[node name="RodTipTracker" type="Marker3D" parent="Player/CharacterBody3D" unique_id=862572580 node_paths=PackedStringArray("source_sprite", "camera", "fallback_marker")]
+script = ExtResource("65_rod_tip_tracker")
+source_sprite = NodePath("../AnimatedSprite3D")
+camera = NodePath("../../../CameraRig/Camera3D")
+fallback_marker = NodePath("../BaitSpawner")
+pixel_correction = Vector2(1, -22)
 
 [node name="RyuScreenNotifier" type="VisibleOnScreenNotifier3D" parent="Player/CharacterBody3D" unique_id=2104172510]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27968735, -0.11015487)
@@ -793,6 +796,11 @@ min_speed = 2.0
 launch_angle_degrees = 30.0
 reel_target = NodePath("../../../Player/CharacterBody3D/ReelEndPoint")
 distance_meter_scale = 4.0
+
+[node name="FishingLineView" type="Node3D" parent="Game/Fishing" unique_id=2069580850 node_paths=PackedStringArray("caster", "rod_tip")]
+script = ExtResource("64_fishing_line")
+caster = NodePath("../Caster")
+rod_tip = NodePath("../../../Player/CharacterBody3D/RodTipTracker")
 
 [node name="Encounter" type="Node" parent="Game/Fishing" unique_id=105265296 node_paths=PackedStringArray("caster")]
 script = ExtResource("24_cybga")
