@@ -9,7 +9,7 @@
 script = ExtResource("1_shadow_script")
 family_speed_multiplier = 0.92
 family_turn_multiplier = 1.12
-family_scale_multiplier = 0.92
+family_scale_multiplier = 1.70
 fight_anchor_fraction = 0.46
 segment_spacing = 0.075
 swim_wave_speed = 3.6

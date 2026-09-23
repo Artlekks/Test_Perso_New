@@ -31,7 +31,7 @@ var family_speed_multiplier: float = 1.0
 @export_range(0.25, 2.0, 0.05)
 var family_turn_multiplier: float = 1.0
 
-@export_range(0.5, 1.5, 0.05)
+@export_range(0.5, 2.5, 0.05)
 var family_scale_multiplier: float = 1.0
 
 @export_category("Body Motion")
