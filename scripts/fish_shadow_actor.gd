@@ -134,6 +134,44 @@ var fight_wave_multiplier: float = 1.35
 @export_range(0.1, 2.0, 0.05)
 var fight_release_fade_time: float = 0.55
 
+@export_category("Hooked Fight Orientation")
+## 0 = face fully against bait travel, 1 = travel with bait.
+@export_range(0.0, 1.0, 0.05)
+var fight_resisting_follow_alignment: float = 0.92
+
+@export_range(0.0, 1.0, 0.05)
+var fight_exhausted_follow_alignment: float = 0.97
+
+@export_range(0.0, 1.0, 0.05)
+var fight_spent_follow_alignment: float = 1.0
+
+@export_category("Hooked Fight Close Catch")
+## Near Ryu, readability wins over free fight-facing. The fish head is blended
+## toward the reel target so it cannot visually flip backward into the player.
+@export_range(0.5, 5.0, 0.1)
+var fight_close_align_start_distance: float = 3.0
+
+@export_range(0.1, 3.0, 0.1)
+var fight_close_align_full_distance: float = 1.4
+
+@export_range(0.5, 4.0, 0.1)
+var fight_close_turn_multiplier: float = 1.8
+
+@export_range(0.0, 2.0, 0.05)
+var fight_resisting_wave_activity: float = 1.0
+
+@export_range(0.0, 2.0, 0.05)
+var fight_exhausted_wave_activity: float = 0.58
+
+@export_range(0.0, 2.0, 0.05)
+var fight_spent_wave_activity: float = 0.30
+
+@export_range(0.05, 1.0, 0.05)
+var fight_thrash_visual_time: float = 0.36
+
+@export_range(1.0, 2.5, 0.05)
+var fight_thrash_wave_boost: float = 1.55
+
 @export_category("Lifetime")
 @export_range(0.05, 3.0, 0.05)
 var fade_in_time: float = 0.40
@@ -191,6 +229,10 @@ var _fight_bait: Node3D = null
 var _fight_last_bait_position: Vector3 = Vector3.ZERO
 var _fight_motion_direction: Vector3 = Vector3.ZERO
 var _fight_size_multiplier: float = 1.0
+var _fight_follow_alignment: float = 0.05
+var _fight_wave_activity: float = 1.0
+var _fight_thrash_time_left: float = 0.0
+var _fight_thrash_intensity: float = 0.0
 
 
 func configure(
@@ -305,6 +347,10 @@ func attach_to_hooked_bait(
 	_age = maxf(_age, fade_in_time)
 
 	_fight_size_multiplier = clampf(size_multiplier, 0.70, 1.45)
+	_fight_follow_alignment = fight_resisting_follow_alignment
+	_fight_wave_activity = fight_resisting_wave_activity
+	_fight_thrash_time_left = 0.0
+	_fight_thrash_intensity = 0.0
 	_depth_ratio = minf(_depth_ratio, fight_depth_ratio)
 	_target_depth_ratio = fight_depth_ratio
 	_depth_change_remaining = 9999.0
@@ -327,6 +373,8 @@ func release_from_hooked_bait(dive_away: bool = true) -> void:
 	_bait = null
 	_observed_bait_id = 0
 	_fight_size_multiplier = 1.0
+	_fight_thrash_time_left = 0.0
+	_fight_thrash_intensity = 0.0
 	_expiring = true
 	_expire_fade_override = fight_release_fade_time
 	_life_remaining = minf(_life_remaining, fight_release_fade_time)
@@ -334,6 +382,27 @@ func release_from_hooked_bait(dive_away: bool = true) -> void:
 	if dive_away:
 		_target_depth_ratio = 1.0
 		_pick_new_target()
+
+
+func set_fight_visual_state(state_name: StringName) -> void:
+	match state_name:
+		&"spent":
+			_fight_follow_alignment = fight_spent_follow_alignment
+			_fight_wave_activity = fight_spent_wave_activity
+		&"exhausted":
+			_fight_follow_alignment = fight_exhausted_follow_alignment
+			_fight_wave_activity = fight_exhausted_wave_activity
+		_:
+			_fight_follow_alignment = fight_resisting_follow_alignment
+			_fight_wave_activity = fight_resisting_wave_activity
+
+
+func play_fight_thrash(intensity: float) -> void:
+	if not _fight_tracking:
+		return
+
+	_fight_thrash_intensity = clampf(intensity, 0.0, 1.0)
+	_fight_thrash_time_left = fight_thrash_visual_time
 
 
 func consume_for_bite() -> void:
@@ -706,14 +775,70 @@ func _update_hooked_motion(delta: float) -> void:
 	# lure depth while preserving the readable surface-shadow presentation.
 	global_position = _project_bait_to_visual_plane(bait_position)
 
-	# While being retrieved, the fish generally faces against the direction it
-	# is being pulled. Surges/thrashes still show through because the bait itself
-	# moves under the existing fight code; only the shadow anchor stays welded.
-	var desired_facing := -_fight_motion_direction
-	if desired_facing.length_squared() > 0.0001:
+	# Normal hooked motion follows the bait/retrieve direction so the fish reads
+	# as physically attached to the lure. Resistance is shown mostly through body
+	# wave and lateral motion. Only a genuine thrash temporarily turns the fish
+	# strongly against the retrieve.
+	if _fight_thrash_time_left > 0.0:
+		_fight_thrash_time_left = maxf(_fight_thrash_time_left - delta, 0.0)
+
+	var follow_alignment := _fight_follow_alignment
+	var turn_multiplier := 1.10
+
+	if _fight_thrash_time_left > 0.0:
+		# Only a genuine thrash strongly turns the fish against the retrieve.
+		# Weak thrashes oppose less; strong thrashes can approach a full reversal.
+		follow_alignment = lerpf(0.25, 0.05, _fight_thrash_intensity)
+		turn_multiplier = lerpf(1.45, 2.0, _fight_thrash_intensity)
+
+	var motion_direction := _fight_motion_direction.normalized()
+	if motion_direction.length_squared() > 0.0001:
+		# Rotate from fully opposed (180 degrees) toward fully following (0 degrees).
+		# Preserve the fish's current turning side so intermediate states do not
+		# suddenly flip from left-leaning to right-leaning.
+		var side_sign := signf(_head_direction.cross(motion_direction).y)
+		if is_zero_approx(side_sign):
+			side_sign = 1.0
+
+		var offset_angle := PI * (1.0 - clampf(follow_alignment, 0.0, 1.0))
+		var desired_facing := motion_direction.rotated(
+			Vector3.UP,
+			offset_angle * side_sign
+		).normalized()
+
+		# Close to the catch point, the lure head is visually the line-entry cue.
+		# Force the fish progressively toward Ryu so the head cannot end up facing
+		# away from the character or disappearing backward through the feet.
+		if _fight_bait.has_method("get_reel_target_node"):
+			var reel_target_node = _fight_bait.get_reel_target_node()
+			if is_instance_valid(reel_target_node):
+				var bait_to_target: Vector3 = (
+					reel_target_node.global_position - bait_position
+				)
+				bait_to_target.y = 0.0
+
+				var target_distance := bait_to_target.length()
+				if (
+					target_distance > 0.0001
+					and target_distance < fight_close_align_start_distance
+				):
+					var close_blend := 1.0 - smoothstep(
+						fight_close_align_full_distance,
+						fight_close_align_start_distance,
+						target_distance
+					)
+					desired_facing = desired_facing.slerp(
+						bait_to_target.normalized(),
+						clampf(close_blend, 0.0, 1.0)
+					).normalized()
+					turn_multiplier = maxf(
+						turn_multiplier,
+						fight_close_turn_multiplier
+					)
+
 		_head_direction = _head_direction.slerp(
-			desired_facing.normalized(),
-			clampf(1.0 - exp(-turn_response * 1.35 * delta), 0.0, 1.0)
+			desired_facing,
+			clampf(1.0 - exp(-turn_response * turn_multiplier * delta), 0.0, 1.0)
 		).normalized()
 
 
@@ -819,23 +944,31 @@ func _place_body() -> void:
 		* lerpf(1.0, deep_scale_multiplier, _depth_ratio)
 	)
 	var active_wave_speed := swim_wave_speed
+	var wave_activity := 1.0
 	if _fight_tracking:
 		active_wave_speed *= fight_wave_multiplier
+		wave_activity = _fight_wave_activity
+		if _fight_thrash_time_left > 0.0:
+			wave_activity *= lerpf(
+				1.15,
+				fight_thrash_wave_boost,
+				_fight_thrash_intensity
+			)
 	var phase := _swim_time * active_wave_speed
 
 	var head_direction := _head_direction.rotated(
 		Vector3.UP,
-		deg_to_rad(sin(phase) * head_sway_degrees)
+		deg_to_rad(sin(phase) * head_sway_degrees * wave_activity)
 	).normalized()
 
 	var middle_direction := _head_direction.rotated(
 		Vector3.UP,
-		deg_to_rad(sin(phase - 0.90) * middle_sway_degrees)
+		deg_to_rad(sin(phase - 0.90) * middle_sway_degrees * wave_activity)
 	).normalized()
 
 	var tail_direction := _head_direction.rotated(
 		Vector3.UP,
-		deg_to_rad(sin(phase - 1.80) * tail_sway_degrees)
+		deg_to_rad(sin(phase - 1.80) * tail_sway_degrees * wave_activity)
 	).normalized()
 
 	var spacing := segment_spacing * visual_scale

@@ -66,9 +66,9 @@ enum Phase {
 ## Placeholder strengths only. The event timing stays valid when the final
 ## BOF4 splash sprites replace the procedural placeholder.
 @export_range(0.1, 2.0, 0.05)
-var landing_splash_strength: float = 0.55
+var landing_splash_strength: float = 0.66
 @export_range(0.1, 2.0, 0.05)
-var fight_thrash_splash_strength: float = 1.0
+var fight_thrash_splash_strength: float = 0.82
 @export_range(0.05, 1.5, 0.05)
 var fight_thrash_splash_cooldown: float = 0.35
 
@@ -127,6 +127,7 @@ func _ready() -> void:
 	encounter.fish_movement_changed.connect(_on_fish_movement_changed)
 	encounter.fish_depth_intent_changed.connect(_on_fish_depth_intent_changed)
 	encounter.fish_thrash_started.connect(_on_fish_thrash_started)
+	encounter.fish_resistance_started.connect(_on_fish_resistance_started_splash)
 	encounter.hook_off.connect(_on_fight_failed)
 	encounter.line_broken.connect(_on_line_broken)
 	encounter.fish_caught.connect(_on_fish_caught)
@@ -1101,14 +1102,30 @@ func _on_fish_depth_intent_changed(value: float) -> void:
 	caster.set_fish_depth_intent(value)
 
 
+func _on_fish_resistance_started_splash() -> void:
+	# The info box calls the beginning of a resistance round "thrashing about".
+	# Guarantee matching visual feedback here instead of relying only on the
+	# separate random micro-thrash roll inside FishBehavior.
+	if phase != Phase.FIGHT:
+		return
+
+	var surface_position: Vector3 = caster.get_active_bait_visual_surface_position()
+	_spawn_surface_splash(
+		surface_position,
+		maxf(fight_thrash_splash_strength * 0.95, 0.05),
+		true
+	)
+	_fight_splash_cooldown_left = fight_thrash_splash_cooldown
+
+
 func _on_fish_thrash_started(intensity: float) -> void:
 	if phase != Phase.FIGHT:
 		return
 
-	if _fight_splash_cooldown_left > 0.0:
-		return
-
-	var surface_position: Vector3 = caster.get_active_bait_surface_position()
+	# A real FishBehavior thrash should always have a visual cue. Do not let the
+	# generic splash cooldown swallow the event; the signal itself is already
+	# discrete and only fires once per actual thrash choice.
+	var surface_position: Vector3 = caster.get_active_bait_visual_surface_position()
 	var strength := fight_thrash_splash_strength * lerpf(
 		0.70,
 		1.15,
@@ -1141,6 +1158,18 @@ func _spawn_surface_splash(
 			maxf(strength, 0.05),
 			is_fight_splash
 		)
+
+	# Fight splashes are a readability cue for the hooked fish, not a persistent
+	# footprint in world space. The bait can move a meaningful distance during
+	# the splash lifetime, so keep the effect visually centered on the bait head.
+	# The splash itself remains on the water plane; only its projected screen
+	# position follows the underwater bait. Landing splashes stay fixed.
+	if (
+		is_fight_splash
+		and splash.has_method("set_follow_target")
+		and is_instance_valid(caster.active_bait)
+	):
+		splash.set_follow_target(caster.active_bait)
 
 func _on_line_broken() -> void:
 	if phase != Phase.FIGHT:

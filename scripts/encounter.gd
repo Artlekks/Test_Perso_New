@@ -436,6 +436,14 @@ func _start_active_fight_shadow(existing_shadow: Node = null) -> void:
 	)
 
 
+func _set_active_fight_shadow_visual_state(state_name: StringName) -> void:
+	if not is_instance_valid(active_fight_shadow):
+		return
+
+	if active_fight_shadow.has_method("set_fight_visual_state"):
+		active_fight_shadow.set_fight_visual_state(state_name)
+
+
 func _end_active_fight_shadow(dive_away: bool) -> void:
 	if not is_instance_valid(active_fight_shadow):
 		active_fight_shadow = null
@@ -670,6 +678,7 @@ func _on_fish_behavior_depth_changed(value: float) -> void:
 
 func _start_resistance_round() -> void:
 	fight_state = FightState.RESISTING
+	_set_active_fight_shadow_visual_state(&"resisting")
 	fish_resistance_started.emit()
 	recovery_time_left = 0.0
 	caster.set_reel_speed_multiplier(1.0)
@@ -705,6 +714,7 @@ func _finish_resistance_round() -> void:
 		return
 
 	fight_state = FightState.EXHAUSTED
+	_set_active_fight_shadow_visual_state(&"exhausted")
 
 	# Exhausted does NOT mean motionless.
 	tension.set_fish_resistance(
@@ -734,6 +744,7 @@ func _finish_resistance_round() -> void:
 
 func _enter_spent() -> void:
 	fight_state = FightState.SPENT
+	_set_active_fight_shadow_visual_state(&"spent")
 	fish_spent.emit()
 	
 	recovery_time_left = spent_recovery_time
@@ -754,6 +765,7 @@ func _enter_spent() -> void:
 
 func _restart_from_spent() -> void:
 	fight_state = FightState.RESISTING
+	_set_active_fight_shadow_visual_state(&"resisting")
 	recovery_time_left = 0.0
 
 	rounds_remaining = 1
@@ -911,7 +923,15 @@ func _on_fish_behavior_thrash_started(intensity: float) -> void:
 	if fight_state == FightState.NONE:
 		return
 
-	fish_thrash_started.emit(clampf(intensity, 0.0, 1.0))
+	var clamped_intensity := clampf(intensity, 0.0, 1.0)
+
+	if (
+		is_instance_valid(active_fight_shadow)
+		and active_fight_shadow.has_method("play_fight_thrash")
+	):
+		active_fight_shadow.play_fight_thrash(clamped_intensity)
+
+	fish_thrash_started.emit(clamped_intensity)
 
 func _on_fish_behavior_pressure_changed(value: float) -> void:
 	fish_behavior_pressure = clampf(value, 0.0, 1.0)
