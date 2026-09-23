@@ -60,6 +60,14 @@ var large_fish_speed: float = 0.24
 @export_range(0.0, 0.5, 0.01)
 var speed_variation: float = 0.10
 
+@export_category("Ambient Readability")
+## Ambient shadows are allowed to dive/fade, but if every live fish becomes
+## effectively invisible for this long, bring one back toward a readable depth.
+@export var readability_guard_enabled: bool = true
+
+@export_range(0.25, 8.0, 0.25)
+var no_readable_shadow_grace_time: float = 2.0
+
 @export_category("Presentation")
 @export_range(0.1, 3.0, 0.05)
 var small_fish_scale: float = 0.72
@@ -75,6 +83,7 @@ var _desired_count: int = 1
 var _population_reconsider_remaining: float = 0.0
 var _spawn_remaining: float = 0.0
 var _fight_shadow: FishShadowActor = null
+var _no_readable_shadow_time: float = 0.0
 
 
 func _ready() -> void:
@@ -108,6 +117,8 @@ func _process(delta: float) -> void:
 			respawn_delay_min,
 			maxf(respawn_delay_max, respawn_delay_min)
 		)
+
+	_update_readability_guard(delta)
 
 
 func _initialize_presence() -> void:
@@ -386,6 +397,54 @@ func _get_ambient_shadow_count() -> int:
 		count += 1
 
 	return count
+
+
+func _get_readable_ambient_shadow_count() -> int:
+	_cleanup_invalid_shadows()
+	var count := 0
+
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if shadow.is_hooked_tracking():
+			continue
+		if shadow.has_method("is_ambient_readable") and shadow.is_ambient_readable():
+			count += 1
+
+	return count
+
+
+func _update_readability_guard(delta: float) -> void:
+	if not readability_guard_enabled:
+		_no_readable_shadow_time = 0.0
+		return
+
+	var ambient_count := _get_ambient_shadow_count()
+	if ambient_count <= 0:
+		_no_readable_shadow_time = 0.0
+		return
+
+	if _get_readable_ambient_shadow_count() > 0:
+		_no_readable_shadow_time = 0.0
+		return
+
+	_no_readable_shadow_time += delta
+	if _no_readable_shadow_time < no_readable_shadow_grace_time:
+		return
+
+	_no_readable_shadow_time = 0.0
+	_restore_one_readable_shadow()
+
+
+func _restore_one_readable_shadow() -> void:
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if shadow.is_hooked_tracking():
+			continue
+		if shadow.has_method("restore_readable_presence"):
+			shadow.restore_readable_presence()
+			return
 
 
 func _clear_population() -> void:

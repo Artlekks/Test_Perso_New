@@ -316,6 +316,29 @@ func is_hooked_tracking() -> bool:
 	return _fight_tracking and is_instance_valid(_fight_bait)
 
 
+## True when this ambient shadow is actually readable to the player, not merely
+## alive in the population array. A fish that has dived very deep or is fading
+## out should not satisfy the visual-presence guarantee.
+func is_ambient_readable() -> bool:
+	if _fight_tracking or _expiring or _expired_emitted:
+		return false
+	if _get_lifecycle_alpha() < 0.34:
+		return false
+	return _depth_ratio <= 0.68
+
+
+## Ask an existing ambient fish to return to a readable depth instead of
+## spawning a duplicate. This preserves the 1-3 population design while
+## preventing every live shadow from being simultaneously invisible.
+func restore_readable_presence() -> void:
+	if _fight_tracking or _expiring or _expired_emitted:
+		return
+
+	_target_depth_ratio = minf(_target_depth_ratio, 0.30)
+	_depth_change_remaining = maxf(_depth_change_remaining, 2.4)
+	_life_remaining = maxf(_life_remaining, 4.0)
+
+
 func attach_to_hooked_bait(
 	bait: Node3D,
 	hooked_fish_data: FishData = null,
