@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishingQAProfile" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_qa_profile.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bof4/spots/ocean_2.tres" id="2"]
+[ext_resource type="Resource" path="res://data/bof4/fish/sea_bass.tres" id="3"]
+[ext_resource type="Resource" path="res://data/bof4/lures/deep_diver.tres" id="4"]
+[ext_resource type="Resource" path="res://data/bof4/rods/angling_rod.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+sort_order = 20
+profile_name = "PRE-BITE / SHADOW"
+purpose = "Visual pre-bite test: ambient shadows are Sea Bass, encounter selection stays normal."
+fishing_spot = ExtResource("2")
+shadow_fish_override = ExtResource("3")
+lure = ExtResource("4")
+rod = ExtResource("5")
+forced_tech_level = 4

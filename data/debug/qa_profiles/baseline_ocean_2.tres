@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FishingQAProfile" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_qa_profile.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bof4/spots/ocean_2.tres" id="2"]
+[ext_resource type="Resource" path="res://data/bof4/lures/straight.tres" id="3"]
+[ext_resource type="Resource" path="res://data/bof4/rods/wooden_rod.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+sort_order = 10
+profile_name = "BASELINE / OCEAN 2"
+purpose = "General regression: normal Ocean 2 population and RNG with starter gear."
+fishing_spot = ExtResource("2")
+lure = ExtResource("3")
+rod = ExtResource("4")

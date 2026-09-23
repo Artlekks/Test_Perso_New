@@ -7,6 +7,7 @@ extends Area3D
 @onready var water_surface: Node3D = $WaterSurface
 @onready var water_bottom: Node3D = $WaterBottom
 @onready var swim_bounds: Node = get_node_or_null("FishSwimBounds")
+@onready var shadow_presence: Node = get_node_or_null("FishShadowPresence")
 
 
 func can_player_fish(player: Node3D) -> bool:
@@ -45,3 +46,22 @@ func get_fish_population() -> Array[FishSpawnEntry]:
 		return []
 
 	return fishing_spot.get_fish_population()
+
+
+func get_fishing_spot() -> FishingSpotData:
+	return fishing_spot
+
+
+func set_fishing_spot(new_spot: FishingSpotData) -> void:
+	fishing_spot = new_spot
+
+	if shadow_presence != null and shadow_presence.has_method("rebuild_population"):
+		shadow_presence.rebuild_population()
+
+
+func set_debug_shadow_fish(fish: FishData) -> void:
+	if shadow_presence == null:
+		shadow_presence = get_node_or_null("FishShadowPresence")
+
+	if shadow_presence != null and shadow_presence.has_method("set_debug_forced_fish"):
+		shadow_presence.set_debug_forced_fish(fish)

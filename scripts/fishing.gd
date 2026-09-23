@@ -182,6 +182,14 @@ func _ready() -> void:
 		debug_settings,
 		fishing_progress
 	)
+	debug_menu.connect(
+		"spot_requested",
+		Callable(self, "_on_debug_spot_requested")
+	)
+	debug_menu.connect(
+		"debug_environment_changed",
+		Callable(self, "_sync_debug_environment")
+	)
 
 	technique_detector = FishingTechniqueDetectorScript.new()
 	add_child(technique_detector)
@@ -469,6 +477,10 @@ func _on_mode_changed(new_mode) -> void:
 			zone.get_fish_population()
 		)
 
+		if debug_menu != null:
+			debug_menu.set_fish_zone(zone)
+
+		_sync_debug_environment()
 		camera_rig.enter_fishing_view()
 
 
@@ -568,6 +580,35 @@ func _is_debug_toggle(event: InputEvent) -> bool:
 	)
 
 
+func _on_debug_spot_requested(spot: FishingSpotData) -> void:
+	var zone = game_mode.active_fish_zone
+	if zone == null or spot == null:
+		return
+
+	if zone.has_method("set_fishing_spot"):
+		zone.set_fishing_spot(spot)
+	else:
+		zone.set("fishing_spot", spot)
+
+	encounter.set_fish_population(zone.get_fish_population())
+
+
+func _sync_debug_environment() -> void:
+	var zone = game_mode.active_fish_zone
+	if zone == null:
+		return
+
+	encounter.set_fish_population(zone.get_fish_population())
+
+	if (
+		debug_settings != null
+		and zone.has_method("set_debug_shadow_fish")
+	):
+		zone.set_debug_shadow_fish(
+			debug_settings.get_shadow_fish_override()
+		)
+
+
 func _open_debug_menu() -> void:
 	if (
 		debug_menu == null
@@ -575,6 +616,8 @@ func _open_debug_menu() -> void:
 		or lure_selector_open
 	):
 		return
+
+	debug_menu.set_fish_zone(game_mode.active_fish_zone)
 
 	if not debug_menu.open_menu():
 		return

@@ -84,6 +84,7 @@ var _population_reconsider_remaining: float = 0.0
 var _spawn_remaining: float = 0.0
 var _fight_shadow: FishShadowActor = null
 var _no_readable_shadow_time: float = 0.0
+var _debug_forced_fish: FishData = null
 
 
 func _ready() -> void:
@@ -300,6 +301,22 @@ func end_fight_shadow(dive_away: bool = true) -> void:
 	_fight_shadow = null
 
 
+func set_debug_forced_fish(fish: FishData) -> void:
+	if _debug_forced_fish == fish:
+		return
+
+	_debug_forced_fish = fish
+
+	# The override can be assigned before deferred initialization has resolved
+	# FishSwimBounds. Store it immediately, rebuild only when spawning is ready.
+	if _swim_bounds != null:
+		rebuild_population()
+
+
+func get_debug_forced_fish() -> FishData:
+	return _debug_forced_fish
+
+
 func rebuild_population() -> void:
 	_clear_population()
 	_desired_count = _choose_population_count()
@@ -315,7 +332,11 @@ func _spawn_one_shadow() -> void:
 		return
 
 	var population := _get_population()
-	var fish := _pick_weighted_fish(population)
+	var fish: FishData = _debug_forced_fish
+
+	if fish == null:
+		fish = _pick_weighted_fish(population)
+
 	var shadow := _instantiate_shadow_for_fish(fish)
 
 	if shadow == null:

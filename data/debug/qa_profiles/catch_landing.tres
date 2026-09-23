@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FishingQAProfile" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_qa_profile.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bof4/spots/ocean_1.tres" id="2"]
+[ext_resource type="Resource" path="res://data/bof4/fish/man_o_war.tres" id="3"]
+[ext_resource type="Resource" path="res://data/bof4/lures/deep_diver.tres" id="4"]
+[ext_resource type="Resource" path="res://data/bof4/rods/masters_rod.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+sort_order = 70
+profile_name = "FAST CATCH / LANDING"
+purpose = "Quick repeatable catch/landing/result test using a one-round fish and strong rod."
+fishing_spot = ExtResource("2")
+forced_fish = ExtResource("3")
+shadow_fish_override = ExtResource("3")
+lure = ExtResource("4")
+rod = ExtResource("5")
+king_mode = 1

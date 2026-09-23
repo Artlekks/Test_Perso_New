@@ -7,6 +7,7 @@ enum KingMode {
 }
 
 var forced_fish: FishData = null
+var shadow_fish_override: FishData = null
 var king_mode: int = KingMode.DEFAULT
 var forced_tech_level: int = 0
 var record_debug_catches: bool = false
@@ -18,6 +19,14 @@ func set_forced_fish(fish: FishData) -> void:
 
 func get_forced_fish() -> FishData:
 	return forced_fish
+
+
+func set_shadow_fish_override(fish: FishData) -> void:
+	shadow_fish_override = fish
+
+
+func get_shadow_fish_override() -> FishData:
+	return shadow_fish_override
 
 
 func set_king_mode(mode: int) -> void:
@@ -70,6 +79,7 @@ func get_forced_tech_label() -> String:
 func is_encounter_override_active() -> bool:
 	return (
 		forced_fish != null
+		or shadow_fish_override != null
 		or king_mode != KingMode.DEFAULT
 		or forced_tech_level > 0
 	)
