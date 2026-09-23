@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="FishingSpotData" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://fdv7f55yxcge"]
 
-[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
-[ext_resource type="Script" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
-[ext_resource type="Resource" path="res://data/bof4/fish/blowfish.tres" id="3_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/moorfish.tres" id="4_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/sea_bream.tres" id="5_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/black_porgy.tres" id="6_fish"]
+[ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
+[ext_resource type="Resource" uid="uid://cqrpu833jmtay" path="res://data/bof4/fish/blowfish.tres" id="3_fish"]
+[ext_resource type="Resource" uid="uid://bbljjxymscte4" path="res://data/bof4/fish/moorfish.tres" id="4_fish"]
+[ext_resource type="Resource" uid="uid://bniuky4cn8clk" path="res://data/bof4/fish/sea_bream.tres" id="5_fish"]
+[ext_resource type="Resource" uid="uid://xpej14dqwca7" path="res://data/bof4/fish/black_porgy.tres" id="6_fish"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")

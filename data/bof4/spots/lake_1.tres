@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="FishingSpotData" load_steps=13 format=3]
+[gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://cxowvp5a85tsi"]
 
-[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
-[ext_resource type="Script" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
-[ext_resource type="Resource" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/piranha.tres" id="4_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/bass.tres" id="5_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/blue_gill.tres" id="6_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish/martian_squid.tres" id="7_fish"]
+[ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
+[ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
+[ext_resource type="Resource" uid="uid://cys3woi0lpntp" path="res://data/bof4/fish/piranha.tres" id="4_fish"]
+[ext_resource type="Resource" uid="uid://dhnueeixwu1d6" path="res://data/bof4/fish/bass.tres" id="5_fish"]
+[ext_resource type="Resource" uid="uid://xygc445jf4oi" path="res://data/bof4/fish/blue_gill.tres" id="6_fish"]
+[ext_resource type="Resource" uid="uid://cwamaw6pettl8" path="res://data/bof4/fish/martian_squid.tres" id="7_fish"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")

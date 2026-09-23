@@ -492,6 +492,7 @@ power = NodePath("../../../Game/Fishing/Power")
 encounter = NodePath("../../../Game/Fishing/Encounter")
 caster = NodePath("../../../Game/Fishing/Caster")
 bar_green = ExtResource("16_0e2yj")
+safe_color_max = 0.65
 
 [node name="Root" parent="UI/FishingHud/PowerMeter" index="0" unique_id=591532728]
 anchors_preset = 2
