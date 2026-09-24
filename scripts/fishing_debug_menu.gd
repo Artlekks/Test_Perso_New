@@ -8,12 +8,14 @@ const CONTENT_CATALOG: FishingContentCatalog = preload(
 )
 
 const QA_PROFILE_DIRECTORY := "res://data/debug/qa_profiles"
+const MAX_DEBUG_SHADOW_COUNT := 12
 
 
 enum Row {
 	PROFILE,
 	SPOT,
 	FISH,
+	SHADOWS,
 	KING,
 	LURE,
 	ROD,
@@ -21,12 +23,13 @@ enum Row {
 	SAVE_DEBUG,
 }
 
-const ROW_COUNT := 8
+const ROW_COUNT := 9
 
 @onready var root: Control = $Root
 @onready var profile_label: Label = $Root/Panel/ProfileLabel
 @onready var spot_label: Label = $Root/Panel/SpotLabel
 @onready var fish_label: Label = $Root/Panel/FishLabel
+@onready var shadow_count_label: Label = $Root/Panel/ShadowCountLabel
 @onready var king_label: Label = $Root/Panel/KingLabel
 @onready var lure_label: Label = $Root/Panel/LureLabel
 @onready var rod_label: Label = $Root/Panel/RodLabel
@@ -129,6 +132,8 @@ func _change_value(step: int) -> void:
 			_change_spot(step)
 		Row.FISH:
 			_change_fish(step)
+		Row.SHADOWS:
+			_change_shadow_count(step)
 		Row.KING:
 			_change_king(step)
 		Row.LURE:
@@ -187,6 +192,7 @@ func _apply_profile(profile: FishingQAProfile) -> void:
 
 	_settings.set_forced_fish(profile.forced_fish)
 	_settings.set_shadow_fish_override(profile.shadow_fish_override)
+	_settings.set_shadow_count_override(profile.shadow_count_override)
 	_settings.set_king_mode(profile.king_mode)
 	_settings.set_forced_tech_level(profile.forced_tech_level)
 	_settings.set_record_debug_catches(profile.record_debug_catches)
@@ -237,6 +243,20 @@ func _change_fish(step: int) -> void:
 	_settings.set_forced_fish(fish)
 	# Manual FISH selection intentionally mirrors into ambient/pre-bite shadows.
 	_settings.set_shadow_fish_override(fish)
+	_mark_custom_profile()
+	debug_environment_changed.emit()
+
+
+func _change_shadow_count(step: int) -> void:
+	if _settings == null:
+		return
+
+	var current: int = int(_settings.get_shadow_count_override())
+	var next_count: int = int(posmod(
+		current + step,
+		MAX_DEBUG_SHADOW_COUNT + 1
+	))
+	_settings.set_shadow_count_override(next_count)
 	_mark_custom_profile()
 	debug_environment_changed.emit()
 
@@ -368,6 +388,11 @@ func _refresh() -> void:
 	profile_label.text = _row_text(Row.PROFILE, "PROFILE", profile_text)
 	spot_label.text = _row_text(Row.SPOT, "SPOT", spot_text)
 	fish_label.text = _row_text(Row.FISH, "FISH", fish_text)
+	shadow_count_label.text = _row_text(
+		Row.SHADOWS,
+		"SHADOWS",
+		_settings.get_shadow_count_label()
+	)
 	king_label.text = _row_text(Row.KING, "KING", _settings.get_king_mode_label())
 	lure_label.text = _row_text(Row.LURE, "LURE", lure_text)
 	rod_label.text = _row_text(Row.ROD, "ROD", rod_text)
@@ -403,9 +428,18 @@ func _refresh() -> void:
 	if shadow_override != null:
 		shadow_text = shadow_override.fish_name
 
+	var shadow_population_text := "runtime unavailable"
+	if (
+		_fish_zone != null
+		and _fish_zone.has_method("get_shadow_population_debug_counts")
+	):
+		var counts: Vector2i = _fish_zone.get_shadow_population_debug_counts()
+		shadow_population_text = "%d alive / %d readable" % [counts.x, counts.y]
+
 	status_label.text = (
 		profile_purpose
 		+ "\nShadow QA: " + shadow_text
+		+ " | " + shadow_population_text
 		+ "\n"
 		+ progress_text
 		+ "\nF10/K/I close   W/S row   A/D change"

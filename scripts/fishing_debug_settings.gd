@@ -8,6 +8,7 @@ enum KingMode {
 
 var forced_fish: FishData = null
 var shadow_fish_override: FishData = null
+var shadow_count_override: int = 0
 var king_mode: int = KingMode.DEFAULT
 var forced_tech_level: int = 0
 var record_debug_catches: bool = false
@@ -27,6 +28,20 @@ func set_shadow_fish_override(fish: FishData) -> void:
 
 func get_shadow_fish_override() -> FishData:
 	return shadow_fish_override
+
+
+func set_shadow_count_override(count: int) -> void:
+	shadow_count_override = clampi(count, 0, 32)
+
+
+func get_shadow_count_override() -> int:
+	return shadow_count_override
+
+
+func get_shadow_count_label() -> String:
+	if shadow_count_override <= 0:
+		return "SPOT PROFILE"
+	return str(shadow_count_override)
 
 
 func set_king_mode(mode: int) -> void:
@@ -80,6 +95,7 @@ func is_encounter_override_active() -> bool:
 	return (
 		forced_fish != null
 		or shadow_fish_override != null
+		or shadow_count_override > 0
 		or king_mode != KingMode.DEFAULT
 		or forced_tech_level > 0
 	)

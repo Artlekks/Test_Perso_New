@@ -793,13 +793,23 @@ func _sync_debug_environment() -> void:
 
 	encounter.set_fish_population(zone.get_fish_population())
 
-	if (
-		debug_settings != null
-		and zone.has_method("set_debug_shadow_fish")
-	):
-		zone.set_debug_shadow_fish(
-			debug_settings.get_shadow_fish_override()
+	if debug_settings == null:
+		return
+
+	# Apply the two shadow QA controls together so changing a profile rebuilds
+	# the ambient population once, not once for species and again for count.
+	if zone.has_method("set_debug_shadow_overrides"):
+		zone.set_debug_shadow_overrides(
+			debug_settings.get_shadow_fish_override(),
+			debug_settings.get_shadow_count_override()
 		)
+		return
+
+	# Compatibility fallback for any older FishZone scene.
+	if zone.has_method("set_debug_shadow_fish"):
+		zone.set_debug_shadow_fish(debug_settings.get_shadow_fish_override())
+	if zone.has_method("set_debug_shadow_count"):
+		zone.set_debug_shadow_count(debug_settings.get_shadow_count_override())
 
 
 func _open_debug_menu() -> void:

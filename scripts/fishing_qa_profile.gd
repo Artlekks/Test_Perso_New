@@ -20,6 +20,9 @@ enum KingMode {
 ## Optional ambient/pre-bite shadow override. This is deliberately separate so
 ## a QA profile can force a visible species without bypassing pre-bite RNG.
 @export var shadow_fish_override: FishData
+## 0 keeps the fishing spot ambient profile. Any positive value temporarily
+## forces that exact ambient shadow count while this QA profile is active.
+@export_range(0, 32, 1) var shadow_count_override: int = 0
 
 @export_category("Gear / Technique")
 @export var lure: BaitData

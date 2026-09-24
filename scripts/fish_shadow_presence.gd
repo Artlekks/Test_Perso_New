@@ -78,6 +78,7 @@ var _spawn_remaining: float = 0.0
 var _fight_shadow: FishShadowActor = null
 var _no_readable_shadow_time: float = 0.0
 var _debug_forced_fish: FishData = null
+var _debug_shadow_count_override: int = 0
 var _ambient_profile: AmbientFishProfile = null
 
 
@@ -296,21 +297,44 @@ func end_fight_shadow(dive_away: bool = true) -> void:
 	_fight_shadow = null
 
 
-func set_debug_forced_fish(fish: FishData) -> void:
-	if _debug_forced_fish == fish:
+func set_debug_overrides(fish: FishData, shadow_count: int) -> void:
+	var next_count := clampi(shadow_count, 0, 32)
+	if _debug_forced_fish == fish and _debug_shadow_count_override == next_count:
 		return
 
 	_debug_forced_fish = fish
+	_debug_shadow_count_override = next_count
 
-	# QA profiles/manual FISH overrides can be assigned before deferred
-	# initialization resolves FishSwimBounds. Store immediately, rebuild only
-	# once the presence system is ready to spawn.
+	# QA overrides can be assigned before deferred initialization resolves
+	# FishSwimBounds. Store immediately, rebuild once when the system is ready.
 	if _swim_bounds != null:
 		rebuild_population()
 
 
+func set_debug_forced_fish(fish: FishData) -> void:
+	set_debug_overrides(fish, _debug_shadow_count_override)
+
+
 func get_debug_forced_fish() -> FishData:
 	return _debug_forced_fish
+
+
+## Runtime-only QA override. 0 means the active spot AmbientFishProfile stays
+## authoritative. A positive value forces an exact ambient population without
+## mutating the spot/profile resource in the editor.
+func set_debug_shadow_count_override(count: int) -> void:
+	set_debug_overrides(_debug_forced_fish, count)
+
+
+func get_debug_shadow_count_override() -> int:
+	return _debug_shadow_count_override
+
+
+func get_population_debug_counts() -> Vector2i:
+	return Vector2i(
+		_get_ambient_shadow_count(),
+		_get_readable_ambient_shadow_count()
+	)
 
 
 func rebuild_population() -> void:
@@ -327,7 +351,7 @@ func _spawn_one_shadow() -> void:
 		return
 
 	var profile := _get_active_ambient_profile()
-	var spawn_cap := profile.get_max_count()
+	var spawn_cap := _get_spawn_cap(profile)
 	if _get_ambient_shadow_count() >= spawn_cap:
 		return
 
@@ -374,6 +398,12 @@ func _spawn_one_shadow() -> void:
 		lifetime,
 		_rng.randi()
 	)
+
+	# A manual QA shadow-count override means "show me exactly this many
+	# shadows". Keep those test shadows in a readable depth band so the debug
+	# control measures presentation rather than hidden/deep population members.
+	if _debug_shadow_count_override > 0:
+		shadow.set_debug_force_readable(true)
 
 	_spawned_shadows.append(shadow)
 
@@ -486,6 +516,9 @@ func _clear_population() -> void:
 
 
 func _choose_population_count() -> int:
+	if _debug_shadow_count_override > 0:
+		return _debug_shadow_count_override
+
 	var profile := _get_active_ambient_profile()
 	var minimum := profile.get_min_count()
 	var maximum := profile.get_max_count()
@@ -518,6 +551,12 @@ func _choose_population_count() -> int:
 			return options[index]
 
 	return options[options.size() - 1]
+
+
+func _get_spawn_cap(profile: AmbientFishProfile) -> int:
+	if _debug_shadow_count_override > 0:
+		return _debug_shadow_count_override
+	return profile.get_max_count()
 
 
 func _refresh_spot_identity() -> void:

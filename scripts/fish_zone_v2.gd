@@ -59,9 +59,41 @@ func set_fishing_spot(new_spot: FishingSpotData) -> void:
 		shadow_presence.rebuild_population()
 
 
+func set_debug_shadow_overrides(fish: FishData, count: int) -> void:
+	if shadow_presence == null:
+		shadow_presence = get_node_or_null("FishShadowPresence")
+
+	if shadow_presence != null and shadow_presence.has_method("set_debug_overrides"):
+		shadow_presence.set_debug_overrides(fish, count)
+
+
 func set_debug_shadow_fish(fish: FishData) -> void:
 	if shadow_presence == null:
 		shadow_presence = get_node_or_null("FishShadowPresence")
 
 	if shadow_presence != null and shadow_presence.has_method("set_debug_forced_fish"):
 		shadow_presence.set_debug_forced_fish(fish)
+
+
+func set_debug_shadow_count(count: int) -> void:
+	if shadow_presence == null:
+		shadow_presence = get_node_or_null("FishShadowPresence")
+
+	if (
+		shadow_presence != null
+		and shadow_presence.has_method("set_debug_shadow_count_override")
+	):
+		shadow_presence.set_debug_shadow_count_override(count)
+
+
+func get_shadow_population_debug_counts() -> Vector2i:
+	if shadow_presence == null:
+		shadow_presence = get_node_or_null("FishShadowPresence")
+
+	if (
+		shadow_presence != null
+		and shadow_presence.has_method("get_population_debug_counts")
+	):
+		return shadow_presence.get_population_debug_counts()
+
+	return Vector2i.ZERO

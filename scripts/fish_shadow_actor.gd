@@ -220,6 +220,7 @@ var _depth_ratio: float = 0.3
 var _target_depth_ratio: float = 0.3
 var _depth_change_remaining: float = 0.0
 var _ambient_depth_bias: float = 0.0
+var _debug_force_readable: bool = false
 
 var _age: float = 0.0
 var _life_remaining: float = 10.0
@@ -287,6 +288,20 @@ func get_fish_data() -> FishData:
 
 func set_ambient_depth_bias(bias: float) -> void:
 	_ambient_depth_bias = clampf(bias, -0.35, 0.35)
+
+
+## QA-only presentation lock used by the F10 shadow-count override. It keeps
+## test shadows in the readable depth band without changing any authored fish
+## depth preference or fishing-spot AmbientFishProfile.
+func set_debug_force_readable(enabled: bool) -> void:
+	_debug_force_readable = enabled
+	if not enabled:
+		return
+
+	_depth_ratio = minf(_depth_ratio, 0.30)
+	_target_depth_ratio = minf(_target_depth_ratio, 0.30)
+	_depth_change_remaining = maxf(_depth_change_remaining, 2.4)
+	_life_remaining = maxf(_life_remaining, 4.0)
 
 
 func is_interested_in_bait() -> bool:
@@ -584,6 +599,9 @@ func _pick_new_depth_target() -> void:
 		0.02,
 		1.0
 	)
+
+	if _debug_force_readable:
+		_target_depth_ratio = clampf(_target_depth_ratio, 0.05, 0.30)
 
 
 func _update_bait_interest(delta: float) -> void:

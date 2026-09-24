@@ -80,52 +80,59 @@ offset_right = 592.0
 offset_bottom = 170.0
 text = "  FISH     < ANY / SPOT RNG >"
 
-[node name="KingLabel" type="Label" parent="Root/Panel"]
+[node name="ShadowCountLabel" type="Label" parent="Root/Panel"]
 offset_left = 28.0
 offset_top = 178.0
 offset_right = 592.0
 offset_bottom = 204.0
-text = "  KING     < DEFAULT RNG >"
+text = "  SHADOWS  < SPOT PROFILE >"
 
-[node name="LureLabel" type="Label" parent="Root/Panel"]
+[node name="KingLabel" type="Label" parent="Root/Panel"]
 offset_left = 28.0
 offset_top = 212.0
 offset_right = 592.0
 offset_bottom = 238.0
-text = "  LURE     < Straight >"
+text = "  KING     < DEFAULT RNG >"
 
-[node name="RodLabel" type="Label" parent="Root/Panel"]
+[node name="LureLabel" type="Label" parent="Root/Panel"]
 offset_left = 28.0
 offset_top = 246.0
 offset_right = 592.0
 offset_bottom = 272.0
-text = "  ROD      < Wooden Rod >"
+text = "  LURE     < Straight >"
 
-[node name="TechLabel" type="Label" parent="Root/Panel"]
+[node name="RodLabel" type="Label" parent="Root/Panel"]
 offset_left = 28.0
 offset_top = 280.0
 offset_right = 592.0
 offset_bottom = 306.0
-text = "  TECH     < NORMAL RHYTHM >"
+text = "  ROD      < Wooden Rod >"
 
-[node name="SaveDebugLabel" type="Label" parent="Root/Panel"]
+[node name="TechLabel" type="Label" parent="Root/Panel"]
 offset_left = 28.0
 offset_top = 314.0
 offset_right = 592.0
 offset_bottom = 340.0
+text = "  TECH     < NORMAL RHYTHM >"
+
+[node name="SaveDebugLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 348.0
+offset_right = 592.0
+offset_bottom = 374.0
 text = "  SAVE DBG < OFF >"
 
 [node name="DividerLabel2" type="Label" parent="Root/Panel"]
 offset_left = 18.0
-offset_top = 354.0
+offset_top = 388.0
 offset_right = 602.0
-offset_bottom = 374.0
+offset_bottom = 408.0
 text = "----------------------------------------------------------------"
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="Root/Panel"]
 offset_left = 18.0
-offset_top = 386.0
+offset_top = 420.0
 offset_right = 602.0
 offset_bottom = 558.0
 text = "F10 close"
