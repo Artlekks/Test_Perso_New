@@ -65,9 +65,36 @@
 [ext_resource type="Shader" uid="uid://blulkepsl8mb3" path="res://assets/models/shaders/beach_animated.gdshader" id="66_beach_anim_shader"]
 [ext_resource type="Texture2D" uid="uid://dj8cp700a24p" path="res://assets/models/textures/Beach.png" id="67_beach_anim_strip"]
 [ext_resource type="Script" uid="uid://begr1yt3g400u" path="res://scripts/depth_floor_from_mesh.gd" id="68_depth_floor_mesh"]
+[ext_resource type="Shader" uid="uid://mpwr3cxnthc4" path="res://assets/models/shaders/sea_far_fade.gdshader" id="69_sea_far_shader"]
+[ext_resource type="Texture2D" uid="uid://m06dq1n502h7" path="res://assets/models/fbx/beach_texpage-P8-EE4D3D823035F839-79597399A405481F-128x256-0-0-256x256-P1-199.png" id="70_sea_static_tex"]
+
+[sub_resource type="Environment" id="Environment_l3qxs"]
+background_mode = 1
+background_energy_multiplier = 0.0
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_m5b5u"]
 size = Vector3(3.3657227, 1, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sea_far"]
+render_priority = 0
+shader = ExtResource("69_sea_far_shader")
+shader_parameter/sea_texture = ExtResource("70_sea_static_tex")
+shader_parameter/shore_z = -1.0
+shader_parameter/far_z = -45.0
+shader_parameter/sea_min_x = -13.37757
+shader_parameter/sea_max_x = 13.67757
+shader_parameter/depth_darkening_start = 0.2
+shader_parameter/depth_darkening_strength = 0.735
+shader_parameter/deep_blue_start = -0.085
+shader_parameter/deep_blue_strength = 2.265
+shader_parameter/deep_blue_tint = Color(0.055200003, 0.16607997, 0.24, 1)
+shader_parameter/side_feather_width = 1.35
+shader_parameter/far_feather_width = 1.85
+shader_parameter/edge_feather_power = 1.35
+shader_parameter/final_black_band_width = 0.42
+shader_parameter/final_black_band_power = 1.45
+shader_parameter/edge_fade_start = -0.035
+shader_parameter/edge_fade_power = 1.49
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_beach_anim"]
 render_priority = 0
@@ -149,6 +176,9 @@ ring_segments = 24
 
 [node name="World" type="Node3D" parent="." unique_id=268595614]
 
+[node name="WorldEnvironment" type="WorldEnvironment" parent="World" unique_id=105501597]
+environment = SubResource("Environment_l3qxs")
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="World" unique_id=2136325107]
 transform = Transform3D(0.97024, 0.240796, -0.0255451, 0.17076, -0.605588, 0.777241, 0.171687, -0.758472, -0.628684, 0, 1.83915, 0)
 shadow_normal_bias = 1.216
@@ -169,19 +199,25 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.48561275, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8996403, -0.25, -5)
 
 [node name="BoundsShape3D" parent="World/FishZone_V2/FishSwimBounds" index="0"]
-transform = Transform3D(0.43974325, 0, 0, 0, 0.7395576, 0, 0, 0, 0.6574353, -0.817531, -0.56291586, 1.8091676)
+transform = Transform3D(0.685, 0, 0, 0, 0.74, 0, 0, 0, 0.73865706, -0.817531, -0.56291586, 1.3847073)
+
+[node name="FishShadowPresence" parent="World/FishZone_V2" index="4"]
+min_visible_shadows = 2
 
 [node name="CollisionShape3D" parent="World/FishZone_V2" index="5" unique_id=1425339664]
-transform = Transform3D(1.605, 0, 0, 0, 1.605, 0, 0, 0, 1.605, 0.07391289, 0, 0)
+transform = Transform3D(2.4227698, 0, 0, 0, 1.605, 0, 0, 0, 1.605, 0.07391289, 0, 0)
 shape = SubResource("BoxShape3D_m5b5u")
 
 [node name="beach" parent="World" unique_id=284991885 instance=ExtResource("9_m5b5u")]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, -0.1, -1)
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, -0.1, -1.4689629)
 
-[node name="Beach" parent="World/beach" index="1" unique_id=289578795]
+[node name="Sea" parent="World/beach" index="0" unique_id=642623395]
+material_override = SubResource("ShaderMaterial_sea_far")
+
+[node name="Beach" parent="World/beach" index="1" unique_id=1328992124]
 material_override = SubResource("ShaderMaterial_beach_anim")
 
-[node name="Bottom" parent="World/beach" index="2" unique_id=1160892613]
+[node name="Bottom" parent="World/beach" index="2" unique_id=1367108879]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
 material_override = SubResource("StandardMaterial3D_myncn")
 
@@ -192,9 +228,10 @@ script = ExtResource("68_depth_floor_mesh")
 source_mesh_path = NodePath("../beach/Bottom")
 
 [node name="ShoreBlocker" type="StaticBody3D" parent="World" unique_id=1753511095]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0.21194549, -0.18671966)
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0.21194549, -0.4542961)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="World/ShoreBlocker" unique_id=1465609237]
+transform = Transform3D(2.133684, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("BoxShape3D_shore_blocker")
 debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
