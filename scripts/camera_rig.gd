@@ -6,10 +6,11 @@ signal heading_changed(yaw: float)
 signal exploration_view_started
 
 @export var target: Node3D
+@export var fishing_reference_camera: Camera3D
+@export var fishing_pose_camera: Camera3D
 
 @export var fishing_h_offset: float = 0.9
 @export var fishing_v_offset: float = 0.6
-@export var aim_follow_speed: float = 6.0
 @export var fishing_yaw_offset_degrees: float = -15.0
 @export_range(-80.0, -5.0, 0.5) var fishing_pitch_degrees: float = -38.5
 @export_category("Fishing Follow")
@@ -17,17 +18,13 @@ signal exploration_view_started
 var fishing_follow_trigger_y_ratio: float = 0.50
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
-var fishing_aim_active: bool = false
-var fishing_aim_target_yaw: float = 0.0
 var exploration_h_offset: float = 0.0
 var exploration_v_offset: float = 0.0
 var exploration_yaw_before_fishing: float = 0.0
 var exploration_camera_pitch_before_fishing: float = 0.0
 var exploration_camera_transform_before_fishing: Transform3D
-var fishing_camera_pitch_delta: float = 0.0
-var _camera_orbit_start_transform: Transform3D
-var _camera_orbit_axis: Vector3 = Vector3.RIGHT
-var _camera_orbit_angle: float = 0.0
+var _camera_transition_start_transform: Transform3D
+var _camera_transition_target_transform: Transform3D
 var is_rotating: bool = false
 var _last_heading_yaw: float = 0.0
 var fishing_follow_target: Node3D = null
@@ -68,13 +65,6 @@ func _process(_delta: float) -> void:
 	# the tween every frame and snap the camera home instantly.
 	if not follow_controls_position and not fishing_follow_returning:
 		global_position = target.global_position
-
-	if fishing_aim_active:
-		rotation.y = lerp_angle(
-			rotation.y,
-			fishing_aim_target_yaw,
-			clamp(aim_follow_speed * _delta, 0.0, 1.0)
-		)
 
 	if not is_equal_approx(rotation.y, _last_heading_yaw):
 		_last_heading_yaw = rotation.y
@@ -292,20 +282,47 @@ func enter_fishing_view() -> void:
 	var camera: Camera3D = $Camera3D
 	exploration_camera_pitch_before_fishing = camera.rotation.x
 	exploration_camera_transform_before_fishing = camera.transform
-	fishing_camera_pitch_delta = (
-		deg_to_rad(fishing_pitch_degrees)
-		- camera.rotation.x
-	)
 
 	if target == null:
 		fishing_view_ready.emit()
 		return
 
+	# Fishing heading and fishing framing are intentionally independent.
+	# The reference camera preserves the Step One heading behaviour, while
+	# FishingCameraPose stores the exact local pose chosen during Remote
+	# runtime tuning. Exploration can now be changed without disturbing it.
+	var fishing_heading_transform: Transform3D = camera.transform
+	if is_instance_valid(fishing_reference_camera):
+		fishing_heading_transform = fishing_reference_camera.transform
+
+	var fishing_target_transform: Transform3D
+	if is_instance_valid(fishing_pose_camera):
+		fishing_target_transform = fishing_pose_camera.transform
+	else:
+		var reference_pitch: float = (
+			fishing_heading_transform.basis.get_euler().x
+		)
+		var fishing_pitch_delta: float = (
+			deg_to_rad(fishing_pitch_degrees)
+			- reference_pitch
+		)
+		fishing_target_transform = _orbit_transform(
+			fishing_heading_transform,
+			fishing_pitch_delta
+		)
+
 	var player_forward := target.global_transform.basis.z
 	player_forward.y = 0.0
 	player_forward = player_forward.normalized()
 
-	var camera_forward := -camera.global_transform.basis.z
+	# Calculate fishing yaw from the fishing reference as well. Otherwise
+	# a local yaw change made only for exploration would still rotate the
+	# fishing shot.
+	var reference_global_basis: Basis = (
+		global_transform.basis
+		* fishing_heading_transform.basis
+	)
+	var camera_forward := -reference_global_basis.z
 	camera_forward.y = 0.0
 	camera_forward = camera_forward.normalized()
 
@@ -316,7 +333,7 @@ func enter_fishing_view() -> void:
 
 	var target_yaw := rotation.y + yaw_difference
 	target_yaw += deg_to_rad(fishing_yaw_offset_degrees)
-	
+
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_ease(Tween.EASE_IN_OUT)
@@ -328,21 +345,19 @@ func enter_fishing_view() -> void:
 		0.7
 	)
 
-	# Pitch the fishing camera by ORBITING it around the player/rig pivot,
-	# rather than rotating it in place. Rotating in place changes where Ryu
-	# appears on screen. Applying the same pitch rotation to both the
-	# camera basis and its local position keeps the rig origin projected at
-	# the same screen coordinate while changing the water-plane angle.
-	_prepare_camera_orbit(camera, fishing_camera_pitch_delta)
+	_prepare_camera_transition(
+		camera.transform,
+		fishing_target_transform
+	)
 
 	tween.parallel().tween_method(
-		_apply_camera_orbit,
+		_apply_camera_transition,
 		0.0,
 		1.0,
 		0.7
 	)
 
-	tween.tween_property(
+	tween.parallel().tween_property(
 		camera,
 		"h_offset",
 		fishing_h_offset,
@@ -357,13 +372,15 @@ func enter_fishing_view() -> void:
 	)
 
 	await tween.finished
+	camera.transform = fishing_target_transform
 	fishing_view_ready.emit()
+
 
 func exit_fishing_view() -> void:
 	var camera: Camera3D = $Camera3D
-		
+
 	exploration_view_started.emit()
-		
+
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_ease(Tween.EASE_IN_OUT)
@@ -375,13 +392,13 @@ func exit_fishing_view() -> void:
 		0.7
 	)
 
-	# Reverse the same orbit used on entry. This restores the exact
-	# exploration camera transform while keeping the player's screen anchor
-	# stable during the pitch portion of the transition.
-	_prepare_camera_orbit(camera, -fishing_camera_pitch_delta)
+	_prepare_camera_transition(
+		camera.transform,
+		exploration_camera_transform_before_fishing
+	)
 
 	tween.parallel().tween_method(
-		_apply_camera_orbit,
+		_apply_camera_transition,
 		0.0,
 		1.0,
 		0.7
@@ -405,64 +422,52 @@ func exit_fishing_view() -> void:
 	camera.transform = exploration_camera_transform_before_fishing
 	exploration_view_ready.emit()
 
-func _prepare_camera_orbit(camera: Camera3D, angle: float) -> void:
-	_camera_orbit_start_transform = camera.transform
-	_camera_orbit_axis = (
-		_camera_orbit_start_transform.basis.x.normalized()
+
+func _orbit_transform(
+	source_transform: Transform3D,
+	angle: float
+) -> Transform3D:
+	var orbit_axis: Vector3 = source_transform.basis.x.normalized()
+	var orbit := Basis(orbit_axis, angle)
+
+	return Transform3D(
+		orbit * source_transform.basis,
+		orbit * source_transform.origin
 	)
-	_camera_orbit_angle = angle
 
 
-func _apply_camera_orbit(weight: float) -> void:
+func _prepare_camera_transition(
+	start_transform: Transform3D,
+	target_transform: Transform3D
+) -> void:
+	_camera_transition_start_transform = start_transform
+	_camera_transition_target_transform = target_transform
+
+
+func _apply_camera_transition(weight: float) -> void:
 	var camera: Camera3D = $Camera3D
-	var orbit := Basis(
-		_camera_orbit_axis,
-		_camera_orbit_angle * weight
-	)
-
-	camera.transform = Transform3D(
-		orbit * _camera_orbit_start_transform.basis,
-		orbit * _camera_orbit_start_transform.origin
+	camera.transform = _camera_transition_start_transform.interpolate_with(
+		_camera_transition_target_transform,
+		weight
 	)
 
 
-func start_fishing_aim(direction: Vector3) -> void:
-	fishing_aim_active = true
-	set_fishing_aim_direction(direction)
+
+func start_fishing_aim(_direction: Vector3) -> void:
+	# Fishing aim changes casting direction only. Camera heading is locked to
+	# the authored fishing pose so entering AIM can never trigger a second
+	# rotation after the fishing-view transition.
+	pass
 
 
-func set_fishing_aim_direction(direction: Vector3) -> void:
-	var camera: Camera3D = $Camera3D
+func set_fishing_aim_direction(_direction: Vector3) -> void:
+	# Intentionally does not rotate the camera.
+	pass
 
-	var desired_forward := direction
-	desired_forward.y = 0.0
-
-	if desired_forward.length_squared() == 0.0:
-		return
-
-	desired_forward = desired_forward.normalized()
-
-	var camera_forward := -camera.global_transform.basis.z
-	camera_forward.y = 0.0
-
-	if camera_forward.length_squared() == 0.0:
-		return
-
-	camera_forward = camera_forward.normalized()
-
-	var yaw_difference := camera_forward.signed_angle_to(
-		desired_forward,
-		Vector3.UP
-	)
-
-	fishing_aim_target_yaw = (
-		rotation.y
-		+ yaw_difference
-		+ deg_to_rad(fishing_yaw_offset_degrees)
-	)
 
 func stop_fishing_aim() -> void:
-	fishing_aim_active = false
+	pass
+
 
 func set_fishing_camera_frozen(active: bool) -> void:
 	fishing_camera_frozen = active

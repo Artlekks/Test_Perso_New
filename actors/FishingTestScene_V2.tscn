@@ -200,23 +200,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.48561275, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8996403, -0.25, -5)
 
 [node name="BoundsShape3D" parent="World/FishZone_V2/FishSwimBounds" index="0"]
-transform = Transform3D(0.685, 0, 0, 0, 0.74, 0, 0, 0, 0.7095096, -0.817531, -0.56291586, 1.3403081)
+transform = Transform3D(0.47662574, 0, 0, 0, 0.74, 0, 0, 0, 0.7095096, -0.8220593, -0.56291586, 1.3403082)
 
 [node name="CollisionShape3D" parent="World/FishZone_V2" index="5" unique_id=1425339664]
-transform = Transform3D(2.4227698, 0, 0, 0, 1.605, 0, 0, 0, 1.605, 0.07391289, 0, 0)
+transform = Transform3D(1.6760244, 0, 0, 0, 1.605, 0, 0, 0, 1.605, 0.07391289, 0, 0)
 shape = SubResource("BoxShape3D_m5b5u")
 
 [node name="beach" parent="World" unique_id=284991885 instance=ExtResource("9_m5b5u")]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, -0.1, -1.4689629)
+transform = Transform3D(0.45, 0, 0, 0, 0.3, 0, 0, 0, 0.45, -0.0225, -0.1, -1.6810987)
 
-[node name="Sea" parent="World/beach" index="0" unique_id=642623395]
+[node name="Sea" parent="World/beach" index="0" unique_id=1122532236]
 material_override = SubResource("ShaderMaterial_sea_far")
 
-[node name="Beach" parent="World/beach" index="1" unique_id=1328992124]
+[node name="Beach" parent="World/beach" index="1" unique_id=2088931626]
 material_override = SubResource("ShaderMaterial_beach_anim")
 
-[node name="Bottom" parent="World/beach" index="2" unique_id=1367108879]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+[node name="Bottom" parent="World/beach" index="2" unique_id=120987956]
+transform = Transform3D(0.7753322, 0, 0, 0, 0.99999994, 0, 0, 0, 1, 0, 3.9999998, 0)
 material_override = SubResource("StandardMaterial3D_myncn")
 
 [node name="DepthFloor" type="StaticBody3D" parent="World" unique_id=383427262]
@@ -226,7 +226,7 @@ script = ExtResource("68_depth_floor_mesh")
 source_mesh_path = NodePath("../beach/Bottom")
 
 [node name="ShoreBlocker" type="StaticBody3D" parent="World" unique_id=1753511095]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0.21194549, -0.4542961)
+transform = Transform3D(0.1391608, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0.0045283046, 0.21194547, -0.4542961)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="World/ShoreBlocker" unique_id=1465609237]
 transform = Transform3D(2.133684, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
@@ -266,16 +266,31 @@ pixel_correction = Vector2(1, -22)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27968735, -0.11015487)
 aabb = AABB(-0.15072826, -0.35128146, -0.25026277, 0.39227682, 0.7025629, 0.50052553)
 
-[node name="CameraRig" type="Node3D" parent="." unique_id=1419276622 node_paths=PackedStringArray("target")]
+[node name="CameraRig" type="Node3D" parent="." unique_id=1419276622 node_paths=PackedStringArray("target", "fishing_reference_camera", "fishing_pose_camera")]
+transform = Transform3D(0.9781476, 0, 0.2079117, 0, 1, 0, -0.2079117, 0, 0.9781476, 0, 0, 0)
 script = ExtResource("2_0kejc")
 target = NodePath("../Player/CharacterBody3D")
-fishing_h_offset = 1.0
-fishing_v_offset = 0.7
-fishing_yaw_offset_degrees = 40.0
+fishing_reference_camera = NodePath("FishingCameraReference")
+fishing_pose_camera = NodePath("FishingCameraPose")
+fishing_h_offset = 0.7
+fishing_v_offset = 0.55
+fishing_yaw_offset_degrees = 0.0
+fishing_pitch_degrees = -35.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=1229414820]
-transform = Transform3D(0.603208, -0.37812513, 0.7022546, 0, 0.88047737, 0.4740882, -0.79758394, -0.2859738, 0.531111, 1.029, 0.897, 0.672)
+transform = Transform3D(0.8877069, -0.37437958, 0.267986, -0.16132298, 0.29223612, 0.9426415, -0.43122086, -0.8800216, 0.19902396, 0.337, 1.484, -0.216)
+v_offset = -0.2
 current = true
+
+[node name="FishingCameraReference" type="Camera3D" parent="CameraRig" unique_id=714470094]
+transform = Transform3D(0.603208, -0.37812513, 0.7022546, 0, 0.88047737, 0.4740882, -0.79758394, -0.2859738, 0.531111, 1.029, 0.897, 0.672)
+h_offset = 0.7
+v_offset = 0.55
+
+[node name="FishingCameraPose" type="Camera3D" parent="CameraRig" unique_id=24534905]
+transform = Transform3D(-0.1374445, -0.90487546, 0.40287647, 0, 0.4067366, 0.9135455, -0.99050945, 0.1255618, -0.05590371, 0.464, 1.004, -0.166)
+h_offset = 0.7
+v_offset = 0.55
 
 [node name="UI" type="Node" parent="." unique_id=551417241]
 
