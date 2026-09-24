@@ -5,6 +5,7 @@
 [ext_resource type="Resource" uid="uid://d0sap4gwweio" path="res://data/bof4/fish/sweetfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="4_fish"]
 [ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="5_fish"]
+[ext_resource type="Resource" path="res://data/bof4/ambient_profiles/river_1.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
@@ -27,11 +28,5 @@ spot_id = &"river_1"
 spot_name = "River 1"
 location_description = "East of Sarai (canyon)"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
-ambient_shadow_max = 2
-ambient_one_shadow_weight = 0.58
-ambient_two_shadow_weight = 0.42
-ambient_three_shadow_weight = 0.0
-ambient_depth_bias = -0.14
-ambient_speed_multiplier = 1.15
-ambient_lifetime_multiplier = 0.9
+ambient_profile = ExtResource("ambient_profile")
 depth_notes = "Freshwater river population; marine jelly species removed for ecosystem plausibility."

@@ -7,6 +7,7 @@
 [ext_resource type="Resource" uid="uid://xygc445jf4oi" path="res://data/bof4/fish/blue_gill.tres" id="5_fish"]
 [ext_resource type="Resource" uid="uid://b5bkqnl3ydvpj" path="res://data/bof4/fish/black_bass.tres" id="6_fish"]
 [ext_resource type="Resource" uid="uid://ch2n7oqjaly1d" path="res://data/bof4/fish/dorado.tres" id="7_fish"]
+[ext_resource type="Resource" path="res://data/bof4/ambient_profiles/lake_2.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
@@ -39,10 +40,5 @@ spot_id = &"lake_2"
 spot_name = "Lake 2"
 location_description = "South of Lyp"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5")])
-ambient_one_shadow_weight = 0.32
-ambient_two_shadow_weight = 0.46
-ambient_three_shadow_weight = 0.22
-ambient_depth_bias = 0.02
-ambient_speed_multiplier = 0.9
-ambient_lifetime_multiplier = 1.1
+ambient_profile = ExtResource("ambient_profile")
 depth_notes = "Freshwater lake population; Martian Squid moved to marine testing/population."

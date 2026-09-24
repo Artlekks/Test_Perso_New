@@ -9,6 +9,7 @@
 [ext_resource type="Resource" uid="uid://bh7lnsqujscvu" path="res://data/bof4/fish/bonito.tres" id="7_fish"]
 [ext_resource type="Resource" uid="uid://nsa84vmwi5hl" path="res://data/bof4/fish/angler.tres" id="8_fish"]
 [ext_resource type="Resource" uid="uid://cwamaw6pettl8" path="res://data/bof4/fish/martian_squid.tres" id="9_fish"]
+[ext_resource type="Resource" path="res://data/bof4/ambient_profiles/ocean_3.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
@@ -51,10 +52,5 @@ spot_id = &"ocean_3"
 spot_name = "Ocean 3"
 location_description = "Between Highway and Mountain Path"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5"), SubResource("FishSpawnEntry_6"), SubResource("FishSpawnEntry_7")])
-ambient_one_shadow_weight = 0.4
-ambient_two_shadow_weight = 0.42
-ambient_three_shadow_weight = 0.18
-ambient_depth_bias = 0.18
-ambient_speed_multiplier = 0.8
-ambient_lifetime_multiplier = 1.22
+ambient_profile = ExtResource("ambient_profile")
 depth_notes = "Marine/deep-water population; Martian Squid moved here for ecological consistency."

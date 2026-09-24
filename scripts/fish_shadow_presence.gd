@@ -6,6 +6,7 @@ const DefaultRoundFishShadowScene := preload("res://actors/FishShadowRound.tscn"
 const DefaultWideFishShadowScene := preload("res://actors/FishShadowWide.tscn")
 const DefaultSquidFishShadowScene := preload("res://actors/FishShadowSquid.tscn")
 const DefaultJellyFishShadowScene := preload("res://actors/FishShadowJelly.tscn")
+const DefaultAmbientFishProfile := preload("res://data/bof4/ambient_profiles/default.tres")
 
 @export_category("Visual Profiles")
 ## Alternate shadow scenes are optional. Every scene must use FishShadowActor
@@ -20,21 +21,9 @@ const DefaultJellyFishShadowScene := preload("res://actors/FishShadowJelly.tscn"
 @export_category("Presence")
 @export var enabled: bool = true
 
-@export_range(1, 3, 1)
-var min_visible_shadows: int = 1
-
-@export_range(1, 3, 1)
-var max_visible_shadows: int = 3
-
-## Relative probabilities when a new ambient population size is chosen.
-@export_range(0.0, 1.0, 0.05)
-var one_shadow_weight: float = 0.55
-
-@export_range(0.0, 1.0, 0.05)
-var two_shadow_weight: float = 0.32
-
-@export_range(0.0, 1.0, 0.05)
-var three_shadow_weight: float = 0.13
+## Used only when the active FishingSpotData has no ambient_profile assigned.
+## Spot-specific population tuning belongs in FishingSpotData.ambient_profile.
+@export var default_ambient_profile: AmbientFishProfile = DefaultAmbientFishProfile
 
 @export_range(2.0, 30.0, 0.5)
 var population_reconsider_time_min: float = 10.0
@@ -89,14 +78,7 @@ var _spawn_remaining: float = 0.0
 var _fight_shadow: FishShadowActor = null
 var _no_readable_shadow_time: float = 0.0
 var _debug_forced_fish: FishData = null
-var _spot_shadow_min: int = -1
-var _spot_shadow_max: int = -1
-var _spot_one_weight: float = -1.0
-var _spot_two_weight: float = -1.0
-var _spot_three_weight: float = -1.0
-var _spot_depth_bias: float = 0.0
-var _spot_speed_multiplier: float = 1.0
-var _spot_lifetime_multiplier: float = 1.0
+var _ambient_profile: AmbientFishProfile = null
 
 
 func _ready() -> void:
@@ -343,10 +325,9 @@ func rebuild_population() -> void:
 func _spawn_one_shadow() -> void:
 	if _swim_bounds == null:
 		return
-	var spawn_cap := max_visible_shadows
-	if _spot_shadow_max >= 1:
-		spawn_cap = _spot_shadow_max
-	spawn_cap = clampi(spawn_cap, 1, 3)
+
+	var profile := _get_active_ambient_profile()
+	var spawn_cap := profile.get_max_count()
 	if _get_ambient_shadow_count() >= spawn_cap:
 		return
 
@@ -367,11 +348,11 @@ func _spawn_one_shadow() -> void:
 	var size_t := _get_size_ratio(fish)
 	var speed := lerpf(small_fish_speed, large_fish_speed, size_t)
 	speed *= _rng.randf_range(1.0 - speed_variation, 1.0 + speed_variation)
-	speed *= _spot_speed_multiplier
+	speed *= profile.speed_multiplier
 
 	var visual_scale := lerpf(small_fish_scale, large_fish_scale, size_t)
 	var initial_depth := clampf(
-		_pick_visual_depth(fish) + _spot_depth_bias,
+		_pick_visual_depth(fish) + profile.depth_bias,
 		0.05,
 		0.82
 	)
@@ -379,10 +360,10 @@ func _spawn_one_shadow() -> void:
 		shadow_lifetime_min,
 		maxf(shadow_lifetime_max, shadow_lifetime_min)
 	)
-	lifetime *= _spot_lifetime_multiplier
+	lifetime *= profile.lifetime_multiplier
 
 	if shadow.has_method("set_ambient_depth_bias"):
-		shadow.set_ambient_depth_bias(_spot_depth_bias)
+		shadow.set_ambient_depth_bias(profile.depth_bias)
 	shadow.configure(
 		fish,
 		_swim_bounds,
@@ -505,38 +486,16 @@ func _clear_population() -> void:
 
 
 func _choose_population_count() -> int:
-	var configured_min := min_visible_shadows
-	var configured_max := max_visible_shadows
-	var configured_one := one_shadow_weight
-	var configured_two := two_shadow_weight
-	var configured_three := three_shadow_weight
-
-	if _spot_shadow_min >= 1:
-		configured_min = _spot_shadow_min
-	if _spot_shadow_max >= 1:
-		configured_max = _spot_shadow_max
-	if _spot_one_weight >= 0.0:
-		configured_one = _spot_one_weight
-	if _spot_two_weight >= 0.0:
-		configured_two = _spot_two_weight
-	if _spot_three_weight >= 0.0:
-		configured_three = _spot_three_weight
-
-	var minimum := clampi(configured_min, 1, 3)
-	var maximum := clampi(configured_max, minimum, 3)
+	var profile := _get_active_ambient_profile()
+	var minimum := profile.get_min_count()
+	var maximum := profile.get_max_count()
 
 	var options: Array[int] = []
 	var weights: Array[float] = []
 
-	if minimum <= 1 and maximum >= 1:
-		options.append(1)
-		weights.append(maxf(configured_one, 0.0))
-	if minimum <= 2 and maximum >= 2:
-		options.append(2)
-		weights.append(maxf(configured_two, 0.0))
-	if minimum <= 3 and maximum >= 3:
-		options.append(3)
-		weights.append(maxf(configured_three, 0.0))
+	for count in range(minimum, maximum + 1):
+		options.append(count)
+		weights.append(profile.get_weight_for_count(count))
 
 	if options.is_empty():
 		return minimum
@@ -545,8 +504,10 @@ func _choose_population_count() -> int:
 	for weight in weights:
 		total += weight
 
+	# A zeroed/missing weight table should never make the system unusable.
+	# Fall back to an even choice across the configured min/max range.
 	if total <= 0.0:
-		return options[0]
+		return options[_rng.randi_range(0, options.size() - 1)]
 
 	var roll := _rng.randf_range(0.0, total)
 	var cumulative := 0.0
@@ -560,14 +521,7 @@ func _choose_population_count() -> int:
 
 
 func _refresh_spot_identity() -> void:
-	_spot_shadow_min = -1
-	_spot_shadow_max = -1
-	_spot_one_weight = -1.0
-	_spot_two_weight = -1.0
-	_spot_three_weight = -1.0
-	_spot_depth_bias = 0.0
-	_spot_speed_multiplier = 1.0
-	_spot_lifetime_multiplier = 1.0
+	_ambient_profile = default_ambient_profile
 
 	if _fish_zone == null:
 		return
@@ -576,17 +530,16 @@ func _refresh_spot_identity() -> void:
 	if _fish_zone.has_method("get_fishing_spot"):
 		spot = _fish_zone.get_fishing_spot() as FishingSpotData
 
-	if spot == null:
-		return
+	if spot != null and spot.get_ambient_profile() != null:
+		_ambient_profile = spot.get_ambient_profile()
 
-	_spot_shadow_min = spot.ambient_shadow_min
-	_spot_shadow_max = spot.ambient_shadow_max
-	_spot_one_weight = spot.ambient_one_shadow_weight
-	_spot_two_weight = spot.ambient_two_shadow_weight
-	_spot_three_weight = spot.ambient_three_shadow_weight
-	_spot_depth_bias = spot.ambient_depth_bias
-	_spot_speed_multiplier = spot.ambient_speed_multiplier
-	_spot_lifetime_multiplier = spot.ambient_lifetime_multiplier
+
+func _get_active_ambient_profile() -> AmbientFishProfile:
+	if _ambient_profile != null:
+		return _ambient_profile
+	if default_ambient_profile != null:
+		return default_ambient_profile
+	return DefaultAmbientFishProfile
 
 
 func _get_water_y() -> float:

@@ -5,6 +5,7 @@
 [ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://die2ltgr3x351" path="res://data/bof4/fish/bullcat.tres" id="4_fish"]
 [ext_resource type="Resource" uid="uid://dx0kf16ay62nk" path="res://data/bof4/fish/acheron.tres" id="5_fish"]
+[ext_resource type="Resource" path="res://data/bof4/ambient_profiles/chamba.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
@@ -27,11 +28,5 @@ spot_id = &"chamba"
 spot_name = "Chamba"
 location_description = "Southeast of Chamba"
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
-ambient_shadow_min = 2
-ambient_one_shadow_weight = 0.0
-ambient_two_shadow_weight = 0.62
-ambient_three_shadow_weight = 0.38
-ambient_depth_bias = 0.04
-ambient_speed_multiplier = 0.78
-ambient_lifetime_multiplier = 1.25
+ambient_profile = ExtResource("ambient_profile")
 depth_notes = "Special Chamba population."

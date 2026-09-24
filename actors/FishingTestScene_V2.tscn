@@ -202,9 +202,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8996403, -0.25, -5)
 [node name="BoundsShape3D" parent="World/FishZone_V2/FishSwimBounds" index="0"]
 transform = Transform3D(0.685, 0, 0, 0, 0.74, 0, 0, 0, 0.7095096, -0.817531, -0.56291586, 1.3403081)
 
-[node name="FishShadowPresence" parent="World/FishZone_V2" index="4"]
-min_visible_shadows = 2
-
 [node name="CollisionShape3D" parent="World/FishZone_V2" index="5" unique_id=1425339664]
 transform = Transform3D(2.4227698, 0, 0, 0, 1.605, 0, 0, 0, 1.605, 0.07391289, 0, 0)
 shape = SubResource("BoxShape3D_m5b5u")

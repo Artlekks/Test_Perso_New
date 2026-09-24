@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AmbientFishProfile" format=3 uid="uid://clqts4h8453qa"]
+
+[ext_resource type="Script" uid="uid://cpg5wui111oc5" path="res://scripts/database/ambient_fish_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+min_visible_shadows = 3
+max_visible_shadows = 5
+count_weights = PackedFloat32Array(0.55, 0.32, 0.13)

@@ -3,61 +3,9 @@ extends CanvasLayer
 signal spot_requested(spot: FishingSpotData)
 signal debug_environment_changed
 
-const FISH_DATABASE = [
-	preload("res://data/bof4/fish/acheron.tres"),
-	preload("res://data/bof4/fish/angelfish.tres"),
-	preload("res://data/bof4/fish/angler.tres"),
-	preload("res://data/bof4/fish/barandy.tres"),
-	preload("res://data/bof4/fish/bass.tres"),
-	preload("res://data/bof4/fish/black_bass.tres"),
-	preload("res://data/bof4/fish/black_porgy.tres"),
-	preload("res://data/bof4/fish/blowfish.tres"),
-	preload("res://data/bof4/fish/blue_gill.tres"),
-	preload("res://data/bof4/fish/bonito.tres"),
-	preload("res://data/bof4/fish/browntail.tres"),
-	preload("res://data/bof4/fish/bullcat.tres"),
-	preload("res://data/bof4/fish/dorado.tres"),
-	preload("res://data/bof4/fish/flatfish.tres"),
-	preload("res://data/bof4/fish/flying_fish.tres"),
-	preload("res://data/bof4/fish/jellyfish.tres"),
-	preload("res://data/bof4/fish/man_o_war.tres"),
-	preload("res://data/bof4/fish/martian_squid.tres"),
-	preload("res://data/bof4/fish/moorfish.tres"),
-	preload("res://data/bof4/fish/octopus.tres"),
-	preload("res://data/bof4/fish/piranha.tres"),
-	preload("res://data/bof4/fish/rainbow_trout.tres"),
-	preload("res://data/bof4/fish/salmon.tres"),
-	preload("res://data/bof4/fish/sea_bass.tres"),
-	preload("res://data/bof4/fish/sea_bream.tres"),
-	preload("res://data/bof4/fish/spearfish.tres"),
-	preload("res://data/bof4/fish/sturgeon.tres"),
-	preload("res://data/bof4/fish/sweetfish.tres"),
-	preload("res://data/bof4/fish/trout.tres"),
-	preload("res://data/bof4/fish/whale.tres"),
-]
-
-const ROD_DATABASE = [
-	preload("res://data/bof4/rods/wooden_rod.tres"),
-	preload("res://data/bof4/rods/bamboo_rod.tres"),
-	preload("res://data/bof4/rods/deluxe_rod.tres"),
-	preload("res://data/bof4/rods/spanner.tres"),
-	preload("res://data/bof4/rods/angling_rod.tres"),
-	preload("res://data/bof4/rods/masters_rod.tres"),
-]
-
-const SPOT_DATABASE = [
-	preload("res://data/bof4/spots/river_1.tres"),
-	preload("res://data/bof4/spots/river_2.tres"),
-	preload("res://data/bof4/spots/river_3.tres"),
-	preload("res://data/bof4/spots/lake_1.tres"),
-	preload("res://data/bof4/spots/lake_2.tres"),
-	preload("res://data/bof4/spots/lake_3.tres"),
-	preload("res://data/bof4/spots/ocean_1.tres"),
-	preload("res://data/bof4/spots/ocean_2.tres"),
-	preload("res://data/bof4/spots/ocean_3.tres"),
-	preload("res://data/bof4/spots/chamba.tres"),
-	preload("res://data/bof4/spots/saldine.tres"),
-]
+const CONTENT_CATALOG: FishingContentCatalog = preload(
+	"res://data/bof4/catalogs/all_content.tres"
+)
 
 const QA_PROFILE_DIRECTORY := "res://data/debug/qa_profiles"
 
@@ -250,7 +198,7 @@ func _apply_profile(profile: FishingQAProfile) -> void:
 			_loadout.equip_rod(profile.rod)
 
 	if profile.fishing_spot != null:
-		_spot_index = SPOT_DATABASE.find(profile.fishing_spot)
+		_spot_index = CONTENT_CATALOG.spots.find(profile.fishing_spot)
 		spot_requested.emit(profile.fishing_spot)
 
 	_sync_fish_index()
@@ -258,13 +206,13 @@ func _apply_profile(profile: FishingQAProfile) -> void:
 
 
 func _change_spot(step: int) -> void:
-	if SPOT_DATABASE.is_empty():
+	if CONTENT_CATALOG.spots.is_empty():
 		return
 
 	if _spot_index < 0:
 		_spot_index = 0
 	else:
-		_spot_index = posmod(_spot_index + step, SPOT_DATABASE.size())
+		_spot_index = posmod(_spot_index + step, CONTENT_CATALOG.spots.size())
 
 	# A manual spot change means "test this ecosystem". Clear a previous
 	# targeted fish/shadow override so the selected spot population becomes the
@@ -274,17 +222,17 @@ func _change_spot(step: int) -> void:
 	_fish_index = 0
 
 	_mark_custom_profile()
-	spot_requested.emit(SPOT_DATABASE[_spot_index])
+	spot_requested.emit(CONTENT_CATALOG.spots[_spot_index])
 	debug_environment_changed.emit()
 
 
 func _change_fish(step: int) -> void:
 	# Index 0 means normal encounter RNG and normal shadow population.
-	_fish_index = posmod(_fish_index + step, FISH_DATABASE.size() + 1)
+	_fish_index = posmod(_fish_index + step, CONTENT_CATALOG.fish.size() + 1)
 
 	var fish: FishData = null
 	if _fish_index > 0:
-		fish = FISH_DATABASE[_fish_index - 1]
+		fish = CONTENT_CATALOG.fish[_fish_index - 1]
 
 	_settings.set_forced_fish(fish)
 	# Manual FISH selection intentionally mirrors into ambient/pre-bite shadows.
@@ -316,15 +264,15 @@ func _change_lure(step: int) -> void:
 
 
 func _change_rod(step: int) -> void:
-	if _loadout == null or ROD_DATABASE.is_empty():
+	if _loadout == null or CONTENT_CATALOG.tackle.rods.is_empty():
 		return
 
-	var current_index := ROD_DATABASE.find(_loadout.get_selected_rod())
+	var current_index := CONTENT_CATALOG.tackle.rods.find(_loadout.get_selected_rod())
 	if current_index < 0:
 		current_index = 0
 
-	var next_index := posmod(current_index + step, ROD_DATABASE.size())
-	_loadout.equip_rod(ROD_DATABASE[next_index])
+	var next_index := posmod(current_index + step, CONTENT_CATALOG.tackle.rods.size())
+	_loadout.equip_rod(CONTENT_CATALOG.tackle.rods[next_index])
 	_mark_custom_profile()
 
 
@@ -363,7 +311,7 @@ func _sync_fish_index() -> void:
 	if forced_fish == null:
 		return
 
-	var found_index := FISH_DATABASE.find(forced_fish)
+	var found_index := CONTENT_CATALOG.fish.find(forced_fish)
 	if found_index >= 0:
 		_fish_index = found_index + 1
 
@@ -380,7 +328,7 @@ func _sync_spot_from_runtime() -> void:
 		current_spot = _fish_zone.get("fishing_spot") as FishingSpotData
 
 	if current_spot != null:
-		_spot_index = SPOT_DATABASE.find(current_spot)
+		_spot_index = CONTENT_CATALOG.spots.find(current_spot)
 
 
 func _refresh() -> void:
@@ -395,8 +343,8 @@ func _refresh() -> void:
 		profile_purpose = profile.purpose
 
 	var spot_text := "CURRENT ZONE"
-	if _spot_index >= 0 and _spot_index < SPOT_DATABASE.size():
-		spot_text = SPOT_DATABASE[_spot_index].spot_name
+	if _spot_index >= 0 and _spot_index < CONTENT_CATALOG.spots.size():
+		spot_text = CONTENT_CATALOG.spots[_spot_index].spot_name
 	elif _fish_zone != null:
 		var runtime_spot = _fish_zone.get("fishing_spot")
 		if runtime_spot is FishingSpotData:
@@ -404,7 +352,7 @@ func _refresh() -> void:
 
 	var fish_text := "ANY / SPOT RNG"
 	if _fish_index > 0:
-		var fish: FishData = FISH_DATABASE[_fish_index - 1]
+		var fish: FishData = CONTENT_CATALOG.fish[_fish_index - 1]
 		fish_text = fish.fish_name
 
 	var lure_text := "NONE"
@@ -439,7 +387,7 @@ func _refresh() -> void:
 		]
 
 		if _fish_index > 0:
-			var selected_fish: FishData = FISH_DATABASE[_fish_index - 1]
+			var selected_fish: FishData = CONTENT_CATALOG.fish[_fish_index - 1]
 			var record := _progress.get_species_record(selected_fish)
 			if not record.is_empty():
 				progress_text += "\n%s record: %d cm / %d pts / %d caught / King: %s" % [
