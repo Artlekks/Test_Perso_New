@@ -12,8 +12,9 @@ uniform float sea_max_x = 13.67757;
 
 // Broad colour shaping. Keep the deep-water band visible for much longer,
 // then only fade to black in the final exposed edge strip.
-uniform float depth_darkening_start = 0.32;
-uniform float depth_darkening_strength = 0.08;
+uniform float depth_darkening_start : hint_range(0.0, 1.0, 0.01) = 0.58;
+uniform float depth_darkening_end : hint_range(0.0, 1.0, 0.01) = 0.68;
+uniform float depth_darkening_strength : hint_range(0.0, 1.0, 0.01) = 0.835;
 uniform float deep_blue_start = 0.52;
 uniform float deep_blue_strength = 0.48;
 uniform vec4 deep_blue_tint : source_color = vec4(0.04, 0.16, 0.34, 1.0);
@@ -46,8 +47,21 @@ void fragment() {
     float depth01 = clamp((shore_z - sea_local_xz.y) / depth_denom, 0.0, 1.0);
 
     // Gentle broad darkening only.
-    float broad_depth_t = smoothstep(depth_darkening_start, 1.0, depth01);
-    vec3 shaded = base * (1.0 - broad_depth_t * depth_darkening_strength);
+	// Depth darkening behaves like a movable two-handle colour ramp.
+	// Start = where the darkening begins.
+	// End   = where it reaches full strength.
+	float darkening_end = max(
+	    depth_darkening_end,
+	    depth_darkening_start + 0.001
+	);
+
+	float broad_depth_t = smoothstep(
+	    depth_darkening_start,
+	    darkening_end,
+	    depth01
+	);
+
+	vec3 shaded = base * (1.0 - broad_depth_t * depth_darkening_strength);
 
     // Preserve a readable dark-blue zone instead of rushing to black.
     float blue_t = smoothstep(deep_blue_start, 0.96, depth01) * deep_blue_strength;

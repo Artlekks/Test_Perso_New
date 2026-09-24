@@ -83,8 +83,9 @@ shader_parameter/shore_z = -1.0
 shader_parameter/far_z = -45.0
 shader_parameter/sea_min_x = -13.37757
 shader_parameter/sea_max_x = 13.67757
-shader_parameter/depth_darkening_start = 0.2
-shader_parameter/depth_darkening_strength = 0.735
+shader_parameter/depth_darkening_start = 0.0
+shader_parameter/depth_darkening_end = 0.21999999508256
+shader_parameter/depth_darkening_strength = 0.6499999854712
 shader_parameter/deep_blue_start = -0.085
 shader_parameter/deep_blue_strength = 2.265
 shader_parameter/deep_blue_tint = Color(0.055200003, 0.16607997, 0.24, 1)
@@ -199,7 +200,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.48561275, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8996403, -0.25, -5)
 
 [node name="BoundsShape3D" parent="World/FishZone_V2/FishSwimBounds" index="0"]
-transform = Transform3D(0.685, 0, 0, 0, 0.74, 0, 0, 0, 0.73865706, -0.817531, -0.56291586, 1.3847073)
+transform = Transform3D(0.685, 0, 0, 0, 0.74, 0, 0, 0, 0.7095096, -0.817531, -0.56291586, 1.3403081)
 
 [node name="FishShadowPresence" parent="World/FishZone_V2" index="4"]
 min_visible_shadows = 2
