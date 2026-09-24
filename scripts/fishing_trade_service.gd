@@ -72,13 +72,15 @@ func execute_trade(recipe: FishingTradeRecipe) -> Dictionary:
 	# Evaluation above makes the transaction deterministic. Costs are consumed
 	# without individual disk writes, the reward is granted, then one save commits
 	# the whole exchange.
-	if not inventory.try_consume_fish_costs(
+	var consumption := inventory.consume_fish_costs(
 		recipe.required_fish_ids,
 		recipe.required_counts,
 		false
-	):
+	)
+	if not bool(consumption.get("success", false)):
 		result["can_trade"] = false
 		result["reason"] = "inventory_changed"
+		result["missing_fish"] = consumption.get("missing_fish", {})
 		return result
 
 	var reward_count_after := 0
@@ -95,6 +97,7 @@ func execute_trade(recipe: FishingTradeRecipe) -> Dictionary:
 	inventory.commit_changes()
 	result["reason"] = "completed"
 	result["reward_count_after"] = reward_count_after
+	result["consumed_specimens"] = consumption.get("consumed_specimens", {})
 	result["fish_counts_after"] = inventory.get_all_fish_counts()
 	trade_completed.emit(recipe, result.duplicate(true))
 	return result

@@ -2,6 +2,7 @@ extends Node
 class_name FishingLoadout
 
 signal lure_changed(lure: BaitData)
+signal lure_consumed(lure: BaitData, remaining_count: int, reason: StringName)
 signal rod_changed(rod: RodData)
 
 @export_category("Fishing Database")
@@ -177,6 +178,73 @@ func is_lure_owned(lure: BaitData) -> bool:
 
 func is_rod_owned(rod: RodData) -> bool:
 	return _inventory == null or _inventory.owns_rod(rod)
+
+
+func consume_equipped_lure(reason: StringName = &"consumed") -> Dictionary:
+	var result := {
+		"consumed": false,
+		"reason": "",
+		"lure_id": &"",
+		"remaining_count": 0,
+		"fallback_lure_id": &"",
+	}
+
+	if selected_lure == null:
+		result["reason"] = "no_lure_equipped"
+		return result
+
+	if _inventory == null:
+		result["reason"] = "inventory_unavailable"
+		return result
+
+	var lost_lure := selected_lure
+	var lure_id: StringName = lost_lure.lure_id
+	result["lure_id"] = lure_id
+
+	# QA/system loadouts are deliberately allowed to equip tackle the player
+	# does not own. A failure test using such a lure must never delete unrelated
+	# inventory.
+	if not _inventory.owns_lure(lost_lure):
+		result["reason"] = "equipped_lure_not_owned"
+		return result
+
+	if not _inventory.remove_lure(lost_lure, 1, true):
+		result["reason"] = "inventory_remove_failed"
+		return result
+
+	var remaining := _inventory.get_lure_count(lure_id)
+	result["consumed"] = true
+	result["reason"] = str(reason)
+	result["remaining_count"] = remaining
+
+	if remaining <= 0:
+		var fallback := _find_first_owned_lure()
+		if fallback != null:
+			_equip_lure_internal(fallback)
+			result["fallback_lure_id"] = fallback.lure_id
+		else:
+			_clear_lure_internal()
+
+	lure_consumed.emit(lost_lure, remaining, reason)
+	return result
+
+
+func clear_lure() -> void:
+	_clear_lure_internal()
+
+
+func _find_first_owned_lure() -> BaitData:
+	for lure in get_owned_lures():
+		if lure != null:
+			return lure
+	return null
+
+
+func _clear_lure_internal() -> void:
+	if selected_lure == null:
+		return
+	selected_lure = null
+	lure_changed.emit(null)
 
 
 func _equip_lure_internal(lure: BaitData) -> void:

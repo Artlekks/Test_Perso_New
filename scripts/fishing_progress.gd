@@ -7,6 +7,10 @@ signal catch_recorded(
 	record: Dictionary,
 	fishing_points: int
 )
+signal catch_specimen_recorded(
+	species_key: String,
+	specimen_data: Dictionary
+)
 
 const SAVE_VERSION: int = 1
 const MAX_FISHING_POINTS: int = 9999
@@ -138,6 +142,15 @@ func record_catch(fish: FishInstance) -> Dictionary:
 		species_key,
 		record.duplicate(true),
 		fishing_points
+	)
+	catch_specimen_recorded.emit(
+		species_key,
+		{
+			"fish_name": fish.species.fish_name,
+			"size": fish.size,
+			"points": fish.points,
+			"is_king": fish.is_king,
+		}
 	)
 
 	return result

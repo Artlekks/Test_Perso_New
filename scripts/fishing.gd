@@ -137,6 +137,7 @@ var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
 var fishing_journal_service: FishingJournalService = null
 var catch_record_result: Dictionary = {}
+var last_lure_loss_result: Dictionary = {}
 
 var locked_cast_power: float = 0.0
 # Player input / desired curve amount.
@@ -546,6 +547,10 @@ func get_fishing_progress() -> FishingProgress:
 
 func get_fishing_inventory() -> FishingInventory:
 	return fishing_inventory
+
+
+func get_last_lure_loss_result() -> Dictionary:
+	return last_lure_loss_result.duplicate(true)
 
 
 func get_fishing_trade_service() -> FishingTradeService:
@@ -1057,6 +1062,7 @@ func _on_bait_landed(point: Vector3) -> void:
 		
 func _enter_in_water() -> void:
 	phase = Phase.IN_WATER
+	last_lure_loss_result = {}
 	technique_detector.reset()
 	technique_view.clear()
 
@@ -1473,6 +1479,8 @@ func _on_line_broken() -> void:
 	if phase != Phase.FIGHT:
 		return
 
+	_consume_equipped_lure_for_line_break()
+
 	if caster.has_method("set_hold_returned_bait_for_landing"):
 		caster.set_hold_returned_bait_for_landing(false)
 
@@ -1486,6 +1494,16 @@ func _on_line_broken() -> void:
 
 	phase = Phase.LINE_BROKEN
 	sprite_director.play(&"Reel_Broken_Rod")
+
+func _consume_equipped_lure_for_line_break() -> void:
+	last_lure_loss_result = {}
+	if loadout == null or not loadout.has_method("consume_equipped_lure"):
+		return
+
+	var result = loadout.consume_equipped_lure(&"line_break")
+	if result is Dictionary:
+		last_lure_loss_result = (result as Dictionary).duplicate(true)
+
 
 func _freeze_failed_fight() -> void:
 	caster.set_reeling(false)
@@ -1648,6 +1666,21 @@ func _commit_curved_cast() -> void:
 
 	if loadout != null:
 		cast_lure = loadout.get_selected_lure()
+
+	# Once tackle ownership is active, an empty loadout must not silently cast
+	# the bait scene with its default data. This is the backend guard; the future
+	# menu can provide the proper "select/get bait" presentation.
+	if cast_lure == null:
+		throw_preview.hide_preview()
+		power.stop()
+		locked_cast_power = 0.0
+		cast_curve_value = 0.0
+		preview_cast_curve_value = 0.0
+		cast_power_locked = false
+		cast_confirm_ready = not Input.is_action_pressed("enter_fishing")
+		phase = Phase.CANCEL_THROW
+		sprite_director.play_backwards(&"Prep_Throw")
+		return
 
 	if zone.has_method("get_swim_bounds"):
 		cast_swim_bounds = zone.get_swim_bounds()
