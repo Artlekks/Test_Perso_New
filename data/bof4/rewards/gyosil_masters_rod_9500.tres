@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FishingRewardDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_reward_definition.gd" id="1_reward"]
+
+[resource]
+script = ExtResource("1_reward")
+reward_key = &"gyosil_masters_rod_9500"
+display_name = "Master's Rod"
+source_description = "Master Gyosil reward at 9500 fishing points. Claimable, not auto-granted."
+trigger_type = 0
+threshold = 9500
+reward_type = 1
+reward_item_id = &"masters_rod"
+quantity = 1
+auto_claim = false

@@ -29,6 +29,21 @@ const FishingTackleCatalogResource = preload(
 const FishingTradeCatalogResource = preload(
 	"res://data/bof4/trades/all_trades.tres"
 )
+const FishingUnlockStateScript = preload(
+	"res://scripts/fishing_unlock_state.gd"
+)
+const FishingRewardServiceScript = preload(
+	"res://scripts/fishing_reward_service.gd"
+)
+const FishingRewardCatalogResource = preload(
+	"res://data/bof4/rewards/all_rewards.tres"
+)
+const FishingJournalServiceScript = preload(
+	"res://scripts/fishing_journal_service.gd"
+)
+const FishingJournalCatalogResource = preload(
+	"res://data/bof4/journal/all_journal_data.tres"
+)
 const FishingSurfaceSplashScene = preload(
 	"res://actors/FishingSurfaceSplash.tscn"
 )
@@ -118,6 +133,9 @@ var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
 var fishing_inventory: FishingInventory = null
 var fishing_trade_service: FishingTradeService = null
+var fishing_unlock_state: FishingUnlockState = null
+var fishing_reward_service: FishingRewardService = null
+var fishing_journal_service: FishingJournalService = null
 var catch_record_result: Dictionary = {}
 
 var locked_cast_power: float = 0.0
@@ -195,6 +213,16 @@ func _ready() -> void:
 		loadout.set_inventory(fishing_inventory)
 
 	fishing_trade_service = _get_or_create_fishing_trade_service(
+		fishing_inventory
+	)
+	fishing_unlock_state = _get_or_create_fishing_unlock_state()
+	fishing_reward_service = _get_or_create_fishing_reward_service(
+		fishing_progress,
+		fishing_inventory,
+		fishing_unlock_state
+	)
+	fishing_journal_service = _get_or_create_fishing_journal_service(
+		fishing_progress,
 		fishing_inventory
 	)
 
@@ -524,6 +552,18 @@ func get_fishing_trade_service() -> FishingTradeService:
 	return fishing_trade_service
 
 
+func get_fishing_unlock_state() -> FishingUnlockState:
+	return fishing_unlock_state
+
+
+func get_fishing_reward_service() -> FishingRewardService:
+	return fishing_reward_service
+
+
+func get_fishing_journal_service() -> FishingJournalService:
+	return fishing_journal_service
+
+
 func _get_or_create_fishing_progress() -> FishingProgress:
 	var tree_root := get_tree().root
 	var existing := tree_root.get_node_or_null(
@@ -587,6 +627,81 @@ func _get_or_create_fishing_trade_service(
 		inventory,
 		FishingTackleCatalogResource,
 		FishingTradeCatalogResource
+	)
+	tree_root.add_child.call_deferred(new_service)
+	return new_service
+
+
+func _get_or_create_fishing_unlock_state() -> FishingUnlockState:
+	var tree_root := get_tree().root
+	var existing := tree_root.get_node_or_null("FishingUnlockState")
+
+	if existing is FishingUnlockState:
+		var existing_state := existing as FishingUnlockState
+		existing_state.initialize()
+		return existing_state
+
+	var new_state := FishingUnlockStateScript.new()
+	new_state.name = "FishingUnlockState"
+	tree_root.add_child.call_deferred(new_state)
+	new_state.initialize()
+	return new_state
+
+
+func _get_or_create_fishing_reward_service(
+	progress: FishingProgress,
+	inventory: FishingInventory,
+	unlock_state: FishingUnlockState
+) -> FishingRewardService:
+	var tree_root := get_tree().root
+	var existing := tree_root.get_node_or_null("FishingRewardService")
+
+	if existing is FishingRewardService:
+		var existing_service := existing as FishingRewardService
+		existing_service.configure(
+			progress,
+			inventory,
+			FishingTackleCatalogResource,
+			unlock_state,
+			FishingRewardCatalogResource
+		)
+		return existing_service
+
+	var new_service := FishingRewardServiceScript.new()
+	new_service.name = "FishingRewardService"
+	new_service.configure(
+		progress,
+		inventory,
+		FishingTackleCatalogResource,
+		unlock_state,
+		FishingRewardCatalogResource
+	)
+	tree_root.add_child.call_deferred(new_service)
+	return new_service
+
+
+func _get_or_create_fishing_journal_service(
+	progress: FishingProgress,
+	inventory: FishingInventory
+) -> FishingJournalService:
+	var tree_root := get_tree().root
+	var existing := tree_root.get_node_or_null("FishingJournalService")
+
+	if existing is FishingJournalService:
+		var existing_service := existing as FishingJournalService
+		existing_service.configure(
+			progress,
+			inventory,
+			FishingJournalCatalogResource
+		)
+		return existing_service
+
+	var new_service := FishingJournalServiceScript.new()
+	new_service.name = "FishingJournalService"
+	new_service.configure(
+		progress,
+		inventory,
+		FishingJournalCatalogResource
 	)
 	tree_root.add_child.call_deferred(new_service)
 	return new_service
