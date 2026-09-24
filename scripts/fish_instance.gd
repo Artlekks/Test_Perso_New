@@ -32,8 +32,16 @@ func setup(data: FishData, king_override: int = -1) -> void:
 
 	behavior_profile = data.behavior_profile
 	resistance_rounds = data.resistance_rounds
-	recovery_time_min = data.recovery_time_min
-	recovery_time_max = data.recovery_time_max
+
+	var recovery_multiplier := 1.0
+	if behavior_profile != null:
+		recovery_multiplier = maxf(
+			behavior_profile.recovery_time_multiplier,
+			0.5
+		)
+
+	recovery_time_min = data.recovery_time_min * recovery_multiplier
+	recovery_time_max = data.recovery_time_max * recovery_multiplier
 
 	var safe_average := maxf(data.average_size, 0.001)
 	var size_ratio := size / safe_average

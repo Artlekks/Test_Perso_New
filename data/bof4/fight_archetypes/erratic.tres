@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+archetype = 4
+profile_name = "ERRATIC"
+lateral_activity = 1.0
+vertical_activity = 1.0
+direction_change_min = 0.28
+direction_change_max = 0.68
+movement_response_multiplier = 1.55
+release_reaction_multiplier = 1.45
+recovery_time_multiplier = 0.82
+surge_weight = 0.7
+side_run_weight = 1.2
+dive_weight = 1.7
+rise_weight = 1.0
+erratic_weight = 3.8
+thrash_chance = 0.36
+thrash_multiplier = 1.45
+metadata/balance_origin = "Authored gameplay archetype; species difficulty still comes from FishData stamina, strength, rounds and size."

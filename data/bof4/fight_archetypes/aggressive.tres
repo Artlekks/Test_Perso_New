@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+archetype = 2
+profile_name = "AGGRESSIVE"
+lateral_activity = 0.95
+vertical_activity = 0.85
+direction_change_min = 0.42
+direction_change_max = 0.95
+movement_response_multiplier = 1.2
+release_reaction_multiplier = 1.35
+recovery_time_multiplier = 0.72
+surge_weight = 2.2
+side_run_weight = 2.0
+dive_weight = 1.4
+rise_weight = 0.5
+erratic_weight = 1.3
+thrash_chance = 0.42
+thrash_multiplier = 1.5
+metadata/balance_origin = "Authored gameplay archetype; species difficulty still comes from FishData stamina, strength, rounds and size."

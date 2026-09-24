@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FishingTradeCatalog" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_trade_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/bof4/trades/shyde_gold_top.tres" id="2_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/shyde_hanger.tres" id="3_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/shyde_spoon.tres" id="4_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/shyde_warbler.tres" id="5_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/wyndia_bamboo_rod.tres" id="6_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/wyndia_flattop.tres" id="7_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/wyndia_tail.tres" id="8_trade"]
+[ext_resource type="Resource" path="res://data/bof4/trades/wyndia_toad.tres" id="9_trade"]
+
+[resource]
+script = ExtResource("1_catalog")
+recipes = Array[Resource]([ExtResource("2_trade"), ExtResource("3_trade"), ExtResource("4_trade"), ExtResource("5_trade"), ExtResource("6_trade"), ExtResource("7_trade"), ExtResource("8_trade"), ExtResource("9_trade")])

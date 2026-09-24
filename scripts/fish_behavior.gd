@@ -110,6 +110,8 @@ var lateral_activity: float = 1.0
 var vertical_activity: float = 1.0
 
 var behavior_profile: FishBehaviorProfile = null
+var profile_response_multiplier: float = 1.0
+var profile_release_reaction_multiplier: float = 1.0
 
 # Baseline values are captured before any species profile is applied.
 # If a future FishData has no behavior profile, we restore these instead
@@ -138,6 +140,7 @@ func _process(delta: float) -> void:
 		target_lateral,
 		lateral_response_speed
 		* current_lateral_response_multiplier
+		* profile_response_multiplier
 		* delta
 	)
 
@@ -146,6 +149,7 @@ func _process(delta: float) -> void:
 		target_depth,
 		depth_response_speed
 		* current_depth_response_multiplier
+		* profile_response_multiplier
 		* delta
 	)
 
@@ -154,6 +158,7 @@ func _process(delta: float) -> void:
 		target_pressure,
 		pressure_response_speed
 		* current_pressure_response_multiplier
+		* profile_response_multiplier
 		* delta
 	)
 
@@ -192,6 +197,8 @@ func configure(fish: FishInstance) -> void:
 
 	thrash_chance_per_change = profile.thrash_chance
 	thrash_multiplier = profile.thrash_multiplier
+	profile_response_multiplier = maxf(profile.movement_response_multiplier, 0.5)
+	profile_release_reaction_multiplier = maxf(profile.release_reaction_multiplier, 0.5)
 
 
 func _reset_profile_settings() -> void:
@@ -207,6 +214,8 @@ func _reset_profile_settings() -> void:
 
 	thrash_chance_per_change = _default_thrash_chance
 	thrash_multiplier = _default_thrash_multiplier
+	profile_response_multiplier = 1.0
+	profile_release_reaction_multiplier = 1.0
 
 
 func _capture_default_profile_settings() -> void:
@@ -273,6 +282,12 @@ func react_to_release(
 ) -> void:
 	if not active:
 		return
+
+	reaction_intensity = clampf(
+		reaction_intensity * profile_release_reaction_multiplier,
+		0.0,
+		1.0
+	)
 
 	# Releasing K gives the fish freedom to move,
 	# but does not automatically cause a full surge away.

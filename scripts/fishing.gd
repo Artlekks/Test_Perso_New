@@ -17,6 +17,18 @@ const FishingTechniqueViewScene = preload(
 const FishingProgressScript = preload(
 	"res://scripts/fishing_progress.gd"
 )
+const FishingInventoryScript = preload(
+	"res://scripts/fishing_inventory.gd"
+)
+const FishingTradeServiceScript = preload(
+	"res://scripts/fishing_trade_service.gd"
+)
+const FishingTackleCatalogResource = preload(
+	"res://data/bof4/tackle/all_tackle.tres"
+)
+const FishingTradeCatalogResource = preload(
+	"res://data/bof4/trades/all_trades.tres"
+)
 const FishingSurfaceSplashScene = preload(
 	"res://actors/FishingSurfaceSplash.tscn"
 )
@@ -104,6 +116,8 @@ var debug_menu_open: bool = false
 var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
+var fishing_inventory: FishingInventory = null
+var fishing_trade_service: FishingTradeService = null
 var catch_record_result: Dictionary = {}
 
 var locked_cast_power: float = 0.0
@@ -174,6 +188,15 @@ func _ready() -> void:
 	encounter.set_debug_settings(debug_settings)
 
 	fishing_progress = _get_or_create_fishing_progress()
+	fishing_inventory = _get_or_create_fishing_inventory()
+	fishing_inventory.bind_progress(fishing_progress)
+
+	if loadout != null:
+		loadout.set_inventory(fishing_inventory)
+
+	fishing_trade_service = _get_or_create_fishing_trade_service(
+		fishing_inventory
+	)
 
 	debug_menu = FishingDebugMenuScene.instantiate()
 	add_child(debug_menu)
@@ -493,6 +516,14 @@ func get_fishing_progress() -> FishingProgress:
 	return fishing_progress
 
 
+func get_fishing_inventory() -> FishingInventory:
+	return fishing_inventory
+
+
+func get_fishing_trade_service() -> FishingTradeService:
+	return fishing_trade_service
+
+
 func _get_or_create_fishing_progress() -> FishingProgress:
 	var tree_root := get_tree().root
 	var existing := tree_root.get_node_or_null(
@@ -517,6 +548,48 @@ func _get_or_create_fishing_progress() -> FishingProgress:
 	tree_root.add_child.call_deferred(new_progress)
 	new_progress.initialize()
 	return new_progress
+
+
+func _get_or_create_fishing_inventory() -> FishingInventory:
+	var tree_root := get_tree().root
+	var existing := tree_root.get_node_or_null("FishingInventory")
+
+	if existing is FishingInventory:
+		var existing_inventory := existing as FishingInventory
+		existing_inventory.initialize()
+		return existing_inventory
+
+	var new_inventory := FishingInventoryScript.new()
+	new_inventory.name = "FishingInventory"
+	tree_root.add_child.call_deferred(new_inventory)
+	new_inventory.initialize()
+	return new_inventory
+
+
+func _get_or_create_fishing_trade_service(
+	inventory: FishingInventory
+) -> FishingTradeService:
+	var tree_root := get_tree().root
+	var existing := tree_root.get_node_or_null("FishingTradeService")
+
+	if existing is FishingTradeService:
+		var existing_service := existing as FishingTradeService
+		existing_service.configure(
+			inventory,
+			FishingTackleCatalogResource,
+			FishingTradeCatalogResource
+		)
+		return existing_service
+
+	var new_service := FishingTradeServiceScript.new()
+	new_service.name = "FishingTradeService"
+	new_service.configure(
+		inventory,
+		FishingTackleCatalogResource,
+		FishingTradeCatalogResource
+	)
+	tree_root.add_child.call_deferred(new_service)
+	return new_service
 
 
 func _on_technique_triggered(level: int) -> void:

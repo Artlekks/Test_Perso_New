@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FishingTackleCatalog" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_tackle_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="2_lures"]
+[ext_resource type="Resource" path="res://data/bof4/rods/wooden_rod.tres" id="3_rod"]
+[ext_resource type="Resource" path="res://data/bof4/rods/bamboo_rod.tres" id="4_rod"]
+[ext_resource type="Resource" path="res://data/bof4/rods/deluxe_rod.tres" id="5_rod"]
+[ext_resource type="Resource" path="res://data/bof4/rods/spanner.tres" id="6_rod"]
+[ext_resource type="Resource" path="res://data/bof4/rods/angling_rod.tres" id="7_rod"]
+[ext_resource type="Resource" path="res://data/bof4/rods/masters_rod.tres" id="8_rod"]
+
+[resource]
+script = ExtResource("1_catalog")
+lure_catalog = ExtResource("2_lures")
+rods = Array[Resource]([ExtResource("3_rod"), ExtResource("4_rod"), ExtResource("5_rod"), ExtResource("6_rod"), ExtResource("7_rod"), ExtResource("8_rod")])

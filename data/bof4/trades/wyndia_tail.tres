@@ -6,5 +6,7 @@
 script = ExtResource("1_trade")
 shop_name = "Wyndia Manillo"
 reward_item = "Tail"
+reward_type = 0
+reward_id = &"tail"
 required_fish_ids = PackedStringArray("flying_fish")
 required_counts = PackedInt32Array(3)
