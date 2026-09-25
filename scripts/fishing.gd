@@ -1201,7 +1201,7 @@ func _process(delta: float) -> void:
 	)
 
 	if phase == Phase.CURVE:
-		var curve_input := Input.get_axis(
+		var curve_input := -Input.get_axis(
 			"ds_left",
 			"ds_right"
 		)

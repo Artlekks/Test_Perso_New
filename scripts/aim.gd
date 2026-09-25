@@ -15,7 +15,7 @@ func _process(delta: float) -> void:
 	if not active:
 		return
 
-	var input := Input.get_axis("ds_left", "ds_right")
+	var input := -Input.get_axis("ds_left", "ds_right")
 
 	if is_zero_approx(input):
 		return
