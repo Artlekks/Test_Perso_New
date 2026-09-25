@@ -61,52 +61,57 @@ func setup(data: FishData, king_override: int = -1) -> void:
 
 
 func _roll_size_and_king(data: FishData, king_override: int) -> void:
-	var safe_average := maxf(data.average_size, 0.01)
-	var king_threshold := maxf(
+	var safe_average: float = maxf(data.average_size, 1.0)
+	var king_threshold: float = maxf(
 		data.king_size,
 		safe_average
 	)
 
+	var roll_king_band: bool = false
 	match king_override:
 		0:
-			is_king = false
+			roll_king_band = false
 		1:
-			is_king = true
+			roll_king_band = true
 		_:
-			is_king = randf() < clampf(
+			roll_king_band = randf() < clampf(
 				data.king_chance,
 				0.0,
 				1.0
 			)
 
-	if is_king:
-		var king_max := king_threshold * maxf(
-			data.king_max_size_multiplier,
-			1.0
+	if roll_king_band:
+		var king_min_cm: int = maxi(ceili(king_threshold), 1)
+		var king_max_cm: int = maxi(
+			king_min_cm,
+			roundi(
+				king_threshold
+				* maxf(data.king_max_size_multiplier, 1.0)
+			)
 		)
 
-		size = randf_range(
-			king_threshold,
-			king_max
-		)
+		size = float(randi_range(king_min_cm, king_max_cm))
+		is_king = size >= king_threshold
 		return
 
-	# The normal band is centered roughly around average_size.
-	# Averaging two random values makes extreme sizes less common without
-	# requiring a separate probability table.
-	var minimum_size := safe_average * 0.6
-	var normal_max := maxf(
-		king_threshold - 0.01,
-		minimum_size
+	# Normal fish are kept below the crown threshold. The two-roll average
+	# makes middle-sized specimens common and record-near fish progressively
+	# rarer, while still centering the population close to average_size.
+	var minimum_cm: int = maxi(roundi(safe_average * 0.60), 1)
+	var normal_max_cm: int = maxi(
+		ceili(king_threshold) - 1,
+		minimum_cm
 	)
 
-	var normal_roll := (
-		randf()
-		+ randf()
-	) * 0.5
-
-	size = lerpf(
-		minimum_size,
-		normal_max,
-		normal_roll
+	var normal_roll: float = (randf() + randf()) * 0.5
+	var rolled_cm: int = roundi(
+		lerpf(
+			float(minimum_cm),
+			float(normal_max_cm),
+			normal_roll
+		)
 	)
+
+	size = float(clampi(rolled_cm, minimum_cm, normal_max_cm))
+	is_king = size >= king_threshold
+

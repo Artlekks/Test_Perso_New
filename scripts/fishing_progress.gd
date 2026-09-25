@@ -79,6 +79,9 @@ func record_catch(
 	var previous_best_points := int(
 		record.get("best_points", 0)
 	)
+	var previous_best_points_size := float(
+		record.get("best_points_size", 0.0)
+	)
 	var previous_king_caught := bool(
 		record.get("king_caught", false)
 	)
@@ -96,7 +99,13 @@ func record_catch(
 		record["best_size_points"] = fish.points
 		_copy_context_to_record(record, "best_size", context)
 
-	if fish.points > previous_best_points:
+	var improves_points: bool = fish.points > previous_best_points
+	var improves_equal_point_specimen: bool = (
+		fish.points == previous_best_points
+		and fish.size > previous_best_points_size
+	)
+
+	if improves_points or improves_equal_point_specimen:
 		record["best_points"] = fish.points
 		record["best_points_size"] = fish.size
 		_copy_context_to_record(record, "best_points", context)
@@ -127,8 +136,9 @@ func record_catch(
 		"new_best_size": (
 			fish.size > previous_best_size
 		),
-		"new_best_points": (
-			fish.points > previous_best_points
+		"new_best_points": improves_points,
+		"best_points_record_changed": (
+			improves_points or improves_equal_point_specimen
 		),
 		"first_king": (
 			fish.is_king

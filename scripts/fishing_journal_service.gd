@@ -180,6 +180,57 @@ func get_entry(
 	return entry
 
 
+func get_record_snapshot(species_id: String) -> Dictionary:
+	# Stable backend-facing record payload for Data/menu screens. The UI does
+	# not need to know FishingProgress' save schema.
+	var entry: Dictionary = get_entry(species_id, false)
+	if entry.is_empty() or not bool(entry.get("discovered", false)):
+		return entry
+
+	return {
+		"species_id": str(entry.get("species_id", "")),
+		"display_name": str(entry.get("display_name", "")),
+		"portrait": entry.get("portrait", null),
+		"caught_count": int(entry.get("caught_count", 0)),
+		"best_size": float(entry.get("best_size", 0.0)),
+		"best_size_points": int(entry.get("best_size_points", 0)),
+		"best_size_spot_id": str(entry.get("best_size_spot_id", "")),
+		"best_size_spot_name": str(entry.get("best_size_spot_name", "")),
+		"best_size_lure_id": str(entry.get("best_size_lure_id", "")),
+		"best_size_lure_name": str(entry.get("best_size_lure_name", "")),
+		"best_points": int(entry.get("best_points", 0)),
+		"best_points_size": float(entry.get("best_points_size", 0.0)),
+		"best_points_spot_id": str(entry.get("best_points_spot_id", "")),
+		"best_points_spot_name": str(entry.get("best_points_spot_name", "")),
+		"best_points_lure_id": str(entry.get("best_points_lure_id", "")),
+		"best_points_lure_name": str(entry.get("best_points_lure_name", "")),
+		"king_caught": bool(entry.get("king_caught", false)),
+		"king_count": int(entry.get("king_count", 0)),
+		"average_size": float(entry.get("average_size", 0.0)),
+		"king_size": float(entry.get("king_size", 0.0)),
+		"max_points": int(entry.get("max_points", 0)),
+	}
+
+
+func get_record_snapshots(
+	include_undiscovered: bool = true
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+
+	for species_id in _ordered_species_ids:
+		var snapshot: Dictionary = get_record_snapshot(str(species_id))
+		if snapshot.is_empty():
+			continue
+		if (
+			not include_undiscovered
+			and not bool(snapshot.get("discovered", true))
+		):
+			continue
+		result.append(snapshot)
+
+	return result
+
+
 func get_entries_for_spot(
 	spot_id: StringName,
 	include_undiscovered: bool = true,
