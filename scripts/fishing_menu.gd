@@ -56,6 +56,42 @@ const HINT_TOPICS: PackedStringArray = [
 	"Lure Actions",
 ]
 
+# BOF4 Data-menu species order. Only discovered species are shown, but they
+# always retain this canonical ordering as the journal grows.
+const DATA_SPECIES_ORDER: PackedStringArray = [
+	"Jellyfish",
+	"Piranha",
+	"Bass",
+	"Bluegill",
+	"Sweetfish",
+	"Browntail",
+	"Black Bass",
+	"Angelfish",
+	"Trout",
+	"Rainbow Trout",
+	"Bull Cat",
+	"Martian Squid",
+	"Dorado",
+	"Salmon",
+	"Barundi",
+	"Sturgeon",
+	"Man-o'-War",
+	"Flying Fish",
+	"Blowfish",
+	"Moonfish",
+	"Sea Bass",
+	"Flatfish",
+	"Sea Bream",
+	"Bream",
+	"Octopus",
+	"Bonito",
+	"Black Porgy",
+	"Angler",
+	"Spearfish",
+	"Whale",
+	"Acheron",
+]
+
 const TRANSITION_OUT_TIME: float = 0.16
 const TRANSITION_IN_TIME: float = 0.18
 const MAIN_COMMAND_X: float = 16.0
@@ -78,6 +114,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var main_page: Control = $Root/MainPage
 @onready var command_panel: Control = $Root/MainPage/LeftMask/CommandPanel
 @onready var command_selector: Control = $Root/MainPage/LeftMask/CommandPanel/CommandSelector
+@onready var command_disabled_overlay: ColorRect = $Root/MainPage/LeftMask/CommandPanel/DisabledOverlay
 @onready var command_list: ItemList = $Root/MainPage/LeftMask/CommandPanel/CommandList
 @onready var main_equip_panel: Control = $Root/MainPage/EquipPanel
 @onready var main_status_panel: Control = $Root/MainPage/StatusPanel
@@ -105,6 +142,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var data_details_panel: Control = $Root/DataPage/DetailsPanel
 @onready var data_species_selector: TextureRect = $Root/DataPage/SpeciesPanel/SpeciesSelector
 @onready var data_species_list: ItemList = $Root/DataPage/SpeciesPanel/SpeciesList
+@onready var data_scroll_thumb: TextureRect = $Root/DataPage/SpeciesPanel/ScrollThumb
 @onready var data_caught_count_label: Label = $Root/DataPage/SpeciesPanel/CaughtCountLabel
 @onready var data_portrait: TextureRect = $Root/DataPage/DetailsPanel/PreviewPanel/FishPortrait
 @onready var data_size_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/SizeLabel
@@ -157,6 +195,7 @@ func _ready() -> void:
 	root.visible = false
 
 	_fill_static_lists()
+	_configure_data_list_visuals()
 	_set_page(Page.MAIN)
 	_reset_panel_positions()
 
@@ -215,6 +254,7 @@ func close_menu() -> void:
 	_is_open = false
 	_transitioning = false
 	exit_confirm.visible = false
+	command_disabled_overlay.visible = false
 	root.visible = false
 	_restore_gameplay_hud()
 	get_tree().paused = _pause_was_active
@@ -313,6 +353,7 @@ func _set_page(page: int) -> void:
 	hints_page.visible = page == Page.HINTS
 	options_page.visible = page == Page.OPTIONS
 	exit_confirm.visible = false
+	command_disabled_overlay.visible = false
 	_transitioning = false
 
 	match page:
@@ -441,6 +482,7 @@ func _handle_data_input(event: InputEvent) -> void:
 	data_species_list.ensure_current_is_visible()
 	_sync_data_selector_window()
 	_update_data_selector()
+	_update_data_scroll_thumb()
 	_update_data_details()
 
 
@@ -479,6 +521,7 @@ func _show_exit_confirm() -> void:
 	_exit_index = 1
 	exit_list.select(_exit_index)
 	_update_exit_selector()
+	command_disabled_overlay.visible = true
 	exit_confirm.visible = true
 	exit_panel.scale = Vector2(0.06, 0.06)
 	info_label.text = "Quit fishing?"
@@ -713,6 +756,7 @@ func _hide_exit_confirm() -> void:
 	tween.tween_property(exit_panel, "scale", Vector2(0.06, 0.06), 0.10)
 	await tween.finished
 	exit_confirm.visible = false
+	command_disabled_overlay.visible = false
 	exit_panel.scale = Vector2.ONE
 	_update_main_info()
 
@@ -791,7 +835,7 @@ func _rebuild_equip_entries() -> void:
 			if count <= 0:
 				continue
 			_equip_entries.append({"kind": "rod", "resource": rod, "count": count})
-			equip_accessory_list.add_item("%s  %d" % [rod.rod_name, count])
+			equip_accessory_list.add_item(_format_accessory_row(rod.rod_name, count))
 	else:
 		if _tackle_catalog.lure_catalog != null:
 			for lure in _tackle_catalog.lure_catalog.lures:
@@ -803,7 +847,7 @@ func _rebuild_equip_entries() -> void:
 				if count <= 0:
 					continue
 				_equip_entries.append({"kind": "lure", "resource": lure, "count": count})
-				equip_accessory_list.add_item("%s  %d" % [lure.display_name, count])
+				equip_accessory_list.add_item(_format_accessory_row(lure.display_name, count))
 
 	if _equip_entries.is_empty():
 		_equip_accessory_index = 0
@@ -816,6 +860,15 @@ func _rebuild_equip_entries() -> void:
 		equip_accessory_list.select(_equip_accessory_index)
 
 	_update_equip_accessory_counter()
+
+
+func _format_accessory_row(display_name: String, count: int) -> String:
+	# Keep quantities in one fixed right-hand column. Single digits are always
+	# zero-padded so 01..09 use the same two-character width as 10+.
+	var padded_name: String = display_name
+	while padded_name.length() < 13:
+		padded_name += " "
+	return "%s%02d" % [padded_name, maxi(count, 0)]
 
 
 func _refresh_equip_selection() -> void:
@@ -840,7 +893,10 @@ func _update_equip_slot_colors() -> void:
 		return
 
 	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
-	var inactive_color := Color(0.58, 0.58, 0.58, 1.0)
+	# The bitmap glyphs are already dark gray. Lowering RGB made them black.
+	# Fade their alpha instead so the beige panel shows through as BOF4-style
+	# light gray disabled text.
+	var inactive_color := Color(1.0, 1.0, 1.0, 0.46)
 
 	for item_index in range(equip_slot_list.item_count):
 		equip_slot_list.set_item_custom_fg_color(item_index, normal_color)
@@ -944,16 +1000,38 @@ func _refresh_data_page() -> void:
 		_update_data_details()
 		return
 
-	var snapshot: Dictionary = _journal.get_data_menu_snapshot(false, false)
+	# Keep every species in its canonical BOF4 slot. Undiscovered fish stay in
+	# the list so later catches never collapse upward and change row order.
+	var snapshot: Dictionary = _journal.get_data_menu_snapshot(true, false)
+	var entries_by_key: Dictionary = {}
 	var raw_species: Variant = snapshot.get("species", [])
 	if raw_species is Array:
-		var source_species: Array = raw_species
-		for value in source_species:
-			if value is Dictionary:
-				_data_entries.append((value as Dictionary).duplicate(true))
+		for value in raw_species:
+			if not (value is Dictionary):
+				continue
+			var entry: Dictionary = (value as Dictionary).duplicate(true)
+			var source_name: String = str(entry.get("display_name", ""))
+			entries_by_key[_canonical_species_key(source_name)] = entry
 
-	for entry in _data_entries:
-		data_species_list.add_item(str(entry.get("display_name", "????")))
+	for canonical_name in DATA_SPECIES_ORDER:
+		var canonical_key: String = _canonical_species_key(canonical_name)
+		var entry: Dictionary
+		if entries_by_key.has(canonical_key):
+			entry = (entries_by_key[canonical_key] as Dictionary).duplicate(true)
+		else:
+			# A reserved slot (currently Bream if it is not in the content catalog)
+			# still stays in the correct list position.
+			entry = {
+				"display_name": canonical_name,
+				"discovered": false,
+				"current_owned_count": 0,
+			}
+
+		# Display the canonical BOF4/reference spelling regardless of the
+		# project's internal resource spelling (Barandy/Barundi, Moorfish, etc.).
+		entry["display_name"] = canonical_name
+		_data_entries.append(entry)
+		data_species_list.add_item(canonical_name)
 
 	if _data_entries.is_empty():
 		_data_index = 0
@@ -965,6 +1043,7 @@ func _refresh_data_page() -> void:
 		_sync_data_selector_window()
 
 	_update_data_selector()
+	_update_data_scroll_thumb()
 	_update_data_details()
 
 
@@ -983,6 +1062,13 @@ func _update_data_details() -> void:
 	var fish_name: String = str(entry.get("display_name", "????"))
 	info_label.text = "View data on %s" % fish_name
 
+	if not bool(entry.get("discovered", false)):
+		data_caught_count_label.text = "00"
+		return
+
+	# Journal entries expose FishData.portrait, and every BOF4 FishData portrait
+	# is a 72x48 AtlasTexture region from Atlas_Fishes.png. The TextureRect is
+	# also 72x48, so every species is shown 1:1 with no per-fish rescaling.
 	var portrait_value: Variant = entry.get("portrait", null)
 	if portrait_value is Texture2D:
 		data_portrait.texture = portrait_value as Texture2D
@@ -1012,6 +1098,26 @@ func _sync_data_selector_window() -> void:
 	)
 
 
+func _canonical_species_key(display_name: String) -> String:
+	var normalized: String = display_name.to_lower()
+	normalized = normalized.replace(" ", "").replace("-", "").replace("'", "")
+
+	# Map project/internal spellings onto the reference names used by the menu.
+	var aliases: Dictionary = {
+		"bluegill": "bluegill",
+		"bullcat": "bullcat",
+		"barandy": "barundi",
+		"barundi": "barundi",
+		"manowar": "manowar",
+		"moorfish": "moonfish",
+		"moafish": "moonfish",
+		"moonfish": "moonfish",
+	}
+	if aliases.has(normalized):
+		return str(aliases[normalized])
+	return normalized
+
+
 func _update_data_selector() -> void:
 	if not is_instance_valid(data_species_selector):
 		return
@@ -1021,8 +1127,47 @@ func _update_data_selector() -> void:
 		return
 
 	var visible_row: int = clampi(_data_index - _data_window_start, 0, 7)
-	var y: float = 9.0 + float(visible_row) * 15.0
+	var y: float = 9.0 + float(visible_row) * 17.0
 	data_species_selector.position.y = y
+
+
+func _configure_data_list_visuals() -> void:
+	# Keep the supplied selector texture at its exact PNG size. The whole menu
+	# root already scales 2x, so scaling this node again creates the ugly extra
+	# pixels the Data selector was showing.
+	if is_instance_valid(data_species_selector) and data_species_selector.texture != null:
+		data_species_selector.size = data_species_selector.texture.get_size()
+
+	# ItemList keeps its internal scrollbar for scrolling logic, but BOF4 draws
+	# its own thin L1/R1 indicator. Hide only the native Godot visual.
+	if is_instance_valid(data_species_list):
+		var native_scrollbar: VScrollBar = data_species_list.get_v_scroll_bar()
+		if is_instance_valid(native_scrollbar):
+			native_scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
+			native_scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_update_data_scroll_thumb()
+
+
+func _update_data_scroll_thumb() -> void:
+	if not is_instance_valid(data_scroll_thumb):
+		return
+
+	data_scroll_thumb.visible = _data_entries.size() > 8
+	if not data_scroll_thumb.visible:
+		return
+
+	# The thumb has a fixed 2x34 native-pixel size. It represents the current
+	# eight-row viewport, so it moves only when the list itself scrolls.
+	const visible_rows: int = 8
+	const track_top_y: float = 45.0
+	const track_bottom_y: float = 112.0
+	var max_window_start: int = maxi(_data_entries.size() - visible_rows, 0)
+	var ratio: float = 0.0
+	if max_window_start > 0:
+		ratio = clampf(float(_data_window_start) / float(max_window_start), 0.0, 1.0)
+
+	data_scroll_thumb.position.y = roundf(lerpf(track_top_y, track_bottom_y, ratio))
 
 
 func _get_primary_location_name(entry: Dictionary) -> String:
@@ -1106,9 +1251,10 @@ func _update_hint_selector() -> void:
 	if not is_instance_valid(hints_selector):
 		return
 
-	# The BOF4 hint rows advance by 16 px visually. Keep the selector
-	# on that exact cadence so it never drifts from the text rows.
-	hints_selector.position.y = 5.0 + float(_hint_index) * 16.0
+	# First row is aligned at Y=5. Each following BOF4 hint row advances
+	# 17 px, so the selector must use the same cadence or the error grows
+	# by one pixel on every step.
+	hints_selector.position.y = 5.0 + float(_hint_index) * 17.0
 
 
 func _update_hint_text() -> void:
