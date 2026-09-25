@@ -144,7 +144,7 @@ func add_fish_specimen(
 	specimen.specimen_id = _allocate_specimen_id()
 	specimen.species_id = key
 	specimen.fish_name = fish_name
-	specimen.size = maxf(size, 0.0)
+	specimen.size = float(maxi(roundi(size), 0))
 	specimen.points = maxi(points, 0)
 	specimen.is_king = is_king
 	specimen.spot_id = str(catch_context.get("spot_id", ""))

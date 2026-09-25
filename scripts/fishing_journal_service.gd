@@ -24,6 +24,10 @@ func configure(
 	_inventory = inventory
 	_catalog = catalog
 	_rebuild_static_index()
+
+	if is_instance_valid(_progress):
+		_progress.reconcile_records_with_catalog(_fish_by_id)
+
 	_connect_sources()
 	changed.emit()
 
@@ -229,6 +233,35 @@ func get_record_snapshots(
 		result.append(snapshot)
 
 	return result
+
+
+func get_data_menu_snapshot(
+	include_undiscovered: bool = true,
+	reveal_undiscovered_details: bool = false
+) -> Dictionary:
+	# One backend payload for the future Data menu. Presentation/layout stays
+	# completely outside this service.
+	var species_entries: Array[Dictionary] = []
+
+	for species_id in _ordered_species_ids:
+		var entry: Dictionary = get_entry(
+			str(species_id),
+			reveal_undiscovered_details
+		)
+		if entry.is_empty():
+			continue
+		if (
+			not include_undiscovered
+			and not bool(entry.get("discovered", false))
+		):
+			continue
+		species_entries.append(entry)
+
+	return {
+		"summary": get_summary(),
+		"species": species_entries,
+		"spots": get_all_spot_snapshots(),
+	}
 
 
 func get_entries_for_spot(

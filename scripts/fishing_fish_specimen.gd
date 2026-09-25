@@ -39,7 +39,7 @@ static func from_dictionary(data: Dictionary) -> FishingFishSpecimen:
 	specimen.specimen_id = maxi(int(data.get("specimen_id", 0)), 0)
 	specimen.species_id = _normalize_id_static(str(data.get("species_id", "")))
 	specimen.fish_name = str(data.get("fish_name", ""))
-	specimen.size = maxf(float(data.get("size", 0.0)), 0.0)
+	specimen.size = float(maxi(roundi(float(data.get("size", 0.0))), 0))
 	specimen.points = maxi(int(data.get("points", 0)), 0)
 	specimen.is_king = bool(data.get("is_king", false))
 	specimen.spot_id = str(data.get("spot_id", ""))

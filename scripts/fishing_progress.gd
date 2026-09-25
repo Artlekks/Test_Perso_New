@@ -1,6 +1,10 @@
 extends Node
 class_name FishingProgress
 
+const CatchScoring = preload(
+	"res://scripts/fishing_catch_scoring.gd"
+)
+
 signal changed
 signal catch_recorded(
 	species_key: String,
@@ -12,7 +16,7 @@ signal catch_specimen_recorded(
 	specimen_data: Dictionary
 )
 
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3
 const MAX_FISHING_POINTS: int = 9999
 const SAVE_PATH: String = "user://fishing_progress.json"
 
@@ -368,7 +372,7 @@ func load_from_disk() -> bool:
 		)
 		return false
 
-	total_catches = maxi(
+	var saved_total_catches: int = maxi(
 		int(data.get("total_catches", 0)),
 		0
 	)
@@ -391,9 +395,15 @@ func load_from_disk() -> bool:
 				)
 			)
 
-	# Fishing points are always derived from best species records.
-	# Never trust a stale/corrupted cached total from disk.
+	# Lifetime total and fishing score are both derived from the sanitized
+	# per-species records. Never trust stale cached totals from disk.
+	_recalculate_total_catches()
 	_recalculate_fishing_points()
+
+	# Keep a larger legacy total only if an older build recorded catches that
+	# could not be represented in species_records. Normal modern saves should
+	# always match the derived value exactly.
+	total_catches = maxi(total_catches, saved_total_catches)
 
 	changed.emit()
 	return true
@@ -409,6 +419,112 @@ func reset_all_progress(delete_save: bool = true) -> void:
 		DirAccess.remove_absolute(absolute_path)
 
 	changed.emit()
+
+
+func _recalculate_total_catches() -> void:
+	var total: int = 0
+
+	for raw_record in species_records.values():
+		if not (raw_record is Dictionary):
+			continue
+		total += maxi(int((raw_record as Dictionary).get("caught_count", 0)), 0)
+
+	total_catches = maxi(total, 0)
+
+
+func reconcile_records_with_catalog(species_by_id: Dictionary) -> bool:
+	# Migration/integrity pass run once the journal has access to FishData.
+	# This upgrades old fractional sizes and old linear scores to the current
+	# whole-centimeter / BOF4-style tiered scoring without UI involvement.
+	var changed_any: bool = false
+
+	for raw_key in species_records.keys():
+		var key: String = str(raw_key)
+		var fish: FishData = species_by_id.get(key) as FishData
+		if fish == null:
+			continue
+
+		var old_record: Dictionary = (species_records[key] as Dictionary).duplicate(true)
+		var record: Dictionary = _sanitize_record(old_record)
+
+		var best_size: float = float(roundi(float(record.get("best_size", 0.0))))
+		var best_points_size: float = float(roundi(float(record.get("best_points_size", 0.0))))
+		var last_size: float = float(roundi(float(record.get("last_catch_size", 0.0))))
+
+		record["best_size"] = best_size
+		record["best_points_size"] = best_points_size
+		record["last_catch_size"] = last_size
+
+		if best_size > 0.0:
+			var best_size_is_king: bool = best_size >= fish.king_size
+			record["best_size_points"] = CatchScoring.calculate_points(
+				fish,
+				best_size,
+				best_size_is_king
+			)
+
+		if best_points_size <= 0.0 and best_size > 0.0:
+			best_points_size = best_size
+			record["best_points_size"] = best_points_size
+			_copy_record_context(record, "best_size", "best_points")
+
+		var best_points_score: int = 0
+		if best_points_size > 0.0:
+			best_points_score = CatchScoring.calculate_points(
+				fish,
+				best_points_size,
+				best_points_size >= fish.king_size
+			)
+
+		var best_size_score: int = int(record.get("best_size_points", 0))
+		if (
+			best_size_score > best_points_score
+			or (
+				best_size_score == best_points_score
+				and best_size > best_points_size
+			)
+		):
+			record["best_points"] = best_size_score
+			record["best_points_size"] = best_size
+			_copy_record_context(record, "best_size", "best_points")
+		else:
+			record["best_points"] = best_points_score
+
+		if last_size > 0.0:
+			var last_is_king: bool = last_size >= fish.king_size
+			record["last_catch_is_king"] = last_is_king
+			record["last_catch_points"] = CatchScoring.calculate_points(
+				fish,
+				last_size,
+				last_is_king
+			)
+
+		if best_size >= fish.king_size and best_size > 0.0:
+			record["king_caught"] = true
+			record["king_count"] = maxi(int(record.get("king_count", 0)), 1)
+
+		if record != old_record:
+			species_records[key] = record
+			changed_any = true
+
+	if changed_any:
+		_recalculate_total_catches()
+		_recalculate_fishing_points()
+		save_to_disk()
+		changed.emit()
+
+	return changed_any
+
+
+func _copy_record_context(
+	record: Dictionary,
+	from_prefix: String,
+	to_prefix: String
+) -> void:
+	for suffix in ["spot_id", "spot_name", "lure_id", "lure_name"]:
+		record[to_prefix + "_" + suffix] = str(
+			record.get(from_prefix + "_" + suffix, "")
+		)
 
 
 func _recalculate_fishing_points() -> void:
@@ -471,7 +587,7 @@ func _create_empty_record(
 func _sanitize_record(
 	record: Dictionary
 ) -> Dictionary:
-	return {
+	var result: Dictionary = {
 		"fish_name": str(
 			record.get("fish_name", "")
 		),
@@ -484,15 +600,7 @@ func _sanitize_record(
 			),
 			0
 		),
-		"best_size": maxf(
-			float(
-				record.get(
-					"best_size",
-					0.0
-				)
-			),
-			0.0
-		),
+		"best_size": float(maxi(roundi(float(record.get("best_size", 0.0))), 0)),
 		"best_size_points": maxi(int(record.get("best_size_points", 0)), 0),
 		"best_size_spot_id": str(record.get("best_size_spot_id", "")),
 		"best_size_spot_name": str(record.get("best_size_spot_name", "")),
@@ -507,12 +615,12 @@ func _sanitize_record(
 			),
 			0
 		),
-		"best_points_size": maxf(float(record.get("best_points_size", 0.0)), 0.0),
+		"best_points_size": float(maxi(roundi(float(record.get("best_points_size", 0.0))), 0)),
 		"best_points_spot_id": str(record.get("best_points_spot_id", "")),
 		"best_points_spot_name": str(record.get("best_points_spot_name", "")),
 		"best_points_lure_id": str(record.get("best_points_lure_id", "")),
 		"best_points_lure_name": str(record.get("best_points_lure_name", "")),
-		"last_catch_size": maxf(float(record.get("last_catch_size", 0.0)), 0.0),
+		"last_catch_size": float(maxi(roundi(float(record.get("last_catch_size", 0.0))), 0)),
 		"last_catch_points": maxi(int(record.get("last_catch_points", 0)), 0),
 		"last_catch_is_king": bool(record.get("last_catch_is_king", false)),
 		"last_catch_spot_id": str(record.get("last_catch_spot_id", "")),
@@ -536,6 +644,10 @@ func _sanitize_record(
 		)
 	}
 
+	if int(result["king_count"]) > 0:
+		result["king_caught"] = true
+
+	return result
 
 
 func _sanitize_catch_context(context: Dictionary) -> Dictionary:
