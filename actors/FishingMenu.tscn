@@ -73,10 +73,10 @@ stretch_mode = 0
 
 [node name="InfoLabel" type="Label" parent="Root/InfoPanel"]
 layout_mode = 0
-offset_left = 7
-offset_top = 5.5
-offset_right = 279
-offset_bottom = 18
+offset_left = 6.0
+offset_top = 11.0
+offset_right = 278.0
+offset_bottom = 23.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
@@ -108,9 +108,9 @@ stretch_mode = 0
 texture_filter = 1
 layout_mode = 0
 offset_left = 3
-offset_top = 15
+offset_top = 9
 offset_right = 73
-offset_bottom = 30
+offset_bottom = 24
 texture = ExtResource("3_selector")
 expand_mode = 1
 stretch_mode = 0
@@ -159,10 +159,10 @@ stretch_mode = 0
 
 [node name="RodLabel" type="Label" parent="Root/MainPage/EquipPanel"]
 layout_mode = 0
-offset_left = 27
-offset_top = 12
-offset_right = 141
-offset_bottom = 23.5
+offset_left = 32
+offset_top = 14
+offset_right = 146
+offset_bottom = 25.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
@@ -170,10 +170,10 @@ text = "---"
 
 [node name="LureLabel" type="Label" parent="Root/MainPage/EquipPanel"]
 layout_mode = 0
-offset_left = 27
-offset_top = 30
-offset_right = 141
-offset_bottom = 42.5
+offset_left = 31
+offset_top = 34
+offset_right = 145
+offset_bottom = 46.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
@@ -203,10 +203,10 @@ text = "The Fish"
 
 [node name="PointsLabel" type="Label" parent="Root/MainPage/StatusPanel"]
 layout_mode = 0
-offset_left = 78
-offset_top = 37.5
-offset_right = 122
-offset_bottom = 52
+offset_left = 60
+offset_top = 35
+offset_right = 104
+offset_bottom = 49.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12

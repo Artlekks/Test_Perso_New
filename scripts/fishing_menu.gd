@@ -29,6 +29,15 @@ const COMMANDS: PackedStringArray = [
 	"Exit",
 ]
 
+const MAIN_INFO_TEXT: PackedStringArray = [
+	"Equip Rod and Lure.",
+	"View Fish Data.",
+	"Learn how to fish.",
+	"Hints to help you fish better.",
+	"Change Game Options.",
+	"Stop Fishing.",
+]
+
 const HELP_TOPICS: PackedStringArray = [
 	"Casting",
 	"Moving the lure",
@@ -301,9 +310,9 @@ func _set_page(page: int) -> void:
 
 	match page:
 		Page.MAIN:
-			info_label.text = ""
 			command_list.select(_command_index)
 			_update_command_selector()
+			_update_main_info()
 		Page.EQUIP:
 			info_label.text = "Equip a rod and lure."
 			_refresh_equip_page()
@@ -359,7 +368,7 @@ func _handle_main_input(event: InputEvent) -> void:
 		_command_index = posmod(_command_index + step, COMMANDS.size())
 		command_list.select(_command_index)
 		_update_command_selector()
-		info_label.text = ""
+		_update_main_info()
 		return
 
 	if not _is_confirm(event):
@@ -651,15 +660,24 @@ func _transition_to_main() -> void:
 	await incoming.finished
 	_page = Page.MAIN
 	_transitioning = false
-	info_label.text = ""
 	_update_command_selector()
+	_update_main_info()
 	page_changed.emit(&"main")
+
+
+func _update_main_info() -> void:
+	if not is_instance_valid(info_label):
+		return
+	if _command_index < 0 or _command_index >= MAIN_INFO_TEXT.size():
+		info_label.text = ""
+		return
+	info_label.text = MAIN_INFO_TEXT[_command_index]
 
 
 func _update_command_selector() -> void:
 	if not is_instance_valid(command_selector):
 		return
-	command_selector.position.y = 15.0 + float(_command_index) * 17.0
+	command_selector.position.y = 9.0 + float(_command_index) * 17.0
 
 
 func _update_equip_slot_selector() -> void:
@@ -685,7 +703,7 @@ func _hide_exit_confirm() -> void:
 	await tween.finished
 	exit_confirm.visible = false
 	exit_panel.scale = Vector2.ONE
-	info_label.text = ""
+	_update_main_info()
 
 
 func _refresh_all() -> void:
