@@ -8,7 +8,7 @@ signal fish_specimen_removed(species_id: String, specimen: FishingFishSpecimen)
 signal lure_count_changed(lure_id: StringName, count: int)
 signal rod_count_changed(rod_id: StringName, count: int)
 
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3
 const SAVE_PATH: String = "user://fishing_inventory.json"
 
 # Backend defaults only. These are the current starter loadout and are kept
@@ -133,7 +133,8 @@ func add_fish_specimen(
 	points: int,
 	is_king: bool,
 	persist: bool = true,
-	legacy: bool = false
+	legacy: bool = false,
+	catch_context: Dictionary = {}
 ) -> FishingFishSpecimen:
 	var key := _normalize_id(species_id)
 	if key.is_empty():
@@ -146,6 +147,10 @@ func add_fish_specimen(
 	specimen.size = maxf(size, 0.0)
 	specimen.points = maxi(points, 0)
 	specimen.is_king = is_king
+	specimen.spot_id = str(catch_context.get("spot_id", ""))
+	specimen.spot_name = str(catch_context.get("spot_name", ""))
+	specimen.lure_id = str(catch_context.get("lure_id", ""))
+	specimen.lure_name = str(catch_context.get("lure_name", ""))
 	specimen.legacy = legacy
 
 	var specimens := _get_or_create_specimen_array(key)
@@ -580,7 +585,13 @@ func _on_progress_catch_specimen_recorded(
 		int(catch_data.get("points", 0)),
 		bool(catch_data.get("is_king", false)),
 		true,
-		false
+		false,
+		{
+			"spot_id": str(catch_data.get("spot_id", "")),
+			"spot_name": str(catch_data.get("spot_name", "")),
+			"lure_id": str(catch_data.get("lure_id", "")),
+			"lure_name": str(catch_data.get("lure_name", "")),
+		}
 	)
 
 

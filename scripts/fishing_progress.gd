@@ -12,7 +12,7 @@ signal catch_specimen_recorded(
 	specimen_data: Dictionary
 )
 
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 const MAX_FISHING_POINTS: int = 9999
 const SAVE_PATH: String = "user://fishing_progress.json"
 
@@ -50,7 +50,10 @@ func initialize() -> void:
 	load_from_disk()
 
 
-func record_catch(fish: FishInstance) -> Dictionary:
+func record_catch(
+	fish: FishInstance,
+	catch_context: Dictionary = {}
+) -> Dictionary:
 	if fish == null or fish.species == null:
 		return {}
 
@@ -81,6 +84,7 @@ func record_catch(fish: FishInstance) -> Dictionary:
 	)
 	var previous_fishing_points := fishing_points
 	var previous_rank_index := get_rank_index(previous_fishing_points)
+	var context := _sanitize_catch_context(catch_context)
 
 	record["fish_name"] = fish.species.fish_name
 	record["caught_count"] = int(
@@ -89,9 +93,18 @@ func record_catch(fish: FishInstance) -> Dictionary:
 
 	if fish.size > previous_best_size:
 		record["best_size"] = fish.size
+		record["best_size_points"] = fish.points
+		_copy_context_to_record(record, "best_size", context)
 
 	if fish.points > previous_best_points:
 		record["best_points"] = fish.points
+		record["best_points_size"] = fish.size
+		_copy_context_to_record(record, "best_points", context)
+
+	record["last_catch_size"] = fish.size
+	record["last_catch_points"] = fish.points
+	record["last_catch_is_king"] = fish.is_king
+	_copy_context_to_record(record, "last_catch", context)
 
 	if fish.is_king:
 		record["king_caught"] = true
@@ -133,7 +146,8 @@ func record_catch(fish: FishInstance) -> Dictionary:
 		"rank_name": current_rank_name,
 		"rank_index": current_rank_index,
 		"rank_up": current_rank_index > previous_rank_index,
-		"next_rank_points": get_next_rank_threshold(fishing_points)
+		"next_rank_points": get_next_rank_threshold(fishing_points),
+		"catch_context": context.duplicate(true)
 	}
 
 	save_to_disk()
@@ -150,6 +164,10 @@ func record_catch(fish: FishInstance) -> Dictionary:
 			"size": fish.size,
 			"points": fish.points,
 			"is_king": fish.is_king,
+			"spot_id": str(context.get("spot_id", "")),
+			"spot_name": str(context.get("spot_name", "")),
+			"lure_id": str(context.get("lure_id", "")),
+			"lure_name": str(context.get("lure_name", "")),
 		}
 	)
 
@@ -417,7 +435,24 @@ func _create_empty_record(
 		),
 		"caught_count": 0,
 		"best_size": 0.0,
+		"best_size_points": 0,
+		"best_size_spot_id": "",
+		"best_size_spot_name": "",
+		"best_size_lure_id": "",
+		"best_size_lure_name": "",
 		"best_points": 0,
+		"best_points_size": 0.0,
+		"best_points_spot_id": "",
+		"best_points_spot_name": "",
+		"best_points_lure_id": "",
+		"best_points_lure_name": "",
+		"last_catch_size": 0.0,
+		"last_catch_points": 0,
+		"last_catch_is_king": false,
+		"last_catch_spot_id": "",
+		"last_catch_spot_name": "",
+		"last_catch_lure_id": "",
+		"last_catch_lure_name": "",
 		"king_caught": false,
 		"king_count": 0
 	}
@@ -448,6 +483,11 @@ func _sanitize_record(
 			),
 			0.0
 		),
+		"best_size_points": maxi(int(record.get("best_size_points", 0)), 0),
+		"best_size_spot_id": str(record.get("best_size_spot_id", "")),
+		"best_size_spot_name": str(record.get("best_size_spot_name", "")),
+		"best_size_lure_id": str(record.get("best_size_lure_id", "")),
+		"best_size_lure_name": str(record.get("best_size_lure_name", "")),
 		"best_points": maxi(
 			int(
 				record.get(
@@ -457,6 +497,18 @@ func _sanitize_record(
 			),
 			0
 		),
+		"best_points_size": maxf(float(record.get("best_points_size", 0.0)), 0.0),
+		"best_points_spot_id": str(record.get("best_points_spot_id", "")),
+		"best_points_spot_name": str(record.get("best_points_spot_name", "")),
+		"best_points_lure_id": str(record.get("best_points_lure_id", "")),
+		"best_points_lure_name": str(record.get("best_points_lure_name", "")),
+		"last_catch_size": maxf(float(record.get("last_catch_size", 0.0)), 0.0),
+		"last_catch_points": maxi(int(record.get("last_catch_points", 0)), 0),
+		"last_catch_is_king": bool(record.get("last_catch_is_king", false)),
+		"last_catch_spot_id": str(record.get("last_catch_spot_id", "")),
+		"last_catch_spot_name": str(record.get("last_catch_spot_name", "")),
+		"last_catch_lure_id": str(record.get("last_catch_lure_id", "")),
+		"last_catch_lure_name": str(record.get("last_catch_lure_name", "")),
 		"king_caught": bool(
 			record.get(
 				"king_caught",
@@ -473,6 +525,27 @@ func _sanitize_record(
 			0
 		)
 	}
+
+
+
+func _sanitize_catch_context(context: Dictionary) -> Dictionary:
+	return {
+		"spot_id": str(context.get("spot_id", "")),
+		"spot_name": str(context.get("spot_name", "")),
+		"lure_id": str(context.get("lure_id", "")),
+		"lure_name": str(context.get("lure_name", "")),
+	}
+
+
+func _copy_context_to_record(
+	record: Dictionary,
+	prefix: String,
+	context: Dictionary
+) -> void:
+	record[prefix + "_spot_id"] = str(context.get("spot_id", ""))
+	record[prefix + "_spot_name"] = str(context.get("spot_name", ""))
+	record[prefix + "_lure_id"] = str(context.get("lure_id", ""))
+	record[prefix + "_lure_name"] = str(context.get("lure_name", ""))
 
 
 func _reset_runtime_state() -> void:

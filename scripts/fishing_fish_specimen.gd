@@ -7,6 +7,10 @@ var fish_name: String = ""
 var size: float = 0.0
 var points: int = 0
 var is_king: bool = false
+var spot_id: String = ""
+var spot_name: String = ""
+var lure_id: String = ""
+var lure_name: String = ""
 var legacy: bool = false
 
 
@@ -18,6 +22,10 @@ func to_dictionary() -> Dictionary:
 		"size": size,
 		"points": points,
 		"is_king": is_king,
+		"spot_id": spot_id,
+		"spot_name": spot_name,
+		"lure_id": lure_id,
+		"lure_name": lure_name,
 		"legacy": legacy,
 	}
 
@@ -34,6 +42,10 @@ static func from_dictionary(data: Dictionary) -> FishingFishSpecimen:
 	specimen.size = maxf(float(data.get("size", 0.0)), 0.0)
 	specimen.points = maxi(int(data.get("points", 0)), 0)
 	specimen.is_king = bool(data.get("is_king", false))
+	specimen.spot_id = str(data.get("spot_id", ""))
+	specimen.spot_name = str(data.get("spot_name", ""))
+	specimen.lure_id = str(data.get("lure_id", ""))
+	specimen.lure_name = str(data.get("lure_name", ""))
 	specimen.legacy = bool(data.get("legacy", false))
 	return specimen
 

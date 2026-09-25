@@ -1338,8 +1338,37 @@ func _on_fish_caught(fish: FishInstance) -> void:
 	if debug_override_active and not allow_debug_record:
 		return
 
-	catch_record_result = fishing_progress.record_catch(fish)
+	catch_record_result = fishing_progress.record_catch(
+		fish,
+		_build_catch_record_context()
+	)
 	
+
+func _build_catch_record_context() -> Dictionary:
+	var context := {
+		"spot_id": "",
+		"spot_name": "",
+		"lure_id": "",
+		"lure_name": "",
+	}
+
+	var zone = game_mode.active_fish_zone if game_mode != null else null
+	if zone != null and zone.has_method("get_fishing_spot"):
+		var spot_value: Variant = zone.call("get_fishing_spot")
+		if spot_value is FishingSpotData:
+			var spot := spot_value as FishingSpotData
+			context["spot_id"] = str(spot.spot_id)
+			context["spot_name"] = spot.spot_name
+
+	if loadout != null:
+		var lure := loadout.get_selected_lure()
+		if lure != null:
+			context["lure_id"] = str(lure.lure_id)
+			context["lure_name"] = lure.display_name
+
+	return context
+
+
 func _on_bite_triggered() -> void:
 	if phase != Phase.IN_WATER:
 		return
