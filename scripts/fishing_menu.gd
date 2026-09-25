@@ -95,17 +95,20 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var equip_accessory_panel: Control = $Root/EquipPage/AccessoryPanel
 @onready var equip_slot_list: ItemList = $Root/EquipPage/SlotPanel/SlotList
 @onready var equip_accessory_list: ItemList = $Root/EquipPage/AccessoryPanel/AccessoryList
-@onready var equip_guide_label: Label = $Root/EquipPage/GuidePanel/GuideLabel
+@onready var equip_guide_icon: TextureRect = $Root/EquipPage/GuidePanel/GuideIcon
+@onready var equip_guide_title_label: Label = $Root/EquipPage/GuidePanel/GuideTitleLabel
+@onready var equip_guide_description_label: Label = $Root/EquipPage/GuidePanel/GuideDescriptionLabel
 
 @onready var data_page: Control = $Root/DataPage
 @onready var data_species_panel: Control = $Root/DataPage/SpeciesPanel
 @onready var data_details_panel: Control = $Root/DataPage/DetailsPanel
+@onready var data_species_selector: TextureRect = $Root/DataPage/SpeciesPanel/SpeciesSelector
 @onready var data_species_list: ItemList = $Root/DataPage/SpeciesPanel/SpeciesList
+@onready var data_caught_count_label: Label = $Root/DataPage/SpeciesPanel/CaughtCountLabel
 @onready var data_portrait: TextureRect = $Root/DataPage/DetailsPanel/PreviewPanel/FishPortrait
-@onready var data_record_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/RecordLabel
+@onready var data_size_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/SizeLabel
+@onready var data_points_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/PointsLabel
 @onready var data_point_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/PointLabel
-@onready var data_lure_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/LureLabel
-@onready var data_habitat_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/HabitatLabel
 
 @onready var help_page: Control = $Root/HelpPage
 @onready var help_list: ItemList = $Root/HelpPage/TopicPanel/TopicList
@@ -113,6 +116,7 @@ const OFF_BOTTOM_Y: float = 250.0
 
 @onready var hints_page: Control = $Root/HintsPage
 @onready var hints_topic_panel: Control = $Root/HintsPage/TopicPanel
+@onready var hints_selector: TextureRect = $Root/HintsPage/TopicPanel/HintSelector
 @onready var hints_list: ItemList = $Root/HintsPage/TopicPanel/TopicList
 @onready var hints_text_label: Label = $Root/HintsPage/TextPanel/TextLabel
 
@@ -136,6 +140,7 @@ var _equip_slot_index: int = 0
 var _equip_accessory_index: int = 0
 var _equip_entries: Array[Dictionary] = []
 var _data_index: int = 0
+var _data_window_start: int = 0
 var _data_entries: Array[Dictionary] = []
 var _help_index: int = 0
 var _hint_index: int = 0
@@ -286,6 +291,7 @@ func _fill_static_lists() -> void:
 	exit_list.select(1)
 	_update_command_selector()
 	_update_equip_slot_selector()
+	_update_hint_selector()
 	_update_exit_selector()
 
 
@@ -432,6 +438,8 @@ func _handle_data_input(event: InputEvent) -> void:
 	_data_index = posmod(_data_index + step, _data_entries.size())
 	data_species_list.select(_data_index)
 	data_species_list.ensure_current_is_visible()
+	_sync_data_selector_window()
+	_update_data_selector()
 	_update_data_details()
 
 
@@ -454,6 +462,7 @@ func _handle_hints_input(event: InputEvent) -> void:
 	_hint_index = posmod(_hint_index + step, HINT_TOPICS.size())
 	hints_list.select(_hint_index)
 	hints_list.ensure_current_is_visible()
+	_update_hint_selector()
 	_update_hint_text()
 
 
@@ -547,6 +556,7 @@ func _transition_from_main(target_page: int) -> void:
 		Page.HINTS:
 			hints_page.visible = true
 			hints_topic_panel.position.x = OFF_RIGHT_X
+			_update_hint_selector()
 			_update_hint_text()
 
 	var outgoing := create_tween()
@@ -689,7 +699,7 @@ func _update_equip_slot_selector() -> void:
 func _update_exit_selector() -> void:
 	if not is_instance_valid(exit_selector):
 		return
-	exit_selector.position.y = 9.0 + float(_exit_index) * 13.0
+	exit_selector.position.y = 8.0 + float(_exit_index) * 13.0
 
 
 func _hide_exit_confirm() -> void:
@@ -821,27 +831,46 @@ func _refresh_equip_selection() -> void:
 
 
 func _update_equip_guide() -> void:
+	equip_guide_icon.texture = null
+	equip_guide_title_label.text = ""
+	equip_guide_description_label.text = ""
+
 	if _equip_entries.is_empty():
-		equip_guide_label.text = "No owned tackle in this category."
+		equip_guide_description_label.text = "No owned tackle in this category."
 		return
 
 	var entry: Dictionary = _equip_entries[_equip_accessory_index]
 	var resource: Resource = entry.get("resource", null) as Resource
+
 	if resource is RodData:
 		var rod: RodData = resource as RodData
-		equip_guide_label.text = "%s\nPower Level: %s" % [
-			rod.description,
-			rod.power_level_label,
-		]
+		var description_parts: PackedStringArray = rod.description.split(";", false, 1)
+		if description_parts.size() >= 2:
+			var guide_title: String = str(description_parts[0]).strip_edges()
+			if not guide_title.to_lower().ends_with("rod"):
+				guide_title += " Rod"
+			equip_guide_title_label.text = guide_title
+			var guide_body: String = str(description_parts[1]).strip_edges()
+			if not guide_body.is_empty():
+				guide_body = guide_body.left(1).to_upper() + guide_body.substr(1)
+			equip_guide_description_label.text = "%s\nPower Level: %s" % [
+				guide_body,
+				rod.power_level_label,
+			]
+		else:
+			equip_guide_title_label.text = rod.rod_name
+			equip_guide_description_label.text = "%s\nPower Level: %s" % [
+				rod.description,
+				rod.power_level_label,
+			]
+
 	elif resource is BaitData:
 		var lure: BaitData = resource as BaitData
-		equip_guide_label.text = "%s\n%s  Lv.%d" % [
-			lure.description,
-			lure.get_type_label(),
+		equip_guide_title_label.text = "Lv %d %s" % [
 			lure.level,
+			lure.get_type_label(),
 		]
-	else:
-		equip_guide_label.text = ""
+		equip_guide_description_label.text = lure.description
 
 
 func _equip_selected_accessory() -> void:
@@ -872,7 +901,7 @@ func _refresh_data_page() -> void:
 		_update_data_details()
 		return
 
-	var snapshot: Dictionary = _journal.get_data_menu_snapshot(true, false)
+	var snapshot: Dictionary = _journal.get_data_menu_snapshot(false, false)
 	var raw_species: Variant = snapshot.get("species", [])
 	if raw_species is Array:
 		var source_species: Array = raw_species
@@ -885,53 +914,96 @@ func _refresh_data_page() -> void:
 
 	if _data_entries.is_empty():
 		_data_index = 0
+		_data_window_start = 0
 	else:
 		_data_index = clampi(_data_index, 0, _data_entries.size() - 1)
 		data_species_list.select(_data_index)
 		data_species_list.ensure_current_is_visible()
+		_sync_data_selector_window()
 
+	_update_data_selector()
 	_update_data_details()
 
 
 func _update_data_details() -> void:
 	data_portrait.texture = null
-	data_record_label.text = "-- cm      -- pts."
+	data_size_label.text = "--"
+	data_points_label.text = "--"
 	data_point_label.text = "---"
-	data_lure_label.text = "---"
-	data_habitat_label.text = "---"
+	data_caught_count_label.text = "0"
 
 	if _data_entries.is_empty():
 		info_label.text = "No fishing data."
 		return
 
 	var entry: Dictionary = _data_entries[_data_index]
-	var discovered: bool = bool(entry.get("discovered", false))
 	var name: String = str(entry.get("display_name", "????"))
-
-	if not discovered:
-		info_label.text = "No data on this fish yet."
-		return
-
 	info_label.text = "View data on %s" % name
 
 	var portrait_value: Variant = entry.get("portrait", null)
 	if portrait_value is Texture2D:
 		data_portrait.texture = portrait_value as Texture2D
 
-	data_record_label.text = "%d cm      %d pts." % [
-		int(round(float(entry.get("best_size", 0.0)))),
-		int(entry.get("best_points", 0)),
+	data_size_label.text = "%d" % int(round(float(entry.get("best_size", 0.0))))
+	data_points_label.text = "%d" % int(entry.get("best_points", 0))
+	data_point_label.text = _get_primary_location_name(entry)
+	data_caught_count_label.text = "%02d" % int(entry.get("current_owned_count", 0))
+
+
+
+func _sync_data_selector_window() -> void:
+	const visible_rows: int = 8
+	if _data_entries.is_empty():
+		_data_window_start = 0
+		return
+
+	if _data_index < _data_window_start:
+		_data_window_start = _data_index
+	elif _data_index >= _data_window_start + visible_rows:
+		_data_window_start = _data_index - visible_rows + 1
+
+	_data_window_start = clampi(
+		_data_window_start,
+		0,
+		maxi(_data_entries.size() - visible_rows, 0)
+	)
+
+
+func _update_data_selector() -> void:
+	if not is_instance_valid(data_species_selector):
+		return
+
+	data_species_selector.visible = not _data_entries.is_empty()
+	if _data_entries.is_empty():
+		return
+
+	var visible_row: int = clampi(_data_index - _data_window_start, 0, 7)
+	var y: float = 9.0 + float(visible_row) * 16.0
+	data_species_selector.position.y = y
+
+
+func _get_primary_location_name(entry: Dictionary) -> String:
+	var preferred_fields: PackedStringArray = [
+		"best_size_spot_name",
+		"best_points_spot_name",
+		"last_catch_spot_name",
 	]
 
-	data_point_label.text = _join_location_names(entry)
-	data_lure_label.text = _join_lure_names(entry)
+	for field_name in preferred_fields:
+		var spot_name: String = str(entry.get(field_name, "")).strip_edges()
+		if not spot_name.is_empty():
+			return spot_name
 
-	var habitat_types: Variant = entry.get("habitat_types", PackedStringArray())
-	if habitat_types is PackedStringArray:
-		var habitats: PackedStringArray = habitat_types
-		data_habitat_label.text = (
-			", ".join(habitats) if not habitats.is_empty() else "---"
-		)
+	var raw_locations: Variant = entry.get("locations", [])
+	if raw_locations is Array:
+		for value in raw_locations:
+			if not (value is Dictionary):
+				continue
+			var spot_name: String = str((value as Dictionary).get("spot_name", "")).strip_edges()
+			if not spot_name.is_empty():
+				return spot_name
+
+	return "---"
 
 
 func _join_location_names(entry: Dictionary) -> String:
@@ -987,8 +1059,18 @@ func _update_help_text() -> void:
 			help_text_label.text = "I returns to the previous menu."
 
 
+func _update_hint_selector() -> void:
+	if not is_instance_valid(hints_selector):
+		return
+
+	# Hints is text-only: its visual row height is 15 px. Data uses
+	# 16 px because its species rows include the icon/list layout.
+	hints_selector.position.y = 5.0 + float(_hint_index) * 15.0
+
+
 func _update_hint_text() -> void:
 	hints_list.select(_hint_index)
+	_update_hint_selector()
 	hints_text_label.text = "%s\n\nReference text will be filled from your BOF4 screenshots." % HINT_TOPICS[_hint_index]
 
 

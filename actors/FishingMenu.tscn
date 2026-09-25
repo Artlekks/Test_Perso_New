@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font.fnt" id="2_font"]
@@ -16,6 +16,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Hint_Panel.png" id="14_hint"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Validation_Panel.png" id="15_validation"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="16_background"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Selector_Big.png" id="17_data_selector"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Selector_Bigger.png" id="18_hint_selector"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleEmpty"]
 
@@ -244,10 +246,10 @@ mouse_filter = 2
 
 [node name="SlotList" type="ItemList" parent="Root/EquipPage/SlotPanel"]
 layout_mode = 0
-offset_left = 24
-offset_top = 8
-offset_right = 143
-offset_bottom = 47
+offset_left = 31
+offset_top = 14
+offset_right = 150
+offset_bottom = 53
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
@@ -270,10 +272,33 @@ texture = ExtResource("9_guide")
 expand_mode = 1
 stretch_mode = 0
 
-[node name="GuideLabel" type="Label" parent="Root/EquipPage/GuidePanel"]
+[node name="GuideIcon" type="TextureRect" parent="Root/EquipPage/GuidePanel"]
+layout_mode = 0
+offset_left = 8
+offset_top = 17
+offset_right = 26
+offset_bottom = 33
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+mouse_filter = 2
+
+[node name="GuideTitleLabel" type="Label" parent="Root/EquipPage/GuidePanel"]
+layout_mode = 0
+offset_left = 28
+offset_top = 17
+offset_right = 139
+offset_bottom = 30
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+clip_text = true
+
+[node name="GuideDescriptionLabel" type="Label" parent="Root/EquipPage/GuidePanel"]
 layout_mode = 0
 offset_left = 9
-offset_top = 20
+offset_top = 38
 offset_right = 139
 offset_bottom = 89
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -327,12 +352,24 @@ texture = ExtResource("11_data_name")
 expand_mode = 1
 stretch_mode = 0
 
+[node name="SpeciesSelector" type="TextureRect" parent="Root/DataPage/SpeciesPanel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 4
+offset_top = 9
+offset_right = 121
+offset_bottom = 24
+texture = ExtResource("17_data_selector")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
 [node name="SpeciesList" type="ItemList" parent="Root/DataPage/SpeciesPanel"]
 layout_mode = 0
-offset_left = 21
-offset_top = 12.5
-offset_right = 122
-offset_bottom = 148.5
+offset_left = 24
+offset_top = 9
+offset_right = 125
+offset_bottom = 145
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
@@ -340,9 +377,20 @@ theme_override_font_sizes/font_size = 12
 theme_override_constants/line_separation = 3
 theme_override_styles/panel = SubResource("StyleEmpty")
 theme_override_styles/focus = SubResource("StyleEmpty")
-theme_override_styles/selected = SubResource("StyleSelected")
-theme_override_styles/selected_focus = SubResource("StyleSelected")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
+
+[node name="CaughtCountLabel" type="Label" parent="Root/DataPage/SpeciesPanel"]
+layout_mode = 0
+offset_left = 92
+offset_top = 149
+offset_right = 116
+offset_bottom = 162
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "0"
 
 [node name="DetailsPanel" type="Control" parent="Root/DataPage"]
 layout_mode = 0
@@ -381,50 +429,41 @@ texture = ExtResource("13_data")
 expand_mode = 1
 stretch_mode = 0
 
-[node name="RecordLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+[node name="SizeLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
 layout_mode = 0
-offset_left = 17.5
-offset_top = 21.5
-offset_right = 137.5
-offset_bottom = 34.5
+offset_left = 25
+offset_top = 12
+offset_right = 56
+offset_bottom = 25
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
-text = "-- cm      -- pts."
+text = "--"
+horizontal_alignment = 2
 
-[node name="LureLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+[node name="PointsLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
 layout_mode = 0
-offset_left = 8.5
-offset_top = 39
-offset_right = 139
-offset_bottom = 52
+offset_left = 89
+offset_top = 12
+offset_right = 120
+offset_bottom = 25
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
-text = ""
+text = "--"
+horizontal_alignment = 2
 
 [node name="PointLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
 layout_mode = 0
-offset_left = 8.5
-offset_top = 60.5
+offset_left = 36
+offset_top = 53
 offset_right = 139
-offset_bottom = 73.5
+offset_bottom = 66
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 text = ""
-
-[node name="HabitatLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
-layout_mode = 0
-offset_left = 8.5
-offset_top = 76.5
-offset_right = 139
-offset_bottom = 92
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 12
-autowrap_mode = 2
-text = ""
+clip_text = true
 
 [node name="HelpPage" type="Control" parent="Root"]
 visible = false
@@ -492,12 +531,24 @@ texture = ExtResource("14_hint")
 expand_mode = 1
 stretch_mode = 0
 
+[node name="HintSelector" type="TextureRect" parent="Root/HintsPage/TopicPanel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 4
+offset_top = 5
+offset_right = 190
+offset_bottom = 20
+texture = ExtResource("18_hint_selector")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
 [node name="TopicList" type="ItemList" parent="Root/HintsPage/TopicPanel"]
 layout_mode = 0
-offset_left = 22
-offset_top = 14.5
-offset_right = 182.5
-offset_bottom = 118
+offset_left = 31
+offset_top = 5
+offset_right = 191.5
+offset_bottom = 108.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
@@ -505,8 +556,8 @@ theme_override_font_sizes/font_size = 12
 theme_override_constants/line_separation = 3
 theme_override_styles/panel = SubResource("StyleEmpty")
 theme_override_styles/focus = SubResource("StyleEmpty")
-theme_override_styles/selected = SubResource("StyleSelected")
-theme_override_styles/selected_focus = SubResource("StyleSelected")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
 
 [node name="TextPanel" type="Control" parent="Root/HintsPage"]
@@ -569,9 +620,9 @@ pivot_offset = Vector2(54, 39)
 texture_filter = 1
 layout_mode = 0
 offset_left = 4
-offset_top = 9
+offset_top = 8
 offset_right = 50
-offset_bottom = 22
+offset_bottom = 21
 texture = ExtResource("3_selector")
 expand_mode = 1
 stretch_mode = 0
