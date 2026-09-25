@@ -92,6 +92,41 @@ const DATA_SPECIES_ORDER: PackedStringArray = [
 	"Acheron",
 ]
 
+# Canonical Data preview source: the menu resolves the selected name back to
+# FishData, whose portrait is the authoritative Atlas_Fishes.png region.
+const DATA_FISH_BY_KEY: Dictionary = {
+	"jellyfish": preload("res://data/bof4/fish/jellyfish.tres"),
+	"piranha": preload("res://data/bof4/fish/piranha.tres"),
+	"bass": preload("res://data/bof4/fish/bass.tres"),
+	"bluegill": preload("res://data/bof4/fish/blue_gill.tres"),
+	"sweetfish": preload("res://data/bof4/fish/sweetfish.tres"),
+	"browntail": preload("res://data/bof4/fish/browntail.tres"),
+	"blackbass": preload("res://data/bof4/fish/black_bass.tres"),
+	"angelfish": preload("res://data/bof4/fish/angelfish.tres"),
+	"trout": preload("res://data/bof4/fish/trout.tres"),
+	"rainbowtrout": preload("res://data/bof4/fish/rainbow_trout.tres"),
+	"bullcat": preload("res://data/bof4/fish/bullcat.tres"),
+	"martiansquid": preload("res://data/bof4/fish/martian_squid.tres"),
+	"dorado": preload("res://data/bof4/fish/dorado.tres"),
+	"salmon": preload("res://data/bof4/fish/salmon.tres"),
+	"barundi": preload("res://data/bof4/fish/barandy.tres"),
+	"sturgeon": preload("res://data/bof4/fish/sturgeon.tres"),
+	"manowar": preload("res://data/bof4/fish/man_o_war.tres"),
+	"flyingfish": preload("res://data/bof4/fish/flying_fish.tres"),
+	"blowfish": preload("res://data/bof4/fish/blowfish.tres"),
+	"moonfish": preload("res://data/bof4/fish/moorfish.tres"),
+	"seabass": preload("res://data/bof4/fish/sea_bass.tres"),
+	"flatfish": preload("res://data/bof4/fish/flatfish.tres"),
+	"seabream": preload("res://data/bof4/fish/sea_bream.tres"),
+	"octopus": preload("res://data/bof4/fish/octopus.tres"),
+	"bonito": preload("res://data/bof4/fish/bonito.tres"),
+	"blackporgy": preload("res://data/bof4/fish/black_porgy.tres"),
+	"angler": preload("res://data/bof4/fish/angler.tres"),
+	"spearfish": preload("res://data/bof4/fish/spearfish.tres"),
+	"whale": preload("res://data/bof4/fish/whale.tres"),
+	"acheron": preload("res://data/bof4/fish/acheron.tres"),
+}
+
 const TRANSITION_OUT_TIME: float = 0.16
 const TRANSITION_IN_TIME: float = 0.18
 const MAIN_COMMAND_X: float = 16.0
@@ -196,6 +231,7 @@ func _ready() -> void:
 
 	_fill_static_lists()
 	_configure_data_list_visuals()
+	_configure_hint_list_visuals()
 	_set_page(Page.MAIN)
 	_reset_panel_positions()
 
@@ -254,6 +290,7 @@ func close_menu() -> void:
 	_is_open = false
 	_transitioning = false
 	exit_confirm.visible = false
+	_set_command_confirm_colors(false)
 	command_disabled_overlay.visible = false
 	root.visible = false
 	_restore_gameplay_hud()
@@ -353,6 +390,7 @@ func _set_page(page: int) -> void:
 	hints_page.visible = page == Page.HINTS
 	options_page.visible = page == Page.OPTIONS
 	exit_confirm.visible = false
+	_set_command_confirm_colors(false)
 	command_disabled_overlay.visible = false
 	_transitioning = false
 
@@ -521,7 +559,8 @@ func _show_exit_confirm() -> void:
 	_exit_index = 1
 	exit_list.select(_exit_index)
 	_update_exit_selector()
-	command_disabled_overlay.visible = true
+	_set_command_confirm_colors(true)
+	command_disabled_overlay.visible = false
 	exit_confirm.visible = true
 	exit_panel.scale = Vector2(0.06, 0.06)
 	info_label.text = "Quit fishing?"
@@ -735,16 +774,31 @@ func _update_command_selector() -> void:
 
 
 func _update_equip_slot_selector() -> void:
-	if not is_instance_valid(equip_slot_selector):
-		return
-	equip_slot_selector.position.y = 12.0 + float(_equip_slot_index) * 17.0
-
+	# Normalized selector: SlotList draws selection with the exact same
+	# StyleBoxTexture as AccessoryList. No manual selector geometry remains.
+	pass
 
 func _update_exit_selector() -> void:
 	if not is_instance_valid(exit_selector):
 		return
 	exit_selector.position.y = 8.0 + float(_exit_index) * 13.0
 
+
+
+func _set_command_confirm_colors(confirming: bool) -> void:
+	if not is_instance_valid(command_list):
+		return
+
+	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
+	# Bitmap glyphs are already dark; >1 RGB brightens the glyph artwork toward
+	# BOF4's light disabled gray while leaving the panel texture untouched.
+	var disabled_color := Color(2.2, 2.2, 2.2, 1.0)
+
+	for item_index in range(command_list.item_count):
+		var color := normal_color
+		if confirming and item_index < COMMANDS.size() - 1:
+			color = disabled_color
+		command_list.set_item_custom_fg_color(item_index, color)
 
 func _hide_exit_confirm() -> void:
 	if not exit_confirm.visible:
@@ -756,6 +810,7 @@ func _hide_exit_confirm() -> void:
 	tween.tween_property(exit_panel, "scale", Vector2(0.06, 0.06), 0.10)
 	await tween.finished
 	exit_confirm.visible = false
+	_set_command_confirm_colors(false)
 	command_disabled_overlay.visible = false
 	exit_panel.scale = Vector2.ONE
 	_update_main_info()
@@ -896,7 +951,7 @@ func _update_equip_slot_colors() -> void:
 	# The bitmap glyphs are already dark gray. Lowering RGB made them black.
 	# Fade their alpha instead so the beige panel shows through as BOF4-style
 	# light gray disabled text.
-	var inactive_color := Color(1.0, 1.0, 1.0, 0.46)
+	var inactive_color := Color(2.2, 2.2, 2.2, 1.0)
 
 	for item_index in range(equip_slot_list.item_count):
 		equip_slot_list.set_item_custom_fg_color(item_index, normal_color)
@@ -1052,7 +1107,7 @@ func _update_data_details() -> void:
 	data_size_label.text = "--"
 	data_points_label.text = "--"
 	data_point_label.text = "---"
-	data_caught_count_label.text = "0"
+	data_caught_count_label.text = "00"
 
 	if _data_entries.is_empty():
 		info_label.text = "No fishing data."
@@ -1062,22 +1117,21 @@ func _update_data_details() -> void:
 	var fish_name: String = str(entry.get("display_name", "????"))
 	info_label.text = "View data on %s" % fish_name
 
-	if not bool(entry.get("discovered", false)):
-		data_caught_count_label.text = "00"
-		return
+	# Preview identity comes directly from the FishData database. FishData owns
+	# the AtlasTexture region, so every canonical name always resolves to the
+	# correct sprite instead of inheriting a stale/fallback Jellyfish texture.
+	var fish_key: String = _canonical_species_key(fish_name)
+	var fish_data: FishData = DATA_FISH_BY_KEY.get(fish_key) as FishData
+	if fish_data != null and fish_data.portrait != null:
+		data_portrait.texture = fish_data.portrait
 
-	# Journal entries expose FishData.portrait, and every BOF4 FishData portrait
-	# is a 72x48 AtlasTexture region from Atlas_Fishes.png. The TextureRect is
-	# also 72x48, so every species is shown 1:1 with no per-fish rescaling.
-	var portrait_value: Variant = entry.get("portrait", null)
-	if portrait_value is Texture2D:
-		data_portrait.texture = portrait_value as Texture2D
+	if not bool(entry.get("discovered", false)):
+		return
 
 	data_size_label.text = "%d" % int(round(float(entry.get("best_size", 0.0))))
 	data_points_label.text = "%d" % int(entry.get("best_points", 0))
 	data_point_label.text = _get_primary_location_name(entry)
 	data_caught_count_label.text = "%02d" % int(entry.get("current_owned_count", 0))
-
 
 
 func _sync_data_selector_window() -> void:
@@ -1119,25 +1173,11 @@ func _canonical_species_key(display_name: String) -> String:
 
 
 func _update_data_selector() -> void:
-	if not is_instance_valid(data_species_selector):
-		return
-
-	data_species_selector.visible = not _data_entries.is_empty()
-	if _data_entries.is_empty():
-		return
-
-	var visible_row: int = clampi(_data_index - _data_window_start, 0, 7)
-	var y: float = 9.0 + float(visible_row) * 17.0
-	data_species_selector.position.y = y
-
+	# Normalized selector: SpeciesList draws selection from its real row rect
+	# using StyleSelectedBig. Scrolling and row spacing are handled by ItemList.
+	pass
 
 func _configure_data_list_visuals() -> void:
-	# Keep the supplied selector texture at its exact PNG size. The whole menu
-	# root already scales 2x, so scaling this node again creates the ugly extra
-	# pixels the Data selector was showing.
-	if is_instance_valid(data_species_selector) and data_species_selector.texture != null:
-		data_species_selector.size = data_species_selector.texture.get_size()
-
 	# ItemList keeps its internal scrollbar for scrolling logic, but BOF4 draws
 	# its own thin L1/R1 indicator. Hide only the native Godot visual.
 	if is_instance_valid(data_species_list):
@@ -1148,6 +1188,15 @@ func _configure_data_list_visuals() -> void:
 
 	_update_data_scroll_thumb()
 
+
+
+func _configure_hint_list_visuals() -> void:
+	# Seven categories fit in the Hint panel. Hide Godot's native scroll bar.
+	if is_instance_valid(hints_list):
+		var native_scrollbar: VScrollBar = hints_list.get_v_scroll_bar()
+		if is_instance_valid(native_scrollbar):
+			native_scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
+			native_scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _update_data_scroll_thumb() -> void:
 	if not is_instance_valid(data_scroll_thumb):
@@ -1248,14 +1297,9 @@ func _update_help_text() -> void:
 
 
 func _update_hint_selector() -> void:
-	if not is_instance_valid(hints_selector):
-		return
-
-	# First row is aligned at Y=5. Each following BOF4 hint row advances
-	# 17 px, so the selector must use the same cadence or the error grows
-	# by one pixel on every step.
-	hints_selector.position.y = 5.0 + float(_hint_index) * 17.0
-
+	# Normalized selector: Hints TopicList draws selection from its real row
+	# rect using StyleSelectedBigger. No base/step pixel math remains.
+	pass
 
 func _update_hint_text() -> void:
 	hints_list.select(_hint_index)
