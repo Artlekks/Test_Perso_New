@@ -95,6 +95,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var equip_accessory_panel: Control = $Root/EquipPage/AccessoryPanel
 @onready var equip_slot_list: ItemList = $Root/EquipPage/SlotPanel/SlotList
 @onready var equip_accessory_list: ItemList = $Root/EquipPage/AccessoryPanel/AccessoryList
+@onready var equip_accessory_count_label: Label = $Root/EquipPage/AccessoryPanel/AccessoryCountLabel
 @onready var equip_guide_icon: TextureRect = $Root/EquipPage/GuidePanel/GuideIcon
 @onready var equip_guide_title_label: Label = $Root/EquipPage/GuidePanel/GuideTitleLabel
 @onready var equip_guide_description_label: Label = $Root/EquipPage/GuidePanel/GuideDescriptionLabel
@@ -790,7 +791,7 @@ func _rebuild_equip_entries() -> void:
 			if count <= 0:
 				continue
 			_equip_entries.append({"kind": "rod", "resource": rod, "count": count})
-			equip_accessory_list.add_item("%s  x%d" % [rod.rod_name, count])
+			equip_accessory_list.add_item("%s  %d" % [rod.rod_name, count])
 	else:
 		if _tackle_catalog.lure_catalog != null:
 			for lure in _tackle_catalog.lure_catalog.lures:
@@ -802,7 +803,7 @@ func _rebuild_equip_entries() -> void:
 				if count <= 0:
 					continue
 				_equip_entries.append({"kind": "lure", "resource": lure, "count": count})
-				equip_accessory_list.add_item("%s  x%d" % [lure.display_name, count])
+				equip_accessory_list.add_item("%s  %d" % [lure.display_name, count])
 
 	if _equip_entries.is_empty():
 		_equip_accessory_index = 0
@@ -813,6 +814,8 @@ func _rebuild_equip_entries() -> void:
 			_equip_entries.size() - 1
 		)
 		equip_accessory_list.select(_equip_accessory_index)
+
+	_update_equip_accessory_counter()
 
 
 func _refresh_equip_selection() -> void:
@@ -827,7 +830,47 @@ func _refresh_equip_selection() -> void:
 	else:
 		equip_accessory_list.grab_focus()
 
+	_update_equip_slot_colors()
+	_update_equip_accessory_counter()
 	_update_equip_guide()
+
+
+func _update_equip_slot_colors() -> void:
+	if not is_instance_valid(equip_slot_list):
+		return
+
+	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
+	var inactive_color := Color(0.58, 0.58, 0.58, 1.0)
+
+	for item_index in range(equip_slot_list.item_count):
+		equip_slot_list.set_item_custom_fg_color(item_index, normal_color)
+
+	# While browsing accessories, the other equipped slot is intentionally
+	# greyed like BOF4. Example: choosing a lure greys the equipped rod.
+	if _equip_focus == EquipFocus.ACCESSORY and equip_slot_list.item_count >= 2:
+		var inactive_index: int = 1 - _equip_slot_index
+		equip_slot_list.set_item_custom_fg_color(inactive_index, inactive_color)
+
+
+func _update_equip_accessory_counter() -> void:
+	if not is_instance_valid(equip_accessory_count_label):
+		return
+
+	var total_entries: int = _equip_entries.size()
+	if total_entries <= 0:
+		equip_accessory_count_label.text = "0/0"
+		return
+
+	# BOF4 shows 0 / total before entering the accessory list, then the
+	# selected entry number once the list owns focus.
+	var current_entry: int = 0
+	if _equip_focus == EquipFocus.ACCESSORY:
+		current_entry = clampi(_equip_accessory_index + 1, 1, total_entries)
+
+	equip_accessory_count_label.text = "%d/%d" % [
+		current_entry,
+		total_entries,
+	]
 
 
 func _update_equip_guide() -> void:
@@ -937,8 +980,8 @@ func _update_data_details() -> void:
 		return
 
 	var entry: Dictionary = _data_entries[_data_index]
-	var name: String = str(entry.get("display_name", "????"))
-	info_label.text = "View data on %s" % name
+	var fish_name: String = str(entry.get("display_name", "????"))
+	info_label.text = "View data on %s" % fish_name
 
 	var portrait_value: Variant = entry.get("portrait", null)
 	if portrait_value is Texture2D:
@@ -978,7 +1021,7 @@ func _update_data_selector() -> void:
 		return
 
 	var visible_row: int = clampi(_data_index - _data_window_start, 0, 7)
-	var y: float = 9.0 + float(visible_row) * 16.0
+	var y: float = 9.0 + float(visible_row) * 15.0
 	data_species_selector.position.y = y
 
 
@@ -1063,9 +1106,9 @@ func _update_hint_selector() -> void:
 	if not is_instance_valid(hints_selector):
 		return
 
-	# Hints is text-only: its visual row height is 15 px. Data uses
-	# 16 px because its species rows include the icon/list layout.
-	hints_selector.position.y = 5.0 + float(_hint_index) * 15.0
+	# The BOF4 hint rows advance by 16 px visually. Keep the selector
+	# on that exact cadence so it never drifts from the text rows.
+	hints_selector.position.y = 5.0 + float(_hint_index) * 16.0
 
 
 func _update_hint_text() -> void:
@@ -1079,9 +1122,9 @@ func _update_time_label() -> void:
 		return
 	# Temporary game-time source until a global save/play-time service exists.
 	# Engine ticks keep counting from game launch and do not reset when this menu opens.
-	var total_seconds: int = int(Time.get_ticks_msec() / 1000)
-	var hours: int = total_seconds / 3600
-	var minutes: int = (total_seconds % 3600) / 60
+	var total_seconds: int = int(Time.get_ticks_msec() / 1000.0)
+	var hours: int = int(total_seconds / 3600.0)
+	var minutes: int = int((total_seconds % 3600) / 60.0)
 	time_label.text = "%02d:%02d" % [hours, minutes]
 
 

@@ -605,13 +605,13 @@ func _rebuild_static_index() -> void:
 				continue
 
 			var locations: Array = _locations_by_species.get(species_id, [])
-			var duplicate := false
+			var is_duplicate := false
 			for location in locations:
 				if str(location.get("spot_id", "")) == str(spot.spot_id):
-					duplicate = true
+					is_duplicate = true
 					break
 
-			if duplicate:
+			if is_duplicate:
 				continue
 
 			locations.append({

@@ -268,14 +268,14 @@ func _update_droplets(t: float) -> void:
 			continue
 
 		var velocity := _drop_velocities[i]
-		var position := (
+		var splash_position := (
 			_drop_start_positions[i]
 			+ velocity * elapsed
 			+ Vector3.DOWN * 0.5 * gravity * elapsed * elapsed
 		)
 
-		position.y = maxf(position.y, 0.0)
-		drop.position = position
+		splash_position.y = maxf(splash_position.y, 0.0)
+		drop.position = splash_position
 		drop.scale = Vector3.ONE * maxf(1.0 - t * 0.70, 0.25)
 
 		var material := drop.material_override as StandardMaterial3D
