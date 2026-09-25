@@ -16,7 +16,7 @@ signal catch_specimen_recorded(
 	specimen_data: Dictionary
 )
 
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 const MAX_FISHING_POINTS: int = 9999
 const SAVE_PATH: String = "user://fishing_progress.json"
 
@@ -92,6 +92,10 @@ func record_catch(
 	var previous_fishing_points := fishing_points
 	var previous_rank_index := get_rank_index(previous_fishing_points)
 	var context := _sanitize_catch_context(catch_context)
+	var discovery_result: Dictionary = _record_context_discovery(
+		record,
+		context
+	)
 
 	record["fish_name"] = fish.species.fish_name
 	record["caught_count"] = int(
@@ -136,6 +140,12 @@ func record_catch(
 		"record": record.duplicate(true),
 		"new_species": (
 			previous_caught_count <= 0
+		),
+		"new_spot_discovery": bool(
+			discovery_result.get("new_spot", false)
+		),
+		"new_lure_discovery": bool(
+			discovery_result.get("new_lure", false)
 		),
 		"new_best_size": (
 			fish.size > previous_best_size
@@ -222,10 +232,35 @@ func get_next_rank_threshold(points: int = -1) -> int:
 
 
 func get_rank_progress(points: int = -1) -> Dictionary:
-	var value := fishing_points if points < 0 else clampi(points, 0, MAX_FISHING_POINTS)
-	var index := get_rank_index(value)
-	var current_min := int(RANK_TABLE[index]["min_points"])
-	var next_threshold := get_next_rank_threshold(value)
+	var value: int = (
+		fishing_points
+		if points < 0
+		else clampi(points, 0, MAX_FISHING_POINTS)
+	)
+	var index: int = get_rank_index(value)
+	var current_min: int = int(RANK_TABLE[index]["min_points"])
+	var next_threshold: int = get_next_rank_threshold(value)
+	var is_max_rank: bool = index >= RANK_TABLE.size() - 1
+
+	# The final rank still has useful progress from 9500 -> perfect 9999.
+	# For every other rank, progress ends at the next rank threshold.
+	var span_end: int = (
+		MAX_FISHING_POINTS
+		if is_max_rank
+		else next_threshold
+	)
+	var span_size: int = maxi(span_end - current_min, 1)
+	var points_into_rank: int = clampi(
+		value - current_min,
+		0,
+		span_size
+	)
+	var points_to_next: int = maxi(span_end - value, 0)
+	var progress_ratio: float = clampf(
+		float(points_into_rank) / float(span_size),
+		0.0,
+		1.0
+	)
 
 	return {
 		"index": index,
@@ -233,8 +268,17 @@ func get_rank_progress(points: int = -1) -> Dictionary:
 		"points": value,
 		"current_min": current_min,
 		"next_threshold": next_threshold,
-		"is_max_rank": index >= RANK_TABLE.size() - 1,
+		"is_max_rank": is_max_rank,
+		"points_into_rank": points_into_rank,
+		"rank_span_points": span_size,
+		"points_to_next": points_to_next,
+		"progress_ratio": progress_ratio,
+		"max_fishing_points": MAX_FISHING_POINTS,
 	}
+
+
+func get_max_fishing_points() -> int:
+	return MAX_FISHING_POINTS
 
 
 func get_total_catches() -> int:
@@ -421,6 +465,25 @@ func reset_all_progress(delete_save: bool = true) -> void:
 	changed.emit()
 
 
+func reset_species_progress_by_key(
+	species_key: String,
+	persist: bool = true
+) -> bool:
+	var key: String = species_key.strip_edges().to_lower()
+	if key.is_empty() or not species_records.has(key):
+		return false
+
+	species_records.erase(key)
+	_recalculate_total_catches()
+	_recalculate_fishing_points()
+
+	if persist:
+		save_to_disk()
+
+	changed.emit()
+	return true
+
+
 func _recalculate_total_catches() -> void:
 	var total: int = 0
 
@@ -580,7 +643,9 @@ func _create_empty_record(
 		"last_catch_lure_id": "",
 		"last_catch_lure_name": "",
 		"king_caught": false,
-		"king_count": 0
+		"king_count": 0,
+		"known_spots": [],
+		"successful_lures": []
 	}
 
 
@@ -641,13 +706,197 @@ func _sanitize_record(
 				)
 			),
 			0
+		),
+		"known_spots": _sanitize_discovery_entries(
+			record.get("known_spots", []),
+			"spot_id",
+			"spot_name"
+		),
+		"successful_lures": _sanitize_discovery_entries(
+			record.get("successful_lures", []),
+			"lure_id",
+			"lure_name"
 		)
 	}
 
 	if int(result["king_count"]) > 0:
 		result["king_caught"] = true
 
+	_backfill_discovery_from_record_context(result)
 	return result
+
+
+func _backfill_discovery_from_record_context(record: Dictionary) -> void:
+	# Version-4 migration: older records already stored context for best/last
+	# catches. Preserve that useful knowledge instead of starting discovery at
+	# zero after upgrading the save format.
+	for prefix in ["best_size", "best_points", "last_catch"]:
+		_add_discovery_if_missing(
+			record,
+			"known_spots",
+			"spot_id",
+			"spot_name",
+			str(record.get(prefix + "_spot_id", "")),
+			str(record.get(prefix + "_spot_name", ""))
+		)
+		_add_discovery_if_missing(
+			record,
+			"successful_lures",
+			"lure_id",
+			"lure_name",
+			str(record.get(prefix + "_lure_id", "")),
+			str(record.get(prefix + "_lure_name", ""))
+		)
+
+
+func _add_discovery_if_missing(
+	record: Dictionary,
+	field_name: String,
+	id_key: String,
+	name_key: String,
+	entry_id: String,
+	entry_name: String
+) -> void:
+	entry_id = entry_id.strip_edges()
+	entry_name = entry_name.strip_edges()
+	if entry_id.is_empty():
+		return
+
+	var entries: Array[Dictionary] = _sanitize_discovery_entries(
+		record.get(field_name, []),
+		id_key,
+		name_key
+	)
+
+	for index in range(entries.size()):
+		var existing: Dictionary = entries[index]
+		if str(existing.get(id_key, "")) != entry_id:
+			continue
+		if str(existing.get(name_key, "")).is_empty() and not entry_name.is_empty():
+			existing[name_key] = entry_name
+			entries[index] = existing
+		record[field_name] = entries
+		return
+
+	var new_entry: Dictionary = {
+		"catch_count": 1,
+	}
+	new_entry[id_key] = entry_id
+	new_entry[name_key] = entry_name
+	entries.append(new_entry)
+	record[field_name] = entries
+
+
+func _sanitize_discovery_entries(
+	raw_value: Variant,
+	id_key: String,
+	name_key: String
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var index_by_id: Dictionary = {}
+
+	if not (raw_value is Array):
+		return result
+
+	var raw_entries: Array = raw_value as Array
+	for raw_entry in raw_entries:
+		if not (raw_entry is Dictionary):
+			continue
+
+		var source: Dictionary = raw_entry as Dictionary
+		var entry_id: String = str(source.get(id_key, "")).strip_edges()
+		if entry_id.is_empty():
+			continue
+
+		var entry_name: String = str(source.get(name_key, "")).strip_edges()
+		var catch_count: int = maxi(int(source.get("catch_count", 1)), 1)
+
+		if index_by_id.has(entry_id):
+			var existing_index: int = int(index_by_id[entry_id])
+			var existing: Dictionary = result[existing_index]
+			existing["catch_count"] = int(existing.get("catch_count", 0)) + catch_count
+			if str(existing.get(name_key, "")).is_empty() and not entry_name.is_empty():
+				existing[name_key] = entry_name
+			result[existing_index] = existing
+			continue
+
+		index_by_id[entry_id] = result.size()
+		var sanitized_entry: Dictionary = {
+			"catch_count": catch_count,
+		}
+		sanitized_entry[id_key] = entry_id
+		sanitized_entry[name_key] = entry_name
+		result.append(sanitized_entry)
+
+	return result
+
+
+func _record_context_discovery(
+	record: Dictionary,
+	context: Dictionary
+) -> Dictionary:
+	var new_spot: bool = _upsert_discovery_entry(
+		record,
+		"known_spots",
+		"spot_id",
+		"spot_name",
+		str(context.get("spot_id", "")),
+		str(context.get("spot_name", ""))
+	)
+	var new_lure: bool = _upsert_discovery_entry(
+		record,
+		"successful_lures",
+		"lure_id",
+		"lure_name",
+		str(context.get("lure_id", "")),
+		str(context.get("lure_name", ""))
+	)
+
+	return {
+		"new_spot": new_spot,
+		"new_lure": new_lure,
+	}
+
+
+func _upsert_discovery_entry(
+	record: Dictionary,
+	field_name: String,
+	id_key: String,
+	name_key: String,
+	entry_id: String,
+	entry_name: String
+) -> bool:
+	entry_id = entry_id.strip_edges()
+	entry_name = entry_name.strip_edges()
+	if entry_id.is_empty():
+		return false
+
+	var entries: Array[Dictionary] = _sanitize_discovery_entries(
+		record.get(field_name, []),
+		id_key,
+		name_key
+	)
+
+	for index in range(entries.size()):
+		var entry: Dictionary = entries[index]
+		if str(entry.get(id_key, "")) != entry_id:
+			continue
+
+		entry["catch_count"] = maxi(int(entry.get("catch_count", 0)), 0) + 1
+		if str(entry.get(name_key, "")).is_empty() and not entry_name.is_empty():
+			entry[name_key] = entry_name
+		entries[index] = entry
+		record[field_name] = entries
+		return false
+
+	var new_entry: Dictionary = {
+		"catch_count": 1,
+	}
+	new_entry[id_key] = entry_id
+	new_entry[name_key] = entry_name
+	entries.append(new_entry)
+	record[field_name] = entries
+	return true
 
 
 func _sanitize_catch_context(context: Dictionary) -> Dictionary:

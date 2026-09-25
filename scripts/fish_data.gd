@@ -7,14 +7,41 @@ class_name FishData
 @export var average_size: float = 1.0
 @export var king_size: float = 2.0
 
-## Chance that a newly created FishInstance rolls in the king-size band.
-## This is authored gameplay tuning, not claimed canonical BOF4 RNG.
+## Chance that a newly created FishInstance rolls in the crown/king band.
+## Gameplay tuning only; this is not claimed to reproduce original BOF4 RNG.
 @export_range(0.0, 1.0, 0.005)
-var king_chance: float = 0.03
+var king_chance: float = 0.015
 
 ## A king can roll from king_size up to king_size * this multiplier.
 @export_range(1.0, 1.25, 0.01)
 var king_max_size_multiplier: float = 1.05
+
+@export_category("Size Distribution")
+
+## Chance for a non-king catch to roll directly in the near-record band.
+## This probability is evaluated alongside king_chance, so 0.06 means
+## approximately six catches in one hundred before species/spot selection.
+@export_range(0.0, 0.50, 0.005)
+var near_record_chance: float = 0.06
+
+## Near-record fish begin at this fraction of king_size and remain below crown.
+@export_range(0.75, 0.99, 0.01)
+var near_record_min_size_ratio: float = 0.90
+
+## Lowest ordinary size relative to average_size. 0.80 works well with the
+## authored BOF4 data because average_size is usually about 75% of king_size.
+@export_range(0.25, 1.0, 0.05)
+var normal_min_average_multiplier: float = 0.80
+
+## Averaging several random samples makes ordinary catches cluster around the
+## species average instead of distributing uniformly from tiny to near-record.
+@export_range(1, 6, 1)
+var normal_roll_samples: int = 3
+
+## Near-record sizes are biased toward the bottom of their band, so a fish one
+## centimetre below crown is rarer than simply entering the near-record band.
+@export_range(1, 5, 1)
+var near_record_roll_samples: int = 2
 
 @export_category("Fight Stats")
 @export var base_stamina: float = 100.0
