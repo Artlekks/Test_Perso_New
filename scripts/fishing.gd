@@ -6,6 +6,9 @@ const FishingDebugSettingsScript = preload(
 const FishingDebugMenuScene = preload(
 	"res://actors/FishingDebugMenu.tscn"
 )
+const FishingMenuScene = preload(
+	"res://actors/FishingMenu.tscn"
+)
 
 const FishingTechniqueDetectorScript = preload(
 	"res://scripts/fishing_technique_detector.gd"
@@ -136,6 +139,7 @@ var fishing_trade_service: FishingTradeService = null
 var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
 var fishing_journal_service: FishingJournalService = null
+var fishing_menu: FishingMenu = null
 var catch_record_result: Dictionary = {}
 var last_lure_loss_result: Dictionary = {}
 
@@ -227,6 +231,8 @@ func _ready() -> void:
 		fishing_inventory
 	)
 
+	_setup_fishing_menu()
+
 	debug_menu = FishingDebugMenuScene.instantiate()
 	add_child(debug_menu)
 	debug_menu.configure(
@@ -257,6 +263,35 @@ func _ready() -> void:
 			loadout.rod_changed.connect(_on_rod_changed)
 
 		_on_rod_changed(loadout.get_selected_rod())
+
+func _setup_fishing_menu() -> void:
+	if fishing_menu != null:
+		return
+
+	fishing_menu = FishingMenuScene.instantiate() as FishingMenu
+	if fishing_menu == null:
+		push_warning("Fishing: failed to instantiate FishingMenu.")
+		return
+
+	var menu_parent: Node = get_node_or_null("../../UI")
+	if menu_parent == null:
+		menu_parent = get_tree().current_scene
+
+	if menu_parent == null:
+		push_warning("Fishing: no parent available for FishingMenu.")
+		fishing_menu.queue_free()
+		fishing_menu = null
+		return
+
+	menu_parent.add_child(fishing_menu)
+	fishing_menu.configure(
+		game_mode,
+		loadout,
+		fishing_inventory,
+		fishing_journal_service,
+		FishingTackleCatalogResource
+	)
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not game_mode.is_fishing():

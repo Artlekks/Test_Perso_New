@@ -1,0 +1,585 @@
+[gd_scene load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font.fnt" id="2_font"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Selector.png" id="3_selector"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Info_Panel.png" id="4_info"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Command_Panel.png" id="5_command"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Equip_Equip_Panel.png" id="6_equip"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Status_Panel.png" id="7_status"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Time_Panel.png" id="8_time"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Equip_Lure_Panel.png" id="9_guide"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Equip_Accessories_Panel.png" id="10_accessory"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Name_Panel.png" id="11_data_name"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Preview_Panel.png" id="12_data_preview"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Panel.png" id="13_data"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Hint_Panel.png" id="14_hint"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Validation_Panel.png" id="15_validation"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="16_background"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleEmpty"]
+
+[sub_resource type="StyleBoxTexture" id="StyleSelected"]
+texture = ExtResource("3_selector")
+texture_margin_left = 1.5
+texture_margin_top = 1.5
+texture_margin_right = 1.5
+texture_margin_bottom = 1.5
+
+[sub_resource type="StyleBoxFlat" id="StyleGeneric"]
+bg_color = Color(0.80, 0.78, 0.64, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38, 0.32, 0.31, 1)
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+
+[node name="FishingMenu" type="CanvasLayer"]
+layer = 95
+script = ExtResource("1_menu")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 320
+offset_bottom = 240
+scale = Vector2(2, 2)
+mouse_filter = 2
+
+[node name="Background" type="TextureRect" parent="Root"]
+texture_filter = 1
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+texture = ExtResource("16_background")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="InfoPanel" type="TextureRect" parent="Root"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 16.0
+offset_top = 13.0
+offset_right = 304.0
+offset_bottom = 38.0
+texture = ExtResource("4_info")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="InfoLabel" type="Label" parent="Root/InfoPanel"]
+layout_mode = 0
+offset_left = 7
+offset_top = 5.5
+offset_right = 279
+offset_bottom = 18
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+
+[node name="MainPage" type="Control" parent="Root"]
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="LeftMask" type="Control" parent="Root/MainPage"]
+layout_mode = 0
+offset_right = 95
+offset_bottom = 240
+clip_contents = true
+
+[node name="CommandPanel" type="TextureRect" parent="Root/MainPage/LeftMask"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 16
+offset_top = 52
+offset_right = 92
+offset_bottom = 168
+texture = ExtResource("5_command")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="CommandSelector" type="TextureRect" parent="Root/MainPage/LeftMask/CommandPanel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 3
+offset_top = 15
+offset_right = 73
+offset_bottom = 30
+texture = ExtResource("3_selector")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="CommandList" type="ItemList" parent="Root/MainPage/LeftMask/CommandPanel"]
+visible = false
+layout_mode = 0
+offset_right = 0.5
+offset_bottom = 0.5
+mouse_filter = 2
+
+[node name="TimePanel" type="TextureRect" parent="Root/MainPage/LeftMask"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 16
+offset_top = 170
+offset_right = 92
+offset_bottom = 194
+texture = ExtResource("8_time")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TimeLabel" type="Label" parent="Root/MainPage/LeftMask/TimePanel"]
+layout_mode = 0
+offset_left = 8
+offset_top = 8
+offset_right = 68
+offset_bottom = 21
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "00:00"
+horizontal_alignment = 1
+
+[node name="EquipPanel" type="TextureRect" parent="Root/MainPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 98
+offset_top = 51
+offset_right = 246
+offset_bottom = 102
+texture = ExtResource("6_equip")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="RodLabel" type="Label" parent="Root/MainPage/EquipPanel"]
+layout_mode = 0
+offset_left = 27
+offset_top = 12
+offset_right = 141
+offset_bottom = 23.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "---"
+
+[node name="LureLabel" type="Label" parent="Root/MainPage/EquipPanel"]
+layout_mode = 0
+offset_left = 27
+offset_top = 30
+offset_right = 141
+offset_bottom = 42.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "---"
+
+[node name="StatusPanel" type="TextureRect" parent="Root/MainPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 98
+offset_top = 108
+offset_right = 246
+offset_bottom = 167
+texture = ExtResource("7_status")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="RankLabel" type="Label" parent="Root/MainPage/StatusPanel"]
+visible = false
+layout_mode = 0
+offset_left = 46
+offset_top = 14
+offset_right = 141
+offset_bottom = 28
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "The Fish"
+
+[node name="PointsLabel" type="Label" parent="Root/MainPage/StatusPanel"]
+layout_mode = 0
+offset_left = 78
+offset_top = 37.5
+offset_right = 122
+offset_bottom = 52
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "0"
+horizontal_alignment = 2
+
+[node name="EquipPage" type="Control" parent="Root"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="SlotPanel" type="TextureRect" parent="Root/EquipPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 16
+offset_top = 51
+offset_right = 164
+offset_bottom = 102
+texture = ExtResource("6_equip")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="SlotSelector" type="TextureRect" parent="Root/EquipPage/SlotPanel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 4
+offset_top = 12
+offset_right = 144
+offset_bottom = 26
+texture = ExtResource("3_selector")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="SlotList" type="ItemList" parent="Root/EquipPage/SlotPanel"]
+layout_mode = 0
+offset_left = 24
+offset_top = 8
+offset_right = 143
+offset_bottom = 47
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+theme_override_constants/line_separation = 3
+theme_override_styles/panel = SubResource("StyleEmpty")
+theme_override_styles/focus = SubResource("StyleEmpty")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
+mouse_filter = 2
+
+[node name="GuidePanel" type="TextureRect" parent="Root/EquipPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 16
+offset_top = 104
+offset_right = 164
+offset_bottom = 200
+texture = ExtResource("9_guide")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="GuideLabel" type="Label" parent="Root/EquipPage/GuidePanel"]
+layout_mode = 0
+offset_left = 9
+offset_top = 20
+offset_right = 139
+offset_bottom = 89
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+text = ""
+
+[node name="AccessoryPanel" type="TextureRect" parent="Root/EquipPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 167
+offset_top = 51
+offset_right = 304
+offset_bottom = 215
+texture = ExtResource("10_accessory")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="AccessoryList" type="ItemList" parent="Root/EquipPage/AccessoryPanel"]
+layout_mode = 0
+offset_left = 9
+offset_top = 13
+offset_right = 122.5
+offset_bottom = 151
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+theme_override_constants/line_separation = 5
+theme_override_styles/panel = SubResource("StyleEmpty")
+theme_override_styles/focus = SubResource("StyleEmpty")
+theme_override_styles/selected = SubResource("StyleSelected")
+theme_override_styles/selected_focus = SubResource("StyleSelected")
+mouse_filter = 2
+
+[node name="DataPage" type="Control" parent="Root"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="SpeciesPanel" type="TextureRect" parent="Root/DataPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 16
+offset_top = 51
+offset_right = 153
+offset_bottom = 215
+texture = ExtResource("11_data_name")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="SpeciesList" type="ItemList" parent="Root/DataPage/SpeciesPanel"]
+layout_mode = 0
+offset_left = 21
+offset_top = 12.5
+offset_right = 122
+offset_bottom = 148.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+theme_override_constants/line_separation = 3
+theme_override_styles/panel = SubResource("StyleEmpty")
+theme_override_styles/focus = SubResource("StyleEmpty")
+theme_override_styles/selected = SubResource("StyleSelected")
+theme_override_styles/selected_focus = SubResource("StyleSelected")
+mouse_filter = 2
+
+[node name="DetailsPanel" type="Control" parent="Root/DataPage"]
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="PreviewPanel" type="TextureRect" parent="Root/DataPage/DetailsPanel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 191
+offset_top = 62
+offset_right = 269
+offset_bottom = 116
+texture = ExtResource("12_data_preview")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="FishPortrait" type="TextureRect" parent="Root/DataPage/DetailsPanel/PreviewPanel"]
+layout_mode = 0
+offset_left = 4
+offset_top = 4
+offset_right = 74
+offset_bottom = 50
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="RecordPanel" type="TextureRect" parent="Root/DataPage/DetailsPanel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 156
+offset_top = 119
+offset_right = 304
+offset_bottom = 215
+texture = ExtResource("13_data")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="RecordLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+layout_mode = 0
+offset_left = 17.5
+offset_top = 21.5
+offset_right = 137.5
+offset_bottom = 34.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "-- cm      -- pts."
+
+[node name="LureLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+layout_mode = 0
+offset_left = 8.5
+offset_top = 39
+offset_right = 139
+offset_bottom = 52
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+
+[node name="PointLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+layout_mode = 0
+offset_left = 8.5
+offset_top = 60.5
+offset_right = 139
+offset_bottom = 73.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+
+[node name="HabitatLabel" type="Label" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+layout_mode = 0
+offset_left = 8.5
+offset_top = 76.5
+offset_right = 139
+offset_bottom = 92
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+text = ""
+
+[node name="HelpPage" type="Control" parent="Root"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="TopicPanel" type="Panel" parent="Root/HelpPage"]
+layout_mode = 0
+offset_left = 76
+offset_top = 56
+offset_right = 212
+offset_bottom = 143
+theme_override_styles/panel = SubResource("StyleGeneric")
+
+[node name="TopicList" type="ItemList" parent="Root/HelpPage/TopicPanel"]
+layout_mode = 0
+offset_left = 4
+offset_top = 4
+offset_right = 132
+offset_bottom = 83
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+theme_override_styles/panel = SubResource("StyleEmpty")
+theme_override_styles/focus = SubResource("StyleEmpty")
+theme_override_styles/selected = SubResource("StyleSelected")
+theme_override_styles/selected_focus = SubResource("StyleSelected")
+mouse_filter = 2
+
+[node name="TextPanel" type="Panel" parent="Root/HelpPage"]
+layout_mode = 0
+offset_left = 56
+offset_top = 153
+offset_right = 264
+offset_bottom = 210
+theme_override_styles/panel = SubResource("StyleGeneric")
+
+[node name="TextLabel" type="Label" parent="Root/HelpPage/TextPanel"]
+layout_mode = 0
+offset_left = 5
+offset_top = 5
+offset_right = 203
+offset_bottom = 52
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+text = ""
+
+[node name="HintsPage" type="Control" parent="Root"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="TopicPanel" type="TextureRect" parent="Root/HintsPage"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 63
+offset_top = 39
+offset_right = 257
+offset_bottom = 168
+texture = ExtResource("14_hint")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TopicList" type="ItemList" parent="Root/HintsPage/TopicPanel"]
+layout_mode = 0
+offset_left = 22
+offset_top = 14.5
+offset_right = 182.5
+offset_bottom = 118
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+theme_override_constants/line_separation = 3
+theme_override_styles/panel = SubResource("StyleEmpty")
+theme_override_styles/focus = SubResource("StyleEmpty")
+theme_override_styles/selected = SubResource("StyleSelected")
+theme_override_styles/selected_focus = SubResource("StyleSelected")
+mouse_filter = 2
+
+[node name="TextPanel" type="Control" parent="Root/HintsPage"]
+visible = false
+layout_mode = 0
+offset_right = 0.5
+offset_bottom = 0.5
+
+[node name="TextLabel" type="Label" parent="Root/HintsPage/TextPanel"]
+layout_mode = 0
+offset_right = 0.5
+offset_bottom = 0.5
+text = ""
+
+[node name="OptionsPage" type="Control" parent="Root"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="Panel" type="Panel" parent="Root/OptionsPage"]
+layout_mode = 0
+offset_left = 71
+offset_top = 75
+offset_right = 249
+offset_bottom = 143
+theme_override_styles/panel = SubResource("StyleGeneric")
+
+[node name="Label" type="Label" parent="Root/OptionsPage/Panel"]
+layout_mode = 0
+offset_left = 8
+offset_top = 14
+offset_right = 170
+offset_bottom = 54
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "Options\n\nSkipped for now, as requested."
+horizontal_alignment = 1
+
+[node name="ExitConfirm" type="Control" parent="Root"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+
+[node name="Panel" type="TextureRect" parent="Root/ExitConfirm"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 248
+offset_top = 55
+offset_right = 302
+offset_bottom = 94
+texture = ExtResource("15_validation")
+expand_mode = 1
+stretch_mode = 0
+pivot_offset = Vector2(54, 39)
+
+[node name="ChoiceSelector" type="TextureRect" parent="Root/ExitConfirm/Panel"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 4
+offset_top = 9
+offset_right = 50
+offset_bottom = 22
+texture = ExtResource("3_selector")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="ChoiceList" type="ItemList" parent="Root/ExitConfirm/Panel"]
+visible = false
+layout_mode = 0
+offset_right = 0.5
+offset_bottom = 0.5
+mouse_filter = 2
