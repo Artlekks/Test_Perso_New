@@ -11,6 +11,8 @@ signal exploration_view_started
 
 @export var fishing_h_offset: float = 0.9
 @export var fishing_v_offset: float = 0.6
+@export_range(0.5, 1.5, 0.01) var fishing_distance_scale: float = 1.0
+@export var aim_follow_speed: float = 6.0
 @export var fishing_yaw_offset_degrees: float = -15.0
 @export_range(-80.0, -5.0, 0.5) var fishing_pitch_degrees: float = -38.5
 @export_category("Fishing Follow")
@@ -18,6 +20,9 @@ signal exploration_view_started
 var fishing_follow_trigger_y_ratio: float = 0.50
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
+var fishing_aim_active: bool = false
+var fishing_aim_target_yaw: float = 0.0
+var fishing_aim_direction_to_rig_offset: float = 0.0
 var exploration_h_offset: float = 0.0
 var exploration_v_offset: float = 0.0
 var exploration_yaw_before_fishing: float = 0.0
@@ -65,6 +70,16 @@ func _process(_delta: float) -> void:
 	# the tween every frame and snap the camera home instantly.
 	if not follow_controls_position and not fishing_follow_returning:
 		global_position = target.global_position
+
+	# During AIM the camera only responds to player-driven aim changes.
+	# start_fishing_aim() seeds the neutral pose from the camera's current
+	# fishing heading, so entering AIM itself never causes a second snap.
+	if fishing_aim_active:
+		rotation.y = lerp_angle(
+			rotation.y,
+			fishing_aim_target_yaw,
+			clamp(aim_follow_speed * _delta, 0.0, 1.0)
+		)
 
 	if not is_equal_approx(rotation.y, _last_heading_yaw):
 		_last_heading_yaw = rotation.y
@@ -311,6 +326,22 @@ func enter_fishing_view() -> void:
 			fishing_pitch_delta
 		)
 
+	# Preserve the exploration camera distance when entering fishing.
+	# The authored fishing pose still defines the viewing direction and
+	# rotation, but it must not dolly closer and make the character larger.
+	var exploration_distance: float = (
+		exploration_camera_transform_before_fishing.origin.length()
+	)
+	var fishing_pose_distance: float = (
+		fishing_target_transform.origin.length()
+	)
+	if fishing_pose_distance > 0.0001:
+		fishing_target_transform.origin *= (
+			exploration_distance
+			* fishing_distance_scale
+			/ fishing_pose_distance
+		)
+
 	var player_forward := target.global_transform.basis.z
 	player_forward.y = 0.0
 	player_forward = player_forward.normalized()
@@ -453,20 +484,66 @@ func _apply_camera_transition(weight: float) -> void:
 
 
 
-func start_fishing_aim(_direction: Vector3) -> void:
-	# Fishing aim changes casting direction only. Camera heading is locked to
-	# the authored fishing pose so entering AIM can never trigger a second
-	# rotation after the fishing-view transition.
-	pass
+func start_fishing_aim(direction: Vector3) -> void:
+	# Preserve the exact fishing camera heading when AIM begins.
+	# We store the angular relationship between the neutral cast direction
+	# and the rig, then reuse it for every later A/D aim update.
+	var center_direction := direction
+	center_direction.y = 0.0
+
+	if center_direction.length_squared() == 0.0:
+		center_direction = Vector3.FORWARD
+	else:
+		center_direction = center_direction.normalized()
+
+	var direction_yaw := atan2(
+		center_direction.x,
+		center_direction.z
+	)
+
+	fishing_aim_direction_to_rig_offset = wrapf(
+		rotation.y - direction_yaw,
+		-PI,
+		PI
+	)
+
+	fishing_aim_target_yaw = rotation.y
+	fishing_aim_active = true
 
 
-func set_fishing_aim_direction(_direction: Vector3) -> void:
-	# Intentionally does not rotate the camera.
-	pass
+func set_fishing_aim_direction(direction: Vector3) -> void:
+	if not fishing_aim_active:
+		return
+
+	var desired_direction := direction
+	desired_direction.y = 0.0
+
+	if desired_direction.length_squared() == 0.0:
+		return
+
+	desired_direction = desired_direction.normalized()
+
+	var desired_direction_yaw := atan2(
+		desired_direction.x,
+		desired_direction.z
+	)
+
+	var mapped_rig_yaw := (
+		desired_direction_yaw
+		+ fishing_aim_direction_to_rig_offset
+	)
+
+	# Pick the equivalent angle nearest the rig's current heading so crossing
+	# +/-180 degrees can never create a full-circle camera spin.
+	fishing_aim_target_yaw = rotation.y + wrapf(
+		mapped_rig_yaw - rotation.y,
+		-PI,
+		PI
+	)
 
 
 func stop_fishing_aim() -> void:
-	pass
+	fishing_aim_active = false
 
 
 func set_fishing_camera_frozen(active: bool) -> void:
