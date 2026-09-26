@@ -3,6 +3,8 @@ class_name FishingMenu
 
 const EQUIP_LEFT_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left_Filled.png")
 const EQUIP_LEFT_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left.png")
+const EQUIP_ROD_GUIDE_PANEL: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Rod_Panel.png")
+const EQUIP_LURE_GUIDE_PANEL: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Lure_Panel.png")
 
 # BOF4 Guide-panel lure icons.
 # Explicit lure-by-lure mapping keeps the menu deterministic and avoids
@@ -208,8 +210,8 @@ const DATA_FISH_BY_KEY: Dictionary = {
 @export_category("Equip QA")
 ## Development-only convenience. When enabled, the Equip page lists every rod
 ## and lure in the tackle catalog even when the save inventory does not own it.
-## Unowned entries are shown as quantity 01 and may be equipped for testing,
-## but the real FishingInventory is not modified.
+## Unowned entries receive stable fake 01-99 quantities for UI testing and
+## may be equipped, but the real FishingInventory is not modified.
 @export var show_full_tackle_catalog_for_testing: bool = true
 
 const BOF_STANDARD_ADVANCE_PX: int = 8
@@ -257,7 +259,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var equip_page: Control = $Root/EquipPage
 @onready var equip_slot_panel: Control = $Root/EquipPage/SlotPanel
 @onready var equip_slot_selector: TextureRect = $SelectorLayer/EquipLeft
-@onready var equip_guide_panel: Control = $Root/EquipPage/GuidePanel
+@onready var equip_guide_panel: TextureRect = $Root/EquipPage/GuidePanel
 @onready var equip_accessory_panel: Control = $Root/EquipPage/AccessoryPanel
 @onready var equip_slot_list: ItemList = $Root/EquipPage/SlotPanel/SlotList
 @onready var equip_rod_slot_label: Label = $Root/EquipPage/SlotPanel/RodSlotLabel
@@ -312,6 +314,7 @@ var _equip_focus: int = EquipFocus.SLOT
 var _equip_slot_index: int = 0
 var _equip_accessory_index: int = 0
 var _equip_window_start: int = 0
+var _equip_quantity_labels: Array[Label] = []
 var _equip_entries: Array[Dictionary] = []
 var _data_index: int = 0
 var _data_window_start: int = 0
@@ -335,6 +338,7 @@ func _ready() -> void:
 
 	_fill_static_lists()
 	_configure_equip_accessory_list_visuals()
+	_create_equip_quantity_labels()
 	_configure_data_list_visuals()
 	_configure_hint_list_visuals()
 	_configure_selector_overlays()
@@ -1336,6 +1340,14 @@ func _refresh_equip_page() -> void:
 	_refresh_equip_selection()
 
 
+func _qa_fake_tackle_count(tackle_id: StringName) -> int:
+	# Stable pseudo-random-looking quantity for menu layout testing.
+	# It does not touch FishingInventory and stays the same each time the menu
+	# opens, so quantities do not visibly flicker around between visits.
+	var value: int = abs(String(tackle_id).hash())
+	return (value % 99) + 1
+
+
 func _rebuild_equip_entries() -> void:
 	_equip_entries.clear()
 	equip_accessory_list.clear()
@@ -1353,7 +1365,7 @@ func _rebuild_equip_entries() -> void:
 			if count <= 0:
 				if not show_full_tackle_catalog_for_testing:
 					continue
-				count = 1
+				count = _qa_fake_tackle_count(rod.rod_id)
 			_equip_entries.append({"kind": "rod", "resource": rod, "count": count})
 	else:
 		if _tackle_catalog.lure_catalog != null:
@@ -1366,7 +1378,7 @@ func _rebuild_equip_entries() -> void:
 				if count <= 0:
 					if not show_full_tackle_catalog_for_testing:
 						continue
-					count = 1
+					count = _qa_fake_tackle_count(lure.lure_id)
 				_equip_entries.append({"kind": "lure", "resource": lure, "count": count})
 
 	if _equip_entries.is_empty():
@@ -1387,24 +1399,11 @@ func _rebuild_equip_entries() -> void:
 	call_deferred("_place_equip_right_selector")
 
 
-func _format_accessory_row(display_name: String, count: int) -> String:
-	# BOF4's live text is mostly 8 px advance, but narrow glyphs (I/i/l) use
-	# 4 px. Preserve the original 104 px name column instead of padding by
-	# character count, otherwise names containing narrow letters would make the
-	# two-digit quantity column wobble left. U+00A0 is a private 4 px blank
-	# glyph in BOF_Font_Refined.fnt and is used only when half-cell padding is
-	# needed.
-	var padded_name: String = display_name
-	var remaining_px: int = ACCESSORY_NAME_COLUMN_WIDTH_PX - _bof_text_advance_px(display_name)
-
-	while remaining_px >= BOF_STANDARD_ADVANCE_PX:
-		padded_name += " "
-		remaining_px -= BOF_STANDARD_ADVANCE_PX
-
-	if remaining_px >= BOF_NARROW_ADVANCE_PX:
-		padded_name += ACCESSORY_HALF_SPACE
-
-	return "%s%02d" % [padded_name, maxi(count, 0)]
+func _format_accessory_row(display_name: String, _count: int) -> String:
+	# Names and quantities are deliberately rendered separately.
+	# Putting both into one ItemList string makes Godot replace the clipped
+	# right edge with "..." when the row is wider than the control.
+	return display_name
 
 
 func _bof_text_advance_px(value: String) -> int:
@@ -1499,7 +1498,7 @@ func _update_equip_accessory_counter() -> void:
 
 	var total_entries: int = _equip_entries.size()
 	if total_entries <= 0:
-		equip_accessory_count_label.text = "0/0"
+		equip_accessory_count_label.text = "00/00"
 		return
 
 	# BOF4 shows 0 / total before entering the accessory list, then the
@@ -1508,13 +1507,24 @@ func _update_equip_accessory_counter() -> void:
 	if _equip_focus == EquipFocus.ACCESSORY:
 		current_entry = clampi(_equip_accessory_index + 1, 1, total_entries)
 
-	equip_accessory_count_label.text = "%d/%d" % [
+	equip_accessory_count_label.text = "%02d/%02d" % [
 		current_entry,
 		total_entries,
 	]
 
 
 func _update_equip_guide() -> void:
+	var is_lure_page: bool = _equip_slot_index == 1
+
+	# Rod uses its own panel with the rod icon baked into the texture.
+	# Lure uses the clean panel plus the dynamic lure-family icon.
+	if is_lure_page:
+		equip_guide_panel.texture = EQUIP_LURE_GUIDE_PANEL
+		equip_guide_icon.visible = true
+	else:
+		equip_guide_panel.texture = EQUIP_ROD_GUIDE_PANEL
+		equip_guide_icon.visible = false
+
 	equip_guide_icon.texture = null
 	equip_guide_title_label.text = ""
 	equip_guide_description_label.text = ""
@@ -1720,6 +1730,10 @@ func _update_data_selector() -> void:
 
 
 func _configure_equip_accessory_list_visuals() -> void:
+	# Names occupy only the left part of the row. Quantities are separate labels.
+	# This prevents Godot's ItemList text-overrun ellipsis from hiding numbers.
+	equip_accessory_list.size.x = 96.0
+
 	# Keep ItemList scrolling logic, but hide Godot's native grey scrollbar.
 	# BOF4 uses the same thin yellow custom thumb as the Data page.
 	if is_instance_valid(equip_accessory_list):
@@ -1751,6 +1765,69 @@ func _sync_equip_selector_window() -> void:
 	)
 
 
+func _create_equip_quantity_labels() -> void:
+	if not is_instance_valid(equip_accessory_panel):
+		return
+
+	# Eight fixed BOF4 rows. The quantity column is independent from ItemList
+	# text, so it can never be truncated into an ellipsis.
+	for row_index in range(8):
+		var label := Label.new()
+		label.name = "Quantity%02d" % row_index
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_override(
+			"font",
+			equip_accessory_list.get_theme_font("font")
+		)
+		label.add_theme_font_size_override(
+			"font_size",
+			equip_accessory_list.get_theme_font_size("font_size")
+		)
+		label.add_theme_color_override(
+			"font_color",
+			Color(1.0, 1.0, 1.0, 1.0)
+		)
+
+		# Fixed right-aligned quantity column immediately before the scrollbar.
+		# Two digits occupy 16 native pixels with the BOF font.
+		label.position = Vector2(98.0, 5.0 + float(row_index * 17))
+		label.size = Vector2(21.0, 17.0)
+		label.text = ""
+		label.visible = false
+
+		equip_accessory_panel.add_child(label)
+		_equip_quantity_labels.append(label)
+
+
+func _refresh_equip_quantity_labels() -> void:
+	for label in _equip_quantity_labels:
+		if is_instance_valid(label):
+			label.text = ""
+			label.visible = false
+
+	if _equip_entries.is_empty():
+		return
+
+	var visible_count: int = mini(
+		8,
+		_equip_entries.size() - _equip_window_start
+	)
+
+	for local_row in range(visible_count):
+		if local_row >= _equip_quantity_labels.size():
+			break
+
+		var global_index: int = _equip_window_start + local_row
+		var entry: Dictionary = _equip_entries[global_index]
+		var count: int = clampi(int(entry.get("count", 0)), 0, 99)
+		var label: Label = _equip_quantity_labels[local_row]
+
+		label.text = "%02d" % count
+		label.visible = true
+
+
 func _refresh_equip_visible_rows() -> void:
 	# Equip deliberately does NOT use ItemList's native scrolling anymore.
 	# Only the current eight-row BOF4 window exists in the ItemList. This keeps
@@ -1780,6 +1857,8 @@ func _refresh_equip_visible_rows() -> void:
 	var visible_index: int = _equip_accessory_index - _equip_window_start
 	if visible_index >= 0 and visible_index < equip_accessory_list.item_count:
 		equip_accessory_list.select(visible_index)
+
+	_refresh_equip_quantity_labels()
 
 
 func _update_equip_scroll_thumb() -> void:
