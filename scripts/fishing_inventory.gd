@@ -557,6 +557,31 @@ func load_from_disk() -> bool:
 	return true
 
 
+func reset_fish_inventory_for_testing(persist: bool = true) -> void:
+	# Catch-pipeline QA reset: clear ONLY caught fish/specimens.
+	# Rod/lure ownership is deliberately preserved so the player can keep
+	# testing fishing immediately after the reset.
+	var previous_species: Array[String] = []
+	for raw_key in fish_specimens.keys():
+		previous_species.append(str(raw_key))
+
+	fish_specimens.clear()
+	_next_specimen_id = 1
+
+	# Prevent bind_progress() from treating this as a legacy inventory and
+	# recreating fish from lifetime records during the same startup.
+	_progress_migrated = true
+	_dirty = true
+
+	for species_id in previous_species:
+		fish_count_changed.emit(species_id, 0)
+
+	changed.emit()
+
+	if persist:
+		commit_changes()
+
+
 func reset_inventory(delete_save: bool = true) -> void:
 	_reset_runtime_state()
 	# Resetting the physical inventory must not immediately recreate all lifetime

@@ -51,6 +51,13 @@ const FishingSurfaceSplashScene = preload(
 	"res://actors/FishingSurfaceSplash.tscn"
 )
 
+# One-time QA bootstrap for the catch/result pipeline audit.
+# Once created, this marker prevents future launches from wiping the catches
+# we are specifically trying to test for persistence.
+const CATCH_PIPELINE_CLEAN_TEST_MARKER: String = (
+	"user://catch_pipeline_clean_test_v1.done"
+)
+
 enum Phase {
 	INACTIVE,
 	ENTER,
@@ -212,6 +219,9 @@ func _ready() -> void:
 
 	fishing_progress = _get_or_create_fishing_progress()
 	fishing_inventory = _get_or_create_fishing_inventory()
+
+	_prepare_clean_catch_pipeline_test_once()
+
 	fishing_inventory.bind_progress(fishing_progress)
 
 	if loadout != null:
@@ -602,6 +612,40 @@ func get_fishing_reward_service() -> FishingRewardService:
 
 func get_fishing_journal_service() -> FishingJournalService:
 	return fishing_journal_service
+
+
+func _prepare_clean_catch_pipeline_test_once() -> void:
+	if (
+		fishing_progress == null
+		or fishing_inventory == null
+	):
+		return
+
+	if FileAccess.file_exists(CATCH_PIPELINE_CLEAN_TEST_MARKER):
+		return
+
+	# Reset permanent catch records first, then physical fish inventory.
+	# Tackle remains intact.
+	fishing_progress.reset_all_progress(true)
+	fishing_inventory.reset_fish_inventory_for_testing(true)
+
+	var marker := FileAccess.open(
+		CATCH_PIPELINE_CLEAN_TEST_MARKER,
+		FileAccess.WRITE
+	)
+	if marker == null:
+		push_warning(
+			"Fishing: could not create catch-pipeline clean-test marker."
+		)
+		return
+
+	marker.store_string("done")
+	marker.close()
+
+	print(
+		"Catch pipeline QA: fish records/inventory reset to zero once; "
+		+ "tackle preserved."
+	)
 
 
 func _get_or_create_fishing_progress() -> FishingProgress:
