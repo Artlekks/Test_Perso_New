@@ -1,6 +1,9 @@
 extends CanvasLayer
 class_name FishingMenu
 
+const EQUIP_LEFT_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left_Filled.png")
+const EQUIP_LEFT_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left.png")
+
 signal opened
 signal closed
 signal page_changed(page_name: StringName)
@@ -144,6 +147,14 @@ const DATA_FISH_BY_KEY: Dictionary = {
 ## Extra vertical correction applied only to the Yes row. No keeps the calibrated position.
 @export var exit_yes_extra_y: float = -4.0
 
+@export_category("Menu State Colors LIVE")
+## Multiplier applied to the bitmap font for inactive/disabled text.
+## Keep this above 1.0 because the glyph artwork itself is dark gray.
+@export var disabled_text_tint: Color = Color8(0xE1, 0xE1, 0xE1, 0x74)
+## Independent highlight for the accessory that is currently equipped.
+## This sits behind the row text and below the pink cursor selector.
+@export var equipped_accessory_highlight_color: Color = Color(0.68, 0.60, 0.22, 0.28)
+
 const NAV_REPEAT_DELAY: float = 0.28
 const NAV_REPEAT_INTERVAL: float = 0.085
 
@@ -190,6 +201,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var equip_rod_slot_label: Label = $Root/EquipPage/SlotPanel/RodSlotLabel
 @onready var equip_lure_slot_label: Label = $Root/EquipPage/SlotPanel/LureSlotLabel
 @onready var equip_accessory_list: ItemList = $Root/EquipPage/AccessoryPanel/AccessoryList
+@onready var equip_equipped_highlight: ColorRect = $Root/EquipPage/AccessoryPanel/EquippedHighlight
 @onready var equip_accessory_selector: TextureRect = $SelectorLayer/EquipRight
 @onready var equip_accessory_count_label: Label = $Root/EquipPage/AccessoryPanel/AccessoryCountLabel
 @onready var equip_guide_icon: TextureRect = $Root/EquipPage/GuidePanel/GuideIcon
@@ -1025,9 +1037,18 @@ func _place_native_selector_on_item(
 
 
 func _place_equip_left_selector() -> void:
-	if _page != Page.EQUIP or _equip_focus != EquipFocus.SLOT:
+	# BOF4 uses two visual states on the left:
+	# - SLOT focus: warm filled selector.
+	# - ACCESSORY focus: outline-only selector remains on the chosen category.
+	if _page != Page.EQUIP:
 		equip_slot_selector.visible = false
 		return
+
+	if _equip_focus == EquipFocus.SLOT:
+		equip_slot_selector.texture = EQUIP_LEFT_SELECTOR_FILLED
+	else:
+		equip_slot_selector.texture = EQUIP_LEFT_SELECTOR_OUTLINE
+
 	_place_native_selector_on_item(
 		equip_slot_list,
 		equip_slot_selector,
@@ -1144,15 +1165,16 @@ func _set_command_confirm_colors(confirming: bool) -> void:
 		return
 
 	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
-	# Bitmap glyphs are already dark; >1 RGB brightens the glyph artwork toward
-	# BOF4's light disabled gray while leaving the panel texture untouched.
-	var disabled_color := Color(2.2, 2.2, 2.2, 1.0)
+	var disabled_color: Color = disabled_text_tint
 
 	for item_index in range(command_list.item_count):
 		var color := normal_color
 		if confirming and item_index < COMMANDS.size() - 1:
 			color = disabled_color
 		command_list.set_item_custom_fg_color(item_index, color)
+
+	# Force the ItemList to repaint immediately when Exit confirmation opens/closes.
+	command_list.queue_redraw()
 
 func _hide_exit_confirm() -> void:
 	if not exit_confirm.visible or _exit_closing:
@@ -1280,6 +1302,7 @@ func _rebuild_equip_entries() -> void:
 		call_deferred("_place_equip_right_selector")
 
 	_update_equip_accessory_counter()
+	_update_equipped_accessory_highlight()
 
 
 func _format_accessory_row(display_name: String, count: int) -> String:
@@ -1307,6 +1330,7 @@ func _refresh_equip_selection() -> void:
 	_update_equip_slot_colors()
 	_update_equip_accessory_counter()
 	_update_equip_guide()
+	_update_equipped_accessory_highlight()
 
 
 func _update_equip_slot_colors() -> void:
@@ -1314,7 +1338,7 @@ func _update_equip_slot_colors() -> void:
 		return
 
 	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
-	var inactive_color := Color(2.2, 2.2, 2.2, 1.0)
+	var inactive_color: Color = disabled_text_tint
 
 	# SlotList is navigation-only; the dedicated labels let rod and lure have
 	# independent one-pixel placement without disturbing row geometry.
@@ -1328,6 +1352,38 @@ func _update_equip_slot_colors() -> void:
 			equip_lure_slot_label.add_theme_color_override("font_color", inactive_color)
 		elif _equip_slot_index == 1 and is_instance_valid(equip_rod_slot_label):
 			equip_rod_slot_label.add_theme_color_override("font_color", inactive_color)
+
+
+func _equipped_accessory_index() -> int:
+	if not is_instance_valid(_loadout) or _equip_entries.is_empty():
+		return -1
+
+	var selected_rod: RodData = _loadout.get_selected_rod()
+	var selected_lure: BaitData = _loadout.get_selected_lure()
+
+	for item_index in range(_equip_entries.size()):
+		var entry: Dictionary = _equip_entries[item_index]
+		var resource: Resource = entry.get("resource", null) as Resource
+
+		if _equip_slot_index == 0 and resource is RodData and selected_rod != null:
+			var rod: RodData = resource as RodData
+			if rod.rod_id == selected_rod.rod_id:
+				return item_index
+
+		elif _equip_slot_index == 1 and resource is BaitData and selected_lure != null:
+			var lure: BaitData = resource as BaitData
+			if lure.lure_id == selected_lure.lure_id:
+				return item_index
+
+	return -1
+
+
+func _update_equipped_accessory_highlight() -> void:
+	# BOF4 does not use a second independent equipped-row rectangle here.
+	# The left rod/lure category keeps its outline selector, while the Accessory
+	# list uses its own warm filled cursor selector.
+	if is_instance_valid(equip_equipped_highlight):
+		equip_equipped_highlight.visible = false
 
 
 func _update_equip_accessory_counter() -> void:

@@ -376,6 +376,16 @@ texture = ExtResource("10_accessory")
 expand_mode = 1
 stretch_mode = 0
 
+[node name="EquippedHighlight" type="ColorRect" parent="Root/EquipPage/AccessoryPanel"]
+visible = false
+layout_mode = 0
+offset_left = 6.0
+offset_top = 9.0
+offset_right = 119.5
+offset_bottom = 26.0
+color = Color(0.68, 0.60, 0.22, 0.28)
+mouse_filter = 2
+
 [node name="AccessoryList" type="ItemList" parent="Root/EquipPage/AccessoryPanel"]
 layout_mode = 0
 offset_left = 6
