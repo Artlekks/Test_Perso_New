@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
@@ -28,6 +28,12 @@
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Yes_No_Selector.png" id="26_exit_native"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Name_Panel_2.png" id="27_data_name_2"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Guide_Panel.png" id="28_data_guide"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Spinner_Dark.png" id="29_spinner_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Winder_Dark.png" id="30_winder_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Topper_Dark.png" id="31_topper_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Minnow_Dark.png" id="32_minnow_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Frogger_Dark.png" id="33_frogger_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Worm_Dark.png" id="34_worm_dark"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleEmpty"]
 
@@ -574,6 +580,84 @@ theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 text = ""
 clip_text = true
+
+[node name="SpinnerDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 35
+offset_top = 34
+offset_right = 47
+offset_bottom = 44
+texture = ExtResource("29_spinner_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="WinderDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 49
+offset_top = 33
+offset_right = 61
+offset_bottom = 45
+texture = ExtResource("30_winder_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="TopperDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 63
+offset_top = 35
+offset_right = 75
+offset_bottom = 45
+texture = ExtResource("31_topper_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="MinnowDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 77
+offset_top = 33
+offset_right = 89
+offset_bottom = 45
+texture = ExtResource("32_minnow_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="FroggerDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 91
+offset_top = 33
+offset_right = 103
+offset_bottom = 45
+texture = ExtResource("33_frogger_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="WormDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 105
+offset_top = 33
+offset_right = 117
+offset_bottom = 45
+texture = ExtResource("34_worm_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
 
 [node name="DetailPagePanels" type="Control" parent="Root/DataPage"]
 visible = false

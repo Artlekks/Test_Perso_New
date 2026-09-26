@@ -284,6 +284,35 @@ const DATA_GUIDE_COPY: Dictionary = {
 }
 
 
+# Data menu lure compatibility.
+# A listed family is dark/unavailable for that fish.
+# Display order in the baked panel is:
+# Spinner, Winder, Topper, Minnow, Frogger, Worm.
+const DATA_DARK_LURE_FAMILIES: Dictionary = {
+	"bass": [&"spinner", &"winder"],
+	"bluegill": [&"topper", &"minnow"],
+	"browntail": [&"frogger", &"worm"],
+	"blackbass": [&"spinner", &"winder"],
+	"rainbowtrout": [&"frogger", &"worm"],
+	"bullcat": [&"spinner", &"winder"],
+	"martiansquid": [&"spinner", &"topper", &"frogger"],
+	"dorado": [&"spinner", &"winder"],
+	"salmon": [&"spinner", &"winder"],
+	"barundi": [&"spinner", &"winder", &"topper", &"minnow"],
+	"sturgeon": [&"spinner", &"winder", &"topper", &"minnow"],
+	"blowfish": [&"topper", &"minnow"],
+	"flatfish": [&"frogger", &"worm"],
+	"seabream": [&"spinner", &"winder"],
+	"octopus": [&"spinner", &"topper", &"frogger"],
+	"bonito": [&"spinner", &"winder", &"frogger"],
+	"blackporgy": [&"spinner", &"winder"],
+	"angler": [&"spinner", &"winder"],
+	"spearfish": [&"frogger", &"worm"],
+	"whale": [&"frogger", &"worm"],
+}
+
+
+
 @export_category("Selector Calibration LIVE (screen pixels)")
 ## These selectors live outside the 2x-scaled 320x240 menu root, so every
 ## selector PNG renders at its authored pixel size with no stretching.
@@ -388,6 +417,12 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var data_size_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/SizeLabel
 @onready var data_points_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/PointsLabel
 @onready var data_point_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/PointLabel
+@onready var data_lure_spinner_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/SpinnerDark
+@onready var data_lure_winder_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/WinderDark
+@onready var data_lure_topper_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/TopperDark
+@onready var data_lure_minnow_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/MinnowDark
+@onready var data_lure_frogger_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/FroggerDark
+@onready var data_lure_worm_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/WormDark
 @onready var data_detail_panels: Control = $Root/DataPage/DetailPagePanels
 @onready var data_detail_name_label: Label = $Root/DataPage/DetailPagePanels/NamePanel/FishNameLabel
 @onready var data_detail_effect_label: Label = $Root/DataPage/DetailPagePanels/GuidePanel/EffectLabel
@@ -1809,6 +1844,7 @@ func _update_data_details() -> void:
 	data_points_label.text = "--"
 	data_point_label.text = "---"
 	data_caught_count_label.text = "00"
+	_set_data_lure_dark_overlays("", false)
 
 	if _data_entries.is_empty():
 		info_label.text = "No fishing data."
@@ -1829,7 +1865,10 @@ func _update_data_details() -> void:
 	if fish_data != null and fish_data.portrait != null:
 		data_portrait.texture = fish_data.portrait
 
-	if not bool(entry.get("discovered", false)):
+	var discovered: bool = bool(entry.get("discovered", false))
+	_set_data_lure_dark_overlays(fish_key, discovered)
+
+	if not discovered:
 		return
 
 	data_size_label.text = "%d" % int(round(float(entry.get("best_size", 0.0))))
@@ -1837,6 +1876,35 @@ func _update_data_details() -> void:
 	data_point_label.text = _get_primary_location_name(entry)
 	data_caught_count_label.text = "%02d" % int(entry.get("current_owned_count", 0))
 	_update_data_detail_content()
+
+
+func _set_data_lure_dark_overlays(
+	fish_key: String,
+	discovered: bool
+) -> void:
+	var dark_families: Array = DATA_DARK_LURE_FAMILIES.get(
+		fish_key,
+		[]
+	)
+
+	data_lure_spinner_dark.visible = (
+		discovered and dark_families.has(&"spinner")
+	)
+	data_lure_winder_dark.visible = (
+		discovered and dark_families.has(&"winder")
+	)
+	data_lure_topper_dark.visible = (
+		discovered and dark_families.has(&"topper")
+	)
+	data_lure_minnow_dark.visible = (
+		discovered and dark_families.has(&"minnow")
+	)
+	data_lure_frogger_dark.visible = (
+		discovered and dark_families.has(&"frogger")
+	)
+	data_lure_worm_dark.visible = (
+		discovered and dark_families.has(&"worm")
+	)
 
 
 func _update_data_detail_content() -> void:
