@@ -4,6 +4,56 @@ class_name FishingMenu
 const EQUIP_LEFT_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left_Filled.png")
 const EQUIP_LEFT_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left.png")
 
+# BOF4 Guide-panel lure icons.
+# Explicit lure-by-lure mapping keeps the menu deterministic and avoids
+# depending on a generic lure_type classification for presentation.
+const LURE_GUIDE_ICONS: Dictionary = {
+	&"straight": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Worm.png"),
+	&"tail": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Worm.png"),
+	&"crab": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Worm.png"),
+
+	&"baby_frog": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Frogger.png"),
+	&"toad": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Frogger.png"),
+	&"fat_frog": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Frogger.png"),
+	&"king_frog": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Frogger.png"),
+
+	&"popper": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Topper.png"),
+	&"flattop": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Topper.png"),
+	&"swisher": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Topper.png"),
+
+	&"floater": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Minnow.png"),
+	&"hanger": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Minnow.png"),
+	&"deep_diver": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Minnow.png"),
+
+	&"twister": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Winder.png"),
+	&"warbler": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Winder.png"),
+	&"dancer": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Winder.png"),
+
+	&"silver_top": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Spinner.png"),
+	&"gold_top": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Spinner.png"),
+	&"platinum_top": preload("res://assets/ui/fishing_menu/lure_icons/Icon_Spinner.png"),
+}
+
+
+const ROD_GUIDE_TITLES: Dictionary = {
+	&"wooden_rod": "For beginners",
+	&"deluxe_rod": "Fancy rod",
+	&"bamboo_rod": "Bamboo rod",
+	&"spanner": "Super Rod",
+	&"angling_rod": "Good range",
+	&"masters_rod": "Ultimate Rod",
+}
+
+const LURE_GUIDE_TYPE_LABELS: Dictionary = {
+	LureType.Type.WORM: "Worm",
+	LureType.Type.FROG: "Frogger",
+	LureType.Type.TOPPER: "Topper",
+	LureType.Type.MINNOW: "Minnow",
+	LureType.Type.WINDER: "Winder",
+	LureType.Type.SPINNER: "Spinner",
+}
+
+
 signal opened
 signal closed
 signal page_changed(page_name: StringName)
@@ -1478,35 +1528,35 @@ func _update_equip_guide() -> void:
 
 	if resource is RodData:
 		var rod: RodData = resource as RodData
-		var description_parts: PackedStringArray = rod.description.split(";", false, 1)
-		if description_parts.size() >= 2:
-			var guide_title: String = str(description_parts[0]).strip_edges()
-			if not guide_title.to_lower().ends_with("rod"):
-				guide_title += " Rod"
-			equip_guide_title_label.text = guide_title
-			var guide_body: String = str(description_parts[1]).strip_edges()
-			if not guide_body.is_empty():
-				guide_body = guide_body.left(1).to_upper() + guide_body.substr(1)
-			equip_guide_description_label.text = "%s\nPower Level: %s" % [
-				guide_body,
-				rod.power_level_label,
-			]
-		else:
-			equip_guide_title_label.text = rod.rod_name
-			equip_guide_description_label.text = "%s\nPower Level: %s" % [
-				rod.description,
-				rod.power_level_label,
-			]
+		equip_guide_title_label.text = str(
+			ROD_GUIDE_TITLES.get(rod.rod_id, rod.rod_name)
+		)
+		equip_guide_description_label.text = "%s
+Power Level: %s" % [
+			rod.description,
+			rod.power_level_label,
+		]
 
 	elif resource is BaitData:
 		var lure: BaitData = resource as BaitData
 		if lure.lure_id == &"spoon" or lure.lure_id == &"king_frog":
 			equip_guide_title_label.text = "Ultimate Lure"
 		else:
-			equip_guide_title_label.text = "Lv %d %s" % [
+			var lure_type_label: String = str(
+				LURE_GUIDE_TYPE_LABELS.get(
+					lure.lure_type,
+					lure.get_type_label()
+				)
+			)
+			equip_guide_title_label.text = "LV %d %s" % [
 				lure.level,
-				lure.get_type_label(),
+				lure_type_label,
 			]
+
+		equip_guide_icon.texture = LURE_GUIDE_ICONS.get(
+			lure.lure_id,
+			null
+		) as Texture2D
 		equip_guide_description_label.text = lure.description
 
 

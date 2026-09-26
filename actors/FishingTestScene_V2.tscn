@@ -57,7 +57,7 @@
 [ext_resource type="Script" uid="uid://bikrpbvei4d02" path="res://scripts/fishing_info_controller.gd" id="58_1hrhd"]
 [ext_resource type="Script" uid="uid://duoxl2rtj55jb" path="res://scripts/fishing_loadout.gd" id="59_loadout"]
 [ext_resource type="Resource" uid="uid://jfv2tn7hn7lu" path="res://data/bof4/rods/wooden_rod.tres" id="60_wooden_rod"]
-[ext_resource type="Resource" path="res://data/bof4/lures/all_lures.tres" id="61_lure_catalog"]
+[ext_resource type="Resource" uid="uid://c4aeeldxwabcb" path="res://data/bof4/lures/all_lures.tres" id="61_lure_catalog"]
 [ext_resource type="Resource" uid="uid://bdpul13jusncl" path="res://data/bof4/lures/straight.tres" id="62_straight"]
 [ext_resource type="PackedScene" path="res://actors/FishingLureSelectorView.tscn" id="63_lure_selector"]
 [ext_resource type="Script" uid="uid://vbd5g476jff" path="res://scripts/fishing_line_view.gd" id="64_fishing_line"]

@@ -6,8 +6,8 @@
 script = ExtResource("1_rod")
 rod_id = &"masters_rod"
 rod_name = "Master's Rod"
-power_level_label = "MAX"
-description = "The ultimate rod. Can be used to catch anything."
+power_level_label = "Max"
+description = "Can be used to catch anything."
 acquisition_method = "Master Gyosil: 9500 points."
 cast_speed_multiplier = 1.35
 reel_speed_multiplier = 1.2
