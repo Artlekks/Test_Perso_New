@@ -1,5 +1,7 @@
 extends Area3D
 
+signal fishing_spot_changed(spot: FishingSpotData)
+
 @export var facing_tolerance_degrees: float = 60.0
 @export var fishing_spot: FishingSpotData
 
@@ -57,6 +59,8 @@ func set_fishing_spot(new_spot: FishingSpotData) -> void:
 
 	if shadow_presence != null and shadow_presence.has_method("rebuild_population"):
 		shadow_presence.rebuild_population()
+
+	fishing_spot_changed.emit(fishing_spot)
 
 
 func set_debug_shadow_overrides(fish: FishData, count: int) -> void:
