@@ -182,6 +182,22 @@ const DATA_FISH_BY_KEY: Dictionary = {
 	"acheron": preload("res://data/bof4/fish/acheron.tres"),
 }
 
+
+# Data Page 2 guide copy confirmed directly from the supplied BOF4 screenshots.
+# Other species fall back to the project's existing source_effect metadata until
+# their exact in-game Guide text is supplied.
+const DATA_GUIDE_COPY: Dictionary = {
+	"sweetfish": {
+		"title": "Restores AP",
+		"body": "Considered a delicacy in many parts of the world.",
+	},
+	"bullcat": {
+		"title": "Fir+Ear attack",
+		"body": "Bottomdweller used to make Dynamite.",
+	},
+}
+
+
 @export_category("Selector Calibration LIVE (screen pixels)")
 ## These selectors live outside the 2x-scaled 320x240 menu root, so every
 ## selector PNG renders at its authored pixel size with no stretching.
@@ -233,6 +249,8 @@ const EQUIP_GUIDE_Y: float = 104.0
 const EQUIP_ACCESSORY_X: float = 167.0
 const DATA_NAME_X: float = 16.0
 const DATA_DETAILS_X: float = 0.0
+const DATA_DETAILS_DETAIL_X: float = -140.0
+const DATA_DETAIL_PANELS_X: float = 0.0
 const HINT_X: float = 63.0
 const OFF_LEFT_X: float = -160.0
 const OFF_RIGHT_X: float = 330.0
@@ -284,6 +302,11 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var data_size_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/SizeLabel
 @onready var data_points_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/PointsLabel
 @onready var data_point_label: Label = $Root/DataPage/DetailsPanel/RecordPanel/PointLabel
+@onready var data_detail_panels: Control = $Root/DataPage/DetailPagePanels
+@onready var data_detail_name_label: Label = $Root/DataPage/DetailPagePanels/NamePanel/FishNameLabel
+@onready var data_detail_effect_label: Label = $Root/DataPage/DetailPagePanels/GuidePanel/EffectLabel
+@onready var data_detail_guide_label: Label = $Root/DataPage/DetailPagePanels/GuidePanel/GuideTextLabel
+@onready var data_detail_avg_label: Label = $Root/DataPage/DetailPagePanels/GuidePanel/AvgValueLabel
 
 @onready var help_page: Control = $Root/HelpPage
 @onready var help_list: ItemList = $Root/HelpPage/TopicPanel/TopicList
@@ -319,6 +342,7 @@ var _equip_entries: Array[Dictionary] = []
 var _data_index: int = 0
 var _data_window_start: int = 0
 var _data_entries: Array[Dictionary] = []
+var _data_detail_open: bool = false
 var _help_index: int = 0
 var _hint_index: int = 0
 var _exit_index: int = 1
@@ -516,6 +540,8 @@ func _handle_vertical_navigation(step: int) -> void:
 				_refresh_equip_selection()
 
 		Page.DATA:
+			if _data_detail_open:
+				return
 			if not _data_entries.is_empty():
 				_data_index = clampi(_data_index + step, 0, _data_entries.size() - 1)
 				data_species_list.select(_data_index)
@@ -640,6 +666,11 @@ func _set_page(page: int) -> void:
 			info_label.text = "Equip a rod and lure."
 			_refresh_equip_page()
 		Page.DATA:
+			_data_detail_open = false
+			data_detail_panels.visible = false
+			data_detail_panels.position.x = OFF_RIGHT_X
+			data_species_panel.position.x = DATA_NAME_X
+			data_details_panel.position.x = DATA_DETAILS_X
 			_refresh_data_page()
 		Page.HELP:
 			info_label.text = "Learn How To Fish - Select a topic."
@@ -682,6 +713,10 @@ func _handle_cancel() -> void:
 		_equip_focus = EquipFocus.SLOT
 		_refresh_equip_selection()
 		_sync_selector_visibility()
+		return
+
+	if _page == Page.DATA and _data_detail_open:
+		_transition_data_detail(false)
 		return
 
 	_transition_to_main()
@@ -754,8 +789,22 @@ func _handle_equip_input(event: InputEvent) -> void:
 
 
 func _handle_data_input(event: InputEvent) -> void:
+	if _data_entries.is_empty():
+		return
+
+	if _data_detail_open:
+		if _horizontal_step(event) != 0 or _is_confirm(event):
+			_transition_data_detail(false)
+		return
+
+	if _is_confirm(event):
+		var entry: Dictionary = _data_entries[_data_index]
+		if bool(entry.get("discovered", false)):
+			_transition_data_detail(true)
+		return
+
 	var step: int = _vertical_step(event)
-	if step == 0 or _data_entries.is_empty():
+	if step == 0:
 		return
 
 	_data_index = clampi(_data_index + step, 0, _data_entries.size() - 1)
@@ -849,6 +898,9 @@ func _reset_panel_positions() -> void:
 
 	data_species_panel.position.x = DATA_NAME_X
 	data_details_panel.position.x = DATA_DETAILS_X
+	data_detail_panels.position.x = OFF_RIGHT_X
+	data_detail_panels.visible = false
+	_data_detail_open = false
 	hints_topic_panel.position.x = HINT_X
 
 	exit_panel.scale = Vector2.ONE
@@ -879,6 +931,9 @@ func _transition_from_main(target_page: int) -> void:
 			_refresh_equip_page()
 		Page.DATA:
 			data_page.visible = true
+			_data_detail_open = false
+			data_detail_panels.visible = false
+			data_detail_panels.position.x = OFF_RIGHT_X
 			data_species_panel.position.x = OFF_LEFT_X
 			data_details_panel.position.x = OFF_RIGHT_X
 			_refresh_data_page()
@@ -966,6 +1021,13 @@ func _transition_to_main() -> void:
 		Page.DATA:
 			outgoing.tween_property(data_species_panel, "position:x", OFF_LEFT_X, TRANSITION_OUT_TIME)
 			outgoing.tween_property(data_details_panel, "position:x", OFF_RIGHT_X, TRANSITION_OUT_TIME)
+			if data_detail_panels.visible:
+				outgoing.tween_property(
+					data_detail_panels,
+					"position:x",
+					OFF_RIGHT_X,
+					TRANSITION_OUT_TIME
+				)
 		Page.HINTS:
 			outgoing.tween_property(hints_topic_panel, "position:x", OFF_RIGHT_X, TRANSITION_OUT_TIME)
 
@@ -977,6 +1039,8 @@ func _transition_to_main() -> void:
 
 	equip_page.visible = false
 	data_page.visible = false
+	data_detail_panels.visible = false
+	_data_detail_open = false
 	hints_page.visible = false
 	main_page.visible = true
 
@@ -1151,7 +1215,7 @@ func _place_equip_right_selector() -> void:
 
 
 func _place_data_selector() -> void:
-	if _page != Page.DATA or _data_entries.is_empty():
+	if _page != Page.DATA or _data_detail_open or _data_entries.is_empty():
 		data_species_selector.visible = false
 		return
 	_place_native_selector_on_item(
@@ -1666,7 +1730,10 @@ func _update_data_details() -> void:
 
 	var entry: Dictionary = _data_entries[_data_index]
 	var fish_name: String = str(entry.get("display_name", "????"))
-	info_label.text = "View data on %s" % fish_name
+	if _data_detail_open:
+		info_label.text = "Directional buttons: Change page"
+	else:
+		info_label.text = "View data on %s" % fish_name
 
 	# Preview identity comes directly from the FishData database. FishData owns
 	# the AtlasTexture region, so every canonical name always resolves to the
@@ -1683,6 +1750,132 @@ func _update_data_details() -> void:
 	data_points_label.text = "%d" % int(entry.get("best_points", 0))
 	data_point_label.text = _get_primary_location_name(entry)
 	data_caught_count_label.text = "%02d" % int(entry.get("current_owned_count", 0))
+	_update_data_detail_content()
+
+
+func _update_data_detail_content() -> void:
+	data_detail_name_label.text = ""
+	data_detail_effect_label.text = ""
+	data_detail_guide_label.text = ""
+	data_detail_avg_label.text = ""
+
+	if _data_entries.is_empty():
+		return
+
+	var entry: Dictionary = _data_entries[_data_index]
+	if not bool(entry.get("discovered", false)):
+		return
+
+	var fish_name: String = str(entry.get("display_name", ""))
+	var fish_key: String = _canonical_species_key(fish_name)
+	var fish_data: FishData = DATA_FISH_BY_KEY.get(fish_key) as FishData
+
+	data_detail_name_label.text = fish_name
+
+	if fish_data != null:
+		data_detail_avg_label.text = "%d" % int(round(fish_data.average_size))
+
+	var confirmed_copy: Dictionary = DATA_GUIDE_COPY.get(fish_key, {})
+	if not confirmed_copy.is_empty():
+		data_detail_effect_label.text = str(
+			confirmed_copy.get("title", "")
+		)
+		data_detail_guide_label.text = str(
+			confirmed_copy.get("body", "")
+		)
+		return
+
+	# Temporary fallback until the exact original BOF4 Guide wording for each
+	# species is supplied.
+	if fish_data != null:
+		data_detail_effect_label.text = str(
+			fish_data.get_meta("source_effect", "")
+		)
+
+	var fallback_location: String = _get_primary_location_name(entry)
+	if fallback_location.is_empty():
+		data_detail_guide_label.text = "Fishing data recorded for this species."
+	else:
+		data_detail_guide_label.text = "Found around %s." % fallback_location
+
+
+func _transition_data_detail(open_detail: bool) -> void:
+	if _transitioning or _page != Page.DATA:
+		return
+	if open_detail == _data_detail_open:
+		return
+	if _data_entries.is_empty():
+		return
+
+	if open_detail:
+		var entry: Dictionary = _data_entries[_data_index]
+		if not bool(entry.get("discovered", false)):
+			return
+
+	_transitioning = true
+	_hide_all_selector_overlays()
+	_update_data_detail_content()
+
+	if open_detail:
+		_data_detail_open = true
+		info_label.text = "Directional buttons: Change page"
+		data_detail_panels.visible = true
+		data_detail_panels.position.x = OFF_RIGHT_X
+
+		var tween_in := create_tween()
+		tween_in.set_trans(Tween.TRANS_CUBIC)
+		tween_in.set_ease(Tween.EASE_IN_OUT)
+		tween_in.set_parallel(true)
+		tween_in.tween_property(
+			data_species_panel,
+			"position:x",
+			OFF_LEFT_X,
+			TRANSITION_IN_TIME
+		)
+		tween_in.tween_property(
+			data_details_panel,
+			"position:x",
+			DATA_DETAILS_DETAIL_X,
+			TRANSITION_IN_TIME
+		)
+		tween_in.tween_property(
+			data_detail_panels,
+			"position:x",
+			DATA_DETAIL_PANELS_X,
+			TRANSITION_IN_TIME
+		)
+		await tween_in.finished
+	else:
+		var tween_out := create_tween()
+		tween_out.set_trans(Tween.TRANS_CUBIC)
+		tween_out.set_ease(Tween.EASE_IN_OUT)
+		tween_out.set_parallel(true)
+		tween_out.tween_property(
+			data_species_panel,
+			"position:x",
+			DATA_NAME_X,
+			TRANSITION_OUT_TIME
+		)
+		tween_out.tween_property(
+			data_details_panel,
+			"position:x",
+			DATA_DETAILS_X,
+			TRANSITION_OUT_TIME
+		)
+		tween_out.tween_property(
+			data_detail_panels,
+			"position:x",
+			OFF_RIGHT_X,
+			TRANSITION_OUT_TIME
+		)
+		await tween_out.finished
+
+		data_detail_panels.visible = false
+		_data_detail_open = false
+		_update_data_details()
+
+	_transitioning = false
+	_sync_selector_visibility()
 
 
 func _sync_data_selector_window() -> void:

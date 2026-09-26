@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
@@ -26,6 +26,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Name_Selector.png" id="24_data_native"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Hint_Panel_Selector.png" id="25_hint_native"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Yes_No_Selector.png" id="26_exit_native"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Name_Panel_2.png" id="27_data_name_2"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Guide_Panel.png" id="28_data_guide"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleEmpty"]
 
@@ -572,6 +574,91 @@ theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 text = ""
 clip_text = true
+
+[node name="DetailPagePanels" type="Control" parent="Root/DataPage"]
+visible = false
+layout_mode = 0
+offset_right = 320
+offset_bottom = 240
+mouse_filter = 2
+
+[node name="NamePanel" type="TextureRect" parent="Root/DataPage/DetailPagePanels"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 166
+offset_top = 58
+offset_right = 304
+offset_bottom = 92
+texture = ExtResource("27_data_name_2")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="FishNameLabel" type="Label" parent="Root/DataPage/DetailPagePanels/NamePanel"]
+layout_mode = 0
+offset_left = 8
+offset_top = 14
+offset_right = 130
+offset_bottom = 28
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+horizontal_alignment = 1
+clip_text = true
+mouse_filter = 2
+
+[node name="GuidePanel" type="TextureRect" parent="Root/DataPage/DetailPagePanels"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 166
+offset_top = 92
+offset_right = 304
+offset_bottom = 220
+texture = ExtResource("28_data_guide")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="EffectLabel" type="Label" parent="Root/DataPage/DetailPagePanels/GuidePanel"]
+layout_mode = 0
+offset_left = 6
+offset_top = 14
+offset_right = 128
+offset_bottom = 27
+theme_override_colors/font_color = Color(0.396078, 0.686275, 0.882353, 0.454902)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+clip_text = true
+mouse_filter = 2
+
+[node name="GuideTextLabel" type="Label" parent="Root/DataPage/DetailPagePanels/GuidePanel"]
+layout_mode = 0
+offset_left = 6
+offset_top = 35
+offset_right = 128
+offset_bottom = 105
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+autowrap_mode = 2
+clip_text = true
+mouse_filter = 2
+
+[node name="AvgValueLabel" type="Label" parent="Root/DataPage/DetailPagePanels/GuidePanel"]
+layout_mode = 0
+offset_left = 42
+offset_top = 103
+offset_right = 114
+offset_bottom = 119
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ""
+clip_text = true
+mouse_filter = 2
 
 [node name="HelpPage" type="Control" parent="Root"]
 visible = false
