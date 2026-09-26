@@ -403,6 +403,19 @@ theme_override_styles/selected = SubResource("StyleEmpty")
 theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
 
+[node name="ScrollThumb" type="TextureRect" parent="Root/EquipPage/AccessoryPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 129
+offset_top = 45
+offset_right = 131
+offset_bottom = 79
+texture = ExtResource("19_data_bar")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
 [node name="AccessoryCountLabel" type="Label" parent="Root/EquipPage/AccessoryPanel"]
 layout_mode = 0
 offset_left = 74

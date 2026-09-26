@@ -155,6 +155,13 @@ const DATA_FISH_BY_KEY: Dictionary = {
 ## This sits behind the row text and below the pink cursor selector.
 @export var equipped_accessory_highlight_color: Color = Color(0.68, 0.60, 0.22, 0.28)
 
+@export_category("Equip QA")
+## Development-only convenience. When enabled, the Equip page lists every rod
+## and lure in the tackle catalog even when the save inventory does not own it.
+## Unowned entries are shown as quantity 01 and may be equipped for testing,
+## but the real FishingInventory is not modified.
+@export var show_full_tackle_catalog_for_testing: bool = true
+
 const BOF_STANDARD_ADVANCE_PX: int = 8
 const BOF_NARROW_ADVANCE_PX: int = 4
 const ACCESSORY_NAME_COLUMN_WIDTH_PX: int = 104
@@ -209,6 +216,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var equip_equipped_highlight: ColorRect = $Root/EquipPage/AccessoryPanel/EquippedHighlight
 @onready var equip_accessory_selector: TextureRect = $SelectorLayer/EquipRight
 @onready var equip_accessory_count_label: Label = $Root/EquipPage/AccessoryPanel/AccessoryCountLabel
+@onready var equip_scroll_thumb: TextureRect = $Root/EquipPage/AccessoryPanel/ScrollThumb
 @onready var equip_guide_icon: TextureRect = $Root/EquipPage/GuidePanel/GuideIcon
 @onready var equip_guide_title_label: Label = $Root/EquipPage/GuidePanel/GuideTitleLabel
 @onready var equip_guide_description_label: Label = $Root/EquipPage/GuidePanel/GuideDescriptionLabel
@@ -253,6 +261,7 @@ var _command_index: int = 0
 var _equip_focus: int = EquipFocus.SLOT
 var _equip_slot_index: int = 0
 var _equip_accessory_index: int = 0
+var _equip_window_start: int = 0
 var _equip_entries: Array[Dictionary] = []
 var _data_index: int = 0
 var _data_window_start: int = 0
@@ -275,6 +284,7 @@ func _ready() -> void:
 	selector_layer.visible = false
 
 	_fill_static_lists()
+	_configure_equip_accessory_list_visuals()
 	_configure_data_list_visuals()
 	_configure_hint_list_visuals()
 	_configure_selector_overlays()
@@ -440,6 +450,7 @@ func _handle_vertical_navigation(step: int) -> void:
 			if _equip_focus == EquipFocus.SLOT:
 				_equip_slot_index = clampi(_equip_slot_index + step, 0, 1)
 				_equip_accessory_index = 0
+				_equip_window_start = 0
 				_refresh_equip_page()
 				_update_equip_slot_selector()
 			elif not _equip_entries.is_empty():
@@ -655,6 +666,7 @@ func _handle_equip_input(event: InputEvent) -> void:
 		if slot_step != 0:
 			_equip_slot_index = clampi(_equip_slot_index + slot_step, 0, 1)
 			_equip_accessory_index = 0
+			_equip_window_start = 0
 			_refresh_equip_page()
 			_update_equip_slot_selector()
 			return
@@ -1063,13 +1075,23 @@ func _place_equip_left_selector() -> void:
 
 
 func _place_equip_right_selector() -> void:
-	if _page != Page.EQUIP or _equip_focus != EquipFocus.ACCESSORY or _equip_entries.is_empty():
+	if (
+		_page != Page.EQUIP
+		or _equip_focus != EquipFocus.ACCESSORY
+		or _equip_entries.is_empty()
+	):
 		equip_accessory_selector.visible = false
 		return
+
+	var visible_row: int = _equip_accessory_index - _equip_window_start
+	if visible_row < 0 or visible_row >= equip_accessory_list.item_count:
+		equip_accessory_selector.visible = false
+		return
+
 	_place_native_selector_on_item(
 		equip_accessory_list,
 		equip_accessory_selector,
-		_equip_accessory_index,
+		visible_row,
 		equip_right_selector_offset
 	)
 
@@ -1279,9 +1301,10 @@ func _rebuild_equip_entries() -> void:
 			if is_instance_valid(_inventory):
 				count = _inventory.get_rod_count(rod.rod_id)
 			if count <= 0:
-				continue
+				if not show_full_tackle_catalog_for_testing:
+					continue
+				count = 1
 			_equip_entries.append({"kind": "rod", "resource": rod, "count": count})
-			equip_accessory_list.add_item(_format_accessory_row(rod.rod_name, count))
 	else:
 		if _tackle_catalog.lure_catalog != null:
 			for lure in _tackle_catalog.lure_catalog.lures:
@@ -1291,23 +1314,27 @@ func _rebuild_equip_entries() -> void:
 				if is_instance_valid(_inventory):
 					count = _inventory.get_lure_count(lure.lure_id)
 				if count <= 0:
-					continue
+					if not show_full_tackle_catalog_for_testing:
+						continue
+					count = 1
 				_equip_entries.append({"kind": "lure", "resource": lure, "count": count})
-				equip_accessory_list.add_item(_format_accessory_row(lure.display_name, count))
 
 	if _equip_entries.is_empty():
 		_equip_accessory_index = 0
+		_equip_window_start = 0
 	else:
 		_equip_accessory_index = clampi(
 			_equip_accessory_index,
 			0,
 			_equip_entries.size() - 1
 		)
-		equip_accessory_list.select(_equip_accessory_index)
-		call_deferred("_place_equip_right_selector")
 
+	_sync_equip_selector_window()
+	_refresh_equip_visible_rows()
+	_update_equip_scroll_thumb()
 	_update_equip_accessory_counter()
 	_update_equipped_accessory_highlight()
+	call_deferred("_place_equip_right_selector")
 
 
 func _format_accessory_row(display_name: String, count: int) -> String:
@@ -1344,9 +1371,12 @@ func _bof_text_advance_px(value: String) -> int:
 func _refresh_equip_selection() -> void:
 	equip_slot_list.select(_equip_slot_index)
 	_update_equip_slot_selector()
+
 	if not _equip_entries.is_empty():
-		equip_accessory_list.select(_equip_accessory_index)
-		equip_accessory_list.ensure_current_is_visible()
+		_sync_equip_selector_window()
+		_refresh_equip_visible_rows()
+		_update_equip_scroll_thumb()
+
 	call_deferred("_place_equip_right_selector")
 
 	if _equip_focus == EquipFocus.SLOT:
@@ -1470,10 +1500,13 @@ func _update_equip_guide() -> void:
 
 	elif resource is BaitData:
 		var lure: BaitData = resource as BaitData
-		equip_guide_title_label.text = "Lv %d %s" % [
-			lure.level,
-			lure.get_type_label(),
-		]
+		if lure.lure_id == &"spoon" or lure.lure_id == &"king_frog":
+			equip_guide_title_label.text = "Ultimate Lure"
+		else:
+			equip_guide_title_label.text = "Lv %d %s" % [
+				lure.level,
+				lure.get_type_label(),
+			]
 		equip_guide_description_label.text = lure.description
 
 
@@ -1486,9 +1519,17 @@ func _equip_selected_accessory() -> void:
 	var equipped: bool = false
 
 	if resource is RodData:
-		equipped = _loadout.equip_owned_rod(resource as RodData)
+		if show_full_tackle_catalog_for_testing:
+			_loadout.equip_rod(resource as RodData)
+			equipped = _loadout.get_selected_rod() == resource
+		else:
+			equipped = _loadout.equip_owned_rod(resource as RodData)
 	elif resource is BaitData:
-		equipped = _loadout.equip_owned_lure(resource as BaitData)
+		if show_full_tackle_catalog_for_testing:
+			_loadout.equip_lure(resource as BaitData)
+			equipped = _loadout.get_selected_lure() == resource
+		else:
+			equipped = _loadout.equip_owned_lure(resource as BaitData)
 
 	if equipped:
 		info_label.text = "Equipped %s." % _resource_display_name(resource)
@@ -1628,6 +1669,114 @@ func _update_data_selector() -> void:
 	call_deferred("_place_data_selector")
 
 
+func _configure_equip_accessory_list_visuals() -> void:
+	# Keep ItemList scrolling logic, but hide Godot's native grey scrollbar.
+	# BOF4 uses the same thin yellow custom thumb as the Data page.
+	if is_instance_valid(equip_accessory_list):
+		var native_scrollbar: VScrollBar = equip_accessory_list.get_v_scroll_bar()
+		if is_instance_valid(native_scrollbar):
+			native_scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
+			native_scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			native_scrollbar.value = 0.0
+
+	_update_equip_scroll_thumb()
+
+
+func _sync_equip_selector_window() -> void:
+	const visible_rows: int = 8
+
+	if _equip_entries.is_empty():
+		_equip_window_start = 0
+		return
+
+	if _equip_accessory_index < _equip_window_start:
+		_equip_window_start = _equip_accessory_index
+	elif _equip_accessory_index >= _equip_window_start + visible_rows:
+		_equip_window_start = _equip_accessory_index - visible_rows + 1
+
+	_equip_window_start = clampi(
+		_equip_window_start,
+		0,
+		maxi(_equip_entries.size() - visible_rows, 0)
+	)
+
+
+func _refresh_equip_visible_rows() -> void:
+	# Equip deliberately does NOT use ItemList's native scrolling anymore.
+	# Only the current eight-row BOF4 window exists in the ItemList. This keeps
+	# fast W/S hold-repeat deterministic and prevents the selector from being
+	# displaced by a hidden Godot scrollbar that is one frame out of sync.
+	const visible_rows: int = 8
+
+	equip_accessory_list.clear()
+
+	if _equip_entries.is_empty():
+		return
+
+	var window_end: int = mini(
+		_equip_window_start + visible_rows,
+		_equip_entries.size()
+	)
+
+	for global_index in range(_equip_window_start, window_end):
+		var entry: Dictionary = _equip_entries[global_index]
+		var resource: Resource = entry.get("resource", null) as Resource
+		var count: int = int(entry.get("count", 0))
+		var display_name: String = _resource_display_name(resource)
+		equip_accessory_list.add_item(
+			_format_accessory_row(display_name, count)
+		)
+
+	var visible_index: int = _equip_accessory_index - _equip_window_start
+	if visible_index >= 0 and visible_index < equip_accessory_list.item_count:
+		equip_accessory_list.select(visible_index)
+
+
+func _update_equip_scroll_thumb() -> void:
+	if not is_instance_valid(equip_scroll_thumb):
+		return
+
+	var total_entries: int = _equip_entries.size()
+	if total_entries <= 0:
+		equip_scroll_thumb.visible = false
+		return
+
+	equip_scroll_thumb.visible = true
+
+	# BOF4 track geometry inside the Accessory panel.
+	const visible_rows: int = 8
+	const track_top_y: float = 45.0
+	const track_end_y: float = 152.0
+	const scrolling_thumb_height: float = 34.0
+	const scrolling_thumb_bottom_y: float = (
+		track_end_y - scrolling_thumb_height
+	)
+
+	if total_entries <= visible_rows:
+		# All rods fit on one page. A full-height yellow bar communicates that
+		# this IS the complete page and there is nowhere further to scroll.
+		equip_scroll_thumb.position.y = track_top_y
+		equip_scroll_thumb.size.y = track_end_y - track_top_y
+		return
+
+	# Lures have multiple pages. Restore the normal BOF4 thumb size and move it
+	# according to our explicit eight-row window.
+	equip_scroll_thumb.size.y = scrolling_thumb_height
+
+	var max_window_start: int = maxi(total_entries - visible_rows, 0)
+	var ratio: float = 0.0
+	if max_window_start > 0:
+		ratio = clampf(
+			float(_equip_window_start) / float(max_window_start),
+			0.0,
+			1.0
+		)
+
+	equip_scroll_thumb.position.y = roundf(
+		lerpf(track_top_y, scrolling_thumb_bottom_y, ratio)
+	)
+
+
 func _configure_data_list_visuals() -> void:
 	# ItemList keeps its internal scrollbar for scrolling logic, but BOF4 draws
 	# its own thin L1/R1 indicator. Hide only the native Godot visual.
@@ -1661,7 +1810,7 @@ func _update_data_scroll_thumb() -> void:
 	# eight-row viewport, so it moves only when the list itself scrolls.
 	const visible_rows: int = 8
 	const track_top_y: float = 45.0
-	const track_bottom_y: float = 112.0
+	const track_bottom_y: float = 118.0
 	var max_window_start: int = maxi(_data_entries.size() - visible_rows, 0)
 	var ratio: float = 0.0
 	if max_window_start > 0:

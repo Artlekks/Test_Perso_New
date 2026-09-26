@@ -6,8 +6,8 @@
 script = ExtResource("1_bait")
 lure_id = &"straight"
 display_name = "Straight"
-description = "Basic worm shape."
-metadata/acquisition = "Buy: Sarai/Shyde (20z)."
-metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Baseline worm; full-column sink."
+description = "Lure shaped like a worm. Can be used to catch various fish."
 bottom_snag_resistance = 0.55
 obstacle_snag_resistance = 0.35
+metadata/acquisition = "Buy: Sarai/Shyde (20z)."
+metadata/mechanics_note = "Authored first-pass gameplay tuning; not claimed as canonical BOF4 numeric physics. Baseline worm; full-column sink."

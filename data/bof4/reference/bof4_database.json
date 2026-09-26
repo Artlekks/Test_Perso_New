@@ -1488,7 +1488,7 @@
         "name": "Straight",
         "type": "Worm",
         "level": 1,
-        "description": "Basic worm shape.",
+        "description": "Lure shaped like a worm. Can be used to catch various fish.",
         "acquisition": "Buy: Sarai/Shyde (20z)."
       },
       {
@@ -1496,7 +1496,7 @@
         "name": "Tail",
         "type": "Worm",
         "level": 2,
-        "description": "Balanced, long range.",
+        "description": "Good balance; has a long range and is easy to use.",
         "acquisition": "Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."
       },
       {
@@ -1504,7 +1504,7 @@
         "name": "Crab",
         "type": "Worm",
         "level": 3,
-        "description": "Rises on reel; for bottom fish.",
+        "description": "Rises slightly when wound. Good for catching bottomdwellers.",
         "acquisition": "Trade: Lyp (Black Bass x1, Blue Gill x1, Piranha x1)."
       },
       {
@@ -1512,7 +1512,7 @@
         "name": "Baby Frog",
         "type": "Frog",
         "level": 1,
-        "description": "Doesn't sink easily.",
+        "description": "Lure shaped like a frog; doesn't sink even if moved.",
         "acquisition": "Buy: Sarai/Shyde (20z)."
       },
       {
@@ -1520,7 +1520,7 @@
         "name": "Toad",
         "type": "Frog",
         "level": 2,
-        "description": "Sinks slow, rises quick.",
+        "description": "Sinks slowly but rises quickly. Has a cute pink color.",
         "acquisition": "Drop: Tadpole (Kyria/Synesta); Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."
       },
       {
@@ -1528,7 +1528,7 @@
         "name": "Fat Frog",
         "type": "Frog",
         "level": 3,
-        "description": "Best frog; attractive.",
+        "description": "Best frogger; has an almost prideful look on its face.",
         "acquisition": "Drop: Mud Pup (Fane); Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
       },
       {
@@ -1536,7 +1536,7 @@
         "name": "Popper",
         "type": "Topper",
         "level": 1,
-        "description": "Noisy, surface.",
+        "description": "Makes a noise when wound. Will not sink even if moved.",
         "acquisition": "Drop: Ghost (N. Chamba); Buy: Lyp (20z)."
       },
       {
@@ -1544,7 +1544,7 @@
         "name": "Flattop",
         "type": "Topper",
         "level": 2,
-        "description": "Shallow mimic.",
+        "description": "Moves like a shallow-water fish.",
         "acquisition": "Satchel (? areas); Trade: Wyndia (Blowfish x2) (80z)."
       },
       {
@@ -1552,7 +1552,7 @@
         "name": "Swisher",
         "type": "Topper",
         "level": 3,
-        "description": "Propeller surface churn.",
+        "description": "Attracts fish with a propeller that churns up the surface.",
         "acquisition": "Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."
       },
       {
@@ -1560,7 +1560,7 @@
         "name": "Floater",
         "type": "Minnow",
         "level": 1,
-        "description": "Small fish shape.",
+        "description": "Shaped like a small fish; easy to use.",
         "acquisition": "Buy: Synesta/Shyde (20z)."
       },
       {
@@ -1568,7 +1568,7 @@
         "name": "Hanger",
         "type": "Minnow",
         "level": 2,
-        "description": "Floats on wind.",
+        "description": "Floats when wound; sinks if left alone.",
         "acquisition": "Trade: Shyde (Blowfish x2); Buy: Chiqua (80z)."
       },
       {
@@ -1576,7 +1576,7 @@
         "name": "Deep Diver",
         "type": "Minnow",
         "level": 3,
-        "description": "Sinks deep.",
+        "description": "Sinks quickly; rises slowly. Good for getting bottomdwellers.",
         "acquisition": "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
       },
       {
@@ -1584,7 +1584,7 @@
         "name": "Twister",
         "type": "Winder",
         "level": 1,
-        "description": "Twists.",
+        "description": "Rarely gets caught, so good for going after bottomdwellers.",
         "acquisition": "Buy: Synesta/Shyde (20z)."
       },
       {
@@ -1592,7 +1592,7 @@
         "name": "Warbler",
         "type": "Winder",
         "level": 2,
-        "description": "Warbles.",
+        "description": "Well-balanced; attracts fish with its floating motion.",
         "acquisition": "Trade: Shyde (Flying Fish x3); Buy: Chiqua (80z)."
       },
       {
@@ -1600,7 +1600,7 @@
         "name": "Dancer",
         "type": "Winder",
         "level": 3,
-        "description": "Dances; for deep fish.",
+        "description": "Heavy and sinks fast. Has a rhythmic movement.",
         "acquisition": "Trade: Lyp (Black Bass x1, Bass x1, Piranha x1)."
       },
       {
@@ -1608,7 +1608,7 @@
         "name": "Silver Top",
         "type": "Spinner",
         "level": 1,
-        "description": "Silver spin.",
+        "description": "Lures fish with its silver skin. Sinks quickly when wound.",
         "acquisition": "Buy: Synesta/Shyde (20z)."
       },
       {
@@ -1616,7 +1616,7 @@
         "name": "Gold Top",
         "type": "Spinner",
         "level": 2,
-        "description": "Gold spin.",
+        "description": "Sinks fast and floats slowly. Its gold skin attracts fish.",
         "acquisition": "Trade: Shyde (Sea Bream x1, Man-o'-War x1); Buy: Chiqua (80z)."
       },
       {
@@ -1624,7 +1624,7 @@
         "name": "Platinum Top",
         "type": "Spinner",
         "level": 3,
-        "description": "Platinum spin.",
+        "description": "Its shiny metal surface attracts humans as well as fish.",
         "acquisition": "Trade: Lyp (Angelfish x1, Blue Gill x1, Bass x1)."
       },
       {
@@ -1632,8 +1632,16 @@
         "name": "Spoon",
         "type": "Spoon",
         "level": 1,
-        "description": "Spoon shape; versatile.",
+        "description": "Attracts any and all kind of fish.",
         "acquisition": "Trade: Shyde (Sea Bream x1, Man-o'-War x1) (20z)."
+      },
+      {
+        "id": "king_frog",
+        "name": "King Frog",
+        "type": "Ultimate",
+        "level": 2,
+        "description": "No fish can resist the temptation of this lure.",
+        "acquisition": "Post-game: Rey and Teepo's Shop, Abandoned Village (800z)."
       }
     ],
     "rods": [
@@ -1641,42 +1649,42 @@
         "id": "wooden_rod",
         "name": "Wooden Rod",
         "power_level": "1",
-        "description": "Beginner; easy but fragile.",
+        "description": "For beginners. Easy to use but the line breaks easily.",
         "acquisition": "Buy: Sarai (50z)."
       },
       {
         "id": "bamboo_rod",
         "name": "Bamboo Rod",
         "power_level": "2",
-        "description": "Good range, harder handling.",
+        "description": "A bamboo rod. Good range, but hard to handle.",
         "acquisition": "Trade: Wyndia Manillo (Sea Bream x2); Buy: Faerie Shop (250z)."
       },
       {
         "id": "deluxe_rod",
         "name": "Deluxe Rod",
         "power_level": "2",
-        "description": "Balanced, easy.",
+        "description": "Fancy rod. Good balance and easy to handle.",
         "acquisition": "Treasure: Saldine."
       },
       {
         "id": "spanner",
         "name": "Spanner",
         "power_level": "3",
-        "description": "Handmade, balanced.",
+        "description": "Handmade rod with good balance, range, and power.",
         "acquisition": "Master Gyosil: 6000 points."
       },
       {
         "id": "angling_rod",
         "name": "Angling Rod",
         "power_level": "MAX",
-        "description": "Long range, powerful.",
+        "description": "A powerful rod with good range.",
         "acquisition": "Trade: Lyp Manillo (Salmon x2, Dorado x2, Martian Squid x2)."
       },
       {
         "id": "masters_rod",
         "name": "Master's Rod",
         "power_level": "MAX",
-        "description": "Ultimate; catches anything.",
+        "description": "The ultimate rod. Can be used to catch anything.",
         "acquisition": "Master Gyosil: 9500 points."
       }
     ],
