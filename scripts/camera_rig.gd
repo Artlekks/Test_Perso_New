@@ -29,6 +29,15 @@ var fishing_follow_trigger_y_ratio: float = 0.50
 var fishing_follow_bottom_y_ratio: float = 0.58
 @export_range(0.20, 0.60, 0.01)
 var fishing_follow_left_x_ratio: float = 0.40
+## During a cast, follow begins near the outer-right screen edge.
+## 0.76 = about X=243 on a native 320px-wide frame.
+@export_range(0.60, 0.90, 0.01)
+var fishing_follow_right_x_ratio: float = 0.76
+## Upper cast boundary. The lure may travel freely until it reaches roughly
+## the top 28% of the frame; after that the camera follows the casting arc.
+## 0.28 = about Y=67 on a native 320x240 frame.
+@export_range(0.15, 0.45, 0.01)
+var fishing_follow_top_y_ratio: float = 0.28
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
 var fishing_aim_active: bool = false
@@ -51,6 +60,7 @@ var fishing_follow_base_position: Vector3 = Vector3.ZERO
 
 var fishing_follow_water_y: float = 0.0
 var fishing_follow_activation_progress: float = 0.0
+var fishing_follow_activation_height: float = 0.0
 var fishing_follow_offset: float = 0.0
 
 var fishing_follow_armed: bool = false
@@ -120,6 +130,7 @@ func arm_fishing_follow(
 	fishing_follow_water_y = water_y
 
 	fishing_follow_activation_progress = 0.0
+	fishing_follow_activation_height = 0.0
 	fishing_follow_offset = 0.0
 
 	fishing_follow_armed = true
@@ -179,6 +190,7 @@ func _clear_fishing_follow_state() -> void:
 
 	fishing_follow_water_y = 0.0
 	fishing_follow_activation_progress = 0.0
+	fishing_follow_activation_height = 0.0
 	fishing_follow_offset = 0.0
 
 	fishing_follow_armed = false
@@ -244,34 +256,44 @@ func _update_fishing_follow() -> bool:
 			var viewport_height := viewport_size.y
 			var viewport_width := viewport_size.x
 
-			var trigger_y := (
-				viewport_height
-				* fishing_follow_trigger_y_ratio
-			)
 			var bottom_limit_y := (
 				viewport_height
-				* fishing_follow_bottom_y_ratio
+					* fishing_follow_bottom_y_ratio
+			)
+			var top_limit_y := (
+				viewport_height
+					* fishing_follow_top_y_ratio
 			)
 			var left_limit_x := (
 				viewport_width
-				* fishing_follow_left_x_ratio
+					* fishing_follow_left_x_ratio
+			)
+			var right_limit_x := (
+				viewport_width
+					* fishing_follow_right_x_ratio
+			)
+			var actual_screen_position := camera.unproject_position(
+				current_position
 			)
 			var has_reached_water := (
 				current_position.y
-				<= fishing_follow_water_y + 0.05
+					<= fishing_follow_water_y + 0.05
 			)
 
-			# Normal casts arm the camera at the existing upper trigger. Very
-			# short casts may never reach that trigger, so once the lure has
-			# reached the water, also activate if it would already violate the
-			# central tracking zone.
+			# BOF4-style cast framing:
+			# - rightward casts trigger around 76% of screen width;
+			# - high casts trigger before the lure reaches the top edge.
+			# Once either threshold is reached the camera travels with the
+			# airborne arc rather than allowing the lure to leave the frame.
 			if (
-				screen_position.y <= trigger_y
+				screen_position.x >= right_limit_x
+				or actual_screen_position.y <= top_limit_y
 				or (
 					has_reached_water
 					and (
 						screen_position.y >= bottom_limit_y
 						or screen_position.x <= left_limit_x
+						or screen_position.x >= right_limit_x
 					)
 				)
 			):
@@ -284,6 +306,9 @@ func _update_fishing_follow() -> bool:
 					current_position
 						- fishing_follow_cast_origin
 				).dot(fishing_follow_direction)
+				fishing_follow_activation_height = (
+					current_position.y
+				)
 
 	if not fishing_follow_active:
 		return false
@@ -299,9 +324,15 @@ func _update_fishing_follow() -> bool:
 		0.0
 	)
 
+	var airborne_height_offset := maxf(
+		current_position.y - fishing_follow_activation_height,
+		0.0
+	)
+
 	global_position = (
 		fishing_follow_base_position
 			+ fishing_follow_direction * fishing_follow_offset
+			+ Vector3.UP * airborne_height_offset
 	)
 
 	# Keep the lure / hooked fish inside a loose central screen-space zone.
@@ -321,6 +352,73 @@ func _enforce_fishing_tracking_zone(
 	for _i in range(2):
 		_enforce_fishing_bottom_screen_limit(world_position)
 		_enforce_fishing_left_screen_limit(world_position)
+		_enforce_fishing_right_screen_limit(world_position)
+
+
+func _enforce_fishing_right_screen_limit(
+	world_position: Vector3
+) -> void:
+	var camera: Camera3D = $Camera3D
+	if camera.is_position_behind(world_position):
+		return
+
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	if viewport_width <= 0.0:
+		return
+
+	var limit_x := viewport_width * fishing_follow_right_x_ratio
+	var start_screen_x := camera.unproject_position(world_position).x
+	if start_screen_x <= limit_x:
+		return
+
+	var start_rig_position := global_position
+	var camera_right := camera.global_transform.basis.x
+	camera_right.y = 0.0
+	if camera_right.length_squared() <= 0.000001:
+		return
+	camera_right = camera_right.normalized()
+
+	var probe_distance := 0.25
+	var correction_axis := -camera_right
+
+	global_position = start_rig_position - camera_right * probe_distance
+	var negative_x := camera.unproject_position(world_position).x
+	global_position = start_rig_position + camera_right * probe_distance
+	var positive_x := camera.unproject_position(world_position).x
+	global_position = start_rig_position
+
+	if positive_x < negative_x:
+		correction_axis = camera_right
+
+	var probe_x := minf(negative_x, positive_x)
+	if probe_x >= start_screen_x:
+		return
+
+	var low_distance := 0.0
+	var high_distance := probe_distance
+	var high_x := probe_x
+
+	for _i in range(10):
+		if high_x <= limit_x:
+			break
+		low_distance = high_distance
+		high_distance *= 2.0
+		global_position = start_rig_position + correction_axis * high_distance
+		high_x = camera.unproject_position(world_position).x
+
+	if high_x > limit_x:
+		return
+
+	for _i in range(8):
+		var mid_distance := (low_distance + high_distance) * 0.5
+		global_position = start_rig_position + correction_axis * mid_distance
+		var mid_x := camera.unproject_position(world_position).x
+		if mid_x > limit_x:
+			low_distance = mid_distance
+		else:
+			high_distance = mid_distance
+
+	global_position = start_rig_position + correction_axis * high_distance
 
 
 func _enforce_fishing_left_screen_limit(

@@ -294,6 +294,14 @@ func get_reel_target_node() -> Node3D:
 	return reel_target
 
 
+func is_cast_flying() -> bool:
+	return state == State.FLYING
+
+
+func get_visual_velocity() -> Vector3:
+	return velocity
+
+
 func set_swim_bounds(bounds: Node) -> void:
 	swim_bounds = bounds
 

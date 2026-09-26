@@ -27,6 +27,16 @@ extends Node3D
 @export_range(0.0, 0.75, 0.05)
 var line_alignment_weight: float = 0.20
 
+@export_category("Cast Speed Lines")
+@export var cast_speed_lines_enabled: bool = true
+@export_range(0.0, 20.0, 0.1)
+var cast_speed_lines_min_speed: float = 1.0
+@export_range(0.02, 0.50, 0.01)
+var cast_speed_lines_length: float = 0.18
+@export_range(0.0, 0.20, 0.005)
+var cast_speed_lines_spread: float = 0.035
+@export var cast_speed_lines_color: Color = Color(1.0, 1.0, 1.0, 0.55)
+
 @export_category("Chain Geometry")
 ## Total visible length stays close to the previous single-piece lure.
 @export var segment_length: float = 0.058
@@ -84,6 +94,10 @@ var _head_direction: Vector3 = Vector3.FORWARD
 var _middle_direction: Vector3 = Vector3.FORWARD
 var _tail_direction: Vector3 = Vector3.FORWARD
 
+var _cast_speed_line_mesh: ImmediateMesh = null
+var _cast_speed_line_instance: MeshInstance3D = null
+var _cast_speed_line_material: StandardMaterial3D = null
+
 
 func _ready() -> void:
 	_bait = get_parent() as Node3D
@@ -93,6 +107,7 @@ func _ready() -> void:
 		return
 
 	_prepare_visual_material()
+	_prepare_cast_speed_lines()
 	_update_depth_readability()
 
 	_previous_world_position = _bait.global_position
@@ -136,16 +151,24 @@ func _physics_process(delta: float) -> void:
 	)
 
 	var line_direction := _get_line_direction()
+	var is_flying := _is_bait_cast_flying()
 
-	if movement_speed >= motion_threshold:
+	if is_flying:
+		# While airborne, the lure points along the actual throw vector.
+		# The fishing line does not pull its nose back toward the player yet.
+		var flight_velocity := _get_bait_visual_velocity()
+		if flight_velocity.length_squared() > 0.0001:
+			desired_direction = flight_velocity.normalized()
+		elif movement_speed >= motion_threshold:
+			desired_direction = world_motion.normalized()
+		else:
+			desired_direction = _head_direction
+	elif movement_speed >= motion_threshold:
 		desired_direction = world_motion.normalized()
-
 		if line_direction.length_squared() > 0.0001:
 			desired_direction = (
-				desired_direction
-				* (1.0 - line_alignment_weight)
-				+ line_direction
-				* line_alignment_weight
+				desired_direction * (1.0 - line_alignment_weight)
+				+ line_direction * line_alignment_weight
 			).normalized()
 	elif line_direction.length_squared() > 0.0001:
 		desired_direction = line_direction
@@ -187,6 +210,93 @@ func _physics_process(delta: float) -> void:
 
 	_place_chain()
 	_update_depth_readability()
+
+
+func _is_bait_cast_flying() -> bool:
+	if _bait == null or not _bait.has_method("is_cast_flying"):
+		return false
+	return bool(_bait.is_cast_flying())
+
+
+func _get_bait_visual_velocity() -> Vector3:
+	if _bait == null or not _bait.has_method("get_visual_velocity"):
+		return Vector3.ZERO
+	return Vector3(_bait.get_visual_velocity())
+
+
+func _prepare_cast_speed_lines() -> void:
+	_cast_speed_line_mesh = ImmediateMesh.new()
+	_cast_speed_line_instance = MeshInstance3D.new()
+	_cast_speed_line_instance.name = "CastSpeedLines"
+	_cast_speed_line_instance.mesh = _cast_speed_line_mesh
+	_cast_speed_line_instance.visible = false
+	_cast_speed_line_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_cast_speed_line_instance)
+
+	_cast_speed_line_material = StandardMaterial3D.new()
+	_cast_speed_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_cast_speed_line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_cast_speed_line_material.vertex_color_use_as_albedo = true
+	_cast_speed_line_material.no_depth_test = true
+
+
+func _update_cast_speed_lines(
+	is_flying: bool,
+	flight_velocity: Vector3,
+	world_position: Vector3
+) -> void:
+	if (
+		not cast_speed_lines_enabled
+		or not is_flying
+		or flight_velocity.length() < cast_speed_lines_min_speed
+	):
+		_cast_speed_line_instance.visible = false
+		_cast_speed_line_mesh.clear_surfaces()
+		return
+
+	var direction := flight_velocity.normalized()
+	var side := direction.cross(Vector3.UP)
+	if side.length_squared() < 0.0001:
+		side = Vector3.RIGHT
+	else:
+		side = side.normalized()
+
+	var local_up := side.cross(direction)
+	if local_up.length_squared() < 0.0001:
+		local_up = Vector3.UP
+	else:
+		local_up = local_up.normalized()
+
+	_cast_speed_line_instance.global_transform = Transform3D(
+		Basis.IDENTITY,
+		world_position
+	)
+
+	_cast_speed_line_mesh.clear_surfaces()
+	_cast_speed_line_mesh.surface_begin(
+		Mesh.PRIMITIVE_LINES,
+		_cast_speed_line_material
+	)
+
+	var offsets: Array[Vector3] = [
+		side * cast_speed_lines_spread,
+		-side * cast_speed_lines_spread,
+		local_up * cast_speed_lines_spread * 0.65,
+	]
+
+	for line_index in range(offsets.size()):
+		var line_scale := 1.0 - float(line_index) * 0.16
+		var offset: Vector3 = offsets[line_index]
+		var front := -direction * cast_speed_lines_length * 0.18 + offset
+		var back := -direction * cast_speed_lines_length * line_scale + offset
+		var line_color := cast_speed_lines_color
+		line_color.a *= line_scale
+		_cast_speed_line_mesh.surface_set_color(line_color)
+		_cast_speed_line_mesh.surface_add_vertex(front)
+		_cast_speed_line_mesh.surface_add_vertex(back)
+
+	_cast_speed_line_mesh.surface_end()
+	_cast_speed_line_instance.visible = true
 
 
 func _prepare_visual_material() -> void:
