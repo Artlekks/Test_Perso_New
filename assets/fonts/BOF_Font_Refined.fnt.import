@@ -1,0 +1,17 @@
+[remap]
+
+importer="font_data_bmfont"
+type="FontFile"
+uid="uid://dnl6klv4lvu30"
+path="res://.godot/imported/BOF_Font_Refined.fnt-b1b493f283f60fc3b2afea4694a55fc3.fontdata"
+
+[deps]
+
+source_file="res://assets/fonts/BOF_Font_Refined.fnt"
+dest_files=["res://.godot/imported/BOF_Font_Refined.fnt-b1b493f283f60fc3b2afea4694a55fc3.fontdata"]
+
+[params]
+
+fallbacks=[]
+compress=true
+scaling_mode=2

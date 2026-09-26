@@ -1,7 +1,7 @@
 [gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
-[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font.fnt" id="2_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Selector.png" id="3_selector"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Info_Panel.png" id="4_info"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Command_Panel.png" id="5_command"]
@@ -665,6 +665,9 @@ offset_bottom = 0.5
 layout_mode = 0
 offset_right = 0.5
 offset_bottom = 0.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
 text = ""
 
 [node name="OptionsPage" type="Control" parent="Root"]

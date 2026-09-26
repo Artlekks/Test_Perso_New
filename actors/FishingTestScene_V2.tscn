@@ -18,8 +18,8 @@
 [ext_resource type="Script" uid="uid://boqng0bhxpde6" path="res://scripts/caster.gd" id="15_hrkbp"]
 [ext_resource type="Texture2D" uid="uid://dw03tio5j4wnt" path="res://assets/sprites/bar-bar.png" id="16_0e2yj"]
 [ext_resource type="PackedScene" uid="uid://b55g00mjd4bs" path="res://actors/bait_V2.tscn" id="16_cxlon"]
+[ext_resource type="Texture2D" uid="uid://bibjd1xybubtb" path="res://assets/sprites/Compass_Face_Fish.png" id="16_pua6c"]
 [ext_resource type="Texture2D" uid="uid://c7w6ts6bqr8yu" path="res://assets/sprites/TensionMeter.png" id="16_rxc8i"]
-[ext_resource type="Texture2D" uid="uid://bybktjbfq40mh" path="res://assets/sprites/Fishing_Icon.png" id="16_y5vpm"]
 [ext_resource type="Texture2D" uid="uid://ci8te3gnaliuv" path="res://assets/sprites/Location.png" id="17_f3f7x"]
 [ext_resource type="Texture2D" uid="uid://u3tyt71m2h6" path="res://assets/sprites/Menu.png" id="18_t57di"]
 [ext_resource type="Texture2D" uid="uid://3llccm0knkks" path="res://assets/sprites/Menu_Cast.png" id="19_30w2a"]
@@ -297,7 +297,6 @@ v_offset = 0.55
 
 [node name="ExplorationHud" type="CanvasLayer" parent="UI" unique_id=981426337 node_paths=PackedStringArray("exploration", "camera_rig", "game_mode")]
 layer = 40
-visible = false
 script = ExtResource("14_04ybk")
 exploration = NodePath("../../Game/Exploration")
 camera_rig = NodePath("../../CameraRig")
@@ -338,9 +337,9 @@ z_index = 1
 texture_filter = 1
 layout_mode = 1
 offset_left = 55.0
-offset_top = 32.0
+offset_top = 31.0
 offset_right = 64.0
-offset_bottom = 65.0
+offset_bottom = 64.0
 scale = Vector2(2, 2)
 pivot_offset = Vector2(4.5, 16.47)
 mouse_filter = 2
@@ -356,7 +355,7 @@ offset_right = 90.0
 offset_bottom = 55.0
 scale = Vector2(2, 2)
 mouse_filter = 2
-texture = ExtResource("16_y5vpm")
+texture = ExtResource("16_pua6c")
 stretch_mode = 2
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="UI/ExplorationHud/Root/Compass" unique_id=1187115211]

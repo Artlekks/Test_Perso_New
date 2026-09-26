@@ -155,6 +155,11 @@ const DATA_FISH_BY_KEY: Dictionary = {
 ## This sits behind the row text and below the pink cursor selector.
 @export var equipped_accessory_highlight_color: Color = Color(0.68, 0.60, 0.22, 0.28)
 
+const BOF_STANDARD_ADVANCE_PX: int = 8
+const BOF_NARROW_ADVANCE_PX: int = 4
+const ACCESSORY_NAME_COLUMN_WIDTH_PX: int = 104
+const ACCESSORY_HALF_SPACE: String = " "
+
 const NAV_REPEAT_DELAY: float = 0.28
 const NAV_REPEAT_INTERVAL: float = 0.085
 
@@ -1306,12 +1311,34 @@ func _rebuild_equip_entries() -> void:
 
 
 func _format_accessory_row(display_name: String, count: int) -> String:
-	# Keep quantities in one fixed right-hand column. Single digits are always
-	# zero-padded so 01..09 use the same two-character width as 10+.
+	# BOF4's live text is mostly 8 px advance, but narrow glyphs (I/i/l) use
+	# 4 px. Preserve the original 104 px name column instead of padding by
+	# character count, otherwise names containing narrow letters would make the
+	# two-digit quantity column wobble left. U+00A0 is a private 4 px blank
+	# glyph in BOF_Font_Refined.fnt and is used only when half-cell padding is
+	# needed.
 	var padded_name: String = display_name
-	while padded_name.length() < 13:
+	var remaining_px: int = ACCESSORY_NAME_COLUMN_WIDTH_PX - _bof_text_advance_px(display_name)
+
+	while remaining_px >= BOF_STANDARD_ADVANCE_PX:
 		padded_name += " "
+		remaining_px -= BOF_STANDARD_ADVANCE_PX
+
+	if remaining_px >= BOF_NARROW_ADVANCE_PX:
+		padded_name += ACCESSORY_HALF_SPACE
+
 	return "%s%02d" % [padded_name, maxi(count, 0)]
+
+
+func _bof_text_advance_px(value: String) -> int:
+	var width_px := 0
+	for character_index in range(value.length()):
+		var character := value.substr(character_index, 1)
+		if character == "I" or character == "i" or character == "l":
+			width_px += BOF_NARROW_ADVANCE_PX
+		else:
+			width_px += BOF_STANDARD_ADVANCE_PX
+	return width_px
 
 
 func _refresh_equip_selection() -> void:
