@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font.fnt" id="2_font"]
@@ -19,6 +19,13 @@
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Selector_Big.png" id="17_data_selector"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Selector_Bigger.png" id="18_hint_selector"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Bar.png" id="19_data_bar"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Equip_Selector.png" id="20_equip_selector"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Main_Command_Selector.png" id="21_main_native"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Equip_Selector_Left.png" id="22_equip_left_native"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Equip_Selector_Right.png" id="23_equip_right_native"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Data_Name_Selector.png" id="24_data_native"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Hint_Panel_Selector.png" id="25_hint_native"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Yes_No_Selector.png" id="26_exit_native"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleEmpty"]
 
@@ -122,6 +129,7 @@ expand_mode = 1
 stretch_mode = 0
 
 [node name="CommandSelector" type="TextureRect" parent="Root/MainPage/LeftMask/CommandPanel"]
+visible = false
 texture_filter = 1
 layout_mode = 0
 offset_left = 3
@@ -186,10 +194,10 @@ stretch_mode = 0
 
 [node name="RodLabel" type="Label" parent="Root/MainPage/EquipPanel"]
 layout_mode = 0
-offset_left = 32
-offset_top = 14
-offset_right = 146
-offset_bottom = 25.5
+offset_left = 33
+offset_top = 16
+offset_right = 147
+offset_bottom = 27.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
@@ -197,9 +205,9 @@ text = "---"
 
 [node name="LureLabel" type="Label" parent="Root/MainPage/EquipPanel"]
 layout_mode = 0
-offset_left = 31
+offset_left = 32
 offset_top = 34
-offset_right = 145
+offset_right = 146
 offset_bottom = 46.5
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
@@ -261,11 +269,11 @@ stretch_mode = 0
 visible = false
 texture_filter = 1
 layout_mode = 0
-offset_left = 6
-offset_top = 12
-offset_right = 76
-offset_bottom = 27
-texture = ExtResource("3_selector")
+offset_left = 4.0
+offset_top = 12.0
+offset_right = 126.0
+offset_bottom = 26.0
+texture = ExtResource("20_equip_selector")
 expand_mode = 0
 stretch_mode = 0
 mouse_filter = 2
@@ -276,15 +284,39 @@ offset_left = 31
 offset_top = 14
 offset_right = 150
 offset_bottom = 53
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 0)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 theme_override_constants/line_separation = 3
 theme_override_styles/panel = SubResource("StyleEmpty")
 theme_override_styles/focus = SubResource("StyleEmpty")
-theme_override_styles/selected = SubResource("StyleSelected")
-theme_override_styles/selected_focus = SubResource("StyleSelected")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
+mouse_filter = 2
+
+[node name="RodSlotLabel" type="Label" parent="Root/EquipPage/SlotPanel"]
+layout_mode = 0
+offset_left = 33
+offset_top = 16
+offset_right = 147
+offset_bottom = 29
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "---"
+mouse_filter = 2
+
+[node name="LureSlotLabel" type="Label" parent="Root/EquipPage/SlotPanel"]
+layout_mode = 0
+offset_left = 32
+offset_top = 34
+offset_right = 146
+offset_bottom = 47
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "---"
 mouse_filter = 2
 
 [node name="GuidePanel" type="TextureRect" parent="Root/EquipPage"]
@@ -357,16 +389,16 @@ theme_override_font_sizes/font_size = 12
 theme_override_constants/line_separation = 5
 theme_override_styles/panel = SubResource("StyleEmpty")
 theme_override_styles/focus = SubResource("StyleEmpty")
-theme_override_styles/selected = SubResource("StyleSelected")
-theme_override_styles/selected_focus = SubResource("StyleSelected")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
 
 [node name="AccessoryCountLabel" type="Label" parent="Root/EquipPage/AccessoryPanel"]
 layout_mode = 0
 offset_left = 74
-offset_top = 150
+offset_top = 149
 offset_right = 116
-offset_bottom = 163
+offset_bottom = 162
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
@@ -395,10 +427,10 @@ stretch_mode = 0
 visible = false
 texture_filter = 1
 layout_mode = 0
-offset_left = 4
-offset_top = 9
-offset_right = 121
-offset_bottom = 24
+offset_left = 4.0
+offset_top = 9.0
+offset_right = 121.0
+offset_bottom = 24.0
 texture = ExtResource("17_data_selector")
 expand_mode = 0
 stretch_mode = 0
@@ -417,8 +449,8 @@ theme_override_font_sizes/font_size = 12
 theme_override_constants/line_separation = 3
 theme_override_styles/panel = SubResource("StyleEmpty")
 theme_override_styles/focus = SubResource("StyleEmpty")
-theme_override_styles/selected = SubResource("StyleSelectedBig")
-theme_override_styles/selected_focus = SubResource("StyleSelectedBig")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
 
 [node name="ScrollThumb" type="TextureRect" parent="Root/DataPage/SpeciesPanel"]
@@ -587,10 +619,10 @@ stretch_mode = 0
 visible = false
 texture_filter = 1
 layout_mode = 0
-offset_left = 4
-offset_top = 5
-offset_right = 190
-offset_bottom = 20
+offset_left = 4.0
+offset_top = 5.0
+offset_right = 190.0
+offset_bottom = 20.0
 texture = ExtResource("18_hint_selector")
 expand_mode = 0
 stretch_mode = 0
@@ -609,8 +641,8 @@ theme_override_font_sizes/font_size = 12
 theme_override_constants/line_separation = 3
 theme_override_styles/panel = SubResource("StyleEmpty")
 theme_override_styles/focus = SubResource("StyleEmpty")
-theme_override_styles/selected = SubResource("StyleSelectedBigger")
-theme_override_styles/selected_focus = SubResource("StyleSelectedBigger")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
 
 [node name="TextPanel" type="Control" parent="Root/HintsPage"]
@@ -670,6 +702,7 @@ stretch_mode = 0
 pivot_offset = Vector2(54, 39)
 
 [node name="ChoiceSelector" type="TextureRect" parent="Root/ExitConfirm/Panel"]
+visible = false
 texture_filter = 1
 layout_mode = 0
 offset_left = 4
@@ -682,8 +715,91 @@ stretch_mode = 0
 mouse_filter = 2
 
 [node name="ChoiceList" type="ItemList" parent="Root/ExitConfirm/Panel"]
-visible = false
 layout_mode = 0
-offset_right = 0.5
-offset_bottom = 0.5
+offset_left = 4.0
+offset_top = 7.0
+offset_right = 50.0
+offset_bottom = 35.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 0)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+theme_override_constants/line_separation = 0
+theme_override_styles/panel = SubResource("StyleEmpty")
+theme_override_styles/focus = SubResource("StyleEmpty")
+theme_override_styles/selected = SubResource("StyleEmpty")
+theme_override_styles/selected_focus = SubResource("StyleEmpty")
+mouse_filter = 2
+
+
+[node name="SelectorLayer" type="Control" parent="."]
+layout_mode = 0
+offset_right = 640.0
+offset_bottom = 480.0
+mouse_filter = 2
+
+[node name="MainCommand" type="TextureRect" parent="SelectorLayer"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 132.0
+offset_bottom = 30.0
+texture = ExtResource("21_main_native")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="EquipLeft" type="TextureRect" parent="SelectorLayer"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 244.0
+offset_bottom = 28.0
+texture = ExtResource("22_equip_left_native")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="EquipRight" type="TextureRect" parent="SelectorLayer"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 231.0
+offset_bottom = 28.0
+texture = ExtResource("23_equip_right_native")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="DataName" type="TextureRect" parent="SelectorLayer"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 228.0
+offset_bottom = 30.0
+texture = ExtResource("24_data_native")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Hints" type="TextureRect" parent="SelectorLayer"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 366.0
+offset_bottom = 30.0
+texture = ExtResource("25_hint_native")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="YesNo" type="TextureRect" parent="SelectorLayer"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 26.0
+texture = ExtResource("26_exit_native")
+expand_mode = 0
+stretch_mode = 0
 mouse_filter = 2

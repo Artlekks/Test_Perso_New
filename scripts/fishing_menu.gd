@@ -127,6 +127,26 @@ const DATA_FISH_BY_KEY: Dictionary = {
 	"acheron": preload("res://data/bof4/fish/acheron.tres"),
 }
 
+@export_category("Selector Calibration LIVE (screen pixels)")
+## These selectors live outside the 2x-scaled 320x240 menu root, so every
+## selector PNG renders at its authored pixel size with no stretching.
+@export var main_selector_screen_position: Vector2 = Vector2(42.0, 122.0)
+## Live calibration: move the Equip-left selector relative to its selected row.
+@export var equip_left_selector_offset: Vector2 = Vector2(-44.0, 1.0)
+## Live calibration: move the Accessory selector relative to its selected row.
+@export var equip_right_selector_offset: Vector2 = Vector2(-2.0, 1.0)
+## Live calibration: move the Data selector relative to its selected row.
+@export var data_selector_offset: Vector2 = Vector2(-39.0, 0.0)
+## Live calibration: move the Hints selector relative to its selected row.
+@export var hints_selector_offset: Vector2 = Vector2(-51.0, 0.0)
+## Live calibration: move the Yes/No selector relative to its selected row.
+@export var exit_selector_offset: Vector2 = Vector2(6.0, 6.0)
+## Extra vertical correction applied only to the Yes row. No keeps the calibrated position.
+@export var exit_yes_extra_y: float = -4.0
+
+const NAV_REPEAT_DELAY: float = 0.28
+const NAV_REPEAT_INTERVAL: float = 0.085
+
 const TRANSITION_OUT_TIME: float = 0.16
 const TRANSITION_IN_TIME: float = 0.18
 const MAIN_COMMAND_X: float = 16.0
@@ -144,11 +164,12 @@ const OFF_RIGHT_X: float = 330.0
 const OFF_BOTTOM_Y: float = 250.0
 
 @onready var root: Control = $Root
+@onready var selector_layer: Control = $SelectorLayer
 @onready var info_label: Label = $Root/InfoPanel/InfoLabel
 
 @onready var main_page: Control = $Root/MainPage
 @onready var command_panel: Control = $Root/MainPage/LeftMask/CommandPanel
-@onready var command_selector: Control = $Root/MainPage/LeftMask/CommandPanel/CommandSelector
+@onready var command_selector: TextureRect = $SelectorLayer/MainCommand
 @onready var command_disabled_overlay: ColorRect = $Root/MainPage/LeftMask/CommandPanel/DisabledOverlay
 @onready var command_list: ItemList = $Root/MainPage/LeftMask/CommandPanel/CommandList
 @onready var main_equip_panel: Control = $Root/MainPage/EquipPanel
@@ -162,11 +183,14 @@ const OFF_BOTTOM_Y: float = 250.0
 
 @onready var equip_page: Control = $Root/EquipPage
 @onready var equip_slot_panel: Control = $Root/EquipPage/SlotPanel
-@onready var equip_slot_selector: Control = $Root/EquipPage/SlotPanel/SlotSelector
+@onready var equip_slot_selector: TextureRect = $SelectorLayer/EquipLeft
 @onready var equip_guide_panel: Control = $Root/EquipPage/GuidePanel
 @onready var equip_accessory_panel: Control = $Root/EquipPage/AccessoryPanel
 @onready var equip_slot_list: ItemList = $Root/EquipPage/SlotPanel/SlotList
+@onready var equip_rod_slot_label: Label = $Root/EquipPage/SlotPanel/RodSlotLabel
+@onready var equip_lure_slot_label: Label = $Root/EquipPage/SlotPanel/LureSlotLabel
 @onready var equip_accessory_list: ItemList = $Root/EquipPage/AccessoryPanel/AccessoryList
+@onready var equip_accessory_selector: TextureRect = $SelectorLayer/EquipRight
 @onready var equip_accessory_count_label: Label = $Root/EquipPage/AccessoryPanel/AccessoryCountLabel
 @onready var equip_guide_icon: TextureRect = $Root/EquipPage/GuidePanel/GuideIcon
 @onready var equip_guide_title_label: Label = $Root/EquipPage/GuidePanel/GuideTitleLabel
@@ -175,7 +199,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var data_page: Control = $Root/DataPage
 @onready var data_species_panel: Control = $Root/DataPage/SpeciesPanel
 @onready var data_details_panel: Control = $Root/DataPage/DetailsPanel
-@onready var data_species_selector: TextureRect = $Root/DataPage/SpeciesPanel/SpeciesSelector
+@onready var data_species_selector: TextureRect = $SelectorLayer/DataName
 @onready var data_species_list: ItemList = $Root/DataPage/SpeciesPanel/SpeciesList
 @onready var data_scroll_thumb: TextureRect = $Root/DataPage/SpeciesPanel/ScrollThumb
 @onready var data_caught_count_label: Label = $Root/DataPage/SpeciesPanel/CaughtCountLabel
@@ -190,14 +214,14 @@ const OFF_BOTTOM_Y: float = 250.0
 
 @onready var hints_page: Control = $Root/HintsPage
 @onready var hints_topic_panel: Control = $Root/HintsPage/TopicPanel
-@onready var hints_selector: TextureRect = $Root/HintsPage/TopicPanel/HintSelector
+@onready var hints_selector: TextureRect = $SelectorLayer/Hints
 @onready var hints_list: ItemList = $Root/HintsPage/TopicPanel/TopicList
 @onready var hints_text_label: Label = $Root/HintsPage/TextPanel/TextLabel
 
 @onready var options_page: Control = $Root/OptionsPage
 @onready var exit_confirm: Control = $Root/ExitConfirm
 @onready var exit_panel: Control = $Root/ExitConfirm/Panel
-@onready var exit_selector: Control = $Root/ExitConfirm/Panel/ChoiceSelector
+@onready var exit_selector: TextureRect = $SelectorLayer/YesNo
 @onready var exit_list: ItemList = $Root/ExitConfirm/Panel/ChoiceList
 
 var _game_mode: Node = null
@@ -223,17 +247,24 @@ var _pause_was_active: bool = false
 var _session_time_seconds: float = 0.0
 var _transitioning: bool = false
 var _hidden_hud_visibility: Dictionary = {}
+var _nav_repeat_direction: int = 0
+var _nav_repeat_timer: float = 0.0
+var _exit_closing: bool = false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	root.visible = false
+	selector_layer.visible = false
 
 	_fill_static_lists()
 	_configure_data_list_visuals()
 	_configure_hint_list_visuals()
+	_configure_selector_overlays()
+	call_deferred("_configure_exit_list_visuals")
 	_set_page(Page.MAIN)
 	_reset_panel_positions()
+	_sync_selector_visibility()
 
 
 func configure(
@@ -273,6 +304,7 @@ func open_menu() -> void:
 	_is_open = true
 	_pause_was_active = get_tree().paused
 	_hide_gameplay_hud()
+	selector_layer.visible = true
 	root.visible = true
 	_command_index = 0
 	main_equip_panel.visible = true
@@ -289,9 +321,14 @@ func close_menu() -> void:
 
 	_is_open = false
 	_transitioning = false
+	_exit_closing = false
 	exit_confirm.visible = false
+	selector_layer.visible = false
+	_hide_all_selector_overlays()
 	_set_command_confirm_colors(false)
 	command_disabled_overlay.visible = false
+	_reset_nav_repeat()
+	_hide_all_selector_overlays()
 	root.visible = false
 	_restore_gameplay_hud()
 	get_tree().paused = _pause_was_active
@@ -302,6 +339,10 @@ func _process(delta: float) -> void:
 	if not _is_open:
 		_session_time_seconds += delta
 		_update_time_label()
+		return
+
+	_process_vertical_repeat(delta)
+	_update_visible_native_selectors()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -320,8 +361,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# Ignore OS key-repeat echoes. Menu repeat is handled at a stable,
+	# frame-rate-independent cadence in _process_vertical_repeat().
+	if event is InputEventKey and (event as InputEventKey).echo:
+		get_viewport().set_input_as_handled()
+		return
+
 	if _is_cancel(event):
 		_handle_cancel()
+		_reset_nav_repeat()
+		get_viewport().set_input_as_handled()
+		return
+
+	var vertical_step: int = _vertical_step(event)
+	if vertical_step != 0:
+		_handle_vertical_navigation(vertical_step)
+		_arm_nav_repeat(vertical_step)
 		get_viewport().set_input_as_handled()
 		return
 
@@ -345,6 +400,106 @@ func _unhandled_input(event: InputEvent) -> void:
 			_handle_options_input(event)
 
 	get_viewport().set_input_as_handled()
+
+
+func _handle_vertical_navigation(step: int) -> void:
+	if step == 0 or _transitioning:
+		return
+
+	if exit_confirm.visible:
+		_exit_index = clampi(_exit_index + step, 0, 1)
+		exit_list.select(_exit_index)
+		_update_exit_selector()
+		return
+
+	match _page:
+		Page.MAIN:
+			_command_index = posmod(_command_index + step, COMMANDS.size())
+			command_list.select(_command_index)
+			_update_command_selector()
+			_update_main_info()
+
+		Page.EQUIP:
+			if _equip_focus == EquipFocus.SLOT:
+				_equip_slot_index = clampi(_equip_slot_index + step, 0, 1)
+				_equip_accessory_index = 0
+				_refresh_equip_page()
+				_update_equip_slot_selector()
+			elif not _equip_entries.is_empty():
+				_equip_accessory_index = clampi(
+					_equip_accessory_index + step,
+					0,
+					_equip_entries.size() - 1
+				)
+				_refresh_equip_selection()
+
+		Page.DATA:
+			if not _data_entries.is_empty():
+				_data_index = clampi(_data_index + step, 0, _data_entries.size() - 1)
+				data_species_list.select(_data_index)
+				data_species_list.ensure_current_is_visible()
+				_sync_data_selector_window()
+				_update_data_selector()
+				_update_data_scroll_thumb()
+				_update_data_details()
+
+		Page.HELP:
+			_help_index = clampi(_help_index + step, 0, HELP_TOPICS.size() - 1)
+			help_list.select(_help_index)
+			help_list.ensure_current_is_visible()
+			_update_help_text()
+
+		Page.HINTS:
+			_hint_index = clampi(_hint_index + step, 0, HINT_TOPICS.size() - 1)
+			hints_list.select(_hint_index)
+			hints_list.ensure_current_is_visible()
+			_update_hint_selector()
+			_update_hint_text()
+
+
+func _arm_nav_repeat(direction: int) -> void:
+	_nav_repeat_direction = direction
+	_nav_repeat_timer = NAV_REPEAT_DELAY
+
+
+func _reset_nav_repeat() -> void:
+	_nav_repeat_direction = 0
+	_nav_repeat_timer = 0.0
+
+
+func _process_vertical_repeat(delta: float) -> void:
+	if _transitioning:
+		_reset_nav_repeat()
+		return
+
+	var held_direction: int = 0
+	var up_held: bool = (
+		Input.is_action_pressed("move_forward")
+		or Input.is_action_pressed("ui_up")
+	)
+	var down_held: bool = (
+		Input.is_action_pressed("move_back")
+		or Input.is_action_pressed("ui_down")
+	)
+
+	if up_held != down_held:
+		held_direction = -1 if up_held else 1
+
+	if held_direction == 0:
+		_reset_nav_repeat()
+		return
+
+	if held_direction != _nav_repeat_direction:
+		_nav_repeat_direction = held_direction
+		_nav_repeat_timer = NAV_REPEAT_DELAY
+		return
+
+	_nav_repeat_timer -= delta
+	if _nav_repeat_timer > 0.0:
+		return
+
+	_handle_vertical_navigation(held_direction)
+	_nav_repeat_timer += NAV_REPEAT_INTERVAL
 
 
 func _fill_static_lists() -> void:
@@ -413,6 +568,7 @@ func _set_page(page: int) -> void:
 		Page.OPTIONS:
 			info_label.text = "Fishing options are not implemented yet."
 
+	_sync_selector_visibility()
 	page_changed.emit(_page_name(page))
 
 func _page_name(page: int) -> StringName:
@@ -443,6 +599,7 @@ func _handle_cancel() -> void:
 	if _page == Page.EQUIP and _equip_focus == EquipFocus.ACCESSORY:
 		_equip_focus = EquipFocus.SLOT
 		_refresh_equip_selection()
+		_sync_selector_visibility()
 		return
 
 	_transition_to_main()
@@ -479,7 +636,7 @@ func _handle_equip_input(event: InputEvent) -> void:
 	if _equip_focus == EquipFocus.SLOT:
 		var slot_step: int = _vertical_step(event)
 		if slot_step != 0:
-			_equip_slot_index = posmod(_equip_slot_index + slot_step, 2)
+			_equip_slot_index = clampi(_equip_slot_index + slot_step, 0, 1)
 			_equip_accessory_index = 0
 			_refresh_equip_page()
 			_update_equip_slot_selector()
@@ -488,15 +645,17 @@ func _handle_equip_input(event: InputEvent) -> void:
 		if _horizontal_step(event) > 0 or _is_confirm(event):
 			_equip_focus = EquipFocus.ACCESSORY
 			_refresh_equip_selection()
+			_sync_selector_visibility()
 			return
 
 		return
 
 	var accessory_step: int = _vertical_step(event)
 	if accessory_step != 0 and not _equip_entries.is_empty():
-		_equip_accessory_index = posmod(
+		_equip_accessory_index = clampi(
 			_equip_accessory_index + accessory_step,
-			_equip_entries.size()
+			0,
+			_equip_entries.size() - 1
 		)
 		_refresh_equip_selection()
 		return
@@ -504,6 +663,7 @@ func _handle_equip_input(event: InputEvent) -> void:
 	if _horizontal_step(event) < 0:
 		_equip_focus = EquipFocus.SLOT
 		_refresh_equip_selection()
+		_sync_selector_visibility()
 		return
 
 	if _is_confirm(event):
@@ -515,7 +675,7 @@ func _handle_data_input(event: InputEvent) -> void:
 	if step == 0 or _data_entries.is_empty():
 		return
 
-	_data_index = posmod(_data_index + step, _data_entries.size())
+	_data_index = clampi(_data_index + step, 0, _data_entries.size() - 1)
 	data_species_list.select(_data_index)
 	data_species_list.ensure_current_is_visible()
 	_sync_data_selector_window()
@@ -529,7 +689,7 @@ func _handle_help_input(event: InputEvent) -> void:
 	if step == 0:
 		return
 
-	_help_index = posmod(_help_index + step, HELP_TOPICS.size())
+	_help_index = clampi(_help_index + step, 0, HELP_TOPICS.size() - 1)
 	help_list.select(_help_index)
 	help_list.ensure_current_is_visible()
 	_update_help_text()
@@ -540,7 +700,7 @@ func _handle_hints_input(event: InputEvent) -> void:
 	if step == 0:
 		return
 
-	_hint_index = posmod(_hint_index + step, HINT_TOPICS.size())
+	_hint_index = clampi(_hint_index + step, 0, HINT_TOPICS.size() - 1)
 	hints_list.select(_hint_index)
 	hints_list.ensure_current_is_visible()
 	_update_hint_selector()
@@ -556,12 +716,15 @@ func _handle_options_input(_event: InputEvent) -> void:
 func _show_exit_confirm() -> void:
 	if _transitioning:
 		return
+	_exit_closing = false
+	_configure_exit_list_visuals()
 	_exit_index = 1
 	exit_list.select(_exit_index)
 	_update_exit_selector()
 	_set_command_confirm_colors(true)
 	command_disabled_overlay.visible = false
 	exit_confirm.visible = true
+	_sync_selector_visibility()
 	exit_panel.scale = Vector2(0.06, 0.06)
 	info_label.text = "Quit fishing?"
 
@@ -576,7 +739,7 @@ func _handle_exit_confirm_input(event: InputEvent) -> void:
 		step = _horizontal_step(event)
 
 	if step != 0:
-		_exit_index = posmod(_exit_index + step, 2)
+		_exit_index = clampi(_exit_index + step, 0, 1)
 		exit_list.select(_exit_index)
 		_update_exit_selector()
 		return
@@ -770,19 +933,210 @@ func _update_main_info() -> void:
 func _update_command_selector() -> void:
 	if not is_instance_valid(command_selector):
 		return
-	command_selector.position.y = 9.0 + float(_command_index) * 17.0
+	command_selector.position = (
+		main_selector_screen_position
+		+ Vector2(0.0, float(_command_index) * 34.0)
+	)
+	command_selector.visible = (
+		_is_open
+		and _page == Page.MAIN
+		and not exit_confirm.visible
+		and not _transitioning
+	)
 
 
 func _update_equip_slot_selector() -> void:
-	# Normalized selector: SlotList draws selection with the exact same
-	# StyleBoxTexture as AccessoryList. No manual selector geometry remains.
-	pass
+	if not is_instance_valid(equip_slot_list):
+		return
+	if equip_slot_list.item_count <= 0:
+		if is_instance_valid(equip_slot_selector):
+			equip_slot_selector.visible = false
+		return
+
+	_equip_slot_index = clampi(
+		_equip_slot_index,
+		0,
+		equip_slot_list.item_count - 1
+	)
+	equip_slot_list.select(_equip_slot_index)
+	equip_slot_list.ensure_current_is_visible()
+	call_deferred("_place_equip_left_selector")
+
+
+func _configure_selector_overlays() -> void:
+	# All custom selectors are authored at final 640x480 display scale and live
+	# in an unscaled sibling layer. Never resize them in code.
+	for selector in [
+		command_selector,
+		equip_slot_selector,
+		equip_accessory_selector,
+		data_species_selector,
+		hints_selector,
+		exit_selector,
+	]:
+		if is_instance_valid(selector):
+			selector.visible = false
+
+
+func _configure_exit_list_visuals() -> void:
+	# Yes / No has only two rows and should never show a scrollbar. Keep the
+	# ItemList for navigation, but make its internal scrollbar fully invisible.
+	if not is_instance_valid(exit_list):
+		return
+	var scrollbar: VScrollBar = exit_list.get_v_scroll_bar()
+	if is_instance_valid(scrollbar):
+		scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _item_screen_position(list: ItemList, index: int) -> Vector2:
+	if not is_instance_valid(list) or index < 0 or index >= list.item_count:
+		return Vector2.ZERO
+
+	var item_rect: Rect2 = list.get_item_rect(index, false)
+	var local_position: Vector2 = item_rect.position
+	var scrollbar: VScrollBar = list.get_v_scroll_bar()
+	if is_instance_valid(scrollbar) and scrollbar.visible:
+		local_position.y -= float(scrollbar.value)
+
+	return list.get_global_transform_with_canvas() * local_position
+
+
+func _place_native_selector_on_item(
+	list: ItemList,
+	selector: TextureRect,
+	index: int,
+	screen_offset: Vector2
+) -> void:
+	if (
+		not _is_open
+		or _transitioning
+		or not is_instance_valid(list)
+		or not is_instance_valid(selector)
+		or index < 0
+		or index >= list.item_count
+	):
+		if is_instance_valid(selector):
+			selector.visible = false
+		return
+
+	selector.position = _item_screen_position(list, index) + screen_offset
+	selector.visible = true
+
+
+func _place_equip_left_selector() -> void:
+	if _page != Page.EQUIP or _equip_focus != EquipFocus.SLOT:
+		equip_slot_selector.visible = false
+		return
+	_place_native_selector_on_item(
+		equip_slot_list,
+		equip_slot_selector,
+		_equip_slot_index,
+		equip_left_selector_offset
+	)
+
+
+func _place_equip_right_selector() -> void:
+	if _page != Page.EQUIP or _equip_focus != EquipFocus.ACCESSORY or _equip_entries.is_empty():
+		equip_accessory_selector.visible = false
+		return
+	_place_native_selector_on_item(
+		equip_accessory_list,
+		equip_accessory_selector,
+		_equip_accessory_index,
+		equip_right_selector_offset
+	)
+
+
+func _place_data_selector() -> void:
+	if _page != Page.DATA or _data_entries.is_empty():
+		data_species_selector.visible = false
+		return
+	_place_native_selector_on_item(
+		data_species_list,
+		data_species_selector,
+		_data_index,
+		data_selector_offset
+	)
+
+
+func _place_hints_selector() -> void:
+	if _page != Page.HINTS:
+		hints_selector.visible = false
+		return
+	_place_native_selector_on_item(
+		hints_list,
+		hints_selector,
+		_hint_index,
+		hints_selector_offset
+	)
+
+
+func _place_exit_selector() -> void:
+	if not exit_confirm.visible or _exit_closing:
+		exit_selector.visible = false
+		return
+
+	var row_offset := exit_selector_offset
+	if _exit_index == 0:
+		row_offset.y += exit_yes_extra_y
+
+	_place_native_selector_on_item(
+		exit_list,
+		exit_selector,
+		_exit_index,
+		row_offset
+	)
+
+
+func _update_visible_native_selectors() -> void:
+	if not _is_open or _transitioning:
+		_hide_all_selector_overlays()
+		return
+
+	if _page == Page.MAIN and not exit_confirm.visible:
+		_update_command_selector()
+	elif _page == Page.EQUIP:
+		_place_equip_left_selector()
+		_place_equip_right_selector()
+	elif _page == Page.DATA:
+		_place_data_selector()
+	elif _page == Page.HINTS:
+		_place_hints_selector()
+
+	if exit_confirm.visible:
+		_place_exit_selector()
+
+
+func _hide_all_selector_overlays() -> void:
+	for selector in [
+		command_selector,
+		equip_slot_selector,
+		equip_accessory_selector,
+		data_species_selector,
+		hints_selector,
+		exit_selector,
+	]:
+		if is_instance_valid(selector):
+			selector.visible = false
+
+
+func _sync_selector_visibility() -> void:
+	_hide_all_selector_overlays()
+	if not _is_open or _transitioning:
+		return
+	call_deferred("_update_visible_native_selectors")
+
 
 func _update_exit_selector() -> void:
-	if not is_instance_valid(exit_selector):
+	if not is_instance_valid(exit_list) or exit_list.item_count <= 0:
+		if is_instance_valid(exit_selector):
+			exit_selector.visible = false
 		return
-	exit_selector.position.y = 8.0 + float(_exit_index) * 13.0
-
+	_exit_index = clampi(_exit_index, 0, exit_list.item_count - 1)
+	exit_list.select(_exit_index)
+	exit_list.ensure_current_is_visible()
+	call_deferred("_place_exit_selector")
 
 
 func _set_command_confirm_colors(confirming: bool) -> void:
@@ -801,8 +1155,14 @@ func _set_command_confirm_colors(confirming: bool) -> void:
 		command_list.set_item_custom_fg_color(item_index, color)
 
 func _hide_exit_confirm() -> void:
-	if not exit_confirm.visible:
+	if not exit_confirm.visible or _exit_closing:
 		return
+
+	# Stop the screen-space selector immediately. The confirmation panel may
+	# still animate closed, but its selector must never linger over Main.
+	_exit_closing = true
+	if is_instance_valid(exit_selector):
+		exit_selector.visible = false
 
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BACK)
@@ -810,10 +1170,12 @@ func _hide_exit_confirm() -> void:
 	tween.tween_property(exit_panel, "scale", Vector2(0.06, 0.06), 0.10)
 	await tween.finished
 	exit_confirm.visible = false
+	_exit_closing = false
 	_set_command_confirm_colors(false)
 	command_disabled_overlay.visible = false
 	exit_panel.scale = Vector2.ONE
 	_update_main_info()
+	_sync_selector_visibility()
 
 
 func _refresh_all() -> void:
@@ -866,6 +1228,8 @@ func _refresh_equip_page() -> void:
 
 	equip_slot_list.add_item(rod_name)
 	equip_slot_list.add_item(lure_name)
+	equip_rod_slot_label.text = rod_name
+	equip_lure_slot_label.text = lure_name
 	equip_slot_list.select(_equip_slot_index)
 	_update_equip_slot_selector()
 
@@ -913,6 +1277,7 @@ func _rebuild_equip_entries() -> void:
 			_equip_entries.size() - 1
 		)
 		equip_accessory_list.select(_equip_accessory_index)
+		call_deferred("_place_equip_right_selector")
 
 	_update_equip_accessory_counter()
 
@@ -932,6 +1297,7 @@ func _refresh_equip_selection() -> void:
 	if not _equip_entries.is_empty():
 		equip_accessory_list.select(_equip_accessory_index)
 		equip_accessory_list.ensure_current_is_visible()
+	call_deferred("_place_equip_right_selector")
 
 	if _equip_focus == EquipFocus.SLOT:
 		equip_slot_list.grab_focus()
@@ -948,19 +1314,20 @@ func _update_equip_slot_colors() -> void:
 		return
 
 	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
-	# The bitmap glyphs are already dark gray. Lowering RGB made them black.
-	# Fade their alpha instead so the beige panel shows through as BOF4-style
-	# light gray disabled text.
 	var inactive_color := Color(2.2, 2.2, 2.2, 1.0)
 
-	for item_index in range(equip_slot_list.item_count):
-		equip_slot_list.set_item_custom_fg_color(item_index, normal_color)
+	# SlotList is navigation-only; the dedicated labels let rod and lure have
+	# independent one-pixel placement without disturbing row geometry.
+	if is_instance_valid(equip_rod_slot_label):
+		equip_rod_slot_label.add_theme_color_override("font_color", normal_color)
+	if is_instance_valid(equip_lure_slot_label):
+		equip_lure_slot_label.add_theme_color_override("font_color", normal_color)
 
-	# While browsing accessories, the other equipped slot is intentionally
-	# greyed like BOF4. Example: choosing a lure greys the equipped rod.
-	if _equip_focus == EquipFocus.ACCESSORY and equip_slot_list.item_count >= 2:
-		var inactive_index: int = 1 - _equip_slot_index
-		equip_slot_list.set_item_custom_fg_color(inactive_index, inactive_color)
+	if _equip_focus == EquipFocus.ACCESSORY:
+		if _equip_slot_index == 0 and is_instance_valid(equip_lure_slot_label):
+			equip_lure_slot_label.add_theme_color_override("font_color", inactive_color)
+		elif _equip_slot_index == 1 and is_instance_valid(equip_rod_slot_label):
+			equip_rod_slot_label.add_theme_color_override("font_color", inactive_color)
 
 
 func _update_equip_accessory_counter() -> void:
@@ -1173,9 +1540,10 @@ func _canonical_species_key(display_name: String) -> String:
 
 
 func _update_data_selector() -> void:
-	# Normalized selector: SpeciesList draws selection from its real row rect
-	# using StyleSelectedBig. Scrolling and row spacing are handled by ItemList.
-	pass
+	data_species_list.select(_data_index)
+	data_species_list.ensure_current_is_visible()
+	call_deferred("_place_data_selector")
+
 
 func _configure_data_list_visuals() -> void:
 	# ItemList keeps its internal scrollbar for scrolling logic, but BOF4 draws
@@ -1297,9 +1665,10 @@ func _update_help_text() -> void:
 
 
 func _update_hint_selector() -> void:
-	# Normalized selector: Hints TopicList draws selection from its real row
-	# rect using StyleSelectedBigger. No base/step pixel math remains.
-	pass
+	hints_list.select(_hint_index)
+	hints_list.ensure_current_is_visible()
+	call_deferred("_place_hints_selector")
+
 
 func _update_hint_text() -> void:
 	hints_list.select(_hint_index)
