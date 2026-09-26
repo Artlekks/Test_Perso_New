@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3]
+[gd_scene load_steps=42 format=3]
 
 [ext_resource type="Script" path="res://scripts/fishing_menu.gd" id="1_menu"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
@@ -34,6 +34,10 @@
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Minnow_Dark.png" id="32_minnow_dark"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Frogger_Dark.png" id="33_frogger_dark"]
 [ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/lure_icons/Icon_Worm_Dark.png" id="34_worm_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/wave_icons/Icon_CalmWave_Dark.png" id="35_calm_wave_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/wave_icons/Icon_BigWaves_Dark.png" id="36_big_waves_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/wave_icons/Icon_TsunamiWaves_Dark.png" id="37_tsunami_waves_dark"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Hint_Info_Panel.png" id="38_hint_info"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleEmpty"]
 
@@ -659,6 +663,45 @@ expand_mode = 1
 stretch_mode = 2
 mouse_filter = 2
 
+[node name="CalmWaveDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 36
+offset_top = 73
+offset_right = 48
+offset_bottom = 85
+texture = ExtResource("35_calm_wave_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="BigWavesDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 52
+offset_top = 73
+offset_right = 64
+offset_bottom = 85
+texture = ExtResource("36_big_waves_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
+[node name="TsunamiWavesDark" type="TextureRect" parent="Root/DataPage/DetailsPanel/RecordPanel"]
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_left = 68
+offset_top = 73
+offset_right = 80
+offset_bottom = 85
+texture = ExtResource("37_tsunami_waves_dark")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
+
 [node name="DetailPagePanels" type="Control" parent="Root/DataPage"]
 visible = false
 layout_mode = 0
@@ -741,6 +784,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 text = ""
+horizontal_alignment = 2
 clip_text = true
 mouse_filter = 2
 
@@ -840,20 +884,39 @@ theme_override_styles/selected = SubResource("StyleEmpty")
 theme_override_styles/selected_focus = SubResource("StyleEmpty")
 mouse_filter = 2
 
-[node name="TextPanel" type="Control" parent="Root/HintsPage"]
+[node name="TextPanel" type="TextureRect" parent="Root/HintsPage"]
 visible = false
+clip_contents = true
+texture_filter = 1
 layout_mode = 0
-offset_right = 0.5
-offset_bottom = 0.5
+offset_left = 41
+offset_top = 174
+offset_right = 279
+offset_bottom = 228
+texture = ExtResource("38_hint_info")
+expand_mode = 1
+stretch_mode = 2
+mouse_filter = 2
 
 [node name="TextLabel" type="Label" parent="Root/HintsPage/TextPanel"]
 layout_mode = 0
-offset_right = 0.5
-offset_bottom = 0.5
+offset_left = 10
+offset_top = 8
+offset_right = 228
+offset_bottom = 47
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 text = ""
+autowrap_mode = 2
+clip_text = true
+mouse_filter = 2
+
+[node name="ScrollArrow" type="Polygon2D" parent="Root/HintsPage/TextPanel"]
+visible = false
+position = Vector2(119, 49)
+polygon = PackedVector2Array(-4, -2, 4, -2, 0, 2)
+color = Color(0, 0, 0, 1)
 
 [node name="OptionsPage" type="Control" parent="Root"]
 visible = false

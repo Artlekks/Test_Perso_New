@@ -3,6 +3,12 @@ class_name FishingMenu
 
 const EQUIP_LEFT_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left_Filled.png")
 const EQUIP_LEFT_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left.png")
+const COMMAND_PANEL_NORMAL: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Command_Panel.png")
+const COMMAND_PANEL_CONFIRM_DISABLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Command_Panel_Disabled.png")
+const MAIN_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Main_Command_Selector.png")
+const MAIN_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Main_Command_Selector_Outline.png")
+const HINT_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Hint_Panel_Selector.png")
+const HINT_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Hint_Panel_Selector_Outline.png")
 const EQUIP_ROD_GUIDE_PANEL: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Rod_Panel.png")
 const EQUIP_LURE_GUIDE_PANEL: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Lure_Panel.png")
 
@@ -111,6 +117,19 @@ const HINT_TOPICS: PackedStringArray = [
 	"Lure Actions",
 ]
 
+const HINT_DETAIL_TEXT: PackedStringArray = [
+	"You can use the Fishing Controller to play the fishing minigame!",
+	"Reference text for Rods and Lures will be added here.",
+	"Reference text for Types of Lures will be added here.",
+	"Reference text for Terrain and Range will be added here.",
+	"Reference text for Hooking will be added here.",
+	"Reference text for Uses of Fish will be added here.",
+	"Reference text for Lure Actions will be added here.",
+]
+
+const HINT_TEXT_LINES_PER_PAGE: int = 3
+const HINT_TEXT_MAX_WIDTH_PX: int = 218
+
 # BOF4 Data-menu species order. Only discovered species are shown, but they
 # always retain this canonical ordering as the journal grows.
 const DATA_SPECIES_ORDER: PackedStringArray = [
@@ -137,7 +156,6 @@ const DATA_SPECIES_ORDER: PackedStringArray = [
 	"Sea Bass",
 	"Flatfish",
 	"Sea Bream",
-	"Bream",
 	"Octopus",
 	"Bonito",
 	"Black Porgy",
@@ -312,6 +330,44 @@ const DATA_DARK_LURE_FAMILIES: Dictionary = {
 }
 
 
+# Data menu depth/wave availability.
+# A listed wave icon is dark/unavailable for that fish.
+# Display order is Calm, Big Waves, Tsunami.
+const DATA_DARK_WAVES: Dictionary = {
+	"jellyfish": [&"tsunami"],
+	"piranha": [&"calm", &"tsunami"],
+	"bass": [&"calm", &"tsunami"],
+	"bluegill": [&"calm", &"tsunami"],
+	"sweetfish": [&"big", &"tsunami"],
+	"browntail": [&"big", &"tsunami"],
+	"blackbass": [&"calm", &"tsunami"],
+	"angelfish": [&"calm", &"tsunami"],
+	"trout": [&"big", &"tsunami"],
+	"rainbowtrout": [&"big", &"tsunami"],
+	"bullcat": [&"big", &"tsunami"],
+	"martiansquid": [&"calm", &"tsunami"],
+	"dorado": [&"calm", &"tsunami"],
+	"salmon": [&"big", &"tsunami"],
+	"barundi": [&"calm", &"tsunami"],
+	"sturgeon": [&"big", &"tsunami"],
+	"manowar": [&"calm", &"big"],
+	"flyingfish": [&"calm", &"big"],
+	"blowfish": [&"calm", &"big"],
+	"moonfish": [&"calm", &"big"],
+	"seabass": [&"calm", &"big"],
+	"flatfish": [&"calm", &"big"],
+	"seabream": [&"calm", &"big"],
+	"octopus": [&"calm", &"big"],
+	"bonito": [&"calm", &"big"],
+	"blackporgy": [&"calm", &"big"],
+	"angler": [&"calm", &"big"],
+	"spearfish": [&"calm", &"big"],
+	"whale": [&"calm", &"big"],
+	"acheron": [&"calm", &"big", &"tsunami"],
+}
+
+
+
 
 @export_category("Selector Calibration LIVE (screen pixels)")
 ## These selectors live outside the 2x-scaled 320x240 menu root, so every
@@ -376,7 +432,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var info_label: Label = $Root/InfoPanel/InfoLabel
 
 @onready var main_page: Control = $Root/MainPage
-@onready var command_panel: Control = $Root/MainPage/LeftMask/CommandPanel
+@onready var command_panel: TextureRect = $Root/MainPage/LeftMask/CommandPanel
 @onready var command_selector: TextureRect = $SelectorLayer/MainCommand
 @onready var command_disabled_overlay: ColorRect = $Root/MainPage/LeftMask/CommandPanel/DisabledOverlay
 @onready var command_list: ItemList = $Root/MainPage/LeftMask/CommandPanel/CommandList
@@ -423,6 +479,9 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var data_lure_minnow_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/MinnowDark
 @onready var data_lure_frogger_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/FroggerDark
 @onready var data_lure_worm_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/WormDark
+@onready var data_wave_calm_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/CalmWaveDark
+@onready var data_wave_big_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/BigWavesDark
+@onready var data_wave_tsunami_dark: TextureRect = $Root/DataPage/DetailsPanel/RecordPanel/TsunamiWavesDark
 @onready var data_detail_panels: Control = $Root/DataPage/DetailPagePanels
 @onready var data_detail_name_label: Label = $Root/DataPage/DetailPagePanels/NamePanel/FishNameLabel
 @onready var data_detail_effect_label: Label = $Root/DataPage/DetailPagePanels/GuidePanel/EffectLabel
@@ -438,6 +497,8 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var hints_selector: TextureRect = $SelectorLayer/Hints
 @onready var hints_list: ItemList = $Root/HintsPage/TopicPanel/TopicList
 @onready var hints_text_label: Label = $Root/HintsPage/TextPanel/TextLabel
+@onready var hints_text_panel: TextureRect = $Root/HintsPage/TextPanel
+@onready var hints_scroll_arrow: Polygon2D = $Root/HintsPage/TextPanel/ScrollArrow
 
 @onready var options_page: Control = $Root/OptionsPage
 @onready var exit_confirm: Control = $Root/ExitConfirm
@@ -466,6 +527,9 @@ var _data_entries: Array[Dictionary] = []
 var _data_detail_open: bool = false
 var _help_index: int = 0
 var _hint_index: int = 0
+var _hint_detail_open: bool = false
+var _hint_text_lines: Array[String] = []
+var _hint_text_line_start: int = 0
 var _exit_index: int = 1
 var _pause_was_active: bool = false
 var _session_time_seconds: float = 0.0
@@ -662,6 +726,7 @@ func _handle_vertical_navigation(step: int) -> void:
 
 		Page.DATA:
 			if _data_detail_open:
+				_move_data_detail_selection(step)
 				return
 			if not _data_entries.is_empty():
 				_data_index = clampi(_data_index + step, 0, _data_entries.size() - 1)
@@ -679,6 +744,10 @@ func _handle_vertical_navigation(step: int) -> void:
 			_update_help_text()
 
 		Page.HINTS:
+			if _hint_detail_open:
+				_scroll_hint_text(step)
+				return
+
 			_hint_index = clampi(_hint_index + step, 0, HINT_TOPICS.size() - 1)
 			hints_list.select(_hint_index)
 			hints_list.ensure_current_is_visible()
@@ -797,6 +866,9 @@ func _set_page(page: int) -> void:
 			info_label.text = "Learn How To Fish - Select a topic."
 			_update_help_text()
 		Page.HINTS:
+			_hint_detail_open = false
+			hints_text_panel.visible = false
+			_set_hint_detail_colors(false)
 			info_label.text = "Using the Fishing Controller"
 			_update_hint_text()
 		Page.OPTIONS:
@@ -838,6 +910,10 @@ func _handle_cancel() -> void:
 
 	if _page == Page.DATA and _data_detail_open:
 		_transition_data_detail(false)
+		return
+
+	if _page == Page.HINTS and _hint_detail_open:
+		_close_hint_detail()
 		return
 
 	_transition_to_main()
@@ -914,8 +990,20 @@ func _handle_data_input(event: InputEvent) -> void:
 		return
 
 	if _data_detail_open:
-		if _horizontal_step(event) != 0 or _is_confirm(event):
-			_transition_data_detail(false)
+		var detail_step: int = 0
+		var vertical_step: int = _vertical_step(event)
+		var horizontal_step: int = _horizontal_step(event)
+
+		# Original BOF4 behavior:
+		# W or A = previous fish.
+		# S or D = next fish.
+		if vertical_step < 0 or horizontal_step < 0:
+			detail_step = -1
+		elif vertical_step > 0 or horizontal_step > 0:
+			detail_step = 1
+
+		if detail_step != 0:
+			_move_data_detail_selection(detail_step)
 		return
 
 	if _is_confirm(event):
@@ -937,6 +1025,38 @@ func _handle_data_input(event: InputEvent) -> void:
 	_update_data_details()
 
 
+func _move_data_detail_selection(step: int) -> void:
+	if step == 0 or _data_entries.is_empty():
+		return
+
+	var new_index: int = _data_index
+
+	# Skip undiscovered entries in normal gameplay.
+	while true:
+		var candidate: int = new_index + step
+		if candidate < 0 or candidate >= _data_entries.size():
+			return
+
+		new_index = candidate
+		var candidate_entry: Dictionary = _data_entries[new_index]
+		if bool(candidate_entry.get("discovered", false)):
+			break
+
+	_data_index = new_index
+
+	# Keep the hidden list synchronized so returning with I lands on the
+	# same fish currently displayed in the detail page.
+	data_species_list.select(_data_index)
+	data_species_list.ensure_current_is_visible()
+	_sync_data_selector_window()
+	_update_data_scroll_thumb()
+
+	# Refresh every shared/manual field without changing page layout.
+	_update_data_details()
+	_update_data_detail_content()
+	info_label.text = "Directional buttons: Change page"
+
+
 func _handle_help_input(event: InputEvent) -> void:
 	var step: int = _vertical_step(event)
 	if step == 0:
@@ -949,15 +1069,11 @@ func _handle_help_input(event: InputEvent) -> void:
 
 
 func _handle_hints_input(event: InputEvent) -> void:
-	var step: int = _vertical_step(event)
-	if step == 0:
+	if _hint_detail_open:
 		return
 
-	_hint_index = clampi(_hint_index + step, 0, HINT_TOPICS.size() - 1)
-	hints_list.select(_hint_index)
-	hints_list.ensure_current_is_visible()
-	_update_hint_selector()
-	_update_hint_text()
+	if _is_confirm(event):
+		_open_hint_detail()
 
 
 func _handle_options_input(_event: InputEvent) -> void:
@@ -1060,6 +1176,9 @@ func _transition_from_main(target_page: int) -> void:
 			_refresh_data_page()
 		Page.HINTS:
 			hints_page.visible = true
+			_hint_detail_open = false
+			hints_text_panel.visible = false
+			_set_hint_detail_colors(false)
 			hints_topic_panel.position.x = OFF_RIGHT_X
 			_update_hint_selector()
 			_update_hint_text()
@@ -1201,6 +1320,13 @@ func _update_main_info() -> void:
 func _update_command_selector() -> void:
 	if not is_instance_valid(command_selector):
 		return
+
+	command_selector.texture = (
+		MAIN_SELECTOR_OUTLINE
+		if exit_confirm.visible
+		else MAIN_SELECTOR_FILLED
+	)
+
 	command_selector.position = (
 		main_selector_screen_position
 		+ Vector2(0.0, float(_command_index) * 34.0)
@@ -1208,7 +1334,6 @@ func _update_command_selector() -> void:
 	command_selector.visible = (
 		_is_open
 		and _page == Page.MAIN
-		and not exit_confirm.visible
 		and not _transitioning
 	)
 
@@ -1351,6 +1476,13 @@ func _place_hints_selector() -> void:
 	if _page != Page.HINTS:
 		hints_selector.visible = false
 		return
+
+	hints_selector.texture = (
+		HINT_SELECTOR_OUTLINE
+		if _hint_detail_open
+		else HINT_SELECTOR_FILLED
+	)
+
 	_place_native_selector_on_item(
 		hints_list,
 		hints_selector,
@@ -1381,7 +1513,7 @@ func _update_visible_native_selectors() -> void:
 		_hide_all_selector_overlays()
 		return
 
-	if _page == Page.MAIN and not exit_confirm.visible:
+	if _page == Page.MAIN:
 		_update_command_selector()
 	elif _page == Page.EQUIP:
 		_place_equip_left_selector()
@@ -1427,6 +1559,15 @@ func _update_exit_selector() -> void:
 
 
 func _set_command_confirm_colors(confirming: bool) -> void:
+	if is_instance_valid(command_panel):
+		command_panel.texture = (
+			COMMAND_PANEL_CONFIRM_DISABLED
+			if confirming
+			else COMMAND_PANEL_NORMAL
+		)
+
+	# Keep the hidden ItemList state synchronized as well, although the visible
+	# command words/icons themselves are baked into the panel texture.
 	if not is_instance_valid(command_list):
 		return
 
@@ -1810,8 +1951,6 @@ func _refresh_data_page() -> void:
 		if entries_by_key.has(canonical_key):
 			entry = (entries_by_key[canonical_key] as Dictionary).duplicate(true)
 		else:
-			# A reserved slot (currently Bream if it is not in the content catalog)
-			# still stays in the correct list position.
 			entry = {
 				"display_name": canonical_name,
 				"discovered": false,
@@ -1845,6 +1984,7 @@ func _update_data_details() -> void:
 	data_point_label.text = "---"
 	data_caught_count_label.text = "00"
 	_set_data_lure_dark_overlays("", false)
+	_set_data_wave_dark_overlays("", false)
 
 	if _data_entries.is_empty():
 		info_label.text = "No fishing data."
@@ -1867,6 +2007,7 @@ func _update_data_details() -> void:
 
 	var discovered: bool = bool(entry.get("discovered", false))
 	_set_data_lure_dark_overlays(fish_key, discovered)
+	_set_data_wave_dark_overlays(fish_key, discovered)
 
 	if not discovered:
 		return
@@ -1904,6 +2045,26 @@ func _set_data_lure_dark_overlays(
 	)
 	data_lure_worm_dark.visible = (
 		discovered and dark_families.has(&"worm")
+	)
+
+
+func _set_data_wave_dark_overlays(
+	fish_key: String,
+	discovered: bool
+) -> void:
+	var dark_waves: Array = DATA_DARK_WAVES.get(
+		fish_key,
+		[]
+	)
+
+	data_wave_calm_dark.visible = (
+		discovered and dark_waves.has(&"calm")
+	)
+	data_wave_big_dark.visible = (
+		discovered and dark_waves.has(&"big")
+	)
+	data_wave_tsunami_dark.visible = (
+		discovered and dark_waves.has(&"tsunami")
 	)
 
 
@@ -2382,7 +2543,124 @@ func _update_hint_selector() -> void:
 func _update_hint_text() -> void:
 	hints_list.select(_hint_index)
 	_update_hint_selector()
-	hints_text_label.text = "%s\n\nReference text will be filled from your BOF4 screenshots." % HINT_TOPICS[_hint_index]
+
+	_hint_text_line_start = 0
+	_hint_text_lines = _wrap_hint_text(
+		HINT_DETAIL_TEXT[_hint_index],
+		HINT_TEXT_MAX_WIDTH_PX
+	)
+	_refresh_hint_text_page()
+
+
+func _open_hint_detail() -> void:
+	if _hint_detail_open:
+		return
+
+	_hint_detail_open = true
+	_hint_text_line_start = 0
+	hints_text_panel.visible = true
+	_set_hint_detail_colors(true)
+	_update_hint_text()
+	_sync_selector_visibility()
+
+
+func _close_hint_detail() -> void:
+	if not _hint_detail_open:
+		return
+
+	_hint_detail_open = false
+	_hint_text_line_start = 0
+	hints_text_panel.visible = false
+	hints_scroll_arrow.visible = false
+	_set_hint_detail_colors(false)
+	_update_hint_selector()
+	_sync_selector_visibility()
+
+
+func _set_hint_detail_colors(detail_open: bool) -> void:
+	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
+	var inactive_color: Color = disabled_text_tint
+
+	for item_index in range(hints_list.item_count):
+		var item_color := normal_color
+		if detail_open and item_index != _hint_index:
+			item_color = inactive_color
+		hints_list.set_item_custom_fg_color(item_index, item_color)
+
+	hints_list.queue_redraw()
+
+
+func _scroll_hint_text(step: int) -> void:
+	if not _hint_detail_open or step == 0:
+		return
+
+	if step > 0:
+		if (
+			_hint_text_line_start + HINT_TEXT_LINES_PER_PAGE
+			< _hint_text_lines.size()
+		):
+			_hint_text_line_start += HINT_TEXT_LINES_PER_PAGE
+	else:
+		_hint_text_line_start = maxi(
+			_hint_text_line_start - HINT_TEXT_LINES_PER_PAGE,
+			0
+		)
+
+	_refresh_hint_text_page()
+
+
+func _refresh_hint_text_page() -> void:
+	if _hint_text_lines.is_empty():
+		hints_text_label.text = ""
+		hints_scroll_arrow.visible = false
+		return
+
+	var end_index: int = mini(
+		_hint_text_line_start + HINT_TEXT_LINES_PER_PAGE,
+		_hint_text_lines.size()
+	)
+
+	var visible_lines := PackedStringArray()
+	for line_index in range(_hint_text_line_start, end_index):
+		visible_lines.append(_hint_text_lines[line_index])
+
+	hints_text_label.text = "\n".join(visible_lines)
+	hints_scroll_arrow.visible = (
+		_hint_detail_open
+		and end_index < _hint_text_lines.size()
+	)
+
+
+func _wrap_hint_text(
+	value: String,
+	max_width_px: int
+) -> Array[String]:
+	var result: Array[String] = []
+
+	for paragraph in value.split("\n", true):
+		if paragraph.is_empty():
+			result.append("")
+			continue
+
+		var current_line := ""
+		for word in paragraph.split(" ", false):
+			var candidate := word
+			if not current_line.is_empty():
+				candidate = current_line + " " + word
+
+			if (
+				current_line.is_empty()
+				or _bof_text_advance_px(candidate) <= max_width_px
+			):
+				current_line = candidate
+			else:
+				result.append(current_line)
+				current_line = word
+
+		if not current_line.is_empty():
+			result.append(current_line)
+
+	return result
 
 
 func _update_time_label() -> void:

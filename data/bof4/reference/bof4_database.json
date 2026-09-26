@@ -7,7 +7,11 @@
       "https://gamefaqs.gamespot.com/ps/196818-breath-of-fire-iv/faqs/10937"
     ],
     "supplied_project_gdd": "Breath of Fire IV Fishing Minigame - Comprehensive Game Design Document",
-    "note": "The original supplied GDD listed 27 fish and contained several fish-stat discrepancies. v2 uses the verified 30-fish table for fish size/king/max-points/lure/spot facts, with English FAQs used for item effects/worth. Authored gameplay tuning remains explicitly separate."
+    "note": "The original supplied GDD listed 27 fish and contained several fish-stat discrepancies. v2 uses the verified 30-fish table for fish size/king/max-points/lure/spot facts, with English FAQs used for item effects/worth. Authored gameplay tuning remains explicitly separate.",
+    "additional_references": [
+      "https://bof.fandom.com/wiki/Fishing_Spot"
+    ],
+    "fandom_fishing_spot_note": "BOF4 section used only for world-map discovery/location/tip reference. Gameplay stats/lure compatibility remain governed by verified project data and direct in-game reference captures."
   },
   "source_data": {
     "fish": [
@@ -1700,7 +1704,12 @@
           "rainbow_trout"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Shallow; waterfall area is useful for Rainbow Trout."
+        "depth_notes": "Shallow; waterfall area is useful for Rainbow Trout.",
+        "fandom_discovery": "East of the canyon east of Sarai.",
+        "fandom_tips": [
+          "Trout tip: use the Straight lure.",
+          "Rainbow Trout tip: Tech 4 with a Flattop near the waterfall."
+        ]
       },
       {
         "id": "river_2",
@@ -1714,7 +1723,8 @@
           "salmon"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Shallow river population."
+        "depth_notes": "Shallow river population.",
+        "fandom_discovery": "North of Kasq Woods; revealed after talking to the NPC in Kasq Woods and leaving the forest."
       },
       {
         "id": "river_3",
@@ -1730,7 +1740,8 @@
           "sturgeon"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Large river population including Sturgeon."
+        "depth_notes": "Large river population including Sturgeon.",
+        "fandom_discovery": "South-west of Fou-Lu's Tomb."
       },
       {
         "id": "lake_1",
@@ -1744,7 +1755,11 @@
           "martian_squid"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Lake population; Martian Squid is present."
+        "depth_notes": "Lake population; Martian Squid is present.",
+        "fandom_discovery": "Between Synesta and the Wharf; look for a '?' and leave the desert to the northeast to uncover the route.",
+        "fandom_tips": [
+          "Barandy: long/fat shadow; very long casts and Tech 4 are useful."
+        ]
       },
       {
         "id": "lake_2",
@@ -1759,7 +1774,8 @@
           "dorado"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Lake population including Black Bass and Dorado."
+        "depth_notes": "Lake population including Black Bass and Dorado.",
+        "fandom_discovery": "South of Lyp Village."
       },
       {
         "id": "lake_3",
@@ -1774,7 +1790,8 @@
           "barandy"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Lake population including Barandy."
+        "depth_notes": "Lake population including Barandy.",
+        "fandom_discovery": "North of Chiqua."
       },
       {
         "id": "ocean_1",
@@ -1787,7 +1804,8 @@
           "sea_bream"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "First ocean population."
+        "depth_notes": "First ocean population.",
+        "fandom_discovery": "Between Shyde and Ludia; enter the '?' area and leave the map toward the west."
       },
       {
         "id": "ocean_2",
@@ -1803,7 +1821,12 @@
           "whale"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Deep ocean population including Spearfish and Whale."
+        "depth_notes": "Deep ocean population including Spearfish and Whale.",
+        "fandom_discovery": "In the north-eastern region of the world map.",
+        "fandom_tips": [
+          "Whale: aim near the rock to the right at roughly 25-30m.",
+          "Spearfish: prefers surface-to-mid depth."
+        ]
       },
       {
         "id": "ocean_3",
@@ -1818,7 +1841,8 @@
           "angler"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Deep ocean population including Angler."
+        "depth_notes": "Deep ocean population including Angler.",
+        "fandom_discovery": "In a '?' area between Highway and the area south of Kwanso; leave toward the west."
       },
       {
         "id": "saldine",
@@ -1831,7 +1855,8 @@
           "black_porgy"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Saldine-only population includes Moorfish and Black Porgy."
+        "depth_notes": "Saldine-only population includes Moorfish and Black Porgy.",
+        "fandom_discovery": "North-east of the Flats; visited during story progression."
       },
       {
         "id": "chamba",
@@ -1843,7 +1868,11 @@
           "acheron"
         ],
         "unresolved_fish_names": [],
-        "depth_notes": "Special Chamba population."
+        "depth_notes": "Special Chamba population.",
+        "fandom_discovery": "South-east of Chamba; revisit after the Chamba story events, climb the ladder and walk to the roof.",
+        "fandom_tips": [
+          "Acheron: aim through the alley between the buildings to the right at roughly 20m."
+        ]
       }
     ],
     "example_manillo_trades": [
