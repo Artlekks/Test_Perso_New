@@ -18,6 +18,17 @@ signal exploration_view_started
 @export_category("Fishing Follow")
 @export_range(0.1, 0.9, 0.05)
 var fishing_follow_trigger_y_ratio: float = 0.50
+# Screen-space tracking zone for the lure / hooked fish.
+# The target may move freely until it reaches one of these boundaries.
+# Values are ratios of the native viewport, so they stay correct if the
+# game window is scaled.
+#
+# 0.58 = about y=139 on a 320x240 frame.
+# 0.40 = about x=128 on a 320x240 frame.
+@export_range(0.45, 0.75, 0.01)
+var fishing_follow_bottom_y_ratio: float = 0.58
+@export_range(0.20, 0.60, 0.01)
+var fishing_follow_left_x_ratio: float = 0.40
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
 var fishing_aim_active: bool = false
@@ -227,16 +238,43 @@ func _update_fishing_follow() -> bool:
 				projected_position
 			)
 
-			var viewport_height := (
-				get_viewport().get_visible_rect().size.y
+			var viewport_size := (
+				get_viewport().get_visible_rect().size
 			)
+			var viewport_height := viewport_size.y
+			var viewport_width := viewport_size.x
 
 			var trigger_y := (
 				viewport_height
 				* fishing_follow_trigger_y_ratio
 			)
+			var bottom_limit_y := (
+				viewport_height
+				* fishing_follow_bottom_y_ratio
+			)
+			var left_limit_x := (
+				viewport_width
+				* fishing_follow_left_x_ratio
+			)
+			var has_reached_water := (
+				current_position.y
+				<= fishing_follow_water_y + 0.05
+			)
 
-			if screen_position.y <= trigger_y:
+			# Normal casts arm the camera at the existing upper trigger. Very
+			# short casts may never reach that trigger, so once the lure has
+			# reached the water, also activate if it would already violate the
+			# central tracking zone.
+			if (
+				screen_position.y <= trigger_y
+				or (
+					has_reached_water
+					and (
+						screen_position.y >= bottom_limit_y
+						or screen_position.x <= left_limit_x
+					)
+				)
+			):
 				fishing_follow_armed = false
 				fishing_follow_active = true
 
@@ -266,8 +304,205 @@ func _update_fishing_follow() -> bool:
 			+ fishing_follow_direction * fishing_follow_offset
 	)
 
+	# Keep the lure / hooked fish inside a loose central screen-space zone.
+	# It is still free to move naturally inside the zone; the camera only
+	# corrects once it tries to cross the lower or left boundary.
+	_enforce_fishing_tracking_zone(current_position)
+
 	return true
 	
+
+func _enforce_fishing_tracking_zone(
+	world_position: Vector3
+) -> void:
+	# Correct twice because a perspective camera can couple horizontal and
+	# vertical screen movement slightly. Two small passes keep both limits
+	# respected without locking the target rigidly to a single screen point.
+	for _i in range(2):
+		_enforce_fishing_bottom_screen_limit(world_position)
+		_enforce_fishing_left_screen_limit(world_position)
+
+
+func _enforce_fishing_left_screen_limit(
+	world_position: Vector3
+) -> void:
+	var camera: Camera3D = $Camera3D
+
+	if camera.is_position_behind(world_position):
+		return
+
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	if viewport_width <= 0.0:
+		return
+
+	var limit_x := viewport_width * fishing_follow_left_x_ratio
+	var start_screen_x := camera.unproject_position(world_position).x
+
+	if start_screen_x >= limit_x:
+		return
+
+	var start_rig_position := global_position
+
+	# Use the camera's screen-right direction projected onto the water plane.
+	# Probe both signs so this remains robust if the authored camera heading
+	# changes at another fishing spot.
+	var camera_right := camera.global_transform.basis.x
+	camera_right.y = 0.0
+
+	if camera_right.length_squared() <= 0.000001:
+		return
+
+	camera_right = camera_right.normalized()
+
+	var probe_distance := 0.25
+	var correction_axis := -camera_right
+
+	global_position = start_rig_position - camera_right * probe_distance
+	var negative_x := camera.unproject_position(world_position).x
+
+	global_position = start_rig_position + camera_right * probe_distance
+	var positive_x := camera.unproject_position(world_position).x
+
+	global_position = start_rig_position
+
+	if positive_x > negative_x:
+		correction_axis = camera_right
+
+	var probe_x := maxf(negative_x, positive_x)
+	if probe_x <= start_screen_x:
+		# Neither direction improves the horizontal framing.
+		return
+
+	# Expand until the target is inside the allowed zone, then binary-search
+	# the smallest camera correction necessary.
+	var low_distance := 0.0
+	var high_distance := probe_distance
+	var high_x := probe_x
+
+	for _i in range(10):
+		if high_x >= limit_x:
+			break
+
+		low_distance = high_distance
+		high_distance *= 2.0
+		global_position = (
+			start_rig_position
+				+ correction_axis * high_distance
+		)
+		high_x = camera.unproject_position(world_position).x
+
+	if high_x < limit_x:
+		return
+
+	for _i in range(8):
+		var mid_distance := (low_distance + high_distance) * 0.5
+		global_position = (
+			start_rig_position
+				+ correction_axis * mid_distance
+		)
+
+		var mid_x := camera.unproject_position(world_position).x
+		if mid_x < limit_x:
+			low_distance = mid_distance
+		else:
+			high_distance = mid_distance
+
+	global_position = (
+		start_rig_position
+			+ correction_axis * high_distance
+	)
+
+
+func _enforce_fishing_bottom_screen_limit(
+	world_position: Vector3
+) -> void:
+	var camera: Camera3D = $Camera3D
+
+	if camera.is_position_behind(world_position):
+		return
+
+	var viewport_height := get_viewport().get_visible_rect().size.y
+	if viewport_height <= 0.0:
+		return
+
+	var limit_y := viewport_height * fishing_follow_bottom_y_ratio
+	var start_screen_y := camera.unproject_position(world_position).y
+
+	if start_screen_y <= limit_y:
+		return
+
+	var start_rig_position := global_position
+	var cast_axis := fishing_follow_direction
+
+	if cast_axis.length_squared() <= 0.000001:
+		return
+
+	cast_axis = cast_axis.normalized()
+
+	# Normally moving the rig backwards along the cast axis pushes the lure
+	# upward on screen. Probe both directions anyway so this remains correct
+	# if a fishing spot/camera is authored with an unusual orientation.
+	var probe_distance := 0.25
+	var correction_axis := -cast_axis
+
+	global_position = start_rig_position - cast_axis * probe_distance
+	var backward_y := camera.unproject_position(world_position).y
+
+	global_position = start_rig_position + cast_axis * probe_distance
+	var forward_y := camera.unproject_position(world_position).y
+
+	global_position = start_rig_position
+
+	if forward_y < backward_y:
+		correction_axis = cast_axis
+
+	var probe_y := minf(backward_y, forward_y)
+	if probe_y >= start_screen_y:
+		# Neither direction can improve the framing from this camera pose.
+		return
+
+	# Find a distance that places the target above the limit, then binary-search
+	# the smallest correction. This gives a hard screen-space boundary without
+	# snapping the camera farther than necessary.
+	var low_distance := 0.0
+	var high_distance := probe_distance
+	var high_y := probe_y
+
+	for _i in range(10):
+		if high_y <= limit_y:
+			break
+
+		low_distance = high_distance
+		high_distance *= 2.0
+		global_position = (
+			start_rig_position
+				+ correction_axis * high_distance
+		)
+		high_y = camera.unproject_position(world_position).y
+
+	if high_y > limit_y:
+		# Extremely unusual geometry: keep the strongest safe correction found
+		# instead of allowing the tracked target to disappear under the HUD.
+		return
+
+	for _i in range(8):
+		var mid_distance := (low_distance + high_distance) * 0.5
+		global_position = (
+			start_rig_position
+				+ correction_axis * mid_distance
+		)
+
+		var mid_y := camera.unproject_position(world_position).y
+		if mid_y > limit_y:
+			low_distance = mid_distance
+		else:
+			high_distance = mid_distance
+
+	global_position = (
+		start_rig_position
+			+ correction_axis * high_distance
+	)
+
 func rotate_quarter_turn(direction: int) -> void:
 	if is_rotating:
 		return
