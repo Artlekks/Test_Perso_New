@@ -187,13 +187,99 @@ const DATA_FISH_BY_KEY: Dictionary = {
 # Other species fall back to the project's existing source_effect metadata until
 # their exact in-game Guide text is supplied.
 const DATA_GUIDE_COPY: Dictionary = {
+	"jellyfish": {
+		"title": "Restores 50 HP",
+		"body": "Lives in lakes and rivers; goes for any type of lure.",
+	},
+	"piranha": {
+		"body": "Has sharp teeth and hard scales. Lives in schools in lakes.",
+	},
+	"bass": {
+		"body": "Omnivorous, but a picky eater. Avoids lures it doesn't like.",
+	},
+	"bluegill": {
+		"body": "Has a violent nature and can attack without warning.",
+	},
 	"sweetfish": {
 		"title": "Restores AP",
 		"body": "Considered a delicacy in many parts of the world.",
 	},
+	"browntail": {
+		"body": "Shape and color changes with its habitat.",
+	},
+	"blackbass": {
+		"body": "Not much to look at, but rich in protein and nutrition.",
+	},
+	"angelfish": {
+		"body": "Only found in mountain lakes. Popular with children.",
+	},
+	"trout": {
+		"body": "Very alert to danger; will fight to protect itself.",
+	},
+	"rainbowtrout": {
+		"body": "Beautiful to watch as it swims.",
+	},
 	"bullcat": {
 		"title": "Fir+Ear attack",
-		"body": "Bottomdweller used to make Dynamite.",
+		"body": "Bottom dweller, used to make dynamite.",
+	},
+	"martiansquid": {
+		"body": "Lives in shallow waters. Hard to catch as it is very strong.",
+	},
+	"dorado": {
+		"body": "So big it's too much for one sitting!",
+	},
+	"salmon": {
+		"body": "Usually swims far out to sea. But can be caught in rivers.",
+	},
+	"barundi": {
+		"body": "King of the lakes, it has an almost regal air about it.",
+	},
+	"sturgeon": {
+		"body": "Sometimes called \"the living jewel\".",
+	},
+	"manowar": {
+		"title": "Restores 50 HP",
+		"body": "Ocean dwelling jellyfish; goes after any lure.",
+	},
+	"flyingfish": {
+		"body": "Skips above the waves. Very agile and hard to catch.",
+	},
+	"blowfish": {
+		"body": "Protects itself with very sharp spines.",
+	},
+	"moonfish": {
+		"body": "Popular with women, it looks like it's flying in the water.",
+	},
+	"seabass": {
+		"body": "Fights, but not too much; a good fish for beginners.",
+	},
+	"flatfish": {
+		"body": "Swims close to the bottom. Its eyes always look to the left.",
+	},
+	"seabream": {
+		"body": "A fine-looking, fine-tasting fish.",
+	},
+	"octopus": {
+		"body": "Also called \"devilfish\". No one has yet to eat it.",
+	},
+	"bonito": {
+		"body": "A fast fish. Being able to catch one is a distinction.",
+	},
+	"blackporgy": {
+		"body": "A hard fish to catch, but worth the effort.",
+	},
+	"angler": {
+		"body": "A rare fish usually found only in deep waters.",
+	},
+	"spearfish": {
+		"body": "Uses its horns to cut through and escape nets.",
+	},
+	"whale": {
+		"body": "King of the sea, it is the ultimate catch.",
+	},
+	"acheron": {
+		"body": "Fish mutated by exposure to hex energy. Handle with care!",
 	},
 }
 
@@ -1776,21 +1862,22 @@ func _update_data_detail_content() -> void:
 		data_detail_avg_label.text = "%d" % int(round(fish_data.average_size))
 
 	var confirmed_copy: Dictionary = DATA_GUIDE_COPY.get(fish_key, {})
-	if not confirmed_copy.is_empty():
-		data_detail_effect_label.text = str(
-			confirmed_copy.get("title", "")
-		)
-		data_detail_guide_label.text = str(
-			confirmed_copy.get("body", "")
-		)
-		return
 
-	# Temporary fallback until the exact original BOF4 Guide wording for each
-	# species is supplied.
 	if fish_data != null:
 		data_detail_effect_label.text = str(
 			fish_data.get_meta("source_effect", "")
 		)
+
+	if confirmed_copy.has("title"):
+		data_detail_effect_label.text = str(
+			confirmed_copy.get("title", "")
+		)
+
+	if confirmed_copy.has("body"):
+		data_detail_guide_label.text = str(
+			confirmed_copy.get("body", "")
+		)
+		return
 
 	var fallback_location: String = _get_primary_location_name(entry)
 	if fallback_location.is_empty():

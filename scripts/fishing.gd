@@ -50,12 +50,22 @@ const FishingJournalCatalogResource = preload(
 const FishingSurfaceSplashScene = preload(
 	"res://actors/FishingSurfaceSplash.tscn"
 )
+const CatchScoring = preload(
+	"res://scripts/fishing_catch_scoring.gd"
+)
 
 # One-time QA bootstrap for the catch/result pipeline audit.
 # Once created, this marker prevents future launches from wiping the catches
 # we are specifically trying to test for persistence.
 const CATCH_PIPELINE_CLEAN_TEST_MARKER: String = (
 	"user://catch_pipeline_clean_test_v1.done"
+)
+
+# One-time QA seed for the completed fish manual UI.
+# This gives one specimen to every species that has never been caught so every
+# Data entry can be opened with K without requiring 30 manual catches.
+const MANUAL_FULL_CATALOG_TEST_MARKER: String = (
+	"user://manual_full_catalog_test_v1.done"
 )
 
 enum Phase {
@@ -223,6 +233,8 @@ func _ready() -> void:
 	_prepare_clean_catch_pipeline_test_once()
 
 	fishing_inventory.bind_progress(fishing_progress)
+
+	_seed_manual_full_catalog_test_once()
 
 	if loadout != null:
 		loadout.set_inventory(fishing_inventory)
@@ -645,6 +657,66 @@ func _prepare_clean_catch_pipeline_test_once() -> void:
 	print(
 		"Catch pipeline QA: fish records/inventory reset to zero once; "
 		+ "tackle preserved."
+	)
+
+
+func _seed_manual_full_catalog_test_once() -> void:
+	if fishing_progress == null or fishing_inventory == null:
+		return
+
+	if FileAccess.file_exists(MANUAL_FULL_CATALOG_TEST_MARKER):
+		return
+
+	var seeded_count: int = 0
+
+	for fish_data in FishingJournalCatalogResource.species:
+		if fish_data == null:
+			continue
+
+		# Preserve every real catch already made by the player.
+		if fishing_progress.has_caught(fish_data):
+			continue
+
+		var test_fish := FishInstance.new()
+		test_fish.species = fish_data
+		test_fish.size = float(maxi(roundi(fish_data.average_size), 1))
+		test_fish.is_king = false
+		test_fish.size_band = &"normal"
+		test_fish.points = CatchScoring.calculate_points(
+			fish_data,
+			test_fish.size,
+			false
+		)
+
+		# record_catch emits catch_specimen_recorded; because inventory is already
+		# bound, this also creates exactly one physical inventory specimen.
+		fishing_progress.record_catch(
+			test_fish,
+			{
+				"spot_id": "manual_qa",
+				"spot_name": "Manual QA",
+				"lure_id": "",
+				"lure_name": "",
+			}
+		)
+
+		seeded_count += 1
+
+	var marker := FileAccess.open(
+		MANUAL_FULL_CATALOG_TEST_MARKER,
+		FileAccess.WRITE
+	)
+	if marker == null:
+		push_warning(
+			"Fishing: could not create manual full-catalog QA marker."
+		)
+		return
+
+	marker.store_string("done")
+	marker.close()
+
+	print(
+		"Fish manual QA: seeded %d previously-undiscovered species." % seeded_count
 	)
 
 
