@@ -380,6 +380,13 @@ func _refresh() -> void:
 	if selected_lure != null:
 		lure_text = selected_lure.display_name
 
+		var selected_action: LureActionProfile = (
+			selected_lure.get_action_profile()
+		)
+
+		if selected_action != null:
+			lure_text += " [" + selected_action.get_style_label() + "]"
+
 	var rod_text := "NONE"
 	var selected_rod = _loadout.get_selected_rod()
 	if selected_rod != null:
@@ -436,14 +443,85 @@ func _refresh() -> void:
 		var counts: Vector2i = _fish_zone.get_shadow_population_debug_counts()
 		shadow_population_text = "%d alive / %d readable" % [counts.x, counts.y]
 
+	var lure_backend_text := _get_lure_backend_debug_text(
+		selected_lure
+	)
+	var lure_runtime_text := _get_lure_runtime_debug_text()
+	var rod_backend_text := _get_rod_backend_debug_text(
+		selected_rod
+	)
+
 	status_label.text = (
 		profile_purpose
 		+ "\nShadow QA: " + shadow_text
 		+ " | " + shadow_population_text
 		+ "\n"
 		+ progress_text
+		+ "\nLure DB: " + lure_backend_text
+		+ "\nLure RT: " + lure_runtime_text
+		+ "\nRod DB: " + rod_backend_text
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
+
+
+func _get_lure_backend_debug_text(
+	lure: BaitData
+) -> String:
+	if lure == null:
+		return "NONE"
+
+	return "%s | %s | sink %.2f @ %.2f | reel %.3f rise %.2f steer %.2f" % [
+		lure.get_type_label(),
+		lure.get_action_debug_summary(),
+		lure.sink_depth,
+		lure.sink_speed,
+		lure.reel_speed,
+		lure.reel_rise_speed,
+		lure.reel_steer_strength,
+	]
+
+
+func _get_rod_backend_debug_text(
+	rod: RodData
+) -> String:
+	if rod == null:
+		return "NONE"
+
+	return rod.get_debug_summary()
+
+
+func _get_lure_runtime_debug_text() -> String:
+	# F10 refreshes only on explicit debug/menu changes, so this one SceneTree
+	# lookup is observability work, not a gameplay hot loop.
+	var bait := get_tree().get_first_node_in_group("bait")
+
+	if bait == null:
+		return "NO ACTIVE BAIT"
+
+	if not bait.has_method("get_lure_debug_snapshot"):
+		return "ACTIVE BAIT / NO SNAPSHOT"
+
+	var snapshot: Dictionary = bait.get_lure_debug_snapshot()
+	var depth_m: float = float(
+		snapshot.get("depth_m", 0.0)
+	)
+	var total_depth_m: float = float(
+		snapshot.get("total_depth_m", 0.0)
+	)
+
+	return (
+		"%s | %s | depth %.2f/%.2f | action %s"
+		+ " | steer %.2f->%.2f | S %.3f"
+	) % [
+		str(snapshot.get("state", "?")),
+		("REEL" if bool(snapshot.get("reeling", false)) else "IDLE"),
+		depth_m,
+		total_depth_m,
+		str(snapshot.get("action_mode", "NONE")),
+		float(snapshot.get("steering", 0.0)),
+		float(snapshot.get("steering_target", 0.0)),
+		float(snapshot.get("manual_pull_remaining", 0.0)),
+	]
 
 
 func _on_progress_changed() -> void:

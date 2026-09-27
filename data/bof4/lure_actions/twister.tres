@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://87ttibpydqs3"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"twister"
+display_name = "Twist"
+motion_style = 4
+idle_lateral_amplitude = 0.01
+idle_vertical_amplitude = 0.0024
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 1.0
+reel_lateral_amplitude = 0.024
+reel_vertical_amplitude = 0.0048
+reel_forward_amplitude = 0.0032
+reel_frequency_hz = 2.4
+reel_attraction_multiplier = 1.1
+surface_disturbance = 0.05
+flash_strength = 0.05
+tuning_note = "Fast lateral wobble layered over its existing snag-resistant tuning. V1 numeric timing is inferred from guide text, not claimed canonical."

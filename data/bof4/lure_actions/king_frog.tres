@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://csnt8ov43wttd"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"king_frog"
+display_name = "King Frog"
+motion_style = 1
+idle_lateral_amplitude = 0.012
+idle_vertical_amplitude = 0.014
+idle_forward_amplitude = 0.0016
+idle_frequency_hz = 0.95
+reel_lateral_amplitude = 0.022
+reel_vertical_amplitude = 0.022
+reel_forward_amplitude = 0.006
+reel_frequency_hz = 1.45
+idle_attraction_multiplier = 1.18
+reel_attraction_multiplier = 1.35
+universal_compatibility = true
+surface_disturbance = 0.7
+tuning_note = "Ultimate Frogger. Universal compatibility follows the guide text. V1 numeric timing is inferred from guide text, not claimed canonical."

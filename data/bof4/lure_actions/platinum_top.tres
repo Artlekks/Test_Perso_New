@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://bnm4u78v75t2"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"platinum_top"
+display_name = "Platinum Spin"
+motion_style = 5
+idle_lateral_amplitude = 0.0064
+idle_vertical_amplitude = 0.0024
+idle_forward_amplitude = 0.0012
+idle_frequency_hz = 1.7
+reel_lateral_amplitude = 0.012
+reel_vertical_amplitude = 0.004
+reel_forward_amplitude = 0.0064
+reel_frequency_hz = 4.6
+idle_attraction_multiplier = 1.08
+reel_attraction_multiplier = 1.23
+surface_disturbance = 0.04
+flash_strength = 1.0
+tuning_note = "Highest standard spinner flash/attraction. V1 numeric timing is inferred from guide text, not claimed canonical."

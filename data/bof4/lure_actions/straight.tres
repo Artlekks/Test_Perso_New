@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://bbgp6t4r4jico"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"straight"
+display_name = "Soft Worm"
+idle_lateral_amplitude = 0.0072
+idle_vertical_amplitude = 0.0024
+idle_frequency_hz = 0.8
+reel_lateral_amplitude = 0.0112
+reel_vertical_amplitude = 0.0032
+reel_forward_amplitude = 0.0024
+reel_frequency_hz = 1.3
+surface_disturbance = 0.05
+tuning_note = "Baseline worm action; subtle natural sway. V1 numeric timing is inferred from guide text, not claimed canonical."

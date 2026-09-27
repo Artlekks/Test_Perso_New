@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://ctyvadh7tl643"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"toad"
+display_name = "Quick Rise"
+motion_style = 1
+idle_lateral_amplitude = 0.006
+idle_vertical_amplitude = 0.01
+idle_frequency_hz = 0.85
+reel_lateral_amplitude = 0.012
+reel_vertical_amplitude = 0.018
+reel_forward_amplitude = 0.0032
+reel_frequency_hz = 1.2
+idle_attraction_multiplier = 1.02
+reel_attraction_multiplier = 1.09
+surface_disturbance = 0.4
+tuning_note = "Slow sink / stronger rise character. V1 numeric timing is inferred from guide text, not claimed canonical."

@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dovnksw17hay4"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/popper.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -9,6 +10,7 @@ display_name = "Popper"
 lure_type = 2
 description = "Makes a noise when wound. Will not sink even if moved."
 visual_tint = Color(0.96, 0.58, 0.24, 1)
+action_profile = ExtResource("2_action")
 sink_depth = 0.02
 sink_speed = 0.03
 reel_speed = 0.055

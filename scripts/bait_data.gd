@@ -17,6 +17,9 @@ var level: int = 1
 ## hardcoded visual rules in the renderer.
 @export var visual_tint: Color = Color.WHITE
 
+@export_category("Action")
+@export var action_profile: LureActionProfile
+
 @export_category("Water Movement")
 ## Normalized target depth: 0.0 = water surface, 1.0 = local bottom.
 @export_range(0.0, 1.0, 0.01) var sink_depth: float = 1.0
@@ -64,7 +67,7 @@ func get_type_label() -> String:
 		LureType.Type.WORM:
 			return "Worm"
 		LureType.Type.FROG:
-			return "Frog"
+			return "Frogger"
 		LureType.Type.TOPPER:
 			return "Topper"
 		LureType.Type.MINNOW:
@@ -77,3 +80,38 @@ func get_type_label() -> String:
 			return "Spoon"
 		_:
 			return "Unknown"
+
+
+func get_action_profile() -> LureActionProfile:
+	return action_profile
+
+
+func get_action_attraction_multiplier(
+	is_reeling: bool
+) -> float:
+	if action_profile == null:
+		return 1.0
+
+	return action_profile.get_attraction_multiplier(
+		is_reeling
+	)
+
+
+func has_universal_compatibility() -> bool:
+	return (
+		action_profile != null
+		and action_profile.universal_compatibility
+	)
+
+
+func get_action_debug_summary() -> String:
+	if action_profile == null:
+		return "NO ACTION PROFILE"
+
+	return "%s/%s  ATTR %.2f idle / %.2f reel%s" % [
+		action_profile.display_name,
+		action_profile.get_style_label(),
+		action_profile.idle_attraction_multiplier,
+		action_profile.reel_attraction_multiplier,
+		("  UNIVERSAL" if action_profile.universal_compatibility else ""),
+	]

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://deevinshdaaii"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"spoon"
+display_name = "Universal Spoon"
+motion_style = 6
+idle_lateral_amplitude = 0.0112
+idle_vertical_amplitude = 0.0048
+idle_forward_amplitude = 0.0016
+idle_frequency_hz = 1.0
+reel_lateral_amplitude = 0.024
+reel_vertical_amplitude = 0.0072
+reel_forward_amplitude = 0.0072
+reel_frequency_hz = 2.0
+idle_attraction_multiplier = 1.12
+reel_attraction_multiplier = 1.27
+universal_compatibility = true
+surface_disturbance = 0.08
+flash_strength = 0.55
+tuning_note = "Ultimate universal Spoon; compatibility follows 'any and all kinds of fish'. V1 numeric timing is inferred from guide text, not claimed canonical."

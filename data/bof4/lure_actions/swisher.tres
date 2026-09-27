@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://btjdmbsctgwov"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"swisher"
+display_name = "Propeller Churn"
+motion_style = 2
+idle_lateral_amplitude = 0.0032
+idle_vertical_amplitude = 0.0016
+idle_frequency_hz = 0.8
+reel_lateral_amplitude = 0.012
+reel_vertical_amplitude = 0.006
+reel_forward_amplitude = 0.014
+reel_frequency_hz = 3.0
+idle_attraction_multiplier = 0.98
+reel_attraction_multiplier = 1.24
+surface_disturbance = 1.0
+flash_strength = 0.15
+tuning_note = "Fast retrieve pulse representing propeller surface churn. V1 numeric timing is inferred from guide text, not claimed canonical."

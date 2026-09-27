@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://cikqasabk8wm0"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"fat_frog"
+display_name = "Heavy Frog Bob"
+motion_style = 1
+idle_lateral_amplitude = 0.008
+idle_vertical_amplitude = 0.012
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 0.85
+reel_lateral_amplitude = 0.014
+reel_vertical_amplitude = 0.02
+reel_forward_amplitude = 0.004
+reel_frequency_hz = 1.15
+idle_attraction_multiplier = 1.05
+reel_attraction_multiplier = 1.12
+surface_disturbance = 0.48
+tuning_note = "Strongest standard Frogger action. V1 numeric timing is inferred from guide text, not claimed canonical."

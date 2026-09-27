@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://di5ey3a1pgla"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/baby_frog.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -9,6 +10,7 @@ display_name = "Baby Frog"
 lure_type = 1
 description = "Lure shaped like a frog, doesn't sink even if moved."
 visual_tint = Color(0.38, 0.82, 0.32, 1)
+action_profile = ExtResource("2_action")
 sink_depth = 0.2
 sink_speed = 0.08
 reel_speed = 0.048

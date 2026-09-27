@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://ch7r51jhqx3hd"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/gold_top.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -10,6 +11,7 @@ lure_type = 5
 level = 2
 description = "Sinks fast and floats slowly. Its gold skin attracts fish."
 visual_tint = Color(0.55, 0.82, 0.78, 1)
+action_profile = ExtResource("2_action")
 sink_depth = 0.5
 reel_speed = 0.062
 reel_rise_speed = 0.46

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://ytpfb47ilyn3"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"warbler"
+display_name = "Floating Wobble"
+motion_style = 4
+idle_lateral_amplitude = 0.012
+idle_vertical_amplitude = 0.01
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 0.9
+reel_lateral_amplitude = 0.022
+reel_vertical_amplitude = 0.01
+reel_forward_amplitude = 0.0032
+reel_frequency_hz = 1.7
+idle_attraction_multiplier = 1.06
+reel_attraction_multiplier = 1.13
+surface_disturbance = 0.1
+flash_strength = 0.05
+tuning_note = "Balanced floating/wobbling action. V1 numeric timing is inferred from guide text, not claimed canonical."

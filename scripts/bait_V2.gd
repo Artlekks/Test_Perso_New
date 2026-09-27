@@ -1,5 +1,9 @@
 extends Node3D
 
+const LureActionRuntimeScript = preload(
+	"res://scripts/lure_action_runtime.gd"
+)
+
 signal landed(point: Vector3)
 signal returned
 signal depth_changed(current_depth: float, total_depth: float)
@@ -38,7 +42,12 @@ var micro_lateral_strength: float = 0.16
 ## soft so it reads as living movement rather than jitter.
 @export var micro_response_speed: float = 5.0
 
+@export_category("Input Smoothing")
+@export var reel_steering_response_speed: float = 8.0
+@export var reel_steering_return_speed: float = 10.0
 @export var twitch_speed: float = 1.8
+@export var twitch_acceleration: float = 10.0
+@export var twitch_target_decay: float = 5.0
 @export var twitch_deceleration: float = 12.0
 @export_category("Fight Distance")
 @export var max_extra_fight_distance: float = 3.0
@@ -74,6 +83,9 @@ var fight_return_pull_threshold: float = 0.12
 @export var manual_pull_step_distance: float = 0.14
 ## How quickly each queued pull step is played out.
 @export var manual_pull_speed: float = 1.8
+## Smooth start/stop for discrete S pulls.
+@export var manual_pull_acceleration: float = 8.0
+@export var manual_pull_deceleration: float = 10.0
 ## Lets rapid S taps stack a few pulls without building an unlimited queue.
 @export var manual_pull_max_queued_distance: float = 0.42
 ## Fight-only master scale for the physical distance gained from S. The free
@@ -103,15 +115,26 @@ var snag_twitch_impulse: float = 0.24
 @export var max_air_curve_degrees: float = 30.0
 
 var twitch_velocity: Vector3 = Vector3.ZERO
+var twitch_target_velocity: Vector3 = Vector3.ZERO
 var fight_max_distance: float = 0.0
 var fish_depth_intent: float = 0.0
 var fish_pull_strength: float = 0.0
 var fight_mode: bool = false
 var reel_steering: float = 0.0
+var reel_steering_target: float = 0.0
 var fight_resistance: float = 1.0
 var fish_lateral: float = 0.0
 var reel_speed_multiplier: float = 1.0
 var manual_pull_remaining: float = 0.0
+var manual_pull_current_speed: float = 0.0
+
+# Rod runtime modifiers are configured once by Caster when the rod changes.
+# Bait physics consumes plain floats and does not depend on RodData itself.
+var rod_steering_strength_multiplier: float = 1.0
+var rod_steering_response_multiplier: float = 1.0
+var rod_twitch_strength_multiplier: float = 1.0
+var rod_manual_pull_distance_multiplier: float = 1.0
+var rod_manual_pull_response_multiplier: float = 1.0
 
 # Physical-only micro movement. These values never leave bait_V2.gd.
 var micro_lateral: float = 0.0
@@ -147,8 +170,13 @@ var snag_probe: Area3D = null
 var snag_risk: float = 0.0
 var snag_triggered: bool = false
 
+## One cached runtime per spawned bait. Profiles are configured only when lure
+## data changes; there are no per-frame resource loads or SceneTree searches.
+var lure_action_runtime: LureActionRuntime = LureActionRuntimeScript.new()
+
 func _ready() -> void:
 	_ensure_snag_probe()
+	_configure_lure_action_runtime()
 
 
 func _ensure_snag_probe() -> void:
@@ -190,9 +218,10 @@ func launch(
 	air_path_playback_speed = 1.0
 	_reset_micro_movement()
 	_reset_snag_state()
-	manual_pull_remaining = 0.0
+	_reset_control_smoothing()
 	simulation_frozen = false
 	state = State.FLYING
+	lure_action_runtime.reset()
 
 	ripple_view.configure(
 		self,
@@ -326,12 +355,18 @@ func set_reeling(active: bool) -> void:
 			state = State.SINKING
 
 func set_reel_steering(value: float) -> void:
-	reel_steering = clampf(value, -1.0, 1.0)
+	reel_steering_target = clampf(
+		value,
+		-1.0,
+		1.0
+	)
 
 
 func _physics_process(delta: float) -> void:
 	if simulation_frozen:
 		return
+
+	_update_reel_steering_response(delta)
 
 	if state == State.SINKING or state == State.IN_WATER:
 		_update_bottom_from_world()
@@ -352,7 +387,10 @@ func _physics_process(delta: float) -> void:
 	# S-pull is a short, discrete retrieve impulse layered on top of the
 	# normal water simulation. It is intentionally separate from K reeling:
 	# repeated taps can therefore retrieve in visible little increments.
-	if manual_pull_remaining > 0.0:
+	if (
+		manual_pull_remaining > 0.0
+		or manual_pull_current_speed > 0.001
+	):
 		if _update_manual_pull(delta):
 			return
 	
@@ -366,13 +404,13 @@ func _physics_process(delta: float) -> void:
 			elif not fight_mode:
 				_update_sinking(delta)
 	
-	if twitch_velocity.length_squared() > 0.001:
-		global_position += twitch_velocity * delta
-
-		twitch_velocity = twitch_velocity.move_toward(
-			Vector3.ZERO,
-			twitch_deceleration * delta
-		)
+	if (
+		(state == State.SINKING or state == State.IN_WATER)
+		and not fight_mode
+	):
+		_update_lure_action_motion(delta)
+	
+	_update_twitch_motion(delta)
 	
 	_enforce_fight_distance()
 	
@@ -621,8 +659,7 @@ func _trigger_snag_miss(reason: StringName) -> void:
 
 	snag_triggered = true
 	reeling = false
-	reel_steering = 0.0
-	twitch_velocity = Vector3.ZERO
+	_reset_control_smoothing()
 	_reset_micro_movement()
 	simulation_frozen = true
 	hide_ripple()
@@ -691,6 +728,7 @@ func _update_reeling(delta: float) -> void:
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		reel_steering = 0.0
+		reel_steering_target = 0.0
 		fish_lateral = 0.0
 		_reset_micro_movement()
 		reeling = false
@@ -706,7 +744,10 @@ func _update_reeling(delta: float) -> void:
 	var convergence := _get_reel_convergence(distance)
 	var steering_fade := 1.0 - convergence
 
-	var steering_strength := data.reel_steer_strength
+	var steering_strength := (
+		data.reel_steer_strength
+		* rod_steering_strength_multiplier
+	)
 
 	if fight_mode:
 		var steer_authority := lerpf(
@@ -760,6 +801,7 @@ func _update_reeling(delta: float) -> void:
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		reel_steering = 0.0
+		reel_steering_target = 0.0
 		fish_lateral = 0.0
 		_reset_micro_movement()
 
@@ -813,13 +855,20 @@ func queue_manual_pull() -> void:
 			)
 		)
 
+	var rod_distance_multiplier: float = maxf(
+		rod_manual_pull_distance_multiplier,
+		0.0
+	)
+
 	var pull_step := (
 		maxf(manual_pull_step_distance, 0.0)
 		* distance_multiplier
+		* rod_distance_multiplier
 	)
 	var queue_cap := (
 		maxf(manual_pull_max_queued_distance, 0.0)
 		* distance_multiplier
+		* rod_distance_multiplier
 	)
 
 	manual_pull_remaining = minf(
@@ -830,56 +879,115 @@ func queue_manual_pull() -> void:
 
 func _update_manual_pull(delta: float) -> bool:
 	if reel_target == null:
-		manual_pull_remaining = 0.0
+		_reset_manual_pull_motion()
 		return false
 
 	if state != State.SINKING and state != State.IN_WATER:
-		manual_pull_remaining = 0.0
+		_reset_manual_pull_motion()
 		return false
 
-	var target_position := reel_target.global_position
+	var target_position: Vector3 = reel_target.global_position
 	var to_target := Vector3(
 		target_position.x - global_position.x,
 		0.0,
 		target_position.z - global_position.z
 	)
-	var distance := to_target.length()
+	var distance: float = to_target.length()
 
 	if distance <= return_distance:
-		# A resisting fish can be physically close without being caught yet.
-		# Match normal K reeling: only complete the return once the fish is calm.
 		if fight_mode and not _can_finish_fight_return():
-			manual_pull_remaining = 0.0
+			_reset_manual_pull_motion()
 			return false
 
 		global_position.x = target_position.x
 		global_position.z = target_position.z
-		manual_pull_remaining = 0.0
+		_reset_manual_pull_motion()
 		reeling = false
 		returned.emit()
 		return true
 
 	if distance <= 0.0001:
-		manual_pull_remaining = 0.0
+		_reset_manual_pull_motion()
 		return false
 
-	var available_distance := maxf(
+	var available_distance: float = maxf(
 		distance - return_distance,
 		0.0
 	)
-	var move_distance := minf(
+
+	if (
+		available_distance <= 0.0
+		or manual_pull_remaining <= 0.00001
+	):
+		manual_pull_current_speed = move_toward(
+			manual_pull_current_speed,
+			0.0,
+			maxf(manual_pull_deceleration, 0.0)
+			* maxf(rod_manual_pull_response_multiplier, 0.01)
+			* delta
+		)
+
+		if manual_pull_current_speed <= 0.001:
+			manual_pull_current_speed = 0.0
+
+		return false
+
+	var response_multiplier: float = maxf(
+		rod_manual_pull_response_multiplier,
+		0.01
+	)
+	var acceleration: float = (
+		maxf(manual_pull_acceleration, 0.0)
+		* response_multiplier
+	)
+	var deceleration: float = (
+		maxf(manual_pull_deceleration, 0.001)
+		* response_multiplier
+	)
+
+	# Kinematic stopping-speed cap: accelerate into the S pull, then ease
+	# down naturally as the queued distance runs out instead of stopping
+	# at a fixed-size positional increment.
+	var stopping_speed: float = sqrt(
+		maxf(
+			2.0
+			* deceleration
+			* manual_pull_remaining,
+			0.0
+		)
+	)
+	var desired_speed: float = minf(
+		maxf(manual_pull_speed, 0.0),
+		stopping_speed
+	)
+
+	var speed_change: float = (
+		acceleration
+		if manual_pull_current_speed < desired_speed
+		else deceleration
+	)
+
+	manual_pull_current_speed = move_toward(
+		manual_pull_current_speed,
+		desired_speed,
+		speed_change * delta
+	)
+
+	var move_distance: float = minf(
 		minf(
-			maxf(manual_pull_speed, 0.0) * delta,
+			manual_pull_current_speed * delta,
 			manual_pull_remaining
 		),
 		available_distance
 	)
 
 	if move_distance <= 0.0:
-		manual_pull_remaining = 0.0
 		return false
 
-	global_position += to_target.normalized() * move_distance
+	global_position += (
+		to_target.normalized()
+		* move_distance
+	)
 	manual_pull_remaining = maxf(
 		manual_pull_remaining - move_distance,
 		0.0
@@ -887,9 +995,6 @@ func _update_manual_pull(delta: float) -> bool:
 
 	_emit_depth()
 
-	# S can complete a normal free retrieve. During a fight it obeys the
-	# exact same final-return gate as K, so repeated taps cannot bypass a
-	# fish that is still actively pulling.
 	var remaining_flat := Vector2(
 		target_position.x - global_position.x,
 		target_position.z - global_position.z
@@ -897,21 +1002,276 @@ func _update_manual_pull(delta: float) -> bool:
 
 	if remaining_flat <= return_distance:
 		if fight_mode and not _can_finish_fight_return():
-			manual_pull_remaining = 0.0
+			_reset_manual_pull_motion()
 			return false
 
 		global_position.x = target_position.x
 		global_position.z = target_position.z
-		manual_pull_remaining = 0.0
+		_reset_manual_pull_motion()
 		reeling = false
 		returned.emit()
 		return true
 
+	if manual_pull_remaining <= 0.00001:
+		manual_pull_remaining = 0.0
+
 	return false
+
+
+func _update_reel_steering_response(delta: float) -> void:
+	var response_multiplier: float = maxf(
+		rod_steering_response_multiplier,
+		0.01
+	)
+	var response_speed: float = (
+		reel_steering_response_speed
+		if absf(reel_steering_target) > 0.001
+		else reel_steering_return_speed
+	)
+
+	reel_steering = move_toward(
+		reel_steering,
+		reel_steering_target,
+		maxf(response_speed, 0.0)
+		* response_multiplier
+		* delta
+	)
+
+	if (
+		absf(reel_steering_target) <= 0.001
+		and absf(reel_steering) <= 0.001
+	):
+		reel_steering = 0.0
+
+
+func _update_twitch_motion(delta: float) -> void:
+	if (
+		twitch_velocity.length_squared() <= 0.000001
+		and twitch_target_velocity.length_squared() <= 0.000001
+	):
+		return
+
+	var response_multiplier: float = maxf(
+		rod_steering_response_multiplier,
+		0.01
+	)
+
+	twitch_velocity = twitch_velocity.move_toward(
+		twitch_target_velocity,
+		maxf(twitch_acceleration, 0.0)
+		* response_multiplier
+		* delta
+	)
+
+	global_position += twitch_velocity * delta
+
+	twitch_target_velocity = twitch_target_velocity.move_toward(
+		Vector3.ZERO,
+		maxf(twitch_target_decay, 0.0)
+		* response_multiplier
+		* delta
+	)
+
+	if twitch_target_velocity.length_squared() <= 0.0001:
+		twitch_target_velocity = Vector3.ZERO
+		twitch_velocity = twitch_velocity.move_toward(
+			Vector3.ZERO,
+			maxf(twitch_deceleration, 0.0)
+			* response_multiplier
+			* delta
+		)
+
+	if twitch_velocity.length_squared() <= 0.0001:
+		twitch_velocity = Vector3.ZERO
+
+
+func _reset_manual_pull_motion() -> void:
+	manual_pull_remaining = 0.0
+	manual_pull_current_speed = 0.0
+
+
+func _reset_control_smoothing() -> void:
+	reel_steering = 0.0
+	reel_steering_target = 0.0
+	twitch_velocity = Vector3.ZERO
+	twitch_target_velocity = Vector3.ZERO
+	_reset_manual_pull_motion()
+
+
+func set_rod_control_multipliers(
+	steering_strength: float,
+	steering_response: float,
+	twitch_strength: float,
+	manual_pull_distance: float,
+	manual_pull_response: float
+) -> void:
+	rod_steering_strength_multiplier = maxf(
+		steering_strength,
+		0.0
+	)
+	rod_steering_response_multiplier = maxf(
+		steering_response,
+		0.01
+	)
+	rod_twitch_strength_multiplier = maxf(
+		twitch_strength,
+		0.0
+	)
+	rod_manual_pull_distance_multiplier = maxf(
+		manual_pull_distance,
+		0.0
+	)
+	rod_manual_pull_response_multiplier = maxf(
+		manual_pull_response,
+		0.01
+	)
+
+
+func _configure_lure_action_runtime() -> void:
+	if lure_action_runtime == null:
+		lure_action_runtime = LureActionRuntimeScript.new()
+
+	var profile: LureActionProfile = null
+
+	if data != null:
+		profile = data.get_action_profile()
+
+	lure_action_runtime.configure(profile)
+
+
+func _update_lure_action_motion(delta: float) -> void:
+	if data == null or lure_action_runtime == null:
+		return
+
+	# Never let presentation/action motion pull a bait back out of the final
+	# return radius after _update_reeling() has completed the retrieve.
+	if reel_target != null:
+		var bait_flat := Vector2(
+			global_position.x,
+			global_position.z
+		)
+		var target_flat := Vector2(
+			reel_target.global_position.x,
+			reel_target.global_position.z
+		)
+
+		if bait_flat.distance_to(target_flat) <= return_distance:
+			return
+
+	var local_delta: Vector3 = (
+		lure_action_runtime.sample_motion_delta(
+			delta,
+			reeling
+		)
+	)
+
+	if local_delta.length_squared() <= 0.0000001:
+		return
+
+	var forward: Vector3 = _get_lure_action_forward()
+	var side: Vector3 = Vector3.UP.cross(forward).normalized()
+
+	if side.length_squared() < 0.0001:
+		side = Vector3.RIGHT
+
+	var proposed_position: Vector3 = (
+		global_position
+		+ side * local_delta.x
+		+ Vector3.UP * local_delta.y
+		+ forward * local_delta.z
+	)
+
+	if (
+		swim_bounds != null
+		and swim_bounds.has_method("constrain_fish_motion")
+	):
+		proposed_position = swim_bounds.constrain_fish_motion(
+			global_position,
+			proposed_position
+		)
+
+	var previous_y: float = global_position.y
+
+	global_position.x = proposed_position.x
+	global_position.z = proposed_position.z
+	global_position.y = clampf(
+		proposed_position.y,
+		bottom_y,
+		water_y + 0.03
+	)
+
+	if not is_equal_approx(previous_y, global_position.y):
+		_emit_depth()
+
+
+func _get_lure_action_forward() -> Vector3:
+	if reel_target != null:
+		var to_target: Vector3 = (
+			reel_target.global_position
+			- global_position
+		)
+		to_target.y = 0.0
+
+		if to_target.length_squared() > 0.0001:
+			return to_target.normalized()
+
+	var horizontal_velocity := Vector3(
+		velocity.x,
+		0.0,
+		velocity.z
+	)
+
+	if horizontal_velocity.length_squared() > 0.0001:
+		return horizontal_velocity.normalized()
+
+	return Vector3.FORWARD
+
+
+func is_reeling_active() -> bool:
+	return reeling
+
+
+func get_lure_debug_snapshot() -> Dictionary:
+	var snapshot: Dictionary = {
+		"state": _get_state_debug_label(),
+		"reeling": reeling,
+		"fight_mode": fight_mode,
+		"depth_m": maxf(water_y - global_position.y, 0.0),
+		"total_depth_m": maxf(water_y - bottom_y, 0.0),
+		"action_mode": "NONE",
+		"action": "NONE",
+		"steering": reel_steering,
+		"steering_target": reel_steering_target,
+		"manual_pull_remaining": manual_pull_remaining,
+	}
+
+	if data != null:
+		snapshot["lure"] = data.display_name
+		snapshot["action"] = data.get_action_debug_summary()
+
+	if lure_action_runtime != null:
+		snapshot["action_mode"] = lure_action_runtime.get_mode_label()
+
+	return snapshot
+
+
+func _get_state_debug_label() -> String:
+	match state:
+		State.IDLE:
+			return "IDLE"
+		State.FLYING:
+			return "FLYING"
+		State.SINKING:
+			return "SINKING"
+		State.IN_WATER:
+			return "IN WATER"
+		_:
+			return "UNKNOWN"
 
 
 func set_data(new_data: BaitData) -> void:
 	data = new_data
+	_configure_lure_action_runtime()
 
 func set_simulation_frozen(active: bool) -> void:
 	simulation_frozen = active
@@ -1041,8 +1401,10 @@ func _get_reel_convergence(distance: float) -> float:
 
 func set_fight_mode(active: bool) -> void:
 	fight_mode = active
-	manual_pull_remaining = 0.0
+	_reset_manual_pull_motion()
+	twitch_target_velocity = Vector3.ZERO
 	_reset_micro_movement()
+	lure_action_runtime.reset()
 
 	if fight_mode:
 		_choose_micro_target()
@@ -1268,11 +1630,12 @@ func twitch_side(direction: float) -> void:
 			)
 		)
 
-	twitch_velocity = (
+	twitch_target_velocity = (
 		side
 		* clampf(direction, -1.0, 1.0)
 		* twitch_speed
 		* twitch_multiplier
+		* rod_twitch_strength_multiplier
 	)
 
 func set_reel_speed_multiplier(value: float) -> void:

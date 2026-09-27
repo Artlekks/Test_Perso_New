@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://1dfy70galh"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"deep_diver"
+display_name = "Deep Track"
+motion_style = 3
+idle_lateral_amplitude = 0.0048
+idle_vertical_amplitude = 0.0016
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 0.6
+reel_lateral_amplitude = 0.01
+reel_vertical_amplitude = 0.0024
+reel_forward_amplitude = 0.004
+reel_frequency_hz = 1.6
+reel_attraction_multiplier = 1.05
+surface_disturbance = 0.02
+tuning_note = "Tight deep-running movement; intentionally little vertical action. V1 numeric timing is inferred from guide text, not claimed canonical."

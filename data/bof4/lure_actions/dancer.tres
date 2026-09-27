@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://3wt7fsdab2n1"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"dancer"
+display_name = "Rhythmic Dance"
+motion_style = 4
+idle_lateral_amplitude = 0.014
+idle_vertical_amplitude = 0.006
+idle_forward_amplitude = 0.0016
+idle_frequency_hz = 1.1
+reel_lateral_amplitude = 0.03
+reel_vertical_amplitude = 0.012
+reel_forward_amplitude = 0.0072
+reel_frequency_hz = 2.2
+idle_attraction_multiplier = 1.04
+reel_attraction_multiplier = 1.17
+surface_disturbance = 0.08
+flash_strength = 0.08
+tuning_note = "Strongest rhythmic Winder movement. V1 numeric timing is inferred from guide text, not claimed canonical."

@@ -46,7 +46,7 @@ var segment_gap_px: float = -1.0
 ## Set to 0 for fully smooth angular response. A small number such as 32 keeps
 ## a subtle sprite-like stepping without destroying articulation.
 @export_range(0, 64, 1)
-var rotation_steps: int = 32
+var rotation_steps: int = 0
 
 @export_category("Surface Attitude")
 @export_range(0.01, 1.0, 0.01)

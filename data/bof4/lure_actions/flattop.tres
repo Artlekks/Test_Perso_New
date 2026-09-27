@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://cs77jh0r7k30t"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"flattop"
+display_name = "Shallow Swim"
+motion_style = 3
+idle_lateral_amplitude = 0.008
+idle_vertical_amplitude = 0.0024
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 1.0
+reel_lateral_amplitude = 0.02
+reel_vertical_amplitude = 0.004
+reel_forward_amplitude = 0.0048
+reel_frequency_hz = 1.8
+reel_attraction_multiplier = 1.09
+surface_disturbance = 0.55
+tuning_note = "Shallow-water fish-like movement. V1 numeric timing is inferred from guide text, not claimed canonical."

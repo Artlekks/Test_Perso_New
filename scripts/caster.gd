@@ -117,6 +117,7 @@ func perform_cast(
 	active_bait.set_reel_speed_multiplier(
 		_get_rod_reel_speed_multiplier()
 	)
+	_apply_rod_control_settings_to_bait()
 
 	active_bait.landed.connect(_on_bait_landed)
 	active_bait.depth_changed.connect(_on_bait_depth_changed)
@@ -521,6 +522,16 @@ func cancel_bait_to_aim() -> void:
 	_on_bait_returned()
 
 
+func is_active_bait_reeling() -> bool:
+	if not is_instance_valid(active_bait):
+		return false
+
+	if not active_bait.has_method("is_reeling_active"):
+		return false
+
+	return bool(active_bait.is_reeling_active())
+
+
 func set_reel_speed_multiplier(value: float) -> void:
 	if is_instance_valid(active_bait):
 		active_bait.set_reel_speed_multiplier(
@@ -535,6 +546,48 @@ func set_rod_data(rod_data: RodData) -> void:
 		active_bait.set_reel_speed_multiplier(
 			_get_rod_reel_speed_multiplier()
 		)
+		_apply_rod_control_settings_to_bait()
+
+
+func _apply_rod_control_settings_to_bait() -> void:
+	if not is_instance_valid(active_bait):
+		return
+
+	if not active_bait.has_method(
+		"set_rod_control_multipliers"
+	):
+		return
+
+	var steering_strength: float = 1.0
+	var steering_response: float = 1.0
+	var twitch_strength: float = 1.0
+	var manual_pull_distance: float = 1.0
+	var manual_pull_response: float = 1.0
+
+	if active_rod_data != null:
+		steering_strength = (
+			active_rod_data.steering_strength_multiplier
+		)
+		steering_response = (
+			active_rod_data.steering_response_multiplier
+		)
+		twitch_strength = (
+			active_rod_data.twitch_strength_multiplier
+		)
+		manual_pull_distance = (
+			active_rod_data.manual_pull_distance_multiplier
+		)
+		manual_pull_response = (
+			active_rod_data.manual_pull_response_multiplier
+		)
+
+	active_bait.set_rod_control_multipliers(
+		steering_strength,
+		steering_response,
+		twitch_strength,
+		manual_pull_distance,
+		manual_pull_response
+	)
 
 
 func _get_rod_reel_speed_multiplier() -> float:

@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://wdstdo1c83mm"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/toad.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -10,6 +11,7 @@ lure_type = 1
 level = 2
 description = "Sinks slowly but rises quickly. Has a cute pink color."
 visual_tint = Color(0.38, 0.82, 0.32, 1)
+action_profile = ExtResource("2_action")
 sink_depth = 0.3
 sink_speed = 0.12
 reel_rise_speed = 1.0

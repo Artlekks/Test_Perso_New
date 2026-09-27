@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dpffa00genhoc"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/flattop.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -10,6 +11,7 @@ lure_type = 2
 level = 2
 description = "Moves like a shallow water fish."
 visual_tint = Color(0.96, 0.58, 0.24, 1)
+action_profile = ExtResource("2_action")
 sink_depth = 0.08
 sink_speed = 0.05
 reel_speed = 0.055

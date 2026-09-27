@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://cb2g2xpw714ew"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/twister.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -9,6 +10,7 @@ display_name = "Twister"
 lure_type = 4
 description = "Rarely gets caught, so good for going after bottom dwellers."
 visual_tint = Color(0.67, 0.45, 0.86, 1)
+action_profile = ExtResource("2_action")
 sink_depth = 0.45
 sink_speed = 0.16
 reel_speed = 0.055

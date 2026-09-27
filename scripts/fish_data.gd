@@ -172,20 +172,30 @@ func get_unavailable_lure_types() -> Array[int]:
 	return result
 
 
-func get_lure_match_multiplier(bait: BaitData) -> float:
+func get_lure_match_multiplier(
+	bait: BaitData,
+	is_reeling: bool = false
+) -> float:
 	if bait == null:
 		return 1.0
 
+	var compatibility: float = 0.15
+
 	if bait.lure_id != &"" and preferred_lure_ids.has(bait.lure_id):
-		return 1.5
+		compatibility = 1.5
+	elif bait.has_universal_compatibility():
+		compatibility = 1.0
+	elif accepts_all_lures:
+		compatibility = 1.0
+	elif preferred_lure_types.has(bait.lure_type):
+		compatibility = 1.0
 
-	if accepts_all_lures:
-		return 1.0
-
-	if preferred_lure_types.has(bait.lure_type):
-		return 1.0
-
-	return 0.15
+	return (
+		compatibility
+		* bait.get_action_attraction_multiplier(
+			is_reeling
+		)
+	)
 
 func get_depth_match_multiplier(
 	current_depth: float,

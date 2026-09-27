@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://by7a7abue2qtl"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"tail"
+display_name = "Tail Sway"
+idle_lateral_amplitude = 0.01
+idle_vertical_amplitude = 0.0032
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 0.9
+reel_lateral_amplitude = 0.016
+reel_vertical_amplitude = 0.004
+reel_forward_amplitude = 0.0032
+reel_frequency_hz = 1.5
+reel_attraction_multiplier = 1.03
+surface_disturbance = 0.05
+tuning_note = "Balanced worm with a slightly stronger retrieve sway. V1 numeric timing is inferred from guide text, not claimed canonical."

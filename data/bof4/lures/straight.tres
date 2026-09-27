@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://bdpul13jusncl"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Resource" path="res://data/bof4/lure_actions/straight.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -8,6 +9,7 @@ lure_id = &"straight"
 display_name = "Straight"
 description = "Lure shaped like a worm. Can be used to catch various fish."
 visual_tint = Color(0.95, 0.42, 0.6, 1)
+action_profile = ExtResource("2_action")
 bottom_snag_resistance = 0.55
 obstacle_snag_resistance = 0.35
 metadata/acquisition = "Buy: Sarai/Shyde (20z)."

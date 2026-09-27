@@ -6,7 +6,8 @@ func choose(
 	entries: Array[FishSpawnEntry],
 	bait: BaitData,
 	current_depth: float,
-	total_depth: float
+	total_depth: float,
+	is_reeling: bool = false
 ) -> FishSpawnEntry:
 	var total_weight := 0.0
 
@@ -14,7 +15,7 @@ func choose(
 		if entry == null or entry.fish == null or entry.weight <= 0.0:
 			continue
 
-		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
+		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait, is_reeling)
 		var depth_multiplier := entry.fish.get_depth_match_multiplier(
 			current_depth,
 			total_depth
@@ -35,7 +36,7 @@ func choose(
 		if entry == null or entry.fish == null or entry.weight <= 0.0:
 			continue
 
-		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
+		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait, is_reeling)
 		var depth_multiplier := entry.fish.get_depth_match_multiplier(
 			current_depth,
 			total_depth
@@ -57,7 +58,8 @@ func get_attraction_ratio(
 	entries: Array[FishSpawnEntry],
 	bait: BaitData,
 	current_depth: float,
-	total_depth: float
+	total_depth: float,
+	is_reeling: bool = false
 ) -> float:
 	var base_weight_total := 0.0
 	var effective_weight_total := 0.0
@@ -68,7 +70,7 @@ func get_attraction_ratio(
 
 		base_weight_total += entry.weight
 
-		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait)
+		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait, is_reeling)
 		var depth_multiplier := entry.fish.get_depth_match_multiplier(
 			current_depth,
 			total_depth
@@ -83,6 +85,9 @@ func get_attraction_ratio(
 	if base_weight_total <= 0.0:
 		return 0.0
 
+	# Keep global bite probability normalized. Attraction values above 1.0 still
+	# influence species selection in choose(), while this ratio remains a safe
+	# 0..1 chance input for Encounter.
 	return clampf(
 		effective_weight_total / base_weight_total,
 		0.0,

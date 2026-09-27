@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LureActionProfile" format=3 uid="uid://buvftx5esvpye"]
+
+[ext_resource type="Script" uid="uid://bd4lfmqv0whys" path="res://scripts/lure_action_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+action_id = &"gold_top"
+display_name = "Gold Spin"
+motion_style = 5
+idle_lateral_amplitude = 0.0056
+idle_vertical_amplitude = 0.002
+idle_forward_amplitude = 0.0008
+idle_frequency_hz = 1.6
+reel_lateral_amplitude = 0.0112
+reel_vertical_amplitude = 0.0032
+reel_forward_amplitude = 0.0056
+reel_frequency_hz = 4.3
+idle_attraction_multiplier = 1.05
+reel_attraction_multiplier = 1.19
+surface_disturbance = 0.04
+flash_strength = 0.9
+tuning_note = "Stronger flash/attraction than Silver Top. V1 numeric timing is inferred from guide text, not claimed canonical."

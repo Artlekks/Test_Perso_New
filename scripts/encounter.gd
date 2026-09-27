@@ -215,7 +215,8 @@ func _on_bite_timer_timeout() -> void:
 			fish_population,
 			active_bait_data,
 			caster.get_current_bait_depth(),
-			caster.get_current_total_depth()
+			caster.get_current_total_depth(),
+			caster.is_active_bait_reeling()
 		)
 
 		var bite_chance := (
@@ -257,7 +258,8 @@ func _on_bite_timer_timeout() -> void:
 				fish_population,
 				active_bait_data,
 				caster.get_current_bait_depth(),
-				caster.get_current_total_depth()
+				caster.get_current_total_depth(),
+				caster.is_active_bait_reeling()
 			)
 
 	if (
