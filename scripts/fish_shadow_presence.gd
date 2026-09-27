@@ -660,32 +660,46 @@ func _pick_weighted_fish(population: Array[FishSpawnEntry]) -> FishData:
 	if population.is_empty():
 		return null
 
-	var total_weight := 0.0
+	var total_weight: float = 0.0
 
 	for entry in population:
-		if entry == null or entry.fish == null:
+		if entry == null:
 			continue
-		total_weight += maxf(entry.weight, 0.0)
+		total_weight += entry.get_ambient_weight()
 
 	if total_weight <= 0.0:
 		for entry in population:
-			if entry != null and entry.fish != null:
+			if (
+				entry != null
+				and entry.fish != null
+				and entry.enabled_for_ambient
+			):
 				return entry.fish
 		return null
 
-	var roll := _rng.randf_range(0.0, total_weight)
-	var cumulative := 0.0
+	var roll: float = _rng.randf_range(
+		0.0,
+		total_weight
+	)
+	var cumulative: float = 0.0
 
 	for entry in population:
-		if entry == null or entry.fish == null:
+		if entry == null:
 			continue
-		cumulative += maxf(entry.weight, 0.0)
-		if roll <= cumulative:
+
+		cumulative += entry.get_ambient_weight()
+
+		if roll <= cumulative and entry.fish != null:
 			return entry.fish
 
 	for index in range(population.size() - 1, -1, -1):
-		var fallback_entry := population[index]
-		if fallback_entry != null and fallback_entry.fish != null:
+		var fallback_entry: FishSpawnEntry = population[index]
+
+		if (
+			fallback_entry != null
+			and fallback_entry.fish != null
+			and fallback_entry.enabled_for_ambient
+		):
 			return fallback_entry.fish
 
 	return null

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://dx0kf16ay62nk"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fight_archetypes/erratic.tres" id="2_behavior"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/acheron_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_acheron"]
@@ -10,12 +10,12 @@ region = Rect2(313, 270, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
-fish_name = "Acheron"
 species_id = &"acheron"
 journal_name = "Acheron"
 guide_effect = "Poisons everyone, allies and enemies."
 guide_description = "Fish mutated by exposure to hex energy. Handle with care!"
 journal_spot_ids = Array[StringName]([&"chamba"])
+fish_name = "Acheron"
 average_size = 37.0
 king_size = 50.0
 base_stamina = 97.1

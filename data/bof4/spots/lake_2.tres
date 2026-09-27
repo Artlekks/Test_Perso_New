@@ -1,18 +1,19 @@
 [gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://da3t83awf8ykm"]
 
-[ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
-[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
 [ext_resource type="Resource" uid="uid://cys3woi0lpntp" path="res://data/bof4/fish/piranha.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://dhnueeixwu1d6" path="res://data/bof4/fish/bass.tres" id="4_fish"]
 [ext_resource type="Resource" uid="uid://xygc445jf4oi" path="res://data/bof4/fish/blue_gill.tres" id="5_fish"]
 [ext_resource type="Resource" uid="uid://b5bkqnl3ydvpj" path="res://data/bof4/fish/black_bass.tres" id="6_fish"]
-[ext_resource type="Resource" uid="uid://ch2n7oqjaly1d" path="res://data/bof4/fish/dorado.tres" id="7_fish"]
+[ext_resource type="Resource" uid="uid://cwamaw6pettl8" path="res://data/bof4/fish/martian_squid.tres" id="7_fish"]
+[ext_resource type="Resource" uid="uid://ch2n7oqjaly1d" path="res://data/bof4/fish/dorado.tres" id="8_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/lake_2.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 25.0
+weight = 20.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
@@ -22,23 +23,32 @@ weight = 20.0
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
-weight = 20.0
+weight = 18.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_4"]
 script = ExtResource("2_spawn")
 fish = ExtResource("6_fish")
-weight = 20.0
+weight = 18.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_5"]
 script = ExtResource("2_spawn")
 fish = ExtResource("7_fish")
-weight = 15.0
+weight = 12.0
+ambient_weight_multiplier = 0.90
+
+[sub_resource type="Resource" id="FishSpawnEntry_6"]
+script = ExtResource("2_spawn")
+fish = ExtResource("8_fish")
+weight = 12.0
+ambient_weight_multiplier = 0.80
 
 [resource]
 script = ExtResource("1_spot")
 spot_id = &"lake_2"
 spot_name = "Lake 2"
 location_description = "South of Lyp"
-fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5")])
+water_type = 1
+fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5"), SubResource("FishSpawnEntry_6")])
 ambient_profile = ExtResource("ambient_profile")
-depth_notes = "Freshwater lake population; Martian Squid moved to marine testing/population."
+strategy_notes = "Dorado is a rarer late-lake target."
+depth_notes = "Medium-Deep; Dorado and Black Bass share similar shadow territory."

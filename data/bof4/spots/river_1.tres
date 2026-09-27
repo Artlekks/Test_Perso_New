@@ -1,32 +1,43 @@
 [gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://cphp2pioqjiyv"]
 
-[ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
-[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
-[ext_resource type="Resource" uid="uid://d0sap4gwweio" path="res://data/bof4/fish/sweetfish.tres" id="3_fish"]
-[ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="4_fish"]
-[ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="5_fish"]
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
+[ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
+[ext_resource type="Resource" uid="uid://d0sap4gwweio" path="res://data/bof4/fish/sweetfish.tres" id="4_fish"]
+[ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="5_fish"]
+[ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="6_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/river_1.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 40.0
+weight = 20.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
-weight = 40.0
+weight = 30.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
-weight = 20.0
+weight = 35.0
+
+[sub_resource type="Resource" id="FishSpawnEntry_4"]
+script = ExtResource("2_spawn")
+fish = ExtResource("6_fish")
+weight = 15.0
+ambient_weight_multiplier = 0.85
+hotspot_tag = &"waterfall"
+strategy_note = "Waterfall area is the documented Rainbow Trout tip."
 
 [resource]
 script = ExtResource("1_spot")
 spot_id = &"river_1"
 spot_name = "River 1"
 location_description = "East of Sarai (canyon)"
-fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3")])
+water_type = 0
+fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4")])
 ambient_profile = ExtResource("ambient_profile")
-depth_notes = "Freshwater river population; marine jelly species removed for ecosystem plausibility."
+strategy_notes = "Rainbow Trout is associated with the waterfall area."
+depth_notes = "Shallow; cast into the waterfall for Rainbow Trout."

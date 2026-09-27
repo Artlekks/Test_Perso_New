@@ -1,22 +1,23 @@
 [gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://fvp381oslsgx"]
 
-[ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
-[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
-[ext_resource type="Resource" uid="uid://b5msme1jvwbqn" path="res://data/bof4/fish/browntail.tres" id="3_fish"]
+[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
+[ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="4_fish"]
-[ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="5_fish"]
-[ext_resource type="Resource" uid="uid://b4o1i6nhbjwx" path="res://data/bof4/fish/salmon.tres" id="6_fish"]
+[ext_resource type="Resource" uid="uid://b5msme1jvwbqn" path="res://data/bof4/fish/browntail.tres" id="5_fish"]
+[ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="6_fish"]
+[ext_resource type="Resource" uid="uid://b4o1i6nhbjwx" path="res://data/bof4/fish/salmon.tres" id="7_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/river_2.tres" id="ambient_profile"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
-weight = 25.0
+weight = 15.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
-weight = 40.0
+weight = 30.0
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
@@ -26,13 +27,23 @@ weight = 20.0
 [sub_resource type="Resource" id="FishSpawnEntry_4"]
 script = ExtResource("2_spawn")
 fish = ExtResource("6_fish")
+weight = 20.0
+
+[sub_resource type="Resource" id="FishSpawnEntry_5"]
+script = ExtResource("2_spawn")
+fish = ExtResource("7_fish")
 weight = 15.0
+ambient_weight_multiplier = 0.90
+hotspot_tag = &"waterfall"
+strategy_note = "Near-waterfall placement is the documented Salmon tip."
 
 [resource]
 script = ExtResource("1_spot")
 spot_id = &"river_2"
 spot_name = "River 2"
 location_description = "North of Kasq Woods"
-fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4")])
+water_type = 0
+fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5")])
 ambient_profile = ExtResource("ambient_profile")
-depth_notes = "Freshwater river population; marine jelly species removed for ecosystem plausibility."
+strategy_notes = "Salmon is associated with the waterfall area."
+depth_notes = "Shallow-Medium; near waterfall for Salmon."

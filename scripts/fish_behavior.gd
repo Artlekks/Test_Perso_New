@@ -112,6 +112,8 @@ var vertical_activity: float = 1.0
 var behavior_profile: FishBehaviorProfile = null
 var profile_response_multiplier: float = 1.0
 var profile_release_reaction_multiplier: float = 1.0
+var profile_pressure_multiplier: float = 1.0
+var effective_fight_intensity_multiplier: float = 1.0
 
 # Baseline values are captured before any species profile is applied.
 # If a future FishData has no behavior profile, we restore these instead
@@ -199,6 +201,11 @@ func configure(fish: FishInstance) -> void:
 	thrash_multiplier = profile.thrash_multiplier
 	profile_response_multiplier = maxf(profile.movement_response_multiplier, 0.5)
 	profile_release_reaction_multiplier = maxf(profile.release_reaction_multiplier, 0.5)
+	profile_pressure_multiplier = maxf(profile.pressure_multiplier, 0.01)
+	effective_fight_intensity_multiplier = maxf(
+		fish.behavior_intensity_multiplier,
+		0.01
+	)
 
 
 func _reset_profile_settings() -> void:
@@ -216,6 +223,8 @@ func _reset_profile_settings() -> void:
 	thrash_multiplier = _default_thrash_multiplier
 	profile_response_multiplier = 1.0
 	profile_release_reaction_multiplier = 1.0
+	profile_pressure_multiplier = 1.0
+	effective_fight_intensity_multiplier = 1.0
 
 
 func _capture_default_profile_settings() -> void:
@@ -236,7 +245,7 @@ func _capture_default_profile_settings() -> void:
 
 func start(new_intensity: float = 1.0) -> void:
 	intensity = clampf(
-		new_intensity,
+		new_intensity * effective_fight_intensity_multiplier,
 		0.0,
 		1.0
 	)
@@ -284,7 +293,9 @@ func react_to_release(
 		return
 
 	reaction_intensity = clampf(
-		reaction_intensity * profile_release_reaction_multiplier,
+		reaction_intensity
+		* profile_release_reaction_multiplier
+		* effective_fight_intensity_multiplier,
 		0.0,
 		1.0
 	)
@@ -493,9 +504,12 @@ func _choose_new_movement(
 		* movement_intensity
 	)
 
-	target_pressure = (
+	target_pressure = clampf(
 		new_pressure
 		* movement_intensity
+		* profile_pressure_multiplier,
+		0.0,
+		1.0
 	)
 
 
@@ -685,3 +699,31 @@ func _choose_fight_back_type(
 
 
 	return FightBackType.ERRATIC
+
+
+func get_debug_snapshot() -> Dictionary:
+	return {
+		"active": active,
+		"profile": (behavior_profile.get_archetype_label() if behavior_profile != null else "NONE"),
+		"state": _get_fight_back_label(current_fight_back),
+		"lateral": lateral,
+		"depth": depth,
+		"pressure": pressure,
+		"time_to_change": maxf(time_until_change, 0.0),
+	}
+
+
+func _get_fight_back_label(fight_back_type: int) -> String:
+	match fight_back_type:
+		FightBackType.SURGE_AWAY:
+			return "SURGE"
+		FightBackType.SIDE_RUN:
+			return "SIDE RUN"
+		FightBackType.DIVE:
+			return "DIVE"
+		FightBackType.RISE:
+			return "RISE"
+		FightBackType.ERRATIC:
+			return "ERRATIC"
+		_:
+			return "UNKNOWN"

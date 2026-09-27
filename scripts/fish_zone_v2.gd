@@ -101,3 +101,20 @@ func get_shadow_population_debug_counts() -> Vector2i:
 		return shadow_presence.get_population_debug_counts()
 
 	return Vector2i.ZERO
+
+
+func get_spot_debug_snapshot() -> Dictionary:
+	if fishing_spot == null:
+		return {
+			"spot": "NONE",
+			"summary": "NO SPOT",
+			"water_depth_m": get_water_depth(),
+			"species": PackedStringArray(),
+		}
+
+	return {
+		"spot": fishing_spot.spot_name,
+		"summary": fishing_spot.get_debug_summary(),
+		"water_depth_m": get_water_depth(),
+		"species": fishing_spot.get_population_species_names(),
+	}

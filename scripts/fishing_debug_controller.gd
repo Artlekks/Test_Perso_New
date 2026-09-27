@@ -48,7 +48,8 @@ func configure(
 	debug_menu.configure(
 		_loadout,
 		settings,
-		_progress
+		_progress,
+		_encounter
 	)
 	debug_menu.connect(
 		"spot_requested",

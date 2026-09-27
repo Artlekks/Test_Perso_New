@@ -134,6 +134,7 @@ var active_bait_data: BaitData = null
 var debug_settings = null
 var active_rod_data: RodData = null
 var base_line_break_delay: float = 0.0
+var base_bite_window_time: float = 0.8
 var active_tech_level: int = 0
 var technique_time_left: float = 0.0
 
@@ -155,6 +156,7 @@ func _ready() -> void:
 	fish_behavior.thrash_started.connect(_on_fish_behavior_thrash_started)
 
 	base_line_break_delay = tension.line_break_delay
+	base_bite_window_time = maxf(bite_window_timer.wait_time, 0.05)
 	_apply_rod_tension_settings()
 	
 func _on_bait_landed(_point: Vector3) -> void:
@@ -277,7 +279,7 @@ func _on_bite_timer_timeout() -> void:
 
 	bite_active = true
 	bite_opportunity_started.emit()
-	bite_window_timer.start()
+	bite_window_timer.start(_get_pending_bite_window_time())
 
 func try_hook() -> bool:
 	if not bite_active:
@@ -346,6 +348,10 @@ func _confirm_hit() -> bool:
 func _on_bite_window_timeout() -> void:
 	bite_active = false
 
+	var retry_delay: float = (
+		retry_bite_delay * _get_pending_bite_retry_multiplier()
+	)
+
 	if is_instance_valid(pending_shadow):
 		if pending_shadow.has_method("abandon_bait_and_dive"):
 			pending_shadow.abandon_bait_and_dive()
@@ -354,7 +360,7 @@ func _on_bite_window_timeout() -> void:
 	pending_fish_entry = null
 	bite_missed.emit()
 
-	bite_timer.start(retry_bite_delay)
+	bite_timer.start(retry_delay)
 
 func _get_visible_shadow_candidate() -> Node:
 	var bait := get_tree().get_first_node_in_group("bait") as Node3D
@@ -534,10 +540,14 @@ func _process(delta: float) -> void:
 		)
 
 		fish_pull_changed.emit(
-			lerpf(
-				spent_pull_strength * 0.5,
-				spent_pull_strength,
-				spent_pressure
+			clampf(
+				lerpf(
+					spent_pull_strength * 0.5,
+					spent_pull_strength,
+					spent_pressure
+				) * _get_pull_multiplier(),
+				0.0,
+				1.0
 			)
 		)
 
@@ -569,10 +579,14 @@ func _process(delta: float) -> void:
 		)
 
 		fish_pull_changed.emit(
-			lerpf(
-				exhausted_pull_strength * 0.5,
-				exhausted_pull_strength,
-				exhausted_pressure
+			clampf(
+				lerpf(
+					exhausted_pull_strength * 0.5,
+					exhausted_pull_strength,
+					exhausted_pressure
+				) * _get_pull_multiplier(),
+				0.0,
+				1.0
 			)
 		)
 
@@ -618,7 +632,10 @@ func _process(delta: float) -> void:
 			)
 	else:
 		fish_stamina = minf(
-			fish_stamina + stamina_recovery_speed * delta,
+			fish_stamina
+			+ stamina_recovery_speed
+			* _get_stamina_recovery_multiplier()
+			* delta,
 			max_stamina
 		)
 
@@ -645,10 +662,11 @@ func _process(delta: float) -> void:
 	tension.set_fish_resistance(tension_resistance)
 	fish_resistance_changed.emit(resistance)
 
-	var pull_strength := lerpf(
-		0.2,
-		1.0,
-		resistance
+	var pull_strength: float = clampf(
+		lerpf(0.2, 1.0, resistance)
+		* _get_pull_multiplier(),
+		0.0,
+		1.0
 	)
 
 	fish_pull_changed.emit(pull_strength)
@@ -656,6 +674,31 @@ func _process(delta: float) -> void:
 	if fish_stamina <= 0.0:
 		_finish_resistance_round() 
 		
+func _get_pending_bite_window_time() -> float:
+	var multiplier: float = 1.0
+	if pending_fish_entry != null and pending_fish_entry.fish != null:
+		multiplier = pending_fish_entry.fish.get_bite_window_multiplier()
+	return maxf(base_bite_window_time * multiplier, 0.05)
+
+
+func _get_pending_bite_retry_multiplier() -> float:
+	if pending_fish_entry == null or pending_fish_entry.fish == null:
+		return 1.0
+	return pending_fish_entry.fish.get_bite_retry_multiplier()
+
+
+func _get_pull_multiplier() -> float:
+	if active_fish == null:
+		return 1.0
+	return maxf(active_fish.pull_multiplier, 0.01)
+
+
+func _get_stamina_recovery_multiplier() -> float:
+	if active_fish == null:
+		return 1.0
+	return maxf(active_fish.stamina_recovery_multiplier, 0.01)
+
+
 func set_player_reeling(active: bool) -> void:
 	var was_reeling := player_reeling
 
@@ -758,7 +801,11 @@ func _finish_resistance_round() -> void:
 	)
 
 	fish_pull_changed.emit(
-		exhausted_pull_strength
+		clampf(
+			exhausted_pull_strength * _get_pull_multiplier(),
+			0.0,
+			1.0
+		)
 	)
 
 	fish_behavior.start(
@@ -795,7 +842,13 @@ func _enter_spent() -> void:
 	# considers the fish "spent" and stays relaxed.
 	fish_resistance_changed.emit(0.0)
 
-	fish_pull_changed.emit(spent_pull_strength)
+	fish_pull_changed.emit(
+		clampf(
+			spent_pull_strength * _get_pull_multiplier(),
+			0.0,
+			1.0
+		)
+	)
 
 	caster.set_reel_speed_multiplier(spent_reel_speed_multiplier)
 
@@ -822,6 +875,42 @@ func _restart_from_spent() -> void:
 
 	fish_behavior.start(spent_restart_intensity)
 	
+func get_fish_debug_snapshot() -> Dictionary:
+	var snapshot := {
+		"fight_state": _get_fight_state_label(),
+		"stamina": fish_stamina,
+		"max_stamina": _get_max_stamina(),
+		"rounds_remaining": rounds_remaining,
+		"pressure": fish_behavior_pressure,
+		"lateral": current_fish_lateral,
+		"bite_active": bite_active,
+		"pending_fish": "NONE",
+	}
+
+	if pending_fish_entry != null and pending_fish_entry.fish != null:
+		snapshot["pending_fish"] = pending_fish_entry.fish.fish_name
+
+	if active_fish != null:
+		snapshot.merge(active_fish.get_debug_snapshot(), true)
+
+	if fish_behavior != null and fish_behavior.has_method("get_debug_snapshot"):
+		snapshot["behavior"] = fish_behavior.get_debug_snapshot()
+
+	return snapshot
+
+
+func _get_fight_state_label() -> String:
+	match fight_state:
+		FightState.RESISTING:
+			return "RESISTING"
+		FightState.EXHAUSTED:
+			return "EXHAUSTED"
+		FightState.SPENT:
+			return "SPENT"
+		_:
+			return "NONE"
+
+
 func set_fish_population(entries: Array[FishSpawnEntry]) -> void:
 	fish_population = entries.duplicate()
 

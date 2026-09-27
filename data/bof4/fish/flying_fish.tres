@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://biqcyropg3d4"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fight_archetypes/darting.tres" id="2_behavior"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/flying_fish_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_flying_fish"]
@@ -10,12 +10,12 @@ region = Rect2(159, 164, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
-fish_name = "Flying Fish"
 species_id = &"flying_fish"
 journal_name = "Flying Fish"
 guide_effect = "Restores 100 HP to one ally."
 guide_description = "Skips above the waves. Very agile and hard to catch."
 journal_spot_ids = Array[StringName]([&"ocean_1", &"ocean_3"])
+fish_name = "Flying Fish"
 average_size = 26.0
 king_size = 35.0
 base_stamina = 68.5

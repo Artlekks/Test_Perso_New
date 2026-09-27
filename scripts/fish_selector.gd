@@ -9,43 +9,33 @@ func choose(
 	total_depth: float,
 	is_reeling: bool = false
 ) -> FishSpawnEntry:
-	var total_weight := 0.0
+	var total_weight: float = 0.0
 
 	for entry in entries:
-		if entry == null or entry.fish == null or entry.weight <= 0.0:
+		if entry == null:
 			continue
 
-		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait, is_reeling)
-		var depth_multiplier := entry.fish.get_depth_match_multiplier(
+		total_weight += entry.get_bite_selection_weight(
+			bait,
 			current_depth,
-			total_depth
-		)
-
-		total_weight += (
-			entry.weight
-			* lure_multiplier
-			* depth_multiplier
+			total_depth,
+			is_reeling
 		)
 
 	if total_weight <= 0.0:
 		return null
 
-	var roll := randf() * total_weight
+	var roll: float = randf() * total_weight
 
 	for entry in entries:
-		if entry == null or entry.fish == null or entry.weight <= 0.0:
+		if entry == null:
 			continue
 
-		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait, is_reeling)
-		var depth_multiplier := entry.fish.get_depth_match_multiplier(
+		roll -= entry.get_bite_selection_weight(
+			bait,
 			current_depth,
-			total_depth
-		)
-
-		roll -= (
-			entry.weight
-			* lure_multiplier
-			* depth_multiplier
+			total_depth,
+			is_reeling
 		)
 
 		if roll <= 0.0:
@@ -61,33 +51,26 @@ func get_attraction_ratio(
 	total_depth: float,
 	is_reeling: bool = false
 ) -> float:
-	var base_weight_total := 0.0
-	var effective_weight_total := 0.0
+	var base_weight_total: float = 0.0
+	var effective_weight_total: float = 0.0
 
 	for entry in entries:
-		if entry == null or entry.fish == null or entry.weight <= 0.0:
+		if entry == null:
 			continue
 
-		base_weight_total += entry.weight
-
-		var lure_multiplier := entry.fish.get_lure_match_multiplier(bait, is_reeling)
-		var depth_multiplier := entry.fish.get_depth_match_multiplier(
+		base_weight_total += entry.get_base_bite_weight()
+		effective_weight_total += entry.get_bite_selection_weight(
+			bait,
 			current_depth,
-			total_depth
-		)
-
-		effective_weight_total += (
-			entry.weight
-			* lure_multiplier
-			* depth_multiplier
+			total_depth,
+			is_reeling
 		)
 
 	if base_weight_total <= 0.0:
 		return 0.0
 
-	# Keep global bite probability normalized. Attraction values above 1.0 still
-	# influence species selection in choose(), while this ratio remains a safe
-	# 0..1 chance input for Encounter.
+	# Values above 1.0 still matter for species selection in choose(). Encounter
+	# consumes this as a safe probability input, so clamp only at this boundary.
 	return clampf(
 		effective_weight_total / base_weight_total,
 		0.0,

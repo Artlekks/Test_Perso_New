@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://ch2n7oqjaly1d"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fight_archetypes/darting.tres" id="2_behavior"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/dorado_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_dorado"]
@@ -10,12 +10,12 @@ region = Rect2(159, 111, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
-fish_name = "Dorado"
 species_id = &"dorado"
 journal_name = "Dorado"
 guide_effect = "Restores 800 HP to all allies."
 guide_description = "So big it's too much for one sitting!"
 journal_spot_ids = Array[StringName]([&"lake_2", &"lake_3"])
+fish_name = "Dorado"
 average_size = 67.0
 king_size = 90.0
 base_stamina = 90.3

@@ -41,6 +41,7 @@ var _loadout = null
 var _settings = null
 var _progress: FishingProgress = null
 var _fish_zone: Node = null
+var _encounter: Node = null
 var _selected_row: int = Row.PROFILE
 var _profile_index: int = 0
 var _profile_database: Array[FishingQAProfile] = []
@@ -55,11 +56,13 @@ func _ready() -> void:
 func configure(
 	loadout,
 	settings,
-	progress: FishingProgress = null
+	progress: FishingProgress = null,
+	encounter: Node = null
 ) -> void:
 	_loadout = loadout
 	_settings = settings
 	_progress = progress
+	_encounter = encounter
 	_load_qa_profiles()
 
 	if _progress != null:
@@ -451,6 +454,14 @@ func _refresh() -> void:
 		selected_rod
 	)
 
+	var selected_fish_data: FishData = null
+	if _fish_index > 0:
+		selected_fish_data = CONTENT_CATALOG.fish[_fish_index - 1]
+
+	var fish_backend_text := _get_fish_backend_debug_text(selected_fish_data)
+	var fish_runtime_text := _get_fish_runtime_debug_text()
+	var spot_backend_text := _get_spot_backend_debug_text()
+
 	status_label.text = (
 		profile_purpose
 		+ "\nShadow QA: " + shadow_text
@@ -460,6 +471,9 @@ func _refresh() -> void:
 		+ "\nLure DB: " + lure_backend_text
 		+ "\nLure RT: " + lure_runtime_text
 		+ "\nRod DB: " + rod_backend_text
+		+ "\nFish DB: " + fish_backend_text
+		+ "\nFish RT: " + fish_runtime_text
+		+ "\nSpot DB: " + spot_backend_text
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
 
@@ -488,6 +502,90 @@ func _get_rod_backend_debug_text(
 		return "NONE"
 
 	return rod.get_debug_summary()
+
+
+func _get_fish_backend_debug_text(fish: FishData) -> String:
+	if fish == null:
+		return "ANY / SPOT RNG"
+
+	return (
+		"%s | %.0f/%.0fcm | stam %.1f str %.2f rounds %d | "
+		+ "depth %.2f-%.2f | %s"
+	) % [
+		fish.fish_name, fish.average_size, fish.king_size,
+		fish.base_stamina, fish.base_strength, fish.resistance_rounds,
+		fish.preferred_depth_min, fish.preferred_depth_max,
+		fish.get_behavior_debug_summary(),
+	]
+
+
+func _get_fish_runtime_debug_text() -> String:
+	if _encounter == null:
+		return "NO ENCOUNTER"
+	if not _encounter.has_method("get_fish_debug_snapshot"):
+		return "NO SNAPSHOT"
+
+	var snapshot: Dictionary = _encounter.get_fish_debug_snapshot()
+	var species_name: String = str(snapshot.get("species", "NONE"))
+
+	if species_name == "NONE":
+		var pending_name: String = str(snapshot.get("pending_fish", "NONE"))
+		if pending_name != "NONE":
+			return "PENDING %s | bite %s" % [
+				pending_name,
+				("OPEN" if bool(snapshot.get("bite_active", false)) else "WAIT"),
+			]
+		return "NO ACTIVE FISH"
+
+	var behavior_state: String = "NONE"
+	var behavior_value: Variant = snapshot.get("behavior", {})
+	if behavior_value is Dictionary:
+		var behavior_snapshot: Dictionary = behavior_value
+		behavior_state = str(behavior_snapshot.get("state", "NONE"))
+
+	return (
+		"%s %s%s | %.0fcm | stam %.1f/%.1f | str %.2f | "
+		+ "%s/%s | rounds %d | pressure %.2f lat %.2f"
+	) % [
+		species_name,
+		("KING " if bool(snapshot.get("is_king", false)) else ""),
+		str(snapshot.get("profile", "NONE")),
+		float(snapshot.get("size", 0.0)),
+		float(snapshot.get("stamina", 0.0)),
+		float(snapshot.get("max_stamina", 0.0)),
+		float(snapshot.get("strength", 0.0)),
+		str(snapshot.get("fight_state", "NONE")),
+		behavior_state,
+		int(snapshot.get("rounds_remaining", 0)),
+		float(snapshot.get("pressure", 0.0)),
+		float(snapshot.get("lateral", 0.0)),
+	]
+
+
+func _get_spot_backend_debug_text() -> String:
+	if _fish_zone == null:
+		return "NO FISH ZONE"
+
+	if not _fish_zone.has_method("get_spot_debug_snapshot"):
+		return "NO SNAPSHOT"
+
+	var snapshot: Dictionary = (
+		_fish_zone.get_spot_debug_snapshot()
+	)
+	var species_value: Variant = snapshot.get(
+		"species",
+		PackedStringArray()
+	)
+	var species_count: int = 0
+
+	if species_value is PackedStringArray:
+		species_count = species_value.size()
+
+	return "%s | depth %.2fm | %d species runtime" % [
+		str(snapshot.get("summary", "NO SPOT")),
+		float(snapshot.get("water_depth_m", 0.0)),
+		species_count,
+	]
 
 
 func _get_lure_runtime_debug_text() -> String:

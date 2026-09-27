@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://xygc445jf4oi"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fight_archetypes/darting.tres" id="2_behavior"]
+[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/blue_gill_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_blue_gill"]
@@ -10,12 +10,12 @@ region = Rect2(236, 5, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
-fish_name = "Blue Gill"
 species_id = &"blue_gill"
 journal_name = "Bluegill"
 guide_effect = "Casts a minor Water attack on one enemy."
 guide_description = "Has a violent nature and can attack without warning."
 journal_spot_ids = Array[StringName]([&"lake_1", &"lake_2"])
+fish_name = "Blue Gill"
 average_size = 37.0
 king_size = 50.0
 base_stamina = 75.4

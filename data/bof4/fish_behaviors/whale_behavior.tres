@@ -4,6 +4,18 @@
 
 [resource]
 script = ExtResource("1_profile")
+archetype = 3
+profile_name = "HEAVY"
+movement_response_multiplier = 0.65
+release_reaction_multiplier = 1.1
+recovery_time_multiplier = 1.25
+bite_aggression_multiplier = 0.927
+bite_window_multiplier = 1.018
+bite_retry_multiplier = 1.1
+fight_intensity_multiplier = 1.1
+pressure_multiplier = 1.15
+pull_multiplier = 1.219
+stamina_recovery_multiplier = 0.948
 lateral_activity = 0.45
 vertical_activity = 0.55
 direction_change_min = 1.40
@@ -15,4 +27,4 @@ rise_weight = 0.10
 erratic_weight = 0.20
 thrash_chance = 0.30
 thrash_multiplier = 1.60
-metadata/balance_origin = "Authored gameplay baseline; movement personality is not specified numerically by the source data."
+metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."

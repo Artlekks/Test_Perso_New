@@ -66,6 +66,28 @@ var near_record_roll_samples: int = 2
 @export var base_stamina: float = 100.0
 @export var base_strength: float = 1.0
 
+@export_category("Size Fight Scaling")
+## Existing behavior was linear stamina scaling by size ratio. Keeping 1.0
+## preserves that baseline while making the rule data-driven.
+@export_range(0.0, 2.0, 0.05)
+var stamina_size_exponent: float = 1.0
+
+## Existing behavior blended strength halfway toward size ratio. Keeping 0.5
+## preserves that baseline while allowing species-specific tuning later.
+@export_range(0.0, 1.0, 0.05)
+var strength_size_influence: float = 0.5
+
+@export_category("King Fight Scaling")
+## King fish are already larger. These are deliberately modest extra modifiers.
+@export_range(1.0, 1.5, 0.01)
+var king_stamina_multiplier: float = 1.08
+
+@export_range(1.0, 1.5, 0.01)
+var king_strength_multiplier: float = 1.05
+
+@export_range(1.0, 1.5, 0.01)
+var king_behavior_multiplier: float = 1.08
+
 @export_category("Depth Preference")
 
 ## Normalized lure depth. 0.0 = surface, 1.0 = bottom.
@@ -196,6 +218,36 @@ func get_lure_match_multiplier(
 			is_reeling
 		)
 	)
+
+
+
+func get_bite_aggression_multiplier() -> float:
+	if behavior_profile == null:
+		return 1.0
+
+	return maxf(behavior_profile.bite_aggression_multiplier, 0.0)
+
+
+func get_bite_window_multiplier() -> float:
+	if behavior_profile == null:
+		return 1.0
+
+	return maxf(behavior_profile.bite_window_multiplier, 0.1)
+
+
+func get_bite_retry_multiplier() -> float:
+	if behavior_profile == null:
+		return 1.0
+
+	return maxf(behavior_profile.bite_retry_multiplier, 0.1)
+
+
+func get_behavior_debug_summary() -> String:
+	if behavior_profile == null:
+		return "NO PROFILE"
+
+	return behavior_profile.get_debug_summary()
+
 
 func get_depth_match_multiplier(
 	current_depth: float,
