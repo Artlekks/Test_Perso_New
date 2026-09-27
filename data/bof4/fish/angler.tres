@@ -10,6 +10,11 @@ region = Rect2(82, 270, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"angler"
+journal_name = "Angler"
+guide_effect = "Casts a major Wind/Water attack on all enemies."
+guide_description = "A rare fish usually found only in deep waters."
+journal_spot_ids = Array[StringName]([&"ocean_3"])
 fish_name = "Angler"
 average_size = 105.0
 king_size = 140.0

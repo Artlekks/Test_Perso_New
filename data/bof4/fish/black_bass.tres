@@ -10,6 +10,11 @@ region = Rect2(82, 58, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"black_bass"
+journal_name = "Black Bass"
+guide_effect = "Restores 1200 HP to one ally."
+guide_description = "Not much to look at, but rich in protein and nutrition."
+journal_spot_ids = Array[StringName]([&"lake_2", &"lake_3"])
 fish_name = "Black Bass"
 average_size = 52.0
 king_size = 70.0

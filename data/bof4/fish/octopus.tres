@@ -10,6 +10,11 @@ region = Rect2(236, 217, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"octopus"
+journal_name = "Octopus"
+guide_effect = "Blinds all enemies."
+guide_description = "Also called \"devilfish\". No one has yet to eat it."
+journal_spot_ids = Array[StringName]([&"ocean_2", &"ocean_3"])
 fish_name = "Octopus"
 average_size = 60.0
 king_size = 80.0

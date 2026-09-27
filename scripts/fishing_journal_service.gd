@@ -165,7 +165,7 @@ func get_entry(
 		"discovered": discovered,
 		"discovery_state": discovery_state,
 		"discovery_label": _get_discovery_label(discovery_state),
-		"display_name": fish.fish_name if reveal_details else "????",
+		"display_name": fish.get_journal_name() if reveal_details else "????",
 		"portrait": fish.portrait if reveal_details else null,
 		"shadow_visual_profile": fish.shadow_visual_profile,
 		"shadow_visual_profile_name": _get_shadow_profile_name(
@@ -242,6 +242,12 @@ func get_entry(
 		"lure_id"
 	)
 	entry["preferred_lure_types"] = fish.preferred_lure_types.duplicate()
+	entry["unavailable_lure_types"] = fish.get_unavailable_lure_types()
+	entry["guide_effect"] = fish.guide_effect
+	entry["guide_description"] = fish.guide_description
+	entry["journal_spot_ids"] = _string_name_array_to_strings(
+		fish.journal_spot_ids
+	)
 	entry["source_effect"] = str(fish.get_meta("source_effect", ""))
 	entry["source_worth_zenny"] = int(fish.get_meta("source_worth_zenny", 0))
 	entry["source_preferred_lures"] = str(
@@ -582,9 +588,22 @@ func _rebuild_static_index() -> void:
 	for fish in _catalog.species:
 		if fish == null:
 			continue
+
 		var species_id := _get_species_id(fish)
-		if species_id.is_empty() or _fish_by_id.has(species_id):
+		if species_id.is_empty():
+			push_warning(
+				"FishingJournalService: FishData has no stable species_id: %s"
+				% fish.resource_path
+			)
 			continue
+
+		if _fish_by_id.has(species_id):
+			push_warning(
+				"FishingJournalService: duplicate species_id '%s'."
+				% species_id
+			)
+			continue
+
 		_fish_by_id[species_id] = fish
 		_ordered_species_ids.append(species_id)
 
@@ -626,9 +645,40 @@ func _rebuild_static_index() -> void:
 
 func _get_location_snapshots(species_id: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var raw_locations: Array = _locations_by_species.get(species_id, [])
 	var record: Dictionary = _get_record(species_id)
+	var fish: FishData = _fish_by_id.get(species_id) as FishData
+	var canonical_spot_ids: Array[StringName] = []
 
+	if fish != null:
+		canonical_spot_ids = fish.journal_spot_ids
+
+	# Canonical BOF4 source locations are owned by FishData. Gameplay spot
+	# populations/weights may be tuned independently without changing the manual.
+	if not canonical_spot_ids.is_empty():
+		for raw_spot_id in canonical_spot_ids:
+			var spot_id: String = _normalize_id(str(raw_spot_id))
+			var spot: FishingSpotData = _spots_by_id.get(spot_id) as FishingSpotData
+			if spot == null:
+				continue
+
+			result.append({
+				"spot_id": str(spot.spot_id),
+				"spot_name": spot.spot_name,
+				"location_description": spot.location_description,
+				"environment_type": _get_environment_type(str(spot.spot_id)),
+				"population_weight": _get_runtime_population_weight(
+					species_id,
+					str(spot.spot_id)
+				),
+				"discovered": _record_knows_spot(
+					record,
+					str(spot.spot_id)
+				),
+			})
+		return result
+
+	# Fallback for custom/modded content that has not authored source locations.
+	var raw_locations: Array = _locations_by_species.get(species_id, [])
 	for raw_location in raw_locations:
 		if not (raw_location is Dictionary):
 			continue
@@ -641,6 +691,25 @@ func _get_location_snapshots(species_id: String) -> Array[Dictionary]:
 		result.append(location)
 
 	return result
+
+
+func _get_runtime_population_weight(
+	species_id: String,
+	spot_id: String
+) -> float:
+	var raw_locations: Array = _locations_by_species.get(species_id, [])
+
+	for raw_location in raw_locations:
+		if not (raw_location is Dictionary):
+			continue
+		var location: Dictionary = raw_location as Dictionary
+		if (
+			_normalize_id(str(location.get("spot_id", "")))
+			== _normalize_id(spot_id)
+		):
+			return float(location.get("population_weight", 0.0))
+
+	return 0.0
 
 
 func _get_discovery_state(record: Dictionary) -> int:
@@ -769,13 +838,7 @@ func _get_species_id(fish: FishData) -> String:
 	if fish == null:
 		return ""
 
-	if is_instance_valid(_progress):
-		return _normalize_id(_progress.get_species_key(fish))
-
-	if not fish.resource_path.is_empty():
-		return _normalize_id(fish.resource_path.get_file().get_basename())
-
-	return _normalize_id(fish.fish_name)
+	return _normalize_id(fish.get_stable_species_id())
 
 
 func _get_source_index(fish: FishData) -> int:
@@ -804,7 +867,7 @@ func _get_environment_type(spot_id: String) -> String:
 		return "RIVER"
 	if key.begins_with("lake_"):
 		return "LAKE"
-	if key.begins_with("ocean_"):
+	if key.begins_with("ocean_") or key == "saldine":
 		return "OCEAN"
 	return "SPECIAL"
 

@@ -119,3 +119,13 @@ Not changed here:
 - catch/inventory transactional persistence;
 - fish-shadow bait lookup optimization;
 - camera projection optimization.
+
+
+## Pass 2 completion
+
+Single-source-of-truth refactor completed.
+
+Fish identity/manual/lure-compatibility/source-location data now flows from
+FishData through FishingJournalService into FishingMenu.
+
+See `PASS2_SINGLE_SOURCE.md` for the implementation boundary and validation.

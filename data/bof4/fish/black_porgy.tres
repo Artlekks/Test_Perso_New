@@ -10,6 +10,11 @@ region = Rect2(5, 270, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"black_porgy"
+journal_name = "Black Porgy"
+guide_effect = "Restores 100 AP to one ally."
+guide_description = "A hard fish to catch, but worth the effort."
+journal_spot_ids = Array[StringName]([&"saldine"])
 fish_name = "Black Porgy"
 average_size = 52.0
 king_size = 70.0

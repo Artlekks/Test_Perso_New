@@ -10,6 +10,11 @@ region = Rect2(159, 217, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"sea_bream"
+journal_name = "Sea Bream"
+guide_effect = "Restores 30 AP to one ally."
+guide_description = "A fine-looking, fine-tasting fish."
+journal_spot_ids = Array[StringName]([&"ocean_1", &"saldine"])
 fish_name = "Sea Bream"
 average_size = 52.0
 king_size = 70.0

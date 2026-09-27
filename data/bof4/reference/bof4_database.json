@@ -906,8 +906,8 @@
         "effect": "Cures Poison.",
         "worth_zenny": 80,
         "preferred_lures": [
-          "Topper",
-          "Minnow",
+          "Spinner",
+          "Winder",
           "Frog",
           "Worm"
         ],
@@ -945,7 +945,8 @@
           "erratic_weight": 2.2,
           "thrash_chance": 0.15,
           "thrash_multiplier": 1.25
-        }
+        },
+        "verification_note": "Corrected from direct in-game Data-menu reference supplied during project development."
       },
       {
         "index": 20,

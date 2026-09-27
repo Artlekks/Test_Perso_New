@@ -10,6 +10,11 @@ region = Rect2(5, 111, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"bullcat"
+journal_name = "Bull Cat"
+guide_effect = "Fir+Ear attack"
+guide_description = "Bottom dweller, used to make dynamite."
+journal_spot_ids = Array[StringName]([&"river_3", &"chamba"])
 fish_name = "Bullcat"
 average_size = 60.0
 king_size = 80.0

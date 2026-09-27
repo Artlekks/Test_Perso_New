@@ -10,6 +10,11 @@ region = Rect2(159, 270, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"spearfish"
+journal_name = "Spearfish"
+guide_effect = "Restores 1500 HP to all allies."
+guide_description = "Uses its horns to cut through and escape nets."
+journal_spot_ids = Array[StringName]([&"ocean_2"])
 fish_name = "Spearfish"
 average_size = 142.0
 king_size = 190.0

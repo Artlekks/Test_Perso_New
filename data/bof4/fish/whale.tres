@@ -10,6 +10,11 @@ region = Rect2(236, 270, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"whale"
+journal_name = "Whale"
+guide_effect = "Restores full HP and cures status for all allies."
+guide_description = "King of the sea, it is the ultimate catch."
+journal_spot_ids = Array[StringName]([&"ocean_2"])
 fish_name = "Whale"
 average_size = 187.0
 king_size = 250.0

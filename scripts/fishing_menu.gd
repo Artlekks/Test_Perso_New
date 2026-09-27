@@ -130,245 +130,6 @@ const HINT_DETAIL_TEXT: PackedStringArray = [
 const HINT_TEXT_LINES_PER_PAGE: int = 3
 const HINT_TEXT_MAX_WIDTH_PX: int = 218
 
-# BOF4 Data-menu species order. Only discovered species are shown, but they
-# always retain this canonical ordering as the journal grows.
-const DATA_SPECIES_ORDER: PackedStringArray = [
-	"Jellyfish",
-	"Piranha",
-	"Bass",
-	"Bluegill",
-	"Sweetfish",
-	"Browntail",
-	"Black Bass",
-	"Angelfish",
-	"Trout",
-	"Rainbow Trout",
-	"Bull Cat",
-	"Martian Squid",
-	"Dorado",
-	"Salmon",
-	"Barundi",
-	"Sturgeon",
-	"Man-o'-War",
-	"Flying Fish",
-	"Blowfish",
-	"Moonfish",
-	"Sea Bass",
-	"Flatfish",
-	"Sea Bream",
-	"Octopus",
-	"Bonito",
-	"Black Porgy",
-	"Angler",
-	"Spearfish",
-	"Whale",
-	"Acheron",
-]
-
-# Canonical Data preview source: the menu resolves the selected name back to
-# FishData, whose portrait is the authoritative Atlas_Fishes.png region.
-const DATA_FISH_BY_KEY: Dictionary = {
-	"jellyfish": preload("res://data/bof4/fish/jellyfish.tres"),
-	"piranha": preload("res://data/bof4/fish/piranha.tres"),
-	"bass": preload("res://data/bof4/fish/bass.tres"),
-	"bluegill": preload("res://data/bof4/fish/blue_gill.tres"),
-	"sweetfish": preload("res://data/bof4/fish/sweetfish.tres"),
-	"browntail": preload("res://data/bof4/fish/browntail.tres"),
-	"blackbass": preload("res://data/bof4/fish/black_bass.tres"),
-	"angelfish": preload("res://data/bof4/fish/angelfish.tres"),
-	"trout": preload("res://data/bof4/fish/trout.tres"),
-	"rainbowtrout": preload("res://data/bof4/fish/rainbow_trout.tres"),
-	"bullcat": preload("res://data/bof4/fish/bullcat.tres"),
-	"martiansquid": preload("res://data/bof4/fish/martian_squid.tres"),
-	"dorado": preload("res://data/bof4/fish/dorado.tres"),
-	"salmon": preload("res://data/bof4/fish/salmon.tres"),
-	"barundi": preload("res://data/bof4/fish/barandy.tres"),
-	"sturgeon": preload("res://data/bof4/fish/sturgeon.tres"),
-	"manowar": preload("res://data/bof4/fish/man_o_war.tres"),
-	"flyingfish": preload("res://data/bof4/fish/flying_fish.tres"),
-	"blowfish": preload("res://data/bof4/fish/blowfish.tres"),
-	"moonfish": preload("res://data/bof4/fish/moorfish.tres"),
-	"seabass": preload("res://data/bof4/fish/sea_bass.tres"),
-	"flatfish": preload("res://data/bof4/fish/flatfish.tres"),
-	"seabream": preload("res://data/bof4/fish/sea_bream.tres"),
-	"octopus": preload("res://data/bof4/fish/octopus.tres"),
-	"bonito": preload("res://data/bof4/fish/bonito.tres"),
-	"blackporgy": preload("res://data/bof4/fish/black_porgy.tres"),
-	"angler": preload("res://data/bof4/fish/angler.tres"),
-	"spearfish": preload("res://data/bof4/fish/spearfish.tres"),
-	"whale": preload("res://data/bof4/fish/whale.tres"),
-	"acheron": preload("res://data/bof4/fish/acheron.tres"),
-}
-
-
-# Data Page 2 guide copy confirmed directly from the supplied BOF4 screenshots.
-# Other species fall back to the project's existing source_effect metadata until
-# their exact in-game Guide text is supplied.
-const DATA_GUIDE_COPY: Dictionary = {
-	"jellyfish": {
-		"title": "Restores 50 HP",
-		"body": "Lives in lakes and rivers; goes for any type of lure.",
-	},
-	"piranha": {
-		"body": "Has sharp teeth and hard scales. Lives in schools in lakes.",
-	},
-	"bass": {
-		"body": "Omnivorous, but a picky eater. Avoids lures it doesn't like.",
-	},
-	"bluegill": {
-		"body": "Has a violent nature and can attack without warning.",
-	},
-	"sweetfish": {
-		"title": "Restores AP",
-		"body": "Considered a delicacy in many parts of the world.",
-	},
-	"browntail": {
-		"body": "Shape and color changes with its habitat.",
-	},
-	"blackbass": {
-		"body": "Not much to look at, but rich in protein and nutrition.",
-	},
-	"angelfish": {
-		"body": "Only found in mountain lakes. Popular with children.",
-	},
-	"trout": {
-		"body": "Very alert to danger; will fight to protect itself.",
-	},
-	"rainbowtrout": {
-		"body": "Beautiful to watch as it swims.",
-	},
-	"bullcat": {
-		"title": "Fir+Ear attack",
-		"body": "Bottom dweller, used to make dynamite.",
-	},
-	"martiansquid": {
-		"body": "Lives in shallow waters. Hard to catch as it is very strong.",
-	},
-	"dorado": {
-		"body": "So big it's too much for one sitting!",
-	},
-	"salmon": {
-		"body": "Usually swims far out to sea. But can be caught in rivers.",
-	},
-	"barundi": {
-		"body": "King of the lakes, it has an almost regal air about it.",
-	},
-	"sturgeon": {
-		"body": "Sometimes called \"the living jewel\".",
-	},
-	"manowar": {
-		"title": "Restores 50 HP",
-		"body": "Ocean dwelling jellyfish; goes after any lure.",
-	},
-	"flyingfish": {
-		"body": "Skips above the waves. Very agile and hard to catch.",
-	},
-	"blowfish": {
-		"body": "Protects itself with very sharp spines.",
-	},
-	"moonfish": {
-		"body": "Popular with women, it looks like it's flying in the water.",
-	},
-	"seabass": {
-		"body": "Fights, but not too much; a good fish for beginners.",
-	},
-	"flatfish": {
-		"body": "Swims close to the bottom. Its eyes always look to the left.",
-	},
-	"seabream": {
-		"body": "A fine-looking, fine-tasting fish.",
-	},
-	"octopus": {
-		"body": "Also called \"devilfish\". No one has yet to eat it.",
-	},
-	"bonito": {
-		"body": "A fast fish. Being able to catch one is a distinction.",
-	},
-	"blackporgy": {
-		"body": "A hard fish to catch, but worth the effort.",
-	},
-	"angler": {
-		"body": "A rare fish usually found only in deep waters.",
-	},
-	"spearfish": {
-		"body": "Uses its horns to cut through and escape nets.",
-	},
-	"whale": {
-		"body": "King of the sea, it is the ultimate catch.",
-	},
-	"acheron": {
-		"body": "Fish mutated by exposure to hex energy. Handle with care!",
-	},
-}
-
-
-# Data menu lure compatibility.
-# A listed family is dark/unavailable for that fish.
-# Display order in the baked panel is:
-# Spinner, Winder, Topper, Minnow, Frogger, Worm.
-const DATA_DARK_LURE_FAMILIES: Dictionary = {
-	"bass": [&"spinner", &"winder"],
-	"bluegill": [&"topper", &"minnow"],
-	"browntail": [&"frogger", &"worm"],
-	"blackbass": [&"spinner", &"winder"],
-	"rainbowtrout": [&"frogger", &"worm"],
-	"bullcat": [&"spinner", &"winder"],
-	"martiansquid": [&"spinner", &"topper", &"frogger"],
-	"dorado": [&"spinner", &"winder"],
-	"salmon": [&"spinner", &"winder"],
-	"barundi": [&"spinner", &"winder", &"topper", &"minnow"],
-	"sturgeon": [&"spinner", &"winder", &"topper", &"minnow"],
-	"blowfish": [&"topper", &"minnow"],
-	"flatfish": [&"frogger", &"worm"],
-	"seabream": [&"spinner", &"winder"],
-	"octopus": [&"spinner", &"topper", &"frogger"],
-	"bonito": [&"spinner", &"winder", &"frogger"],
-	"blackporgy": [&"spinner", &"winder"],
-	"angler": [&"spinner", &"winder"],
-	"spearfish": [&"frogger", &"worm"],
-	"whale": [&"frogger", &"worm"],
-}
-
-
-# Data menu depth/wave availability.
-# A listed wave icon is dark/unavailable for that fish.
-# Display order is Calm, Big Waves, Tsunami.
-const DATA_DARK_WAVES: Dictionary = {
-	"jellyfish": [&"tsunami"],
-	"piranha": [&"calm", &"tsunami"],
-	"bass": [&"calm", &"tsunami"],
-	"bluegill": [&"calm", &"tsunami"],
-	"sweetfish": [&"big", &"tsunami"],
-	"browntail": [&"big", &"tsunami"],
-	"blackbass": [&"calm", &"tsunami"],
-	"angelfish": [&"calm", &"tsunami"],
-	"trout": [&"big", &"tsunami"],
-	"rainbowtrout": [&"big", &"tsunami"],
-	"bullcat": [&"big", &"tsunami"],
-	"martiansquid": [&"calm", &"tsunami"],
-	"dorado": [&"calm", &"tsunami"],
-	"salmon": [&"big", &"tsunami"],
-	"barundi": [&"calm", &"tsunami"],
-	"sturgeon": [&"big", &"tsunami"],
-	"manowar": [&"calm", &"big"],
-	"flyingfish": [&"calm", &"big"],
-	"blowfish": [&"calm", &"big"],
-	"moonfish": [&"calm", &"big"],
-	"seabass": [&"calm", &"big"],
-	"flatfish": [&"calm", &"big"],
-	"seabream": [&"calm", &"big"],
-	"octopus": [&"calm", &"big"],
-	"bonito": [&"calm", &"big"],
-	"blackporgy": [&"calm", &"big"],
-	"angler": [&"calm", &"big"],
-	"spearfish": [&"calm", &"big"],
-	"whale": [&"calm", &"big"],
-	"acheron": [&"calm", &"big", &"tsunami"],
-}
-
-
-
-
 @export_category("Selector Calibration LIVE (screen pixels)")
 ## These selectors live outside the 2x-scaled 320x240 menu root, so every
 ## selector PNG renders at its authored pixel size with no stretching.
@@ -1932,36 +1693,23 @@ func _refresh_data_page() -> void:
 		_update_data_details()
 		return
 
-	# Keep every species in its canonical BOF4 slot. Undiscovered fish stay in
-	# the list so later catches never collapse upward and change row order.
-	var snapshot: Dictionary = _journal.get_data_menu_snapshot(true, false)
-	var entries_by_key: Dictionary = {}
+	# Pass 2: catalog order, identity, display names and portraits now come from
+	# FishingJournalService/FishData. FishingMenu no longer owns a fish database.
+	# Details are revealed here to preserve the current BOF4-style list/preview
+	# behavior; record values remain gated by the discovered flag below.
+	var snapshot: Dictionary = _journal.get_data_menu_snapshot(true, true)
 	var raw_species: Variant = snapshot.get("species", [])
+
 	if raw_species is Array:
 		for value in raw_species:
 			if not (value is Dictionary):
 				continue
+
 			var entry: Dictionary = (value as Dictionary).duplicate(true)
-			var source_name: String = str(entry.get("display_name", ""))
-			entries_by_key[_canonical_species_key(source_name)] = entry
-
-	for canonical_name in DATA_SPECIES_ORDER:
-		var canonical_key: String = _canonical_species_key(canonical_name)
-		var entry: Dictionary
-		if entries_by_key.has(canonical_key):
-			entry = (entries_by_key[canonical_key] as Dictionary).duplicate(true)
-		else:
-			entry = {
-				"display_name": canonical_name,
-				"discovered": false,
-				"current_owned_count": 0,
-			}
-
-		# Display the canonical BOF4/reference spelling regardless of the
-		# project's internal resource spelling (Barandy/Barundi, Moorfish, etc.).
-		entry["display_name"] = canonical_name
-		_data_entries.append(entry)
-		data_species_list.add_item(canonical_name)
+			_data_entries.append(entry)
+			data_species_list.add_item(
+				str(entry.get("display_name", "????"))
+			)
 
 	if _data_entries.is_empty():
 		_data_index = 0
@@ -1983,8 +1731,8 @@ func _update_data_details() -> void:
 	data_points_label.text = "--"
 	data_point_label.text = "---"
 	data_caught_count_label.text = "00"
-	_set_data_lure_dark_overlays("", false)
-	_set_data_wave_dark_overlays("", false)
+	_set_data_lure_dark_overlays({}, false)
+	_set_data_wave_dark_overlays({}, false)
 
 	if _data_entries.is_empty():
 		info_label.text = "No fishing data."
@@ -1992,22 +1740,19 @@ func _update_data_details() -> void:
 
 	var entry: Dictionary = _data_entries[_data_index]
 	var fish_name: String = str(entry.get("display_name", "????"))
+
 	if _data_detail_open:
 		info_label.text = "Directional buttons: Change page"
 	else:
 		info_label.text = "View data on %s" % fish_name
 
-	# Preview identity comes directly from the FishData database. FishData owns
-	# the AtlasTexture region, so every canonical name always resolves to the
-	# correct sprite instead of inheriting a stale/fallback Jellyfish texture.
-	var fish_key: String = _canonical_species_key(fish_name)
-	var fish_data: FishData = DATA_FISH_BY_KEY.get(fish_key) as FishData
-	if fish_data != null and fish_data.portrait != null:
-		data_portrait.texture = fish_data.portrait
+	var portrait: Texture2D = entry.get("portrait", null) as Texture2D
+	if portrait != null:
+		data_portrait.texture = portrait
 
 	var discovered: bool = bool(entry.get("discovered", false))
-	_set_data_lure_dark_overlays(fish_key, discovered)
-	_set_data_wave_dark_overlays(fish_key, discovered)
+	_set_data_lure_dark_overlays(entry, discovered)
+	_set_data_wave_dark_overlays(entry, discovered)
 
 	if not discovered:
 		return
@@ -2020,51 +1765,51 @@ func _update_data_details() -> void:
 
 
 func _set_data_lure_dark_overlays(
-	fish_key: String,
+	entry: Dictionary,
 	discovered: bool
 ) -> void:
-	var dark_families: Array = DATA_DARK_LURE_FAMILIES.get(
-		fish_key,
+	var unavailable_types: Array = entry.get(
+		"unavailable_lure_types",
 		[]
 	)
 
 	data_lure_spinner_dark.visible = (
-		discovered and dark_families.has(&"spinner")
+		discovered and unavailable_types.has(LureType.Type.SPINNER)
 	)
 	data_lure_winder_dark.visible = (
-		discovered and dark_families.has(&"winder")
+		discovered and unavailable_types.has(LureType.Type.WINDER)
 	)
 	data_lure_topper_dark.visible = (
-		discovered and dark_families.has(&"topper")
+		discovered and unavailable_types.has(LureType.Type.TOPPER)
 	)
 	data_lure_minnow_dark.visible = (
-		discovered and dark_families.has(&"minnow")
+		discovered and unavailable_types.has(LureType.Type.MINNOW)
 	)
 	data_lure_frogger_dark.visible = (
-		discovered and dark_families.has(&"frogger")
+		discovered and unavailable_types.has(LureType.Type.FROG)
 	)
 	data_lure_worm_dark.visible = (
-		discovered and dark_families.has(&"worm")
+		discovered and unavailable_types.has(LureType.Type.WORM)
 	)
 
 
 func _set_data_wave_dark_overlays(
-	fish_key: String,
+	entry: Dictionary,
 	discovered: bool
 ) -> void:
-	var dark_waves: Array = DATA_DARK_WAVES.get(
-		fish_key,
-		[]
+	var habitats: PackedStringArray = entry.get(
+		"habitat_types",
+		PackedStringArray()
 	)
 
 	data_wave_calm_dark.visible = (
-		discovered and dark_waves.has(&"calm")
+		discovered and not habitats.has("RIVER")
 	)
 	data_wave_big_dark.visible = (
-		discovered and dark_waves.has(&"big")
+		discovered and not habitats.has("LAKE")
 	)
 	data_wave_tsunami_dark.visible = (
-		discovered and dark_waves.has(&"tsunami")
+		discovered and not habitats.has("OCEAN")
 	)
 
 
@@ -2081,38 +1826,12 @@ func _update_data_detail_content() -> void:
 	if not bool(entry.get("discovered", false)):
 		return
 
-	var fish_name: String = str(entry.get("display_name", ""))
-	var fish_key: String = _canonical_species_key(fish_name)
-	var fish_data: FishData = DATA_FISH_BY_KEY.get(fish_key) as FishData
-
-	data_detail_name_label.text = fish_name
-
-	if fish_data != null:
-		data_detail_avg_label.text = "%d" % int(round(fish_data.average_size))
-
-	var confirmed_copy: Dictionary = DATA_GUIDE_COPY.get(fish_key, {})
-
-	if fish_data != null:
-		data_detail_effect_label.text = str(
-			fish_data.get_meta("source_effect", "")
-		)
-
-	if confirmed_copy.has("title"):
-		data_detail_effect_label.text = str(
-			confirmed_copy.get("title", "")
-		)
-
-	if confirmed_copy.has("body"):
-		data_detail_guide_label.text = str(
-			confirmed_copy.get("body", "")
-		)
-		return
-
-	var fallback_location: String = _get_primary_location_name(entry)
-	if fallback_location.is_empty():
-		data_detail_guide_label.text = "Fishing data recorded for this species."
-	else:
-		data_detail_guide_label.text = "Found around %s." % fallback_location
+	data_detail_name_label.text = str(entry.get("display_name", ""))
+	data_detail_avg_label.text = "%d" % int(
+		round(float(entry.get("average_size", 0.0)))
+	)
+	data_detail_effect_label.text = str(entry.get("guide_effect", ""))
+	data_detail_guide_label.text = str(entry.get("guide_description", ""))
 
 
 func _transition_data_detail(open_detail: bool) -> void:
@@ -2211,25 +1930,6 @@ func _sync_data_selector_window() -> void:
 		maxi(_data_entries.size() - visible_rows, 0)
 	)
 
-
-func _canonical_species_key(display_name: String) -> String:
-	var normalized: String = display_name.to_lower()
-	normalized = normalized.replace(" ", "").replace("-", "").replace("'", "")
-
-	# Map project/internal spellings onto the reference names used by the menu.
-	var aliases: Dictionary = {
-		"bluegill": "bluegill",
-		"bullcat": "bullcat",
-		"barandy": "barundi",
-		"barundi": "barundi",
-		"manowar": "manowar",
-		"moorfish": "moonfish",
-		"moafish": "moonfish",
-		"moonfish": "moonfish",
-	}
-	if aliases.has(normalized):
-		return str(aliases[normalized])
-	return normalized
 
 
 func _update_data_selector() -> void:

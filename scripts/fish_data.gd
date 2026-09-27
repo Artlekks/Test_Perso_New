@@ -3,6 +3,25 @@ class_name FishData
 
 @export var fish_name: String = ""
 
+@export_category("Identity / Journal")
+
+## Stable persistence/content ID. This is intentionally independent from the
+## visible fish name and should never be changed after saves ship.
+@export var species_id: StringName = &""
+
+## BOF4-facing name used by Data/Journal screens. Falls back to fish_name.
+@export var journal_name: String = ""
+
+## Blue effect line on the Data manual page.
+@export var guide_effect: String = ""
+
+## Descriptive copy shown under the effect line on the Data manual page.
+@export_multiline var guide_description: String = ""
+
+## Canonical BOF4 fishing spots for journal/reference presentation. These are
+## source facts, separate from authored gameplay spawn weights.
+@export var journal_spot_ids: Array[StringName] = []
+
 @export_category("Size / King")
 @export var average_size: float = 1.0
 @export var king_size: float = 2.0
@@ -106,6 +125,52 @@ enum ShadowVisualProfile {
 @export_category("Presentation")
 
 @export var portrait: Texture2D
+
+const JOURNAL_LURE_TYPE_ORDER: Array[int] = [
+	LureType.Type.SPINNER,
+	LureType.Type.WINDER,
+	LureType.Type.TOPPER,
+	LureType.Type.MINNOW,
+	LureType.Type.FROG,
+	LureType.Type.WORM,
+]
+
+
+func get_stable_species_id() -> String:
+	if species_id != &"":
+		return str(species_id)
+
+	if not resource_path.is_empty():
+		return resource_path.get_file().get_basename()
+
+	return (
+		fish_name.strip_edges()
+		.to_lower()
+		.replace(" ", "_")
+		.replace("-", "_")
+		.replace("'", "")
+	)
+
+
+func get_journal_name() -> String:
+	return journal_name if not journal_name.is_empty() else fish_name
+
+
+func accepts_lure_type(lure_type: int) -> bool:
+	if accepts_all_lures:
+		return true
+	return preferred_lure_types.has(lure_type)
+
+
+func get_unavailable_lure_types() -> Array[int]:
+	var result: Array[int] = []
+
+	for lure_type in JOURNAL_LURE_TYPE_ORDER:
+		if not accepts_lure_type(lure_type):
+			result.append(lure_type)
+
+	return result
+
 
 func get_lure_match_multiplier(bait: BaitData) -> float:
 	if bait == null:

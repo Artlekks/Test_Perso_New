@@ -10,6 +10,11 @@ region = Rect2(82, 164, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"man_o_war"
+journal_name = "Man-o'-War"
+guide_effect = "Restores 50 HP"
+guide_description = "Ocean dwelling jellyfish; goes after any lure."
+journal_spot_ids = Array[StringName]([&"ocean_1", &"ocean_2"])
 fish_name = "Man-o'-War"
 average_size = 22.0
 king_size = 30.0

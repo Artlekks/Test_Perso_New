@@ -329,25 +329,14 @@ func get_species_key(species: FishData) -> String:
 	if species == null:
 		return ""
 
-	# We deliberately use the FishData resource filename as the persistent
-	# identity in this first pass. This avoids rewriting all 30 FishData
-	# resources while the database is still evolving.
-	if not species.resource_path.is_empty():
-		return (
-			species.resource_path
-			.get_file()
-			.get_basename()
-		)
+	# Pass 2: persistence identity now lives explicitly in FishData instead of
+	# being inferred from a filename/display name. All current IDs intentionally
+	# match the legacy resource filenames, so existing saves remain compatible.
+	var stable_id: String = species.get_stable_species_id()
+	if not stable_id.is_empty():
+		return stable_id
 
-	# Defensive fallback for dynamically-created FishData.
-	return (
-		species.fish_name
-		.strip_edges()
-		.to_lower()
-		.replace(" ", "_")
-		.replace("-", "_")
-		.replace("'", "")
-	)
+	return ""
 
 
 func save_to_disk() -> bool:

@@ -10,6 +10,11 @@ region = Rect2(313, 270, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"acheron"
+journal_name = "Acheron"
+guide_effect = "Poisons everyone, allies and enemies."
+guide_description = "Fish mutated by exposure to hex energy. Handle with care!"
+journal_spot_ids = Array[StringName]([&"chamba"])
 fish_name = "Acheron"
 average_size = 37.0
 king_size = 50.0

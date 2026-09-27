@@ -10,6 +10,11 @@ region = Rect2(82, 111, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+species_id = &"martian_squid"
+journal_name = "Martian Squid"
+guide_effect = "Nullifies positive status effects."
+guide_description = "Lives in shallow waters. Hard to catch as it is very strong."
+journal_spot_ids = Array[StringName]([&"lake_1", &"lake_2", &"lake_3"])
 fish_name = "Martian Squid"
 average_size = 52.0
 king_size = 70.0
