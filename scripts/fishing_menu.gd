@@ -399,7 +399,7 @@ const DATA_DARK_WAVES: Dictionary = {
 ## and lure in the tackle catalog even when the save inventory does not own it.
 ## Unowned entries receive stable fake 01-99 quantities for UI testing and
 ## may be equipped, but the real FishingInventory is not modified.
-@export var show_full_tackle_catalog_for_testing: bool = true
+@export var show_full_tackle_catalog_for_testing: bool = false
 
 const BOF_STANDARD_ADVANCE_PX: int = 8
 const BOF_NARROW_ADVANCE_PX: int = 4

@@ -1,65 +1,121 @@
-# FishingGame Cleanup / Refactor Audit
+# FishingGame Cleanup / Refactor Audit — Pass 1
 
-## Result
+**Date:** 2026-09-27  
+**Input:** `fishing_game_clean_candidate_FRESH (2)(1).zip`
 
-This is the first structural stabilization pass after the core fishing loop became functional.
-The candidate intentionally preserves the current scene/layout and gameplay architecture while removing proven prototype debris and fixing correctness issues found during the audit.
+## Scope
 
-- Original archive files (including `.git` / `.godot`): **1434**
-- Clean candidate files: **359**
-- Original size: **179.6 MiB**
-- Clean candidate size: **3.3 MiB**
-- Removed project files: **379**
-- Modified/rewritten files: **27**
+Pass 1 is deliberately conservative. It does **not** change the working
+fishing feel, camera, casting, fight logic, menu geometry, or content model.
 
-## Correctness fixes applied
+Goals:
 
-1. **Cast preview trajectory** — `caster.gd` had only half of a local-variable rename completed; the preview loop was still reading the `Node3D.position` property instead of its predicted position. All trajectory integration now uses `predicted_position`.
-2. **Fish endurance database actually works** — `FishInstance.setup()` now copies `resistance_rounds`, `recovery_time_min`, and `recovery_time_max` from `FishData`. Species such as Whale/Spearfish can now use their authored endurance instead of silently falling back to one round.
-3. **Fight input has one owner** — removed the stray global `_unhandled_input()` FIGHT controls. FIGHT S/K/A/D state now comes from the existing phase-gated `_process()` path.
-4. **Duplicate release reaction removed** — releasing K previously triggered two fish movement reactions back-to-back (`react_to_release` + legacy `react_to_slack`). There is now one reaction.
-5. **Duplicate tension simulation removed** — tension was advanced twice per frame. It is now one update; response constants were adjusted to preserve the established feel (`0.36` reeling, `0.30` release) and W/S resting bias is compensated.
-6. **Conflicting fight-distance clamps removed** — `bait_V2.gd` kept the newer `fight_max_distance` system and removed an older clamp based on a `fight_start_distance` value that was never initialized.
-7. **Fishing animation dead branch removed** — duplicate `Phase.IN_WATER` animation branch removed.
-8. **Power-meter color system simplified** — old blue/red texture-switching code and resources removed; the active one-texture hue shader remains.
-9. **Fishing spot population is now single-source** — removed the temporary manual `FishZone_V2.fish_population` fallback and duplicate `fish_ids` runtime metadata. `FishingSpotData.fish_population` is the authoritative runtime population.
-10. **Development console spam removed** from Encounter/FishBehavior.
+1. remove automatic QA/save mutation from normal startup;
+2. make full-tackle QA opt-in;
+3. remove verified exact duplicate unreferenced UI exports;
+4. refresh cleanup documentation;
+5. produce a source-only test archive without `.git/` or `.godot/`.
 
-## Removed architecture / prototype debris
+## Production hygiene
 
-- PhantomCamera addon/autoload/plugin: active V2 scene no longer references it.
-- AS2P addon: not enabled/referenced.
-- Old V1 FishingTestScene, HUD, player, fish-zone, depth-zone, bait and power-meter scenes.
-- Superseded prototype state-machine/controller scripts.
-- Tracked `.tmp` scene saves.
-- Blender `.blend1` backups.
-- Old test FishData / test behavior profiles.
-- Obsolete BOF4 bait test folder (`data/bof4/baits`); current default bait remains at `data/baits/default_bait.tres`, real lure DB remains at `data/bof4/lures`.
-- Proven duplicate Marsh/river textures.
-- Old red/blue tension textures.
-- Old depth/running/test art that had no live V2 reference.
+### Automatic catch reset / catalog seed removed
 
-## Deliberately kept
+Normal gameplay startup no longer:
 
-- All 30 real FishData resources and behavior profiles.
-- All 19 lure resources, 6 rod resources, spot resources, and trade resources — even where runtime UI for them is not built yet.
-- Active editable art sources (`.ase`/`.aseprite`) corresponding to live UI/animation assets.
-- The current embedded Fishing HUD and Fishing controller structure. They are large, but splitting them now would be a higher-risk architectural refactor rather than cleanup.
+- clears fish progress/inventory on a fresh `user://`;
+- seeds one specimen of every fish;
+- reads or creates the temporary catch-pipeline/manual-catalog marker files.
 
-## Recommended next refactor (after this candidate passes playtest)
+Removed from `scripts/fishing.gd`:
 
-Do **not** immediately rewrite the whole working controller. First test this clean candidate. Then use the short Cursor session as an independent read-only architecture audit. After comparing findings, the next safe structural split would be:
+- `CATCH_PIPELINE_CLEAN_TEST_MARKER`
+- `MANUAL_FULL_CATALOG_TEST_MARKER`
+- `_prepare_clean_catch_pipeline_test_once()`
+- `_seed_manual_full_catalog_test_once()`
+- QA-only `CatchScoring` preload
 
-- extract a reusable `FishingSystem.tscn` (Aim/Power/Caster/Encounter/etc.);
-- extract the currently embedded Fishing HUD into one canonical `FishingHUD.tscn`;
-- later split `fishing.gd` presentation/animation decisions from phase/input orchestration.
+The now-unused `FishingInventory.reset_fish_inventory_for_testing()` helper was
+also removed.
 
-The old generic fishing state-machine scripts were removed and should not be revived just for abstraction.
+Old marker files already present in `user://` are harmless because this build
+does not read them.
 
-## Validation performed here
+### Equip full-catalog QA defaults OFF
 
-- Explicit `res://` path scan after cleanup.
-- Removed-file reference scan.
-- Duplicate `class_name` scan.
+`FishingMenu.show_full_tackle_catalog_for_testing` remains available for
+explicit development testing, but now defaults to `false`.
 
-A Godot executable is not available in this environment, so the final engine parse/runtime validation must be done by opening this candidate in Godot and pressing F5.
+Normal gameplay therefore does not show fake quantities or permit unowned
+tackle unless a developer deliberately enables the QA option.
+
+## Duplicate UI cleanup
+
+Removed **28 exact duplicate PNG exports** plus their matching
+`.import` sidecars where present.
+
+Canonical live copies remain under:
+
+- `assets/ui/fishing_menu/`
+- `assets/ui/fishing_menu/lure_icons/`
+- `assets/ui/fishing_menu/wave_icons/`
+- `assets/ui/tech_bubbles/`
+
+Editable source art (`.ase`, `.aseprite`, etc.) was preserved.
+
+Model/source-art duplicate groups were intentionally left for a later art-source
+cleanup pass.
+
+## Packaging
+
+The uploaded project contained approximately:
+
+- `.git/`: **76.3 MiB**
+- `.godot/`: **16.8 MiB**
+
+The Pass 1 candidate excludes both. This does **not** mean you should delete
+your working Git repository; the supplied ZIP is a source/test candidate.
+
+## Current source metrics
+
+Before Pass 1, excluding `.git/.godot`:
+
+- files: **752**
+- size: **5.17 MiB**
+
+After duplicate removal / QA cleanup, before doc rewrite:
+
+- files: **696**
+- size: **5.11 MiB**
+
+BOF4 content remains:
+
+- fish: **30**
+- lures: **20**
+- rods: **6**
+- fishing spots: **11**
+
+## Static validation
+
+- missing quoted `res://` resources: **0**
+- removed files still referenced: **0**
+- duplicate UI/sprite image groups remaining: **0**
+- GDScript files with duplicate function declarations: **0**
+- duplicate `class_name` declarations: **0**
+
+Godot itself is not installed in this audit environment, so final engine
+validation is still: open this Pass 1 candidate and press F5.
+
+## Deferred to Pass 2+
+
+Not changed here:
+
+- fish/manual data duplicated in `FishingMenu`;
+- stable `species_id` normalization;
+- Blowfish lure-compatibility source conflict;
+- Jellyfish/Bullcat/Martian Squid spot-data reconciliation;
+- `FishingMenu.gd` split;
+- `fishing.gd` split;
+- service ownership;
+- catch/inventory transactional persistence;
+- fish-shadow bait lookup optimization;
+- camera projection optimization.
