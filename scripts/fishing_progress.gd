@@ -22,12 +22,16 @@ signal catch_specimen_recorded(
 	specimen_data: Dictionary
 )
 
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
 const SAVE_PATH: String = "user://fishing_progress.json"
 
 var fishing_points: int = 0
 var total_catches: int = 0
 var species_records: Dictionary = {}
+
+## Rolling idempotency window used by FishingCatchRepository recovery.
+var recent_catch_transaction_ids: Array[String] = []
+const MAX_RECENT_CATCH_TRANSACTION_IDS: int = 256
 
 var progression_catalog: FishingProgressionCatalog = (
 	DefaultProgressionCatalog
@@ -79,10 +83,26 @@ func record_catch(
 
 
 func record_catch_snapshot(
-	snapshot: Dictionary
+	snapshot: Dictionary,
+	persist: bool = true,
+	emit_events: bool = true
 ) -> Dictionary:
 	if snapshot.is_empty():
 		return {}
+
+	var transaction_id: String = str(
+		snapshot.get("transaction_id", "")
+	).strip_edges()
+
+	if (
+		not transaction_id.is_empty()
+		and has_catch_transaction(transaction_id)
+	):
+		return {
+			"transaction_id": transaction_id,
+			"transaction_already_applied": true,
+			"catch_snapshot": snapshot.duplicate(true),
+		}
 
 	var species_key: String = str(
 		snapshot.get("species_id", "")
@@ -216,6 +236,9 @@ func record_catch_snapshot(
 	total_catches += 1
 	_recalculate_fishing_points()
 
+	if not transaction_id.is_empty():
+		_remember_catch_transaction(transaction_id)
+
 	var current_rank_index: int = get_rank_index(
 		fishing_points
 	)
@@ -224,6 +247,7 @@ func record_catch_snapshot(
 	)
 
 	var result: Dictionary = {
+		"transaction_id": transaction_id,
 		"species_key": species_key,
 		"record": record.duplicate(true),
 		"catch_snapshot": snapshot.duplicate(true),
@@ -268,7 +292,34 @@ func record_catch_snapshot(
 		"catch_context": context.duplicate(true),
 	}
 
-	save_to_disk()
+	if persist:
+		save_to_disk()
+
+	if emit_events:
+		emit_catch_commit(result)
+
+	return result
+
+
+func emit_catch_commit(result: Dictionary) -> void:
+	if result.is_empty():
+		return
+
+	var species_key: String = str(result.get("species_key", ""))
+	var record: Dictionary = (
+		result.get("record", {}) as Dictionary
+	)
+	var snapshot: Dictionary = (
+		result.get("catch_snapshot", {}) as Dictionary
+	)
+
+	if species_key.is_empty() or snapshot.is_empty():
+		return
+
+	var context: Dictionary = (
+		snapshot.get("catch_context", {}) as Dictionary
+	)
+
 	changed.emit()
 
 	catch_recorded.emit(
@@ -280,28 +331,21 @@ func record_catch_snapshot(
 	catch_specimen_recorded.emit(
 		species_key,
 		{
-			"fish_name": fish_name,
-			"size": size,
-			"points": points,
-			"is_king": is_king,
-			"size_band": size_band,
-			"score_tier": score_tier,
-			"spot_id": str(
-				context.get("spot_id", "")
-			),
-			"spot_name": str(
-				context.get("spot_name", "")
-			),
-			"lure_id": str(
-				context.get("lure_id", "")
-			),
-			"lure_name": str(
-				context.get("lure_name", "")
+			"fish_name": str(snapshot.get("fish_name", "")),
+			"size": float(snapshot.get("size", 0.0)),
+			"points": int(snapshot.get("points", 0)),
+			"is_king": bool(snapshot.get("is_king", false)),
+			"size_band": str(snapshot.get("size_band", "normal")),
+			"score_tier": int(snapshot.get("score_tier", 0)),
+			"spot_id": str(context.get("spot_id", "")),
+			"spot_name": str(context.get("spot_name", "")),
+			"lure_id": str(context.get("lure_id", "")),
+			"lure_name": str(context.get("lure_name", "")),
+			"catch_transaction_id": str(
+				result.get("transaction_id", "")
 			),
 		}
 	)
-
-	return result
 
 
 func get_fishing_points() -> int:
@@ -435,7 +479,8 @@ func save_to_disk() -> bool:
 		"version": SAVE_VERSION,
 		"fishing_points": fishing_points,
 		"total_catches": total_catches,
-		"species_records": species_records
+		"species_records": species_records,
+		"recent_catch_transaction_ids": recent_catch_transaction_ids,
 	}
 
 	var file := FileAccess.open(
@@ -519,6 +564,19 @@ func load_from_disk() -> bool:
 				)
 			)
 
+	var loaded_transactions: Variant = data.get(
+		"recent_catch_transaction_ids",
+		[]
+	)
+
+	if loaded_transactions is Array:
+		for raw_id in loaded_transactions:
+			var transaction_id: String = str(raw_id).strip_edges()
+			if not transaction_id.is_empty():
+				recent_catch_transaction_ids.append(transaction_id)
+
+	_trim_recent_catch_transactions()
+
 	# Lifetime total and fishing score are both derived from the sanitized
 	# per-species records. Never trust stale cached totals from disk.
 	_recalculate_total_catches()
@@ -531,6 +589,74 @@ func load_from_disk() -> bool:
 
 	changed.emit()
 	return true
+
+
+func has_catch_transaction(transaction_id: String) -> bool:
+	var key: String = transaction_id.strip_edges()
+	return (
+		not key.is_empty()
+		and recent_catch_transaction_ids.has(key)
+	)
+
+
+func create_transaction_snapshot() -> Dictionary:
+	return {
+		"fishing_points": fishing_points,
+		"total_catches": total_catches,
+		"species_records": species_records.duplicate(true),
+		"recent_catch_transaction_ids": recent_catch_transaction_ids.duplicate(),
+	}
+
+
+func restore_transaction_snapshot(
+	snapshot: Dictionary,
+	emit_change: bool = true
+) -> void:
+	if snapshot.is_empty():
+		return
+
+	fishing_points = maxi(int(snapshot.get("fishing_points", 0)), 0)
+	total_catches = maxi(int(snapshot.get("total_catches", 0)), 0)
+	species_records = (
+		snapshot.get("species_records", {}) as Dictionary
+	).duplicate(true)
+
+	recent_catch_transaction_ids.clear()
+	var raw_transactions: Variant = snapshot.get(
+		"recent_catch_transaction_ids",
+		[]
+	)
+	if raw_transactions is Array:
+		for raw_id in raw_transactions:
+			var transaction_id: String = str(raw_id).strip_edges()
+			if not transaction_id.is_empty():
+				recent_catch_transaction_ids.append(transaction_id)
+
+	_trim_recent_catch_transactions()
+
+	if emit_change:
+		changed.emit()
+
+
+func commit_changes() -> bool:
+	return save_to_disk()
+
+
+func _remember_catch_transaction(transaction_id: String) -> void:
+	var key: String = transaction_id.strip_edges()
+	if key.is_empty() or recent_catch_transaction_ids.has(key):
+		return
+
+	recent_catch_transaction_ids.append(key)
+	_trim_recent_catch_transactions()
+
+
+func _trim_recent_catch_transactions() -> void:
+	while (
+		recent_catch_transaction_ids.size()
+		> MAX_RECENT_CATCH_TRANSACTION_IDS
+	):
+		recent_catch_transaction_ids.pop_front()
 
 
 func reset_all_progress(delete_save: bool = true) -> void:
@@ -599,20 +725,20 @@ func reconcile_records_with_catalog(species_by_id: Dictionary) -> bool:
 		record["last_catch_size"] = last_size
 
 		if best_size > 0.0:
-			var best_size_score: Dictionary = (
+			var best_size_details: Dictionary = (
 				CatchScoring.evaluate(
 					fish,
 					best_size
 				)
 			)
 			record["best_size_points"] = int(
-				best_size_score.get(
+				best_size_details.get(
 					"points",
 					0
 				)
 			)
 			record["best_size_score_tier"] = int(
-				best_size_score.get(
+				best_size_details.get(
 					"score_tier",
 					0
 				)
@@ -646,15 +772,20 @@ func reconcile_records_with_catalog(species_by_id: Dictionary) -> bool:
 				)
 			)
 
-		var best_size_score: int = int(record.get("best_size_points", 0))
+		var best_size_points: int = int(
+			record.get(
+				"best_size_points",
+				0
+			)
+		)
 		if (
-			best_size_score > best_points_score
+			best_size_points > best_points_score
 			or (
-				best_size_score == best_points_score
+				best_size_points == best_points_score
 				and best_size > best_points_size
 			)
 		):
-			record["best_points"] = best_size_score
+			record["best_points"] = best_size_points
 			record["best_points_size"] = best_size
 			record["best_points_score_tier"] = int(
 				record.get(
@@ -1109,3 +1240,4 @@ func _reset_runtime_state() -> void:
 	fishing_points = 0
 	total_catches = 0
 	species_records.clear()
+	recent_catch_transaction_ids.clear()

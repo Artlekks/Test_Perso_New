@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FishingTradeRecipe" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/trade_recipe.gd" id="1_trade"]
+
+[resource]
+script = ExtResource("1_trade")
+recipe_id = &"lyp_angling_rod"
+shop_id = &"lyp"
+shop_name = "Lyp Manillo"
+sort_order = 70
+reward_item = "Angling Rod"
+reward_type = 1
+reward_id = &"angling_rod"
+reward_quantity = 1
+unique_reward = true
+repeatable = false
+required_fish_ids = PackedStringArray("salmon", "dorado", "martian_squid")
+required_counts = PackedInt32Array(2, 2, 2)
+manillo_value_units = 2220
+source_note = "Verified BOF4 Manillo tackle trade. Internal value units use 100 units per stamp."

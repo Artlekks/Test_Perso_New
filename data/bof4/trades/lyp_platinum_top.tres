@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FishingTradeRecipe" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/trade_recipe.gd" id="1_trade"]
+
+[resource]
+script = ExtResource("1_trade")
+recipe_id = &"lyp_platinum_top"
+shop_id = &"lyp"
+shop_name = "Lyp Manillo"
+sort_order = 10
+reward_item = "Platinum Top"
+reward_type = 0
+reward_id = &"platinum_top"
+reward_quantity = 1
+unique_reward = false
+repeatable = true
+required_fish_ids = PackedStringArray("browntail", "trout", "sweetfish")
+required_counts = PackedInt32Array(1, 1, 1)
+manillo_value_units = 560
+source_note = "Verified BOF4 Manillo tackle trade. Internal value units use 100 units per stamp."

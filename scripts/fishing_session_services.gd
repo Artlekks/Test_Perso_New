@@ -12,8 +12,14 @@ const FishingProgressScript = preload(
 const FishingInventoryScript = preload(
 	"res://scripts/fishing_inventory.gd"
 )
+const FishingCatchRepositoryScript = preload(
+	"res://scripts/fishing_catch_repository.gd"
+)
 const FishingTradeServiceScript = preload(
 	"res://scripts/fishing_trade_service.gd"
+)
+const FishingManilloLedgerScript = preload(
+	"res://scripts/fishing_manillo_ledger.gd"
 )
 const FishingUnlockStateScript = preload(
 	"res://scripts/fishing_unlock_state.gd"
@@ -43,7 +49,9 @@ const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
+var catch_repository: FishingCatchRepository = null
 var trade_service: FishingTradeService = null
+var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
 var reward_service: FishingRewardService = null
 var journal_service: FishingJournalService = null
@@ -75,12 +83,33 @@ func initialize() -> void:
 	inventory.name = "FishingInventory"
 	add_child(inventory)
 	inventory.initialize()
-	inventory.bind_progress(progress)
+
+	# Run the existing migration/enrichment path, but normal new catches are
+	# committed explicitly by FishingCatchRepository.
+	inventory.bind_progress(
+		progress,
+		false
+	)
+
+	catch_repository = FishingCatchRepositoryScript.new()
+	catch_repository.name = "FishingCatchRepository"
+	add_child(catch_repository)
+	catch_repository.configure(
+		progress,
+		inventory
+	)
 
 	unlock_state = FishingUnlockStateScript.new()
 	unlock_state.name = "FishingUnlockState"
 	add_child(unlock_state)
 	unlock_state.initialize()
+
+	manillo_ledger = FishingManilloLedgerScript.new()
+	manillo_ledger.name = "FishingManilloLedger"
+	add_child(manillo_ledger)
+	manillo_ledger.configure(
+		inventory
+	)
 
 	trade_service = FishingTradeServiceScript.new()
 	trade_service.name = "FishingTradeService"
@@ -88,7 +117,8 @@ func initialize() -> void:
 	trade_service.configure(
 		inventory,
 		FishingTackleCatalogResource,
-		FishingTradeCatalogResource
+		FishingTradeCatalogResource,
+		manillo_ledger
 	)
 
 	reward_service = FishingRewardServiceScript.new()
@@ -117,7 +147,9 @@ func is_ready() -> bool:
 		_initialized
 		and progress != null
 		and inventory != null
+		and catch_repository != null
 		and trade_service != null
+		and manillo_ledger != null
 		and unlock_state != null
 		and reward_service != null
 		and journal_service != null

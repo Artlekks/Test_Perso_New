@@ -112,6 +112,7 @@ var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
 var fishing_inventory: FishingInventory = null
+var fishing_catch_repository: FishingCatchRepository = null
 var fishing_trade_service: FishingTradeService = null
 var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
@@ -204,6 +205,7 @@ func _ready() -> void:
 	session_services = _get_or_create_session_services()
 	fishing_progress = session_services.progress
 	fishing_inventory = session_services.inventory
+	fishing_catch_repository = session_services.catch_repository
 	fishing_trade_service = session_services.trade_service
 	fishing_unlock_state = session_services.unlock_state
 	fishing_reward_service = session_services.reward_service
@@ -574,6 +576,10 @@ func _on_mode_changed(new_mode) -> void:
 
 func get_fishing_progress() -> FishingProgress:
 	return fishing_progress
+
+
+func get_fishing_catch_repository() -> FishingCatchRepository:
+	return fishing_catch_repository
 
 
 func get_fishing_inventory() -> FishingInventory:
@@ -1169,7 +1175,7 @@ func _on_fish_caught(fish: FishInstance) -> void:
 	caught_fish = fish
 	catch_record_result = {}
 
-	if fish == null or fishing_progress == null:
+	if fish == null or fishing_catch_repository == null:
 		return
 
 	# Forced fish / king / technique tests do not pollute the player's
@@ -1180,7 +1186,7 @@ func _on_fish_caught(fish: FishInstance) -> void:
 	):
 		return
 
-	catch_record_result = fishing_progress.record_catch(
+	catch_record_result = fishing_catch_repository.commit_catch(
 		fish,
 		_build_catch_record_context()
 	)

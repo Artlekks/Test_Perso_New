@@ -11,6 +11,11 @@ var spot_id: String = ""
 var spot_name: String = ""
 var lure_id: String = ""
 var lure_name: String = ""
+
+## Stable ID shared with FishingProgress for crash-safe catch commits.
+## Empty for legacy/migrated specimens.
+var catch_transaction_id: String = ""
+
 var legacy: bool = false
 
 
@@ -26,6 +31,7 @@ func to_dictionary() -> Dictionary:
 		"spot_name": spot_name,
 		"lure_id": lure_id,
 		"lure_name": lure_name,
+		"catch_transaction_id": catch_transaction_id,
 		"legacy": legacy,
 	}
 
@@ -46,6 +52,9 @@ static func from_dictionary(data: Dictionary) -> FishingFishSpecimen:
 	specimen.spot_name = str(data.get("spot_name", ""))
 	specimen.lure_id = str(data.get("lure_id", ""))
 	specimen.lure_name = str(data.get("lure_name", ""))
+	specimen.catch_transaction_id = str(
+		data.get("catch_transaction_id", "")
+	)
 	specimen.legacy = bool(data.get("legacy", false))
 	return specimen
 

@@ -1,12 +1,16 @@
-[gd_resource type="Resource" script_class="FishingTradeRecipe" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishingTradeRecipe" format=3 uid="uid://c6ibvqqkwc87h"]
 
-[ext_resource type="Script" path="res://scripts/database/trade_recipe.gd" id="1_trade"]
+[ext_resource type="Script" uid="uid://bognjgmo838h5" path="res://scripts/database/trade_recipe.gd" id="1_trade"]
 
 [resource]
 script = ExtResource("1_trade")
+recipe_id = &"wyndia_flattop"
+shop_id = &"wyndia"
 shop_name = "Wyndia Manillo"
+sort_order = 30
 reward_item = "Flattop"
-reward_type = 0
 reward_id = &"flattop"
 required_fish_ids = PackedStringArray("blowfish")
 required_counts = PackedInt32Array(2)
+manillo_value_units = 360
+source_note = "Verified BOF4 Manillo tackle trade. Internal value units use 100 units per stamp."

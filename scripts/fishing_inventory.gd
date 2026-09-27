@@ -7,8 +7,13 @@ signal fish_specimen_added(species_id: String, specimen: FishingFishSpecimen)
 signal fish_specimen_removed(species_id: String, specimen: FishingFishSpecimen)
 signal lure_count_changed(lure_id: StringName, count: int)
 signal rod_count_changed(rod_id: StringName, count: int)
+signal manillo_balance_changed(
+	point_units: int,
+	stamps: int,
+	stamp_cards: int
+)
 
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 5
 const SAVE_PATH: String = "user://fishing_inventory.json"
 
 # Backend defaults only. These are the current starter loadout and are kept
@@ -21,6 +26,12 @@ const STARTER_ROD_ID: StringName = &"wooden_rod"
 var fish_specimens: Dictionary = {}
 var lure_counts: Dictionary = {}
 var rod_counts: Dictionary = {}
+
+## Manillo economy storage lives in the same save as the physical trade
+## inventory so one trade can commit fish cost + reward + trade value together.
+var manillo_point_units: int = 0
+var manillo_stamps: int = 0
+var manillo_stamp_cards: int = 0
 
 var _initialized: bool = false
 var _progress_migrated: bool = false
@@ -42,7 +53,10 @@ func initialize() -> void:
 	_seed_starter_tackle()
 
 
-func bind_progress(progress: FishingProgress) -> void:
+func bind_progress(
+	progress: FishingProgress,
+	listen_for_new_catches: bool = true
+) -> void:
 	initialize()
 
 	if _bound_progress == progress:
@@ -73,9 +87,13 @@ func bind_progress(progress: FishingProgress) -> void:
 
 	commit_changes()
 
-	var callback := Callable(self, "_on_progress_catch_specimen_recorded")
-	if not _bound_progress.catch_specimen_recorded.is_connected(callback):
-		_bound_progress.catch_specimen_recorded.connect(callback)
+	if listen_for_new_catches:
+		var callback := Callable(
+			self,
+			"_on_progress_catch_specimen_recorded"
+		)
+		if not _bound_progress.catch_specimen_recorded.is_connected(callback):
+			_bound_progress.catch_specimen_recorded.connect(callback)
 
 
 # -----------------------------------------------------------------------------
@@ -134,7 +152,9 @@ func add_fish_specimen(
 	is_king: bool,
 	persist: bool = true,
 	legacy: bool = false,
-	catch_context: Dictionary = {}
+	catch_context: Dictionary = {},
+	catch_transaction_id: String = "",
+	emit_events: bool = true
 ) -> FishingFishSpecimen:
 	var key := _normalize_id(species_id)
 	if key.is_empty():
@@ -151,6 +171,7 @@ func add_fish_specimen(
 	specimen.spot_name = str(catch_context.get("spot_name", ""))
 	specimen.lure_id = str(catch_context.get("lure_id", ""))
 	specimen.lure_name = str(catch_context.get("lure_name", ""))
+	specimen.catch_transaction_id = catch_transaction_id.strip_edges()
 	specimen.legacy = legacy
 
 	var specimens := _get_or_create_specimen_array(key)
@@ -158,14 +179,44 @@ func add_fish_specimen(
 	fish_specimens[key] = specimens
 
 	_dirty = true
-	fish_specimen_added.emit(key, specimen.duplicate_specimen())
-	fish_count_changed.emit(key, specimens.size())
-	changed.emit()
+
+	if emit_events:
+		emit_specimen_commit(key, specimen)
 
 	if persist:
 		commit_changes()
 
 	return specimen.duplicate_specimen()
+
+
+func has_catch_transaction(transaction_id: String) -> bool:
+	var key: String = transaction_id.strip_edges()
+	if key.is_empty():
+		return false
+
+	for raw_species_id in fish_specimens.keys():
+		for value in _get_specimen_array(str(raw_species_id)):
+			var specimen := value as FishingFishSpecimen
+			if (
+				specimen != null
+				and specimen.catch_transaction_id == key
+			):
+				return true
+
+	return false
+
+
+func emit_specimen_commit(
+	species_id: String,
+	specimen: FishingFishSpecimen
+) -> void:
+	if specimen == null:
+		return
+
+	var key: String = _normalize_id(species_id)
+	fish_specimen_added.emit(key, specimen.duplicate_specimen())
+	fish_count_changed.emit(key, get_fish_count(key))
+	changed.emit()
 
 
 # Compatibility / debug helper. New real catches should use add_fish_specimen().
@@ -478,6 +529,164 @@ func get_owned_rod_ids() -> PackedStringArray:
 
 
 # -----------------------------------------------------------------------------
+# Manillo economy storage
+# -----------------------------------------------------------------------------
+
+func get_manillo_point_units() -> int:
+	return maxi(manillo_point_units, 0)
+
+
+func get_manillo_stamps() -> int:
+	return maxi(manillo_stamps, 0)
+
+
+func get_manillo_stamp_cards() -> int:
+	return maxi(manillo_stamp_cards, 0)
+
+
+func add_manillo_point_units(
+	amount: int,
+	persist: bool = true
+) -> int:
+	if amount <= 0:
+		return get_manillo_point_units()
+
+	manillo_point_units = maxi(
+		manillo_point_units + amount,
+		0
+	)
+
+	_dirty = true
+	_emit_manillo_balance_changed()
+	changed.emit()
+
+	if persist:
+		commit_changes()
+
+	return manillo_point_units
+
+
+func set_manillo_balance(
+	point_units: int,
+	stamps: int,
+	stamp_cards: int,
+	persist: bool = true
+) -> void:
+	manillo_point_units = maxi(
+		point_units,
+		0
+	)
+	manillo_stamps = maxi(
+		stamps,
+		0
+	)
+	manillo_stamp_cards = maxi(
+		stamp_cards,
+		0
+	)
+
+	_dirty = true
+	_emit_manillo_balance_changed()
+	changed.emit()
+
+	if persist:
+		commit_changes()
+
+
+func create_transaction_snapshot() -> Dictionary:
+	# Pure-data snapshot so rollback never shares mutable Resource instances.
+	return {
+		"fish_specimens": _serialize_specimen_dictionary(),
+		"lure_counts": lure_counts.duplicate(true),
+		"rod_counts": rod_counts.duplicate(true),
+		"manillo_point_units": manillo_point_units,
+		"manillo_stamps": manillo_stamps,
+		"manillo_stamp_cards": manillo_stamp_cards,
+		"next_specimen_id": _next_specimen_id,
+		"dirty": _dirty,
+	}
+
+
+func restore_transaction_snapshot(
+	snapshot: Dictionary
+) -> void:
+	if snapshot.is_empty():
+		return
+
+	fish_specimens = _sanitize_specimen_dictionary(
+		snapshot.get(
+			"fish_specimens",
+			{}
+		)
+	)
+	lure_counts = _sanitize_count_dictionary(
+		snapshot.get(
+			"lure_counts",
+			{}
+		)
+	)
+	rod_counts = _sanitize_count_dictionary(
+		snapshot.get(
+			"rod_counts",
+			{}
+		)
+	)
+	manillo_point_units = maxi(
+		int(
+			snapshot.get(
+				"manillo_point_units",
+				0
+			)
+		),
+		0
+	)
+	manillo_stamps = maxi(
+		int(
+			snapshot.get(
+				"manillo_stamps",
+				0
+			)
+		),
+		0
+	)
+	manillo_stamp_cards = maxi(
+		int(
+			snapshot.get(
+				"manillo_stamp_cards",
+				0
+			)
+		),
+		0
+	)
+	_next_specimen_id = maxi(
+		int(
+			snapshot.get(
+				"next_specimen_id",
+				1
+			)
+		),
+		1
+	)
+	_dirty = bool(
+		snapshot.get(
+			"dirty",
+			false
+		)
+	)
+
+	_emit_manillo_balance_changed()
+	changed.emit()
+
+
+func _emit_manillo_balance_changed() -> void:
+	manillo_balance_changed.emit(
+		get_manillo_point_units(),
+		get_manillo_stamps(),
+		get_manillo_stamp_cards()
+	)
+
+
+# -----------------------------------------------------------------------------
 # Persistence / migration
 # -----------------------------------------------------------------------------
 
@@ -499,6 +708,9 @@ func save_to_disk() -> bool:
 		"fish_specimens": _serialize_specimen_dictionary(),
 		"lure_counts": lure_counts,
 		"rod_counts": rod_counts,
+		"manillo_point_units": manillo_point_units,
+		"manillo_stamps": manillo_stamps,
+		"manillo_stamp_cards": manillo_stamp_cards,
 	}
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -538,6 +750,18 @@ func load_from_disk() -> bool:
 	_progress_migrated = bool(data.get("progress_migrated", false))
 	lure_counts = _sanitize_count_dictionary(data.get("lure_counts", {}))
 	rod_counts = _sanitize_count_dictionary(data.get("rod_counts", {}))
+	manillo_point_units = maxi(
+		int(data.get("manillo_point_units", 0)),
+		0
+	)
+	manillo_stamps = maxi(
+		int(data.get("manillo_stamps", 0)),
+		0
+	)
+	manillo_stamp_cards = maxi(
+		int(data.get("manillo_stamp_cards", 0)),
+		0
+	)
 
 	if version >= 2:
 		fish_specimens = _sanitize_specimen_dictionary(data.get("fish_specimens", {}))
@@ -592,7 +816,8 @@ func _on_progress_catch_specimen_recorded(
 			"spot_name": str(catch_data.get("spot_name", "")),
 			"lure_id": str(catch_data.get("lure_id", "")),
 			"lure_name": str(catch_data.get("lure_name", "")),
-		}
+		},
+		str(catch_data.get("catch_transaction_id", ""))
 	)
 
 
@@ -911,6 +1136,9 @@ func _reset_runtime_state() -> void:
 	fish_specimens.clear()
 	lure_counts.clear()
 	rod_counts.clear()
+	manillo_point_units = 0
+	manillo_stamps = 0
+	manillo_stamp_cards = 0
 	_progress_migrated = false
 	_dirty = false
 	_next_specimen_id = 1
