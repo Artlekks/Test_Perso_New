@@ -472,6 +472,7 @@ func _refresh() -> void:
 	var tech_backend_text := _get_tech_backend_debug_text()
 	var tech_runtime_text := _get_tech_runtime_debug_text()
 	var spatial_runtime_text := _get_spatial_runtime_debug_text()
+	var tension_runtime_text := _get_tension_runtime_debug_text()
 
 	status_label.text = (
 		profile_purpose
@@ -488,6 +489,7 @@ func _refresh() -> void:
 		+ "\nTech DB: " + tech_backend_text
 		+ "\nTech RT: " + tech_runtime_text
 		+ "\nSpatial: " + spatial_runtime_text
+		+ "\nTension: " + tension_runtime_text
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
 
@@ -591,6 +593,47 @@ func _get_fish_runtime_debug_text() -> String:
 		int(snapshot.get("rounds_remaining", 0)),
 		float(snapshot.get("pressure", 0.0)),
 		float(snapshot.get("lateral", 0.0)),
+	]
+
+
+func _get_tension_runtime_debug_text() -> String:
+	if _encounter == null:
+		return "NO ENCOUNTER"
+
+	if not _encounter.has_method(
+		"get_tension_debug_snapshot"
+	):
+		return "NO SNAPSHOT"
+
+	var snapshot: Dictionary = (
+		_encounter.get_tension_debug_snapshot()
+	)
+
+	if snapshot.is_empty():
+		return "NONE"
+
+	return (
+		"%.2f %s | target %.2f fish %.2f | "
+		+ "snap %.0f%% %.2fs x%.2f | escape %.0f%%"
+	) % [
+		float(snapshot.get("value", 0.0)),
+		str(snapshot.get("state_label", "SAFE")),
+		float(snapshot.get("target", 0.0)),
+		float(snapshot.get("fish_resistance", 0.0)),
+		float(snapshot.get("break_progress", 0.0)) * 100.0,
+		float(
+			snapshot.get(
+				"effective_line_break_delay",
+				0.0
+			)
+		),
+		float(
+			snapshot.get(
+				"line_tolerance_multiplier",
+				1.0
+			)
+		),
+		float(snapshot.get("escape_progress", 0.0)) * 100.0,
 	]
 
 

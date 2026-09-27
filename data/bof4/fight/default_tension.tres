@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FishingTensionProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_tension_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+free_reel_start = 0.05
+free_reel_max = 0.18
+free_reel_gain_speed = 0.08
+free_reel_loss_speed = 0.10
+safe_min = 0.35
+safe_max = 0.55
+tension_response_speed = 0.36
+release_tension_speed = 0.30
+reel_target_offset = 0.03
+passive_resistance_offset = 0.08
+directional_tension_speed = 0.035
+thrash_threshold = 0.70
+thrash_target_offset = 0.25
+line_break_delay = 1.50
+hook_off_threshold = 0.0
+hook_off_delay = 0.0

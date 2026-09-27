@@ -137,7 +137,6 @@ var active_fight_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
 var active_rod_data: RodData = null
-var base_line_break_delay: float = 0.0
 var base_bite_window_time: float = 0.8
 var active_tech_level: int = 0
 var technique_time_left: float = 0.0
@@ -159,7 +158,6 @@ func _ready() -> void:
 	fish_behavior.pressure_changed.connect(_on_fish_behavior_pressure_changed)
 	fish_behavior.thrash_started.connect(_on_fish_behavior_thrash_started)
 
-	base_line_break_delay = tension.line_break_delay
 	base_bite_window_time = maxf(bite_window_timer.wait_time, 0.05)
 	_apply_rod_tension_settings()
 	
@@ -912,6 +910,7 @@ func get_fish_debug_snapshot() -> Dictionary:
 		snapshot["behavior"] = fish_behavior.get_debug_snapshot()
 
 	snapshot["technique"] = get_technique_debug_snapshot()
+	snapshot["tension"] = get_tension_debug_snapshot()
 
 	return snapshot
 
@@ -1119,7 +1118,7 @@ func _apply_rod_tension_settings() -> void:
 	if tension == null:
 		return
 
-	var tolerance_multiplier := 1.0
+	var tolerance_multiplier: float = 1.0
 
 	if active_rod_data != null:
 		tolerance_multiplier = maxf(
@@ -1127,13 +1126,32 @@ func _apply_rod_tension_settings() -> void:
 			0.01
 		)
 
-	if base_line_break_delay <= 0.0:
-		base_line_break_delay = tension.line_break_delay
-
-	tension.line_break_delay = (
-		base_line_break_delay
-		* tolerance_multiplier
+	tension.set_line_tolerance_multiplier(
+		tolerance_multiplier
 	)
+
+
+func get_tension_debug_snapshot() -> Dictionary:
+	if tension == null:
+		return {}
+
+	var snapshot: Dictionary = tension.get_debug_snapshot()
+	snapshot["rod_name"] = (
+		active_rod_data.rod_name
+		if active_rod_data != null
+		else "NONE"
+	)
+
+	if active_fish != null:
+		snapshot["fish_strength"] = active_fish.strength
+		snapshot["fish_size"] = active_fish.size
+		snapshot["fish_is_king"] = active_fish.is_king
+	else:
+		snapshot["fish_strength"] = 0.0
+		snapshot["fish_size"] = 0.0
+		snapshot["fish_is_king"] = false
+
+	return snapshot
 
 
 func _on_tension_changed(value: float) -> void:
