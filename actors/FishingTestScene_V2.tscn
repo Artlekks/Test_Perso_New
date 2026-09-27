@@ -266,14 +266,13 @@ pixel_correction = Vector2(1, -22)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27968735, -0.11015487)
 aabb = AABB(-0.15072826, -0.35128146, -0.25026277, 0.39227682, 0.7025629, 0.50052553)
 
-[node name="CameraRig" type="Node3D" parent="." unique_id=1419276622 node_paths=PackedStringArray("target", "fishing_reference_camera", "fishing_pose_camera")]
+[node name="CameraRig" type="Node3D" parent="." unique_id=1419276622 node_paths=PackedStringArray("target", "player_screen_notifier", "fishing_reference_camera", "fishing_pose_camera")]
 transform = Transform3D(0.9781476, 0, 0.2079117, 0, 1, 0, -0.2079117, 0, 0.9781476, 0, 0, 0)
 script = ExtResource("2_0kejc")
 target = NodePath("../Player/CharacterBody3D")
+player_screen_notifier = NodePath("../Player/CharacterBody3D/RyuScreenNotifier")
 fishing_reference_camera = NodePath("FishingCameraReference")
 fishing_pose_camera = NodePath("FishingCameraPose")
-fishing_h_offset = 0.7
-fishing_v_offset = 0.55
 fishing_distance_scale = 0.94659895
 fishing_yaw_offset_degrees = 0.0
 fishing_pitch_degrees = -35.0
@@ -285,13 +284,13 @@ current = true
 
 [node name="FishingCameraReference" type="Camera3D" parent="CameraRig" unique_id=1399148018]
 transform = Transform3D(0.603208, -0.37812513, 0.7022546, 0, 0.88047737, 0.4740882, -0.79758394, -0.2859738, 0.531111, 1.029, 0.897, 0.672)
-h_offset = 0.7
-v_offset = 0.55
+h_offset = 0.9
+v_offset = 0.65
 
 [node name="FishingCameraPose" type="Camera3D" parent="CameraRig" unique_id=1352777743]
 transform = Transform3D(-0.1374445, -0.90487546, 0.40287647, 0, 0.4067366, 0.9135455, -0.99050945, 0.1255618, -0.05590371, 0.35, 1.38, -0.3)
-h_offset = 0.7
-v_offset = 0.55
+h_offset = 0.9
+v_offset = 0.65
 
 [node name="UI" type="Node" parent="." unique_id=551417241]
 

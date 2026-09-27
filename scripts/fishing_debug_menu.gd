@@ -50,6 +50,8 @@ var _settings = null
 var _progress: FishingProgress = null
 var _fish_zone: Node = null
 var _encounter: Node = null
+var _regression_harness: FishingRegressionHarness = null
+var _last_regression_summary: String = "NOT RUN"
 var _selected_row: int = Row.PROFILE
 var _profile_index: int = 0
 var _profile_database: Array[FishingQAProfile] = []
@@ -65,12 +67,14 @@ func configure(
 	loadout,
 	settings,
 	progress: FishingProgress = null,
-	encounter: Node = null
+	encounter: Node = null,
+	regression_harness: FishingRegressionHarness = null
 ) -> void:
 	_loadout = loadout
 	_settings = settings
 	_progress = progress
 	_encounter = encounter
+	_regression_harness = regression_harness
 	_load_qa_profiles()
 
 	if _progress != null:
@@ -109,6 +113,10 @@ func is_open() -> bool:
 ## Returns true when the menu requests to close.
 func handle_input(event: InputEvent) -> bool:
 	if not is_open():
+		return false
+
+	if _is_key_press(event, KEY_F9):
+		_run_regression_suite()
 		return false
 
 	if event.is_action_pressed("ui_up") or event.is_action_pressed("move_forward"):
@@ -490,7 +498,42 @@ func _refresh() -> void:
 		+ "\nTech RT: " + tech_runtime_text
 		+ "\nSpatial: " + spatial_runtime_text
 		+ "\nTension: " + tension_runtime_text
+		+ "\nQA: " + _last_regression_summary
+		+ " | F9 run regression"
 		+ "\nF10/K/I close   W/S row   A/D change"
+	)
+
+
+func _run_regression_suite() -> void:
+	if _regression_harness == null:
+		_last_regression_summary = "HARNESS NOT CONNECTED"
+		_refresh()
+		return
+
+	var report: Dictionary = _regression_harness.run_all()
+	_last_regression_summary = str(
+		report.get(
+			"summary",
+			"NO RESULT"
+		)
+	)
+	_refresh()
+
+
+func _is_key_press(
+	event: InputEvent,
+	key: Key
+) -> bool:
+	if not (event is InputEventKey):
+		return false
+
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return false
+
+	return (
+		key_event.keycode == key
+		or key_event.physical_keycode == key
 	)
 
 

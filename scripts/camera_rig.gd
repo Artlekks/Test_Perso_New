@@ -6,6 +6,7 @@ signal heading_changed(yaw: float)
 signal exploration_view_started
 
 @export var target: Node3D
+@export var player_screen_notifier: VisibleOnScreenNotifier3D
 @export var fishing_reference_camera: Camera3D
 @export var fishing_pose_camera: Camera3D
 
@@ -77,6 +78,12 @@ var fishing_player_return_active: bool = false
 var fishing_player_return_start_camera_position: Vector3 = Vector3.ZERO
 var fishing_player_return_start_distance: float = 0.0
 var fishing_player_return_progress: float = 0.0
+
+# Water contact is an explicit ownership boundary. Before contact the lure may
+# drive cast framing. After contact, as soon as the real world-space Ryu is on
+# screen, the camera must hand ownership back to the player-return rail and the
+# fish/lure is never allowed to pull the rig sideways again for that cast.
+var fishing_follow_has_reached_water: bool = false
 
 var fishing_follow_returning: bool = false
 var _fishing_follow_return_tween: Tween = null
@@ -152,6 +159,15 @@ func arm_fishing_follow(
 	fishing_player_return_start_camera_position = Vector3.ZERO
 	fishing_player_return_start_distance = 0.0
 	fishing_player_return_progress = 0.0
+	fishing_follow_has_reached_water = false
+
+
+func notify_fishing_target_landed() -> void:
+	# Fishing owns the gameplay phase, so it tells the camera exactly when the
+	# cast has entered the water. This avoids guessing from lure depth and makes
+	# the camera handoff deterministic on every cast, including consecutive casts.
+	fishing_follow_has_reached_water = true
+	_try_begin_fishing_player_return()
 
 
 func begin_fishing_player_return() -> void:
@@ -163,18 +179,7 @@ func begin_fishing_player_return() -> void:
 		return
 
 	var tracked_position := fishing_follow_target.global_position
-	var player_position := target.global_position
-
-	var tracked_flat := Vector2(
-		tracked_position.x,
-		tracked_position.z
-	)
-	var player_flat := Vector2(
-		player_position.x,
-		player_position.z
-	)
-
-	var distance := tracked_flat.distance_to(player_flat)
+	var distance := _get_flat_player_distance(tracked_position)
 
 	fishing_player_return_active = true
 	fishing_player_return_start_camera_position = global_position
@@ -247,6 +252,7 @@ func _clear_fishing_follow_state() -> void:
 	fishing_player_return_start_camera_position = Vector3.ZERO
 	fishing_player_return_start_distance = 0.0
 	fishing_player_return_progress = 0.0
+	fishing_follow_has_reached_water = false
 
 
 func _finish_fishing_follow_return() -> void:
@@ -294,6 +300,20 @@ func _update_fishing_follow() -> bool:
 		return false
 
 	var current_position := fishing_follow_target.global_position
+
+	# Keep a geometric fallback for safety, but the normal path is the explicit
+	# notify_fishing_target_landed() call from Fishing.
+	if (
+		not fishing_follow_has_reached_water
+		and current_position.y <= fishing_follow_water_y + 0.05
+	):
+		fishing_follow_has_reached_water = true
+
+	# This is the key ownership rule: once the lure is in the water and the real
+	# Ryu is visible, fish-centric screen corrections are over for this cast.
+	# It does not matter whether Ryu ever left the frame, so consecutive casts
+	# cannot get stuck waiting for a screen_entered edge that will never fire.
+	_try_begin_fishing_player_return()
 
 	if fishing_player_return_active:
 		_update_fishing_player_return(current_position)
@@ -372,6 +392,14 @@ func _update_fishing_follow() -> bool:
 					current_position.y
 				)
 
+	# A short cast can become active only after touching the water. Re-check the
+	# ownership rule immediately so there is not even one frame where the left /
+	# right screen boundary can drag Ryu after he is already visible.
+	_try_begin_fishing_player_return()
+	if fishing_player_return_active:
+		_update_fishing_player_return(current_position)
+		return true
+
 	if not fishing_follow_active:
 		return false
 
@@ -405,6 +433,86 @@ func _update_fishing_follow() -> bool:
 	return true
 	
 
+func should_hand_off_fishing_follow_to_player(
+	player_inside_frame: bool
+) -> bool:
+	if not fishing_follow_active:
+		return false
+
+	if fishing_player_return_active:
+		return false
+
+	if not fishing_follow_has_reached_water:
+		return false
+
+	return player_inside_frame
+
+
+func _try_begin_fishing_player_return() -> bool:
+	var player_inside_frame := _is_fishing_player_inside_frame()
+	if not should_hand_off_fishing_follow_to_player(player_inside_frame):
+		return false
+
+	begin_fishing_player_return()
+	return fishing_player_return_active
+
+
+func _get_flat_player_distance(
+	world_position: Vector3
+) -> float:
+	if target == null:
+		return 0.0
+
+	var player_position := target.global_position
+	return Vector2(
+		world_position.x - player_position.x,
+		world_position.z - player_position.z
+	).length()
+
+
+func _is_fishing_player_inside_frame() -> bool:
+	# Use the same world-space visibility source as FishingCharacterView. The
+	# previous point-projection fallback could disagree with the visible sprite
+	# because it tested only the player's origin, which made the handoff flaky.
+	if is_instance_valid(player_screen_notifier):
+		return player_screen_notifier.is_on_screen()
+
+	if target == null:
+		return false
+
+	var camera: Camera3D = $Camera3D
+	var player_position: Vector3 = target.global_position
+
+	if camera.is_position_behind(player_position):
+		return false
+
+	var viewport_size: Vector2 = (
+		get_viewport().get_visible_rect().size
+	)
+	var screen_position: Vector2 = camera.unproject_position(
+		player_position
+	)
+
+	return (
+		screen_position.x >= 0.0
+		and screen_position.x <= viewport_size.x
+		and screen_position.y >= 0.0
+		and screen_position.y <= viewport_size.y
+	)
+
+
+func get_fishing_follow_debug_snapshot() -> Dictionary:
+	return {
+		"armed": fishing_follow_armed,
+		"active": fishing_follow_active,
+		"player_return_active": fishing_player_return_active,
+		"return_progress": fishing_player_return_progress,
+		"follow_offset": fishing_follow_offset,
+		"has_reached_water": fishing_follow_has_reached_water,
+		"player_inside_frame": _is_fishing_player_inside_frame(),
+	}
+
+
 func _update_fishing_player_return(
 	tracked_position: Vector3
 ) -> void:
@@ -412,17 +520,9 @@ func _update_fishing_player_return(
 		return
 
 	var player_position := target.global_position
-
-	var tracked_flat := Vector2(
-		tracked_position.x,
-		tracked_position.z
+	var current_distance := _get_flat_player_distance(
+		tracked_position
 	)
-	var player_flat := Vector2(
-		player_position.x,
-		player_position.z
-	)
-
-	var current_distance := tracked_flat.distance_to(player_flat)
 
 	var return_travel := maxf(
 		fishing_player_return_start_distance
@@ -462,6 +562,16 @@ func _update_fishing_player_return(
 func _enforce_fishing_tracking_zone(
 	world_position: Vector3
 ) -> void:
+	# Hard invariant: after water contact, a visible real Ryu owns the framing.
+	# The old left/right limits behaved like an invisible collider: crossing one
+	# let the fish drag the whole camera sideways. Never run those corrections in
+	# the player-owned state, even if another lifecycle signal is delayed.
+	if (
+		fishing_follow_has_reached_water
+		and _is_fishing_player_inside_frame()
+	):
+		return
+
 	# Correct twice because a perspective camera can couple horizontal and
 	# vertical screen movement slightly. Two small passes keep both limits
 	# respected without locking the target rigidly to a single screen point.

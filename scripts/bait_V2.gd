@@ -69,8 +69,9 @@ var convergence_block_pull_strength: float = 0.55
 @export_range(0.0, 1.0, 0.01)
 var convergence_full_pull_strength: float = 0.12
 
-## A fighting fish cannot complete the final return while its current pull is
-## above this value. It can be at the player's feet and still surge away.
+## Deprecated scene-compatibility field. Fight pull still affects how hard it
+## is to REACH the player, but once inside return_distance it can no longer
+## veto landing/catch completion.
 @export_range(0.0, 1.0, 0.01)
 var fight_return_pull_threshold: float = 0.12
 
@@ -719,12 +720,7 @@ func _update_reeling(delta: float) -> void:
 
 	var distance := to_target.length()
 
-	# Being close is not enough during a fight. A fish that is still actively
-	# pulling can remain right beside the player and surge away again.
-	if distance <= return_distance:
-		if fight_mode and not _can_finish_fight_return():
-			return
-
+	if can_complete_return(distance):
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		reel_steering = 0.0
@@ -781,23 +777,6 @@ func _update_reeling(delta: float) -> void:
 
 	# Never step past the target.
 	if move_distance >= distance:
-		if fight_mode and not _can_finish_fight_return():
-			# Hold the fish at the edge of the final return radius instead of
-			# declaring victory. Its next active pull can still move it away.
-			var hold_distance := minf(
-				return_distance,
-				distance
-			)
-
-			if distance > 0.0001:
-				global_position += (
-					forward
-					* maxf(distance - hold_distance, 0.0)
-				)
-
-			_emit_depth()
-			return
-
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		reel_steering = 0.0
@@ -894,11 +873,7 @@ func _update_manual_pull(delta: float) -> bool:
 	)
 	var distance: float = to_target.length()
 
-	if distance <= return_distance:
-		if fight_mode and not _can_finish_fight_return():
-			_reset_manual_pull_motion()
-			return false
-
+	if can_complete_return(distance):
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		_reset_manual_pull_motion()
@@ -1000,11 +975,7 @@ func _update_manual_pull(delta: float) -> bool:
 		target_position.z - global_position.z
 	).length()
 
-	if remaining_flat <= return_distance:
-		if fight_mode and not _can_finish_fight_return():
-			_reset_manual_pull_motion()
-			return false
-
+	if can_complete_return(remaining_flat):
 		global_position.x = target_position.x
 		global_position.z = target_position.z
 		_reset_manual_pull_motion()
@@ -1348,16 +1319,14 @@ func _get_fight_calm_factor() -> float:
 	return t * t * (3.0 - 2.0 * t)
 
 
-func _can_finish_fight_return() -> bool:
-	if not fight_mode:
-		return true
-
+func can_complete_return(
+	distance_to_player: float
+) -> bool:
 	return (
-		fish_pull_strength
-		<= clampf(
-			fight_return_pull_threshold,
-			0.0,
-			1.0
+		distance_to_player
+		<= maxf(
+			return_distance,
+			0.0
 		)
 	)
 

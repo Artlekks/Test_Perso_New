@@ -9,6 +9,9 @@ const FishingDebugControllerScript = preload(
 const FishingPauseControllerScript = preload(
 	"res://scripts/fishing_pause_controller.gd"
 )
+const FishingCastInputGateScript = preload(
+	"res://scripts/fishing_cast_input_gate.gd"
+)
 
 const FishingMenuScene = preload(
 	"res://actors/FishingMenu.tscn"
@@ -127,9 +130,12 @@ var cast_curve_value: float = 0.0
 # Smoothed preview curve used by the visible arc + torus and by the actual throw.
 var preview_cast_curve_value: float = 0.0
 
-# Casting uses press -> release -> press semantics. One physical K press can
-# never advance more than one cast stage, even if the key is held or repeats.
-var cast_confirm_ready: bool = true
+# Cast input is owned by a small deterministic gate instead of animation
+# timing. One physical K press can advance at most one cast stage.
+var cast_input_gate: FishingCastInputGate = (
+	FishingCastInputGateScript.new()
+)
+var buffered_prep_power: float = -1.0
 var cast_power_locked: bool = false
 var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
@@ -334,23 +340,38 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Re-arm cast confirmation only after K has genuinely been released.
-	# This prevents a held key or OS key-repeat from leaking into the next
-	# cast stage.
+	# Re-arm only after a genuine physical release.
 	if (
 		_is_cast_input_phase()
 		and event.is_action_released("enter_fishing")
 	):
-		cast_confirm_ready = true
+		cast_input_gate.release(
+			_get_cast_input_gate_stage()
+		)
+		get_viewport().set_input_as_handled()
+		return
 
-	# During the Prep_Throw transition, a premature K press is deliberately
-	# swallowed. It must be released before CHARGE can accept another press.
+	# Fast second K during Prep_Throw is BUFFERED rather than swallowed.
+	# We capture the power value at the actual press time, then transition into
+	# CURVE as soon as Prep_Throw finishes.
 	if (
 		phase == Phase.PREP_THROW
 		and event.is_action_pressed("enter_fishing")
 	):
-		if not _is_key_echo(event):
-			cast_confirm_ready = false
+		var prep_result: FishingCastInputGate.PressResult = (
+			cast_input_gate.press(
+				FishingCastInputGate.Stage.PREP_THROW,
+				_is_key_echo(event)
+			)
+		)
+
+		if (
+			prep_result
+			== FishingCastInputGate.PressResult.BUFFERED
+		):
+			buffered_prep_power = power.lock_value()
+
+		get_viewport().set_input_as_handled()
 		return
 
 	if phase == Phase.WAIT_RESULT:
@@ -370,6 +391,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		if _try_consume_cast_confirm(event):
 			locked_cast_power = 0.0
+			buffered_prep_power = -1.0
 			cast_curve_value = 0.0
 			preview_cast_curve_value = 0.0
 			cast_power_locked = false
@@ -377,6 +399,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			phase = Phase.PREP_THROW
 			power.start()
 			sprite_director.play(&"Prep_Throw")
+			get_viewport().set_input_as_handled()
 			return
 
 		if event.is_action_pressed("cancel_fishing"):
@@ -406,11 +429,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			power.stop()
 
 			locked_cast_power = 0.0
+			buffered_prep_power = -1.0
 			cast_curve_value = 0.0
 			preview_cast_curve_value = 0.0
 			cast_power_locked = false
-			cast_confirm_ready = not Input.is_action_pressed(
-				"enter_fishing"
+			cast_input_gate.reset(
+				Input.is_action_pressed(
+					"enter_fishing"
+				)
 			)
 
 			phase = Phase.CANCEL_THROW
@@ -419,25 +445,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			
 	if phase == Phase.CHARGE:
 		if _try_consume_cast_confirm(event):
-			# POWER LOCK:
-			# Freeze distance, base heading, and the landing torus.
-			# A/D bends only the middle of the trajectory.
-			locked_cast_power = power.lock_value()
-			cast_power_locked = true
-			cast_curve_value = 0.0
-			preview_cast_curve_value = 0.0
-			aim.stop()
-
-			phase = Phase.CURVE
-			_update_cast_preview(
-				locked_cast_power,
-				preview_cast_curve_value
+			_lock_cast_power_to_curve(
+				power.lock_value()
 			)
+			get_viewport().set_input_as_handled()
 			return
 
 	if phase == Phase.CURVE:
 		if _try_consume_cast_confirm(event):
 			_commit_curved_cast()
+			get_viewport().set_input_as_handled()
 			return
 
 
@@ -506,7 +523,8 @@ func _on_mode_changed(new_mode) -> void:
 	set_process_unhandled_input(active)
 
 	if not active:
-		cast_confirm_ready = true
+		cast_input_gate.reset(false)
+		buffered_prep_power = -1.0
 		cast_power_locked = false
 		locked_cast_power = 0.0
 		cast_curve_value = 0.0
@@ -535,9 +553,12 @@ func _on_mode_changed(new_mode) -> void:
 
 		return
 
-	cast_confirm_ready = not Input.is_action_pressed(
-		"enter_fishing"
+	cast_input_gate.reset(
+		Input.is_action_pressed(
+			"enter_fishing"
+		)
 	)
+	buffered_prep_power = -1.0
 	cast_power_locked = false
 	locked_cast_power = 0.0
 	cast_curve_value = 0.0
@@ -661,20 +682,61 @@ func _is_key_echo(event: InputEvent) -> bool:
 	)
 
 
-func _try_consume_cast_confirm(event: InputEvent) -> bool:
+func _get_cast_input_gate_stage() -> FishingCastInputGate.Stage:
+	match phase:
+		Phase.AIM:
+			return FishingCastInputGate.Stage.AIM
+		Phase.PREP_THROW:
+			return FishingCastInputGate.Stage.PREP_THROW
+		Phase.CHARGE:
+			return FishingCastInputGate.Stage.CHARGE
+		Phase.CURVE:
+			return FishingCastInputGate.Stage.CURVE
+		_:
+			return FishingCastInputGate.Stage.NONE
+
+
+func _try_consume_cast_confirm(
+	event: InputEvent
+) -> bool:
 	if not event.is_action_pressed("enter_fishing"):
 		return false
 
-	# Keyboard repeat must never count as a new cast confirmation.
-	if _is_key_echo(event):
-		return false
+	var result: FishingCastInputGate.PressResult = (
+		cast_input_gate.press(
+			_get_cast_input_gate_stage(),
+			_is_key_echo(event)
+		)
+	)
 
-	# Every accepted press disarms the next stage until K is released.
-	if not cast_confirm_ready:
-		return false
+	return (
+		result
+		== FishingCastInputGate.PressResult.CONSUMED
+	)
 
-	cast_confirm_ready = false
-	return true
+
+func _lock_cast_power_to_curve(
+	captured_power: float
+) -> void:
+	if phase != Phase.CHARGE:
+		return
+
+	locked_cast_power = clampf(
+		captured_power,
+		0.0,
+		1.0
+	)
+	buffered_prep_power = -1.0
+	cast_power_locked = true
+	cast_curve_value = 0.0
+	preview_cast_curve_value = 0.0
+	aim.stop()
+
+	phase = Phase.CURVE
+	_update_cast_preview(
+		locked_cast_power,
+		preview_cast_curve_value
+	)
 
 
 
@@ -823,6 +885,17 @@ func _on_animation_finished(animation_name: StringName) -> void:
 		if phase == Phase.PREP_THROW:
 			phase = Phase.CHARGE
 			sprite_director.play(&"Prep_Throw_Idle")
+
+			if cast_input_gate.take_prep_buffer():
+				var captured_power: float = buffered_prep_power
+
+				if captured_power < 0.0:
+					captured_power = power.lock_value()
+
+				_lock_cast_power_to_curve(
+					captured_power
+				)
+
 			return
 
 		if phase == Phase.CANCEL_THROW:
@@ -919,6 +992,12 @@ func _on_bait_landed(point: Vector3) -> void:
 		false
 	)
 
+	# The camera must not infer water contact from lure depth. Tell it exactly
+	# when the cast becomes waterborne so camera ownership is deterministic on
+	# the first cast, second cast, and every cast after that.
+	if camera_rig.has_method("notify_fishing_target_landed"):
+		camera_rig.notify_fishing_target_landed()
+
 	if phase == Phase.THROW:
 		bait_landed_during_throw = true
 		return
@@ -983,10 +1062,13 @@ func _on_bait_returned() -> void:
 
 	cast_power_locked = false
 	locked_cast_power = 0.0
+	buffered_prep_power = -1.0
 	cast_curve_value = 0.0
 	preview_cast_curve_value = 0.0
-	cast_confirm_ready = not Input.is_action_pressed(
-		"enter_fishing"
+	cast_input_gate.reset(
+		Input.is_action_pressed(
+			"enter_fishing"
+		)
 	)
 
 	phase = Phase.AIM
@@ -1531,17 +1613,9 @@ func _commit_curved_cast() -> void:
 	var zone = game_mode.active_fish_zone
 
 	if zone == null:
-		throw_preview.hide_preview()
-		power.stop()
-		locked_cast_power = 0.0
-		cast_curve_value = 0.0
-		preview_cast_curve_value = 0.0
-		cast_power_locked = false
-		cast_confirm_ready = not Input.is_action_pressed(
-			"enter_fishing"
+		push_warning(
+			"Fishing: cast commit blocked because active fish zone is null."
 		)
-		phase = Phase.CANCEL_THROW
-		sprite_director.play_backwards(&"Prep_Throw")
 		return
 
 	var captured_power := locked_cast_power
@@ -1558,15 +1632,9 @@ func _commit_curved_cast() -> void:
 	# the bait scene with its default data. This is the backend guard; the future
 	# menu can provide the proper "select/get bait" presentation.
 	if cast_lure == null:
-		throw_preview.hide_preview()
-		power.stop()
-		locked_cast_power = 0.0
-		cast_curve_value = 0.0
-		preview_cast_curve_value = 0.0
-		cast_power_locked = false
-		cast_confirm_ready = not Input.is_action_pressed("enter_fishing")
-		phase = Phase.CANCEL_THROW
-		sprite_director.play_backwards(&"Prep_Throw")
+		push_warning(
+			"Fishing: cast commit blocked because no lure is equipped."
+		)
 		return
 
 	if zone.has_method("get_swim_bounds"):
@@ -1603,10 +1671,6 @@ func _commit_curved_cast() -> void:
 				landing_direction.normalized()
 			)
 
-	# Only NOW is the power selection considered a confirmed cast.
-	power.confirm_locked()
-	throw_preview.hide_preview()
-
 	var cast_bait: Node3D = caster.perform_cast(
 		captured_power,
 		cast_direction,
@@ -1618,22 +1682,14 @@ func _commit_curved_cast() -> void:
 	)
 
 	if not is_instance_valid(cast_bait):
-		if (
-			power_meter_view != null
-			and power_meter_view.has_method("cancel_to_aim")
-		):
-			power_meter_view.cancel_to_aim()
-
-		locked_cast_power = 0.0
-		cast_curve_value = 0.0
-		preview_cast_curve_value = 0.0
-		cast_power_locked = false
-		cast_confirm_ready = not Input.is_action_pressed(
-			"enter_fishing"
+		push_warning(
+			"Fishing: caster failed to create bait; keeping cast selection active."
 		)
-		phase = Phase.CANCEL_THROW
-		sprite_director.play_backwards(&"Prep_Throw")
 		return
+
+	# Only a successfully created bait commits the cast visually/state-wise.
+	power.confirm_locked()
+	throw_preview.hide_preview()
 
 	encounter.set_active_bait_data(cast_lure)
 	camera_rig.arm_fishing_follow(
@@ -1643,9 +1699,15 @@ func _commit_curved_cast() -> void:
 	)
 
 	locked_cast_power = 0.0
+	buffered_prep_power = -1.0
 	cast_curve_value = 0.0
 	preview_cast_curve_value = 0.0
 	cast_power_locked = false
+	cast_input_gate.reset(
+		Input.is_action_pressed(
+			"enter_fishing"
+		)
+	)
 	bait_landed_during_throw = false
 
 	phase = Phase.THROW

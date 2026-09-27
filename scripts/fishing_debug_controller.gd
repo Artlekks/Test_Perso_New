@@ -10,11 +10,15 @@ class_name FishingDebugController
 const FishingDebugSettingsScript = preload(
 	"res://scripts/fishing_debug_settings.gd"
 )
+const FishingRegressionHarnessScript = preload(
+	"res://scripts/fishing_regression_harness.gd"
+)
 const FishingDebugMenuScene = preload(
 	"res://actors/FishingDebugMenu.tscn"
 )
 
 var settings = null
+var regression_harness: FishingRegressionHarness = null
 var debug_menu: Node = null
 
 var _game_mode: Node = null
@@ -39,6 +43,7 @@ func configure(
 	_progress = progress
 
 	settings = FishingDebugSettingsScript.new()
+	regression_harness = FishingRegressionHarnessScript.new()
 
 	if _encounter != null and _encounter.has_method("set_debug_settings"):
 		_encounter.set_debug_settings(settings)
@@ -49,7 +54,8 @@ func configure(
 		_loadout,
 		settings,
 		_progress,
-		_encounter
+		_encounter,
+		regression_harness
 	)
 	debug_menu.connect(
 		"spot_requested",
@@ -165,6 +171,13 @@ func sync_environment() -> void:
 		zone.set_debug_shadow_count(
 			settings.get_shadow_count_override()
 		)
+
+
+func run_regression_suite() -> Dictionary:
+	if regression_harness == null:
+		return {}
+
+	return regression_harness.run_all()
 
 
 func should_record_catch() -> bool:
