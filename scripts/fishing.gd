@@ -1,11 +1,12 @@
 extends Node
 
-const FishingDebugSettingsScript = preload(
-	"res://scripts/fishing_debug_settings.gd"
+const FishingSessionServicesScript = preload(
+	"res://scripts/fishing_session_services.gd"
 )
-const FishingDebugMenuScene = preload(
-	"res://actors/FishingDebugMenu.tscn"
+const FishingDebugControllerScript = preload(
+	"res://scripts/fishing_debug_controller.gd"
 )
+
 const FishingMenuScene = preload(
 	"res://actors/FishingMenu.tscn"
 )
@@ -17,35 +18,8 @@ const FishingTechniqueViewScene = preload(
 	"res://actors/FishingTechniqueView.tscn"
 )
 
-const FishingProgressScript = preload(
-	"res://scripts/fishing_progress.gd"
-)
-const FishingInventoryScript = preload(
-	"res://scripts/fishing_inventory.gd"
-)
-const FishingTradeServiceScript = preload(
-	"res://scripts/fishing_trade_service.gd"
-)
 const FishingTackleCatalogResource = preload(
 	"res://data/bof4/tackle/all_tackle.tres"
-)
-const FishingTradeCatalogResource = preload(
-	"res://data/bof4/trades/all_trades.tres"
-)
-const FishingUnlockStateScript = preload(
-	"res://scripts/fishing_unlock_state.gd"
-)
-const FishingRewardServiceScript = preload(
-	"res://scripts/fishing_reward_service.gd"
-)
-const FishingRewardCatalogResource = preload(
-	"res://data/bof4/rewards/all_rewards.tres"
-)
-const FishingJournalServiceScript = preload(
-	"res://scripts/fishing_journal_service.gd"
-)
-const FishingJournalCatalogResource = preload(
-	"res://data/bof4/journal/all_journal_data.tres"
 )
 const FishingSurfaceSplashScene = preload(
 	"res://actors/FishingSurfaceSplash.tscn"
@@ -129,9 +103,8 @@ var manual_pull_animation_active: bool = false
 var fish_resisting: bool = false
 var caught_fish: FishInstance = null
 var lure_selector_open: bool = false
-var debug_settings = null
-var debug_menu: Node = null
-var debug_menu_open: bool = false
+var session_services: FishingSessionServices = null
+var debug_controller: FishingDebugController = null
 var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
@@ -208,49 +181,28 @@ func _ready() -> void:
 		_on_result_screen_revealed
 	)
 
-	debug_settings = FishingDebugSettingsScript.new()
-	encounter.set_debug_settings(debug_settings)
-
-	fishing_progress = _get_or_create_fishing_progress()
-	fishing_inventory = _get_or_create_fishing_inventory()
-
-
-	fishing_inventory.bind_progress(fishing_progress)
-
+	session_services = _get_or_create_session_services()
+	fishing_progress = session_services.progress
+	fishing_inventory = session_services.inventory
+	fishing_trade_service = session_services.trade_service
+	fishing_unlock_state = session_services.unlock_state
+	fishing_reward_service = session_services.reward_service
+	fishing_journal_service = session_services.journal_service
 
 	if loadout != null:
 		loadout.set_inventory(fishing_inventory)
 
-	fishing_trade_service = _get_or_create_fishing_trade_service(
-		fishing_inventory
-	)
-	fishing_unlock_state = _get_or_create_fishing_unlock_state()
-	fishing_reward_service = _get_or_create_fishing_reward_service(
-		fishing_progress,
-		fishing_inventory,
-		fishing_unlock_state
-	)
-	fishing_journal_service = _get_or_create_fishing_journal_service(
-		fishing_progress,
-		fishing_inventory
-	)
-
 	_setup_fishing_menu()
 
-	debug_menu = FishingDebugMenuScene.instantiate()
-	add_child(debug_menu)
-	debug_menu.configure(
+	debug_controller = FishingDebugControllerScript.new()
+	debug_controller.name = "FishingDebugController"
+	add_child(debug_controller)
+	debug_controller.configure(
+		game_mode,
+		encounter,
+		aim,
 		loadout,
-		debug_settings,
 		fishing_progress
-	)
-	debug_menu.connect(
-		"spot_requested",
-		Callable(self, "_on_debug_spot_requested")
-	)
-	debug_menu.connect(
-		"debug_environment_changed",
-		Callable(self, "_sync_debug_environment")
 	)
 
 	technique_detector = FishingTechniqueDetectorScript.new()
@@ -301,23 +253,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not game_mode.is_fishing():
 		return
 
-	if _is_debug_toggle(event):
-		if debug_menu_open:
-			_close_debug_menu(true)
-		elif phase == Phase.AIM and not lure_selector_open:
-			_open_debug_menu()
-
+	if (
+		debug_controller != null
+		and debug_controller.is_toggle_event(event)
+	):
+		debug_controller.toggle(
+			phase == Phase.AIM and not lure_selector_open
+		)
 		get_viewport().set_input_as_handled()
 		return
 
-	if debug_menu_open:
-		var close_requested: bool = (
-			debug_menu.handle_input(event)
-		)
-
-		if close_requested:
-			_close_debug_menu(true)
-
+	if (
+		debug_controller != null
+		and debug_controller.route_open_input(event)
+	):
 		# Debug overlay owns input completely while open.
 		get_viewport().set_input_as_handled()
 		return
@@ -541,7 +490,8 @@ func _on_mode_changed(new_mode) -> void:
 		preview_cast_curve_value = 0.0
 
 		_close_lure_selector(false)
-		_close_debug_menu(false)
+		if debug_controller != null:
+			debug_controller.close(false)
 
 		if technique_detector != null:
 			technique_detector.reset()
@@ -568,10 +518,9 @@ func _on_mode_changed(new_mode) -> void:
 			zone.get_fish_population()
 		)
 
-		if debug_menu != null:
-			debug_menu.set_fish_zone(zone)
-
-		_sync_debug_environment()
+		if debug_controller != null:
+			debug_controller.set_fish_zone(zone)
+			debug_controller.sync_environment()
 		camera_rig.enter_fishing_view()
 
 
@@ -609,147 +558,26 @@ func get_fishing_journal_service() -> FishingJournalService:
 
 
 
-func _get_or_create_fishing_progress() -> FishingProgress:
+
+func _get_or_create_session_services() -> FishingSessionServices:
 	var tree_root := get_tree().root
 	var existing := tree_root.get_node_or_null(
-		"FishingProgress"
+		"FishingSessionServices"
 	)
 
-	if existing is FishingProgress:
-		var existing_progress := existing as FishingProgress
-		existing_progress.initialize()
-		return existing_progress
+	if existing is FishingSessionServices:
+		var existing_services := existing as FishingSessionServices
+		existing_services.initialize()
+		return existing_services
 
-	var new_progress := FishingProgressScript.new()
-	new_progress.name = "FishingProgress"
+	var services := FishingSessionServicesScript.new() as FishingSessionServices
+	services.name = "FishingSessionServices"
 
-	# Fishing._ready() can run while SceneTree root is still setting up
-	# its children. Adding another root child immediately at that moment
-	# is rejected by Godot, so defer only the tree attachment.
-	#
-	# The object itself is valid immediately, so we can initialize and use
-	# it now; FishingProgress.initialize() is idempotent when _ready()
-	# later fires after the deferred add.
-	tree_root.add_child.call_deferred(new_progress)
-	new_progress.initialize()
-	return new_progress
-
-
-func _get_or_create_fishing_inventory() -> FishingInventory:
-	var tree_root := get_tree().root
-	var existing := tree_root.get_node_or_null("FishingInventory")
-
-	if existing is FishingInventory:
-		var existing_inventory := existing as FishingInventory
-		existing_inventory.initialize()
-		return existing_inventory
-
-	var new_inventory := FishingInventoryScript.new()
-	new_inventory.name = "FishingInventory"
-	tree_root.add_child.call_deferred(new_inventory)
-	new_inventory.initialize()
-	return new_inventory
-
-
-func _get_or_create_fishing_trade_service(
-	inventory: FishingInventory
-) -> FishingTradeService:
-	var tree_root := get_tree().root
-	var existing := tree_root.get_node_or_null("FishingTradeService")
-
-	if existing is FishingTradeService:
-		var existing_service := existing as FishingTradeService
-		existing_service.configure(
-			inventory,
-			FishingTackleCatalogResource,
-			FishingTradeCatalogResource
-		)
-		return existing_service
-
-	var new_service := FishingTradeServiceScript.new()
-	new_service.name = "FishingTradeService"
-	new_service.configure(
-		inventory,
-		FishingTackleCatalogResource,
-		FishingTradeCatalogResource
-	)
-	tree_root.add_child.call_deferred(new_service)
-	return new_service
-
-
-func _get_or_create_fishing_unlock_state() -> FishingUnlockState:
-	var tree_root := get_tree().root
-	var existing := tree_root.get_node_or_null("FishingUnlockState")
-
-	if existing is FishingUnlockState:
-		var existing_state := existing as FishingUnlockState
-		existing_state.initialize()
-		return existing_state
-
-	var new_state := FishingUnlockStateScript.new()
-	new_state.name = "FishingUnlockState"
-	tree_root.add_child.call_deferred(new_state)
-	new_state.initialize()
-	return new_state
-
-
-func _get_or_create_fishing_reward_service(
-	progress: FishingProgress,
-	inventory: FishingInventory,
-	unlock_state: FishingUnlockState
-) -> FishingRewardService:
-	var tree_root := get_tree().root
-	var existing := tree_root.get_node_or_null("FishingRewardService")
-
-	if existing is FishingRewardService:
-		var existing_service := existing as FishingRewardService
-		existing_service.configure(
-			progress,
-			inventory,
-			FishingTackleCatalogResource,
-			unlock_state,
-			FishingRewardCatalogResource
-		)
-		return existing_service
-
-	var new_service := FishingRewardServiceScript.new()
-	new_service.name = "FishingRewardService"
-	new_service.configure(
-		progress,
-		inventory,
-		FishingTackleCatalogResource,
-		unlock_state,
-		FishingRewardCatalogResource
-	)
-	tree_root.add_child.call_deferred(new_service)
-	return new_service
-
-
-func _get_or_create_fishing_journal_service(
-	progress: FishingProgress,
-	inventory: FishingInventory
-) -> FishingJournalService:
-	var tree_root := get_tree().root
-	var existing := tree_root.get_node_or_null("FishingJournalService")
-
-	if existing is FishingJournalService:
-		var existing_service := existing as FishingJournalService
-		existing_service.configure(
-			progress,
-			inventory,
-			FishingJournalCatalogResource
-		)
-		return existing_service
-
-	var new_service := FishingJournalServiceScript.new()
-	new_service.name = "FishingJournalService"
-	new_service.configure(
-		progress,
-		inventory,
-		FishingJournalCatalogResource
-	)
-	tree_root.add_child.call_deferred(new_service)
-	return new_service
+	# Initialize before deferred tree attachment. This gives Fishing immediate
+	# access while keeping the SceneTree-root mutation safe during _ready().
+	services.initialize()
+	tree_root.add_child.call_deferred(services)
+	return services
 
 
 func _on_technique_triggered(level: int) -> void:
@@ -799,85 +627,6 @@ func _try_consume_cast_confirm(event: InputEvent) -> bool:
 	cast_confirm_ready = false
 	return true
 
-
-func _is_debug_toggle(event: InputEvent) -> bool:
-	if not (event is InputEventKey):
-		return false
-
-	if not event.pressed or event.echo:
-		return false
-
-	return (
-		event.keycode == KEY_F10
-		or event.physical_keycode == KEY_F10
-	)
-
-
-func _on_debug_spot_requested(spot: FishingSpotData) -> void:
-	var zone = game_mode.active_fish_zone
-	if zone == null or spot == null:
-		return
-
-	if zone.has_method("set_fishing_spot"):
-		zone.set_fishing_spot(spot)
-	else:
-		zone.set("fishing_spot", spot)
-
-	encounter.set_fish_population(zone.get_fish_population())
-
-
-func _sync_debug_environment() -> void:
-	var zone = game_mode.active_fish_zone
-	if zone == null:
-		return
-
-	encounter.set_fish_population(zone.get_fish_population())
-
-	if debug_settings == null:
-		return
-
-	# Apply the two shadow QA controls together so changing a profile rebuilds
-	# the ambient population once, not once for species and again for count.
-	if zone.has_method("set_debug_shadow_overrides"):
-		zone.set_debug_shadow_overrides(
-			debug_settings.get_shadow_fish_override(),
-			debug_settings.get_shadow_count_override()
-		)
-		return
-
-	# Compatibility fallback for any older FishZone scene.
-	if zone.has_method("set_debug_shadow_fish"):
-		zone.set_debug_shadow_fish(debug_settings.get_shadow_fish_override())
-	if zone.has_method("set_debug_shadow_count"):
-		zone.set_debug_shadow_count(debug_settings.get_shadow_count_override())
-
-
-func _open_debug_menu() -> void:
-	if (
-		debug_menu == null
-		or phase != Phase.AIM
-		or lure_selector_open
-	):
-		return
-
-	debug_menu.set_fish_zone(game_mode.active_fish_zone)
-
-	if not debug_menu.open_menu():
-		return
-
-	debug_menu_open = true
-	aim.stop()
-
-
-func _close_debug_menu(resume_aim: bool) -> void:
-	if debug_menu != null:
-		debug_menu.close_menu()
-
-	var was_open := debug_menu_open
-	debug_menu_open = false
-
-	if was_open and resume_aim and phase == Phase.AIM:
-		aim.resume()
 
 
 func _open_lure_selector() -> void:
@@ -1362,20 +1111,12 @@ func _on_fish_caught(fish: FishInstance) -> void:
 	if fish == null or fishing_progress == null:
 		return
 
-	var debug_override_active := false
-	var allow_debug_record := false
-
-	if debug_settings != null:
-		debug_override_active = (
-			debug_settings.is_encounter_override_active()
-		)
-		allow_debug_record = (
-			debug_settings.should_record_debug_catches()
-		)
-
 	# Forced fish / king / technique tests do not pollute the player's
 	# permanent records unless SAVE DBG is explicitly enabled.
-	if debug_override_active and not allow_debug_record:
+	if (
+		debug_controller != null
+		and not debug_controller.should_record_catch()
+	):
 		return
 
 	catch_record_result = fishing_progress.record_catch(

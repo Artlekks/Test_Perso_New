@@ -80,6 +80,11 @@ var _no_readable_shadow_time: float = 0.0
 var _debug_forced_fish: FishData = null
 var _debug_shadow_count_override: int = 0
 var _ambient_profile: AmbientFishProfile = null
+var _active_bait: Node3D = null
+var _active_bait_id: int = 0
+var _bait_lookup_cooldown: float = 0.0
+
+const BAIT_LOOKUP_INTERVAL_WHEN_ABSENT: float = 0.10
 
 
 func _ready() -> void:
@@ -96,6 +101,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_cleanup_invalid_shadows()
+	_update_active_bait_reference(delta)
 	_population_reconsider_remaining -= delta
 	_spawn_remaining -= delta
 
@@ -142,6 +148,60 @@ func _initialize_presence() -> void:
 	# Spawn the initial population immediately. Later replacements are staggered.
 	for _index in range(_desired_count):
 		_spawn_one_shadow()
+
+
+func _update_active_bait_reference(delta: float) -> void:
+	var candidate: Node3D = null
+
+	if (
+		is_instance_valid(_active_bait)
+		and _active_bait.is_in_group("bait")
+	):
+		candidate = _active_bait
+		_bait_lookup_cooldown = 0.0
+	else:
+		_bait_lookup_cooldown = maxf(
+			_bait_lookup_cooldown - delta,
+			0.0
+		)
+
+		if _bait_lookup_cooldown > 0.0:
+			# If the previous bait disappeared, clear it immediately while the
+			# throttled search waits for the next cast object.
+			if _active_bait_id != 0:
+				_set_active_bait(null)
+			return
+
+		candidate = (
+			get_tree().get_first_node_in_group("bait")
+			as Node3D
+		)
+		_bait_lookup_cooldown = BAIT_LOOKUP_INTERVAL_WHEN_ABSENT
+
+	var candidate_id: int = 0
+	if is_instance_valid(candidate):
+		candidate_id = candidate.get_instance_id()
+
+	if candidate_id == _active_bait_id:
+		return
+
+	_set_active_bait(candidate)
+
+
+func _set_active_bait(candidate: Node3D) -> void:
+	_active_bait = candidate
+	_active_bait_id = (
+		candidate.get_instance_id()
+		if is_instance_valid(candidate)
+		else 0
+	)
+
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if shadow.is_hooked_tracking():
+			continue
+		shadow.set_ambient_bait(_active_bait)
 
 
 func get_shadows() -> Array[FishShadowActor]:
@@ -406,6 +466,7 @@ func _spawn_one_shadow() -> void:
 		shadow.set_debug_force_readable(true)
 
 	_spawned_shadows.append(shadow)
+	shadow.set_ambient_bait(_active_bait)
 
 
 func _trim_population_if_needed() -> void:

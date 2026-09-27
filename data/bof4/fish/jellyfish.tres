@@ -10,12 +10,12 @@ region = Rect2(5, 5, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Jellyfish"
 species_id = &"jellyfish"
 journal_name = "Jellyfish"
 guide_effect = "Restores 50 HP"
 guide_description = "Lives in lakes and rivers; goes for any type of lure."
 journal_spot_ids = Array[StringName]([&"river_1", &"river_2", &"lake_1", &"lake_3", &"chamba"])
-fish_name = "Jellyfish"
 average_size = 22.0
 king_size = 30.0
 base_stamina = 65.0

@@ -10,12 +10,12 @@ region = Rect2(313, 164, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Moorfish"
 species_id = &"moorfish"
 journal_name = "Moonfish"
 guide_effect = "Revives one KO'd ally with 1 HP; may fail."
 guide_description = "Popular with women, it looks like it's flying in the water."
 journal_spot_ids = Array[StringName]([&"saldine"])
-fish_name = "Moorfish"
 average_size = 22.0
 king_size = 30.0
 base_stamina = 69.0

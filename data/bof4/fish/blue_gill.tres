@@ -10,12 +10,12 @@ region = Rect2(236, 5, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Blue Gill"
 species_id = &"blue_gill"
 journal_name = "Bluegill"
 guide_effect = "Casts a minor Water attack on one enemy."
 guide_description = "Has a violent nature and can attack without warning."
 journal_spot_ids = Array[StringName]([&"lake_1", &"lake_2"])
-fish_name = "Blue Gill"
 average_size = 37.0
 king_size = 50.0
 base_stamina = 75.4

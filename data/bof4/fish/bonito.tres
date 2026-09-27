@@ -10,12 +10,12 @@ region = Rect2(313, 217, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Bonito"
 species_id = &"bonito"
 journal_name = "Bonito"
 guide_effect = "Restores one ally to full HP."
 guide_description = "A fast fish. Being able to catch one is a distinction."
 journal_spot_ids = Array[StringName]([&"ocean_2", &"ocean_3"])
-fish_name = "Bonito"
 average_size = 90.0
 king_size = 120.0
 base_stamina = 90.3

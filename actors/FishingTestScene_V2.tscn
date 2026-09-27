@@ -209,13 +209,13 @@ shape = SubResource("BoxShape3D_m5b5u")
 [node name="beach" parent="World" unique_id=284991885 instance=ExtResource("9_m5b5u")]
 transform = Transform3D(0.45, 0, 0, 0, 0.3, 0, 0, 0, 0.45, -0.0225, -0.1, -1.6714339)
 
-[node name="Sea" parent="World/beach" index="0" unique_id=1122532236]
+[node name="Sea" parent="World/beach" index="0" unique_id=2019294515]
 material_override = SubResource("ShaderMaterial_sea_far")
 
-[node name="Beach" parent="World/beach" index="1" unique_id=2088931626]
+[node name="Beach" parent="World/beach" index="1" unique_id=1906231818]
 material_override = SubResource("ShaderMaterial_beach_anim")
 
-[node name="Bottom" parent="World/beach" index="2" unique_id=120987956]
+[node name="Bottom" parent="World/beach" index="2" unique_id=758102248]
 transform = Transform3D(0.8024675, 0, 0, 0, 0.99999994, 0, 0, 0, 1, 0, 3.9999998, 0)
 material_override = SubResource("StandardMaterial3D_myncn")
 

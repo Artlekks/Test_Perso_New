@@ -10,12 +10,12 @@ region = Rect2(82, 5, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Piranha"
 species_id = &"piranha"
 journal_name = "Piranha"
 guide_effect = "Restores 150 HP to one ally."
 guide_description = "Has sharp teeth and hard scales. Lives in schools in lakes."
 journal_spot_ids = Array[StringName]([&"lake_1", &"lake_2"])
-fish_name = "Piranha"
 average_size = 30.0
 king_size = 40.0
 base_stamina = 69.9

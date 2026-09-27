@@ -1,6 +1,19 @@
 extends CanvasLayer
 class_name FishingMenu
 
+const EquipPageController = preload(
+	"res://scripts/fishing_menu_equip_controller.gd"
+)
+const DataPageController = preload(
+	"res://scripts/fishing_menu_data_controller.gd"
+)
+const HintsPageController = preload(
+	"res://scripts/fishing_menu_hints_controller.gd"
+)
+const HelpPageController = preload(
+	"res://scripts/fishing_menu_help_controller.gd"
+)
+
 const EQUIP_LEFT_SELECTOR_FILLED: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left_Filled.png")
 const EQUIP_LEFT_SELECTOR_OUTLINE: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Equip_Selector_Left.png")
 const COMMAND_PANEL_NORMAL: Texture2D = preload("res://assets/ui/fishing_menu/Menu_Command_Panel.png")
@@ -389,7 +402,6 @@ func close_menu() -> void:
 func _process(delta: float) -> void:
 	if not _is_open:
 		_session_time_seconds += delta
-		_update_time_label()
 		return
 
 	_process_vertical_repeat(delta)
@@ -708,133 +720,33 @@ func _handle_main_input(event: InputEvent) -> void:
 
 
 func _handle_equip_input(event: InputEvent) -> void:
-	if _equip_focus == EquipFocus.SLOT:
-		var slot_step: int = _vertical_step(event)
-		if slot_step != 0:
-			_equip_slot_index = clampi(_equip_slot_index + slot_step, 0, 1)
-			_equip_accessory_index = 0
-			_equip_window_start = 0
-			_refresh_equip_page()
-			_update_equip_slot_selector()
-			return
+	EquipPageController.handle_equip_input(self, event)
 
-		if _horizontal_step(event) > 0 or _is_confirm(event):
-			_equip_focus = EquipFocus.ACCESSORY
-			_refresh_equip_selection()
-			_sync_selector_visibility()
-			return
 
-		return
-
-	var accessory_step: int = _vertical_step(event)
-	if accessory_step != 0 and not _equip_entries.is_empty():
-		_equip_accessory_index = clampi(
-			_equip_accessory_index + accessory_step,
-			0,
-			_equip_entries.size() - 1
-		)
-		_refresh_equip_selection()
-		return
-
-	if _horizontal_step(event) < 0:
-		_equip_focus = EquipFocus.SLOT
-		_refresh_equip_selection()
-		_sync_selector_visibility()
-		return
-
-	if _is_confirm(event):
-		_equip_selected_accessory()
 
 
 func _handle_data_input(event: InputEvent) -> void:
-	if _data_entries.is_empty():
-		return
+	DataPageController.handle_data_input(self, event)
 
-	if _data_detail_open:
-		var detail_step: int = 0
-		var vertical_step: int = _vertical_step(event)
-		var horizontal_step: int = _horizontal_step(event)
 
-		# Original BOF4 behavior:
-		# W or A = previous fish.
-		# S or D = next fish.
-		if vertical_step < 0 or horizontal_step < 0:
-			detail_step = -1
-		elif vertical_step > 0 or horizontal_step > 0:
-			detail_step = 1
-
-		if detail_step != 0:
-			_move_data_detail_selection(detail_step)
-		return
-
-	if _is_confirm(event):
-		var entry: Dictionary = _data_entries[_data_index]
-		if bool(entry.get("discovered", false)):
-			_transition_data_detail(true)
-		return
-
-	var step: int = _vertical_step(event)
-	if step == 0:
-		return
-
-	_data_index = clampi(_data_index + step, 0, _data_entries.size() - 1)
-	data_species_list.select(_data_index)
-	data_species_list.ensure_current_is_visible()
-	_sync_data_selector_window()
-	_update_data_selector()
-	_update_data_scroll_thumb()
-	_update_data_details()
 
 
 func _move_data_detail_selection(step: int) -> void:
-	if step == 0 or _data_entries.is_empty():
-		return
+	DataPageController.move_data_detail_selection(self, step)
 
-	var new_index: int = _data_index
 
-	# Skip undiscovered entries in normal gameplay.
-	while true:
-		var candidate: int = new_index + step
-		if candidate < 0 or candidate >= _data_entries.size():
-			return
-
-		new_index = candidate
-		var candidate_entry: Dictionary = _data_entries[new_index]
-		if bool(candidate_entry.get("discovered", false)):
-			break
-
-	_data_index = new_index
-
-	# Keep the hidden list synchronized so returning with I lands on the
-	# same fish currently displayed in the detail page.
-	data_species_list.select(_data_index)
-	data_species_list.ensure_current_is_visible()
-	_sync_data_selector_window()
-	_update_data_scroll_thumb()
-
-	# Refresh every shared/manual field without changing page layout.
-	_update_data_details()
-	_update_data_detail_content()
-	info_label.text = "Directional buttons: Change page"
 
 
 func _handle_help_input(event: InputEvent) -> void:
-	var step: int = _vertical_step(event)
-	if step == 0:
-		return
+	HelpPageController.handle_help_input(self, event)
 
-	_help_index = clampi(_help_index + step, 0, HELP_TOPICS.size() - 1)
-	help_list.select(_help_index)
-	help_list.ensure_current_is_visible()
-	_update_help_text()
+
 
 
 func _handle_hints_input(event: InputEvent) -> void:
-	if _hint_detail_open:
-		return
+	HintsPageController.handle_hints_input(self, event)
 
-	if _is_confirm(event):
-		_open_hint_detail()
+
 
 
 func _handle_options_input(_event: InputEvent) -> void:
@@ -1404,434 +1316,111 @@ func _refresh_main_page() -> void:
 
 
 func _refresh_equip_page() -> void:
-	equip_slot_list.clear()
+	EquipPageController.refresh_equip_page(self)
 
-	var rod_name: String = "---"
-	var lure_name: String = "---"
-	if is_instance_valid(_loadout):
-		var rod: RodData = _loadout.get_selected_rod()
-		var lure: BaitData = _loadout.get_selected_lure()
-		if rod != null:
-			rod_name = rod.rod_name
-		if lure != null:
-			lure_name = lure.display_name
 
-	equip_slot_list.add_item(rod_name)
-	equip_slot_list.add_item(lure_name)
-	equip_rod_slot_label.text = rod_name
-	equip_lure_slot_label.text = lure_name
-	equip_slot_list.select(_equip_slot_index)
-	_update_equip_slot_selector()
-
-	_rebuild_equip_entries()
-	_refresh_equip_selection()
 
 
 func _qa_fake_tackle_count(tackle_id: StringName) -> int:
-	# Stable pseudo-random-looking quantity for menu layout testing.
-	# It does not touch FishingInventory and stays the same each time the menu
-	# opens, so quantities do not visibly flicker around between visits.
-	var value: int = abs(String(tackle_id).hash())
-	return (value % 99) + 1
+	return EquipPageController.qa_fake_tackle_count(self, tackle_id)
+
+
 
 
 func _rebuild_equip_entries() -> void:
-	_equip_entries.clear()
-	equip_accessory_list.clear()
+	EquipPageController.rebuild_equip_entries(self)
 
-	if _tackle_catalog == null:
-		return
 
-	if _equip_slot_index == 0:
-		for rod in _tackle_catalog.rods:
-			if rod == null:
-				continue
-			var count: int = 1
-			if is_instance_valid(_inventory):
-				count = _inventory.get_rod_count(rod.rod_id)
-			if count <= 0:
-				if not show_full_tackle_catalog_for_testing:
-					continue
-				count = _qa_fake_tackle_count(rod.rod_id)
-			_equip_entries.append({"kind": "rod", "resource": rod, "count": count})
-	else:
-		if _tackle_catalog.lure_catalog != null:
-			for lure in _tackle_catalog.lure_catalog.lures:
-				if lure == null:
-					continue
-				var count: int = 1
-				if is_instance_valid(_inventory):
-					count = _inventory.get_lure_count(lure.lure_id)
-				if count <= 0:
-					if not show_full_tackle_catalog_for_testing:
-						continue
-					count = _qa_fake_tackle_count(lure.lure_id)
-				_equip_entries.append({"kind": "lure", "resource": lure, "count": count})
-
-	if _equip_entries.is_empty():
-		_equip_accessory_index = 0
-		_equip_window_start = 0
-	else:
-		_equip_accessory_index = clampi(
-			_equip_accessory_index,
-			0,
-			_equip_entries.size() - 1
-		)
-
-	_sync_equip_selector_window()
-	_refresh_equip_visible_rows()
-	_update_equip_scroll_thumb()
-	_update_equip_accessory_counter()
-	_update_equipped_accessory_highlight()
-	call_deferred("_place_equip_right_selector")
 
 
 func _format_accessory_row(display_name: String, _count: int) -> String:
-	# Names and quantities are deliberately rendered separately.
-	# Putting both into one ItemList string makes Godot replace the clipped
-	# right edge with "..." when the row is wider than the control.
-	return display_name
+	return EquipPageController.format_accessory_row(self, display_name, _count)
+
+
 
 
 func _bof_text_advance_px(value: String) -> int:
-	var width_px := 0
-	for character_index in range(value.length()):
-		var character := value.substr(character_index, 1)
-		if character == "I" or character == "i" or character == "l":
-			width_px += BOF_NARROW_ADVANCE_PX
-		else:
-			width_px += BOF_STANDARD_ADVANCE_PX
-	return width_px
+	return EquipPageController.bof_text_advance_px(self, value)
+
+
 
 
 func _refresh_equip_selection() -> void:
-	equip_slot_list.select(_equip_slot_index)
-	_update_equip_slot_selector()
+	EquipPageController.refresh_equip_selection(self)
 
-	if not _equip_entries.is_empty():
-		_sync_equip_selector_window()
-		_refresh_equip_visible_rows()
-		_update_equip_scroll_thumb()
 
-	call_deferred("_place_equip_right_selector")
-
-	if _equip_focus == EquipFocus.SLOT:
-		equip_slot_list.grab_focus()
-	else:
-		equip_accessory_list.grab_focus()
-
-	_update_equip_slot_colors()
-	_update_equip_accessory_counter()
-	_update_equip_guide()
-	_update_equipped_accessory_highlight()
 
 
 func _update_equip_slot_colors() -> void:
-	if not is_instance_valid(equip_slot_list):
-		return
+	EquipPageController.update_equip_slot_colors(self)
 
-	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
-	var inactive_color: Color = disabled_text_tint
 
-	# SlotList is navigation-only; the dedicated labels let rod and lure have
-	# independent one-pixel placement without disturbing row geometry.
-	if is_instance_valid(equip_rod_slot_label):
-		equip_rod_slot_label.add_theme_color_override("font_color", normal_color)
-	if is_instance_valid(equip_lure_slot_label):
-		equip_lure_slot_label.add_theme_color_override("font_color", normal_color)
-
-	if _equip_focus == EquipFocus.ACCESSORY:
-		if _equip_slot_index == 0 and is_instance_valid(equip_lure_slot_label):
-			equip_lure_slot_label.add_theme_color_override("font_color", inactive_color)
-		elif _equip_slot_index == 1 and is_instance_valid(equip_rod_slot_label):
-			equip_rod_slot_label.add_theme_color_override("font_color", inactive_color)
 
 
 func _equipped_accessory_index() -> int:
-	if not is_instance_valid(_loadout) or _equip_entries.is_empty():
-		return -1
+	return EquipPageController.equipped_accessory_index(self)
 
-	var selected_rod: RodData = _loadout.get_selected_rod()
-	var selected_lure: BaitData = _loadout.get_selected_lure()
 
-	for item_index in range(_equip_entries.size()):
-		var entry: Dictionary = _equip_entries[item_index]
-		var resource: Resource = entry.get("resource", null) as Resource
-
-		if _equip_slot_index == 0 and resource is RodData and selected_rod != null:
-			var rod: RodData = resource as RodData
-			if rod.rod_id == selected_rod.rod_id:
-				return item_index
-
-		elif _equip_slot_index == 1 and resource is BaitData and selected_lure != null:
-			var lure: BaitData = resource as BaitData
-			if lure.lure_id == selected_lure.lure_id:
-				return item_index
-
-	return -1
 
 
 func _update_equipped_accessory_highlight() -> void:
-	# BOF4 does not use a second independent equipped-row rectangle here.
-	# The left rod/lure category keeps its outline selector, while the Accessory
-	# list uses its own warm filled cursor selector.
-	if is_instance_valid(equip_equipped_highlight):
-		equip_equipped_highlight.visible = false
+	EquipPageController.update_equipped_accessory_highlight(self)
+
+
 
 
 func _update_equip_accessory_counter() -> void:
-	if not is_instance_valid(equip_accessory_count_label):
-		return
+	EquipPageController.update_equip_accessory_counter(self)
 
-	var total_entries: int = _equip_entries.size()
-	if total_entries <= 0:
-		equip_accessory_count_label.text = "00/00"
-		return
 
-	# BOF4 shows 0 / total before entering the accessory list, then the
-	# selected entry number once the list owns focus.
-	var current_entry: int = 0
-	if _equip_focus == EquipFocus.ACCESSORY:
-		current_entry = clampi(_equip_accessory_index + 1, 1, total_entries)
-
-	equip_accessory_count_label.text = "%02d/%02d" % [
-		current_entry,
-		total_entries,
-	]
 
 
 func _update_equip_guide() -> void:
-	var is_lure_page: bool = _equip_slot_index == 1
+	EquipPageController.update_equip_guide(self)
 
-	# Rod uses its own panel with the rod icon baked into the texture.
-	# Lure uses the clean panel plus the dynamic lure-family icon.
-	if is_lure_page:
-		equip_guide_panel.texture = EQUIP_LURE_GUIDE_PANEL
-		equip_guide_icon.visible = true
-	else:
-		equip_guide_panel.texture = EQUIP_ROD_GUIDE_PANEL
-		equip_guide_icon.visible = false
 
-	equip_guide_icon.texture = null
-	equip_guide_title_label.text = ""
-	equip_guide_description_label.text = ""
-
-	if _equip_entries.is_empty():
-		equip_guide_description_label.text = "No owned tackle in this category."
-		return
-
-	var entry: Dictionary = _equip_entries[_equip_accessory_index]
-	var resource: Resource = entry.get("resource", null) as Resource
-
-	if resource is RodData:
-		var rod: RodData = resource as RodData
-		equip_guide_title_label.text = str(
-			ROD_GUIDE_TITLES.get(rod.rod_id, rod.rod_name)
-		)
-		equip_guide_description_label.text = "%s
-Power Level: %s" % [
-			rod.description,
-			rod.power_level_label,
-		]
-
-	elif resource is BaitData:
-		var lure: BaitData = resource as BaitData
-		if lure.lure_id == &"spoon" or lure.lure_id == &"king_frog":
-			equip_guide_title_label.text = "Ultimate Lure"
-		else:
-			var lure_type_label: String = str(
-				LURE_GUIDE_TYPE_LABELS.get(
-					lure.lure_type,
-					lure.get_type_label()
-				)
-			)
-			equip_guide_title_label.text = "LV %d %s" % [
-				lure.level,
-				lure_type_label,
-			]
-
-		equip_guide_icon.texture = LURE_GUIDE_ICONS.get(
-			lure.lure_id,
-			null
-		) as Texture2D
-		equip_guide_description_label.text = lure.description
 
 
 func _equip_selected_accessory() -> void:
-	if _equip_entries.is_empty() or not is_instance_valid(_loadout):
-		return
+	EquipPageController.equip_selected_accessory(self)
 
-	var entry: Dictionary = _equip_entries[_equip_accessory_index]
-	var resource: Resource = entry.get("resource", null) as Resource
-	var equipped: bool = false
 
-	if resource is RodData:
-		if show_full_tackle_catalog_for_testing:
-			_loadout.equip_rod(resource as RodData)
-			equipped = _loadout.get_selected_rod() == resource
-		else:
-			equipped = _loadout.equip_owned_rod(resource as RodData)
-	elif resource is BaitData:
-		if show_full_tackle_catalog_for_testing:
-			_loadout.equip_lure(resource as BaitData)
-			equipped = _loadout.get_selected_lure() == resource
-		else:
-			equipped = _loadout.equip_owned_lure(resource as BaitData)
-
-	if equipped:
-		info_label.text = "Equipped %s." % _resource_display_name(resource)
-		_refresh_main_page()
-		_refresh_equip_page()
 
 
 func _refresh_data_page() -> void:
-	_data_entries.clear()
-	data_species_list.clear()
+	DataPageController.refresh_data_page(self)
 
-	if not is_instance_valid(_journal):
-		info_label.text = "Fishing data is unavailable."
-		_update_data_details()
-		return
 
-	# Pass 2: catalog order, identity, display names and portraits now come from
-	# FishingJournalService/FishData. FishingMenu no longer owns a fish database.
-	# Details are revealed here to preserve the current BOF4-style list/preview
-	# behavior; record values remain gated by the discovered flag below.
-	var snapshot: Dictionary = _journal.get_data_menu_snapshot(true, true)
-	var raw_species: Variant = snapshot.get("species", [])
-
-	if raw_species is Array:
-		for value in raw_species:
-			if not (value is Dictionary):
-				continue
-
-			var entry: Dictionary = (value as Dictionary).duplicate(true)
-			_data_entries.append(entry)
-			data_species_list.add_item(
-				str(entry.get("display_name", "????"))
-			)
-
-	if _data_entries.is_empty():
-		_data_index = 0
-		_data_window_start = 0
-	else:
-		_data_index = clampi(_data_index, 0, _data_entries.size() - 1)
-		data_species_list.select(_data_index)
-		data_species_list.ensure_current_is_visible()
-		_sync_data_selector_window()
-
-	_update_data_selector()
-	_update_data_scroll_thumb()
-	_update_data_details()
 
 
 func _update_data_details() -> void:
-	data_portrait.texture = null
-	data_size_label.text = "--"
-	data_points_label.text = "--"
-	data_point_label.text = "---"
-	data_caught_count_label.text = "00"
-	_set_data_lure_dark_overlays({}, false)
-	_set_data_wave_dark_overlays({}, false)
+	DataPageController.update_data_details(self)
 
-	if _data_entries.is_empty():
-		info_label.text = "No fishing data."
-		return
 
-	var entry: Dictionary = _data_entries[_data_index]
-	var fish_name: String = str(entry.get("display_name", "????"))
-
-	if _data_detail_open:
-		info_label.text = "Directional buttons: Change page"
-	else:
-		info_label.text = "View data on %s" % fish_name
-
-	var portrait: Texture2D = entry.get("portrait", null) as Texture2D
-	if portrait != null:
-		data_portrait.texture = portrait
-
-	var discovered: bool = bool(entry.get("discovered", false))
-	_set_data_lure_dark_overlays(entry, discovered)
-	_set_data_wave_dark_overlays(entry, discovered)
-
-	if not discovered:
-		return
-
-	data_size_label.text = "%d" % int(round(float(entry.get("best_size", 0.0))))
-	data_points_label.text = "%d" % int(entry.get("best_points", 0))
-	data_point_label.text = _get_primary_location_name(entry)
-	data_caught_count_label.text = "%02d" % int(entry.get("current_owned_count", 0))
-	_update_data_detail_content()
 
 
 func _set_data_lure_dark_overlays(
 	entry: Dictionary,
 	discovered: bool
 ) -> void:
-	var unavailable_types: Array = entry.get(
-		"unavailable_lure_types",
-		[]
-	)
+	DataPageController.set_data_lure_dark_overlays(self, entry, discovered)
 
-	data_lure_spinner_dark.visible = (
-		discovered and unavailable_types.has(LureType.Type.SPINNER)
-	)
-	data_lure_winder_dark.visible = (
-		discovered and unavailable_types.has(LureType.Type.WINDER)
-	)
-	data_lure_topper_dark.visible = (
-		discovered and unavailable_types.has(LureType.Type.TOPPER)
-	)
-	data_lure_minnow_dark.visible = (
-		discovered and unavailable_types.has(LureType.Type.MINNOW)
-	)
-	data_lure_frogger_dark.visible = (
-		discovered and unavailable_types.has(LureType.Type.FROG)
-	)
-	data_lure_worm_dark.visible = (
-		discovered and unavailable_types.has(LureType.Type.WORM)
-	)
+
 
 
 func _set_data_wave_dark_overlays(
 	entry: Dictionary,
 	discovered: bool
 ) -> void:
-	var habitats: PackedStringArray = entry.get(
-		"habitat_types",
-		PackedStringArray()
-	)
+	DataPageController.set_data_wave_dark_overlays(self, entry, discovered)
 
-	data_wave_calm_dark.visible = (
-		discovered and not habitats.has("RIVER")
-	)
-	data_wave_big_dark.visible = (
-		discovered and not habitats.has("LAKE")
-	)
-	data_wave_tsunami_dark.visible = (
-		discovered and not habitats.has("OCEAN")
-	)
+
 
 
 func _update_data_detail_content() -> void:
-	data_detail_name_label.text = ""
-	data_detail_effect_label.text = ""
-	data_detail_guide_label.text = ""
-	data_detail_avg_label.text = ""
+	DataPageController.update_data_detail_content(self)
 
-	if _data_entries.is_empty():
-		return
 
-	var entry: Dictionary = _data_entries[_data_index]
-	if not bool(entry.get("discovered", false)):
-		return
-
-	data_detail_name_label.text = str(entry.get("display_name", ""))
-	data_detail_avg_label.text = "%d" % int(
-		round(float(entry.get("average_size", 0.0)))
-	)
-	data_detail_effect_label.text = str(entry.get("guide_effect", ""))
-	data_detail_guide_label.text = str(entry.get("guide_description", ""))
 
 
 func _transition_data_detail(open_detail: bool) -> void:
@@ -1914,453 +1503,145 @@ func _transition_data_detail(open_detail: bool) -> void:
 
 
 func _sync_data_selector_window() -> void:
-	const visible_rows: int = 8
-	if _data_entries.is_empty():
-		_data_window_start = 0
-		return
+	DataPageController.sync_data_selector_window(self)
 
-	if _data_index < _data_window_start:
-		_data_window_start = _data_index
-	elif _data_index >= _data_window_start + visible_rows:
-		_data_window_start = _data_index - visible_rows + 1
 
-	_data_window_start = clampi(
-		_data_window_start,
-		0,
-		maxi(_data_entries.size() - visible_rows, 0)
-	)
 
 
 
 func _update_data_selector() -> void:
-	data_species_list.select(_data_index)
-	data_species_list.ensure_current_is_visible()
-	call_deferred("_place_data_selector")
+	DataPageController.update_data_selector(self)
+
+
 
 
 func _configure_equip_accessory_list_visuals() -> void:
-	# Names occupy only the left part of the row. Quantities are separate labels.
-	# This prevents Godot's ItemList text-overrun ellipsis from hiding numbers.
-	equip_accessory_list.size.x = 96.0
+	EquipPageController.configure_equip_accessory_list_visuals(self)
 
-	# Keep ItemList scrolling logic, but hide Godot's native grey scrollbar.
-	# BOF4 uses the same thin yellow custom thumb as the Data page.
-	if is_instance_valid(equip_accessory_list):
-		var native_scrollbar: VScrollBar = equip_accessory_list.get_v_scroll_bar()
-		if is_instance_valid(native_scrollbar):
-			native_scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
-			native_scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			native_scrollbar.value = 0.0
 
-	_update_equip_scroll_thumb()
 
 
 func _sync_equip_selector_window() -> void:
-	const visible_rows: int = 8
+	EquipPageController.sync_equip_selector_window(self)
 
-	if _equip_entries.is_empty():
-		_equip_window_start = 0
-		return
 
-	if _equip_accessory_index < _equip_window_start:
-		_equip_window_start = _equip_accessory_index
-	elif _equip_accessory_index >= _equip_window_start + visible_rows:
-		_equip_window_start = _equip_accessory_index - visible_rows + 1
-
-	_equip_window_start = clampi(
-		_equip_window_start,
-		0,
-		maxi(_equip_entries.size() - visible_rows, 0)
-	)
 
 
 func _create_equip_quantity_labels() -> void:
-	if not is_instance_valid(equip_accessory_panel):
-		return
+	EquipPageController.create_equip_quantity_labels(self)
 
-	# Eight fixed BOF4 rows. The quantity column is independent from ItemList
-	# text, so it can never be truncated into an ellipsis.
-	for row_index in range(8):
-		var label := Label.new()
-		label.name = "Quantity%02d" % row_index
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_override(
-			"font",
-			equip_accessory_list.get_theme_font("font")
-		)
-		label.add_theme_font_size_override(
-			"font_size",
-			equip_accessory_list.get_theme_font_size("font_size")
-		)
-		label.add_theme_color_override(
-			"font_color",
-			Color(1.0, 1.0, 1.0, 1.0)
-		)
 
-		# Fixed right-aligned quantity column immediately before the scrollbar.
-		# Two digits occupy 16 native pixels with the BOF font.
-		label.position = Vector2(98.0, 5.0 + float(row_index * 17))
-		label.size = Vector2(21.0, 17.0)
-		label.text = ""
-		label.visible = false
-
-		equip_accessory_panel.add_child(label)
-		_equip_quantity_labels.append(label)
 
 
 func _refresh_equip_quantity_labels() -> void:
-	for label in _equip_quantity_labels:
-		if is_instance_valid(label):
-			label.text = ""
-			label.visible = false
+	EquipPageController.refresh_equip_quantity_labels(self)
 
-	if _equip_entries.is_empty():
-		return
 
-	var visible_count: int = mini(
-		8,
-		_equip_entries.size() - _equip_window_start
-	)
-
-	for local_row in range(visible_count):
-		if local_row >= _equip_quantity_labels.size():
-			break
-
-		var global_index: int = _equip_window_start + local_row
-		var entry: Dictionary = _equip_entries[global_index]
-		var count: int = clampi(int(entry.get("count", 0)), 0, 99)
-		var label: Label = _equip_quantity_labels[local_row]
-
-		label.text = "%02d" % count
-		label.visible = true
 
 
 func _refresh_equip_visible_rows() -> void:
-	# Equip deliberately does NOT use ItemList's native scrolling anymore.
-	# Only the current eight-row BOF4 window exists in the ItemList. This keeps
-	# fast W/S hold-repeat deterministic and prevents the selector from being
-	# displaced by a hidden Godot scrollbar that is one frame out of sync.
-	const visible_rows: int = 8
+	EquipPageController.refresh_equip_visible_rows(self)
 
-	equip_accessory_list.clear()
 
-	if _equip_entries.is_empty():
-		return
-
-	var window_end: int = mini(
-		_equip_window_start + visible_rows,
-		_equip_entries.size()
-	)
-
-	for global_index in range(_equip_window_start, window_end):
-		var entry: Dictionary = _equip_entries[global_index]
-		var resource: Resource = entry.get("resource", null) as Resource
-		var count: int = int(entry.get("count", 0))
-		var display_name: String = _resource_display_name(resource)
-		equip_accessory_list.add_item(
-			_format_accessory_row(display_name, count)
-		)
-
-	var visible_index: int = _equip_accessory_index - _equip_window_start
-	if visible_index >= 0 and visible_index < equip_accessory_list.item_count:
-		equip_accessory_list.select(visible_index)
-
-	_refresh_equip_quantity_labels()
 
 
 func _update_equip_scroll_thumb() -> void:
-	if not is_instance_valid(equip_scroll_thumb):
-		return
+	EquipPageController.update_equip_scroll_thumb(self)
 
-	var total_entries: int = _equip_entries.size()
-	if total_entries <= 0:
-		equip_scroll_thumb.visible = false
-		return
 
-	equip_scroll_thumb.visible = true
-
-	# BOF4 track geometry inside the Accessory panel.
-	const visible_rows: int = 8
-	const track_top_y: float = 45.0
-	const track_end_y: float = 152.0
-	const scrolling_thumb_height: float = 34.0
-	const scrolling_thumb_bottom_y: float = (
-		track_end_y - scrolling_thumb_height
-	)
-
-	if total_entries <= visible_rows:
-		# All rods fit on one page. A full-height yellow bar communicates that
-		# this IS the complete page and there is nowhere further to scroll.
-		equip_scroll_thumb.position.y = track_top_y
-		equip_scroll_thumb.size.y = track_end_y - track_top_y
-		return
-
-	# Lures have multiple pages. Restore the normal BOF4 thumb size and move it
-	# according to our explicit eight-row window.
-	equip_scroll_thumb.size.y = scrolling_thumb_height
-
-	var max_window_start: int = maxi(total_entries - visible_rows, 0)
-	var ratio: float = 0.0
-	if max_window_start > 0:
-		ratio = clampf(
-			float(_equip_window_start) / float(max_window_start),
-			0.0,
-			1.0
-		)
-
-	equip_scroll_thumb.position.y = roundf(
-		lerpf(track_top_y, scrolling_thumb_bottom_y, ratio)
-	)
 
 
 func _configure_data_list_visuals() -> void:
-	# ItemList keeps its internal scrollbar for scrolling logic, but BOF4 draws
-	# its own thin L1/R1 indicator. Hide only the native Godot visual.
-	if is_instance_valid(data_species_list):
-		var native_scrollbar: VScrollBar = data_species_list.get_v_scroll_bar()
-		if is_instance_valid(native_scrollbar):
-			native_scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
-			native_scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	DataPageController.configure_data_list_visuals(self)
 
-	_update_data_scroll_thumb()
+
 
 
 
 func _configure_hint_list_visuals() -> void:
-	# Seven categories fit in the Hint panel. Hide Godot's native scroll bar.
-	if is_instance_valid(hints_list):
-		var native_scrollbar: VScrollBar = hints_list.get_v_scroll_bar()
-		if is_instance_valid(native_scrollbar):
-			native_scrollbar.modulate = Color(1.0, 1.0, 1.0, 0.0)
-			native_scrollbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	HintsPageController.configure_hint_list_visuals(self)
+
+
 
 func _update_data_scroll_thumb() -> void:
-	if not is_instance_valid(data_scroll_thumb):
-		return
+	DataPageController.update_data_scroll_thumb(self)
 
-	data_scroll_thumb.visible = _data_entries.size() > 8
-	if not data_scroll_thumb.visible:
-		return
 
-	# The thumb has a fixed 2x34 native-pixel size. It represents the current
-	# eight-row viewport, so it moves only when the list itself scrolls.
-	const visible_rows: int = 8
-	const track_top_y: float = 45.0
-	const track_bottom_y: float = 118.0
-	var max_window_start: int = maxi(_data_entries.size() - visible_rows, 0)
-	var ratio: float = 0.0
-	if max_window_start > 0:
-		ratio = clampf(float(_data_window_start) / float(max_window_start), 0.0, 1.0)
-
-	data_scroll_thumb.position.y = roundf(lerpf(track_top_y, track_bottom_y, ratio))
 
 
 func _get_primary_location_name(entry: Dictionary) -> String:
-	var preferred_fields: PackedStringArray = [
-		"best_size_spot_name",
-		"best_points_spot_name",
-		"last_catch_spot_name",
-	]
+	return DataPageController.get_primary_location_name(self, entry)
 
-	for field_name in preferred_fields:
-		var spot_name: String = str(entry.get(field_name, "")).strip_edges()
-		if not spot_name.is_empty():
-			return spot_name
 
-	var raw_locations: Variant = entry.get("locations", [])
-	if raw_locations is Array:
-		for value in raw_locations:
-			if not (value is Dictionary):
-				continue
-			var spot_name: String = str((value as Dictionary).get("spot_name", "")).strip_edges()
-			if not spot_name.is_empty():
-				return spot_name
-
-	return "---"
 
 
 func _join_location_names(entry: Dictionary) -> String:
-	var names: PackedStringArray = PackedStringArray()
-	var raw_locations: Variant = entry.get("locations", [])
-	if raw_locations is Array:
-		var source_locations: Array = raw_locations
-		for value in source_locations:
-			if not (value is Dictionary):
-				continue
-			var location: Dictionary = value as Dictionary
-			var spot_name: String = str(location.get("spot_name", ""))
-			if not spot_name.is_empty():
-				names.append(spot_name)
+	return DataPageController.join_location_names(self, entry)
 
-	return ", ".join(names) if not names.is_empty() else "---"
+
 
 
 func _join_lure_names(entry: Dictionary) -> String:
-	var names: PackedStringArray = PackedStringArray()
-	var raw_successful: Variant = entry.get("successful_lures", [])
-	if raw_successful is Array:
-		var source_lures: Array = raw_successful
-		for value in source_lures:
-			if not (value is Dictionary):
-				continue
-			var lure_name: String = str((value as Dictionary).get("lure_name", ""))
-			if not lure_name.is_empty() and not names.has(lure_name):
-				names.append(lure_name)
+	return DataPageController.join_lure_names(self, entry)
 
-	if names.is_empty():
-		var preferred: Variant = entry.get("preferred_lure_ids", PackedStringArray())
-		if preferred is PackedStringArray:
-			var preferred_ids: PackedStringArray = preferred
-			for lure_id in preferred_ids:
-				names.append(str(lure_id))
 
-	return ", ".join(names) if not names.is_empty() else "---"
 
 
 func _update_help_text() -> void:
-	help_list.select(_help_index)
-	match _help_index:
-		0:
-			help_text_label.text = "Casting\n\nK enters the cast sequence. Set power, then adjust the curve before release."
-		1:
-			help_text_label.text = "Moving the lure\n\nUse the fishing controls to steer, reel and work the lure after it lands."
-		2:
-			help_text_label.text = "Getting a bite\n\nWatch the fish and react to bite opportunities before the window closes."
-		3:
-			help_text_label.text = "Reeling in a catch\n\nBalance reeling, steering and tension until the fish is exhausted."
-		_:
-			help_text_label.text = "I returns to the previous menu."
+	HelpPageController.update_help_text(self)
+
+
 
 
 func _update_hint_selector() -> void:
-	hints_list.select(_hint_index)
-	hints_list.ensure_current_is_visible()
-	call_deferred("_place_hints_selector")
+	HintsPageController.update_hint_selector(self)
+
+
 
 
 func _update_hint_text() -> void:
-	hints_list.select(_hint_index)
-	_update_hint_selector()
+	HintsPageController.update_hint_text(self)
 
-	_hint_text_line_start = 0
-	_hint_text_lines = _wrap_hint_text(
-		HINT_DETAIL_TEXT[_hint_index],
-		HINT_TEXT_MAX_WIDTH_PX
-	)
-	_refresh_hint_text_page()
+
 
 
 func _open_hint_detail() -> void:
-	if _hint_detail_open:
-		return
+	HintsPageController.open_hint_detail(self)
 
-	_hint_detail_open = true
-	_hint_text_line_start = 0
-	hints_text_panel.visible = true
-	_set_hint_detail_colors(true)
-	_update_hint_text()
-	_sync_selector_visibility()
+
 
 
 func _close_hint_detail() -> void:
-	if not _hint_detail_open:
-		return
+	HintsPageController.close_hint_detail(self)
 
-	_hint_detail_open = false
-	_hint_text_line_start = 0
-	hints_text_panel.visible = false
-	hints_scroll_arrow.visible = false
-	_set_hint_detail_colors(false)
-	_update_hint_selector()
-	_sync_selector_visibility()
+
 
 
 func _set_hint_detail_colors(detail_open: bool) -> void:
-	var normal_color := Color(1.0, 1.0, 1.0, 1.0)
-	var inactive_color: Color = disabled_text_tint
+	HintsPageController.set_hint_detail_colors(self, detail_open)
 
-	for item_index in range(hints_list.item_count):
-		var item_color := normal_color
-		if detail_open and item_index != _hint_index:
-			item_color = inactive_color
-		hints_list.set_item_custom_fg_color(item_index, item_color)
 
-	hints_list.queue_redraw()
 
 
 func _scroll_hint_text(step: int) -> void:
-	if not _hint_detail_open or step == 0:
-		return
+	HintsPageController.scroll_hint_text(self, step)
 
-	if step > 0:
-		if (
-			_hint_text_line_start + HINT_TEXT_LINES_PER_PAGE
-			< _hint_text_lines.size()
-		):
-			_hint_text_line_start += HINT_TEXT_LINES_PER_PAGE
-	else:
-		_hint_text_line_start = maxi(
-			_hint_text_line_start - HINT_TEXT_LINES_PER_PAGE,
-			0
-		)
 
-	_refresh_hint_text_page()
 
 
 func _refresh_hint_text_page() -> void:
-	if _hint_text_lines.is_empty():
-		hints_text_label.text = ""
-		hints_scroll_arrow.visible = false
-		return
+	HintsPageController.refresh_hint_text_page(self)
 
-	var end_index: int = mini(
-		_hint_text_line_start + HINT_TEXT_LINES_PER_PAGE,
-		_hint_text_lines.size()
-	)
 
-	var visible_lines := PackedStringArray()
-	for line_index in range(_hint_text_line_start, end_index):
-		visible_lines.append(_hint_text_lines[line_index])
-
-	hints_text_label.text = "\n".join(visible_lines)
-	hints_scroll_arrow.visible = (
-		_hint_detail_open
-		and end_index < _hint_text_lines.size()
-	)
 
 
 func _wrap_hint_text(
 	value: String,
 	max_width_px: int
 ) -> Array[String]:
-	var result: Array[String] = []
+	return HintsPageController.wrap_hint_text(self, value, max_width_px)
 
-	for paragraph in value.split("\n", true):
-		if paragraph.is_empty():
-			result.append("")
-			continue
 
-		var current_line := ""
-		for word in paragraph.split(" ", false):
-			var candidate := word
-			if not current_line.is_empty():
-				candidate = current_line + " " + word
-
-			if (
-				current_line.is_empty()
-				or _bof_text_advance_px(candidate) <= max_width_px
-			):
-				current_line = candidate
-			else:
-				result.append(current_line)
-				current_line = word
-
-		if not current_line.is_empty():
-			result.append(current_line)
-
-	return result
 
 
 func _update_time_label() -> void:

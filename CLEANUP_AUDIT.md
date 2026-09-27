@@ -129,3 +129,35 @@ Fish identity/manual/lure-compatibility/source-location data now flows from
 FishData through FishingJournalService into FishingMenu.
 
 See `PASS2_SINGLE_SOURCE.md` for the implementation boundary and validation.
+
+
+## Pass 3 completion
+
+FishingMenu page implementations have been split into Equip, Data, Hints and
+Help controller modules using a conservative delegation boundary.
+
+Scene structure and gameplay/camera scripts were frozen during this pass.
+
+See `PASS3_MODULAR_MENU.md`.
+
+
+## Pass 4 completion
+
+Persistent fishing services now live under `FishingSessionServices`, and the
+QA/debug subsystem lives under `FishingDebugController`.
+
+The main fishing controller remains responsible for gameplay phase orchestration
+only plus presentation coordination that is tightly coupled to those phases.
+
+See `PASS4_SYSTEM_OWNERSHIP.md`.
+
+
+## Pass 5 completion
+
+Safe performance polish completed. Ambient fish shadows now share a cached bait
+reference and the hidden menu no longer repaints its Time label every frame.
+
+Camera optimization was deliberately deferred to the post-refactor regression
+phase because camera framing has an open behavioral issue.
+
+See `PASS5_PERFORMANCE.md` and `POST_REFACTOR_REGRESSION_QUEUE.md`.

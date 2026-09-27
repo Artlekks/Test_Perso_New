@@ -604,24 +604,36 @@ func _pick_new_depth_target() -> void:
 		_target_depth_ratio = clampf(_target_depth_ratio, 0.05, 0.30)
 
 
+func set_ambient_bait(candidate: Node3D) -> void:
+	if _fight_tracking:
+		return
+
+	if not is_instance_valid(candidate):
+		if _observed_bait_id != 0 or _bait != null:
+			_clear_bait_interest()
+		return
+
+	var candidate_id := candidate.get_instance_id()
+	if candidate_id == _observed_bait_id:
+		_bait = candidate
+		return
+
+	_bait = candidate
+	_observed_bait_id = candidate_id
+	_pre_bite_state = PreBiteState.ROAM
+	_pre_bite_timer = 0.0
+	_bite_ready_timer = 0.0
+	_interest_cooldown = 0.0
+	_inspect_target_timer = 0.0
+	_inspect_offset = Vector3.ZERO
+
+
 func _update_bait_interest(delta: float) -> void:
-	var candidate := get_tree().get_first_node_in_group("bait") as Node3D
+	var candidate := _bait
 
 	if not is_instance_valid(candidate):
 		_clear_bait_interest()
 		return
-
-	var candidate_id := candidate.get_instance_id()
-
-	if candidate_id != _observed_bait_id:
-		_bait = candidate
-		_observed_bait_id = candidate_id
-		_pre_bite_state = PreBiteState.ROAM
-		_pre_bite_timer = 0.0
-		_bite_ready_timer = 0.0
-		_interest_cooldown = 0.0
-		_inspect_target_timer = 0.0
-		_inspect_offset = Vector3.ZERO
 
 	# Ignore the lure while it is clearly still airborne.
 	if candidate.global_position.y > water_surface_y + 0.12:
