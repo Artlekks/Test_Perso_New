@@ -70,7 +70,7 @@ static func refresh_equip_page(menu) -> void:
 	menu._refresh_equip_selection()
 
 
-static func qa_fake_tackle_count(menu, tackle_id: StringName) -> int:
+static func qa_fake_tackle_count(_menu, tackle_id: StringName) -> int:
 	# Stable pseudo-random-looking quantity for menu layout testing.
 	# It does not touch FishingInventory and stays the same each time the menu
 	# opens, so quantities do not visibly flicker around between visits.
@@ -129,7 +129,7 @@ static func rebuild_equip_entries(menu) -> void:
 	menu.call_deferred("_place_equip_right_selector")
 
 
-static func format_accessory_row(menu, display_name: String, _count: int) -> String:
+static func format_accessory_row(_menu, display_name: String, _count: int) -> String:
 	# Names and quantities are deliberately rendered separately.
 	# Putting both into one ItemList string makes Godot replace the clipped
 	# right edge with "..." when the row is wider than the control.

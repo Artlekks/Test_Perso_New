@@ -1,102 +1,79 @@
 extends Node3D
 
-## Presentation-only 3-segment lure rig.
+## Articulated pixel presentation for the lure.
 ##
-## The parent bait node still owns ALL real cast/sink/reel/fight movement.
-## This rig only turns and positions three visual segments so they trail with
-## progressively more delay, producing an articulated / snake-like motion.
+## IMPORTANT ARCHITECTURE:
+## - Parent Bait still owns every real 3D position/physics/reel/fight value.
+## - Camera is READ ONLY. This script never changes a camera transform.
+## - Fishing controller is not referenced.
+## - These Sprite3D pieces are presentation only.
+##
+## This preserves the previous three-piece lure behavior:
+## head responds fastest, middle follows, tail lags behind.
 
 @onready var segment_01: Node3D = $Segment01
 @onready var segment_02: Node3D = $Segment02
 @onready var segment_03: Node3D = $Segment03
 
-@onready var segment_01_mesh: MeshInstance3D = $Segment01/Mesh
-@onready var segment_02_mesh: MeshInstance3D = $Segment02/Mesh
-@onready var segment_03_mesh: MeshInstance3D = $Segment03/Mesh
+@onready var head_sprite: Sprite3D = $Segment01/Sprite
+@onready var middle_sprite: Sprite3D = $Segment02/Sprite
+@onready var tail_sprite: Sprite3D = $Segment03/Sprite
 
 @export_category("Directional Response")
 @export var motion_threshold: float = 0.015
 
-## Head reacts fastest, tail reacts slowest.
+## Head reacts fastest; tail retains the old delayed articulated feel.
 @export var head_turn_speed: float = 14.0
 @export var middle_turn_speed: float = 7.5
 @export var tail_turn_speed: float = 4.5
 
-## Even while moving, retain some influence from the fishing line so the lure
-## still feels attached rather than behaving like a free projectile.
+## Moving lure still receives a little line influence, keeping it attached to
+## Ryu rather than reading like an independent projectile.
 @export_range(0.0, 0.75, 0.05)
 var line_alignment_weight: float = 0.20
 
-@export_category("Cast Speed Lines")
-@export var cast_speed_lines_enabled: bool = true
-@export_range(0.0, 20.0, 0.1)
-var cast_speed_lines_min_speed: float = 1.0
-@export_range(0.02, 0.50, 0.01)
-var cast_speed_lines_length: float = 0.18
-@export_range(0.0, 0.20, 0.005)
-var cast_speed_lines_spread: float = 0.035
-@export var cast_speed_lines_color: Color = Color(1.0, 1.0, 1.0, 0.55)
+@export_category("Pixel Chain")
+## Screen-space piece lengths. The sprite images themselves are 8/7/6 pixels.
+@export_range(3.0, 16.0, 0.5)
+var head_length_px: float = 8.0
+@export_range(3.0, 16.0, 0.5)
+var middle_length_px: float = 7.0
+@export_range(3.0, 16.0, 0.5)
+var tail_length_px: float = 6.0
+@export_range(-2.0, 4.0, 0.25)
+var segment_gap_px: float = -1.0
 
-@export_category("Chain Geometry")
-## Total visible length stays close to the previous single-piece lure.
-@export var segment_length: float = 0.058
-@export var segment_gap: float = 0.003
+## Set to 0 for fully smooth angular response. A small number such as 32 keeps
+## a subtle sprite-like stepping without destroying articulation.
+@export_range(0, 64, 1)
+var rotation_steps: int = 32
 
 @export_category("Surface Attitude")
-## Close to the water surface, keep the whole articulated lure broadly flat.
 @export_range(0.01, 1.0, 0.01)
 var surface_flatten_depth: float = 0.15
-
-## Small amount of pitch retained right at the surface.
 @export_range(0.0, 0.75, 0.05)
 var surface_vertical_influence: float = 0.10
 
 @export_category("Underwater Attitude")
-## Even when sinking/reeling vertically, keep the lure mostly horizontal,
-## like a small submarine rather than a dart pointing straight down.
 @export_range(0.0, 45.0, 1.0)
 var max_underwater_pitch_degrees: float = 18.0
 
 @export_category("Depth Readability")
-## Presentation only. At this depth the lure reaches its full underwater fade.
-## Slightly shorter than Pass 1 so the depth cue becomes obvious sooner.
 @export_range(0.25, 8.0, 0.05)
 var full_depth_visual_fade_distance: float = 2.35
-
-## Lower than 1.0 makes the depth cue appear earlier; higher delays it.
 @export_range(0.25, 2.5, 0.05)
 var depth_visual_curve_power: float = 0.62
-
-## Preserve the lure color authored in the bait scene/material at the surface.
-## This prevents the readability system from replacing an orange/yellow lure with
-## a hard-coded presentation color.
-@export var preserve_material_surface_color: bool = true
-
-## Used only when preserve_material_surface_color is disabled.
-@export var surface_visual_color_override: Color = Color(1.0, 0.58, 0.10, 0.95)
-
-## At maximum visual depth, darken the authored surface color toward black while
-## keeping its hue family (orange stays dark orange rather than becoming blue).
 @export_range(0.0, 0.95, 0.01)
-var deep_darkening_amount: float = 0.72
-
-## Extra alpha loss at maximum visual depth. Combined with the stronger darkening,
-## this makes a deep lure visibly read as underwater without making it disappear.
+var deep_darkening_amount: float = 0.68
 @export_range(0.10, 1.0, 0.01)
-var deep_alpha_multiplier: float = 0.48
+var deep_alpha_multiplier: float = 0.52
 
 var _bait: Node3D = null
-var _visual_material: StandardMaterial3D = null
-var _surface_base_color: Color = Color.WHITE
 var _previous_world_position: Vector3 = Vector3.ZERO
 
 var _head_direction: Vector3 = Vector3.FORWARD
 var _middle_direction: Vector3 = Vector3.FORWARD
 var _tail_direction: Vector3 = Vector3.FORWARD
-
-var _cast_speed_line_mesh: ImmediateMesh = null
-var _cast_speed_line_instance: MeshInstance3D = null
-var _cast_speed_line_material: StandardMaterial3D = null
 
 
 func _ready() -> void:
@@ -106,13 +83,9 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 
-	_prepare_visual_material()
-	_prepare_cast_speed_lines()
-	_update_depth_readability()
-
 	_previous_world_position = _bait.global_position
 
-	var initial_direction := _get_line_direction()
+	var initial_direction: Vector3 = _get_line_direction()
 
 	if initial_direction.length_squared() < 0.0001:
 		initial_direction = Vector3.FORWARD
@@ -121,57 +94,63 @@ func _ready() -> void:
 		initial_direction,
 		_bait.global_position
 	)
-
-	initial_direction = _limit_vertical_pitch(
-		initial_direction
-	)
+	initial_direction = _limit_vertical_pitch(initial_direction)
 
 	_head_direction = initial_direction.normalized()
 	_middle_direction = _head_direction
 	_tail_direction = _head_direction
 
-	_place_chain()
+	_place_pixel_chain()
+	_update_depth_readability()
 
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(_bait):
 		return
 
-	var current_world_position := _bait.global_position
-	var world_motion := (
+	var current_world_position: Vector3 = _bait.global_position
+	var world_motion: Vector3 = (
 		current_world_position
 		- _previous_world_position
 	)
 	_previous_world_position = current_world_position
 
-	var desired_direction := Vector3.ZERO
-	var movement_speed := (
+	var movement_speed: float = (
 		world_motion.length()
 		/ maxf(delta, 0.0001)
 	)
 
-	var line_direction := _get_line_direction()
-	var is_flying := _is_bait_cast_flying()
+	var desired_direction: Vector3 = Vector3.ZERO
+	var line_direction: Vector3 = _get_line_direction()
+	var is_flying: bool = _is_bait_cast_flying()
 
 	if is_flying:
-		# While airborne, the lure points along the actual throw vector.
-		# The fishing line does not pull its nose back toward the player yet.
-		var flight_velocity := _get_bait_visual_velocity()
+		# Throw: nose follows the actual cast velocity exactly as the old visual.
+		var flight_velocity: Vector3 = _get_bait_visual_velocity()
+
 		if flight_velocity.length_squared() > 0.0001:
 			desired_direction = flight_velocity.normalized()
 		elif movement_speed >= motion_threshold:
 			desired_direction = world_motion.normalized()
 		else:
 			desired_direction = _head_direction
+
 	elif movement_speed >= motion_threshold:
+		# Reeling/fight: actual motion leads, fishing line bends the nose back
+		# toward Ryu. This restores the old "head turns toward character" feel.
 		desired_direction = world_motion.normalized()
+
 		if line_direction.length_squared() > 0.0001:
 			desired_direction = (
 				desired_direction * (1.0 - line_alignment_weight)
 				+ line_direction * line_alignment_weight
 			).normalized()
+
 	elif line_direction.length_squared() > 0.0001:
+		# When barely moving, point toward the rod/player instead of freezing in
+		# one texture orientation.
 		desired_direction = line_direction
+
 	else:
 		desired_direction = _head_direction
 
@@ -182,10 +161,7 @@ func _physics_process(delta: float) -> void:
 		desired_direction,
 		current_world_position
 	)
-
-	desired_direction = _limit_vertical_pitch(
-		desired_direction
-	)
+	desired_direction = _limit_vertical_pitch(desired_direction)
 
 	_head_direction = _follow_direction(
 		_head_direction,
@@ -208,254 +184,168 @@ func _physics_process(delta: float) -> void:
 		delta
 	)
 
-	_place_chain()
+	_place_pixel_chain()
 	_update_depth_readability()
 
 
-func _is_bait_cast_flying() -> bool:
-	if _bait == null or not _bait.has_method("is_cast_flying"):
-		return false
-	return bool(_bait.is_cast_flying())
+func _place_pixel_chain() -> void:
+	if not is_instance_valid(_bait):
+		return
+
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera == null:
+		return
+
+	if camera.is_position_behind(_bait.global_position):
+		return
+
+	var front_screen: Vector2 = camera.unproject_position(
+		_bait.global_position
+	)
+
+	var camera_local_position: Vector3 = (
+		camera.global_transform.affine_inverse()
+		* _bait.global_position
+	)
+	var depth: float = maxf(-camera_local_position.z, 0.01)
+
+	front_screen = _place_pixel_segment(
+		segment_01,
+		head_sprite,
+		front_screen,
+		_head_direction,
+		head_length_px,
+		camera,
+		depth
+	)
+
+	front_screen = _place_pixel_segment(
+		segment_02,
+		middle_sprite,
+		front_screen,
+		_middle_direction,
+		middle_length_px,
+		camera,
+		depth
+	)
+
+	_place_pixel_segment(
+		segment_03,
+		tail_sprite,
+		front_screen,
+		_tail_direction,
+		tail_length_px,
+		camera,
+		depth
+	)
 
 
-func _get_bait_visual_velocity() -> Vector3:
-	if _bait == null or not _bait.has_method("get_visual_velocity"):
-		return Vector3.ZERO
-	return Vector3(_bait.get_visual_velocity())
-
-
-func _prepare_cast_speed_lines() -> void:
-	_cast_speed_line_mesh = ImmediateMesh.new()
-	_cast_speed_line_instance = MeshInstance3D.new()
-	_cast_speed_line_instance.name = "CastSpeedLines"
-	_cast_speed_line_instance.mesh = _cast_speed_line_mesh
-	_cast_speed_line_instance.visible = false
-	_cast_speed_line_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_cast_speed_line_instance)
-
-	_cast_speed_line_material = StandardMaterial3D.new()
-	_cast_speed_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_cast_speed_line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_cast_speed_line_material.vertex_color_use_as_albedo = true
-	_cast_speed_line_material.no_depth_test = true
-
-
-func _update_cast_speed_lines(
-	is_flying: bool,
-	flight_velocity: Vector3,
-	world_position: Vector3
-) -> void:
+func _place_pixel_segment(
+	segment: Node3D,
+	sprite: Sprite3D,
+	front_joint_screen: Vector2,
+	world_direction: Vector3,
+	length_px: float,
+	camera: Camera3D,
+	depth: float
+) -> Vector2:
 	if (
-		not cast_speed_lines_enabled
-		or not is_flying
-		or flight_velocity.length() < cast_speed_lines_min_speed
+		not is_instance_valid(segment)
+		or not is_instance_valid(sprite)
+		or world_direction.length_squared() < 0.0001
 	):
-		_cast_speed_line_instance.visible = false
-		_cast_speed_line_mesh.clear_surfaces()
-		return
+		return front_joint_screen
 
-	var direction := flight_velocity.normalized()
-	var side := direction.cross(Vector3.UP)
-	if side.length_squared() < 0.0001:
-		side = Vector3.RIGHT
-	else:
-		side = side.normalized()
+	var direction_screen: Vector2 = _project_direction_to_screen(
+		camera,
+		world_direction
+	)
 
-	var local_up := side.cross(direction)
-	if local_up.length_squared() < 0.0001:
-		local_up = Vector3.UP
-	else:
-		local_up = local_up.normalized()
+	if direction_screen.length_squared() < 0.0001:
+		return front_joint_screen
 
-	_cast_speed_line_instance.global_transform = Transform3D(
+	direction_screen = direction_screen.normalized()
+
+	var center_screen: Vector2 = (
+		front_joint_screen
+		- direction_screen * (length_px * 0.5)
+	)
+
+	# Segment transform is written in WORLD space with identity basis. This
+	# prevents parent Bait scaling/rotation from turning the pixel cards into 3D.
+	var center_world: Vector3 = camera.project_position(
+		center_screen,
+		depth
+	)
+	segment.global_transform = Transform3D(
 		Basis.IDENTITY,
-		world_position
+		center_world
 	)
 
-	_cast_speed_line_mesh.clear_surfaces()
-	_cast_speed_line_mesh.surface_begin(
-		Mesh.PRIMITIVE_LINES,
-		_cast_speed_line_material
+	var target_angle: float = atan2(
+		-direction_screen.y,
+		direction_screen.x
 	)
 
-	var offsets: Array[Vector3] = [
-		side * cast_speed_lines_spread,
-		-side * cast_speed_lines_spread,
-		local_up * cast_speed_lines_spread * 0.65,
-	]
+	if rotation_steps > 0:
+		var angle_step: float = TAU / float(rotation_steps)
+		target_angle = round(target_angle / angle_step) * angle_step
 
-	for line_index in range(offsets.size()):
-		var line_scale := 1.0 - float(line_index) * 0.16
-		var offset: Vector3 = offsets[line_index]
-		var front := -direction * cast_speed_lines_length * 0.18 + offset
-		var back := -direction * cast_speed_lines_length * line_scale + offset
-		var line_color := cast_speed_lines_color
-		line_color.a *= line_scale
-		_cast_speed_line_mesh.surface_set_color(line_color)
-		_cast_speed_line_mesh.surface_add_vertex(front)
-		_cast_speed_line_mesh.surface_add_vertex(back)
-
-	_cast_speed_line_mesh.surface_end()
-	_cast_speed_line_instance.visible = true
-
-
-func _prepare_visual_material() -> void:
-	var source_material: Material = segment_01_mesh.get_active_material(0)
-
-	if source_material is StandardMaterial3D:
-		_visual_material = source_material.duplicate() as StandardMaterial3D
-	else:
-		_visual_material = StandardMaterial3D.new()
-		_visual_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		_visual_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-
-	# One duplicated material is intentionally shared by the three visual pieces
-	# of THIS bait instance only. It cannot recolor other active baits/scenes.
-	segment_01_mesh.set_surface_override_material(0, _visual_material)
-	segment_02_mesh.set_surface_override_material(0, _visual_material)
-	segment_03_mesh.set_surface_override_material(0, _visual_material)
-
-	# Capture the authored lure color once. Depth presentation should modulate the
-	# artist/user-selected color, never replace it with a hard-coded hue.
-	if preserve_material_surface_color:
-		_surface_base_color = _visual_material.albedo_color
-	else:
-		_surface_base_color = surface_visual_color_override
-
-
-func _update_depth_readability() -> void:
-	if _visual_material == null or not is_instance_valid(_bait):
-		return
-
-	if not _bait.has_method("get_water_surface_y"):
-		_visual_material.albedo_color = _surface_base_color
-		return
-
-	var water_surface_y: float = float(_bait.get_water_surface_y())
-	var depth_below_surface: float = maxf(
-		water_surface_y - _bait.global_position.y,
-		0.0
-	)
-
-	var normalized_depth: float = clampf(
-		depth_below_surface / maxf(full_depth_visual_fade_distance, 0.001),
+	sprite.rotation = Vector3(
 		0.0,
-		1.0
+		0.0,
+		target_angle
 	)
 
-	var depth_blend: float = pow(
-		normalized_depth,
-		maxf(depth_visual_curve_power, 0.01)
+	return (
+		center_screen
+		- direction_screen
+		* (length_px * 0.5 + segment_gap_px)
 	)
 
-	var deep_color: Color = _surface_base_color.darkened(deep_darkening_amount)
-	deep_color.a = _surface_base_color.a * deep_alpha_multiplier
 
-	_visual_material.albedo_color = _surface_base_color.lerp(
-		deep_color,
-		depth_blend
+func _project_direction_to_screen(
+	camera: Camera3D,
+	world_direction: Vector3
+) -> Vector2:
+	var origin_world: Vector3 = _bait.global_position
+	var tip_world: Vector3 = (
+		origin_world
+		+ world_direction.normalized() * 0.5
 	)
+
+	var origin_screen: Vector2 = camera.unproject_position(
+		origin_world
+	)
+	var tip_screen: Vector2 = camera.unproject_position(
+		tip_world
+	)
+
+	return tip_screen - origin_screen
 
 
 func _follow_direction(
 	current: Vector3,
-	target: Vector3,
+	target_direction: Vector3,
 	speed: float,
 	delta: float
 ) -> Vector3:
-	if target.length_squared() < 0.0001:
+	if target_direction.length_squared() < 0.0001:
 		return current
 
 	if current.length_squared() < 0.0001:
-		return target.normalized()
+		return target_direction.normalized()
 
-	var follow_weight := clampf(
+	var follow_weight: float = clampf(
 		1.0 - exp(-speed * delta),
 		0.0,
 		1.0
 	)
 
 	return current.slerp(
-		target.normalized(),
+		target_direction.normalized(),
 		follow_weight
 	).normalized()
-
-
-func _place_chain() -> void:
-	if not is_instance_valid(_bait):
-		return
-
-	# Treat the bait's physical point as the line attachment at the FRONT of
-	# segment 1. Every later segment is chained from the previous segment's tail.
-	var joint_position := _bait.global_position
-
-	joint_position = _place_segment(
-		segment_01,
-		joint_position,
-		_head_direction
-	)
-
-	joint_position = _place_segment(
-		segment_02,
-		joint_position,
-		_middle_direction
-	)
-
-	_place_segment(
-		segment_03,
-		joint_position,
-		_tail_direction
-	)
-
-
-func _place_segment(
-	segment: Node3D,
-	front_joint: Vector3,
-	direction: Vector3
-) -> Vector3:
-	if not is_instance_valid(segment):
-		return front_joint
-
-	var safe_direction := direction.normalized()
-	var segment_basis := _basis_from_direction(safe_direction)
-
-	# Local -Z is the wide/front end of each piece.
-	# Therefore the segment center sits behind the front joint.
-	var center := (
-		front_joint
-		- safe_direction
-		* (segment_length * 0.5)
-	)
-
-	segment.global_transform = Transform3D(
-		segment_basis,
-		center
-	)
-
-	var tail_joint := (
-		center
-		- safe_direction
-		* (segment_length * 0.5)
-	)
-
-	# Tiny separation makes the three-piece articulation readable.
-	return (
-		tail_joint
-		- safe_direction
-		* segment_gap
-	)
-
-
-func _basis_from_direction(direction: Vector3) -> Basis:
-	var safe_up := Vector3.UP
-
-	if absf(direction.dot(Vector3.UP)) > 0.96:
-		safe_up = Vector3.FORWARD
-
-	return Basis.looking_at(
-		direction,
-		safe_up
-	).orthonormalized()
 
 
 func _apply_surface_attitude(
@@ -472,12 +362,12 @@ func _apply_surface_attitude(
 		_bait.get_water_surface_y()
 	)
 
-	var depth_below_surface := maxf(
+	var depth_below_surface: float = maxf(
 		water_y - world_position.y,
 		0.0
 	)
 
-	var depth_blend := clampf(
+	var depth_blend: float = clampf(
 		depth_below_surface
 		/ maxf(surface_flatten_depth, 0.001),
 		0.0,
@@ -487,14 +377,14 @@ func _apply_surface_attitude(
 	if depth_blend >= 1.0:
 		return direction.normalized()
 
-	var horizontal := Vector3(
+	var horizontal: Vector3 = Vector3(
 		direction.x,
 		0.0,
 		direction.z
 	)
 
 	if horizontal.length_squared() < 0.0001:
-		var line_direction := _get_line_direction()
+		var line_direction: Vector3 = _get_line_direction()
 		horizontal = Vector3(
 			line_direction.x,
 			0.0,
@@ -509,15 +399,14 @@ func _apply_surface_attitude(
 		)
 
 	if horizontal.length_squared() < 0.0001:
-		horizontal = Vector3.FORWARD
+		return direction.normalized()
 
 	horizontal = horizontal.normalized()
 
-	var surface_direction := (
-		horizontal
-		+ Vector3.UP
-		* direction.y
-		* surface_vertical_influence
+	var surface_direction: Vector3 = Vector3(
+		horizontal.x,
+		direction.y * surface_vertical_influence,
+		horizontal.z
 	).normalized()
 
 	return surface_direction.slerp(
@@ -526,27 +415,16 @@ func _apply_surface_attitude(
 	).normalized()
 
 
-
 func _limit_vertical_pitch(direction: Vector3) -> Vector3:
 	if direction.length_squared() < 0.0001:
 		return direction
 
-	var normalized := direction.normalized()
-	var horizontal := Vector3(
+	var normalized: Vector3 = direction.normalized()
+	var horizontal: Vector3 = Vector3(
 		normalized.x,
 		0.0,
 		normalized.z
 	)
-
-	# A pure vertical sink has no heading of its own. Borrow the line heading
-	# so the lure can descend while still reading as a horizontal object.
-	if horizontal.length_squared() < 0.0001:
-		var line_direction := _get_line_direction()
-		horizontal = Vector3(
-			line_direction.x,
-			0.0,
-			line_direction.z
-		)
 
 	if horizontal.length_squared() < 0.0001:
 		horizontal = Vector3(
@@ -560,33 +438,20 @@ func _limit_vertical_pitch(direction: Vector3) -> Vector3:
 
 	horizontal = horizontal.normalized()
 
-	var max_pitch_radians := deg_to_rad(
-		clampf(
-			max_underwater_pitch_degrees,
-			0.0,
-			89.0
-		)
+	var max_vertical: float = tan(
+		deg_to_rad(max_underwater_pitch_degrees)
 	)
 
-	var requested_pitch := asin(
-		clampf(
-			normalized.y,
-			-1.0,
-			1.0
-		)
+	var limited_y: float = clampf(
+		normalized.y,
+		-max_vertical,
+		max_vertical
 	)
 
-	var limited_pitch := clampf(
-		requested_pitch,
-		-max_pitch_radians,
-		max_pitch_radians
-	)
-
-	var horizontal_scale := cos(limited_pitch)
-
-	return (
-		horizontal * horizontal_scale
-		+ Vector3.UP * sin(limited_pitch)
+	return Vector3(
+		horizontal.x,
+		limited_y,
+		horizontal.z
 	).normalized()
 
 
@@ -614,3 +479,70 @@ func _get_line_direction() -> Vector3:
 		return Vector3.ZERO
 
 	return direction.normalized()
+
+
+func _is_bait_cast_flying() -> bool:
+	if (
+		_bait == null
+		or not _bait.has_method("is_cast_flying")
+	):
+		return false
+
+	return bool(_bait.is_cast_flying())
+
+
+func _get_bait_visual_velocity() -> Vector3:
+	if (
+		_bait == null
+		or not _bait.has_method("get_visual_velocity")
+	):
+		return Vector3.ZERO
+
+	return Vector3(
+		_bait.get_visual_velocity()
+	)
+
+
+func _update_depth_readability() -> void:
+	if not is_instance_valid(_bait):
+		return
+
+	var color: Color = Color.WHITE
+
+	if _bait.has_method("get_water_surface_y"):
+		var water_surface_y: float = float(
+			_bait.get_water_surface_y()
+		)
+
+		var depth_below_surface: float = maxf(
+			water_surface_y - _bait.global_position.y,
+			0.0
+		)
+
+		var normalized_depth: float = clampf(
+			depth_below_surface
+			/ maxf(full_depth_visual_fade_distance, 0.001),
+			0.0,
+			1.0
+		)
+
+		var depth_blend: float = pow(
+			normalized_depth,
+			maxf(depth_visual_curve_power, 0.01)
+		)
+
+		var deep_color: Color = Color(
+			1.0 - deep_darkening_amount,
+			1.0 - deep_darkening_amount,
+			1.0 - deep_darkening_amount,
+			deep_alpha_multiplier
+		)
+
+		color = Color.WHITE.lerp(
+			deep_color,
+			depth_blend
+		)
+
+	head_sprite.modulate = color
+	middle_sprite.modulate = color
+	tail_sprite.modulate = color

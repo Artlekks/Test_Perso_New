@@ -288,7 +288,7 @@ static func update_data_scroll_thumb(menu) -> void:
 	menu.data_scroll_thumb.position.y = roundf(lerpf(track_top_y, track_bottom_y, ratio))
 
 
-static func get_primary_location_name(menu, entry: Dictionary) -> String:
+static func get_primary_location_name(_menu, entry: Dictionary) -> String:
 	var preferred_fields: PackedStringArray = [
 		"best_size_spot_name",
 		"best_points_spot_name",
@@ -312,7 +312,7 @@ static func get_primary_location_name(menu, entry: Dictionary) -> String:
 	return "---"
 
 
-static func join_location_names(menu, entry: Dictionary) -> String:
+static func join_location_names(_menu, entry: Dictionary) -> String:
 	var names: PackedStringArray = PackedStringArray()
 	var raw_locations: Variant = entry.get("locations", [])
 	if raw_locations is Array:
@@ -328,7 +328,7 @@ static func join_location_names(menu, entry: Dictionary) -> String:
 	return ", ".join(names) if not names.is_empty() else "---"
 
 
-static func join_lure_names(menu, entry: Dictionary) -> String:
+static func join_lure_names(_menu, entry: Dictionary) -> String:
 	var names: PackedStringArray = PackedStringArray()
 	var raw_successful: Variant = entry.get("successful_lures", [])
 	if raw_successful is Array:

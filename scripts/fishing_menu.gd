@@ -293,16 +293,20 @@ var _equip_focus: int = EquipFocus.SLOT
 var _equip_slot_index: int = 0
 var _equip_accessory_index: int = 0
 var _equip_window_start: int = 0
+@warning_ignore("unused_private_class_variable")
 var _equip_quantity_labels: Array[Label] = []
 var _equip_entries: Array[Dictionary] = []
 var _data_index: int = 0
+@warning_ignore("unused_private_class_variable")
 var _data_window_start: int = 0
 var _data_entries: Array[Dictionary] = []
 var _data_detail_open: bool = false
 var _help_index: int = 0
 var _hint_index: int = 0
 var _hint_detail_open: bool = false
+@warning_ignore("unused_private_class_variable")
 var _hint_text_lines: Array[String] = []
+@warning_ignore("unused_private_class_variable")
 var _hint_text_line_start: int = 0
 var _exit_index: int = 1
 var _pause_was_active: bool = false

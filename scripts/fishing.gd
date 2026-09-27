@@ -6,6 +6,9 @@ const FishingSessionServicesScript = preload(
 const FishingDebugControllerScript = preload(
 	"res://scripts/fishing_debug_controller.gd"
 )
+const FishingPauseControllerScript = preload(
+	"res://scripts/fishing_pause_controller.gd"
+)
 
 const FishingMenuScene = preload(
 	"res://actors/FishingMenu.tscn"
@@ -131,6 +134,10 @@ var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
 
 func _ready() -> void:
+	var pause_controller := FishingPauseControllerScript.new()
+	pause_controller.name = "FishingPauseController"
+	add_child(pause_controller)
+
 	game_mode.mode_changed.connect(_on_mode_changed)
 	aim.aim_changed.connect(_on_aim_changed)
 	caster.bait_landed.connect(_on_bait_landed)
