@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"ocean_2_whale"
+display_name = "Two Rocks Left"
+hotspot_tag = &"whale_rocks"
+center_uv = Vector2(0.28, 0.9)
+radius_uv = Vector2(0.22, 0.16)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.82
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.55
+species_weight_multiplier = 3.1
+species_ids = PackedStringArray("whale")
+source_distance_m = 33.0
+source_note = "Guide: Whale is most common between the two rocks about 33m out to the left."
+placement_note = "Far-left/deep V1 mapping in the current Ocean 2 bounds. Final art pass should align it exactly between the two rock landmarks."

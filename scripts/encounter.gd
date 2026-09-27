@@ -129,6 +129,8 @@ var fight_state: int = FightState.NONE
 var rounds_remaining: int = 0
 var recovery_time_left: float = 0.0
 var fish_population: Array[FishSpawnEntry] = []
+var fish_zone: Node = null
+var last_spatial_context: Dictionary = {}
 var pending_fish_entry: FishSpawnEntry = null
 var pending_shadow: Node = null
 var active_fight_shadow: Node = null
@@ -185,6 +187,7 @@ func _on_bait_returned() -> void:
 	pending_fish_entry = null
 	pending_shadow = null
 	active_bait_data = null
+	last_spatial_context.clear()
 	_reset_technique()
 	tension.stop()
 	
@@ -206,6 +209,11 @@ func _on_bite_timer_timeout() -> void:
 		pending_fish_entry.fish = forced_fish
 		pending_fish_entry.weight = 1.0
 	else:
+		var spatial_context: Dictionary = (
+			_get_spatial_context()
+		)
+		last_spatial_context = spatial_context.duplicate(true)
+
 		var shadow_candidate := _get_visible_shadow_candidate()
 
 		# If a visible fish is actively performing the pre-bite sequence but has
@@ -220,13 +228,17 @@ func _on_bite_timer_timeout() -> void:
 			active_bait_data,
 			caster.get_current_bait_depth(),
 			caster.get_current_total_depth(),
-			caster.is_active_bait_reeling()
+			caster.is_active_bait_reeling(),
+			spatial_context
 		)
 
 		var bite_chance := (
 			attraction
 			* max_bite_chance_per_check
 			* _get_tech_attraction_multiplier()
+			* _get_spatial_bite_density_multiplier(
+				spatial_context
+			)
 		)
 
 		if shadow_candidate != null:
@@ -263,7 +275,8 @@ func _on_bite_timer_timeout() -> void:
 				active_bait_data,
 				caster.get_current_bait_depth(),
 				caster.get_current_total_depth(),
-				caster.is_active_bait_reeling()
+				caster.is_active_bait_reeling(),
+				spatial_context
 			)
 
 	if (
@@ -918,8 +931,56 @@ func _get_fight_state_label() -> String:
 func set_fish_population(entries: Array[FishSpawnEntry]) -> void:
 	fish_population = entries.duplicate()
 
+
+func set_fish_zone(new_zone: Node) -> void:
+	fish_zone = new_zone
+	last_spatial_context.clear()
+
+
 func set_active_bait_data(bait_data: BaitData) -> void:
 	active_bait_data = bait_data
+
+func _get_spatial_context() -> Dictionary:
+	if (
+		fish_zone == null
+		or caster == null
+		or not fish_zone.has_method(
+			"get_concentration_snapshot"
+		)
+		or not caster.has_method(
+			"get_active_bait_world_position"
+		)
+	):
+		return {}
+
+	return fish_zone.get_concentration_snapshot(
+		caster.get_active_bait_world_position(),
+		caster.get_current_bait_depth(),
+		caster.get_current_total_depth()
+	)
+
+
+func _get_spatial_bite_density_multiplier(
+	spatial_context: Dictionary
+) -> float:
+	if spatial_context.is_empty():
+		return 1.0
+
+	return clampf(
+		float(
+			spatial_context.get(
+				"bite_density_multiplier",
+				1.0
+			)
+		),
+		0.25,
+		2.0
+	)
+
+
+func get_spatial_debug_snapshot() -> Dictionary:
+	return last_spatial_context.duplicate(true)
+
 
 func apply_technique(level: int) -> void:
 	if technique_catalog == null:

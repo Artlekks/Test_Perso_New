@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"ocean_3_angler"
+display_name = "Rock Peninsula / Second Buoy"
+hotspot_tag = &"angler_buoy"
+center_uv = Vector2(0.77, 0.44)
+radius_uv = Vector2(0.19, 0.2)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.72
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.48
+species_weight_multiplier = 2.9
+species_ids = PackedStringArray("angler")
+source_distance_m = 15.0
+source_note = "Guide/community notes: cast from the rock peninsula toward the second buoy from the right; roughly 10-15m and deep."
+placement_note = "Right-side V1 mapping; align with the final peninsula/buoy landmarks later."

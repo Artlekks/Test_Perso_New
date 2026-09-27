@@ -1,5 +1,9 @@
 extends Area3D
 
+const FishingConcentrationFieldScript = preload(
+	"res://scripts/fishing_concentration_field.gd"
+)
+
 signal fishing_spot_changed(spot: FishingSpotData)
 
 @export var facing_tolerance_degrees: float = 60.0
@@ -10,6 +14,14 @@ signal fishing_spot_changed(spot: FishingSpotData)
 @onready var water_bottom: Node3D = $WaterBottom
 @onready var swim_bounds: Node = get_node_or_null("FishSwimBounds")
 @onready var shadow_presence: Node = get_node_or_null("FishShadowPresence")
+
+var concentration_field: FishingConcentrationField = (
+	FishingConcentrationFieldScript.new()
+)
+
+
+func _ready() -> void:
+	_rebuild_concentration_field()
 
 
 func can_player_fish(player: Node3D) -> bool:
@@ -56,6 +68,7 @@ func get_fishing_spot() -> FishingSpotData:
 
 func set_fishing_spot(new_spot: FishingSpotData) -> void:
 	fishing_spot = new_spot
+	_rebuild_concentration_field()
 
 	if shadow_presence != null and shadow_presence.has_method("rebuild_population"):
 		shadow_presence.rebuild_population()
@@ -103,6 +116,47 @@ func get_shadow_population_debug_counts() -> Vector2i:
 	return Vector2i.ZERO
 
 
+func get_concentration_snapshot(
+	world_position: Vector3,
+	current_depth: float,
+	total_depth: float
+) -> Dictionary:
+	if concentration_field == null:
+		return {}
+
+	return concentration_field.sample(
+		world_position,
+		current_depth,
+		total_depth
+	)
+
+
+func get_fish_radar_snapshot(
+	world_position: Vector3
+) -> Dictionary:
+	if concentration_field == null:
+		return {
+			"dot_count": 0,
+			"dots": [],
+		}
+
+	return concentration_field.build_radar_snapshot(
+		world_position
+	)
+
+
+func _rebuild_concentration_field() -> void:
+	if concentration_field == null:
+		concentration_field = (
+			FishingConcentrationFieldScript.new()
+		)
+
+	concentration_field.configure(
+		fishing_spot,
+		swim_bounds as FishSwimBounds
+	)
+
+
 func get_spot_debug_snapshot() -> Dictionary:
 	if fishing_spot == null:
 		return {
@@ -117,4 +171,6 @@ func get_spot_debug_snapshot() -> Dictionary:
 		"summary": fishing_spot.get_debug_summary(),
 		"water_depth_m": get_water_depth(),
 		"species": fishing_spot.get_population_species_names(),
+		"hotspot_count": fishing_spot.get_hotspot_count(),
+		"baseline_concentration": fishing_spot.baseline_concentration,
 	}

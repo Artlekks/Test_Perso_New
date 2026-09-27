@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"ocean_3_deep"
+display_name = "Deep Water"
+hotspot_tag = &"deep_water"
+center_uv = Vector2(0.5, 0.66)
+radius_uv = Vector2(0.55, 0.5)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.68
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.28
+species_weight_multiplier = 1.45
+species_ids = PackedStringArray("angler", "bonito", "octopus")
+source_distance_m = 0.0
+source_note = "Fishing spot sign: \"The really big fish are close to the bottom!\""
+placement_note = "Broad depth-driven hotspot; horizontal placement intentionally covers most fishable water."

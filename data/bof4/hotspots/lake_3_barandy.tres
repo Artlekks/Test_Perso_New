@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"lake_3_barandy"
+display_name = "Straight Out From Dock"
+hotspot_tag = &"barandy_deep"
+center_uv = Vector2(0.5, 0.88)
+radius_uv = Vector2(0.22, 0.18)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.78
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.48
+species_weight_multiplier = 2.85
+species_ids = PackedStringArray("barandy")
+source_distance_m = 30.0
+source_note = "Guide: Barandy is most common straight out from the dock around 30m."
+placement_note = "Far-center V1 mapping. Align with the final dock/cast axis later."

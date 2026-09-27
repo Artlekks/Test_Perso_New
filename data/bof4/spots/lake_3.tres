@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://dg875bx0em5p5"]
 
 [ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" uid="uid://cj8wqhyprxqa" path="res://scripts/database/fishing_hotspot_definition.gd" id="2_1awf8"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
 [ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://b5bkqnl3ydvpj" path="res://data/bof4/fish/black_bass.tres" id="4_fish"]
@@ -10,6 +11,9 @@
 [ext_resource type="Resource" uid="uid://ch2n7oqjaly1d" path="res://data/bof4/fish/dorado.tres" id="8_fish"]
 [ext_resource type="Resource" uid="uid://df6addq6bwaf3" path="res://data/bof4/fish/barandy.tres" id="9_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/lake_3.tres" id="ambient_profile"]
+[ext_resource type="Resource" path="res://data/bof4/hotspots/lake_3_marsh.tres" id="hotspot_1"]
+[ext_resource type="Resource" path="res://data/bof4/hotspots/lake_3_barandy.tres" id="hotspot_2"]
+[ext_resource type="Resource" path="res://data/bof4/hotspots/lake_3_dorado.tres" id="hotspot_3"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
@@ -56,6 +60,7 @@ spot_name = "Lake 3"
 location_description = "North of Chiqua"
 water_type = 1
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4"), SubResource("FishSpawnEntry_5"), SubResource("FishSpawnEntry_6"), SubResource("FishSpawnEntry_7")])
+concentration_hotspots = Array[ExtResource("2_1awf8")]([ExtResource("hotspot_1"), ExtResource("hotspot_2"), ExtResource("hotspot_3")])
 ambient_profile = ExtResource("ambient_profile")
 strategy_notes = "Barandy is the deep rare target."
 depth_notes = "Medium-Deep; deep water for Barandy."

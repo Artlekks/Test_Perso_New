@@ -517,6 +517,17 @@ func _on_mode_changed(new_mode) -> void:
 		if technique_detector != null:
 			technique_detector.reset()
 
+		if encounter.has_method("set_fish_zone"):
+			encounter.set_fish_zone(null)
+
+		if (
+			depth_meter_view != null
+			and depth_meter_view.has_method(
+				"set_fish_zone"
+			)
+		):
+			depth_meter_view.set_fish_zone(null)
+
 		if technique_view != null:
 			technique_view.clear()
 
@@ -538,6 +549,17 @@ func _on_mode_changed(new_mode) -> void:
 		encounter.set_fish_population(
 			zone.get_fish_population()
 		)
+
+		if encounter.has_method("set_fish_zone"):
+			encounter.set_fish_zone(zone)
+
+		if (
+			depth_meter_view != null
+			and depth_meter_view.has_method(
+				"set_fish_zone"
+			)
+		):
+			depth_meter_view.set_fish_zone(zone)
 
 		if debug_controller != null:
 			debug_controller.set_fish_zone(zone)

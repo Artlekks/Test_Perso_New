@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"ocean_1_rocks"
+display_name = "Rocky Area"
+hotspot_tag = &"rocks"
+center_uv = Vector2(0.67, 0.58)
+radius_uv = Vector2(0.32, 0.3)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.25
+depth_max_ratio = 0.82
+depth_feather = 0.15
+density_multiplier = 1.36
+species_weight_multiplier = 1.85
+species_ids = PackedStringArray("blowfish", "sea_bream")
+source_distance_m = 0.0
+source_note = "Fishing spot sign: \"Try fishing near the rocky areas!\""
+placement_note = "Approximate V1 rock-side concentration."

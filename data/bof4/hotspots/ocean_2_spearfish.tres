@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"ocean_2_spearfish"
+display_name = "Rock South of Boat"
+hotspot_tag = &"spearfish_rock"
+center_uv = Vector2(0.64, 0.73)
+radius_uv = Vector2(0.2, 0.19)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.55
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.46
+species_weight_multiplier = 2.7
+species_ids = PackedStringArray("spearfish")
+source_distance_m = 25.0
+source_note = "Guide: Spearfish is most common at the rock south of the boat, about 25m out."
+placement_note = "Far-right V1 mapping in the current Ocean 2 swim bounds; align to the final boat/rock landmark later."

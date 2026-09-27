@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"saldine_black_porgy"
+display_name = "Indent South of Sign"
+hotspot_tag = &"black_porgy_indent"
+center_uv = Vector2(0.56, 0.86)
+radius_uv = Vector2(0.24, 0.2)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.55
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.48
+species_weight_multiplier = 2.85
+species_ids = PackedStringArray("black_porgy")
+source_distance_m = 30.0
+source_note = "Guide: Black Porgy is most common from the sea indent south of the sign, cast about 30m."
+placement_note = "Far-center V1 mapping; align with the final shoreline indent later."

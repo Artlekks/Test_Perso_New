@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"river_3_rocks"
+display_name = "Bridge Rock"
+hotspot_tag = &"rocks"
+center_uv = Vector2(0.54, 0.34)
+radius_uv = Vector2(0.23, 0.18)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.7
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.42
+species_weight_multiplier = 2.6
+species_ids = PackedStringArray("sturgeon")
+source_distance_m = 8.0
+source_note = "Guide: Sturgeon is most common from the bridge, cast south to the rock about 8m out."
+placement_note = "Near-mid water V1 mapping. Final scene should align this center to the bridge rock."

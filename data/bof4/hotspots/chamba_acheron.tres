@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"chamba_acheron"
+display_name = "Between Buildings"
+hotspot_tag = &"between_buildings"
+center_uv = Vector2(0.72, 0.74)
+radius_uv = Vector2(0.22, 0.22)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.7
+depth_max_ratio = 1.0
+depth_feather = 0.15
+density_multiplier = 1.58
+species_weight_multiplier = 3.0
+species_ids = PackedStringArray("acheron", "bullcat")
+source_distance_m = 25.0
+source_note = "Guide/community notes: Acheron is concentrated between the southeast buildings/platform supports, around 20-25m and deep."
+placement_note = "Far-right V1 mapping; final Chamba scene should place this exactly between the buildings."

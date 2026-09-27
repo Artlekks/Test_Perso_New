@@ -454,6 +454,13 @@ func get_current_total_depth() -> float:
 	return current_total_depth
 
 
+func get_active_bait_world_position() -> Vector3:
+	if not is_instance_valid(active_bait):
+		return global_position
+
+	return active_bait.global_position
+
+
 func get_active_bait_surface_position() -> Vector3:
 	if not is_instance_valid(active_bait):
 		return global_position

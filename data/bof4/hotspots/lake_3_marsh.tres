@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"lake_3_marsh"
+display_name = "Marshy Area"
+hotspot_tag = &"marsh"
+center_uv = Vector2(0.7, 0.58)
+radius_uv = Vector2(0.3, 0.28)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.28
+depth_max_ratio = 0.82
+depth_feather = 0.15
+density_multiplier = 1.34
+species_weight_multiplier = 1.55
+species_ids = PackedStringArray("bullcat", "dorado")
+source_distance_m = 0.0
+source_note = "Fishing spot sign: \"Try fishing near the marshy area!\""
+placement_note = "Approximate V1 marsh concentration."

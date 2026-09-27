@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"lake_3_dorado"
+display_name = "Dorado Near Barandy"
+hotspot_tag = &"dorado_mid"
+center_uv = Vector2(0.5, 0.82)
+radius_uv = Vector2(0.26, 0.2)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.38
+depth_max_ratio = 0.68
+depth_feather = 0.15
+density_multiplier = 1.38
+species_weight_multiplier = 2.1
+species_ids = PackedStringArray("dorado")
+source_distance_m = 0.0
+source_note = "Guide: Dorado can be found near Barandy, but not as deep, around halfway down."
+placement_note = "Shares Barandy horizontal area but uses a mid-depth band."

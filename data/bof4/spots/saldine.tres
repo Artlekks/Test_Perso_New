@@ -1,12 +1,14 @@
 [gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://c31ctq4rlofv"]
 
 [ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" uid="uid://cj8wqhyprxqa" path="res://scripts/database/fishing_hotspot_definition.gd" id="2_4f0si"]
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
 [ext_resource type="Resource" uid="uid://cqrpu833jmtay" path="res://data/bof4/fish/blowfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://bbljjxymscte4" path="res://data/bof4/fish/moorfish.tres" id="4_fish"]
 [ext_resource type="Resource" uid="uid://bniuky4cn8clk" path="res://data/bof4/fish/sea_bream.tres" id="5_fish"]
 [ext_resource type="Resource" uid="uid://xpej14dqwca7" path="res://data/bof4/fish/black_porgy.tres" id="6_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/saldine.tres" id="ambient_profile"]
+[ext_resource type="Resource" path="res://data/bof4/hotspots/saldine_black_porgy.tres" id="hotspot_1"]
 
 [sub_resource type="Resource" id="FishSpawnEntry_1"]
 script = ExtResource("2_spawn")
@@ -36,6 +38,7 @@ spot_name = "Saldine"
 location_description = "Northeast Flats / Saldine Island"
 water_type = 3
 fish_population = Array[ExtResource("2_spawn")]([SubResource("FishSpawnEntry_1"), SubResource("FishSpawnEntry_2"), SubResource("FishSpawnEntry_3"), SubResource("FishSpawnEntry_4")])
+concentration_hotspots = Array[ExtResource("2_4f0si")]([ExtResource("hotspot_1")])
 ambient_profile = ExtResource("ambient_profile")
 recommended_min_lure_level = 3
 strategy_notes = "Special Saldine population includes Moorfish and Black Porgy."

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"ocean_2_octopus"
+display_name = "Whale Rocks Mid-Depth"
+hotspot_tag = &"whale_rocks"
+center_uv = Vector2(0.28, 0.88)
+radius_uv = Vector2(0.24, 0.18)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.45
+depth_max_ratio = 0.8
+depth_feather = 0.15
+density_multiplier = 1.4
+species_weight_multiplier = 2.15
+species_ids = PackedStringArray("octopus")
+source_distance_m = 33.0
+source_note = "Guide: Octopus is common in the same place as Whale, but the lure does not need to be all the way at the bottom."
+placement_note = "Same horizontal V1 landmark as Whale, shallower depth band."

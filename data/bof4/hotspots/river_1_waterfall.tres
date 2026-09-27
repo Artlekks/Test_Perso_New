@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"river_1_waterfall"
+display_name = "Waterfall"
+hotspot_tag = &"waterfall"
+center_uv = Vector2(0.72, 0.72)
+radius_uv = Vector2(0.28, 0.24)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.18
+depth_max_ratio = 0.62
+depth_feather = 0.15
+density_multiplier = 1.38
+species_weight_multiplier = 2.2
+species_ids = PackedStringArray("rainbow_trout")
+source_distance_m = 0.0
+source_note = "Fishing spot sign: \"The bigger fish are near the waterfall!\""
+placement_note = "Approximate V1 mapping to the far-right water area; align with the final waterfall landmark later."

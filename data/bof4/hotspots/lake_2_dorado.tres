@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"lake_2_dorado"
+display_name = "NE Rock and Log"
+hotspot_tag = &"dorado_rock"
+center_uv = Vector2(0.76, 0.73)
+radius_uv = Vector2(0.2, 0.2)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.38
+depth_max_ratio = 0.72
+depth_feather = 0.15
+density_multiplier = 1.48
+species_weight_multiplier = 2.75
+species_ids = PackedStringArray("dorado")
+source_distance_m = 25.0
+source_note = "Guide: Dorado is most common near the rock by the log to the northeast, about 25m out."
+placement_note = "Far-right V1 mapping; align to the final NE rock/log landmark later."

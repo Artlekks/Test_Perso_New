@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"lake_2_trees"
+display_name = "Tree Line"
+hotspot_tag = &"trees"
+center_uv = Vector2(0.68, 0.56)
+radius_uv = Vector2(0.34, 0.3)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.3
+depth_max_ratio = 0.85
+depth_feather = 0.15
+density_multiplier = 1.32
+species_weight_multiplier = 1.45
+species_ids = PackedStringArray()
+source_distance_m = 0.0
+source_note = "Fishing spot sign: \"Try fishing near the trees!\""
+placement_note = "General V1 concentration near the authored tree-side water."

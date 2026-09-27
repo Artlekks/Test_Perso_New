@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FishingHotspotDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_hotspot_definition.gd" id="1_hotspot"]
+
+[resource]
+script = ExtResource("1_hotspot")
+hotspot_id = &"lake_1_rocks_logs"
+display_name = "Rocks and Logs"
+hotspot_tag = &"rocks_logs"
+center_uv = Vector2(0.58, 0.58)
+radius_uv = Vector2(0.32, 0.28)
+horizontal_falloff_power = 1.5
+depth_min_ratio = 0.28
+depth_max_ratio = 0.78
+depth_feather = 0.15
+density_multiplier = 1.38
+species_weight_multiplier = 1.85
+species_ids = PackedStringArray("bass", "blue_gill", "martian_squid")
+source_distance_m = 0.0
+source_note = "Fishing spot sign: \"Try aiming for the places between the rocks and logs!\""
+placement_note = "Approximate V1 center between future rocks/log landmarks."

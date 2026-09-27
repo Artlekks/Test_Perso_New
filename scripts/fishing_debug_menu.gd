@@ -471,6 +471,7 @@ func _refresh() -> void:
 	var spot_backend_text := _get_spot_backend_debug_text()
 	var tech_backend_text := _get_tech_backend_debug_text()
 	var tech_runtime_text := _get_tech_runtime_debug_text()
+	var spatial_runtime_text := _get_spatial_runtime_debug_text()
 
 	status_label.text = (
 		profile_purpose
@@ -486,6 +487,7 @@ func _refresh() -> void:
 		+ "\nSpot DB: " + spot_backend_text
 		+ "\nTech DB: " + tech_backend_text
 		+ "\nTech RT: " + tech_runtime_text
+		+ "\nSpatial: " + spatial_runtime_text
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
 
@@ -589,6 +591,51 @@ func _get_fish_runtime_debug_text() -> String:
 		int(snapshot.get("rounds_remaining", 0)),
 		float(snapshot.get("pressure", 0.0)),
 		float(snapshot.get("lateral", 0.0)),
+	]
+
+
+func _get_spatial_runtime_debug_text() -> String:
+	if _encounter == null:
+		return "NO ENCOUNTER"
+
+	if not _encounter.has_method(
+		"get_spatial_debug_snapshot"
+	):
+		return "NO SNAPSHOT"
+
+	var snapshot: Dictionary = (
+		_encounter.get_spatial_debug_snapshot()
+	)
+
+	if snapshot.is_empty():
+		return "NO ACTIVE BAIT SAMPLE"
+
+	var uv: Vector2 = snapshot.get(
+		"uv",
+		Vector2(0.5, 0.5)
+	)
+	var hotspots_value: Variant = snapshot.get(
+		"active_hotspots",
+		PackedStringArray()
+	)
+	var hotspots_text: String = "-"
+
+	if hotspots_value is PackedStringArray:
+		var hotspot_names: PackedStringArray = hotspots_value
+		if not hotspot_names.is_empty():
+			hotspots_text = ",".join(hotspot_names)
+
+	return "uv %.2f,%.2f | depth %.2f | density x%.2f | %s" % [
+		uv.x,
+		uv.y,
+		float(snapshot.get("depth_ratio", 0.0)),
+		float(
+			snapshot.get(
+				"bite_density_multiplier",
+				1.0
+			)
+		),
+		hotspots_text,
 	]
 
 

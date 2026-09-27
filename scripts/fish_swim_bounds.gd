@@ -106,6 +106,99 @@ func contains_horizontal(world_position: Vector3) -> bool:
 	)
 
 
+func world_to_normalized_uv(
+	world_position: Vector3
+) -> Vector2:
+	var box := _get_box_shape()
+
+	if box == null or bounds_shape == null:
+		return Vector2(0.5, 0.5)
+
+	var local_position: Vector3 = (
+		bounds_shape.global_transform.affine_inverse()
+		* world_position
+	)
+	var half_size := box.size * 0.5
+	var limit_x: float = maxf(
+		half_size.x - inner_margin,
+		0.001
+	)
+	var limit_z: float = maxf(
+		half_size.z - inner_margin,
+		0.001
+	)
+
+	return Vector2(
+		inverse_lerp(
+			-limit_x,
+			limit_x,
+			clampf(
+				local_position.x,
+				-limit_x,
+				limit_x
+			)
+		),
+		inverse_lerp(
+			limit_z,
+			-limit_z,
+			clampf(
+				local_position.z,
+				-limit_z,
+				limit_z
+			)
+		)
+	)
+
+
+func normalized_uv_to_world(
+	uv: Vector2,
+	world_y: float
+) -> Vector3:
+	var box := _get_box_shape()
+
+	if box == null or bounds_shape == null:
+		return Vector3(
+			global_position.x,
+			world_y,
+			global_position.z
+		)
+
+	var half_size := box.size * 0.5
+	var limit_x: float = maxf(
+		half_size.x - inner_margin,
+		0.001
+	)
+	var limit_z: float = maxf(
+		half_size.z - inner_margin,
+		0.001
+	)
+	var clamped_uv := Vector2(
+		clampf(uv.x, 0.0, 1.0),
+		clampf(uv.y, 0.0, 1.0)
+	)
+
+	var local_point := Vector3(
+		lerpf(
+			-limit_x,
+			limit_x,
+			clamped_uv.x
+		),
+		0.0,
+		lerpf(
+			limit_z,
+			-limit_z,
+			clamped_uv.y
+		)
+	)
+
+	var world_point: Vector3 = (
+		bounds_shape.global_transform
+		* local_point
+	)
+	world_point.y = world_y
+	return world_point
+
+
 func get_random_horizontal_point(
 	world_y: float,
 	rng: RandomNumberGenerator = null
