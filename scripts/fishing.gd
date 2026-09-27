@@ -155,6 +155,19 @@ func _ready() -> void:
 	fishing_catch_view.shown.connect(_on_catch_view_shown)
 	fishing_catch_view.dismissed.connect(_on_catch_view_dismissed)
 	power.power_changed.connect(_on_power_changed)
+
+	var player_screen_notifier := player.get_node_or_null(
+		"RyuScreenNotifier"
+	) as VisibleOnScreenNotifier3D
+
+	if player_screen_notifier != null:
+		player_screen_notifier.screen_entered.connect(
+			_on_world_player_reentered_fishing_view
+		)
+	else:
+		push_warning(
+			"Fishing: RyuScreenNotifier was not found under the player."
+		)
 	
 	camera_rig.connect(
 		"fishing_view_ready",
@@ -844,6 +857,24 @@ func _on_exploration_view_ready() -> void:
 
 func _on_aim_changed(direction: Vector3) -> void:
 	camera_rig.set_fishing_aim_direction(direction)
+
+func _on_world_player_reentered_fishing_view() -> void:
+	# CharacterView hides its HUD copy on this exact event. Do NOT snap or tween
+	# the camera here. We only change the camera's ownership rule: from this
+	# point, remaining fish/lure distance progressively carries the rig home.
+	if (
+		phase != Phase.IN_WATER
+		and phase != Phase.FIGHT
+		and phase != Phase.LANDING
+	):
+		return
+
+	if camera_rig == null:
+		return
+
+	if camera_rig.has_method("begin_fishing_player_return"):
+		camera_rig.begin_fishing_player_return()
+
 
 func _on_bait_landed(point: Vector3) -> void:
 	_spawn_surface_splash(

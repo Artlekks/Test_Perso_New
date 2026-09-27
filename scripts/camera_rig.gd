@@ -9,8 +9,8 @@ signal exploration_view_started
 @export var fishing_reference_camera: Camera3D
 @export var fishing_pose_camera: Camera3D
 
-@export var fishing_h_offset: float = 0.9
-@export var fishing_v_offset: float = 0.6
+@export var fishing_h_offset: float = 0.90
+@export var fishing_v_offset: float = 0.65
 @export_range(0.5, 1.5, 0.01) var fishing_distance_scale: float = 1.0
 @export var aim_follow_speed: float = 6.0
 @export var fishing_yaw_offset_degrees: float = -15.0
@@ -40,6 +40,11 @@ var fishing_follow_right_x_ratio: float = 0.76
 var fishing_follow_top_y_ratio: float = 0.28
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
+
+## Once real Ryu re-enters the frame, stop fish-centric screen corrections.
+## From then on, camera progress is driven by the remaining lure/fish distance.
+@export_range(0.1, 2.0, 0.05)
+var fishing_player_return_end_distance: float = 0.50
 var fishing_aim_active: bool = false
 var fishing_aim_target_yaw: float = 0.0
 var fishing_aim_direction_to_rig_offset: float = 0.0
@@ -65,6 +70,14 @@ var fishing_follow_offset: float = 0.0
 
 var fishing_follow_armed: bool = false
 var fishing_follow_active: bool = false
+
+# Original-game-style near-player return. There is deliberately no fixed
+# duration: the camera advances only as the lure/fish comes closer to Ryu.
+var fishing_player_return_active: bool = false
+var fishing_player_return_start_camera_position: Vector3 = Vector3.ZERO
+var fishing_player_return_start_distance: float = 0.0
+var fishing_player_return_progress: float = 0.0
+
 var fishing_follow_returning: bool = false
 var _fishing_follow_return_tween: Tween = null
 var fishing_camera_frozen: bool = false
@@ -135,6 +148,41 @@ func arm_fishing_follow(
 
 	fishing_follow_armed = true
 	fishing_follow_active = false
+	fishing_player_return_active = false
+	fishing_player_return_start_camera_position = Vector3.ZERO
+	fishing_player_return_start_distance = 0.0
+	fishing_player_return_progress = 0.0
+
+
+func begin_fishing_player_return() -> void:
+	if (
+		not fishing_follow_active
+		or target == null
+		or not is_instance_valid(fishing_follow_target)
+	):
+		return
+
+	var tracked_position := fishing_follow_target.global_position
+	var player_position := target.global_position
+
+	var tracked_flat := Vector2(
+		tracked_position.x,
+		tracked_position.z
+	)
+	var player_flat := Vector2(
+		player_position.x,
+		player_position.z
+	)
+
+	var distance := tracked_flat.distance_to(player_flat)
+
+	fishing_player_return_active = true
+	fishing_player_return_start_camera_position = global_position
+	fishing_player_return_start_distance = maxf(
+		distance,
+		fishing_player_return_end_distance + 0.001
+	)
+	fishing_player_return_progress = 0.0
 
 
 func reset_fishing_follow() -> void:
@@ -195,6 +243,10 @@ func _clear_fishing_follow_state() -> void:
 
 	fishing_follow_armed = false
 	fishing_follow_active = false
+	fishing_player_return_active = false
+	fishing_player_return_start_camera_position = Vector3.ZERO
+	fishing_player_return_start_distance = 0.0
+	fishing_player_return_progress = 0.0
 
 
 func _finish_fishing_follow_return() -> void:
@@ -224,6 +276,12 @@ func _update_fishing_follow() -> bool:
 		return false
 
 	if not is_instance_valid(fishing_follow_target):
+		if fishing_player_return_active:
+			if target != null:
+				global_position = target.global_position
+			_clear_fishing_follow_state()
+			return true
+
 		if fishing_follow_active:
 			global_position = (
 				fishing_follow_base_position
@@ -236,6 +294,10 @@ func _update_fishing_follow() -> bool:
 		return false
 
 	var current_position := fishing_follow_target.global_position
+
+	if fishing_player_return_active:
+		_update_fishing_player_return(current_position)
+		return true
 
 	if fishing_follow_armed:
 		var camera: Camera3D = $Camera3D
@@ -342,6 +404,60 @@ func _update_fishing_follow() -> bool:
 
 	return true
 	
+
+func _update_fishing_player_return(
+	tracked_position: Vector3
+) -> void:
+	if target == null:
+		return
+
+	var player_position := target.global_position
+
+	var tracked_flat := Vector2(
+		tracked_position.x,
+		tracked_position.z
+	)
+	var player_flat := Vector2(
+		player_position.x,
+		player_position.z
+	)
+
+	var current_distance := tracked_flat.distance_to(player_flat)
+
+	var return_travel := maxf(
+		fishing_player_return_start_distance
+			- fishing_player_return_end_distance,
+		0.001
+	)
+
+	var raw_progress := clampf(
+		(
+			fishing_player_return_start_distance
+				- current_distance
+		) / return_travel,
+		0.0,
+		1.0
+	)
+
+	# If the fish surges away again, the camera pauses where it is instead of
+	# reversing away from Ryu. It resumes only when the fish gets closer again.
+	fishing_player_return_progress = maxf(
+		fishing_player_return_progress,
+		raw_progress
+	)
+
+	global_position = fishing_player_return_start_camera_position.lerp(
+		player_position,
+		fishing_player_return_progress
+	)
+
+	if (
+		current_distance <= fishing_player_return_end_distance
+		or fishing_player_return_progress >= 0.9999
+	):
+		global_position = player_position
+		_clear_fishing_follow_state()
+
 
 func _enforce_fishing_tracking_zone(
 	world_position: Vector3
