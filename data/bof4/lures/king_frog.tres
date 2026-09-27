@@ -1,20 +1,20 @@
-[gd_resource type="Resource" script_class="BaitData" format=3]
+[gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dy3oc3c6hr1nf"]
 
-[ext_resource type="Script" path="res://scripts/bait_data.gd" id="1_bait"]
+[ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
 
 [resource]
 script = ExtResource("1_bait")
 lure_id = &"king_frog"
 display_name = "King Frog"
-lure_type = 6
+lure_type = 1
 level = 2
 description = "No fish can resist the temptation of this lure."
+visual_tint = Color(0.38, 0.82, 0.32, 1)
 sink_depth = 0.6
-sink_speed = 0.2
 reel_speed = 0.055
 reel_rise_speed = 0.55
 reel_steer_strength = 0.85
-metadata/acquisition = "Post-game: Rey and Teepo's Shop, Abandoned Village (800z)."
-metadata/mechanics_note = "Ultimate lure. Physical motion currently follows the Spoon baseline; attraction-specific balancing can be tuned separately."
 bottom_snag_resistance = 0.9
 obstacle_snag_resistance = 0.9
+metadata/acquisition = "Post-game: Rey and Teepo's Shop, Abandoned Village (800z)."
+metadata/mechanics_note = "Ultimate lure. Physical motion currently follows the Spoon baseline; attraction-specific balancing can be tuned separately."

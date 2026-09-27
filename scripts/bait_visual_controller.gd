@@ -507,7 +507,8 @@ func _update_depth_readability() -> void:
 	if not is_instance_valid(_bait):
 		return
 
-	var color: Color = Color.WHITE
+	var base_color: Color = _get_lure_visual_tint()
+	var color: Color = base_color
 
 	if _bait.has_method("get_water_surface_y"):
 		var water_surface_y: float = float(
@@ -531,14 +532,15 @@ func _update_depth_readability() -> void:
 			maxf(depth_visual_curve_power, 0.01)
 		)
 
+		var darkness: float = 1.0 - deep_darkening_amount
 		var deep_color: Color = Color(
-			1.0 - deep_darkening_amount,
-			1.0 - deep_darkening_amount,
-			1.0 - deep_darkening_amount,
-			deep_alpha_multiplier
+			base_color.r * darkness,
+			base_color.g * darkness,
+			base_color.b * darkness,
+			base_color.a * deep_alpha_multiplier
 		)
 
-		color = Color.WHITE.lerp(
+		color = base_color.lerp(
 			deep_color,
 			depth_blend
 		)
@@ -546,3 +548,18 @@ func _update_depth_readability() -> void:
 	head_sprite.modulate = color
 	middle_sprite.modulate = color
 	tail_sprite.modulate = color
+
+
+func _get_lure_visual_tint() -> Color:
+	if not is_instance_valid(_bait):
+		return Color.WHITE
+
+	# BaitData is already the single source of truth on the parent Bait node.
+	# Presentation reads that resource directly instead of maintaining another
+	# lure-family lookup table in this controller.
+	var bait_data: BaitData = _bait.get("data") as BaitData
+
+	if bait_data == null:
+		return Color.WHITE
+
+	return bait_data.visual_tint

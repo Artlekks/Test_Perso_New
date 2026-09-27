@@ -11,6 +11,12 @@ var level: int = 1
 
 @export_multiline var description: String = ""
 
+@export_category("Presentation")
+## Temporary family color used by the articulated pixel lure.
+## This lives in lure data so future per-lure sprite/art passes do not require
+## hardcoded visual rules in the renderer.
+@export var visual_tint: Color = Color.WHITE
+
 @export_category("Water Movement")
 ## Normalized target depth: 0.0 = water surface, 1.0 = local bottom.
 @export_range(0.0, 1.0, 0.01) var sink_depth: float = 1.0
