@@ -1,5 +1,9 @@
 extends RefCounted
 
+const CatchScoring = preload(
+	"res://scripts/fishing_catch_scoring.gd"
+)
+
 ## Size-generation backend.
 ##
 ## Keeping this separate from FishInstance makes the population distribution
@@ -67,11 +71,16 @@ static func _roll_normal(data: FishData) -> Dictionary:
 		normalized_roll
 	))
 
-	return {
-		"size": float(clampi(rolled_cm, normal_min_cm, normal_max_cm)),
-		"is_king": false,
-		"band": &"normal",
-	}
+	return _build_result(
+		data,
+		float(
+			clampi(
+				rolled_cm,
+				normal_min_cm,
+				normal_max_cm
+			)
+		)
+	)
 
 
 static func _roll_near_record(data: FishData) -> Dictionary:
@@ -93,15 +102,16 @@ static func _roll_near_record(data: FishData) -> Dictionary:
 		normalized_roll
 	))
 
-	return {
-		"size": float(clampi(
-			rolled_cm,
-			near_record_min_cm,
-			near_record_max_cm
-		)),
-		"is_king": false,
-		"band": &"near_record",
-	}
+	return _build_result(
+		data,
+		float(
+			clampi(
+				rolled_cm,
+				near_record_min_cm,
+				near_record_max_cm
+			)
+		)
+	)
 
 
 static func _roll_king(data: FishData) -> Dictionary:
@@ -125,11 +135,16 @@ static func _roll_king(data: FishData) -> Dictionary:
 		normalized_roll
 	))
 
-	return {
-		"size": float(clampi(rolled_cm, king_min_cm, king_max_cm)),
-		"is_king": true,
-		"band": &"king",
-	}
+	return _build_result(
+		data,
+		float(
+			clampi(
+				rolled_cm,
+				king_min_cm,
+				king_max_cm
+			)
+		)
+	)
 
 
 static func _get_near_record_min_cm(data: FishData, king_cm: int) -> int:
@@ -147,3 +162,22 @@ static func _get_near_record_min_cm(data: FishData, king_cm: int) -> int:
 		1,
 		king_cm - 1
 	)
+
+
+
+static func _build_result(
+	data: FishData,
+	size: float
+) -> Dictionary:
+	var score: Dictionary = CatchScoring.evaluate(
+		data,
+		size
+	)
+
+	return {
+		"size": float(score.get("size", 0.0)),
+		"is_king": bool(score.get("is_king", false)),
+		"band": StringName(
+			score.get("size_band", &"normal")
+		),
+	}

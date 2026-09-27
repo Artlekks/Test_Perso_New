@@ -7,6 +7,10 @@ const CONTENT_CATALOG: FishingContentCatalog = preload(
 	"res://data/bof4/catalogs/all_content.tres"
 )
 
+const CatchScoring = preload(
+	"res://scripts/fishing_catch_scoring.gd"
+)
+
 const QA_PROFILE_DIRECTORY := "res://data/debug/qa_profiles"
 const MAX_DEBUG_SHADOW_COUNT := 12
 
@@ -508,13 +512,27 @@ func _get_fish_backend_debug_text(fish: FishData) -> String:
 	if fish == null:
 		return "ANY / SPOT RNG"
 
+	var average_score: Dictionary = CatchScoring.evaluate(
+		fish,
+		fish.average_size
+	)
+
 	return (
-		"%s | %.0f/%.0fcm | stam %.1f str %.2f rounds %d | "
-		+ "depth %.2f-%.2f | %s"
+		"%s | avg %.0f crown %.0fcm | max %d | avg tier %d/%d=%dpts | "
+		+ "stam %.1f str %.2f rounds %d | depth %.2f-%.2f | %s"
 	) % [
-		fish.fish_name, fish.average_size, fish.king_size,
-		fish.base_stamina, fish.base_strength, fish.resistance_rounds,
-		fish.preferred_depth_min, fish.preferred_depth_max,
+		fish.fish_name,
+		fish.average_size,
+		fish.king_size,
+		fish.max_points,
+		int(average_score.get("score_tier", 0)),
+		int(average_score.get("score_tier_count", 10)),
+		int(average_score.get("points", 0)),
+		fish.base_stamina,
+		fish.base_strength,
+		fish.resistance_rounds,
+		fish.preferred_depth_min,
+		fish.preferred_depth_max,
 		fish.get_behavior_debug_summary(),
 	]
 
@@ -544,13 +562,17 @@ func _get_fish_runtime_debug_text() -> String:
 		behavior_state = str(behavior_snapshot.get("state", "NONE"))
 
 	return (
-		"%s %s%s | %.0fcm | stam %.1f/%.1f | str %.2f | "
-		+ "%s/%s | rounds %d | pressure %.2f lat %.2f"
+		"%s %s%s | %.0fcm | %d/%dpts tier %d/10 | "
+		+ "stam %.1f/%.1f | str %.2f | %s/%s | rounds %d | "
+		+ "pressure %.2f lat %.2f"
 	) % [
 		species_name,
 		("KING " if bool(snapshot.get("is_king", false)) else ""),
 		str(snapshot.get("profile", "NONE")),
 		float(snapshot.get("size", 0.0)),
+		int(snapshot.get("points", 0)),
+		int(snapshot.get("max_points", 0)),
+		int(snapshot.get("score_tier", 0)),
 		float(snapshot.get("stamina", 0.0)),
 		float(snapshot.get("max_stamina", 0.0)),
 		float(snapshot.get("strength", 0.0)),

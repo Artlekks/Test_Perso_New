@@ -4,6 +4,9 @@ class_name FishingJournalService
 const CatchScoring = preload(
 	"res://scripts/fishing_catch_scoring.gd"
 )
+const CatchEvaluator = preload(
+	"res://scripts/fishing_catch_evaluator.gd"
+)
 
 enum DiscoveryState {
 	UNKNOWN,
@@ -175,12 +178,18 @@ func get_entry(
 		"current_owned_count": current_owned_count,
 		"best_size": float(record.get("best_size", 0.0)),
 		"best_size_points": int(record.get("best_size_points", 0)),
+		"best_size_score_tier": int(
+			record.get("best_size_score_tier", 0)
+		),
 		"best_size_spot_id": str(record.get("best_size_spot_id", "")),
 		"best_size_spot_name": str(record.get("best_size_spot_name", "")),
 		"best_size_lure_id": str(record.get("best_size_lure_id", "")),
 		"best_size_lure_name": str(record.get("best_size_lure_name", "")),
 		"best_points": int(record.get("best_points", 0)),
 		"best_points_size": float(record.get("best_points_size", 0.0)),
+		"best_points_score_tier": int(
+			record.get("best_points_score_tier", 0)
+		),
 		"best_points_spot_id": str(record.get("best_points_spot_id", "")),
 		"best_points_spot_name": str(record.get("best_points_spot_name", "")),
 		"best_points_lure_id": str(record.get("best_points_lure_id", "")),
@@ -188,6 +197,18 @@ func get_entry(
 		"last_catch_size": float(record.get("last_catch_size", 0.0)),
 		"last_catch_points": int(record.get("last_catch_points", 0)),
 		"last_catch_is_king": bool(record.get("last_catch_is_king", false)),
+		"last_catch_size_band": str(
+			record.get("last_catch_size_band", "")
+		),
+		"last_catch_score_tier": int(
+			record.get("last_catch_score_tier", 0)
+		),
+		"last_catch_size_ratio_to_king": float(
+			record.get(
+				"last_catch_size_ratio_to_king",
+				0.0
+			)
+		),
 		"last_catch_spot_id": str(record.get("last_catch_spot_id", "")),
 		"last_catch_spot_name": str(record.get("last_catch_spot_name", "")),
 		"last_catch_lure_id": str(record.get("last_catch_lure_id", "")),
@@ -277,12 +298,18 @@ func get_record_snapshot(species_id: String) -> Dictionary:
 		"caught_count": int(entry.get("caught_count", 0)),
 		"best_size": float(entry.get("best_size", 0.0)),
 		"best_size_points": int(entry.get("best_size_points", 0)),
+		"best_size_score_tier": int(
+			entry.get("best_size_score_tier", 0)
+		),
 		"best_size_spot_id": str(entry.get("best_size_spot_id", "")),
 		"best_size_spot_name": str(entry.get("best_size_spot_name", "")),
 		"best_size_lure_id": str(entry.get("best_size_lure_id", "")),
 		"best_size_lure_name": str(entry.get("best_size_lure_name", "")),
 		"best_points": int(entry.get("best_points", 0)),
 		"best_points_size": float(entry.get("best_points_size", 0.0)),
+		"best_points_score_tier": int(
+			entry.get("best_points_score_tier", 0)
+		),
 		"best_points_spot_id": str(entry.get("best_points_spot_id", "")),
 		"best_points_spot_name": str(entry.get("best_points_spot_name", "")),
 		"best_points_lure_id": str(entry.get("best_points_lure_id", "")),
@@ -530,42 +557,39 @@ func debug_record_catch(
 	lure_id: String = "",
 	lure_name: String = ""
 ) -> Dictionary:
-	# Backend QA helper for menu testing. It uses the same permanent record path
-	# as a real catch, so the UI can be populated without repeatedly fishing.
+	# Backend QA helper. It deliberately uses the exact same immutable snapshot
+	# and permanent-record pipeline as a real landed fish.
 	if not is_instance_valid(_progress):
 		return {}
 
 	var key: String = _normalize_id(species_id)
 	var fish: FishData = _fish_by_id.get(key) as FishData
+
 	if fish == null:
 		return {}
-
-	var specimen := FishInstance.new()
-	specimen.species = fish
-	specimen.size = float(maxi(size_cm, 1))
-	specimen.is_king = specimen.size >= fish.king_size
-	specimen.points = CatchScoring.calculate_points(
-		fish,
-		specimen.size,
-		specimen.is_king
-	)
 
 	if spot_name.is_empty() and not spot_id.is_empty():
 		var spot: FishingSpotData = _spots_by_id.get(
 			_normalize_id(spot_id)
 		) as FishingSpotData
+
 		if spot != null:
 			spot_name = spot.spot_name
 
-	return _progress.record_catch(
-		specimen,
-		{
-			"spot_id": spot_id,
-			"spot_name": spot_name,
-			"lure_id": lure_id,
-			"lure_name": lure_name,
-		}
+	var snapshot: Dictionary = (
+		CatchEvaluator.create_snapshot_from_values(
+			fish,
+			float(maxi(size_cm, 1)),
+			{
+				"spot_id": spot_id,
+				"spot_name": spot_name,
+				"lure_id": lure_id,
+				"lure_name": lure_name,
+			}
+		)
 	)
+
+	return _progress.record_catch_snapshot(snapshot)
 
 
 func is_discovered(species_id: String) -> bool:

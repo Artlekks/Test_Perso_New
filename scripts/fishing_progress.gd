@@ -4,6 +4,9 @@ class_name FishingProgress
 const CatchScoring = preload(
 	"res://scripts/fishing_catch_scoring.gd"
 )
+const CatchEvaluator = preload(
+	"res://scripts/fishing_catch_evaluator.gd"
+)
 
 signal changed
 signal catch_recorded(
@@ -16,7 +19,7 @@ signal catch_specimen_recorded(
 	specimen_data: Dictionary
 )
 
-const SAVE_VERSION: int = 4
+const SAVE_VERSION: int = 5
 const MAX_FISHING_POINTS: int = 9999
 const SAVE_PATH: String = "user://fishing_progress.json"
 
@@ -58,104 +61,180 @@ func record_catch(
 	fish: FishInstance,
 	catch_context: Dictionary = {}
 ) -> Dictionary:
-	if fish == null or fish.species == null:
+	var snapshot: Dictionary = (
+		CatchEvaluator.create_snapshot(
+			fish,
+			catch_context
+		)
+	)
+
+	return record_catch_snapshot(snapshot)
+
+
+func record_catch_snapshot(
+	snapshot: Dictionary
+) -> Dictionary:
+	if snapshot.is_empty():
 		return {}
 
-	var species_key := get_species_key(fish.species)
+	var species_key: String = str(
+		snapshot.get("species_id", "")
+	).strip_edges().to_lower()
 
 	if species_key.is_empty():
 		push_warning(
-			"FishingProgress: Could not build a stable species key."
+			"FishingProgress: Catch snapshot has no stable species ID."
 		)
 		return {}
 
+	var fish_name: String = str(
+		snapshot.get("fish_name", "")
+	)
+	var size: float = float(
+		snapshot.get("size", 0.0)
+	)
+	var points: int = maxi(
+		int(snapshot.get("points", 0)),
+		0
+	)
+	var is_king: bool = bool(
+		snapshot.get("is_king", false)
+	)
+	var size_band: String = str(
+		snapshot.get("size_band", "normal")
+	)
+	var score_tier: int = maxi(
+		int(snapshot.get("score_tier", 0)),
+		0
+	)
+
+	var context: Dictionary = _sanitize_catch_context(
+		snapshot.get("catch_context", {})
+		as Dictionary
+	)
+
 	var record: Dictionary = species_records.get(
 		species_key,
-		_create_empty_record(fish.species)
+		_create_empty_record_from_snapshot(snapshot)
 	).duplicate(true)
 
-	var previous_caught_count := int(
+	var previous_caught_count: int = int(
 		record.get("caught_count", 0)
 	)
-	var previous_best_size := float(
+	var previous_best_size: float = float(
 		record.get("best_size", 0.0)
 	)
-	var previous_best_points := int(
+	var previous_best_points: int = int(
 		record.get("best_points", 0)
 	)
-	var previous_best_points_size := float(
+	var previous_best_points_size: float = float(
 		record.get("best_points_size", 0.0)
 	)
-	var previous_king_caught := bool(
+	var previous_king_caught: bool = bool(
 		record.get("king_caught", false)
 	)
-	var previous_fishing_points := fishing_points
-	var previous_rank_index := get_rank_index(previous_fishing_points)
-	var context := _sanitize_catch_context(catch_context)
-	var discovery_result: Dictionary = _record_context_discovery(
+	var previous_fishing_points: int = fishing_points
+	var previous_rank_index: int = get_rank_index(
+		previous_fishing_points
+	)
+	var discovery_result: Dictionary = (
+		_record_context_discovery(
+			record,
+			context
+		)
+	)
+
+	record["fish_name"] = fish_name
+	record["caught_count"] = (
+		int(record.get("caught_count", 0))
+		+ 1
+	)
+
+	if size > previous_best_size:
+		record["best_size"] = size
+		record["best_size_points"] = points
+		record["best_size_score_tier"] = score_tier
+		_copy_context_to_record(
+			record,
+			"best_size",
+			context
+		)
+
+	var improves_points: bool = (
+		points > previous_best_points
+	)
+	var improves_equal_point_specimen: bool = (
+		points == previous_best_points
+		and size > previous_best_points_size
+	)
+
+	if (
+		improves_points
+		or improves_equal_point_specimen
+	):
+		record["best_points"] = points
+		record["best_points_size"] = size
+		record["best_points_score_tier"] = score_tier
+		_copy_context_to_record(
+			record,
+			"best_points",
+			context
+		)
+
+	record["last_catch_size"] = size
+	record["last_catch_points"] = points
+	record["last_catch_is_king"] = is_king
+	record["last_catch_size_band"] = size_band
+	record["last_catch_score_tier"] = score_tier
+	record["last_catch_size_ratio_to_king"] = float(
+		snapshot.get(
+			"size_ratio_to_king",
+			0.0
+		)
+	)
+	_copy_context_to_record(
 		record,
+		"last_catch",
 		context
 	)
 
-	record["fish_name"] = fish.species.fish_name
-	record["caught_count"] = int(
-		record.get("caught_count", 0)
-	) + 1
-
-	if fish.size > previous_best_size:
-		record["best_size"] = fish.size
-		record["best_size_points"] = fish.points
-		_copy_context_to_record(record, "best_size", context)
-
-	var improves_points: bool = fish.points > previous_best_points
-	var improves_equal_point_specimen: bool = (
-		fish.points == previous_best_points
-		and fish.size > previous_best_points_size
-	)
-
-	if improves_points or improves_equal_point_specimen:
-		record["best_points"] = fish.points
-		record["best_points_size"] = fish.size
-		_copy_context_to_record(record, "best_points", context)
-
-	record["last_catch_size"] = fish.size
-	record["last_catch_points"] = fish.points
-	record["last_catch_is_king"] = fish.is_king
-	_copy_context_to_record(record, "last_catch", context)
-
-	if fish.is_king:
+	if is_king:
 		record["king_caught"] = true
-		record["king_count"] = int(
-			record.get("king_count", 0)
-		) + 1
+		record["king_count"] = (
+			int(record.get("king_count", 0))
+			+ 1
+		)
 
 	species_records[species_key] = record
 	total_catches += 1
 	_recalculate_fishing_points()
-	var current_rank_index := get_rank_index(fishing_points)
-	var current_rank_name := get_rank_name(fishing_points)
 
-	var result := {
+	var current_rank_index: int = get_rank_index(
+		fishing_points
+	)
+	var current_rank_name: String = get_rank_name(
+		fishing_points
+	)
+
+	var result: Dictionary = {
 		"species_key": species_key,
 		"record": record.duplicate(true),
-		"new_species": (
-			previous_caught_count <= 0
-		),
+		"catch_snapshot": snapshot.duplicate(true),
+		"new_species": previous_caught_count <= 0,
 		"new_spot_discovery": bool(
 			discovery_result.get("new_spot", false)
 		),
 		"new_lure_discovery": bool(
 			discovery_result.get("new_lure", false)
 		),
-		"new_best_size": (
-			fish.size > previous_best_size
-		),
+		"new_best_size": size > previous_best_size,
 		"new_best_points": improves_points,
 		"best_points_record_changed": (
-			improves_points or improves_equal_point_specimen
+			improves_points
+			or improves_equal_point_specimen
 		),
 		"first_king": (
-			fish.is_king
+			is_king
 			and not previous_king_caught
 		),
 		"previous_best_size": previous_best_size,
@@ -163,35 +242,55 @@ func record_catch(
 		"fishing_points_before": previous_fishing_points,
 		"fishing_points": fishing_points,
 		"fishing_points_gained": maxi(
-			fishing_points - previous_fishing_points,
+			fishing_points
+			- previous_fishing_points,
 			0
 		),
-		"rank_before": get_rank_name(previous_fishing_points),
+		"rank_before": get_rank_name(
+			previous_fishing_points
+		),
 		"rank_name": current_rank_name,
 		"rank_index": current_rank_index,
-		"rank_up": current_rank_index > previous_rank_index,
-		"next_rank_points": get_next_rank_threshold(fishing_points),
-		"catch_context": context.duplicate(true)
+		"rank_up": (
+			current_rank_index
+			> previous_rank_index
+		),
+		"next_rank_points": get_next_rank_threshold(
+			fishing_points
+		),
+		"catch_context": context.duplicate(true),
 	}
 
 	save_to_disk()
 	changed.emit()
+
 	catch_recorded.emit(
 		species_key,
 		record.duplicate(true),
 		fishing_points
 	)
+
 	catch_specimen_recorded.emit(
 		species_key,
 		{
-			"fish_name": fish.species.fish_name,
-			"size": fish.size,
-			"points": fish.points,
-			"is_king": fish.is_king,
-			"spot_id": str(context.get("spot_id", "")),
-			"spot_name": str(context.get("spot_name", "")),
-			"lure_id": str(context.get("lure_id", "")),
-			"lure_name": str(context.get("lure_name", "")),
+			"fish_name": fish_name,
+			"size": size,
+			"points": points,
+			"is_king": is_king,
+			"size_band": size_band,
+			"score_tier": score_tier,
+			"spot_id": str(
+				context.get("spot_id", "")
+			),
+			"spot_name": str(
+				context.get("spot_name", "")
+			),
+			"lure_id": str(
+				context.get("lure_id", "")
+			),
+			"lure_name": str(
+				context.get("lure_name", "")
+			),
 		}
 	)
 
@@ -508,11 +607,23 @@ func reconcile_records_with_catalog(species_by_id: Dictionary) -> bool:
 		record["last_catch_size"] = last_size
 
 		if best_size > 0.0:
-			var best_size_is_king: bool = best_size >= fish.king_size
-			record["best_size_points"] = CatchScoring.calculate_points(
-				fish,
-				best_size,
-				best_size_is_king
+			var best_size_score: Dictionary = (
+				CatchScoring.evaluate(
+					fish,
+					best_size
+				)
+			)
+			record["best_size_points"] = int(
+				best_size_score.get(
+					"points",
+					0
+				)
+			)
+			record["best_size_score_tier"] = int(
+				best_size_score.get(
+					"score_tier",
+					0
+				)
 			)
 
 		if best_points_size <= 0.0 and best_size > 0.0:
@@ -521,11 +632,26 @@ func reconcile_records_with_catalog(species_by_id: Dictionary) -> bool:
 			_copy_record_context(record, "best_size", "best_points")
 
 		var best_points_score: int = 0
+		var best_points_score_tier: int = 0
+
 		if best_points_size > 0.0:
-			best_points_score = CatchScoring.calculate_points(
-				fish,
-				best_points_size,
-				best_points_size >= fish.king_size
+			var best_points_details: Dictionary = (
+				CatchScoring.evaluate(
+					fish,
+					best_points_size
+				)
+			)
+			best_points_score = int(
+				best_points_details.get(
+					"points",
+					0
+				)
+			)
+			best_points_score_tier = int(
+				best_points_details.get(
+					"score_tier",
+					0
+				)
 			)
 
 		var best_size_score: int = int(record.get("best_size_points", 0))
@@ -538,20 +664,54 @@ func reconcile_records_with_catalog(species_by_id: Dictionary) -> bool:
 		):
 			record["best_points"] = best_size_score
 			record["best_points_size"] = best_size
+			record["best_points_score_tier"] = int(
+				record.get(
+					"best_size_score_tier",
+					0
+				)
+			)
 			_copy_record_context(record, "best_size", "best_points")
 		else:
 			record["best_points"] = best_points_score
+			record["best_points_score_tier"] = best_points_score_tier
 
 		if last_size > 0.0:
-			var last_is_king: bool = last_size >= fish.king_size
-			record["last_catch_is_king"] = last_is_king
-			record["last_catch_points"] = CatchScoring.calculate_points(
+			var last_score: Dictionary = CatchScoring.evaluate(
 				fish,
-				last_size,
-				last_is_king
+				last_size
+			)
+			record["last_catch_is_king"] = bool(
+				last_score.get("is_king", false)
+			)
+			record["last_catch_points"] = int(
+				last_score.get("points", 0)
+			)
+			record["last_catch_size_band"] = str(
+				last_score.get(
+					"size_band",
+					&"normal"
+				)
+			)
+			record["last_catch_score_tier"] = int(
+				last_score.get(
+					"score_tier",
+					0
+				)
+			)
+			record["last_catch_size_ratio_to_king"] = float(
+				last_score.get(
+					"size_ratio_to_king",
+					0.0
+				)
 			)
 
-		if best_size >= fish.king_size and best_size > 0.0:
+		if (
+			best_size > 0.0
+			and CatchScoring.is_king_size(
+				fish,
+				best_size
+			)
+		):
 			record["king_caught"] = true
 			record["king_count"] = maxi(int(record.get("king_count", 0)), 1)
 
@@ -605,21 +765,39 @@ func _recalculate_fishing_points() -> void:
 func _create_empty_record(
 	species: FishData
 ) -> Dictionary:
-	return {
-		"fish_name": (
+	return _create_empty_record_from_values(
+		(
 			species.fish_name
 			if species != null
 			else ""
-		),
+		)
+	)
+
+
+func _create_empty_record_from_snapshot(
+	snapshot: Dictionary
+) -> Dictionary:
+	return _create_empty_record_from_values(
+		str(snapshot.get("fish_name", ""))
+	)
+
+
+func _create_empty_record_from_values(
+	fish_name: String
+) -> Dictionary:
+	return {
+		"fish_name": fish_name,
 		"caught_count": 0,
 		"best_size": 0.0,
 		"best_size_points": 0,
+		"best_size_score_tier": 0,
 		"best_size_spot_id": "",
 		"best_size_spot_name": "",
 		"best_size_lure_id": "",
 		"best_size_lure_name": "",
 		"best_points": 0,
 		"best_points_size": 0.0,
+		"best_points_score_tier": 0,
 		"best_points_spot_id": "",
 		"best_points_spot_name": "",
 		"best_points_lure_id": "",
@@ -627,6 +805,9 @@ func _create_empty_record(
 		"last_catch_size": 0.0,
 		"last_catch_points": 0,
 		"last_catch_is_king": false,
+		"last_catch_size_band": "",
+		"last_catch_score_tier": 0,
+		"last_catch_size_ratio_to_king": 0.0,
 		"last_catch_spot_id": "",
 		"last_catch_spot_name": "",
 		"last_catch_lure_id": "",
@@ -634,7 +815,7 @@ func _create_empty_record(
 		"king_caught": false,
 		"king_count": 0,
 		"known_spots": [],
-		"successful_lures": []
+		"successful_lures": [],
 	}
 
 
@@ -656,6 +837,10 @@ func _sanitize_record(
 		),
 		"best_size": float(maxi(roundi(float(record.get("best_size", 0.0))), 0)),
 		"best_size_points": maxi(int(record.get("best_size_points", 0)), 0),
+		"best_size_score_tier": maxi(
+			int(record.get("best_size_score_tier", 0)),
+			0
+		),
 		"best_size_spot_id": str(record.get("best_size_spot_id", "")),
 		"best_size_spot_name": str(record.get("best_size_spot_name", "")),
 		"best_size_lure_id": str(record.get("best_size_lure_id", "")),
@@ -670,6 +855,10 @@ func _sanitize_record(
 			0
 		),
 		"best_points_size": float(maxi(roundi(float(record.get("best_points_size", 0.0))), 0)),
+		"best_points_score_tier": maxi(
+			int(record.get("best_points_score_tier", 0)),
+			0
+		),
 		"best_points_spot_id": str(record.get("best_points_spot_id", "")),
 		"best_points_spot_name": str(record.get("best_points_spot_name", "")),
 		"best_points_lure_id": str(record.get("best_points_lure_id", "")),
@@ -677,6 +866,22 @@ func _sanitize_record(
 		"last_catch_size": float(maxi(roundi(float(record.get("last_catch_size", 0.0))), 0)),
 		"last_catch_points": maxi(int(record.get("last_catch_points", 0)), 0),
 		"last_catch_is_king": bool(record.get("last_catch_is_king", false)),
+		"last_catch_size_band": str(
+			record.get("last_catch_size_band", "")
+		),
+		"last_catch_score_tier": maxi(
+			int(record.get("last_catch_score_tier", 0)),
+			0
+		),
+		"last_catch_size_ratio_to_king": maxf(
+			float(
+				record.get(
+					"last_catch_size_ratio_to_king",
+					0.0
+				)
+			),
+			0.0
+		),
 		"last_catch_spot_id": str(record.get("last_catch_spot_id", "")),
 		"last_catch_spot_name": str(record.get("last_catch_spot_name", "")),
 		"last_catch_lure_id": str(record.get("last_catch_lure_id", "")),

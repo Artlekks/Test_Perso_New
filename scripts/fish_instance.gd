@@ -18,7 +18,12 @@ var size_band: StringName = &"normal"
 
 var max_stamina: float = 0.0
 var strength: float = 0.0
+
+## Immutable specimen score metadata calculated once when the fish is created.
 var points: int = 0
+var score_tier: int = 0
+var size_ratio_to_king: float = 0.0
+var score_completion_ratio: float = 0.0
 
 var resistance_rounds: int = 1
 var recovery_time_min: float = 0.8
@@ -94,19 +99,36 @@ func setup(data: FishData, king_override: int = -1) -> void:
 		)
 		pull_multiplier *= sqrt(maxf(data.king_behavior_multiplier, 1.0))
 
-	points = CatchScoring.calculate_points(
+
+
+func _roll_size_and_king(
+	data: FishData,
+	king_override: int
+) -> void:
+	var result: Dictionary = SizeRoller.roll(
 		data,
-		size,
-		is_king
+		king_override
 	)
 
-
-func _roll_size_and_king(data: FishData, king_override: int) -> void:
-	var result: Dictionary = SizeRoller.roll(data, king_override)
-
 	size = float(result.get("size", 0.0))
-	is_king = bool(result.get("is_king", false))
-	size_band = StringName(result.get("band", &"normal"))
+
+	var score: Dictionary = CatchScoring.evaluate(
+		data,
+		size
+	)
+
+	is_king = bool(score.get("is_king", false))
+	size_band = StringName(
+		score.get("size_band", &"normal")
+	)
+	points = int(score.get("points", 0))
+	score_tier = int(score.get("score_tier", 0))
+	size_ratio_to_king = float(
+		score.get("size_ratio_to_king", 0.0)
+	)
+	score_completion_ratio = float(
+		score.get("score_completion_ratio", 0.0)
+	)
 
 
 func get_debug_snapshot() -> Dictionary:
@@ -124,6 +146,20 @@ func get_debug_snapshot() -> Dictionary:
 		"size": size,
 		"is_king": is_king,
 		"size_band": str(size_band),
+		"points": points,
+		"score_tier": score_tier,
+		"size_ratio_to_king": size_ratio_to_king,
+		"score_completion_ratio": score_completion_ratio,
+		"king_size": (
+			species.king_size
+			if species != null
+			else 0.0
+		),
+		"max_points": (
+			species.max_points
+			if species != null
+			else 0
+		),
 		"max_stamina": max_stamina,
 		"strength": strength,
 		"resistance_rounds": resistance_rounds,
