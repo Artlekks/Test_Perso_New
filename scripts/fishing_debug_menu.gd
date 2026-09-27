@@ -11,6 +11,10 @@ const CatchScoring = preload(
 	"res://scripts/fishing_catch_scoring.gd"
 )
 
+const TECHNIQUE_CATALOG: FishingTechniqueCatalog = preload(
+	"res://data/bof4/techniques/all_techniques.tres"
+)
+
 const QA_PROFILE_DIRECTORY := "res://data/debug/qa_profiles"
 const MAX_DEBUG_SHADOW_COUNT := 12
 
@@ -465,6 +469,8 @@ func _refresh() -> void:
 	var fish_backend_text := _get_fish_backend_debug_text(selected_fish_data)
 	var fish_runtime_text := _get_fish_runtime_debug_text()
 	var spot_backend_text := _get_spot_backend_debug_text()
+	var tech_backend_text := _get_tech_backend_debug_text()
+	var tech_runtime_text := _get_tech_runtime_debug_text()
 
 	status_label.text = (
 		profile_purpose
@@ -478,6 +484,8 @@ func _refresh() -> void:
 		+ "\nFish DB: " + fish_backend_text
 		+ "\nFish RT: " + fish_runtime_text
 		+ "\nSpot DB: " + spot_backend_text
+		+ "\nTech DB: " + tech_backend_text
+		+ "\nTech RT: " + tech_runtime_text
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
 
@@ -581,6 +589,80 @@ func _get_fish_runtime_debug_text() -> String:
 		int(snapshot.get("rounds_remaining", 0)),
 		float(snapshot.get("pressure", 0.0)),
 		float(snapshot.get("lateral", 0.0)),
+	]
+
+
+func _get_tech_backend_debug_text() -> String:
+	if TECHNIQUE_CATALOG == null:
+		return "NONE"
+
+	var definitions: Array[FishingTechniqueDefinition] = (
+		TECHNIQUE_CATALOG.get_techniques_descending()
+	)
+	definitions.reverse()
+
+	var parts := PackedStringArray()
+
+	for definition in definitions:
+		parts.append(
+			"T%d %s x%.2f" % [
+				definition.level,
+				definition.get_rhythm_label(),
+				definition.attraction_multiplier,
+			]
+		)
+
+	return " | ".join(parts)
+
+
+func _get_tech_runtime_debug_text() -> String:
+	if _encounter == null:
+		return "NO ENCOUNTER"
+
+	if not _encounter.has_method(
+		"get_technique_debug_snapshot"
+	):
+		return "NO SNAPSHOT"
+
+	var snapshot: Dictionary = (
+		_encounter.get_technique_debug_snapshot()
+	)
+
+	var effective_level: int = int(
+		snapshot.get(
+			"effective_level",
+			0
+		)
+	)
+
+	if effective_level <= 0:
+		return "NONE"
+
+	return "T%d %s | x%.2f | %.2fs%s%s" % [
+		effective_level,
+		str(snapshot.get("rhythm", "")),
+		float(
+			snapshot.get(
+				"attraction_multiplier",
+				1.0
+			)
+		),
+		float(snapshot.get("time_left", 0.0)),
+		(
+			" | BROAD"
+			if bool(
+				snapshot.get(
+					"broad_attraction",
+					false
+				)
+			)
+			else ""
+		),
+		(
+			" | FORCED"
+			if bool(snapshot.get("forced", false))
+			else ""
+		),
 	]
 
 

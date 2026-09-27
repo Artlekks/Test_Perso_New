@@ -20,6 +20,9 @@ enum RewardType {
 @export var reward_key: StringName = &""
 @export var display_name: String = ""
 @export_multiline var source_description: String = ""
+@export var claim_source_id: StringName = &""
+@export var claim_source_name: String = ""
+@export var sort_order: int = 0
 
 @export_category("Condition")
 @export var trigger_type: TriggerType = TriggerType.FISHING_POINTS
@@ -54,3 +57,8 @@ func is_valid_definition() -> bool:
 			return reward_item_id != &"" and quantity > 0
 		_:
 			return false
+
+
+
+func is_unique_equipment_reward() -> bool:
+	return reward_type == RewardType.ROD

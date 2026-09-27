@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishingSpotData" format=3 uid="uid://bfgr65akp22y1"]
 
-[ext_resource type="Script" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
-[ext_resource type="Script" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
+[ext_resource type="Script" uid="uid://dp4rd0nxaq62w" path="res://scripts/database/fishing_spot_data.gd" id="1_spot"]
+[ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
 [ext_resource type="Resource" uid="uid://biqcyropg3d4" path="res://data/bof4/fish/flying_fish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://bhbjocml2b5fy" path="res://data/bof4/fish/sea_bass.tres" id="4_fish"]
 [ext_resource type="Resource" uid="uid://behdeuf85h22j" path="res://data/bof4/fish/flatfish.tres" id="5_fish"]
@@ -33,7 +33,7 @@ weight = 14.0
 script = ExtResource("2_spawn")
 fish = ExtResource("7_fish")
 weight = 12.0
-ambient_weight_multiplier = 0.90
+ambient_weight_multiplier = 0.9
 
 [resource]
 script = ExtResource("1_spot")

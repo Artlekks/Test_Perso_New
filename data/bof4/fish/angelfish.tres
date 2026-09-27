@@ -10,12 +10,12 @@ region = Rect2(159, 58, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Angelfish"
 species_id = &"angelfish"
 journal_name = "Angelfish"
 guide_effect = "Revives one KO'd ally."
 guide_description = "Only found in mountain lakes. Popular with children."
 journal_spot_ids = Array[StringName]([&"lake_3"])
-fish_name = "Angelfish"
 average_size = 22.0
 king_size = 30.0
 base_stamina = 70.1

@@ -7,6 +7,9 @@ const CatchScoring = preload(
 const CatchEvaluator = preload(
 	"res://scripts/fishing_catch_evaluator.gd"
 )
+const DefaultProgressionCatalog: FishingProgressionCatalog = preload(
+	"res://data/bof4/progression/all_progression.tres"
+)
 
 signal changed
 signal catch_recorded(
@@ -20,33 +23,37 @@ signal catch_specimen_recorded(
 )
 
 const SAVE_VERSION: int = 5
-const MAX_FISHING_POINTS: int = 9999
 const SAVE_PATH: String = "user://fishing_progress.json"
-
-# Breath of Fire IV fishing-level thresholds. At an exact threshold the new
-# rank begins (e.g. 200 points = Beginner+).
-const RANK_TABLE: Array[Dictionary] = [
-	{"min_points": 0, "name": "Beginner"},
-	{"min_points": 200, "name": "Beginner+"},
-	{"min_points": 500, "name": "Beginner++"},
-	{"min_points": 1000, "name": "Rodman"},
-	{"min_points": 2000, "name": "Rodman+"},
-	{"min_points": 4000, "name": "Rodman++"},
-	{"min_points": 5000, "name": "Rodmaster"},
-	{"min_points": 7000, "name": "Rodmaster+"},
-	{"min_points": 9000, "name": "Rodmaster++"},
-	{"min_points": 9500, "name": "The Fish"},
-]
 
 var fishing_points: int = 0
 var total_catches: int = 0
 var species_records: Dictionary = {}
+
+var progression_catalog: FishingProgressionCatalog = (
+	DefaultProgressionCatalog
+)
 
 var _initialized: bool = false
 
 
 func _ready() -> void:
 	initialize()
+
+
+func configure_progression_catalog(
+	new_catalog: FishingProgressionCatalog
+) -> void:
+	if (
+		new_catalog == null
+		or not new_catalog.is_valid_catalog()
+	):
+		return
+
+	progression_catalog = new_catalog
+
+	if _initialized:
+		_recalculate_fishing_points()
+		changed.emit()
 
 
 func initialize() -> void:
@@ -302,82 +309,67 @@ func get_fishing_points() -> int:
 
 
 func get_rank_index(points: int = -1) -> int:
-	var value := fishing_points if points < 0 else clampi(points, 0, MAX_FISHING_POINTS)
-	var rank_index := 0
+	var value: int = (
+		fishing_points
+		if points < 0
+		else points
+	)
 
-	for index in range(RANK_TABLE.size()):
-		if value < int(RANK_TABLE[index]["min_points"]):
-			break
-		rank_index = index
-
-	return rank_index
+	return progression_catalog.get_rank_index(value)
 
 
 func get_rank_name(points: int = -1) -> String:
-	if RANK_TABLE.is_empty():
-		return ""
+	var value: int = (
+		fishing_points
+		if points < 0
+		else points
+	)
 
-	return str(RANK_TABLE[get_rank_index(points)]["name"])
+	return progression_catalog.get_rank_name(value)
+
+
+func get_rank_id(points: int = -1) -> StringName:
+	var value: int = (
+		fishing_points
+		if points < 0
+		else points
+	)
+
+	return progression_catalog.get_rank_id(value)
 
 
 func get_next_rank_threshold(points: int = -1) -> int:
-	var value := fishing_points if points < 0 else clampi(points, 0, MAX_FISHING_POINTS)
-	var current_index := get_rank_index(value)
+	var value: int = (
+		fishing_points
+		if points < 0
+		else points
+	)
 
-	if current_index >= RANK_TABLE.size() - 1:
-		return MAX_FISHING_POINTS
-
-	return int(RANK_TABLE[current_index + 1]["min_points"])
+	return progression_catalog.get_next_rank_threshold(
+		value
+	)
 
 
 func get_rank_progress(points: int = -1) -> Dictionary:
 	var value: int = (
 		fishing_points
 		if points < 0
-		else clampi(points, 0, MAX_FISHING_POINTS)
-	)
-	var index: int = get_rank_index(value)
-	var current_min: int = int(RANK_TABLE[index]["min_points"])
-	var next_threshold: int = get_next_rank_threshold(value)
-	var is_max_rank: bool = index >= RANK_TABLE.size() - 1
-
-	# The final rank still has useful progress from 9500 -> perfect 9999.
-	# For every other rank, progress ends at the next rank threshold.
-	var span_end: int = (
-		MAX_FISHING_POINTS
-		if is_max_rank
-		else next_threshold
-	)
-	var span_size: int = maxi(span_end - current_min, 1)
-	var points_into_rank: int = clampi(
-		value - current_min,
-		0,
-		span_size
-	)
-	var points_to_next: int = maxi(span_end - value, 0)
-	var progress_ratio: float = clampf(
-		float(points_into_rank) / float(span_size),
-		0.0,
-		1.0
+		else points
 	)
 
-	return {
-		"index": index,
-		"name": str(RANK_TABLE[index]["name"]),
-		"points": value,
-		"current_min": current_min,
-		"next_threshold": next_threshold,
-		"is_max_rank": is_max_rank,
-		"points_into_rank": points_into_rank,
-		"rank_span_points": span_size,
-		"points_to_next": points_to_next,
-		"progress_ratio": progress_ratio,
-		"max_fishing_points": MAX_FISHING_POINTS,
-	}
+	return progression_catalog.get_rank_progress(
+		value
+	)
+
+
+func get_progression_snapshot() -> Dictionary:
+	var snapshot: Dictionary = get_rank_progress()
+	snapshot["total_catches"] = total_catches
+	return snapshot
 
 
 func get_max_fishing_points() -> int:
-	return MAX_FISHING_POINTS
+	return progression_catalog.max_fishing_points
 
 
 func get_total_catches() -> int:
@@ -758,7 +750,7 @@ func _recalculate_fishing_points() -> void:
 
 	fishing_points = mini(
 		total,
-		MAX_FISHING_POINTS
+		get_max_fishing_points()
 	)
 
 

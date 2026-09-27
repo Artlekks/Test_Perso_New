@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FishingTechniqueDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_technique_definition.gd" id="1_tech"]
+
+[resource]
+script = ExtResource("1_tech")
+level = 4
+technique_id = &"tech_4"
+display_name = "Tec. 4"
+pulse_groups = PackedInt32Array(3, 2, 1)
+attraction_multiplier = 2.00
+boost_duration = 2.50
+broad_attraction = true
+source_note = "BOF4 help/wiki rhythm family: triple pulse, double pulse, single pulse. The wiki describes the fourth technique as attracting all fish types."
+tuning_note = "Attraction multiplier and boost duration preserve the project's existing V1 feel values; they are not claimed original-engine numeric constants."

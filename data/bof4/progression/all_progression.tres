@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="FishingProgressionCatalog" format=3 uid="uid://d0rfqm3kgq84x"]
+
+[ext_resource type="Script" uid="uid://d1mh20pb33uwv" path="res://scripts/database/fishing_progression_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" uid="uid://nt3w2r8hbvr4" path="res://scripts/database/fishing_rank_definition.gd" id="2_rank"]
+
+[sub_resource type="Resource" id="FishingRankDefinition_1"]
+script = ExtResource("2_rank")
+rank_id = &"beginner"
+display_name = "Beginner"
+
+[sub_resource type="Resource" id="FishingRankDefinition_2"]
+script = ExtResource("2_rank")
+rank_id = &"beginner_plus"
+display_name = "Beginner+"
+min_points = 200
+
+[sub_resource type="Resource" id="FishingRankDefinition_3"]
+script = ExtResource("2_rank")
+rank_id = &"beginner_plus_plus"
+display_name = "Beginner++"
+min_points = 500
+
+[sub_resource type="Resource" id="FishingRankDefinition_4"]
+script = ExtResource("2_rank")
+rank_id = &"rodman"
+display_name = "Rodman"
+min_points = 1000
+
+[sub_resource type="Resource" id="FishingRankDefinition_5"]
+script = ExtResource("2_rank")
+rank_id = &"rodman_plus"
+display_name = "Rodman+"
+min_points = 2000
+
+[sub_resource type="Resource" id="FishingRankDefinition_6"]
+script = ExtResource("2_rank")
+rank_id = &"rodman_plus_plus"
+display_name = "Rodman++"
+min_points = 4000
+
+[sub_resource type="Resource" id="FishingRankDefinition_7"]
+script = ExtResource("2_rank")
+rank_id = &"rodmaster"
+display_name = "Rodmaster"
+min_points = 5000
+
+[sub_resource type="Resource" id="FishingRankDefinition_8"]
+script = ExtResource("2_rank")
+rank_id = &"rodmaster_plus"
+display_name = "Rodmaster+"
+min_points = 7000
+
+[sub_resource type="Resource" id="FishingRankDefinition_9"]
+script = ExtResource("2_rank")
+rank_id = &"rodmaster_plus_plus"
+display_name = "Rodmaster++"
+min_points = 9000
+
+[sub_resource type="Resource" id="FishingRankDefinition_10"]
+script = ExtResource("2_rank")
+rank_id = &"the_fish"
+display_name = "The Fish"
+min_points = 9500
+
+[resource]
+script = ExtResource("1_catalog")
+ranks = Array[ExtResource("2_rank")]([SubResource("FishingRankDefinition_1"), SubResource("FishingRankDefinition_2"), SubResource("FishingRankDefinition_3"), SubResource("FishingRankDefinition_4"), SubResource("FishingRankDefinition_5"), SubResource("FishingRankDefinition_6"), SubResource("FishingRankDefinition_7"), SubResource("FishingRankDefinition_8"), SubResource("FishingRankDefinition_9"), SubResource("FishingRankDefinition_10")])

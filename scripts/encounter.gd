@@ -1,5 +1,9 @@
 extends Node
 
+const DefaultTechniqueCatalog: FishingTechniqueCatalog = preload(
+	"res://data/bof4/techniques/all_techniques.tres"
+)
+
 signal bite_opportunity_started
 signal bite_triggered
 signal bite_missed
@@ -79,11 +83,9 @@ var shadow_pre_bite_hold_radius: float = 1.9
 var shadow_pre_bite_retry_delay: float = 0.25
 
 @export_category("Fishing Techniques")
-@export var technique_boost_duration: float = 2.5
-@export var tech_1_attraction_multiplier: float = 1.15
-@export var tech_2_attraction_multiplier: float = 1.35
-@export var tech_3_attraction_multiplier: float = 1.60
-@export var tech_4_attraction_multiplier: float = 2.00
+@export var technique_catalog: FishingTechniqueCatalog = (
+	DefaultTechniqueCatalog
+)
 
 @export_category("Release Movement")
 @export_range(0.0, 1.0, 0.05)
@@ -896,6 +898,8 @@ func get_fish_debug_snapshot() -> Dictionary:
 	if fish_behavior != null and fish_behavior.has_method("get_debug_snapshot"):
 		snapshot["behavior"] = fish_behavior.get_debug_snapshot()
 
+	snapshot["technique"] = get_technique_debug_snapshot()
+
 	return snapshot
 
 
@@ -918,15 +922,25 @@ func set_active_bait_data(bait_data: BaitData) -> void:
 	active_bait_data = bait_data
 
 func apply_technique(level: int) -> void:
-	var clamped_level := clampi(level, 1, 4)
+	if technique_catalog == null:
+		return
 
-	active_tech_level = clamped_level
+	var definition: FishingTechniqueDefinition = (
+		technique_catalog.get_technique(level)
+	)
+
+	if definition == null:
+		return
+
+	active_tech_level = definition.level
 	technique_time_left = maxf(
-		technique_boost_duration,
+		definition.boost_duration,
 		0.0
 	)
 
-	technique_applied.emit(clamped_level)
+	technique_applied.emit(
+		active_tech_level
+	)
 
 
 func get_effective_tech_level() -> int:
@@ -940,24 +954,81 @@ func get_effective_tech_level() -> int:
 			debug_settings.get_forced_tech_level()
 		)
 
-		if forced_level > 0:
+		if (
+			forced_level > 0
+			and technique_catalog != null
+			and technique_catalog.get_technique(
+				forced_level
+			) != null
+		):
 			return forced_level
 
 	return active_tech_level
 
 
+func get_effective_technique() -> FishingTechniqueDefinition:
+	if technique_catalog == null:
+		return null
+
+	return technique_catalog.get_technique(
+		get_effective_tech_level()
+	)
+
+
 func _get_tech_attraction_multiplier() -> float:
-	match get_effective_tech_level():
-		1:
-			return tech_1_attraction_multiplier
-		2:
-			return tech_2_attraction_multiplier
-		3:
-			return tech_3_attraction_multiplier
-		4:
-			return tech_4_attraction_multiplier
-		_:
-			return 1.0
+	var definition: FishingTechniqueDefinition = (
+		get_effective_technique()
+	)
+
+	if definition == null:
+		return 1.0
+
+	return maxf(
+		definition.attraction_multiplier,
+		1.0
+	)
+
+
+func get_technique_debug_snapshot() -> Dictionary:
+	var effective_level: int = (
+		get_effective_tech_level()
+	)
+	var definition: FishingTechniqueDefinition = (
+		get_effective_technique()
+	)
+
+	return {
+		"active_level": active_tech_level,
+		"effective_level": effective_level,
+		"time_left": maxf(
+			technique_time_left,
+			0.0
+		),
+		"forced": (
+			effective_level > 0
+			and effective_level != active_tech_level
+		),
+		"attraction_multiplier": (
+			definition.attraction_multiplier
+			if definition != null
+			else 1.0
+		),
+		"broad_attraction": (
+			definition.broad_attraction
+			if definition != null
+			else false
+		),
+		"rhythm": (
+			definition.get_rhythm_label()
+			if definition != null
+			else ""
+		),
+		"catalog": (
+			technique_catalog.get_debug_summary()
+			if technique_catalog != null
+			else "NONE"
+		),
+	}
 
 
 func _update_technique_timer(delta: float) -> void:

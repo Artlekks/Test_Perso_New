@@ -37,6 +37,9 @@ const FishingRewardCatalogResource = preload(
 const FishingJournalCatalogResource = preload(
 	"res://data/bof4/journal/all_journal_data.tres"
 )
+const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
+	"res://data/bof4/progression/all_progression.tres"
+)
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -62,6 +65,9 @@ func initialize() -> void:
 
 	progress = FishingProgressScript.new()
 	progress.name = "FishingProgress"
+	progress.configure_progression_catalog(
+		FishingProgressionCatalogResource
+	)
 	add_child(progress)
 	progress.initialize()
 

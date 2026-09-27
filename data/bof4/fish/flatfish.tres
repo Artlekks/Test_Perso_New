@@ -10,12 +10,12 @@ region = Rect2(82, 217, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Flatfish"
 species_id = &"flatfish"
 journal_name = "Flatfish"
 guide_effect = "Cures all status ailments on one ally."
 guide_description = "Swims close to the bottom. Its eyes always look to the left."
 journal_spot_ids = Array[StringName]([&"ocean_2", &"ocean_3"])
-fish_name = "Flatfish"
 average_size = 37.0
 king_size = 50.0
 base_stamina = 83.6

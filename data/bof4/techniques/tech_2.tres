@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FishingTechniqueDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_technique_definition.gd" id="1_tech"]
+
+[resource]
+script = ExtResource("1_tech")
+level = 2
+technique_id = &"tech_2"
+display_name = "Tec. 2"
+pulse_groups = PackedInt32Array(1, 2, 1)
+attraction_multiplier = 1.35
+boost_duration = 2.50
+broad_attraction = false
+source_note = "BOF4 help/wiki rhythm family: one pulse, double pulse, one pulse."
+tuning_note = "Attraction multiplier and boost duration preserve the project's existing V1 feel values; they are not claimed original-engine numeric constants."

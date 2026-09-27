@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://cwamaw6pettl8"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/martian_squid_behavior.tres" id="2_behavior"]
+[ext_resource type="Resource" uid="uid://dfpp0mt7hcj6f" path="res://data/bof4/fish_behaviors/martian_squid_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_martian_squid"]
@@ -10,12 +10,12 @@ region = Rect2(82, 111, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Martian Squid"
 species_id = &"martian_squid"
 journal_name = "Martian Squid"
 guide_effect = "Nullifies positive status effects."
 guide_description = "Lives in shallow waters. Hard to catch as it is very strong."
 journal_spot_ids = Array[StringName]([&"lake_1", &"lake_2", &"lake_3"])
-fish_name = "Martian Squid"
 average_size = 52.0
 king_size = 70.0
 base_stamina = 83.6

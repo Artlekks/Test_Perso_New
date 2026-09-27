@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishingTechniqueCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_technique_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/bof4/techniques/tech_1.tres" id="2_tech"]
+[ext_resource type="Resource" path="res://data/bof4/techniques/tech_2.tres" id="3_tech"]
+[ext_resource type="Resource" path="res://data/bof4/techniques/tech_3.tres" id="4_tech"]
+[ext_resource type="Resource" path="res://data/bof4/techniques/tech_4.tres" id="5_tech"]
+
+[resource]
+script = ExtResource("1_catalog")
+minimum_input_interval = 0.06
+short_interval_min = 0.08
+short_interval_max = 0.30
+pause_interval_min = 0.34
+pause_interval_max = 0.75
+sequence_reset_gap = 0.95
+techniques = Array[Resource]([ExtResource("2_tech"), ExtResource("3_tech"), ExtResource("4_tech"), ExtResource("5_tech")])

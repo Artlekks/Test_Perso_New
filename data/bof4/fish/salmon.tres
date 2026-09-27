@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://b4o1i6nhbjwx"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/salmon_behavior.tres" id="2_behavior"]
+[ext_resource type="Resource" uid="uid://c6xp1brbr24kv" path="res://data/bof4/fish_behaviors/salmon_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_salmon"]
@@ -10,12 +10,12 @@ region = Rect2(236, 111, 72, 48)
 
 [resource]
 script = ExtResource("1_fish")
+fish_name = "Salmon"
 species_id = &"salmon"
 journal_name = "Salmon"
 guide_effect = "Restores 30 AP to all allies."
 guide_description = "Usually swims far out to sea. But can be caught in rivers."
 journal_spot_ids = Array[StringName]([&"river_2", &"river_3"])
-fish_name = "Salmon"
 average_size = 105.0
 king_size = 140.0
 base_stamina = 103.5

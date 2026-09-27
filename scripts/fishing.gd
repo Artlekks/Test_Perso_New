@@ -461,19 +461,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			and not bite_opportunity_animation_active
 			and not bite_animation_active
 		):
+			technique_detector.record_pulse(&"rod_pull")
 			caster.pull_bait_toward_player()
 			_play_manual_pull_animation()
 			get_viewport().set_input_as_handled()
 			return
 
 		if event.is_action_pressed("ds_left"):
-			technique_detector.record_pulse()
+			technique_detector.record_pulse(&"left")
 			caster.twitch_bait(-1.0)
 			encounter.add_lure_tension(0.05)
 			return
 
 		if event.is_action_pressed("ds_right"):
-			technique_detector.record_pulse()
+			technique_detector.record_pulse(&"right")
 			caster.twitch_bait(1.0)
 			encounter.add_lure_tension(0.05)
 			return
@@ -483,7 +484,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				technique_detector.reset()
 				return
 
-			technique_detector.record_pulse()
+			technique_detector.record_pulse(&"reel")
 			encounter.set_player_reeling(true)
 			caster.set_reeling(true)
 			current_reel_animation = &""

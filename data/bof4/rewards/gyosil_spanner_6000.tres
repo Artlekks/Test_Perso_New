@@ -1,15 +1,15 @@
-[gd_resource type="Resource" script_class="FishingRewardDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishingRewardDefinition" format=3 uid="uid://fetekxly5npj"]
 
-[ext_resource type="Script" path="res://scripts/database/fishing_reward_definition.gd" id="1_reward"]
+[ext_resource type="Script" uid="uid://k312e8ua6k82" path="res://scripts/database/fishing_reward_definition.gd" id="1_reward"]
 
 [resource]
 script = ExtResource("1_reward")
 reward_key = &"gyosil_spanner_6000"
 display_name = "Spanner"
 source_description = "Master Gyosil reward at 6000 fishing points. Claimable, not auto-granted."
-trigger_type = 0
+claim_source_id = &"gyosil"
+claim_source_name = "Master Gyosil"
+sort_order = 6000
 threshold = 6000
 reward_type = 1
 reward_item_id = &"spanner"
-quantity = 1
-auto_claim = false
