@@ -7,24 +7,30 @@ signal dismissed
 @export var slide_padding_px: float = 30.0
 @export var king_name_prefix: String = "KING "
 @export_category("Record Result")
-@export var record_text_position: Vector2 = Vector2(205.0, 235.0)
+@export var record_text_position: Vector2 = Vector2(28.0, 310.0)
 @export var record_text_size: Vector2 = Vector2(230.0, 88.0)
-@export var record_text_scale: Vector2 = Vector2(1.0, 1.0)
-
-
+@export var record_text_scale: Vector2 = Vector2(1.6, 1.6)
 @onready var root: Control = $Root
 @onready var fish_portrait: TextureRect = $Root/FishPortrait
 @onready var fish_name_label: Label = $Root/FishNameLabel
 @onready var fish_size_label: Label = $Root/FishSizeLabel
 @onready var fish_points_label: Label = $Root/FishPointsLabel
+@onready var record_badge: TextureRect = $Root/NewRecordBadge
+@onready var rank_badge: TextureRect = $Root/RankBadge
 
 var _rest_position: Vector2 = Vector2.ZERO
 var _move_tween: Tween = null
 var _record_label: Label = null
 
+const RANK_BADGE_DIRECTORY := "res://assets/ui/fishing_menu/ranks"
+# Rank art is authored at its final 640x480 HUD size. Keep it under Root so it
+# never inherits CatchFrame's 2x transform. This is the requested final position.
+const RANK_BADGE_ROOT_POSITION := Vector2(280.0, 274.0)
+
 func _ready() -> void:
 	_rest_position = root.position
 	_create_record_label()
+	_setup_rank_badge()
 	root.visible = false
 
 func show_catch(
@@ -91,7 +97,7 @@ func _create_record_label() -> void:
 	_record_label.position = record_text_position
 	_record_label.size = record_text_size
 	_record_label.scale = record_text_scale
-	_record_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_record_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_record_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_record_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_record_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -113,54 +119,95 @@ func _set_record_text(record_result: Dictionary) -> void:
 	if _record_label == null:
 		return
 
+	record_badge.visible = _should_show_record_badge(record_result)
+	_update_rank_badge(record_result)
+
+	# This label is the lifetime fishing-point total only. Keep it numeric so
+	# the baked "pts." artwork in the catch frame remains the single unit label.
 	_record_label.text = ""
 
-	if record_result.is_empty():
-		return
-
-	var lines: Array[String] = []
-	var is_new_species := bool(
-		record_result.get(
-			"new_species",
-			false
+	if record_result.has("fishing_points"):
+		_record_label.text = "%d" % maxi(
+			int(record_result.get("fishing_points", 0)),
+			0
 		)
+
+
+func _should_show_record_badge(record_result: Dictionary) -> bool:
+	if record_result.is_empty():
+		return false
+
+	return (
+		bool(record_result.get("new_species", false))
+		or bool(record_result.get("new_best_size", false))
+		or bool(record_result.get("new_best_points", false))
 	)
 
-	if is_new_species:
-		lines.append("NEW SPECIES!")
-	else:
-		if bool(
-			record_result.get(
-				"new_best_size",
-				false
-			)
-		):
-			lines.append("NEW SIZE RECORD!")
 
-		if bool(
-			record_result.get(
-				"new_best_points",
-				false
-			)
-		):
-			lines.append("NEW POINT RECORD!")
+func _setup_rank_badge() -> void:
+	if rank_badge == null:
+		return
 
-	if bool(
-		record_result.get(
-			"first_king",
-			false
-		)
-	):
-		lines.append("FIRST KING!")
+	# The badge texture is already authored at its final pixel dimensions.
+	# Keep it directly under Root so CatchFrame's 2x scale cannot double it again.
+	if rank_badge.get_parent() != root:
+		rank_badge.reparent(root, false)
 
-	var rank_name := str(record_result.get("rank_name", ""))
+	rank_badge.position = RANK_BADGE_ROOT_POSITION
+	rank_badge.scale = Vector2.ONE
+	rank_badge.pivot_offset = Vector2.ZERO
+	rank_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rank_badge.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rank_badge.stretch_mode = TextureRect.STRETCH_KEEP
+	if rank_badge.texture != null:
+		rank_badge.size = rank_badge.texture.get_size()
+	rank_badge.visible = rank_badge.texture != null
+
+
+func _update_rank_badge(record_result: Dictionary) -> void:
+	if rank_badge == null:
+		return
+
+	# Rank is persistent catch information, not a record-only event. The current
+	# badge stays visible on every catch and only changes when a new rank texture
+	# can be resolved.
+	var rank_id := str(record_result.get("rank_id", "")).strip_edges()
+	var rank_name := str(record_result.get("rank_name", "")).strip_edges()
+
+	if not rank_id.is_empty() or not rank_name.is_empty():
+		var badge_texture := _load_rank_badge_texture(rank_id, rank_name)
+		if badge_texture != null:
+			rank_badge.texture = badge_texture
+			rank_badge.size = badge_texture.get_size()
+
+	rank_badge.position = RANK_BADGE_ROOT_POSITION
+	rank_badge.scale = Vector2.ONE
+	rank_badge.visible = rank_badge.texture != null
+
+
+func _load_rank_badge_texture(rank_id: String, rank_name: String) -> Texture2D:
+	var candidates: Array[String] = []
+
+	# rank_id is the stable asset key. display_name may be renamed later without
+	# breaking progression or forcing code changes.
+	if not rank_id.is_empty():
+		candidates.append(rank_id)
+		candidates.append("Rank_" + rank_id)
+
 	if not rank_name.is_empty():
-		if bool(record_result.get("rank_up", false)):
-			lines.append("RANK UP! " + rank_name.to_upper())
-		else:
-			lines.append("RANK: " + rank_name.to_upper())
+		var underscored_name := rank_name.replace(" ", "_")
+		candidates.append(rank_name)
+		candidates.append(underscored_name)
+		candidates.append("Rank_" + underscored_name)
+		candidates.append(rank_name.to_lower())
+		candidates.append(rank_name.to_lower().replace(" ", "_"))
 
-	_record_label.text = "\n".join(lines)
+	for candidate in candidates:
+		var path := "%s/%s.png" % [RANK_BADGE_DIRECTORY, candidate]
+		if ResourceLoader.exists(path):
+			return load(path) as Texture2D
+
+	return null
 
 
 func dismiss_catch() -> void:
@@ -214,6 +261,10 @@ func hide_catch() -> void:
 
 	if _record_label != null:
 		_record_label.text = ""
+
+	record_badge.visible = false
+	if rank_badge != null:
+		rank_badge.visible = false
 
 	root.visible = false
 	root.position = _rest_position

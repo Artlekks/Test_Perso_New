@@ -51,6 +51,7 @@
 [ext_resource type="Texture2D" uid="uid://biwb03lpmn68q" path="res://assets/sprites/info_frame.png" id="44_wnbcf"]
 [ext_resource type="Texture2D" uid="uid://1fdaxsgd80ca" path="res://assets/sprites/CatchFrame.png" id="45_h3od0"]
 [ext_resource type="Script" uid="uid://cx7dasqcwn8j8" path="res://scripts/fishing_catch_view.gd" id="45_kheg5"]
+[ext_resource type="Texture2D" uid="uid://bvwkvh37ivho6" path="res://assets/ui/fishing_menu/New_Record.png" id="45_new_record"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="46_hmxwl"]
 [ext_resource type="FontFile" uid="uid://c35wcinto4ik1" path="res://assets/fonts/BOF_Font.fnt" id="48_1gbnc"]
 [ext_resource type="Script" uid="uid://c4s43igyy5g0v" path="res://scripts/throw_preview.gd" id="56_bqx6j"]
@@ -655,6 +656,28 @@ offset_right = 321.0
 offset_bottom = 209.0
 scale = Vector2(2, 2)
 texture = ExtResource("45_h3od0")
+stretch_mode = 2
+
+[node name="NewRecordBadge" type="TextureRect" parent="UI/FishingHud/FishingCatchView/Root" unique_id=2113509667]
+visible = false
+layout_mode = 0
+offset_left = 334.0
+offset_top = 130.0
+offset_right = 398.0
+offset_bottom = 138.0
+scale = Vector2(2, 2)
+mouse_filter = 2
+texture = ExtResource("45_new_record")
+stretch_mode = 2
+
+[node name="RankBadge" type="TextureRect" parent="UI/FishingHud/FishingCatchView/Root" unique_id=620794226]
+visible = false
+layout_mode = 0
+offset_left = 250.0
+offset_top = 274.0
+offset_right = 315.0
+offset_bottom = 283.0
+mouse_filter = 2
 stretch_mode = 2
 
 [node name="FishPortrait" type="TextureRect" parent="UI/FishingHud/FishingCatchView/Root" unique_id=1954250058]

@@ -23,7 +23,7 @@ const FishingManilloLedgerScript = preload(
 )
 const FishingUnlockStateScript = preload(
 	"res://scripts/fishing_unlock_state.gd"
-)
+)	
 const FishingRewardServiceScript = preload(
 	"res://scripts/fishing_reward_service.gd"
 )

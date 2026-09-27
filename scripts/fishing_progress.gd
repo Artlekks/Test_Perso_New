@@ -280,6 +280,7 @@ func record_catch_snapshot(
 		"rank_before": get_rank_name(
 			previous_fishing_points
 		),
+		"rank_id": str(get_rank_id(fishing_points)),
 		"rank_name": current_rank_name,
 		"rank_index": current_rank_index,
 		"rank_up": (
