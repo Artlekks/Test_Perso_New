@@ -84,6 +84,7 @@ func perform_cast(
 	bottom_y: float,
 	bait_data: BaitData,
 	swim_bounds: Node,
+	shore_boundary: Node3D,
 	curve_amount: float = 0.0
 ) -> Node3D:
 	if bait_scene == null or spawn_point == null:
@@ -127,6 +128,7 @@ func perform_cast(
 
 	active_bait.set_reel_target(reel_target)
 	active_bait.set_swim_bounds(swim_bounds)
+	active_bait.set_shore_boundary(shore_boundary)
 	active_bait.gravity = cast_gravity
 
 	active_bait.launch(

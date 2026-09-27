@@ -31,6 +31,9 @@ const CameraRigScript = preload(
 const CastInputGateScript = preload(
 	"res://scripts/fishing_cast_input_gate.gd"
 )
+const ShoreBoundaryScript = preload(
+	"res://scripts/fishing_shore_boundary.gd"
+)
 
 const QA_PROFILE_DIRECTORY: String = "res://data/debug/qa_profiles"
 
@@ -69,6 +72,7 @@ func run_all() -> Dictionary:
 	_test_trades(report)
 	_test_tension_profile(report)
 	_test_landing_regression(report)
+	_test_shore_boundary_regression(report)
 	_test_camera_return_regression(report)
 	_test_cast_input_regression(report)
 	_test_qa_profiles(report)
@@ -493,6 +497,69 @@ func _test_landing_regression(
 	)
 
 	bait.free()
+
+
+func _test_shore_boundary_regression(
+	report: Dictionary
+) -> void:
+	var group: String = "shore_boundary"
+	var boundary = ShoreBoundaryScript.new()
+	var shape_node := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+
+	box.size = Vector3(10.0, 2.0, 0.35)
+	shape_node.shape = box
+	shape_node.name = "CollisionShape3D"
+	boundary.add_child(shape_node)
+	boundary.position = Vector3(0.0, 0.0, -0.45)
+	boundary.water_side_sign = -1
+	boundary.water_clearance = 0.0
+
+	var clamped: Vector3 = boundary.constrain_water_motion(
+		Vector3(0.0, 0.0, -1.0),
+		Vector3(0.0, 0.0, 0.25)
+	)
+
+	_assert(
+		report,
+		clamped.z <= -0.6249,
+		"hooked fish cannot cross the shore plane",
+		group
+	)
+
+	var lateral_clamped: Vector3 = boundary.constrain_water_motion(
+		Vector3(8.0, 0.0, -1.0),
+		Vector3(8.0, 0.0, 0.25)
+	)
+
+	_assert(
+		report,
+		lateral_clamped.z <= -0.6249,
+		"shore plane remains authoritative during hard lateral runs",
+		group
+	)
+
+	var bait = BaitScript.new()
+	var reel_target := Node3D.new()
+	reel_target.position = Vector3.ZERO
+	bait.position = Vector3(0.0, 0.0, 0.20)
+	bait.set_reel_target(reel_target)
+	bait.set_shore_boundary(boundary)
+	bait.state = BaitScript.State.IN_WATER
+	bait.fight_mode = true
+
+	bait._finish_return(reel_target.global_position)
+
+	_assert(
+		report,
+		bait.position.z <= -0.6249,
+		"fight landing does not teleport fish onto dry land",
+		group
+	)
+
+	bait.free()
+	reel_target.free()
+	boundary.free()
 
 
 func _test_camera_return_regression(

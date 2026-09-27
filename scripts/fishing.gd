@@ -1624,6 +1624,7 @@ func _commit_curved_cast() -> void:
 	var cast_direction: Vector3 = aim.get_direction()
 	var cast_lure: BaitData = null
 	var cast_swim_bounds: Node = null
+	var cast_shore_boundary: Node3D = null
 
 	if loadout != null:
 		cast_lure = loadout.get_selected_lure()
@@ -1639,6 +1640,9 @@ func _commit_curved_cast() -> void:
 
 	if zone.has_method("get_swim_bounds"):
 		cast_swim_bounds = zone.get_swim_bounds()
+
+	if zone.has_method("get_shore_boundary"):
+		cast_shore_boundary = zone.get_shore_boundary()
 
 	# Predict once more before launch so camera follow can use the actual
 	# curved landing direction instead of the original straight heading.
@@ -1678,6 +1682,7 @@ func _commit_curved_cast() -> void:
 		zone.get_bottom_y(),
 		cast_lure,
 		cast_swim_bounds,
+		cast_shore_boundary,
 		selected_curve
 	)
 

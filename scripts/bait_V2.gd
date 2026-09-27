@@ -166,6 +166,7 @@ var reel_target: Node3D = null
 var reeling: bool = false
 var simulation_frozen: bool = false
 var swim_bounds: Node = null
+var shore_boundary: Node = null
 
 var snag_probe: Area3D = null
 var snag_risk: float = 0.0
@@ -336,6 +337,10 @@ func set_swim_bounds(bounds: Node) -> void:
 	swim_bounds = bounds
 
 
+func set_shore_boundary(boundary: Node) -> void:
+	shore_boundary = boundary
+
+
 func set_reeling(active: bool) -> void:
 	var was_reeling := reeling
 	reeling = active
@@ -414,6 +419,7 @@ func _physics_process(delta: float) -> void:
 	_update_twitch_motion(delta)
 	
 	_enforce_fight_distance()
+	_enforce_shore_boundary()
 	
 func _update_flying(delta: float) -> void:
 	if air_path.size() >= 2:
@@ -720,15 +726,8 @@ func _update_reeling(delta: float) -> void:
 
 	var distance := to_target.length()
 
-	if can_complete_return(distance):
-		global_position.x = target_position.x
-		global_position.z = target_position.z
-		reel_steering = 0.0
-		reel_steering_target = 0.0
-		fish_lateral = 0.0
-		_reset_micro_movement()
-		reeling = false
-		returned.emit()
+	if _can_complete_active_return(distance):
+		_finish_return(target_position)
 		return
 
 	var forward := to_target.normalized()
@@ -773,22 +772,21 @@ func _update_reeling(delta: float) -> void:
 
 		reel_speed *= multiplier
 
-	var move_distance := reel_speed * delta
+	var move_distance := minf(
+		reel_speed * delta,
+		distance
+	)
+	var proposed_position := (
+		global_position
+		+ reel_direction * move_distance
+	)
 
-	# Never step past the target.
-	if move_distance >= distance:
-		global_position.x = target_position.x
-		global_position.z = target_position.z
-		reel_steering = 0.0
-		reel_steering_target = 0.0
-		fish_lateral = 0.0
-		_reset_micro_movement()
+	proposed_position = _constrain_waterborne_shore_position(
+		proposed_position
+	)
 
-		reeling = false
-		returned.emit()
-		return
-
-	global_position += reel_direction * move_distance
+	global_position.x = proposed_position.x
+	global_position.z = proposed_position.z
 
 	if not fight_mode:
 		global_position.y = move_toward(
@@ -798,6 +796,14 @@ func _update_reeling(delta: float) -> void:
 		)
 
 	_emit_depth()
+
+	var remaining_distance := Vector2(
+		target_position.x - global_position.x,
+		target_position.z - global_position.z
+	).length()
+
+	if _can_complete_active_return(remaining_distance):
+		_finish_return(target_position)
 	
 func queue_manual_pull() -> void:
 	if state != State.SINKING and state != State.IN_WATER:
@@ -873,12 +879,8 @@ func _update_manual_pull(delta: float) -> bool:
 	)
 	var distance: float = to_target.length()
 
-	if can_complete_return(distance):
-		global_position.x = target_position.x
-		global_position.z = target_position.z
-		_reset_manual_pull_motion()
-		reeling = false
-		returned.emit()
+	if _can_complete_active_return(distance):
+		_finish_return(target_position)
 		return true
 
 	if distance <= 0.0001:
@@ -886,7 +888,7 @@ func _update_manual_pull(delta: float) -> bool:
 		return false
 
 	var available_distance: float = maxf(
-		distance - return_distance,
+		distance - get_effective_return_distance(),
 		0.0
 	)
 
@@ -959,12 +961,24 @@ func _update_manual_pull(delta: float) -> bool:
 	if move_distance <= 0.0:
 		return false
 
-	global_position += (
-		to_target.normalized()
-		* move_distance
+	var previous_position := global_position
+	var proposed_position := (
+		global_position
+		+ to_target.normalized() * move_distance
 	)
+	proposed_position = _constrain_waterborne_shore_position(
+		proposed_position
+	)
+
+	global_position.x = proposed_position.x
+	global_position.z = proposed_position.z
+
+	var actual_move_distance := Vector2(
+		global_position.x - previous_position.x,
+		global_position.z - previous_position.z
+	).length()
 	manual_pull_remaining = maxf(
-		manual_pull_remaining - move_distance,
+		manual_pull_remaining - actual_move_distance,
 		0.0
 	)
 
@@ -975,12 +989,8 @@ func _update_manual_pull(delta: float) -> bool:
 		target_position.z - global_position.z
 	).length()
 
-	if can_complete_return(remaining_flat):
-		global_position.x = target_position.x
-		global_position.z = target_position.z
-		_reset_manual_pull_motion()
-		reeling = false
-		returned.emit()
+	if _can_complete_active_return(remaining_flat):
+		_finish_return(target_position)
 		return true
 
 	if manual_pull_remaining <= 0.00001:
@@ -1329,6 +1339,114 @@ func can_complete_return(
 			0.0
 		)
 	)
+
+
+func get_effective_return_distance() -> float:
+	var effective_distance := maxf(
+		return_distance,
+		0.0
+	)
+
+	if (
+		shore_boundary == null
+		or reel_target == null
+		or not shore_boundary.has_method(
+			"get_water_side_projection"
+		)
+	):
+		return effective_distance
+
+	var shore_point: Vector3 = (
+		shore_boundary.get_water_side_projection(
+			reel_target.global_position
+		)
+	)
+	var target_flat := Vector2(
+		reel_target.global_position.x,
+		reel_target.global_position.z
+	)
+	var shore_flat := Vector2(
+		shore_point.x,
+		shore_point.z
+	)
+
+	# If a fishing spot places Ryu farther back from the actual waterline than
+	# the normal 0.5 m landing radius, the shore itself becomes the reachable
+	# landing point. The small epsilon prevents a fish from getting stuck on
+	# floating-point noise while pressed against the blocker.
+	return maxf(
+		effective_distance,
+		target_flat.distance_to(shore_flat) + 0.01
+	)
+
+
+func _can_complete_active_return(
+	distance_to_player: float
+) -> bool:
+	return (
+		distance_to_player
+		<= get_effective_return_distance()
+	)
+
+
+func _constrain_waterborne_shore_position(
+	proposed_position: Vector3
+) -> Vector3:
+	if (
+		state != State.SINKING
+		and state != State.IN_WATER
+	):
+		return proposed_position
+
+	if (
+		shore_boundary == null
+		or not shore_boundary.has_method(
+			"constrain_water_motion"
+		)
+	):
+		return proposed_position
+
+	return shore_boundary.constrain_water_motion(
+		global_position,
+		proposed_position
+	)
+
+
+func _enforce_shore_boundary() -> void:
+	if (
+		state != State.SINKING
+		and state != State.IN_WATER
+	):
+		return
+
+	var constrained_position := (
+		_constrain_waterborne_shore_position(
+			global_position
+		)
+	)
+
+	global_position.x = constrained_position.x
+	global_position.z = constrained_position.z
+
+
+func _finish_return(
+	target_position: Vector3
+) -> void:
+	if fight_mode:
+		# The fish stays on the water side for the landing presentation. Do not
+		# teleport it onto Ryu/dry land just because the return threshold fired.
+		_enforce_shore_boundary()
+	else:
+		global_position.x = target_position.x
+		global_position.z = target_position.z
+
+	reel_steering = 0.0
+	reel_steering_target = 0.0
+	fish_lateral = 0.0
+	_reset_micro_movement()
+	_reset_manual_pull_motion()
+	reeling = false
+	returned.emit()
 
 
 func _get_reel_convergence(distance: float) -> float:

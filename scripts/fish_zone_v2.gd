@@ -8,6 +8,7 @@ signal fishing_spot_changed(spot: FishingSpotData)
 
 @export var facing_tolerance_degrees: float = 60.0
 @export var fishing_spot: FishingSpotData
+@export var shore_boundary: Node3D
 
 @onready var water_facing: Node3D = $WaterFacing
 @onready var water_surface: Node3D = $WaterSurface
@@ -53,6 +54,10 @@ func get_water_depth() -> float:
 
 func get_swim_bounds() -> Node:
 	return swim_bounds
+
+
+func get_shore_boundary() -> Node3D:
+	return shore_boundary
 
 
 func get_fish_population() -> Array[FishSpawnEntry]:
