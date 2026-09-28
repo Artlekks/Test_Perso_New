@@ -1,6 +1,7 @@
 extends Node3D
 
 @export var interaction_prompt: String = "K : Cards"
+@export var opponent_profile: Resource
 
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
@@ -26,7 +27,7 @@ func _input(event: InputEvent) -> void:
 		return
 	var game: Node = _find_game()
 	if game != null and game.has_method("open_game"):
-		game.call("open_game")
+		game.call("open_game", opponent_profile)
 	get_viewport().set_input_as_handled()
 
 

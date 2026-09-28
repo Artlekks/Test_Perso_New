@@ -20,12 +20,13 @@ const CardDefinitionScript = preload("res://scripts/triple_triad/triple_triad_ca
 
 var _cache: Dictionary = {}
 
-# Prototype ranks deliberately use the full 1-6 range. Fish use the same range
-# for now; source_kind lets us give them a separate balance curve later without
-# changing the card game engine.
+# Prototype ranks deliberately use the full 1-6 range. Fish remain supported by
+# the backend, but are disabled in the current catalog while the card art is
+# portrait-only.
 const PROTOTYPE_MIN_RANK := 1
 const PROTOTYPE_MAX_RANK := 6
 const DEFAULT_FISH_LEVEL_SPAN := 3
+const BUDGET_SEARCH_ATTEMPTS := 180
 
 
 func get_card(index: int):
@@ -59,16 +60,63 @@ func get_cards_for_level_range(min_level: int, max_level: int) -> Array:
 
 func build_random_hand(rng: RandomNumberGenerator, min_level: int = 1, max_level: int = 3, hand_size: int = 5) -> Array:
 	var pool: Array = get_cards_for_level_range(min_level, max_level)
-	var result: Array = []
-	if pool.is_empty():
-		return result
-	var available: Array = pool.duplicate()
-	var desired_count: int = mini(hand_size, available.size())
-	for _draw_index in range(desired_count):
-		var pick_index: int = rng.randi_range(0, available.size() - 1)
-		result.append(available[pick_index])
-		available.remove_at(pick_index)
-	return result
+	return _draw_unique_cards(rng, pool, hand_size)
+
+
+func build_budgeted_hand(
+	rng: RandomNumberGenerator,
+	min_level: int = 1,
+	max_level: int = 3,
+	hand_size: int = 5,
+	deck_budget: int = 30
+) -> Array:
+	var pool: Array = get_cards_for_level_range(min_level, max_level)
+	if pool.size() <= hand_size:
+		return pool.duplicate()
+
+	var best_hand: Array = []
+	var best_cost: int = -1
+	for _attempt in range(BUDGET_SEARCH_ATTEMPTS):
+		var candidate: Array = _draw_unique_cards(rng, pool, hand_size)
+		if candidate.size() != hand_size:
+			continue
+		var candidate_cost: int = get_hand_cost(candidate)
+		if candidate_cost <= deck_budget:
+			# Prefer a hand that actually uses the available budget instead of always
+			# settling for the first cheap combination we happen to roll.
+			if candidate_cost > best_cost:
+				best_hand = candidate
+				best_cost = candidate_cost
+			if candidate_cost == deck_budget:
+				return candidate
+
+	if not best_hand.is_empty():
+		return best_hand
+
+	# A very restrictive future region should still produce a legal five-card
+	# hand when possible: fall back to the cheapest available cards.
+	var cheapest: Array = pool.duplicate()
+	cheapest.sort_custom(func(a, b):
+		if int(a.deck_cost) == int(b.deck_cost):
+			return int(a.rank_total()) < int(b.rank_total())
+		return int(a.deck_cost) < int(b.deck_cost)
+	)
+	var fallback: Array = []
+	for index in range(mini(hand_size, cheapest.size())):
+		fallback.append(cheapest[index])
+	return fallback
+
+
+func get_hand_cost(cards: Array) -> int:
+	var total: int = 0
+	for card in cards:
+		if card != null:
+			total += int(card.deck_cost)
+	return total
+
+
+func is_hand_within_budget(cards: Array, deck_budget: int, required_size: int = 5) -> bool:
+	return cards.size() == required_size and get_hand_cost(cards) <= deck_budget
 
 
 func validate_catalog() -> Dictionary:
@@ -114,6 +162,7 @@ func _build_portrait_card(index: int):
 	card.level = 1 + (index % 10)
 	var ranks: Array[int] = _generate_ranks(index, card.level)
 	_assign_ranks(card, ranks)
+	card.deck_cost = _cost_from_ranks(card.rank_total())
 	card.portrait = _build_portrait_texture(index)
 	return card
 
@@ -141,6 +190,7 @@ func _build_fish_card(fish_index: int):
 	card.level = 1 + (fish_index % DEFAULT_FISH_LEVEL_SPAN)
 	var ranks: Array[int] = _generate_ranks(card_count + fish_index + 4096, card.level)
 	_assign_ranks(card, ranks)
+	card.deck_cost = _cost_from_ranks(card.rank_total())
 	var fish_portrait = fish.get("portrait")
 	if fish_portrait is Texture2D:
 		card.portrait = fish_portrait
@@ -175,6 +225,27 @@ func _assign_ranks(card, ranks: Array[int]) -> void:
 	card.right_rank = ranks[1]
 	card.bottom_rank = ranks[2]
 	card.left_rank = ranks[3]
+
+
+func _cost_from_ranks(rank_total: int) -> int:
+	# Prototype cost is intentionally strength-based, not rarity-based. Real card
+	# definitions can override this later. Current generated cards span roughly
+	# 2-9 points, leaving room for hand-authored 10-point legendary cards.
+	var normalized: float = remap(float(rank_total), 4.0, 24.0, 1.0, 10.0)
+	return clampi(roundi(normalized), 1, 10)
+
+
+func _draw_unique_cards(rng: RandomNumberGenerator, pool: Array, hand_size: int) -> Array:
+	var result: Array = []
+	if pool.is_empty():
+		return result
+	var available: Array = pool.duplicate()
+	var desired_count: int = mini(hand_size, available.size())
+	for _draw_index in range(desired_count):
+		var pick_index: int = rng.randi_range(0, available.size() - 1)
+		result.append(available[pick_index])
+		available.remove_at(pick_index)
+	return result
 
 
 func _generate_ranks(index: int, level: int) -> Array[int]:

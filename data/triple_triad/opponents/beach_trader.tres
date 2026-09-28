@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/trickster.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="3_region"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"beach_trader"
+display_name = "Beach Trader"
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+min_card_level = 1
+max_card_level = 3
+deck_budget_override = 0

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_region_profile.gd" id="1_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="2_rules"]
+
+[resource]
+script = ExtResource("1_region")
+region_id = &"prototype_volcanic"
+display_name = "Prototype Volcanic"
+board_trait_name = "Magma Veins"
+board_trait_description = "Magma Veins: edge-center cells grant +1 on every side."
+deck_budget = 32
+allow_rotate = true
+rule_set = ExtResource("2_rules")
+cell_rank_bonuses = PackedInt32Array(0, 1, 0, 1, 0, 1, 0, 1, 0)

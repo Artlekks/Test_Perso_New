@@ -1,0 +1,20 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_qa_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="2_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/trickster.tres" id="3_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "SAME + COMBO LAB"
+sort_order = 40
+purpose = "Repeatable hands and player first turn for testing Same traps and Combo propagation against the Trickster AI."
+region_profile = ExtResource("2_region")
+ai_profile = ExtResource("3_ai")
+rule_set_override = ExtResource("4_rules")
+deck_budget_override = 30
+min_card_level = 1
+max_card_level = 3
+starting_owner = 1
+hand_seed = 1337

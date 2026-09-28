@@ -13,11 +13,12 @@ const STATE_SELECT := 1
 const STATE_CONFIRM := 2
 const STATE_RESOLVING := 3
 const STATE_ENTERING := 4
+const STATE_FOCUS_HOLD := 5
 
-const ROW_SCALE := Vector2(0.78, 0.78)
-const ROW_STEP_X := 100.0
-const TOP_ROW_ORIGIN := Vector2(70.0, 92.0)
-const BOTTOM_ROW_ORIGIN := Vector2(70.0, 258.0)
+const ROW_SCALE := Vector2(0.88, 0.88)
+const ROW_STEP_X := 108.0
+const TOP_ROW_ORIGIN := Vector2(42.0, 84.0)
+const BOTTOM_ROW_ORIGIN := Vector2(42.0, 286.0)
 
 # FFVIII-style result-screen entrance: opponent row comes in from the left,
 # player row from the right, with a readable but tightening stagger.
@@ -28,10 +29,9 @@ const ROW_ENTRY_STAGGER_END := 0.075
 
 const OPPONENT_THINK_SECONDS := 0.55
 const OPPONENT_PICK_HOLD_SECONDS := 0.45
-const FOCUS_TRAVEL_SECONDS := 0.30
-const FOCUS_HOLD_SECONDS := 0.38
+const FOCUS_TRAVEL_SECONDS := 0.32
 const EXIT_SECONDS := 0.34
-const FOCUS_SCALE := Vector2(1.55, 1.55)
+const FOCUS_SCALE := Vector2(1.75, 1.75)
 
 @onready var prompt_label: Label = $PromptPanel/PromptLabel
 @onready var info_label: Label = $InfoPanel/InfoLabel
@@ -53,6 +53,8 @@ var _yes_selected: bool = true
 var _focus_card: Control = null
 var _sequence_id: int = 0
 var _entrance_started: bool = false
+var _focus_exit_down: bool = true
+var _focus_sequence_id: int = -1
 
 
 func _ready() -> void:
@@ -100,6 +102,8 @@ func close_reward() -> void:
 	_sequence_id += 1
 	_state = STATE_CLOSED
 	_entrance_started = false
+	_focus_exit_down = true
+	_focus_sequence_id = -1
 	visible = false
 	confirm_overlay.visible = false
 	selection_arrow.visible = false
@@ -157,7 +161,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 
 		STATE_RESOLVING:
-			# The acquisition/loss animation owns the screen until it completes.
+			# The transfer animation owns the screen until the chosen card reaches
+			# the center. Input is intentionally swallowed during that movement.
+			_accept_input()
+
+		STATE_FOCUS_HOLD:
+			# Keep the won/lost card on screen. The player explicitly dismisses it
+			# with K instead of the result vanishing on a timer.
+			if _is_confirm(event):
+				_state = STATE_RESOLVING
+				help_label.text = ""
+				_run_focus_exit(_focus_exit_down, _focus_sequence_id)
 			_accept_input()
 
 
@@ -356,9 +370,10 @@ func _animate_card_transfer(
 	_focus_card.global_position = source_view.global_position
 	source_view.visible = false
 
+	var focus_size := _focus_card.size * FOCUS_SCALE
 	var center_global := global_position + Vector2(
-		(size.x - _focus_card.size.x) * 0.5,
-		(size.y - _focus_card.size.y) * 0.5 - 4.0
+		(size.x - focus_size.x) * 0.5,
+		(size.y - focus_size.y) * 0.5
 	)
 	var focus_tween: Tween = _focus_card.create_tween()
 	focus_tween.set_trans(Tween.TRANS_QUINT)
@@ -369,11 +384,20 @@ func _animate_card_transfer(
 	if not _sequence_is_current(sequence_id):
 		return
 
-	await get_tree().create_timer(FOCUS_HOLD_SECONDS, true).timeout
+	_focus_exit_down = exit_down
+	_focus_sequence_id = sequence_id
+	_state = STATE_FOCUS_HOLD
+	help_label.text = "K: Continue"
+
+
+func _run_focus_exit(exit_down: bool, sequence_id: int) -> void:
 	if not _sequence_is_current(sequence_id):
 		return
+	if _focus_card == null or not is_instance_valid(_focus_card):
+		completed.emit()
+		return
 
-	var exit_global := center_global
+	var exit_global := _focus_card.global_position
 	if exit_down:
 		exit_global.y = global_position.y + size.y + _focus_card.size.y * 1.7
 	else:
@@ -418,7 +442,7 @@ func _entry_sequence_is_current(sequence_id: int) -> bool:
 
 
 func _sequence_is_current(sequence_id: int) -> bool:
-	return visible and _state == STATE_RESOLVING and sequence_id == _sequence_id
+	return visible and _state in [STATE_RESOLVING, STATE_FOCUS_HOLD] and sequence_id == _sequence_id
 
 
 func _clear_focus_card() -> void:

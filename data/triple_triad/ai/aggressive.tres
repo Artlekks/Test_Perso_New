@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
+
+[resource]
+script = ExtResource("1_ai")
+profile_id = &"aggressive"
+display_name = "Aggressive"
+capture_weight = 145.0
+same_trigger_weight = 50.0
+positional_weight = 0.55
+card_strength_weight = 0.16
+conserve_cost_weight = 0.0
+rotate_spend_penalty = 10.0
+randomness = 1.0

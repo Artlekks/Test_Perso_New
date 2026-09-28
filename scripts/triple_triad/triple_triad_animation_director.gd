@@ -2,11 +2,12 @@ extends Node
 
 const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
 
-# The opening deal is deliberately readable: the first cards have more breathing
-# room, then the cadence tightens slightly toward cards four and five.
-@export_range(0.05, 1.0, 0.01) var deal_travel_seconds: float = 0.56
-@export_range(0.01, 0.5, 0.01) var deal_stagger_start_seconds: float = 0.32
-@export_range(0.01, 0.5, 0.01) var deal_stagger_end_seconds: float = 0.16
+# The opening deal starts readable, then accelerates hard into cards 3/4/5.
+# This gives the FF-style one-two-then-boom-boom-boom cadence without making
+# the whole intro feel slow.
+@export_range(0.05, 1.0, 0.01) var deal_travel_seconds: float = 0.40
+@export_range(0.01, 0.5, 0.01) var deal_stagger_start_seconds: float = 0.16
+@export_range(0.01, 0.5, 0.01) var deal_stagger_end_seconds: float = 0.018
 
 # Once a card is committed to a grid cell it should move decisively. The first
 # leg still reads as the card leaving the hand, while the final drop snaps in.
@@ -39,17 +40,20 @@ func animate_placement(
 	source_view: Control,
 	target_view: Control,
 	card_definition,
-	card_owner: int
+	card_owner: int,
+	rotation_quarters: int = 0,
+	rank_bonus: int = 0
 ) -> void:
 	if presentation_root == null or source_view == null or target_view == null:
 		return
 
 	var ghost: Control = CardViewScene.instantiate()
 	presentation_root.add_child(ghost)
-	ghost.configure(card_definition, card_owner, false)
+	ghost.configure(card_definition, card_owner, false, false, rotation_quarters, rank_bonus)
 	ghost.set_selected(false)
 	ghost.z_index = 500
 	ghost.global_position = source_view.global_position
+	ghost.scale = source_view.scale
 	ghost.pivot_offset = ghost.size * 0.5
 	source_view.visible = false
 
@@ -71,7 +75,7 @@ func animate_placement(
 	var lift_scale = tween.parallel().tween_property(
 		ghost,
 		"scale",
-		Vector2(1.045, 1.045),
+		Vector2(maxf(source_view.scale.x, 1.0) + 0.035, maxf(source_view.scale.y, 1.0) + 0.035),
 		placement_lift_seconds
 	)
 	lift_scale.set_trans(Tween.TRANS_QUART)
@@ -88,7 +92,7 @@ func animate_placement(
 	var drop_scale = tween.parallel().tween_property(
 		ghost,
 		"scale",
-		Vector2.ONE,
+		target_view.scale,
 		placement_drop_seconds
 	)
 	drop_scale.set_trans(Tween.TRANS_QUAD)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_region_profile.gd" id="1_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="2_rules"]
+
+[resource]
+script = ExtResource("1_region")
+region_id = &"prototype_highlands"
+display_name = "Prototype Highlands"
+board_trait_name = "Stone Bastions"
+board_trait_description = "Stone Bastions: corner cells grant +1 on every side."
+deck_budget = 28
+allow_rotate = true
+rule_set = ExtResource("2_rules")
+cell_rank_bonuses = PackedInt32Array(1, 0, 1, 0, 0, 0, 1, 0, 1)

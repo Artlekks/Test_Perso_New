@@ -5,3 +5,5 @@
 [resource]
 script = ExtResource("1_rules")
 open_rule = true
+same_rule = true
+combo_rule = true

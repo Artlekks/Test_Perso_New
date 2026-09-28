@@ -1,0 +1,18 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_qa_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="2_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/balanced.tres" id="3_ai"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "BUDGET / 20"
+sort_order = 60
+purpose = "Low deck-budget stress test. Useful for judging whether weaker mixed hands still produce interesting games."
+region_profile = ExtResource("2_region")
+ai_profile = ExtResource("3_ai")
+deck_budget_override = 20
+min_card_level = 1
+max_card_level = 3
+starting_owner = 1
+hand_seed = 8080

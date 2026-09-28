@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
+
+[resource]
+script = ExtResource("1_ai")
+profile_id = &"trickster"
+display_name = "Trickster"
+capture_weight = 88.0
+same_trigger_weight = 130.0
+positional_weight = 0.8
+card_strength_weight = 0.04
+conserve_cost_weight = 0.15
+rotate_spend_penalty = 7.0
+randomness = 2.5

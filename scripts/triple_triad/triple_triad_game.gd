@@ -22,14 +22,17 @@ const PHASE_AI := 5
 const PHASE_RESULT := 6
 const PHASE_REWARD := 7
 
-const HAND_STEP_Y := 64.0
+const HAND_STEP_Y := 72.0
 const HAND_SELECTED_X_OFFSET := -10.0
-const CAPTURE_SETTLE_SECONDS := 0.34
+const CAPTURE_SETTLE_SECONDS := 0.24
 const RESULT_FADE_IN_SECONDS := 0.24
 const RESULT_FADE_OUT_SECONDS := 0.30
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
+@export var region_profile: Resource
+@export var ai_profile: Resource
+@export_range(5, 50, 1) var deck_budget: int = 30
 @export_range(1, 10, 1) var prototype_min_level: int = 1
 @export_range(1, 10, 1) var prototype_max_level: int = 3
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.75
@@ -43,7 +46,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @onready var turn_label: Label = $Root/TurnLabel
 @onready var message_label: Label = $Root/MessageLabel
 @onready var help_label: Label = $Root/HelpLabel
-@onready var info_panel: ColorRect = $Root/InfoPanel
+@onready var info_panel: Control = $Root/InfoPanel
 @onready var info_label: Label = $Root/InfoPanel/InfoLabel
 @onready var selection_arrow: Polygon2D = $Root/SelectionArrow
 @onready var turn_arrow: Polygon2D = $Root/TurnArrow
@@ -52,6 +55,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @onready var transition_fade: ColorRect = $Root/TransitionFade
 @onready var animation_director = $AnimationDirector
 @onready var ai_timer: Timer = $AITimer
+@onready var debug_menu = $TripleTriadDebugMenu
 
 var _match = null
 var _ai = null
@@ -67,6 +71,17 @@ var _starting_player_cards: Array = []
 var _starting_opponent_cards: Array = []
 var _last_info_name: String = ""
 var _result_winner: int = OWNER_NONE
+var _active_opponent_profile: Resource = null
+var _active_region_profile: Resource = null
+var _active_ai_profile: Resource = null
+var _active_rule_set: Resource = null
+var _active_deck_budget: int = 30
+var _active_min_level: int = 1
+var _active_max_level: int = 3
+var _qa_profile_override: Resource = null
+var _qa_forced_starting_owner: int = OWNER_NONE
+var _qa_hand_seed: int = 0
+var _qa_base_summary: Dictionary = {}
 
 
 func _ready() -> void:
@@ -82,6 +97,7 @@ func _ready() -> void:
 	reward_view.reward_selected.connect(_on_reward_selected)
 	reward_view.completed.connect(_on_reward_completed)
 	reward_view.leave_requested.connect(_on_reward_leave_requested)
+	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
 	if card_catalog != null and card_catalog.has_method("validate_catalog"):
 		var audit: Dictionary = card_catalog.validate_catalog()
 		if not bool(audit.get("valid", false)):
@@ -92,13 +108,14 @@ func is_open() -> bool:
 	return _phase != PHASE_CLOSED
 
 
-func open_game() -> void:
+func open_game(opponent_profile_override: Resource = null) -> void:
 	if is_open() or card_catalog == null:
 		return
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.paused:
 		return
 	_previous_pause = tree.paused
+	_resolve_active_configuration(opponent_profile_override)
 	root.visible = true
 	_start_new_match()
 	tree.paused = true
@@ -110,6 +127,7 @@ func close_game() -> void:
 		return
 	ai_timer.stop()
 	reward_view.close_reward()
+	debug_menu.close_menu()
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_phase = PHASE_CLOSED
@@ -118,6 +136,25 @@ func close_game() -> void:
 	if tree != null:
 		tree.paused = _previous_pause
 	closed.emit()
+
+
+func _input(event: InputEvent) -> void:
+	if not is_open() or not _pressed(event):
+		return
+
+	# F10 belongs to the card-game QA overlay while Triple Triad is open. The
+	# overlay is intentionally available only in stable phases so applying a
+	# profile cannot collide with an in-flight placement/deal coroutine.
+	if debug_menu.is_open():
+		var close_requested: bool = bool(debug_menu.handle_input(event))
+		if close_requested:
+			debug_menu.close_menu()
+		_accept_input()
+		return
+
+	if _is_debug_toggle(event) and _phase in [PHASE_SELECT_CARD, PHASE_SELECT_CELL, PHASE_RESULT]:
+		debug_menu.open_menu(_qa_base_summary, _qa_profile_override)
+		_accept_input()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -155,6 +192,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_refresh_views()
 			_accept_input()
 			return
+		if _is_rotate(event):
+			_try_rotate_selected_card()
+			_accept_input()
+			return
 		if _is_confirm(event) and not _match.player_hand.is_empty():
 			_phase = PHASE_SELECT_CELL
 			_selected_cell_index = _find_nearest_empty_cell(_selected_cell_index)
@@ -184,6 +225,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_refresh_views()
 			_accept_input()
 			return
+		if _is_rotate(event):
+			_try_rotate_selected_card()
+			_accept_input()
+			return
 		if _is_confirm(event):
 			_try_player_move()
 			_accept_input()
@@ -204,12 +249,22 @@ func _start_new_match() -> void:
 	message_label.text = ""
 	_last_info_name = ""
 
-	var player_cards: Array = card_catalog.build_random_hand(_rng, prototype_min_level, prototype_max_level, 5)
-	var opponent_cards: Array = card_catalog.build_random_hand(_rng, prototype_min_level, prototype_max_level, 5)
+	if _qa_hand_seed > 0:
+		_rng.seed = _qa_hand_seed
+
+	var player_cards: Array = _build_budgeted_hand(_active_min_level, _active_max_level)
+	var opponent_cards: Array = _build_budgeted_hand(_active_min_level, _active_max_level)
 	_starting_player_cards = player_cards.duplicate()
 	_starting_opponent_cards = opponent_cards.duplicate()
-	var starting_owner: int = OWNER_PLAYER if _rng.randi_range(0, 1) == 0 else OWNER_OPPONENT
-	_match.reset_match(player_cards, opponent_cards, starting_owner, rule_set)
+	var starting_owner: int
+	match _qa_forced_starting_owner:
+		OWNER_PLAYER:
+			starting_owner = OWNER_PLAYER
+		OWNER_OPPONENT:
+			starting_owner = OWNER_OPPONENT
+		_:
+			starting_owner = OWNER_PLAYER if _rng.randi_range(0, 1) == 0 else OWNER_OPPONENT
+	_match.reset_match(player_cards, opponent_cards, starting_owner, _active_rule_set, _active_region_profile)
 	_selected_hand_index = 0
 	_selected_cell_index = 4
 	_phase = PHASE_DEALING
@@ -222,6 +277,7 @@ func _run_deal_sequence(starting_owner: int) -> void:
 	if not is_open() or _phase != PHASE_DEALING:
 		return
 	_phase = PHASE_SELECT_CARD if starting_owner == OWNER_PLAYER else PHASE_AI
+	message_label.text = _region_trait_text()
 	_refresh_views()
 	if _phase == PHASE_AI:
 		_schedule_ai()
@@ -237,6 +293,8 @@ func _try_player_move() -> void:
 		return
 
 	var played_card = _match.player_hand[_selected_hand_index]
+	var played_rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
+	var target_rank_bonus: int = _match.get_cell_rank_bonus(_selected_cell_index)
 	var source_view: Control = _player_views[_selected_hand_index]
 	var target_view: Control = _board_views[_selected_cell_index]
 	var result: Dictionary = _match.place_card(OWNER_PLAYER, _selected_hand_index, _selected_cell_index)
@@ -247,7 +305,7 @@ func _try_player_move() -> void:
 	_phase = PHASE_ANIMATING
 	_last_info_name = str(played_card.display_name)
 	_refresh_phase_ui()
-	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_PLAYER)
+	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_PLAYER, played_rotation, target_rank_bonus)
 	if not is_open():
 		return
 
@@ -275,7 +333,7 @@ func _on_ai_timer_timeout() -> void:
 
 
 func _run_ai_turn() -> void:
-	var move: Dictionary = _ai.choose_move(_match, OWNER_OPPONENT, _rng)
+	var move: Dictionary = _ai.choose_move(_match, OWNER_OPPONENT, _rng, _active_ai_profile)
 	if not bool(move.get("valid", false)):
 		_finish_match()
 		return
@@ -286,7 +344,11 @@ func _run_ai_turn() -> void:
 		_finish_match()
 		return
 
+	if bool(move.get("rotate", false)):
+		_match.rotate_hand_card(OWNER_OPPONENT, hand_index)
 	var played_card = _match.opponent_hand[hand_index]
+	var played_rotation: int = _match.get_hand_rotation(OWNER_OPPONENT, hand_index)
+	var target_rank_bonus: int = _match.get_cell_rank_bonus(cell_index)
 	var source_view: Control = _opponent_views[hand_index]
 	var target_view: Control = _board_views[cell_index]
 	var result: Dictionary = _match.place_card(OWNER_OPPONENT, hand_index, cell_index)
@@ -297,7 +359,7 @@ func _run_ai_turn() -> void:
 	_phase = PHASE_ANIMATING
 	_last_info_name = str(played_card.display_name)
 	_refresh_phase_ui()
-	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_OPPONENT)
+	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_OPPONENT, played_rotation, target_rank_bonus)
 	if not is_open():
 		return
 
@@ -395,6 +457,7 @@ func _build_views() -> void:
 		var opponent_view: Control = CardViewScene.instantiate() as Control
 		opponent_hand_container.add_child(opponent_view)
 		opponent_view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
+		opponent_view.scale = Vector2(1.05, 1.05)
 		opponent_view.z_index = index
 		_opponent_views.append(opponent_view)
 	for _index in range(9):
@@ -405,6 +468,7 @@ func _build_views() -> void:
 		var player_view: Control = CardViewScene.instantiate() as Control
 		player_hand_container.add_child(player_view)
 		player_view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
+		player_view.scale = Vector2(1.05, 1.05)
 		player_view.z_index = index
 		_player_views.append(player_view)
 
@@ -412,15 +476,15 @@ func _build_views() -> void:
 func _refresh_views(captured_cells: Array = []) -> void:
 	if _match == null:
 		return
-	var show_opponent_cards: bool = rule_set == null or bool(rule_set.open_rule)
+	var show_opponent_cards: bool = _active_rule_set == null or bool(_active_rule_set.open_rule)
 
 	for index in range(_opponent_views.size()):
 		var view: Control = _opponent_views[index]
 		view.modulate = Color.WHITE
-		view.scale = Vector2.ONE
+		view.scale = Vector2(1.05, 1.05)
 		if index < _match.opponent_hand.size():
 			view.visible = true
-			view.configure(_match.opponent_hand[index], OWNER_OPPONENT, not show_opponent_cards)
+			view.configure(_match.opponent_hand[index], OWNER_OPPONENT, not show_opponent_cards, false, _match.get_hand_rotation(OWNER_OPPONENT, index), 0)
 			view.set_selected(false)
 			view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
 			view.z_index = index
@@ -430,10 +494,10 @@ func _refresh_views(captured_cells: Array = []) -> void:
 	for index in range(_player_views.size()):
 		var view: Control = _player_views[index]
 		view.modulate = Color.WHITE
-		view.scale = Vector2.ONE
+		view.scale = Vector2(1.05, 1.05)
 		if index < _match.player_hand.size():
 			view.visible = true
-			view.configure(_match.player_hand[index], OWNER_PLAYER, false)
+			view.configure(_match.player_hand[index], OWNER_PLAYER, false, false, _match.get_hand_rotation(OWNER_PLAYER, index), 0)
 			var is_selected: bool = (
 				_phase in [PHASE_SELECT_CARD, PHASE_SELECT_CELL]
 				and index == _selected_hand_index
@@ -460,7 +524,9 @@ func _refresh_views(captured_cells: Array = []) -> void:
 				slot["card"],
 				int(slot["owner"]),
 				false,
-				captured_cells.has(cell_index)
+				captured_cells.has(cell_index),
+				int(slot.get("rotation", 0)),
+				_match.get_cell_rank_bonus(cell_index)
 			)
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
@@ -482,23 +548,23 @@ func _refresh_phase_ui() -> void:
 			info_label.text = ""
 		PHASE_SELECT_CARD:
 			turn_label.text = "Your turn: choose a card"
-			help_label.text = "W/S: Card   K: Select   I: Leave"
+			help_label.text = _player_help_text(false)
 			_update_player_selection_markers()
 			_update_selected_card_info()
 		PHASE_SELECT_CELL:
 			turn_label.text = "Choose a board space"
-			help_label.text = "W/A/S/D: Move   K: Place   I: Back"
+			help_label.text = _player_help_text(true)
 			_update_player_selection_markers()
 			_update_selected_card_info()
 		PHASE_AI:
 			turn_label.text = "Opponent's turn"
 			help_label.text = "I: Leave"
 			_turn_arrow_for_owner(OWNER_OPPONENT)
-			info_label.text = _last_info_name
+			info_label.text = _info_text(_last_info_name)
 		PHASE_ANIMATING:
 			turn_label.text = ""
 			help_label.text = ""
-			info_label.text = _last_info_name
+			info_label.text = _info_text(_last_info_name)
 		PHASE_RESULT:
 			turn_label.text = ""
 			help_label.text = ""
@@ -526,13 +592,31 @@ func _turn_arrow_for_owner(turn_owner: int) -> void:
 
 func _update_selected_card_info() -> void:
 	if _selected_hand_index < 0 or _selected_hand_index >= _match.player_hand.size():
-		info_label.text = ""
+		info_label.text = _info_text("")
 		return
 	var selected_card = _match.player_hand[_selected_hand_index]
-	info_label.text = str(selected_card.display_name)
+	var selected_rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
+	var rotated_text: String = "  ROTATED" if selected_rotation != 0 else ""
+	var headline := "%s   Cost %d%s" % [str(selected_card.display_name), int(selected_card.deck_cost), rotated_text]
+	info_label.text = _info_text(headline)
 
+
+
+
+func _info_text(headline: String) -> String:
+	var trait_text: String = _region_trait_text()
+	if headline.is_empty():
+		return trait_text
+	if trait_text.is_empty():
+		return headline
+	return "%s\n%s" % [headline, trait_text]
 
 func _capture_message(result: Dictionary) -> String:
+	var combo_captured: Array = result.get("combo_captured", [])
+	if bool(result.get("same_triggered", false)):
+		if not combo_captured.is_empty():
+			return "SAME!  COMBO x%d" % combo_captured.size()
+		return "SAME!"
 	var captured: Array = result.get("captured", [])
 	if captured.is_empty():
 		return ""
@@ -551,6 +635,164 @@ func _on_reward_completed() -> void:
 
 func _on_reward_leave_requested() -> void:
 	close_game()
+
+
+func _resolve_active_configuration(opponent_profile_override: Resource) -> void:
+	_active_opponent_profile = opponent_profile_override
+	_active_region_profile = region_profile
+	_active_ai_profile = ai_profile
+	_active_rule_set = rule_set
+	_active_deck_budget = deck_budget
+	_active_min_level = prototype_min_level
+	_active_max_level = prototype_max_level
+
+	if _active_opponent_profile != null:
+		var profile_region = _active_opponent_profile.get("region_profile")
+		if profile_region != null:
+			_active_region_profile = profile_region
+		var profile_ai = _active_opponent_profile.get("ai_profile")
+		if profile_ai != null:
+			_active_ai_profile = profile_ai
+		var min_level_value = _active_opponent_profile.get("min_card_level")
+		var max_level_value = _active_opponent_profile.get("max_card_level")
+		if min_level_value != null:
+			_active_min_level = clampi(int(min_level_value), 1, 10)
+		if max_level_value != null:
+			_active_max_level = clampi(int(max_level_value), _active_min_level, 10)
+
+	if _active_region_profile != null:
+		var region_rules = _active_region_profile.get("rule_set")
+		if region_rules != null:
+			_active_rule_set = region_rules
+		var region_budget = _active_region_profile.get("deck_budget")
+		if region_budget != null:
+			_active_deck_budget = maxi(5, int(region_budget))
+
+	if _active_opponent_profile != null:
+		var budget_override = _active_opponent_profile.get("deck_budget_override")
+		if budget_override != null and int(budget_override) > 0:
+			_active_deck_budget = int(budget_override)
+
+	# Keep the NPC configuration as the debug menu's CURRENT/NPC baseline, then
+	# layer any temporary QA profile over it.
+	_qa_base_summary = _configuration_summary()
+	_apply_qa_profile_override()
+
+
+func _apply_qa_profile_override() -> void:
+	_qa_forced_starting_owner = OWNER_NONE
+	_qa_hand_seed = 0
+	if _qa_profile_override == null:
+		return
+
+	var qa_region: Resource = _qa_profile_override.get("region_profile")
+	if qa_region != null:
+		_active_region_profile = qa_region
+		var region_rules = qa_region.get("rule_set")
+		if region_rules != null:
+			_active_rule_set = region_rules
+		var region_budget = qa_region.get("deck_budget")
+		if region_budget != null:
+			_active_deck_budget = maxi(5, int(region_budget))
+
+	var qa_ai: Resource = _qa_profile_override.get("ai_profile")
+	if qa_ai != null:
+		_active_ai_profile = qa_ai
+
+	var qa_rules: Resource = _qa_profile_override.get("rule_set_override")
+	if qa_rules != null:
+		_active_rule_set = qa_rules
+
+	var qa_budget: int = int(_qa_profile_override.get("deck_budget_override"))
+	if qa_budget > 0:
+		_active_deck_budget = qa_budget
+
+	_active_min_level = clampi(int(_qa_profile_override.get("min_card_level")), 1, 10)
+	_active_max_level = clampi(
+		int(_qa_profile_override.get("max_card_level")),
+		_active_min_level,
+		10
+	)
+	_qa_forced_starting_owner = clampi(
+		int(_qa_profile_override.get("starting_owner")),
+		OWNER_NONE,
+		OWNER_OPPONENT
+	)
+	_qa_hand_seed = maxi(0, int(_qa_profile_override.get("hand_seed")))
+
+
+func _on_qa_profile_apply_requested(selected_profile: Resource) -> void:
+	_qa_profile_override = selected_profile
+	if _qa_profile_override == null:
+		_rng.randomize()
+	_resolve_active_configuration(_active_opponent_profile)
+	_start_new_match()
+
+
+func _configuration_summary() -> Dictionary:
+	return {
+		"region": _resource_display_name(_active_region_profile, "Default"),
+		"ai": _resource_display_name(_active_ai_profile, "Default"),
+		"budget": _active_deck_budget,
+		"min_level": _active_min_level,
+		"max_level": _active_max_level,
+		"rules": _rules_summary(_active_rule_set, _active_region_profile),
+	}
+
+
+func _rules_summary(active_rules: Resource, active_region: Resource) -> String:
+	var labels: PackedStringArray = PackedStringArray()
+	if active_rules != null:
+		if bool(active_rules.get("same_rule")):
+			labels.append("Same")
+		if bool(active_rules.get("combo_rule")):
+			labels.append("Combo")
+	if active_region != null and bool(active_region.get("allow_rotate")):
+		labels.append("Rotate x1")
+	if labels.is_empty():
+		return "Normal capture"
+	return " + ".join(labels)
+
+
+func _resource_display_name(resource: Resource, fallback: String) -> String:
+	if resource == null:
+		return fallback
+	var display_name = resource.get("display_name")
+	if display_name != null and not str(display_name).is_empty():
+		return str(display_name)
+	return resource.resource_path.get_file().get_basename()
+
+
+func _build_budgeted_hand(min_level: int, max_level: int) -> Array:
+	if card_catalog.has_method("build_budgeted_hand"):
+		return card_catalog.build_budgeted_hand(_rng, min_level, max_level, 5, _active_deck_budget)
+	return card_catalog.build_random_hand(_rng, min_level, max_level, 5)
+
+
+func _try_rotate_selected_card() -> void:
+	if _selected_hand_index < 0 or _selected_hand_index >= _match.player_hand.size():
+		return
+	if _match.rotate_hand_card(OWNER_PLAYER, _selected_hand_index):
+		message_label.text = "ROTATE! One use spent."
+	else:
+		message_label.text = "Rotate already used."
+	_refresh_views()
+
+
+func _player_help_text(board_selection: bool) -> String:
+	var rotate_text: String = "   R: Rotate" if _match != null and _match.can_rotate(OWNER_PLAYER) else ""
+	if board_selection:
+		return "W/A/S/D: Move   K: Place%s   I: Back" % rotate_text
+	return "W/S: Card   K: Select%s   I: Leave" % rotate_text
+
+
+func _region_trait_text() -> String:
+	if _active_region_profile == null:
+		return ""
+	var description = _active_region_profile.get("board_trait_description")
+	if description == null:
+		return ""
+	return str(description)
 
 
 func _find_nearest_empty_cell(preferred: int) -> int:
@@ -602,6 +844,14 @@ func _is_up(event: InputEvent) -> bool:
 
 func _is_down(event: InputEvent) -> bool:
 	return _key_matches(event, KEY_S) or _key_matches(event, KEY_DOWN)
+
+
+func _is_rotate(event: InputEvent) -> bool:
+	return _key_matches(event, KEY_R)
+
+
+func _is_debug_toggle(event: InputEvent) -> bool:
+	return _key_matches(event, KEY_F10)
 
 
 func _hand_step(event: InputEvent) -> int:
