@@ -12,12 +12,20 @@ const STATE_CLOSED := 0
 const STATE_SELECT := 1
 const STATE_CONFIRM := 2
 const STATE_RESOLVING := 3
+const STATE_ENTERING := 4
 
 const ROW_SCALE := Vector2(0.78, 0.78)
 const ROW_STEP_X := 100.0
 const TOP_ROW_ORIGIN := Vector2(70.0, 92.0)
 const BOTTOM_ROW_ORIGIN := Vector2(70.0, 258.0)
-const CAPTURE_FLIP_SECONDS := 0.30
+
+# FFVIII-style result-screen entrance: opponent row comes in from the left,
+# player row from the right, with a readable but tightening stagger.
+const ROW_ENTRY_DISTANCE := 720.0
+const ROW_ENTRY_SECONDS := 0.38
+const ROW_ENTRY_STAGGER_START := 0.15
+const ROW_ENTRY_STAGGER_END := 0.075
+
 const OPPONENT_THINK_SECONDS := 0.55
 const OPPONENT_PICK_HOLD_SECONDS := 0.45
 const FOCUS_TRAVEL_SECONDS := 0.30
@@ -44,6 +52,7 @@ var _selected_index: int = 0
 var _yes_selected: bool = true
 var _focus_card: Control = null
 var _sequence_id: int = 0
+var _entrance_started: bool = false
 
 
 func _ready() -> void:
@@ -52,33 +61,45 @@ func _ready() -> void:
 	_build_card_rows()
 
 
-func open_reward(opponent_cards: Array, player_cards: Array, winner: int = OWNER_PLAYER) -> void:
+func open_reward(
+	opponent_cards: Array,
+	player_cards: Array,
+	winner: int = OWNER_PLAYER,
+	defer_entrance: bool = false
+) -> void:
 	_sequence_id += 1
 	_winner = winner
 	_opponent_cards = opponent_cards.duplicate()
 	_player_cards = player_cards.duplicate()
 	_selected_index = 0
 	_yes_selected = true
+	_entrance_started = false
 	visible = true
 	confirm_overlay.visible = false
+	selection_arrow.visible = false
 	_clear_focus_card()
 	_refresh_rows()
+	_prepare_row_entrance()
+	_state = STATE_ENTERING
+	prompt_label.text = ""
+	info_label.text = ""
+	help_label.text = ""
 
-	if _winner == OWNER_PLAYER:
-		_state = STATE_SELECT
-		_refresh_selection()
-	else:
-		_state = STATE_RESOLVING
-		selection_arrow.visible = false
-		prompt_label.text = "Opponent selects one of your cards"
-		info_label.text = ""
-		help_label.text = ""
-		_run_opponent_take_sequence(_sequence_id)
+	if not defer_entrance:
+		start_entrance()
+
+
+func start_entrance() -> void:
+	if not visible or _state != STATE_ENTERING or _entrance_started:
+		return
+	_entrance_started = true
+	_run_row_entrance(_sequence_id)
 
 
 func close_reward() -> void:
 	_sequence_id += 1
 	_state = STATE_CLOSED
+	_entrance_started = false
 	visible = false
 	confirm_overlay.visible = false
 	selection_arrow.visible = false
@@ -94,6 +115,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	match _state:
+		STATE_ENTERING:
+			_accept_input()
+
 		STATE_SELECT:
 			if _is_left(event):
 				_selected_index = wrapi(_selected_index - 1, 0, maxi(_opponent_cards.size(), 1))
@@ -181,6 +205,64 @@ func _refresh_rows() -> void:
 			player_view.visible = false
 
 
+func _prepare_row_entrance() -> void:
+	for index in range(_opponent_views.size()):
+		var view: Control = _opponent_views[index]
+		if not view.visible:
+			continue
+		view.position = _row_final_position(TOP_ROW_ORIGIN, index) + Vector2(-ROW_ENTRY_DISTANCE, 0.0)
+		view.modulate = Color(1, 1, 1, 0)
+
+	for index in range(_player_views.size()):
+		var view: Control = _player_views[index]
+		if not view.visible:
+			continue
+		view.position = _row_final_position(BOTTOM_ROW_ORIGIN, index) + Vector2(ROW_ENTRY_DISTANCE, 0.0)
+		view.modulate = Color(1, 1, 1, 0)
+
+
+func _run_row_entrance(sequence_id: int) -> void:
+	var count: int = maxi(_opponent_cards.size(), _player_cards.size())
+	for index in range(count):
+		if not _entry_sequence_is_current(sequence_id):
+			return
+		if index < _opponent_views.size() and index < _opponent_cards.size():
+			_start_row_card_entry(_opponent_views[index], _row_final_position(TOP_ROW_ORIGIN, index))
+		if index < _player_views.size() and index < _player_cards.size():
+			_start_row_card_entry(_player_views[index], _row_final_position(BOTTOM_ROW_ORIGIN, index))
+		if index < count - 1:
+			var progress: float = 0.0 if count <= 2 else float(index) / float(count - 2)
+			var stagger: float = lerpf(ROW_ENTRY_STAGGER_START, ROW_ENTRY_STAGGER_END, progress)
+			await get_tree().create_timer(stagger, true).timeout
+
+	await get_tree().create_timer(ROW_ENTRY_SECONDS + 0.04, true).timeout
+	if not _entry_sequence_is_current(sequence_id):
+		return
+
+	if _winner == OWNER_PLAYER:
+		_state = STATE_SELECT
+		_refresh_selection()
+	else:
+		_state = STATE_RESOLVING
+		selection_arrow.visible = false
+		prompt_label.text = "Opponent selects one of your cards"
+		info_label.text = ""
+		help_label.text = ""
+		_run_opponent_take_sequence(sequence_id)
+
+
+func _start_row_card_entry(view: Control, final_position: Vector2) -> void:
+	var tween: Tween = view.create_tween()
+	tween.set_trans(Tween.TRANS_QUINT)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(view, "position", final_position, ROW_ENTRY_SECONDS)
+	tween.parallel().tween_property(view, "modulate", Color.WHITE, ROW_ENTRY_SECONDS * 0.72)
+
+
+func _row_final_position(row_origin: Vector2, index: int) -> Vector2:
+	return row_origin + Vector2(float(index) * ROW_STEP_X, 0.0)
+
+
 func _refresh_selection() -> void:
 	if _opponent_cards.is_empty():
 		selection_arrow.visible = false
@@ -217,7 +299,7 @@ func _begin_player_reward_sequence() -> void:
 	help_label.text = ""
 	var sequence_id := _sequence_id
 	var card = _opponent_cards[_selected_index]
-	var source_view: Control = _opponent_views[_selected_index]
+	var source_view = _opponent_views[_selected_index]
 	reward_selected.emit(card)
 	prompt_label.text = "%s acquired!" % str(card.display_name)
 	info_label.text = str(card.display_name)
@@ -243,13 +325,13 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 
 	selection_arrow.visible = false
 	prompt_label.text = "Opponent takes %s" % str(card.display_name)
-	var source_view: Control = _player_views[_selected_index]
+	var source_view = _player_views[_selected_index]
 	_animate_card_transfer(card, source_view, OWNER_OPPONENT, false, sequence_id)
 
 
 func _animate_card_transfer(
 	card,
-	source_view: Control,
+	source_view,
 	new_owner: int,
 	exit_down: bool,
 	sequence_id: int
@@ -258,9 +340,9 @@ func _animate_card_transfer(
 		completed.emit()
 		return
 
-	# First flip the actual row card quickly so the ownership change reads clearly.
-	source_view.configure(card, new_owner, false, true)
-	await get_tree().create_timer(CAPTURE_FLIP_SECONDS, true).timeout
+	# Full reward flip: front -> real menu-background back -> front, then the
+	# chosen card comes forward and leaves the screen.
+	await source_view.play_reward_flip(new_owner)
 	if not _sequence_is_current(sequence_id):
 		return
 
@@ -329,6 +411,10 @@ func _refresh_confirm_choices() -> void:
 	choice_label.text = "YES          NO"
 	choice_arrow.position = Vector2(52.0, 86.0) if _yes_selected else Vector2(158.0, 86.0)
 	help_label.text = "A/D: Choice   K: Confirm   I: Back"
+
+
+func _entry_sequence_is_current(sequence_id: int) -> bool:
+	return visible and _state == STATE_ENTERING and sequence_id == _sequence_id
 
 
 func _sequence_is_current(sequence_id: int) -> bool:

@@ -25,7 +25,8 @@ const PHASE_REWARD := 7
 const HAND_STEP_Y := 64.0
 const HAND_SELECTED_X_OFFSET := -10.0
 const CAPTURE_SETTLE_SECONDS := 0.34
-const RESULT_HOLD_SECONDS := 1.05
+const RESULT_FADE_IN_SECONDS := 0.24
+const RESULT_FADE_OUT_SECONDS := 0.30
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
@@ -48,6 +49,7 @@ const RESULT_HOLD_SECONDS := 1.05
 @onready var turn_arrow: Polygon2D = $Root/TurnArrow
 @onready var result_label: Label = $Root/ResultLabel
 @onready var reward_view = $Root/TripleTriadRewardView
+@onready var transition_fade: ColorRect = $Root/TransitionFade
 @onready var animation_director = $AnimationDirector
 @onready var ai_timer: Timer = $AITimer
 
@@ -64,11 +66,14 @@ var _board_views: Array = []
 var _starting_player_cards: Array = []
 var _starting_opponent_cards: Array = []
 var _last_info_name: String = ""
+var _result_winner: int = OWNER_NONE
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	root.visible = false
+	transition_fade.visible = false
+	transition_fade.modulate = Color(1, 1, 1, 0)
 	_match = MatchScript.new()
 	_ai = AIScript.new()
 	_rng.randomize()
@@ -105,6 +110,8 @@ func close_game() -> void:
 		return
 	ai_timer.stop()
 	reward_view.close_reward()
+	transition_fade.visible = false
+	transition_fade.modulate = Color(1, 1, 1, 0)
 	_phase = PHASE_CLOSED
 	root.visible = false
 	var tree: SceneTree = get_tree()
@@ -121,7 +128,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _phase == PHASE_REWARD:
 		return
 
-	if _phase in [PHASE_DEALING, PHASE_ANIMATING, PHASE_AI, PHASE_RESULT]:
+	if _phase == PHASE_RESULT:
+		if _is_confirm(event):
+			_begin_result_transition()
+			_accept_input()
+			return
+		if _is_back(event):
+			close_game()
+			_accept_input()
+		return
+
+	if _phase in [PHASE_DEALING, PHASE_ANIMATING, PHASE_AI]:
 		if _is_back(event):
 			close_game()
 			_accept_input()
@@ -181,6 +198,9 @@ func _start_new_match() -> void:
 	ai_timer.stop()
 	reward_view.close_reward()
 	result_label.visible = false
+	transition_fade.visible = false
+	transition_fade.modulate = Color(1, 1, 1, 0)
+	_result_winner = OWNER_NONE
 	message_label.text = ""
 	_last_info_name = ""
 
@@ -302,8 +322,8 @@ func _finish_match() -> void:
 	_phase = PHASE_RESULT
 	_refresh_views()
 	var score: Dictionary = _match.get_score()
-	var winner: int = _match.get_winner()
-	match winner:
+	_result_winner = _match.get_winner()
+	match _result_winner:
 		OWNER_PLAYER:
 			result_label.text = "YOU WIN!"
 		OWNER_OPPONENT:
@@ -312,31 +332,58 @@ func _finish_match() -> void:
 			result_label.text = "DRAW"
 	result_label.visible = true
 	turn_label.text = ""
-	help_label.text = ""
+	help_label.text = "K: Continue"
 	selection_arrow.visible = false
 	turn_arrow.visible = false
 	match_finished.emit({
-		"winner": winner,
+		"winner": _result_winner,
 		"score": score,
 	})
-	_run_result_sequence(winner)
 
 
-func _run_result_sequence(winner: int) -> void:
-	await get_tree().create_timer(RESULT_HOLD_SECONDS, true).timeout
-	if not is_open() or _phase != PHASE_RESULT:
+func _begin_result_transition() -> void:
+	if _phase != PHASE_RESULT:
 		return
+	_phase = PHASE_ANIMATING
+	help_label.text = ""
+	_run_result_transition(_result_winner)
+
+
+func _run_result_transition(winner: int) -> void:
+	transition_fade.visible = true
+	transition_fade.modulate = Color(1, 1, 1, 0)
+	var fade_in: Tween = transition_fade.create_tween()
+	fade_in.set_trans(Tween.TRANS_QUAD)
+	fade_in.set_ease(Tween.EASE_IN_OUT)
+	fade_in.tween_property(transition_fade, "modulate", Color.WHITE, RESULT_FADE_IN_SECONDS)
+	await fade_in.finished
+	if not is_open():
+		return
+
 	result_label.visible = false
-	if winner in [OWNER_PLAYER, OWNER_OPPONENT]:
-		_phase = PHASE_REWARD
-		reward_view.open_reward(
-			_starting_opponent_cards,
-			_starting_player_cards,
-			winner
-		)
-		_refresh_phase_ui()
-	else:
+	if winner not in [OWNER_PLAYER, OWNER_OPPONENT]:
 		close_game()
+		return
+
+	_phase = PHASE_REWARD
+	reward_view.open_reward(
+		_starting_opponent_cards,
+		_starting_player_cards,
+		winner,
+		true
+	)
+	_refresh_phase_ui()
+
+	# Reveal the result screen while both card rows begin sliding into place.
+	reward_view.start_entrance()
+	var fade_out: Tween = transition_fade.create_tween()
+	fade_out.set_trans(Tween.TRANS_QUAD)
+	fade_out.set_ease(Tween.EASE_IN_OUT)
+	fade_out.tween_property(transition_fade, "modulate", Color(1, 1, 1, 0), RESULT_FADE_OUT_SECONDS)
+	await fade_out.finished
+	if not is_open():
+		return
+	transition_fade.visible = false
 
 
 func _schedule_ai() -> void:

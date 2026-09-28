@@ -16,7 +16,7 @@ const CardDefinitionScript = preload("res://scripts/triple_triad/triple_triad_ca
 # Optional shared content source. Triple Triad does not depend on fishing runtime
 # services; it only reads portrait/name data from this catalog when present.
 @export var supplemental_content_catalog: Resource
-@export var include_fish_cards: bool = true
+@export var include_fish_cards: bool = false
 
 var _cache: Dictionary = {}
 
