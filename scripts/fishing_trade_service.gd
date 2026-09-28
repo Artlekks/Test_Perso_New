@@ -17,18 +17,21 @@ var inventory: FishingInventory = null
 var tackle_catalog: FishingTackleCatalog = null
 var trade_catalog: FishingTradeCatalog = null
 var manillo_ledger: FishingManilloLedger = null
+var progress: FishingProgress = null
 
 
 func configure(
 	new_inventory: FishingInventory,
 	new_tackle_catalog: FishingTackleCatalog,
 	new_trade_catalog: FishingTradeCatalog,
-	new_manillo_ledger: FishingManilloLedger = null
+	new_manillo_ledger: FishingManilloLedger = null,
+	new_progress: FishingProgress = null
 ) -> void:
 	inventory = new_inventory
 	tackle_catalog = new_tackle_catalog
 	trade_catalog = new_trade_catalog
 	manillo_ledger = new_manillo_ledger
+	progress = new_progress
 
 
 func evaluate_trade(
@@ -52,6 +55,7 @@ func evaluate_trade(
 		"reward_already_owned": false,
 		"manillo_value_units": 0,
 		"manillo_value_display": 0.0,
+		"manillo_reference_max_units": 0,
 	}
 
 	if inventory == null:
@@ -82,12 +86,10 @@ func evaluate_trade(
 	result["reward_quantity"] = recipe.reward_quantity
 	result["reward"] = reward
 	result["unique_reward"] = recipe.unique_reward
-	result["manillo_value_units"] = (
-		recipe.manillo_value_units
-	)
-	result["manillo_value_display"] = (
-		recipe.get_manillo_value_display()
-	)
+	var current_trade_value := get_current_trade_value_units(recipe)
+	result["manillo_value_units"] = current_trade_value
+	result["manillo_value_display"] = float(current_trade_value) / 100.0
+	result["manillo_reference_max_units"] = recipe.manillo_value_units
 
 	if reward == null:
 		result["reason"] = "unknown_reward"
@@ -215,14 +217,9 @@ func execute_trade(
 		)
 		return result
 
-	if (
-		manillo_ledger != null
-		and recipe.manillo_value_units > 0
-	):
-		manillo_ledger.add_trade_value_units(
-			recipe.manillo_value_units,
-			false
-		)
+	var trade_value_units := int(result.get("manillo_value_units", 0))
+	if manillo_ledger != null and trade_value_units > 0:
+		manillo_ledger.add_trade_value_units(trade_value_units, false)
 
 	if not inventory.commit_changes():
 		inventory.restore_transaction_snapshot(
@@ -263,6 +260,24 @@ func execute_trade(
 		result.duplicate(true)
 	)
 	return result
+
+
+func get_current_trade_value_units(recipe: FishingTradeRecipe) -> int:
+	if recipe == null:
+		return 0
+	# BOF4 Manillo points use the player's current record score for each fish
+	# species being traded. Physical specimens are inventory items; the record is
+	# the authoritative point value attached to that species.
+	if progress == null:
+		return maxi(recipe.manillo_value_units, 0)
+	var total := 0
+	for index in range(recipe.required_fish_ids.size()):
+		var species_id := str(recipe.required_fish_ids[index])
+		var count := maxi(int(recipe.required_counts[index]), 0)
+		var record := progress.get_species_record_by_key(species_id)
+		var best_points := maxi(int(record.get("best_points", 0)), 0)
+		total += best_points * count
+	return total
 
 
 func get_all_recipes() -> Array[FishingTradeRecipe]:

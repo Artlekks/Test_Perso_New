@@ -1,0 +1,31 @@
+species_id,fish_name,sell_value_zenny,legacy_item_effect
+jellyfish,Jellyfish,4,Restores 50 HP to one ally.
+piranha,Piranha,30,Restores 150 HP to one ally.
+bass,Bass,70,Restores 500 HP to one ally.
+blue_gill,Blue Gill,150,Casts a minor Water attack on one enemy.
+sweetfish,Sweetfish,20,Restores 5 AP to one ally.
+browntail,Browntail,200,Temporarily raises one ally's defense.
+black_bass,Black Bass,250,Restores 1200 HP to one ally.
+angelfish,Angelfish,350,Revives one KO'd ally.
+trout,Trout,50,Restores 10 AP to one ally.
+rainbow_trout,Rainbow Trout,300,Temporarily raises one ally's attack.
+bullcat,Bullcat,600,Casts a minor Fire/Earth attack on all enemies.
+martian_squid,Martian Squid,400,Nullifies positive status effects.
+dorado,Dorado,800,Restores 800 HP to all allies.
+salmon,Salmon,1000,Restores 30 AP to all allies.
+barandy,Barandy,1400,Restores one ally to full HP.
+sturgeon,Sturgeon,1800,Revives all KO'd allies to 25% HP.
+man_o_war,Man-o'-War,4,Restores 50 HP to one ally.
+flying_fish,Flying Fish,30,Restores 100 HP to one ally.
+blowfish,Blowfish,80,Cures Poison.
+moorfish,Moorfish,100,Revives one KO'd ally with 1 HP; may fail.
+sea_bass,Sea Bass,30,Restores 400 HP to one ally.
+flatfish,Flatfish,300,Cures all status ailments on one ally.
+sea_bream,Sea Bream,350,Restores 30 AP to one ally.
+octopus,Octopus,400,Blinds all enemies.
+bonito,Bonito,700,Restores one ally to full HP.
+black_porgy,Black Porgy,1000,Restores 100 AP to one ally.
+angler,Angler,1000,Casts a major Wind/Water attack on all enemies.
+spearfish,Spearfish,1500,Restores 1500 HP to all allies.
+whale,Whale,2000,Restores full HP and cures status for all allies.
+acheron,Acheron,250,"Poisons everyone, allies and enemies."

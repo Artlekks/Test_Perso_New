@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishingShopOffer" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_shop_offer.gd" id="1_offer"]
+
+[resource]
+script = ExtResource("1_offer")
+offer_id = &"lyp_popper"
+shop_id = &"lyp_item"
+shop_name = "Lyp Item Shop"
+sort_order = 10
+item_type = 0
+item_id = &"popper"
+item_name = "Popper"
+quantity = 1
+price_zenny = 20
+unique_item = false
+availability_tag = &""
+source_note = "BOF4 regular item shop."

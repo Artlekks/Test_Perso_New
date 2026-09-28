@@ -12,8 +12,9 @@ signal manillo_balance_changed(
 	stamps: int,
 	stamp_cards: int
 )
+signal zenny_changed(balance: int)
 
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
 const SAVE_PATH: String = "user://fishing_inventory.json"
 
 # Backend defaults only. These are the current starter loadout and are kept
@@ -32,6 +33,10 @@ var rod_counts: Dictionary = {}
 var manillo_point_units: int = 0
 var manillo_stamps: int = 0
 var manillo_stamp_cards: int = 0
+
+## Fishing economy wallet. Kept behind inventory/service APIs so a future global
+## game wallet can replace the storage without changing shops or trade UI.
+var zenny_balance: int = 0
 
 var _initialized: bool = false
 var _progress_migrated: bool = false
@@ -529,6 +534,49 @@ func get_owned_rod_ids() -> PackedStringArray:
 
 
 # -----------------------------------------------------------------------------
+# Zenny economy storage
+# -----------------------------------------------------------------------------
+
+func get_zenny() -> int:
+	return maxi(zenny_balance, 0)
+
+
+func add_zenny(amount: int, persist: bool = true) -> int:
+	if amount <= 0:
+		return get_zenny()
+	zenny_balance = maxi(zenny_balance + amount, 0)
+	_dirty = true
+	zenny_changed.emit(zenny_balance)
+	changed.emit()
+	if persist:
+		commit_changes()
+	return zenny_balance
+
+
+func spend_zenny(amount: int, persist: bool = true) -> bool:
+	if amount <= 0:
+		return amount <= 0
+	if get_zenny() < amount:
+		return false
+	zenny_balance -= amount
+	_dirty = true
+	zenny_changed.emit(zenny_balance)
+	changed.emit()
+	if persist:
+		commit_changes()
+	return true
+
+
+func set_zenny(amount: int, persist: bool = true) -> void:
+	zenny_balance = maxi(amount, 0)
+	_dirty = true
+	zenny_changed.emit(zenny_balance)
+	changed.emit()
+	if persist:
+		commit_changes()
+
+
+# -----------------------------------------------------------------------------
 # Manillo economy storage
 # -----------------------------------------------------------------------------
 
@@ -599,6 +647,7 @@ func create_transaction_snapshot() -> Dictionary:
 		"fish_specimens": _serialize_specimen_dictionary(),
 		"lure_counts": lure_counts.duplicate(true),
 		"rod_counts": rod_counts.duplicate(true),
+		"zenny_balance": zenny_balance,
 		"manillo_point_units": manillo_point_units,
 		"manillo_stamps": manillo_stamps,
 		"manillo_stamp_cards": manillo_stamp_cards,
@@ -631,6 +680,7 @@ func restore_transaction_snapshot(
 			{}
 		)
 	)
+	zenny_balance = maxi(int(snapshot.get("zenny_balance", 0)), 0)
 	manillo_point_units = maxi(
 		int(
 			snapshot.get(
@@ -674,6 +724,7 @@ func restore_transaction_snapshot(
 		)
 	)
 
+	zenny_changed.emit(get_zenny())
 	_emit_manillo_balance_changed()
 	changed.emit()
 
@@ -708,6 +759,7 @@ func save_to_disk() -> bool:
 		"fish_specimens": _serialize_specimen_dictionary(),
 		"lure_counts": lure_counts,
 		"rod_counts": rod_counts,
+		"zenny_balance": zenny_balance,
 		"manillo_point_units": manillo_point_units,
 		"manillo_stamps": manillo_stamps,
 		"manillo_stamp_cards": manillo_stamp_cards,
@@ -750,6 +802,7 @@ func load_from_disk() -> bool:
 	_progress_migrated = bool(data.get("progress_migrated", false))
 	lure_counts = _sanitize_count_dictionary(data.get("lure_counts", {}))
 	rod_counts = _sanitize_count_dictionary(data.get("rod_counts", {}))
+	zenny_balance = maxi(int(data.get("zenny_balance", 0)), 0)
 	manillo_point_units = maxi(
 		int(data.get("manillo_point_units", 0)),
 		0
@@ -1136,6 +1189,7 @@ func _reset_runtime_state() -> void:
 	fish_specimens.clear()
 	lure_counts.clear()
 	rod_counts.clear()
+	zenny_balance = 0
 	manillo_point_units = 0
 	manillo_stamps = 0
 	manillo_stamp_cards = 0

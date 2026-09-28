@@ -22,6 +22,17 @@ class_name FishData
 ## source facts, separate from authored gameplay spawn weights.
 @export var journal_spot_ids: Array[StringName] = []
 
+@export_category("BOF4 Item / Economy")
+## Original Breath of Fire IV shop value. Kept separate from catch score: size
+## affects fishing progression, while this is the per-fish item value.
+@export_range(0, 999999, 1)
+var sell_value_zenny: int = 0
+
+## Original BOF4 consumable effect, preserved as source-facing data. This project
+## does not have an RPG combat layer, so no runtime combat effect is applied yet.
+## A future fishing/session perk system can map from this without losing source data.
+@export_multiline var legacy_item_effect: String = ""
+
 @export_category("Size / King")
 @export var average_size: float = 1.0
 @export var king_size: float = 2.0
@@ -195,6 +206,18 @@ func get_stable_species_id() -> String:
 
 func get_journal_name() -> String:
 	return journal_name if not journal_name.is_empty() else fish_name
+
+
+func get_sell_value_zenny() -> int:
+	if sell_value_zenny > 0:
+		return sell_value_zenny
+	return maxi(int(get_meta("source_worth_zenny", 0)), 0)
+
+
+func get_legacy_item_effect() -> String:
+	if not legacy_item_effect.strip_edges().is_empty():
+		return legacy_item_effect
+	return str(get_meta("source_effect", ""))
 
 
 func accepts_lure_type(lure_type: int) -> bool:

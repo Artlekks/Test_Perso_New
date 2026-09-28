@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://bh7lnsqujscvu"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/bonito_behavior.tres" id="2_behavior"]
+[ext_resource type="Resource" uid="uid://coacmdk4aggwk" path="res://data/bof4/fish_behaviors/bonito_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_bonito"]
@@ -16,6 +16,8 @@ journal_name = "Bonito"
 guide_effect = "Restores one ally to full HP."
 guide_description = "A fast fish. Being able to catch one is a distinction."
 journal_spot_ids = Array[StringName]([&"ocean_2", &"ocean_3"])
+sell_value_zenny = 700
+legacy_item_effect = "Restores one ally to full HP."
 average_size = 90.0
 king_size = 120.0
 base_stamina = 90.3

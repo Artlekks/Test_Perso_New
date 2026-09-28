@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishingShopOffer" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_shop_offer.gd" id="1_offer"]
+
+[resource]
+script = ExtResource("1_offer")
+offer_id = &"faerie_bamboo_rod"
+shop_id = &"faerie_diligent"
+shop_name = "Faerie Village - Diligent Item Shop"
+sort_order = 10
+item_type = 1
+item_id = &"bamboo_rod"
+item_name = "Bamboo Rod"
+quantity = 1
+price_zenny = 250
+unique_item = true
+availability_tag = &"faerie_diligent_shop"
+source_note = "BOF4 Faerie Village diligent item shop."

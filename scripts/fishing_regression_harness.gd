@@ -16,6 +16,15 @@ const REWARD_CATALOG: FishingRewardCatalog = preload(
 const TRADE_CATALOG: FishingTradeCatalog = preload(
 	"res://data/bof4/trades/all_trades.tres"
 )
+const ShopCatalogScript = preload(
+	"res://scripts/fishing_shop_catalog.gd"
+)
+const ShopOfferScript = preload(
+	"res://scripts/database/fishing_shop_offer.gd"
+)
+const SHOP_CATALOG: ShopCatalogScript = preload(
+	"res://data/bof4/shops/all_shops.tres"
+)
 const TENSION_PROFILE: FishingTensionProfile = preload(
 	"res://data/bof4/fight/default_tension.tres"
 )
@@ -76,6 +85,12 @@ const ProgressionIntegrityScript = preload(
 const RewardServiceScript = preload(
 	"res://scripts/fishing_reward_service.gd"
 )
+const EconomyIntegrityScript = preload(
+	"res://scripts/fishing_economy_integrity.gd"
+)
+const TradeServiceScript = preload(
+	"res://scripts/fishing_trade_service.gd"
+)
 
 const QA_PROFILE_DIRECTORY: String = "res://data/debug/qa_profiles"
 
@@ -87,6 +102,7 @@ const EXPECTED_TECHNIQUE_COUNT: int = 4
 const EXPECTED_RANK_COUNT: int = 10
 const EXPECTED_REWARD_COUNT: int = 2
 const EXPECTED_TRADE_COUNT: int = 14
+const EXPECTED_SHOP_OFFER_COUNT: int = 16
 const EXPECTED_MAX_FISHING_POINTS: int = 9999
 
 
@@ -120,6 +136,7 @@ func run_all() -> Dictionary:
 	_test_progression_reward_contract(report)
 	_test_outcome_loop(report)
 	_test_trades(report)
+	_test_economy_contract(report)
 	_test_fight_stat_resolution(report)
 	_test_tackle_differentiation(report)
 	_test_difficulty_accessibility_curve(report)
@@ -1299,6 +1316,80 @@ func _test_trades(report: Dictionary) -> void:
 
 	_assert_equal_int(report, int(shop_counts.get("wyndia", 0)), 7, "Wyndia trade count", group)
 	_assert_equal_int(report, int(shop_counts.get("lyp", 0)), 7, "Lyp trade count", group)
+
+
+func _test_economy_contract(report: Dictionary) -> void:
+	var group: String = "economy"
+	var audit: Dictionary = EconomyIntegrityScript.audit(
+		CONTENT_CATALOG,
+		SHOP_CATALOG,
+		TRADE_CATALOG
+	)
+	_assert(report, bool(audit.get("ok", false)), "economy integrity audit passes", group)
+	_assert_equal_int(report, SHOP_CATALOG.get_all_offers().size(), EXPECTED_SHOP_OFFER_COUNT, "shop offer count", group)
+
+	var seen_offer_ids: Dictionary = {}
+	for offer in SHOP_CATALOG.get_all_offers():
+		var offer_id := str(offer.offer_id)
+		_assert(report, offer.is_valid_definition(), "%s valid shop offer" % offer_id, group)
+		_assert(report, not seen_offer_ids.has(offer_id), "unique shop offer %s" % offer_id, group)
+		seen_offer_ids[offer_id] = true
+		_assert(report, offer.price_zenny >= 0, "%s non-negative price" % offer_id, group)
+
+	var spoon_offer: ShopOfferScript = SHOP_CATALOG.get_offer_by_id(&"faerie_spoon")
+	_assert(report, spoon_offer != null, "Faerie Spoon offer exists", group)
+	if spoon_offer != null:
+		_assert_equal_int(report, spoon_offer.price_zenny, 120, "Spoon BOF4 price", group)
+		_assert_equal_string(report, str(spoon_offer.availability_tag), "faerie_lazy_shop", "Spoon availability tag", group)
+
+	var king_frog_offer: ShopOfferScript = SHOP_CATALOG.get_offer_by_id(&"clear_king_frog")
+	_assert(report, king_frog_offer != null, "clear-game King Frog offer exists", group)
+	if king_frog_offer != null:
+		_assert_equal_int(report, king_frog_offer.price_zenny, 800, "King Frog BOF4 price", group)
+		_assert_equal_string(report, str(king_frog_offer.availability_tag), "clear_game", "King Frog clear-game gate", group)
+
+	for fish in CONTENT_CATALOG.fish:
+		if fish == null:
+			continue
+		_assert(report, fish.get_sell_value_zenny() > 0, "%s has sell value" % fish.fish_name, group)
+		_assert(report, not fish.get_legacy_item_effect().strip_edges().is_empty(), "%s preserves BOF4 item effect" % fish.fish_name, group)
+
+	var sweetfish := CONTENT_CATALOG.get_fish_by_id(&"sweetfish")
+	_assert(report, sweetfish != null, "Sweetfish economy data exists", group)
+	if sweetfish != null:
+		_assert_equal_int(report, sweetfish.get_sell_value_zenny(), 20, "Sweetfish worth", group)
+
+	var whale := CONTENT_CATALOG.get_fish_by_id(&"whale")
+	_assert(report, whale != null, "Whale economy data exists", group)
+	if whale != null:
+		_assert_equal_int(report, whale.get_sell_value_zenny(), 2000, "Whale worth", group)
+
+	# Manillo trade value is dynamic in BOF4: the current record score for each
+	# required species is multiplied by the number of those fish spent.
+	var progress := FishingProgress.new()
+	var service = TradeServiceScript.new()
+	service.progress = progress
+	var tail_recipe := TRADE_CATALOG.get_recipe_by_id(&"wyndia_tail")
+	_assert(report, tail_recipe != null, "Wyndia Tail recipe exists", group)
+	if tail_recipe != null:
+		progress.record_catch_snapshot({
+			"species_id": "flying_fish",
+			"fish_name": "Flying Fish",
+			"size": 20.0,
+			"points": 123,
+			"max_points": 150,
+			"is_king": false,
+		}, false, false)
+		_assert_equal_int(report, service.get_current_trade_value_units(tail_recipe), 369, "Manillo uses current record score", group)
+		progress.record_catch_snapshot({
+			"species_id": "flying_fish",
+			"fish_name": "Flying Fish",
+			"size": 30.0,
+			"points": 150,
+			"max_points": 150,
+			"is_king": true,
+		}, false, false)
+		_assert_equal_int(report, service.get_current_trade_value_units(tail_recipe), 450, "Manillo value rises with improved record", group)
 
 
 func _test_fight_stat_resolution(report: Dictionary) -> void:

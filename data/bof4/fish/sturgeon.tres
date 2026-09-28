@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://jw0wgwc2tcx5"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/sturgeon_behavior.tres" id="2_behavior"]
+[ext_resource type="Resource" uid="uid://yj4g6fsm7u8k" path="res://data/bof4/fish_behaviors/sturgeon_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_sturgeon"]
@@ -16,6 +16,8 @@ journal_name = "Sturgeon"
 guide_effect = "Revives all KO'd allies to 25% HP."
 guide_description = "Sometimes called \"the living jewel\"."
 journal_spot_ids = Array[StringName]([&"river_3"])
+sell_value_zenny = 1800
+legacy_item_effect = "Revives all KO'd allies to 25% HP."
 average_size = 165.0
 king_size = 220.0
 base_stamina = 133.4

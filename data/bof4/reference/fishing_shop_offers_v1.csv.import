@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dix1obobwanmk"
+
+[deps]
+
+files=["res://data/bof4/reference/fishing_shop_offers_v1.shop.translation", "res://data/bof4/reference/fishing_shop_offers_v1.shop.translation", "res://data/bof4/reference/fishing_shop_offers_v1.item.translation", "res://data/bof4/reference/fishing_shop_offers_v1.price.translation", "res://data/bof4/reference/fishing_shop_offers_v1.availability.translation"]
+
+source_file="res://data/bof4/reference/fishing_shop_offers_v1.csv"
+dest_files=["res://data/bof4/reference/fishing_shop_offers_v1.shop.translation", "res://data/bof4/reference/fishing_shop_offers_v1.shop.translation", "res://data/bof4/reference/fishing_shop_offers_v1.item.translation", "res://data/bof4/reference/fishing_shop_offers_v1.price.translation", "res://data/bof4/reference/fishing_shop_offers_v1.availability.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

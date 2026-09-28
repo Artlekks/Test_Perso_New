@@ -123,6 +123,7 @@ var fishing_progress: FishingProgress = null
 var fishing_inventory: FishingInventory = null
 var fishing_catch_repository: FishingCatchRepository = null
 var fishing_trade_service: FishingTradeService = null
+var fishing_economy_service = null
 var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
 var fishing_journal_service: FishingJournalService = null
@@ -221,6 +222,7 @@ func _ready() -> void:
 	fishing_inventory = session_services.inventory
 	fishing_catch_repository = session_services.catch_repository
 	fishing_trade_service = session_services.trade_service
+	fishing_economy_service = session_services.economy_service
 	fishing_unlock_state = session_services.unlock_state
 	fishing_reward_service = session_services.reward_service
 	fishing_journal_service = session_services.journal_service
@@ -650,6 +652,10 @@ func get_last_outcome_result() -> Dictionary:
 
 func get_fishing_trade_service() -> FishingTradeService:
 	return fishing_trade_service
+
+
+func get_fishing_economy_service():
+	return fishing_economy_service
 
 
 func get_fishing_unlock_state() -> FishingUnlockState:

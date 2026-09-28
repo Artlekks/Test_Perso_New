@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://c6vim2k1fedob"
+
+[deps]
+
+files=["res://data/bof4/reference/fishing_economy_fish_values_v1.fish.translation", "res://data/bof4/reference/fishing_economy_fish_values_v1.sell.translation", "res://data/bof4/reference/fishing_economy_fish_values_v1.legacy.translation"]
+
+source_file="res://data/bof4/reference/fishing_economy_fish_values_v1.csv"
+dest_files=["res://data/bof4/reference/fishing_economy_fish_values_v1.fish.translation", "res://data/bof4/reference/fishing_economy_fish_values_v1.sell.translation", "res://data/bof4/reference/fishing_economy_fish_values_v1.legacy.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

@@ -18,6 +18,9 @@ const FishingCatchRepositoryScript = preload(
 const FishingTradeServiceScript = preload(
 	"res://scripts/fishing_trade_service.gd"
 )
+const FishingEconomyServiceScript = preload(
+	"res://scripts/fishing_economy_service.gd"
+)
 const FishingManilloLedgerScript = preload(
 	"res://scripts/fishing_manillo_ledger.gd"
 )
@@ -33,12 +36,18 @@ const FishingJournalServiceScript = preload(
 const FishingProgressionIntegrityScript = preload(
 	"res://scripts/fishing_progression_integrity.gd"
 )
+const FishingEconomyIntegrityScript = preload(
+	"res://scripts/fishing_economy_integrity.gd"
+)
 
 const FishingTackleCatalogResource = preload(
 	"res://data/bof4/tackle/all_tackle.tres"
 )
 const FishingTradeCatalogResource = preload(
 	"res://data/bof4/trades/all_trades.tres"
+)
+const FishingShopCatalogResource = preload(
+	"res://data/bof4/shops/all_shops.tres"
 )
 const FishingRewardCatalogResource = preload(
 	"res://data/bof4/rewards/all_rewards.tres"
@@ -57,11 +66,13 @@ var progress: FishingProgress = null
 var inventory: FishingInventory = null
 var catch_repository: FishingCatchRepository = null
 var trade_service: FishingTradeService = null
+var economy_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
 var reward_service: FishingRewardService = null
 var journal_service: FishingJournalService = null
 var progression_integrity_report: Dictionary = {}
+var economy_integrity_report: Dictionary = {}
 
 var _initialized: bool = false
 
@@ -125,7 +136,19 @@ func initialize() -> void:
 		inventory,
 		FishingTackleCatalogResource,
 		FishingTradeCatalogResource,
-		manillo_ledger
+		manillo_ledger,
+		progress
+	)
+
+	economy_service = FishingEconomyServiceScript.new()
+	economy_service.name = "FishingEconomyService"
+	add_child(economy_service)
+	economy_service.configure(
+		inventory,
+		FishingContentCatalogResource,
+		FishingTackleCatalogResource,
+		FishingShopCatalogResource,
+		trade_service
 	)
 
 	reward_service = FishingRewardServiceScript.new()
@@ -149,6 +172,7 @@ func initialize() -> void:
 	)
 
 	_run_progression_integrity_audit()
+	_run_economy_integrity_audit()
 
 
 func _run_progression_integrity_audit() -> void:
@@ -165,6 +189,22 @@ func _run_progression_integrity_audit() -> void:
 		push_error("Fishing progression audit: %s" % str(error))
 
 
+func _run_economy_integrity_audit() -> void:
+	economy_integrity_report = FishingEconomyIntegrityScript.audit(
+		FishingContentCatalogResource,
+		FishingShopCatalogResource,
+		FishingTradeCatalogResource
+	)
+	for warning in economy_integrity_report.get("warnings", PackedStringArray()):
+		push_warning("Fishing economy audit: %s" % str(warning))
+	for error in economy_integrity_report.get("errors", PackedStringArray()):
+		push_error("Fishing economy audit: %s" % str(error))
+
+
+func get_economy_integrity_report() -> Dictionary:
+	return economy_integrity_report.duplicate(true)
+
+
 func get_progression_integrity_report() -> Dictionary:
 	return progression_integrity_report.duplicate(true)
 
@@ -176,6 +216,7 @@ func is_ready() -> bool:
 		and inventory != null
 		and catch_repository != null
 		and trade_service != null
+		and economy_service != null
 		and manillo_ledger != null
 		and unlock_state != null
 		and reward_service != null

@@ -1,0 +1,17 @@
+offer_id,shop_id,shop_name,item_name,price_zenny,availability_tag
+chiqua_hanger,chiqua,Chiqua Item Shop,Hanger,80,
+chiqua_tail,chiqua,Chiqua Item Shop,Tail,80,
+chiqua_toad,chiqua,Chiqua Item Shop,Toad,80,
+clear_king_frog,abandoned_village,Rei and Teepo Shop,King Frog,800,clear_game
+faerie_bamboo_rod,faerie_diligent,Faerie Village - Diligent Item Shop,Bamboo Rod,250,faerie_diligent_shop
+faerie_spoon,faerie_lazy,Faerie Village - Lazy Item Shop,Spoon,120,faerie_lazy_shop
+lyp_popper,lyp_item,Lyp Item Shop,Popper,20,
+lyp_silver_top,lyp_item,Lyp Item Shop,Silver Top,20,
+sarai_baby_frog,sarai,Sarai Item Shop,Baby Frog,20,
+sarai_straight,sarai,Sarai Item Shop,Straight,20,
+sarai_wooden_rod,sarai,Sarai Item Shop,Wooden Rod,50,
+shyde_baby_frog,shyde,Shyde Item Shop,Baby Frog,20,
+shyde_floater,shyde,Shyde Item Shop,Floater,20,
+shyde_straight,shyde,Shyde Item Shop,Straight,20,
+shyde_wooden_rod,shyde,Shyde Item Shop,Wooden Rod,50,
+synesta_floater,synesta,Synesta Item Shop,Floater,20,

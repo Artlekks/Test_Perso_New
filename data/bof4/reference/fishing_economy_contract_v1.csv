@@ -1,0 +1,7 @@
+system,rule
+Fish sale,Each physical fish sells for its BOF4 species worth; specimen size/points do not change Zenny value.
+Manillo trade,Consumes physical fish counts and awards trade-point units from the player current best point record for each species spent.
+Stamp conversion,100 trade-point units = 1 stamp; 20 stamps = 1 stamp card.
+Regular shop,Purchases consume Zenny and add lure/rod inventory through one transactional economy service.
+Legacy fish effect,Original BOF4 item effect is preserved as data only; no combat effect is executed in this fishing-focused project.
+Future fishing perk,Legacy item effects can later map to temporary fishing/session modifiers without changing fish identity or economy values.

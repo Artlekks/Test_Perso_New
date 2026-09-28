@@ -32,8 +32,10 @@ var reward_quantity: int = 1
 @export var required_counts: PackedInt32Array = PackedInt32Array()
 
 @export_category("Manillo Economy")
-## Internal Manillo trade-value units. 100 units = 1 stamp.
-## Example: a source value printed as 4.80 is stored as 480.
+## Reference/fallback Manillo trade-value units. 100 units = 1 stamp. Runtime
+## value is normally calculated from the player's CURRENT record points for the
+## fish being spent, matching BOF4. This field remains useful for old tools or
+## scenes that do not provide FishingProgress to FishingTradeService.
 @export_range(0, 100000, 1)
 var manillo_value_units: int = 0
 

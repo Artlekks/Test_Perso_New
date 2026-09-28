@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishingShopOffer" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_shop_offer.gd" id="1_offer"]
+
+[resource]
+script = ExtResource("1_offer")
+offer_id = &"clear_king_frog"
+shop_id = &"abandoned_village"
+shop_name = "Rei and Teepo Shop"
+sort_order = 10
+item_type = 0
+item_id = &"king_frog"
+item_name = "King Frog"
+quantity = 1
+price_zenny = 800
+unique_item = false
+availability_tag = &"clear_game"
+source_note = "BOF4 clear-game Abandoned Village shop."

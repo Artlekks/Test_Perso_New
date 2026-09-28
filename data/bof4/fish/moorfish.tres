@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="FishData" format=3 uid="uid://bbljjxymscte4"]
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
-[ext_resource type="Resource" path="res://data/bof4/fish_behaviors/moorfish_behavior.tres" id="2_behavior"]
+[ext_resource type="Resource" uid="uid://dcqeefq7g7evg" path="res://data/bof4/fish_behaviors/moorfish_behavior.tres" id="2_behavior"]
 [ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_moorfish"]
@@ -16,6 +16,8 @@ journal_name = "Moonfish"
 guide_effect = "Revives one KO'd ally with 1 HP; may fail."
 guide_description = "Popular with women, it looks like it's flying in the water."
 journal_spot_ids = Array[StringName]([&"saldine"])
+sell_value_zenny = 100
+legacy_item_effect = "Revives one KO'd ally with 1 HP; may fail."
 average_size = 22.0
 king_size = 30.0
 base_stamina = 69.0

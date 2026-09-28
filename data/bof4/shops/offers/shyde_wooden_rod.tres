@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishingShopOffer" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_shop_offer.gd" id="1_offer"]
+
+[resource]
+script = ExtResource("1_offer")
+offer_id = &"shyde_wooden_rod"
+shop_id = &"shyde"
+shop_name = "Shyde Item Shop"
+sort_order = 40
+item_type = 1
+item_id = &"wooden_rod"
+item_name = "Wooden Rod"
+quantity = 1
+price_zenny = 50
+unique_item = true
+availability_tag = &""
+source_note = "BOF4 regular item shop."

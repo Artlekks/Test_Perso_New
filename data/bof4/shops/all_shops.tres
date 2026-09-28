@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FishingShopCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_shop_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/sarai_straight.tres" id="2_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/sarai_baby_frog.tres" id="3_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/sarai_wooden_rod.tres" id="4_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/shyde_straight.tres" id="5_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/shyde_baby_frog.tres" id="6_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/shyde_floater.tres" id="7_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/shyde_wooden_rod.tres" id="8_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/synesta_floater.tres" id="9_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/lyp_popper.tres" id="10_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/lyp_silver_top.tres" id="11_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/chiqua_hanger.tres" id="12_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/chiqua_toad.tres" id="13_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/chiqua_tail.tres" id="14_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/faerie_bamboo_rod.tres" id="15_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/faerie_spoon.tres" id="16_offer"]
+[ext_resource type="Resource" path="res://data/bof4/shops/offers/clear_king_frog.tres" id="17_offer"]
+
+[resource]
+script = ExtResource("1_catalog")
+offers = Array[Resource]([ExtResource("2_offer"), ExtResource("3_offer"), ExtResource("4_offer"), ExtResource("5_offer"), ExtResource("6_offer"), ExtResource("7_offer"), ExtResource("8_offer"), ExtResource("9_offer"), ExtResource("10_offer"), ExtResource("11_offer"), ExtResource("12_offer"), ExtResource("13_offer"), ExtResource("14_offer"), ExtResource("15_offer"), ExtResource("16_offer"), ExtResource("17_offer")])

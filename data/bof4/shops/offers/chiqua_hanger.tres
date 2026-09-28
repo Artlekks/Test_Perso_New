@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishingShopOffer" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_shop_offer.gd" id="1_offer"]
+
+[resource]
+script = ExtResource("1_offer")
+offer_id = &"chiqua_hanger"
+shop_id = &"chiqua"
+shop_name = "Chiqua Item Shop"
+sort_order = 10
+item_type = 0
+item_id = &"hanger"
+item_name = "Hanger"
+quantity = 1
+price_zenny = 80
+unique_item = false
+availability_tag = &""
+source_note = "BOF4 regular item shop."
