@@ -93,16 +93,16 @@ var thrash_multiplier: float = 1.35
 
 
 func is_valid_profile() -> bool:
-	var action_weight_total := (
-		surge_weight
-		+ side_run_weight
-		+ dive_weight
-		+ rise_weight
-		+ erratic_weight
-	)
+	var action_weight_total := get_total_action_weight()
 
 	return (
-		direction_change_min > 0.0
+		archetype >= FightArchetype.STEADY
+		and archetype <= FightArchetype.ERRATIC
+		and lateral_activity >= 0.0
+		and lateral_activity <= 1.0
+		and vertical_activity >= 0.0
+		and vertical_activity <= 1.0
+		and direction_change_min > 0.0
 		and direction_change_max >= direction_change_min
 		and movement_response_multiplier > 0.0
 		and release_reaction_multiplier > 0.0
@@ -114,11 +114,81 @@ func is_valid_profile() -> bool:
 		and pressure_multiplier > 0.0
 		and pull_multiplier > 0.0
 		and stamina_recovery_multiplier > 0.0
+		and surge_weight >= 0.0
+		and side_run_weight >= 0.0
+		and dive_weight >= 0.0
+		and rise_weight >= 0.0
+		and erratic_weight >= 0.0
 		and action_weight_total > 0.0
 		and thrash_chance >= 0.0
 		and thrash_chance <= 1.0
 		and thrash_multiplier >= 1.0
 	)
+
+
+func get_total_action_weight() -> float:
+	return (
+		maxf(surge_weight, 0.0)
+		+ maxf(side_run_weight, 0.0)
+		+ maxf(dive_weight, 0.0)
+		+ maxf(rise_weight, 0.0)
+		+ maxf(erratic_weight, 0.0)
+	)
+
+
+func get_action_distribution() -> Dictionary:
+	var total := get_total_action_weight()
+
+	if total <= 0.0:
+		return {
+			"surge": 0.0,
+			"side_run": 0.0,
+			"dive": 0.0,
+			"rise": 0.0,
+			"erratic": 0.0,
+		}
+
+	return {
+		"surge": maxf(surge_weight, 0.0) / total,
+		"side_run": maxf(side_run_weight, 0.0) / total,
+		"dive": maxf(dive_weight, 0.0) / total,
+		"rise": maxf(rise_weight, 0.0) / total,
+		"erratic": maxf(erratic_weight, 0.0) / total,
+	}
+
+
+func get_dominant_action_label() -> String:
+	var weights := {
+		"SURGE": maxf(surge_weight, 0.0),
+		"SIDE RUN": maxf(side_run_weight, 0.0),
+		"DIVE": maxf(dive_weight, 0.0),
+		"RISE": maxf(rise_weight, 0.0),
+		"ERRATIC": maxf(erratic_weight, 0.0),
+	}
+	var dominant := "SURGE"
+	var dominant_weight := -1.0
+
+	for action_name in weights:
+		var weight := float(weights[action_name])
+		if weight > dominant_weight:
+			dominant = str(action_name)
+			dominant_weight = weight
+
+	return dominant
+
+
+func get_personality_signature() -> String:
+	var distribution := get_action_distribution()
+	return "%s|%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f" % [
+		get_archetype_label(),
+		get_dominant_action_label(),
+		float(distribution.get("surge", 0.0)),
+		float(distribution.get("side_run", 0.0)),
+		float(distribution.get("dive", 0.0)),
+		float(distribution.get("rise", 0.0)),
+		float(distribution.get("erratic", 0.0)),
+		thrash_chance,
+	]
 
 
 func get_archetype_label() -> String:

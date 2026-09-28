@@ -46,6 +46,9 @@ const ShoreBoundaryScript = preload(
 const FightLifecycleScript = preload(
 	"res://scripts/fishing_fight_lifecycle.gd"
 )
+const FightResolver = preload(
+	"res://scripts/fishing_fight_resolver.gd"
+)
 const TensionScript = preload(
 	"res://scripts/tension.gd"
 )
@@ -90,6 +93,7 @@ func run_all() -> Dictionary:
 	_test_debug_specimen_forcing(report)
 	_test_rewards(report)
 	_test_trades(report)
+	_test_fight_stat_resolution(report)
 	_test_tension_profile(report)
 	_test_fight_lifecycle_regression(report)
 	_test_tension_failure_regression(report)
@@ -870,6 +874,229 @@ func _test_trades(report: Dictionary) -> void:
 
 	_assert_equal_int(report, int(shop_counts.get("wyndia", 0)), 7, "Wyndia trade count", group)
 	_assert_equal_int(report, int(shop_counts.get("lyp", 0)), 7, "Lyp trade count", group)
+
+
+func _test_fight_stat_resolution(report: Dictionary) -> void:
+	var group: String = "fight_stats"
+	var archetypes: Dictionary = {}
+	var dominant_actions: Dictionary = {}
+	var personality_signatures: Dictionary = {}
+	var resolved_species: int = 0
+
+	for fish_data in CONTENT_CATALOG.fish:
+		if fish_data == null:
+			continue
+
+		var fish_name: String = fish_data.fish_name
+		var profile = fish_data.behavior_profile
+
+		_assert(report, profile != null, "%s has fight profile" % fish_name, group)
+		if profile == null:
+			continue
+
+		_assert(report, profile.is_valid_profile(), "%s profile valid" % fish_name, group)
+		archetypes[profile.get_archetype_label()] = true
+		dominant_actions[profile.get_dominant_action_label()] = true
+		personality_signatures[profile.get_personality_signature()] = true
+
+		var distribution: Dictionary = profile.get_action_distribution()
+		var distribution_total := (
+			float(distribution.get("surge", 0.0))
+			+ float(distribution.get("side_run", 0.0))
+			+ float(distribution.get("dive", 0.0))
+			+ float(distribution.get("rise", 0.0))
+			+ float(distribution.get("erratic", 0.0))
+		)
+		_assert(
+			report,
+			absf(distribution_total - 1.0) <= 0.001,
+			"%s action distribution normalized" % fish_name,
+			group
+		)
+
+		var small_size := maxf(
+			fish_data.average_size * fish_data.normal_min_average_multiplier,
+			1.0
+		)
+		var average_size := maxf(fish_data.average_size, small_size)
+		var large_size := minf(
+			lerpf(fish_data.average_size, fish_data.king_size, 0.75),
+			maxf(fish_data.king_size - 1.0, fish_data.average_size)
+		)
+		var king_size := maxf(fish_data.king_size, large_size)
+
+		var small := FishInstance.new()
+		small.setup(fish_data, -1, small_size)
+		var average := FishInstance.new()
+		average.setup(fish_data, -1, average_size)
+		var large := FishInstance.new()
+		large.setup(fish_data, -1, large_size)
+		var king := FishInstance.new()
+		king.setup(fish_data, -1, king_size)
+
+		for specimen in [small, average, large, king]:
+			_assert(
+				report,
+				FightResolver.is_valid_specimen_stats(specimen.get_fight_stats()),
+				"%s %.0fcm resolved fight stats valid" % [fish_name, specimen.size],
+				group
+			)
+
+		_assert(
+			report,
+			average.max_stamina >= small.max_stamina,
+			"%s average stamina >= small" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			large.max_stamina >= average.max_stamina,
+			"%s large stamina >= average" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			king.max_stamina >= large.max_stamina,
+			"%s king stamina >= large" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			large.strength >= average.strength,
+			"%s large strength >= average" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			king.strength >= large.strength,
+			"%s king strength >= large" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			large.pull_multiplier >= average.pull_multiplier,
+			"%s large pull >= average" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			king.pull_multiplier >= large.pull_multiplier,
+			"%s king pull >= large" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			large.pressure_multiplier >= average.pressure_multiplier,
+			"%s large pressure >= average" % fish_name,
+			group
+		)
+		_assert(
+			report,
+			king.behavior_intensity_multiplier >= large.behavior_intensity_multiplier,
+			"%s king behavior >= large" % fish_name,
+			group
+		)
+
+		# Stress the entire authored specimen range. This catches bad exponents,
+		# negative multipliers and future data edits before they reach Encounter.
+		var stress_max := fish_data.king_size * fish_data.king_max_size_multiplier
+		for step_index in range(13):
+			var t := float(step_index) / 12.0
+			var stress_size := lerpf(small_size, stress_max, t)
+			var stress_stats: Dictionary = FightResolver.resolve_specimen(
+				fish_data,
+				stress_size,
+				stress_size >= fish_data.king_size
+			)
+			_assert(
+				report,
+				FightResolver.is_valid_specimen_stats(stress_stats),
+				"%s stress specimen %d valid" % [fish_name, step_index],
+				group
+			)
+
+		# Every rod must resolve through the same context without rewriting fish
+		# stats. This makes rod differentiation additive and prevents hidden fish
+		# balance changes in Encounter.
+		if CONTENT_CATALOG.tackle != null:
+			for rod in CONTENT_CATALOG.tackle.rods:
+				if rod == null:
+					continue
+				var context: Dictionary = FightResolver.resolve_context(
+					average,
+					rod,
+					null
+				)
+				_assert(
+					report,
+					FightResolver.is_valid_context(context),
+					"%s + %s context valid" % [fish_name, rod.rod_name],
+					group
+				)
+				_assert(
+					report,
+					absf(float(context.get("max_stamina", 0.0)) - average.max_stamina) <= 0.001,
+					"%s rod does not secretly rewrite stamina" % fish_name,
+					group
+				)
+
+		# Lures currently own attraction/retrieve behavior, not hooked-fish
+		# strength. Verify that contract explicitly so a future lure trait must be
+		# added in the resolver rather than as an Encounter special case.
+		if (
+			CONTENT_CATALOG.tackle != null
+			and CONTENT_CATALOG.tackle.lure_catalog != null
+		):
+			var base_context: Dictionary = FightResolver.resolve_context(
+				average,
+				null,
+				null
+			)
+			for lure in CONTENT_CATALOG.tackle.lure_catalog.lures:
+				if lure == null:
+					continue
+				var lure_context: Dictionary = FightResolver.resolve_context(
+					average,
+					null,
+					lure
+				)
+				_assert(
+					report,
+					absf(
+						float(lure_context.get("strength", 0.0))
+						- float(base_context.get("strength", 0.0))
+					) <= 0.001,
+					"%s lure %s keeps fish strength authoritative" % [fish_name, lure.display_name],
+					group
+				)
+
+		resolved_species += 1
+
+	_assert_equal_int(
+		report,
+		resolved_species,
+		EXPECTED_FISH_COUNT,
+		"all species resolve fight stats",
+		group
+	)
+	_assert(
+		report,
+		archetypes.size() >= 5,
+		"all five fight archetypes represented",
+		group
+	)
+	_assert(
+		report,
+		dominant_actions.size() >= 5,
+		"all five dominant movement identities represented",
+		group
+	)
+	_assert(
+		report,
+		personality_signatures.size() >= 20,
+		"species behavior data has broad personality variety",
+		group
+	)
 
 
 func _test_tension_profile(report: Dictionary) -> void:

@@ -8,6 +8,9 @@ const CatchScoring = preload(
 const SizeRoller = preload(
 	"res://scripts/fishing_size_roller.gd"
 )
+const FightResolver = preload(
+	"res://scripts/fishing_fight_resolver.gd"
+)
 
 
 var species: FishData
@@ -25,80 +28,102 @@ var score_tier: int = 0
 var size_ratio_to_king: float = 0.0
 var score_completion_ratio: float = 0.0
 
+## Runtime fight values are resolved once by FishingFightResolver and cached as
+## plain values. Encounter and FishBehavior consume these instead of each
+## reinterpreting FishData independently.
+var size_ratio_to_average: float = 1.0
 var resistance_rounds: int = 1
 var recovery_time_min: float = 0.8
 var recovery_time_max: float = 1.5
 var behavior_profile: FishBehaviorProfile
-
-## Cached once when hooked; hot fight code consumes plain values.
+var archetype_label: String = "UNPROFILED"
+var dominant_action: String = "UNPROFILED"
 var behavior_intensity_multiplier: float = 1.0
+var pressure_multiplier: float = 1.0
 var pull_multiplier: float = 1.0
 var stamina_recovery_multiplier: float = 1.0
+var _fight_stats: Dictionary = {}
 
 
-func setup(data: FishData, king_override: int = -1, size_override_cm: float = -1.0) -> void:
+func setup(
+	data: FishData,
+	king_override: int = -1,
+	size_override_cm: float = -1.0
+) -> void:
 	species = data
 
 	if data == null:
+		_fight_stats.clear()
 		return
 
 	_roll_size_and_king(data, king_override, size_override_cm)
-
-	behavior_profile = data.behavior_profile
-	resistance_rounds = data.resistance_rounds
-
-	var recovery_multiplier := 1.0
-	if behavior_profile != null:
-		recovery_multiplier = maxf(
-			behavior_profile.recovery_time_multiplier,
-			0.5
+	_apply_resolved_fight_stats(
+		FightResolver.resolve_specimen(
+			data,
+			size,
+			is_king
 		)
-
-	recovery_time_min = data.recovery_time_min * recovery_multiplier
-	recovery_time_max = data.recovery_time_max * recovery_multiplier
-
-	var safe_average: float = maxf(data.average_size, 0.001)
-	var size_ratio: float = size / safe_average
-	var stamina_size_scale: float = pow(
-		maxf(size_ratio, 0.001),
-		maxf(data.stamina_size_exponent, 0.0)
-	)
-	var strength_size_scale: float = lerpf(
-		1.0,
-		size_ratio,
-		clampf(data.strength_size_influence, 0.0, 1.0)
 	)
 
-	max_stamina = data.base_stamina * stamina_size_scale
-	strength = data.base_strength * strength_size_scale
 
-	behavior_intensity_multiplier = 1.0
-	pull_multiplier = 1.0
-	stamina_recovery_multiplier = 1.0
+func _apply_resolved_fight_stats(stats: Dictionary) -> void:
+	_fight_stats = stats.duplicate(true)
 
-	if behavior_profile != null:
-		behavior_intensity_multiplier = maxf(
-			behavior_profile.fight_intensity_multiplier,
-			0.01
+	if not FightResolver.is_valid_specimen_stats(stats):
+		push_warning(
+			"FishInstance: invalid resolved fight stats for %s; using safe defaults."
+			% (species.fish_name if species != null else "UNKNOWN")
 		)
-		pull_multiplier = maxf(
-			behavior_profile.pull_multiplier,
-			0.01
-		)
-		stamina_recovery_multiplier = maxf(
-			behavior_profile.stamina_recovery_multiplier,
-			0.01
-		)
+		max_stamina = 1.0
+		strength = 1.0
+		resistance_rounds = 1
+		recovery_time_min = 0.8
+		recovery_time_max = 1.5
+		behavior_profile = species.behavior_profile if species != null else null
+		archetype_label = "UNPROFILED"
+		dominant_action = "UNPROFILED"
+		behavior_intensity_multiplier = 1.0
+		pressure_multiplier = 1.0
+		pull_multiplier = 1.0
+		stamina_recovery_multiplier = 1.0
+		size_ratio_to_average = 1.0
+		return
 
-	if is_king:
-		max_stamina *= maxf(data.king_stamina_multiplier, 1.0)
-		strength *= maxf(data.king_strength_multiplier, 1.0)
-		behavior_intensity_multiplier *= maxf(
-			data.king_behavior_multiplier,
-			1.0
-		)
-		pull_multiplier *= sqrt(maxf(data.king_behavior_multiplier, 1.0))
+	max_stamina = float(stats.get("max_stamina", 1.0))
+	strength = float(stats.get("strength", 1.0))
+	resistance_rounds = maxi(int(stats.get("resistance_rounds", 1)), 1)
+	recovery_time_min = maxf(float(stats.get("recovery_time_min", 0.8)), 0.0)
+	recovery_time_max = maxf(
+		float(stats.get("recovery_time_max", recovery_time_min)),
+		recovery_time_min
+	)
+	behavior_profile = stats.get("behavior_profile", null) as FishBehaviorProfile
+	archetype_label = str(stats.get("archetype", "UNPROFILED"))
+	dominant_action = str(stats.get("dominant_action", "UNPROFILED"))
+	behavior_intensity_multiplier = maxf(
+		float(stats.get("behavior_intensity_multiplier", 1.0)),
+		0.01
+	)
+	pressure_multiplier = maxf(
+		float(stats.get("pressure_multiplier", 1.0)),
+		0.01
+	)
+	pull_multiplier = maxf(
+		float(stats.get("pull_multiplier", 1.0)),
+		0.01
+	)
+	stamina_recovery_multiplier = maxf(
+		float(stats.get("stamina_recovery_multiplier", 1.0)),
+		0.01
+	)
+	size_ratio_to_average = maxf(
+		float(stats.get("size_ratio_to_average", 1.0)),
+		0.0
+	)
 
+
+func get_fight_stats() -> Dictionary:
+	return _fight_stats.duplicate(true)
 
 
 func _roll_size_and_king(
@@ -136,13 +161,9 @@ func _roll_size_and_king(
 
 func get_debug_snapshot() -> Dictionary:
 	var species_name: String = "NONE"
-	var profile_name: String = "NONE"
 
 	if species != null:
 		species_name = species.fish_name
-
-	if behavior_profile != null:
-		profile_name = behavior_profile.get_archetype_label()
 
 	return {
 		"species": species_name,
@@ -151,6 +172,7 @@ func get_debug_snapshot() -> Dictionary:
 		"size_band": str(size_band),
 		"points": points,
 		"score_tier": score_tier,
+		"size_ratio_to_average": size_ratio_to_average,
 		"size_ratio_to_king": size_ratio_to_king,
 		"score_completion_ratio": score_completion_ratio,
 		"king_size": (
@@ -166,8 +188,10 @@ func get_debug_snapshot() -> Dictionary:
 		"max_stamina": max_stamina,
 		"strength": strength,
 		"resistance_rounds": resistance_rounds,
-		"profile": profile_name,
+		"profile": archetype_label,
+		"dominant_action": dominant_action,
 		"behavior_intensity": behavior_intensity_multiplier,
+		"pressure_multiplier": pressure_multiplier,
 		"pull_multiplier": pull_multiplier,
 		"stamina_recovery_multiplier": stamina_recovery_multiplier,
 	}

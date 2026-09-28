@@ -201,7 +201,10 @@ func configure(fish: FishInstance) -> void:
 	thrash_multiplier = profile.thrash_multiplier
 	profile_response_multiplier = maxf(profile.movement_response_multiplier, 0.5)
 	profile_release_reaction_multiplier = maxf(profile.release_reaction_multiplier, 0.5)
-	profile_pressure_multiplier = maxf(profile.pressure_multiplier, 0.01)
+	# Pressure and overall fight intensity are specimen-resolved once in
+	# FishingFightResolver. FishBehavior only consumes the cached values; it no
+	# longer recomputes balance from FishBehaviorProfile on its own.
+	profile_pressure_multiplier = maxf(fish.pressure_multiplier, 0.01)
 	effective_fight_intensity_multiplier = maxf(
 		fish.behavior_intensity_multiplier,
 		0.01
@@ -705,10 +708,13 @@ func get_debug_snapshot() -> Dictionary:
 	return {
 		"active": active,
 		"profile": (behavior_profile.get_archetype_label() if behavior_profile != null else "NONE"),
+		"dominant_action": (behavior_profile.get_dominant_action_label() if behavior_profile != null else "NONE"),
 		"state": _get_fight_back_label(current_fight_back),
 		"lateral": lateral,
 		"depth": depth,
 		"pressure": pressure,
+		"pressure_multiplier": profile_pressure_multiplier,
+		"fight_intensity_multiplier": effective_fight_intensity_multiplier,
 		"time_to_change": maxf(time_until_change, 0.0),
 	}
 

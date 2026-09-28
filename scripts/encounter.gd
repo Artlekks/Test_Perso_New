@@ -6,6 +6,9 @@ const DefaultTechniqueCatalog: FishingTechniqueCatalog = preload(
 const FightLifecycleScript = preload(
 	"res://scripts/fishing_fight_lifecycle.gd"
 )
+const FightResolver = preload(
+	"res://scripts/fishing_fight_resolver.gd"
+)
 
 signal bite_opportunity_started
 signal bite_triggered
@@ -141,6 +144,9 @@ var active_fight_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
 var active_rod_data: RodData = null
+## Immutable per-hook snapshot of fish + rod + lure fight values. Encounter only
+## consumes this resolved package; it does not reinterpret source resources.
+var active_fight_context: Dictionary = {}
 var base_bite_window_time: float = 0.8
 var active_tech_level: int = 0
 var technique_time_left: float = 0.0
@@ -164,7 +170,7 @@ func _ready() -> void:
 
 	base_bite_window_time = maxf(bite_window_timer.wait_time, 0.05)
 	_apply_rod_tension_settings()
-	
+
 func _on_bait_landed(_point: Vector3) -> void:
 	# One authoritative start point for a waterborne encounter. If a future bug
 	# somehow leaves the prior cast open, close that lifecycle before resetting
@@ -374,10 +380,12 @@ func _confirm_hit() -> bool:
 		size_override_cm
 	)
 
+	_rebuild_active_fight_context()
+	_apply_rod_tension_settings()
 	_reset_technique()
 	fish_behavior.configure(active_fish)
 
-	fish_stamina = active_fish.max_stamina
+	fish_stamina = _get_max_stamina()
 	player_reeling = false
 
 
@@ -391,7 +399,10 @@ func _confirm_hit() -> bool:
 	pending_fish_entry = null
 
 	var total_rounds := maxi(
-		active_fish.resistance_rounds,
+		int(active_fight_context.get(
+			"resistance_rounds",
+			active_fish.resistance_rounds
+		)),
 		1
 	)
 
@@ -406,7 +417,7 @@ func _confirm_hit() -> bool:
 	fish_hooked.emit()
 
 	return true
-	
+
 func _on_bite_window_timeout() -> void:
 	if not lifecycle.is_bite_window_open():
 		return
@@ -605,6 +616,7 @@ func catch_fish() -> bool:
 	fish_behavior.stop()
 	active_fish = null
 	active_bait_data = null
+	active_fight_context.clear()
 
 	# Emit the immutable result exactly once, after Encounter has become terminal.
 	# Re-entrant listeners can no longer call catch_fish() a second time.
@@ -710,12 +722,13 @@ func _process(delta: float) -> void:
 				)
 
 				if steering_against_fish:
-					var rod_handling := 1.0
-
-					if active_rod_data != null:
-						rod_handling = (
-							active_rod_data.counter_steer_multiplier
-						)
+					var rod_handling := maxf(
+						float(active_fight_context.get(
+							"counter_steer_multiplier",
+							1.0
+						)),
+						0.01
+					)
 
 					drain_speed *= (
 						counter_steer_fatigue_multiplier
@@ -752,9 +765,9 @@ func _process(delta: float) -> void:
 		0.0,
 		1.0
 	)
-	
+
 	var tension_resistance := resistance * fish_behavior_pressure
-	
+
 	tension.set_fish_resistance(tension_resistance)
 	fish_resistance_changed.emit(resistance)
 
@@ -768,8 +781,8 @@ func _process(delta: float) -> void:
 	fish_pull_changed.emit(pull_strength)
 
 	if fish_stamina <= 0.0:
-		_finish_resistance_round() 
-		
+		_finish_resistance_round()
+
 func _get_pending_bite_window_time() -> float:
 	var multiplier: float = 1.0
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -784,15 +797,20 @@ func _get_pending_bite_retry_multiplier() -> float:
 
 
 func _get_pull_multiplier() -> float:
-	if active_fish == null:
-		return 1.0
-	return maxf(active_fish.pull_multiplier, 0.01)
+	return maxf(
+		float(active_fight_context.get("pull_multiplier", 1.0)),
+		0.01
+	)
 
 
 func _get_stamina_recovery_multiplier() -> float:
-	if active_fish == null:
-		return 1.0
-	return maxf(active_fish.stamina_recovery_multiplier, 0.01)
+	return maxf(
+		float(active_fight_context.get(
+			"stamina_recovery_multiplier",
+			1.0
+		)),
+		0.01
+	)
 
 
 func set_player_reeling(active: bool) -> void:
@@ -836,15 +854,21 @@ func _react_to_reel_release() -> void:
 	fish_behavior.react_to_release(
 		reaction_intensity
 	)
-	
+
 func set_player_steering(value: float) -> void:
 	if not lifecycle.is_hooked():
 		player_steering = 0.0
 		return
 
 	player_steering = clampf(value, -1.0, 1.0)
-	
+
 func _get_max_stamina() -> float:
+	if not active_fight_context.is_empty():
+		return maxf(
+			float(active_fight_context.get("max_stamina", max_fish_stamina)),
+			0.001
+		)
+
 	if active_fish != null:
 		return active_fish.max_stamina
 
@@ -852,6 +876,12 @@ func _get_max_stamina() -> float:
 
 
 func _get_strength() -> float:
+	if not active_fight_context.is_empty():
+		return maxf(
+			float(active_fight_context.get("strength", 1.0)),
+			0.01
+		)
+
 	if active_fish != null:
 		return active_fish.strength
 
@@ -876,7 +906,7 @@ func _start_resistance_round() -> void:
 	fish_resistance_started.emit()
 	recovery_time_left = 0.0
 	caster.set_reel_speed_multiplier(1.0)
-	
+
 	fish_stamina = _get_max_stamina()
 
 	fish_stamina_changed.emit(
@@ -927,12 +957,14 @@ func _finish_resistance_round() -> void:
 		exhausted_behavior_intensity
 	)
 
-	var recovery_min := 0.8
-	var recovery_max := 1.5
-
-	if active_fish != null:
-		recovery_min = active_fish.recovery_time_min
-		recovery_max = active_fish.recovery_time_max
+	var recovery_min := maxf(
+		float(active_fight_context.get("recovery_time_min", 0.8)),
+		0.0
+	)
+	var recovery_max := maxf(
+		float(active_fight_context.get("recovery_time_max", 1.5)),
+		recovery_min
+	)
 
 	recovery_time_left = randf_range(
 		recovery_min,
@@ -944,7 +976,7 @@ func _enter_spent() -> void:
 	fight_state = FightState.SPENT
 	_set_active_fight_shadow_visual_state(&"spent")
 	fish_spent.emit()
-	
+
 	recovery_time_left = spent_recovery_time
 
 	tension.set_fish_resistance(spent_resistance)
@@ -989,7 +1021,7 @@ func _restart_from_spent() -> void:
 	caster.set_reel_speed_multiplier(1.0)
 
 	fish_behavior.start(spent_restart_intensity)
-	
+
 func get_fish_debug_snapshot() -> Dictionary:
 	var snapshot := {
 		"fight_state": _get_fight_state_label(),
@@ -1007,6 +1039,8 @@ func get_fish_debug_snapshot() -> Dictionary:
 
 	if active_fish != null:
 		snapshot.merge(active_fish.get_debug_snapshot(), true)
+
+	snapshot["fight_context"] = active_fight_context.duplicate(true)
 
 	if fish_behavior != null and fish_behavior.has_method("get_debug_snapshot"):
 		snapshot["behavior"] = fish_behavior.get_debug_snapshot()
@@ -1041,6 +1075,8 @@ func set_fish_zone(new_zone: Node) -> void:
 
 func set_active_bait_data(bait_data: BaitData) -> void:
 	active_bait_data = bait_data
+	if active_fish != null:
+		_rebuild_active_fight_context()
 
 func _get_spatial_context() -> Dictionary:
 	if (
@@ -1214,7 +1250,31 @@ func set_debug_settings(settings) -> void:
 
 func set_rod_data(rod_data: RodData) -> void:
 	active_rod_data = rod_data
+	if active_fish != null:
+		_rebuild_active_fight_context()
 	_apply_rod_tension_settings()
+
+
+func _rebuild_active_fight_context() -> void:
+	if active_fish == null:
+		active_fight_context.clear()
+		return
+
+	active_fight_context = FightResolver.resolve_context(
+		active_fish,
+		active_rod_data,
+		active_bait_data
+	)
+
+	if not FightResolver.is_valid_context(active_fight_context):
+		push_warning(
+			"Encounter: invalid resolved fight context for %s."
+			% (
+				active_fish.species.fish_name
+				if active_fish.species != null
+				else "UNKNOWN"
+			)
+		)
 
 
 func _apply_rod_tension_settings() -> void:
@@ -1223,7 +1283,15 @@ func _apply_rod_tension_settings() -> void:
 
 	var tolerance_multiplier: float = 1.0
 
-	if active_rod_data != null:
+	if not active_fight_context.is_empty():
+		tolerance_multiplier = maxf(
+			float(active_fight_context.get(
+				"line_tolerance_multiplier",
+				1.0
+			)),
+			0.01
+		)
+	elif active_rod_data != null:
 		tolerance_multiplier = maxf(
 			active_rod_data.line_tolerance_multiplier,
 			0.01
@@ -1246,9 +1314,11 @@ func get_tension_debug_snapshot() -> Dictionary:
 	)
 
 	if active_fish != null:
-		snapshot["fish_strength"] = active_fish.strength
+		snapshot["fish_strength"] = _get_strength()
 		snapshot["fish_size"] = active_fish.size
 		snapshot["fish_is_king"] = active_fish.is_king
+		snapshot["fish_archetype"] = str(active_fight_context.get("archetype", "NONE"))
+		snapshot["fish_dominant_action"] = str(active_fight_context.get("dominant_action", "NONE"))
 	else:
 		snapshot["fish_strength"] = 0.0
 		snapshot["fish_size"] = 0.0
@@ -1315,6 +1385,7 @@ func _fail_fight(reason: int) -> bool:
 	pending_fish_entry = null
 	pending_shadow = null
 	active_bait_data = null
+	active_fight_context.clear()
 	return true
 
 
@@ -1371,6 +1442,7 @@ func _reset_cast_runtime(clear_bait_data: bool) -> void:
 	pending_fish_entry = null
 	pending_shadow = null
 	active_fish = null
+	active_fight_context.clear()
 
 	fight_state = FightState.NONE
 	rounds_remaining = 0

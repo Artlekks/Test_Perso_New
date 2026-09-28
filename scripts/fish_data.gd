@@ -78,6 +78,19 @@ var stamina_size_exponent: float = 1.0
 @export_range(0.0, 1.0, 0.05)
 var strength_size_influence: float = 0.5
 
+@export_category("Specimen Fight Personality Scaling")
+## Larger specimens keep the same species personality, but express it more
+## strongly. These are intentionally mild defaults; stamina/strength remain the
+## primary difficulty channels while behavior/pull/pressure gain readable size.
+@export_range(0.0, 1.0, 0.05)
+var behavior_size_influence: float = 0.25
+
+@export_range(0.0, 1.0, 0.05)
+var pressure_size_influence: float = 0.25
+
+@export_range(0.0, 1.0, 0.05)
+var pull_size_influence: float = 0.20
+
 @export_category("King Fight Scaling")
 ## King fish are already larger. These are deliberately modest extra modifiers.
 @export_range(1.0, 1.5, 0.01)
@@ -88,6 +101,11 @@ var king_strength_multiplier: float = 1.05
 
 @export_range(1.0, 1.5, 0.01)
 var king_behavior_multiplier: float = 1.08
+
+## Optional extra endurance phase for species that should make crowns feel
+## structurally different. Default zero preserves current BOF4-style tuning.
+@export_range(0, 3, 1)
+var king_extra_resistance_rounds: int = 0
 
 @export_category("Depth Preference")
 
