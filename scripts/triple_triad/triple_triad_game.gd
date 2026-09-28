@@ -559,7 +559,7 @@ func _refresh_phase_ui() -> void:
 			help_label.text = ""
 			info_label.text = _region_trait_text()
 		PHASE_SELECT_CARD:
-			turn_label.text = "Your turn: choose a card"
+			turn_label.text = "Your turn"
 			help_label.text = _player_help_text(false)
 			_update_player_selection_markers()
 			_update_selected_card_info()
@@ -613,10 +613,7 @@ func _capture_message(result: Dictionary) -> String:
 		if not combo_captured.is_empty():
 			return "SAME!  COMBO x%d" % combo_captured.size()
 		return "SAME!"
-	var captured: Array = result.get("captured", [])
-	if captured.is_empty():
-		return ""
-	return "Captured %d card%s!" % [captured.size(), "" if captured.size() == 1 else "s"]
+	return ""
 
 
 func _on_reward_selected(card_definition) -> void:

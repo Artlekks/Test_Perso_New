@@ -9,4 +9,3 @@ script = ExtResource("1_catalog")
 portrait_atlas = ExtResource("2_atlas")
 disabled_indices = PackedInt32Array(148)
 supplemental_content_catalog = ExtResource("3_content")
-include_fish_cards = false
