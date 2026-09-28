@@ -74,15 +74,13 @@ func _refresh_style() -> void:
 	style.border_width_top = 2
 	style.border_width_right = 2
 	style.border_width_bottom = 2
+	style.bg_color = Color(0.075, 0.07, 0.085, 0.94)
 	match card_owner:
 		OWNER_PLAYER:
-			style.bg_color = Color(0.12, 0.23, 0.42, 0.96)
 			style.border_color = Color(0.38, 0.72, 1.0, 1.0)
 		OWNER_OPPONENT:
-			style.bg_color = Color(0.42, 0.13, 0.25, 0.96)
 			style.border_color = Color(1.0, 0.47, 0.68, 1.0)
 		_:
-			style.bg_color = Color(0.08, 0.08, 0.1, 0.80)
 			style.border_color = Color(0.44, 0.44, 0.48, 0.9)
 	if selected:
 		style.border_width_left = 4

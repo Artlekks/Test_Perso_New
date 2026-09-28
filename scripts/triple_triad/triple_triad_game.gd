@@ -25,10 +25,11 @@ const PHASE_FINISHED := 4
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.35
 
 @onready var root: Control = $Root
-@onready var opponent_hand_container: HBoxContainer = $Root/OpponentHand
+@onready var opponent_hand_container: Control = $Root/OpponentHand
 @onready var board_container: GridContainer = $Root/Board
-@onready var player_hand_container: HBoxContainer = $Root/PlayerHand
-@onready var score_label: Label = $Root/ScoreLabel
+@onready var player_hand_container: Control = $Root/PlayerHand
+@onready var opponent_score_label: Label = $Root/OpponentScoreLabel
+@onready var player_score_label: Label = $Root/PlayerScoreLabel
 @onready var turn_label: Label = $Root/TurnLabel
 @onready var message_label: Label = $Root/MessageLabel
 @onready var help_label: Label = $Root/HelpLabel
@@ -240,17 +241,22 @@ func _schedule_ai() -> void:
 
 
 func _build_views() -> void:
-	for _index in range(5):
+	const HAND_STEP_Y := 58.0
+	for index in range(5):
 		var opponent_view = CardViewScene.instantiate()
 		opponent_hand_container.add_child(opponent_view)
+		opponent_view.position = Vector2(0.0, index * HAND_STEP_Y)
+		opponent_view.z_index = index
 		_opponent_views.append(opponent_view)
 	for _index in range(9):
 		var board_view = CardViewScene.instantiate()
 		board_container.add_child(board_view)
 		_board_views.append(board_view)
-	for _index in range(5):
+	for index in range(5):
 		var player_view = CardViewScene.instantiate()
 		player_hand_container.add_child(player_view)
+		player_view.position = Vector2(0.0, index * HAND_STEP_Y)
+		player_view.z_index = index
 		_player_views.append(player_view)
 
 
@@ -264,6 +270,7 @@ func _refresh_views() -> void:
 			view.visible = true
 			view.configure(_match.opponent_hand[index], OWNER_OPPONENT, not show_opponent_cards)
 			view.set_selected(false)
+			view.z_index = index
 		else:
 			view.visible = false
 
@@ -272,7 +279,9 @@ func _refresh_views() -> void:
 		if index < _match.player_hand.size():
 			view.visible = true
 			view.configure(_match.player_hand[index], OWNER_PLAYER, false)
-			view.set_selected(_phase == PHASE_SELECT_CARD and index == _selected_hand_index)
+			var is_selected: bool = _phase == PHASE_SELECT_CARD and index == _selected_hand_index
+			view.set_selected(is_selected)
+			view.z_index = 20 if is_selected else index
 		else:
 			view.visible = false
 
@@ -287,7 +296,8 @@ func _refresh_views() -> void:
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
 	var score: Dictionary = _match.get_score()
-	score_label.text = "BLUE %d   PINK %d" % [int(score["player"]), int(score["opponent"])]
+	opponent_score_label.text = str(int(score["opponent"]))
+	player_score_label.text = str(int(score["player"]))
 	match _phase:
 		PHASE_SELECT_CARD:
 			turn_label.text = "Your turn: choose a card"

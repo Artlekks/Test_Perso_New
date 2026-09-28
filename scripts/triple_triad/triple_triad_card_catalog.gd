@@ -15,20 +15,11 @@ const CardDefinitionScript = preload("res://scripts/triple_triad/triple_triad_ca
 
 var _cache: Dictionary = {}
 
-# FFVIII-inspired card-level envelopes. The portrait art is BOF4, but the rank
-# totals/maxima follow the original Triple Triad level bands for prototype balance.
-const LEVEL_BANDS := {
-	1: {"min_total": 10, "max_total": 13, "max_side": 6},
-	2: {"min_total": 12, "max_total": 15, "max_side": 7},
-	3: {"min_total": 16, "max_total": 18, "max_side": 7},
-	4: {"min_total": 17, "max_total": 20, "max_side": 7},
-	5: {"min_total": 20, "max_total": 22, "max_side": 7},
-	6: {"min_total": 20, "max_total": 23, "max_side": 8},
-	7: {"min_total": 23, "max_total": 26, "max_side": 8},
-	8: {"min_total": 23, "max_total": 26, "max_side": 9},
-	9: {"min_total": 24, "max_total": 27, "max_side": 10},
-	10: {"min_total": 26, "max_total": 29, "max_side": 10},
-}
+# Prototype rank range. We keep the card level field for future collection/progression,
+# but the current playable slice deliberately uses the full 1-6 range uniformly.
+const PROTOTYPE_MIN_RANK := 1
+const PROTOTYPE_MAX_RANK := 6
+
 
 
 func get_card(index: int):
@@ -119,22 +110,11 @@ func _build_portrait_texture(index: int) -> Texture2D:
 
 
 func _generate_ranks(index: int, level: int) -> Array[int]:
-	var band: Dictionary = LEVEL_BANDS[level]
-	var min_total: int = int(band["min_total"])
-	var max_total: int = int(band["max_total"])
-	var max_side: int = int(band["max_side"])
 	var state: int = _next_state((index + 1) * 7919 + level * 104729)
-	var target_total: int = min_total + posmod(state, max_total - min_total + 1)
-	var ranks: Array[int] = [1, 1, 1, 1]
-	var remaining: int = target_total - 4
-	var safety: int = 0
-	while remaining > 0 and safety < 256:
+	var ranks: Array[int] = []
+	for _side_index in range(4):
 		state = _next_state(state)
-		var side_index: int = posmod(state, 4)
-		if ranks[side_index] < max_side:
-			ranks[side_index] += 1
-			remaining -= 1
-		safety += 1
+		ranks.append(PROTOTYPE_MIN_RANK + posmod(state, PROTOTYPE_MAX_RANK - PROTOTYPE_MIN_RANK + 1))
 	return ranks
 
 
