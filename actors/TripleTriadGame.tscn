@@ -1,0 +1,119 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_game.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/triple_triad/card_catalog.tres" id="2_catalog"]
+[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="3_rules"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="4_font"]
+
+[node name="TripleTriadGame" type="CanvasLayer"]
+process_mode = 3
+layer = 80
+script = ExtResource("1_script")
+card_catalog = ExtResource("2_catalog")
+rule_set = ExtResource("3_rules")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Backdrop" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.045, 0.035, 0.055, 0.96)
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 230.0
+offset_top = 4.0
+offset_right = 410.0
+offset_bottom = 28.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+text = "TRIPLE TRIAD"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 208.0
+offset_bottom = 30.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "BLUE 5   PINK 5"
+
+[node name="TurnLabel" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 420.0
+offset_top = 8.0
+offset_right = 628.0
+offset_bottom = 30.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 13
+text = "Your turn"
+horizontal_alignment = 2
+
+[node name="OpponentHand" type="HBoxContainer" parent="Root"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 30.0
+offset_right = 480.0
+offset_bottom = 112.0
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Board" type="GridContainer" parent="Root"]
+layout_mode = 0
+offset_left = 224.0
+offset_top = 113.0
+offset_right = 416.0
+offset_bottom = 359.0
+theme_override_constants/h_separation = 0
+theme_override_constants/v_separation = 0
+columns = 3
+
+[node name="PlayerHand" type="HBoxContainer" parent="Root"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 365.0
+offset_right = 480.0
+offset_bottom = 447.0
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="MessageLabel" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 215.0
+offset_right = 210.0
+offset_bottom = 265.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HelpLabel" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 454.0
+offset_right = 560.0
+offset_bottom = 478.0
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 12
+text = "A/D: Card   K: Select   I: Leave"
+horizontal_alignment = 1
+
+[node name="AITimer" type="Timer" parent="."]
+wait_time = 0.35
+one_shot = true

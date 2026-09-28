@@ -70,6 +70,8 @@
 [ext_resource type="Texture2D" uid="uid://m06dq1n502h7" path="res://assets/models/fbx/beach_texpage-P8-EE4D3D823035F839-79597399A405481F-128x256-0-0-256x256-P1-199.png" id="70_sea_static_tex"]
 [ext_resource type="Script" uid="uid://dmr43e6bpymb0" path="res://scripts/fishing_shore_boundary.gd" id="71_shore_boundary"]
 [ext_resource type="PackedScene" uid="uid://dhj5u200srrux" path="res://actors/BeachMerchantNPC.tscn" id="72_merchant_npc"]
+[ext_resource type="PackedScene" path="res://actors/TripleTriadOpponentNPC.tscn" id="73_triad_npc"]
+[ext_resource type="PackedScene" path="res://actors/TripleTriadGame.tscn" id="74_triad_game"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -238,8 +240,11 @@ transform = Transform3D(1.5887823, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("BoxShape3D_shore_blocker")
 debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
-[node name="BeachMerchantNPC" parent="World" unique_id=1332911730 instance=ExtResource("72_merchant_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9465082, 0.09538448, 0.42)
+[node name="BeachMerchantNPC" parent="World" unique_id=1429238293 instance=ExtResource("72_merchant_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.326166, 0.06284177, 0.42)
+
+[node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
 
 [node name="Player" type="Node" parent="." unique_id=1284942496]
 
@@ -301,6 +306,8 @@ h_offset = 0.9
 v_offset = 0.65
 
 [node name="UI" type="Node" parent="." unique_id=551417241]
+
+[node name="TripleTriadGame" parent="UI" unique_id=641437421 instance=ExtResource("74_triad_game")]
 
 [node name="ExplorationHud" type="CanvasLayer" parent="UI" unique_id=981426337 node_paths=PackedStringArray("exploration", "camera_rig", "game_mode")]
 layer = 40
