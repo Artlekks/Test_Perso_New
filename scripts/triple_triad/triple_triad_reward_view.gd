@@ -11,30 +11,39 @@ const OWNER_OPPONENT := 2
 const STATE_CLOSED := 0
 const STATE_SELECT := 1
 const STATE_CONFIRM := 2
-const STATE_ACQUIRED := 3
+const STATE_RESOLVING := 3
 
 const ROW_SCALE := Vector2(0.78, 0.78)
 const ROW_STEP_X := 100.0
 const TOP_ROW_ORIGIN := Vector2(70.0, 92.0)
 const BOTTOM_ROW_ORIGIN := Vector2(70.0, 258.0)
+const CAPTURE_FLIP_SECONDS := 0.30
+const OPPONENT_THINK_SECONDS := 0.55
+const OPPONENT_PICK_HOLD_SECONDS := 0.45
+const FOCUS_TRAVEL_SECONDS := 0.30
+const FOCUS_HOLD_SECONDS := 0.38
+const EXIT_SECONDS := 0.34
+const FOCUS_SCALE := Vector2(1.55, 1.55)
 
-@onready var prompt_label: Label = $PromptLabel
+@onready var prompt_label: Label = $PromptPanel/PromptLabel
 @onready var info_label: Label = $InfoPanel/InfoLabel
 @onready var selection_arrow: Polygon2D = $SelectionArrow
-@onready var confirm_dim: ColorRect = $ConfirmDim
-@onready var confirm_prompt: Label = $ConfirmDim/ConfirmPrompt
-@onready var choice_label: Label = $ConfirmDim/ChoiceLabel
-@onready var acquired_label: Label = $ConfirmDim/AcquiredLabel
+@onready var confirm_overlay: ColorRect = $ConfirmOverlay
+@onready var confirm_prompt: Label = $ConfirmOverlay/ConfirmPanel/ConfirmPrompt
+@onready var choice_label: Label = $ConfirmOverlay/ConfirmPanel/ChoiceLabel
+@onready var choice_arrow: Polygon2D = $ConfirmOverlay/ConfirmPanel/ChoiceArrow
 @onready var help_label: Label = $HelpLabel
 
 var _state: int = STATE_CLOSED
+var _winner: int = OWNER_PLAYER
 var _opponent_cards: Array = []
 var _player_cards: Array = []
 var _opponent_views: Array = []
 var _player_views: Array = []
 var _selected_index: int = 0
 var _yes_selected: bool = true
-var _confirm_card: Control = null
+var _focus_card: Control = null
+var _sequence_id: int = 0
 
 
 func _ready() -> void:
@@ -43,23 +52,37 @@ func _ready() -> void:
 	_build_card_rows()
 
 
-func open_reward(opponent_cards: Array, player_cards: Array) -> void:
+func open_reward(opponent_cards: Array, player_cards: Array, winner: int = OWNER_PLAYER) -> void:
+	_sequence_id += 1
+	_winner = winner
 	_opponent_cards = opponent_cards.duplicate()
 	_player_cards = player_cards.duplicate()
 	_selected_index = 0
 	_yes_selected = true
-	_state = STATE_SELECT
 	visible = true
-	confirm_dim.visible = false
-	_clear_confirm_card()
+	confirm_overlay.visible = false
+	_clear_focus_card()
 	_refresh_rows()
-	_refresh_selection()
+
+	if _winner == OWNER_PLAYER:
+		_state = STATE_SELECT
+		_refresh_selection()
+	else:
+		_state = STATE_RESOLVING
+		selection_arrow.visible = false
+		prompt_label.text = "Opponent selects one of your cards"
+		info_label.text = ""
+		help_label.text = ""
+		_run_opponent_take_sequence(_sequence_id)
 
 
 func close_reward() -> void:
+	_sequence_id += 1
 	_state = STATE_CLOSED
 	visible = false
-	_clear_confirm_card()
+	confirm_overlay.visible = false
+	selection_arrow.visible = false
+	_clear_focus_card()
 
 
 func is_active() -> bool:
@@ -99,7 +122,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			if _is_confirm(event):
 				if _yes_selected:
-					_confirm_reward()
+					_begin_player_reward_sequence()
 				else:
 					_return_to_selection()
 				_accept_input()
@@ -109,14 +132,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_accept_input()
 				return
 
-		STATE_ACQUIRED:
-			if _is_confirm(event):
-				completed.emit()
-				_accept_input()
-				return
-			if _is_back(event):
-				leave_requested.emit()
-				_accept_input()
+		STATE_RESOLVING:
+			# The acquisition/loss animation owns the screen until it completes.
+			_accept_input()
 
 
 func _build_card_rows() -> void:
@@ -140,18 +158,24 @@ func _build_card_rows() -> void:
 func _refresh_rows() -> void:
 	for index in range(_opponent_views.size()):
 		var opponent_view: Control = _opponent_views[index]
+		opponent_view.modulate = Color.WHITE
+		opponent_view.position = TOP_ROW_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
 		if index < _opponent_cards.size():
 			opponent_view.visible = true
 			opponent_view.configure(_opponent_cards[index], OWNER_OPPONENT, false)
+			opponent_view.scale = ROW_SCALE
 			opponent_view.set_selected(false)
 		else:
 			opponent_view.visible = false
 
 	for index in range(_player_views.size()):
 		var player_view: Control = _player_views[index]
+		player_view.modulate = Color.WHITE
+		player_view.position = BOTTOM_ROW_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
 		if index < _player_cards.size():
 			player_view.visible = true
 			player_view.configure(_player_cards[index], OWNER_PLAYER, false)
+			player_view.scale = ROW_SCALE
 			player_view.set_selected(false)
 		else:
 			player_view.visible = false
@@ -163,76 +187,158 @@ func _refresh_selection() -> void:
 		info_label.text = ""
 		return
 	selection_arrow.visible = true
-	selection_arrow.position = TOP_ROW_ORIGIN + Vector2(
-		float(_selected_index) * ROW_STEP_X - 15.0,
-		42.0
-	)
+	selection_arrow.position = _arrow_position(TOP_ROW_ORIGIN, _selected_index)
 	var card = _opponent_cards[_selected_index]
 	info_label.text = str(card.display_name)
-	prompt_label.text = "Select one card you want"
+	prompt_label.text = "Select 1 card you want"
 	help_label.text = "A/D: Choose   K: Select   I: Leave"
 
 
 func _enter_confirm() -> void:
 	_state = STATE_CONFIRM
 	_yes_selected = true
-	selection_arrow.visible = false
-	confirm_dim.visible = true
-	prompt_label.text = ""
+	confirm_overlay.visible = true
 	confirm_prompt.text = "Are you sure?"
-	acquired_label.text = ""
 	_refresh_confirm_choices()
-	_clear_confirm_card()
-
-	var card = _opponent_cards[_selected_index]
-	_confirm_card = CardViewScene.instantiate() as Control
-	confirm_dim.add_child(_confirm_card)
-	_confirm_card.configure(card, OWNER_OPPONENT, false)
-	_confirm_card.set_selected(false)
-	_confirm_card.position = Vector2(262.0, 126.0)
-	_confirm_card.pivot_offset = _confirm_card.size * 0.5
-	_confirm_card.scale = Vector2(0.05, 1.55)
-	_confirm_card.z_index = 50
-
-	var tween: Tween = _confirm_card.create_tween()
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(_confirm_card, "scale", Vector2(1.55, 1.55), 0.34)
 
 
 func _return_to_selection() -> void:
 	_state = STATE_SELECT
-	confirm_dim.visible = false
-	_clear_confirm_card()
+	confirm_overlay.visible = false
 	_refresh_selection()
 
 
-func _confirm_reward() -> void:
-	_state = STATE_ACQUIRED
+func _begin_player_reward_sequence() -> void:
+	if _selected_index < 0 or _selected_index >= _opponent_cards.size():
+		return
+	_state = STATE_RESOLVING
+	confirm_overlay.visible = false
+	selection_arrow.visible = false
+	help_label.text = ""
+	var sequence_id := _sequence_id
 	var card = _opponent_cards[_selected_index]
+	var source_view: Control = _opponent_views[_selected_index]
 	reward_selected.emit(card)
-	confirm_prompt.text = ""
-	choice_label.text = ""
-	acquired_label.text = "%s acquired!" % str(card.display_name)
-	help_label.text = "K: Continue   I: Leave"
+	prompt_label.text = "%s acquired!" % str(card.display_name)
+	info_label.text = str(card.display_name)
+	_animate_card_transfer(card, source_view, OWNER_PLAYER, true, sequence_id)
 
-	if _confirm_card != null:
-		var tween: Tween = _confirm_card.create_tween()
-		tween.set_trans(Tween.TRANS_QUAD)
-		tween.set_ease(Tween.EASE_IN_OUT)
-		tween.tween_property(_confirm_card, "scale", Vector2(0.05, 1.75), 0.18)
-		tween.tween_property(_confirm_card, "scale", Vector2(1.75, 1.75), 0.24)
+
+func _run_opponent_take_sequence(sequence_id: int) -> void:
+	if _player_cards.is_empty():
+		completed.emit()
+		return
+	await get_tree().create_timer(OPPONENT_THINK_SECONDS, true).timeout
+	if not _sequence_is_current(sequence_id):
+		return
+
+	_selected_index = _choose_opponent_take_index()
+	selection_arrow.visible = true
+	selection_arrow.position = _arrow_position(BOTTOM_ROW_ORIGIN, _selected_index)
+	var card = _player_cards[_selected_index]
+	info_label.text = str(card.display_name)
+	await get_tree().create_timer(OPPONENT_PICK_HOLD_SECONDS, true).timeout
+	if not _sequence_is_current(sequence_id):
+		return
+
+	selection_arrow.visible = false
+	prompt_label.text = "Opponent takes %s" % str(card.display_name)
+	var source_view: Control = _player_views[_selected_index]
+	_animate_card_transfer(card, source_view, OWNER_OPPONENT, false, sequence_id)
+
+
+func _animate_card_transfer(
+	card,
+	source_view: Control,
+	new_owner: int,
+	exit_down: bool,
+	sequence_id: int
+) -> void:
+	if source_view == null or not is_instance_valid(source_view):
+		completed.emit()
+		return
+
+	# First flip the actual row card quickly so the ownership change reads clearly.
+	source_view.configure(card, new_owner, false, true)
+	await get_tree().create_timer(CAPTURE_FLIP_SECONDS, true).timeout
+	if not _sequence_is_current(sequence_id):
+		return
+
+	_focus_card = CardViewScene.instantiate() as Control
+	add_child(_focus_card)
+	_focus_card.configure(card, new_owner, false)
+	_focus_card.set_selected(false)
+	_focus_card.pivot_offset = _focus_card.size * 0.5
+	_focus_card.scale = ROW_SCALE
+	_focus_card.z_index = 250
+	_focus_card.global_position = source_view.global_position
+	source_view.visible = false
+
+	var center_global := global_position + Vector2(
+		(size.x - _focus_card.size.x) * 0.5,
+		(size.y - _focus_card.size.y) * 0.5 - 4.0
+	)
+	var focus_tween: Tween = _focus_card.create_tween()
+	focus_tween.set_trans(Tween.TRANS_QUINT)
+	focus_tween.set_ease(Tween.EASE_OUT)
+	focus_tween.tween_property(_focus_card, "global_position", center_global, FOCUS_TRAVEL_SECONDS)
+	focus_tween.parallel().tween_property(_focus_card, "scale", FOCUS_SCALE, FOCUS_TRAVEL_SECONDS)
+	await focus_tween.finished
+	if not _sequence_is_current(sequence_id):
+		return
+
+	await get_tree().create_timer(FOCUS_HOLD_SECONDS, true).timeout
+	if not _sequence_is_current(sequence_id):
+		return
+
+	var exit_global := center_global
+	if exit_down:
+		exit_global.y = global_position.y + size.y + _focus_card.size.y * 1.7
+	else:
+		exit_global.y = global_position.y - _focus_card.size.y * 2.0
+
+	var exit_tween: Tween = _focus_card.create_tween()
+	exit_tween.set_trans(Tween.TRANS_QUAD)
+	exit_tween.set_ease(Tween.EASE_IN)
+	exit_tween.tween_property(_focus_card, "global_position", exit_global, EXIT_SECONDS)
+	await exit_tween.finished
+	if not _sequence_is_current(sequence_id):
+		return
+
+	_clear_focus_card()
+	completed.emit()
+
+
+func _choose_opponent_take_index() -> int:
+	var best_index: int = 0
+	var best_total: int = -1
+	for index in range(_player_cards.size()):
+		var card = _player_cards[index]
+		var total: int = int(card.top_rank) + int(card.right_rank) + int(card.bottom_rank) + int(card.left_rank)
+		if total > best_total:
+			best_total = total
+			best_index = index
+	return best_index
+
+
+func _arrow_position(row_origin: Vector2, index: int) -> Vector2:
+	return row_origin + Vector2(float(index) * ROW_STEP_X - 15.0, 42.0)
 
 
 func _refresh_confirm_choices() -> void:
-	choice_label.text = "> YES     NO" if _yes_selected else "  YES   > NO"
+	choice_label.text = "YES          NO"
+	choice_arrow.position = Vector2(52.0, 86.0) if _yes_selected else Vector2(158.0, 86.0)
 	help_label.text = "A/D: Choice   K: Confirm   I: Back"
 
 
-func _clear_confirm_card() -> void:
-	if is_instance_valid(_confirm_card):
-		_confirm_card.queue_free()
-	_confirm_card = null
+func _sequence_is_current(sequence_id: int) -> bool:
+	return visible and _state == STATE_RESOLVING and sequence_id == _sequence_id
+
+
+func _clear_focus_card() -> void:
+	if is_instance_valid(_focus_card):
+		_focus_card.queue_free()
+	_focus_card = null
 
 
 func _accept_input() -> void:

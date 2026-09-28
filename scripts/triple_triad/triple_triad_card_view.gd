@@ -8,7 +8,7 @@ const COLOR_PLAYER := Color(0.32, 0.70, 1.0, 1.0)
 const COLOR_OPPONENT := Color(1.0, 0.42, 0.66, 1.0)
 const COLOR_SELECTED := Color(1.0, 0.88, 0.30, 1.0)
 const COLOR_EMPTY := Color(0.43, 0.43, 0.47, 0.92)
-const CAPTURE_HALF_DURATION := 0.28
+const CAPTURE_HALF_DURATION := 0.14
 
 @onready var portrait_background: ColorRect = $Root/PortraitBackground
 @onready var portrait: TextureRect = $Root/Portrait
@@ -25,6 +25,7 @@ var card_owner: int = OWNER_NONE
 var selected: bool = false
 var is_hidden: bool = false
 var _capture_tween: Tween = null
+var _capture_base_scale := Vector2.ONE
 
 
 func _ready() -> void:
@@ -98,7 +99,7 @@ func _refresh_content() -> void:
 		var is_fish_card: bool = card.source_kind == &"fish"
 		# Every portrait uses covered scaling. Wide fish portraits therefore fill
 		# the full card vertically and intentionally crop the horizontal edges.
-		portrait.stretch_mode = 6
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		portrait_background.color = (
 			Color(0.42, 0.48, 0.41, 1.0)
 			if is_fish_card
@@ -136,15 +137,20 @@ func _refresh_style() -> void:
 
 func _play_capture_flip(new_owner: int) -> void:
 	pivot_offset = size * 0.5
+	_capture_base_scale = scale
+	var squeezed_scale := Vector2(
+		maxf(_capture_base_scale.x * 0.04, 0.001),
+		_capture_base_scale.y
+	)
 	_capture_tween = create_tween()
 	_capture_tween.set_trans(Tween.TRANS_QUAD)
 	_capture_tween.set_ease(Tween.EASE_IN_OUT)
-	_capture_tween.tween_property(self, "scale", Vector2(0.04, 1.0), CAPTURE_HALF_DURATION)
+	_capture_tween.tween_property(self, "scale", squeezed_scale, CAPTURE_HALF_DURATION)
 	_capture_tween.tween_callback(func() -> void:
 		card_owner = new_owner
 		_refresh_style()
 	)
-	_capture_tween.tween_property(self, "scale", Vector2.ONE, CAPTURE_HALF_DURATION)
+	_capture_tween.tween_property(self, "scale", _capture_base_scale, CAPTURE_HALF_DURATION)
 	_capture_tween.tween_callback(func() -> void:
 		_capture_tween = null
 	)
@@ -153,13 +159,13 @@ func _play_capture_flip(new_owner: int) -> void:
 func _stop_capture_tween(reset_scale: bool) -> void:
 	if _capture_tween != null:
 		_capture_tween.kill()
+		if reset_scale:
+			scale = _capture_base_scale
 	_capture_tween = null
-	if reset_scale:
-		scale = Vector2.ONE
 
 
-func _owner_color(owner: int) -> Color:
-	match owner:
+func _owner_color(card_owner_value: int) -> Color:
+	match card_owner_value:
 		OWNER_PLAYER:
 			return COLOR_PLAYER
 		OWNER_OPPONENT:

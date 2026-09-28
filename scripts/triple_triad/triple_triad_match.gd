@@ -40,39 +40,39 @@ func reset_match(player_cards: Array, opponent_cards: Array, first_owner: int, r
 	rule_set = rules
 
 
-func can_place(owner: int, hand_index: int, cell_index: int) -> bool:
-	if game_over or owner != current_owner:
+func can_place(card_owner: int, hand_index: int, cell_index: int) -> bool:
+	if game_over or card_owner != current_owner:
 		return false
 	if cell_index < 0 or cell_index >= board.size():
 		return false
 	if board[cell_index] != null:
 		return false
-	var hand: Array = _hand_for_owner(owner)
+	var hand: Array = _hand_for_owner(card_owner)
 	return hand_index >= 0 and hand_index < hand.size()
 
 
-func place_card(owner: int, hand_index: int, cell_index: int) -> Dictionary:
-	if not can_place(owner, hand_index, cell_index):
+func place_card(card_owner: int, hand_index: int, cell_index: int) -> Dictionary:
+	if not can_place(card_owner, hand_index, cell_index):
 		return {"success": false, "reason": "invalid_move"}
 
-	var hand: Array = _hand_for_owner(owner)
+	var hand: Array = _hand_for_owner(card_owner)
 	var card = hand[hand_index]
 	hand.remove_at(hand_index)
 	board[cell_index] = {
 		"card": card,
-		"owner": owner,
+		"owner": card_owner,
 	}
 
-	var captured: Array[int] = _resolve_basic_captures(cell_index, owner)
+	var captured: Array[int] = _resolve_basic_captures(cell_index, card_owner)
 	turn_number += 1
 	game_over = _occupied_count() >= 9
 	if not game_over:
-		current_owner = _other_owner(owner)
+		current_owner = _other_owner(card_owner)
 
 	return {
 		"success": true,
 		"cell_index": cell_index,
-		"owner": owner,
+		"owner": card_owner,
 		"captured": captured,
 		"game_over": game_over,
 		"score": get_score(),
@@ -80,7 +80,7 @@ func place_card(owner: int, hand_index: int, cell_index: int) -> Dictionary:
 	}
 
 
-func preview_capture_count(card, owner: int, cell_index: int) -> int:
+func preview_capture_count(card, card_owner: int, cell_index: int) -> int:
 	if card == null or cell_index < 0 or cell_index >= board.size() or board[cell_index] != null:
 		return -1
 	var capture_count: int = 0
@@ -90,7 +90,7 @@ func preview_capture_count(card, owner: int, cell_index: int) -> int:
 		if not _is_valid_neighbor(cell_index, neighbor_index, int(direction["side"])):
 			continue
 		var neighbor = board[neighbor_index]
-		if neighbor == null or int(neighbor["owner"]) == owner:
+		if neighbor == null or int(neighbor["owner"]) == card_owner:
 			continue
 		var neighbor_card = neighbor["card"]
 		if card.rank_for_side(int(direction["side"])) > neighbor_card.rank_for_side(int(direction["opposite"])):
@@ -106,8 +106,8 @@ func get_empty_cells() -> Array[int]:
 	return result
 
 
-func get_hand(owner: int) -> Array:
-	return _hand_for_owner(owner)
+func get_hand(card_owner: int) -> Array:
+	return _hand_for_owner(card_owner)
 
 
 func get_score() -> Dictionary:
@@ -156,7 +156,7 @@ func validate_state() -> bool:
 	return true
 
 
-func _resolve_basic_captures(cell_index: int, owner: int) -> Array[int]:
+func _resolve_basic_captures(cell_index: int, card_owner: int) -> Array[int]:
 	var captured: Array[int] = []
 	var placed_slot: Dictionary = board[cell_index]
 	var placed_card = placed_slot["card"]
@@ -170,11 +170,11 @@ func _resolve_basic_captures(cell_index: int, owner: int) -> Array[int]:
 		if neighbor_variant == null:
 			continue
 		var neighbor: Dictionary = neighbor_variant
-		if int(neighbor["owner"]) == owner:
+		if int(neighbor["owner"]) == card_owner:
 			continue
 		var neighbor_card = neighbor["card"]
 		if placed_card.rank_for_side(side) > neighbor_card.rank_for_side(int(direction["opposite"])):
-			neighbor["owner"] = owner
+			neighbor["owner"] = card_owner
 			board[neighbor_index] = neighbor
 			captured.append(neighbor_index)
 	return captured
@@ -198,12 +198,12 @@ func _is_valid_neighbor(cell_index: int, neighbor_index: int, side: int) -> bool
 			return false
 
 
-func _hand_for_owner(owner: int) -> Array:
-	return player_hand if owner == OWNER_PLAYER else opponent_hand
+func _hand_for_owner(card_owner: int) -> Array:
+	return player_hand if card_owner == OWNER_PLAYER else opponent_hand
 
 
-func _other_owner(owner: int) -> int:
-	return OWNER_OPPONENT if owner == OWNER_PLAYER else OWNER_PLAYER
+func _other_owner(card_owner: int) -> int:
+	return OWNER_OPPONENT if card_owner == OWNER_PLAYER else OWNER_PLAYER
 
 
 func _occupied_count() -> int:

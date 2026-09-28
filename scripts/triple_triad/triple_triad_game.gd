@@ -21,11 +21,10 @@ const PHASE_ANIMATING := 4
 const PHASE_AI := 5
 const PHASE_RESULT := 6
 const PHASE_REWARD := 7
-const PHASE_FINISHED := 8
 
 const HAND_STEP_Y := 64.0
 const HAND_SELECTED_X_OFFSET := -10.0
-const CAPTURE_SETTLE_SECONDS := 0.64
+const CAPTURE_SETTLE_SECONDS := 0.34
 const RESULT_HOLD_SECONDS := 1.05
 
 @export var card_catalog: Resource
@@ -121,16 +120,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	# The reward view owns input while it is active.
 	if _phase == PHASE_REWARD:
 		return
-
-	if _phase == PHASE_FINISHED:
-		if _is_confirm(event):
-			_start_new_match()
-			_accept_input()
-			return
-		if _is_back(event):
-			close_game()
-			_accept_input()
-			return
 
 	if _phase in [PHASE_DEALING, PHASE_ANIMATING, PHASE_AI, PHASE_RESULT]:
 		if _is_back(event):
@@ -337,14 +326,17 @@ func _run_result_sequence(winner: int) -> void:
 	await get_tree().create_timer(RESULT_HOLD_SECONDS, true).timeout
 	if not is_open() or _phase != PHASE_RESULT:
 		return
-	if winner == OWNER_PLAYER:
-		result_label.visible = false
+	result_label.visible = false
+	if winner in [OWNER_PLAYER, OWNER_OPPONENT]:
 		_phase = PHASE_REWARD
-		reward_view.open_reward(_starting_opponent_cards, _starting_player_cards)
+		reward_view.open_reward(
+			_starting_opponent_cards,
+			_starting_player_cards,
+			winner
+		)
 		_refresh_phase_ui()
 	else:
-		_phase = PHASE_FINISHED
-		_refresh_phase_ui()
+		close_game()
 
 
 func _schedule_ai() -> void:
@@ -467,10 +459,6 @@ func _refresh_phase_ui() -> void:
 			turn_label.text = ""
 			help_label.text = ""
 			info_panel.visible = false
-		PHASE_FINISHED:
-			turn_label.text = "Match complete"
-			help_label.text = "K: Play again   I: Leave"
-			info_label.text = _last_info_name
 
 
 func _update_player_selection_markers() -> void:
@@ -484,9 +472,9 @@ func _update_player_selection_markers() -> void:
 	_turn_arrow_for_owner(OWNER_PLAYER)
 
 
-func _turn_arrow_for_owner(owner: int) -> void:
+func _turn_arrow_for_owner(turn_owner: int) -> void:
 	turn_arrow.visible = true
-	turn_arrow.position = Vector2(58.0, 31.0) if owner == OWNER_OPPONENT else Vector2(574.0, 31.0)
+	turn_arrow.position = Vector2(58.0, 31.0) if turn_owner == OWNER_OPPONENT else Vector2(574.0, 31.0)
 
 
 func _update_selected_card_info() -> void:
@@ -511,9 +499,7 @@ func _on_reward_selected(card_definition) -> void:
 
 func _on_reward_completed() -> void:
 	reward_view.close_reward()
-	_phase = PHASE_FINISHED
-	message_label.text = "%s acquired!" % _last_info_name
-	_refresh_views()
+	close_game()
 
 
 func _on_reward_leave_requested() -> void:

@@ -1,8 +1,8 @@
 extends RefCounted
 
 
-func choose_move(match_state, owner: int, rng: RandomNumberGenerator) -> Dictionary:
-	var hand: Array = match_state.get_hand(owner)
+func choose_move(match_state, card_owner: int, rng: RandomNumberGenerator) -> Dictionary:
+	var hand: Array = match_state.get_hand(card_owner)
 	var empty_cells: Array = match_state.get_empty_cells()
 	if hand.is_empty() or empty_cells.is_empty():
 		return {"valid": false}
@@ -12,7 +12,7 @@ func choose_move(match_state, owner: int, rng: RandomNumberGenerator) -> Diction
 	for hand_index in range(hand.size()):
 		var card = hand[hand_index]
 		for cell_index in empty_cells:
-			var capture_count: int = match_state.preview_capture_count(card, owner, cell_index)
+			var capture_count: int = match_state.preview_capture_count(card, card_owner, cell_index)
 			var positional_bonus: float = _positional_bonus(card, cell_index)
 			var value_score: float = float(card.rank_total()) * 0.08
 			var move_score: float = float(capture_count) * 100.0 + positional_bonus + value_score
