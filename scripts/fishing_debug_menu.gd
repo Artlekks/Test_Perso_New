@@ -11,6 +11,9 @@ const CONTENT_CATALOG: FishingContentCatalog = preload(
 const CatchScoring = preload(
 	"res://scripts/fishing_catch_scoring.gd"
 )
+const DebugSettingsScript = preload(
+	"res://scripts/fishing_debug_settings.gd"
+)
 
 const TECHNIQUE_CATALOG: FishingTechniqueCatalog = preload(
 	"res://data/bof4/techniques/all_techniques.tres"
@@ -24,6 +27,7 @@ enum Row {
 	PROFILE,
 	SPOT,
 	FISH,
+	SPECIMEN,
 	SHADOWS,
 	KING,
 	LURE,
@@ -32,12 +36,13 @@ enum Row {
 	SAVE_DEBUG,
 }
 
-const ROW_COUNT := 9
+const ROW_COUNT := 10
 
 @onready var root: Control = $Root
 @onready var profile_label: Label = $Root/Panel/ProfileLabel
 @onready var spot_label: Label = $Root/Panel/SpotLabel
 @onready var fish_label: Label = $Root/Panel/FishLabel
+@onready var specimen_label: Label = $Root/Panel/SpecimenLabel
 @onready var shadow_count_label: Label = $Root/Panel/ShadowCountLabel
 @onready var king_label: Label = $Root/Panel/KingLabel
 @onready var lure_label: Label = $Root/Panel/LureLabel
@@ -165,6 +170,8 @@ func _change_value(step: int) -> void:
 			_change_spot(step)
 		Row.FISH:
 			_change_fish(step)
+		Row.SPECIMEN:
+			_change_specimen(step)
 		Row.SHADOWS:
 			_change_shadow_count(step)
 		Row.KING:
@@ -224,6 +231,7 @@ func _apply_profile(profile: FishingQAProfile) -> void:
 		return
 
 	_settings.set_forced_fish(profile.forced_fish)
+	_settings.set_specimen_mode(DebugSettingsScript.SpecimenMode.DEFAULT)
 	_settings.set_shadow_fish_override(profile.shadow_fish_override)
 	_settings.set_shadow_count_override(profile.shadow_count_override)
 	_settings.set_king_mode(profile.king_mode)
@@ -280,6 +288,24 @@ func _change_fish(step: int) -> void:
 	debug_environment_changed.emit()
 
 
+func _change_specimen(step: int) -> void:
+	if _settings == null:
+		return
+
+	var next_mode := posmod(
+		_settings.get_specimen_mode() + step,
+		DebugSettingsScript.SpecimenMode.KING + 1
+	)
+	_settings.set_specimen_mode(next_mode)
+
+	# Exact specimen forcing owns size classification for this test. Clear the
+	# legacy King override so two QA controls cannot fight over the same fish.
+	if next_mode != DebugSettingsScript.SpecimenMode.DEFAULT:
+		_settings.set_king_mode(DebugSettingsScript.KingMode.DEFAULT)
+
+	_mark_custom_profile()
+
+
 func _change_shadow_count(step: int) -> void:
 	if _settings == null:
 		return
@@ -297,6 +323,8 @@ func _change_shadow_count(step: int) -> void:
 func _change_king(step: int) -> void:
 	var next_mode: int = posmod(_settings.get_king_mode() + step, 3)
 	_settings.set_king_mode(next_mode)
+	if next_mode != DebugSettingsScript.KingMode.DEFAULT:
+		_settings.set_specimen_mode(DebugSettingsScript.SpecimenMode.DEFAULT)
 	_mark_custom_profile()
 
 
@@ -425,9 +453,18 @@ func _refresh() -> void:
 	if selected_rod != null:
 		rod_text = selected_rod.rod_name
 
+	var selected_specimen_fish: FishData = null
+	if _fish_index > 0:
+		selected_specimen_fish = CONTENT_CATALOG.fish[_fish_index - 1]
+
 	profile_label.text = _row_text(Row.PROFILE, "PROFILE", profile_text)
 	spot_label.text = _row_text(Row.SPOT, "SPOT", spot_text)
 	fish_label.text = _row_text(Row.FISH, "FISH", fish_text)
+	specimen_label.text = _row_text(
+		Row.SPECIMEN,
+		"SPECIMEN",
+		_settings.get_specimen_mode_label(selected_specimen_fish)
+	)
 	shadow_count_label.text = _row_text(
 		Row.SHADOWS,
 		"SHADOWS",
@@ -514,6 +551,7 @@ func _refresh() -> void:
 		+ "\nTension: " + tension_runtime_text
 		+ "\nQA: " + _last_regression_summary
 		+ " | F9 run regression"
+		+ "\nSPECIMEN forcing uses real catch pipeline; SAVE DBG ON persists it"
 		+ "\nShift+R RESET fishing progress"
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)

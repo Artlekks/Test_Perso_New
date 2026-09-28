@@ -52,6 +52,8 @@ func configure(
 	_reward_service = reward_service
 
 	settings = FishingDebugSettingsScript.new()
+	if settings.has_method("configure_progress"):
+		settings.configure_progress(_progress)
 	regression_harness = FishingRegressionHarnessScript.new()
 
 	if _encounter != null and _encounter.has_method("set_debug_settings"):

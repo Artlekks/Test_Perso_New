@@ -79,7 +79,9 @@ func run_all() -> Dictionary:
 	_test_techniques(report)
 	_test_progression(report)
 	_test_catch_persistence_regression(report)
+	_test_all_species_record_delta_regression(report)
 	_test_debug_persistence_gate_regression(report)
+	_test_debug_specimen_forcing(report)
 	_test_rewards(report)
 	_test_trades(report)
 	_test_tension_profile(report)
@@ -575,6 +577,127 @@ func _test_catch_persistence_regression(report: Dictionary) -> void:
 	progress.free()
 
 
+func _test_all_species_record_delta_regression(report: Dictionary) -> void:
+	var group: String = "all_species_progression"
+	var crown_progress := FishingProgress.new()
+	crown_progress.progression_catalog = PROGRESSION_CATALOG
+	var expected_crown_total: int = 0
+	var tested_species: int = 0
+
+	for fish in CONTENT_CATALOG.fish:
+		if fish == null:
+			continue
+
+		tested_species += 1
+		var species_id: String = fish.get_stable_species_id().to_lower()
+		var species_progress := FishingProgress.new()
+		species_progress.progression_catalog = PROGRESSION_CATALOG
+
+		var crown_cm: int = maxi(roundi(fish.king_size), 1)
+		var base_cm: int = clampi(roundi(fish.average_size), 1, crown_cm)
+		var improved_cm: int = mini(base_cm + 1, crown_cm)
+		if improved_cm <= base_cm and crown_cm > 1:
+			base_cm = crown_cm - 1
+			improved_cm = crown_cm
+
+		var base_snapshot: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+			fish,
+			float(base_cm)
+		)
+		var first_result: Dictionary = species_progress.record_catch_snapshot(
+			base_snapshot,
+			false,
+			false
+		)
+		var base_points: int = int(base_snapshot.get("points", 0))
+		_assert_equal_int(
+			report,
+			int(first_result.get("fishing_points", -1)),
+			base_points,
+			"%s first record owns its score" % species_id,
+			group
+		)
+		_assert_equal_int(
+			report,
+			int(first_result.get("fishing_points_gained", -1)),
+			base_points,
+			"%s first record gains its full score" % species_id,
+			group
+		)
+
+		var improved_snapshot: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+			fish,
+			float(improved_cm)
+		)
+		var improved_points: int = int(improved_snapshot.get("points", 0))
+		var second_result: Dictionary = species_progress.record_catch_snapshot(
+			improved_snapshot,
+			false,
+			false
+		)
+		var expected_best: int = maxi(base_points, improved_points)
+		var expected_gain: int = maxi(improved_points - base_points, 0)
+		_assert_equal_int(
+			report,
+			int(second_result.get("fishing_points", -1)),
+			expected_best,
+			"%s improved record replaces, not stacks" % species_id,
+			group
+		)
+		_assert_equal_int(
+			report,
+			int(second_result.get("fishing_points_gained", -1)),
+			expected_gain,
+			"%s improved record gains only the delta" % species_id,
+			group
+		)
+
+		var worse_result: Dictionary = species_progress.record_catch_snapshot(
+			base_snapshot,
+			false,
+			false
+		)
+		_assert_equal_int(
+			report,
+			int(worse_result.get("fishing_points", -1)),
+			expected_best,
+			"%s worse repeat does not change total" % species_id,
+			group
+		)
+		_assert_equal_int(
+			report,
+			int(worse_result.get("fishing_points_gained", -1)),
+			0,
+			"%s worse repeat gains zero" % species_id,
+			group
+		)
+		species_progress.free()
+
+		var crown_snapshot: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+			fish,
+			fish.king_size
+		)
+		var crown_result: Dictionary = crown_progress.record_catch_snapshot(
+			crown_snapshot,
+			false,
+			false
+		)
+		expected_crown_total += maxi(fish.max_points, 0)
+		_assert_equal_int(
+			report,
+			int(crown_result.get("fishing_points", -1)),
+			mini(expected_crown_total, EXPECTED_MAX_FISHING_POINTS),
+			"%s crown contributes max score to global total" % species_id,
+			group
+		)
+
+	_assert_equal_int(report, tested_species, EXPECTED_FISH_COUNT, "all fish audited", group)
+	_assert_equal_int(report, expected_crown_total, EXPECTED_MAX_FISHING_POINTS, "all species max scores sum to 9999", group)
+	_assert_equal_int(report, crown_progress.get_fishing_points(), EXPECTED_MAX_FISHING_POINTS, "all crowns produce 9999 total", group)
+	_assert_equal_string(report, crown_progress.get_rank_name(), "The Fish", "9999 points reaches The Fish", group)
+	crown_progress.free()
+
+
 func _test_debug_persistence_gate_regression(report: Dictionary) -> void:
 	var group: String = "debug_persistence"
 	var settings = DebugSettingsScript.new()
@@ -612,6 +735,50 @@ func _test_debug_persistence_gate_regression(report: Dictionary) -> void:
 
 	controller.free()
 
+
+
+func _test_debug_specimen_forcing(report: Dictionary) -> void:
+	var group: String = "debug_specimen"
+	var settings = DebugSettingsScript.new()
+	var fish: FishData = CONTENT_CATALOG.fish[0] if not CONTENT_CATALOG.fish.is_empty() else null
+	_assert(report, fish != null, "QA specimen test fish exists", group)
+	if fish == null:
+		return
+
+	var normal_bounds := SizeRoller.get_normal_size_bounds(fish)
+	var king_bounds := SizeRoller.get_king_size_bounds(fish)
+
+	settings.set_specimen_mode(DebugSettingsScript.SpecimenMode.SMALL)
+	_assert_equal_int(report, roundi(settings.get_forced_specimen_size(fish)), normal_bounds.x, "small forces normal minimum", group)
+	settings.set_specimen_mode(DebugSettingsScript.SpecimenMode.LARGE)
+	_assert_equal_int(report, roundi(settings.get_forced_specimen_size(fish)), normal_bounds.y, "large forces normal maximum", group)
+	settings.set_specimen_mode(DebugSettingsScript.SpecimenMode.KING)
+	_assert_equal_int(report, roundi(settings.get_forced_specimen_size(fish)), king_bounds.x, "king forces crown threshold", group)
+	_assert(report, settings.is_catch_outcome_override_active(), "specimen forcing is persistence-protected QA", group)
+
+	var progress := FishingProgress.new()
+	progress.progression_catalog = PROGRESSION_CATALOG
+	var baseline_size: int = normal_bounds.x
+	progress.record_catch_snapshot(
+		CatchEvaluatorScript.create_snapshot_from_values(fish, float(baseline_size)),
+		false,
+		false
+	)
+	settings.configure_progress(progress)
+	settings.set_specimen_mode(DebugSettingsScript.SpecimenMode.NEW_RECORD)
+	_assert_equal_int(
+		report,
+		roundi(settings.get_forced_specimen_size(fish)),
+		mini(baseline_size + 1, king_bounds.y),
+		"new-record mode targets one centimetre above current record",
+		group
+	)
+
+	var specimen := FishInstance.new()
+	specimen.setup(fish, -1, float(normal_bounds.x))
+	_assert_equal_int(report, roundi(specimen.size), normal_bounds.x, "FishInstance accepts deterministic size override", group)
+	_assert(report, not specimen.is_king, "small deterministic specimen remains normal", group)
+	progress.free()
 
 func _test_rewards(report: Dictionary) -> void:
 	var group: String = "rewards"

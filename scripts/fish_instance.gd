@@ -36,13 +36,13 @@ var pull_multiplier: float = 1.0
 var stamina_recovery_multiplier: float = 1.0
 
 
-func setup(data: FishData, king_override: int = -1) -> void:
+func setup(data: FishData, king_override: int = -1, size_override_cm: float = -1.0) -> void:
 	species = data
 
 	if data == null:
 		return
 
-	_roll_size_and_king(data, king_override)
+	_roll_size_and_king(data, king_override, size_override_cm)
 
 	behavior_profile = data.behavior_profile
 	resistance_rounds = data.resistance_rounds
@@ -103,14 +103,17 @@ func setup(data: FishData, king_override: int = -1) -> void:
 
 func _roll_size_and_king(
 	data: FishData,
-	king_override: int
+	king_override: int,
+	size_override_cm: float = -1.0
 ) -> void:
-	var result: Dictionary = SizeRoller.roll(
-		data,
-		king_override
-	)
-
-	size = float(result.get("size", 0.0))
+	if size_override_cm >= 0.0:
+		size = CatchScoring.normalize_size_cm(size_override_cm)
+	else:
+		var result: Dictionary = SizeRoller.roll(
+			data,
+			king_override
+		)
+		size = float(result.get("size", 0.0))
 
 	var score: Dictionary = CatchScoring.evaluate(
 		data,

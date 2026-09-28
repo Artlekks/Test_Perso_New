@@ -313,6 +313,7 @@ func _confirm_hit() -> bool:
 	active_fish = FishInstance.new()
 
 	var king_override := -1
+	var size_override_cm: float = -1.0
 
 	if (
 		debug_settings != null
@@ -320,9 +321,20 @@ func _confirm_hit() -> bool:
 	):
 		king_override = debug_settings.get_king_override()
 
+	if (
+		debug_settings != null
+		and debug_settings.has_method("get_forced_specimen_size")
+	):
+		size_override_cm = float(
+			debug_settings.get_forced_specimen_size(
+				pending_fish_entry.fish
+			)
+		)
+
 	active_fish.setup(
 		pending_fish_entry.fish,
-		king_override
+		king_override,
+		size_override_cm
 	)
 
 	_reset_technique()
