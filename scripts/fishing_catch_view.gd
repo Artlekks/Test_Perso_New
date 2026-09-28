@@ -23,6 +23,7 @@ var _move_tween: Tween = null
 var _record_label: Label = null
 
 const RANK_BADGE_DIRECTORY := "res://assets/ui/fishing_menu/ranks"
+const DEFAULT_RANK_BADGE_PATH := "res://assets/ui/fishing_menu/ranks/Rank_Beginner.png"
 # Rank art is authored at its final 640x480 HUD size. Keep it under Root so it
 # never inherits CatchFrame's 2x transform. This is the requested final position.
 const RANK_BADGE_ROOT_POSITION := Vector2(280.0, 274.0)
@@ -148,8 +149,8 @@ func _setup_rank_badge() -> void:
 	if rank_badge == null:
 		return
 
-	# The badge texture is already authored at its final pixel dimensions.
-	# Keep it directly under Root so CatchFrame's 2x scale cannot double it again.
+	# The badge is persistent catch-panel information. It is not tied to
+	# New Record, rank-up, or any other one-shot result state.
 	if rank_badge.get_parent() != root:
 		rank_badge.reparent(root, false)
 
@@ -159,8 +160,13 @@ func _setup_rank_badge() -> void:
 	rank_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rank_badge.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	rank_badge.stretch_mode = TextureRect.STRETCH_KEEP
+
+	if rank_badge.texture == null:
+		rank_badge.texture = _load_default_rank_badge()
+
 	if rank_badge.texture != null:
 		rank_badge.size = rank_badge.texture.get_size()
+
 	rank_badge.visible = rank_badge.texture != null
 
 
@@ -168,21 +174,39 @@ func _update_rank_badge(record_result: Dictionary) -> void:
 	if rank_badge == null:
 		return
 
-	# Rank is persistent catch information, not a record-only event. The current
-	# badge stays visible on every catch and only changes when a new rank texture
-	# can be resolved.
+	# Resolve the current rank art when it exists. Until the rest of the rank
+	# sprites are authored, Beginner is the explicit visual fallback so the rank
+	# area is never blank on a catch result.
 	var rank_id := str(record_result.get("rank_id", "")).strip_edges()
 	var rank_name := str(record_result.get("rank_name", "")).strip_edges()
+	var badge_texture: Texture2D = null
 
 	if not rank_id.is_empty() or not rank_name.is_empty():
-		var badge_texture := _load_rank_badge_texture(rank_id, rank_name)
-		if badge_texture != null:
-			rank_badge.texture = badge_texture
-			rank_badge.size = badge_texture.get_size()
+		badge_texture = _load_rank_badge_texture(rank_id, rank_name)
+
+	if badge_texture == null:
+		badge_texture = _load_default_rank_badge()
+
+	if badge_texture != null:
+		rank_badge.texture = badge_texture
+		rank_badge.size = badge_texture.get_size()
 
 	rank_badge.position = RANK_BADGE_ROOT_POSITION
 	rank_badge.scale = Vector2.ONE
 	rank_badge.visible = rank_badge.texture != null
+
+
+func _load_default_rank_badge() -> Texture2D:
+	if ResourceLoader.exists(DEFAULT_RANK_BADGE_PATH):
+		return load(DEFAULT_RANK_BADGE_PATH) as Texture2D
+
+	# Compatibility with the earlier temporary filenames used during this pass.
+	for fallback_name in ["beginner.png", "Beginner.png"]:
+		var fallback_path := "%s/%s" % [RANK_BADGE_DIRECTORY, fallback_name]
+		if ResourceLoader.exists(fallback_path):
+			return load(fallback_path) as Texture2D
+
+	return null
 
 
 func _load_rank_badge_texture(rank_id: String, rank_name: String) -> Texture2D:
