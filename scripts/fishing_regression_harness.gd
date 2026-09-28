@@ -727,9 +727,9 @@ func _test_record_mercy_system(report: Dictionary) -> void:
 	var no_mercy_count: int = 0
 	var non_king_count: int = 0
 
-	for seed in range(256):
+	for sample_seed in range(256):
 		var rng := RandomNumberGenerator.new()
-		rng.seed = seed + 1001
+		rng.seed = sample_seed + 1001
 		var generated: Dictionary = SpecimenGenerator.roll_with_rng(
 			sweetfish,
 			rng,
@@ -1648,9 +1648,9 @@ func _test_fish_consumable_effects(report: Dictionary) -> void:
 	var sample_fish = CONTENT_CATALOG.fish[0] if not CONTENT_CATALOG.fish.is_empty() else null
 	if sample_fish != null:
 		var saw_session_bonus := false
-		for seed in range(1, 96):
+		for sample_seed in range(1, 96):
 			var rng := RandomNumberGenerator.new()
-			rng.seed = seed
+			rng.seed = sample_seed
 			var generated: Dictionary = SpecimenGenerator.roll_with_rng(
 				sample_fish,
 				rng,

@@ -271,12 +271,12 @@ func _format_trade_costs(costs: Dictionary) -> String:
 	var parts = PackedStringArray()
 	for raw_species_id in costs.keys():
 		var species_id: String = str(raw_species_id)
-		var name: String = species_id
+		var fish_name: String = species_id
 		if content_catalog != null:
 			var fish = content_catalog.get_fish_by_id(StringName(species_id))
 			if fish != null:
-				name = fish.fish_name
-		parts.append("%s x%d" % [name, int(costs[raw_species_id])])
+				fish_name = fish.fish_name
+		parts.append("%s x%d" % [fish_name, int(costs[raw_species_id])])
 	return ", ".join(parts)
 
 

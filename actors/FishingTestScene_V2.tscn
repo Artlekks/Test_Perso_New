@@ -69,6 +69,7 @@
 [ext_resource type="Shader" uid="uid://mpwr3cxnthc4" path="res://assets/models/shaders/sea_far_fade.gdshader" id="69_sea_far_shader"]
 [ext_resource type="Texture2D" uid="uid://m06dq1n502h7" path="res://assets/models/fbx/beach_texpage-P8-EE4D3D823035F839-79597399A405481F-128x256-0-0-256x256-P1-199.png" id="70_sea_static_tex"]
 [ext_resource type="Script" uid="uid://dmr43e6bpymb0" path="res://scripts/fishing_shore_boundary.gd" id="71_shore_boundary"]
+[ext_resource type="PackedScene" uid="uid://dhj5u200srrux" path="res://actors/BeachMerchantNPC.tscn" id="72_merchant_npc"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -236,6 +237,9 @@ script = ExtResource("71_shore_boundary")
 transform = Transform3D(1.5887823, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("BoxShape3D_shore_blocker")
 debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
+
+[node name="BeachMerchantNPC" parent="World" instance=ExtResource("72_merchant_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0, 0.42)
 
 [node name="Player" type="Node" parent="." unique_id=1284942496]
 

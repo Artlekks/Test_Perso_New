@@ -25,7 +25,7 @@ static func audit(
 		if fish == null:
 			errors.append("null fish entry")
 			continue
-		var species_id := fish.get_stable_species_id().to_lower()
+		var species_id: String = str(fish.get_stable_species_id()).strip_edges().to_lower()
 		fish_ids[species_id] = true
 		if fish.get_sell_value_zenny() <= 0:
 			errors.append("%s has no BOF4 sell value" % fish.fish_name)

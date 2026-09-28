@@ -143,18 +143,18 @@ func _refresh() -> void:
 
 
 func _row_text(entry: Dictionary) -> String:
-	var name: String = str(entry.get("display_name", "---"))
+	var display_name: String = str(entry.get("display_name", "---"))
 	match str(entry.get("kind", "")):
 		"sell":
-			return "%s  x%d   %dz" % [name, int(entry.get("owned_count", 0)), int(entry.get("unit_value_zenny", 0))]
+			return "%s  x%d   %dz" % [display_name, int(entry.get("owned_count", 0)), int(entry.get("unit_value_zenny", 0))]
 		"buy":
-			return "%s  %dz   [%s]" % [name, int(entry.get("price_zenny", 0)), str(entry.get("state_label", ""))]
+			return "%s  %dz   [%s]" % [display_name, int(entry.get("price_zenny", 0)), str(entry.get("state_label", ""))]
 		"trade":
-			return "%s   [%s]" % [name, str(entry.get("state_label", ""))]
+			return "%s   [%s]" % [display_name, str(entry.get("state_label", ""))]
 		"use":
-			return "%s  x%d   %s" % [name, int(entry.get("owned_count", 0)), str(entry.get("effect_name", ""))]
+			return "%s  x%d   %s" % [display_name, int(entry.get("owned_count", 0)), str(entry.get("effect_name", ""))]
 		_:
-			return name
+			return display_name
 
 
 func _update_detail() -> void:
