@@ -588,44 +588,60 @@ func _test_camera_return_regression(
 		group
 	)
 
-	# Once the lure is in the water, a visible real Ryu owns the shot. This is
-	# intentionally independent of an off-screen -> on-screen signal edge.
+	# Water + visible player must transfer ownership even if follow is already
+	# active. This is the long-cast path.
 	rig.fishing_follow_has_reached_water = true
 	_assert(
 		report,
 		rig.should_hand_off_fishing_follow_to_player(true),
-		"waterborne visible player immediately reclaims camera",
+		"active waterborne cast can hand off to player",
 		group
 	)
+
+	# Exact regression from the reported bug: the player notifier can fire while
+	# the cast is still ARMED and has never activated fish-centric camera follow.
+	# That state used to refuse the handoff, leaving a latent tracking boundary
+	# that A/D spam could activate later.
+	rig.fishing_follow_active = false
+	rig.fishing_follow_armed = true
+	rig.fishing_player_return_active = false
+	rig.fishing_player_camera_locked = false
+	rig.fishing_follow_has_reached_water = true
+	_assert(
+		report,
+		rig.should_hand_off_fishing_follow_to_player(true),
+		"armed waterborne cast hands off before any tracking threshold",
+		group
+	)
+
+	# Off-screen player still permits fish-centric framing until the player has
+	# actually reclaimed the shot.
 	_assert(
 		report,
 		not rig.should_hand_off_fishing_follow_to_player(false),
-		"off-screen player keeps fish-centric tracking",
+		"off-screen player keeps cast tracking ownership",
 		group
 	)
 
-	# Once the distance-driven return owns the rig, fish motion can never restart
-	# screen-space camera corrections during that cast.
-	rig.fishing_player_return_active = true
+	# Once ownership is latched, it is one-way for the rest of the cast.
+	rig.fishing_player_camera_locked = true
 	_assert(
 		report,
 		not rig.should_hand_off_fishing_follow_to_player(true),
-		"active player return cannot restart",
+		"latched player ownership cannot be reclaimed by fish tracking",
 		group
 	)
 
-	# Regression for the exact reported lifecycle: a successful first cast is
-	# followed by another cast where Ryu never leaves the screen. The second cast
-	# must reclaim at water contact without waiting for a new notifier edge.
+	# A new cast is the only normal path that releases the ownership latch. The
+	# public arm method needs scene nodes, so verify the state contract directly:
+	# unlocked + waterborne + visible becomes eligible again.
+	rig.fishing_player_camera_locked = false
 	rig.fishing_player_return_active = false
-	rig.fishing_follow_active = false
-	rig.fishing_follow_has_reached_water = false
-	rig.fishing_follow_active = true
 	rig.fishing_follow_has_reached_water = true
 	_assert(
 		report,
 		rig.should_hand_off_fishing_follow_to_player(true),
-		"second cast visible-from-start reclaims camera deterministically",
+		"new-cast state may establish fresh player ownership",
 		group
 	)
 

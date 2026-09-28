@@ -85,6 +85,12 @@ var fishing_player_return_progress: float = 0.0
 # fish/lure is never allowed to pull the rig sideways again for that cast.
 var fishing_follow_has_reached_water: bool = false
 
+# Hard ownership latch for the current cast. Once the real player has reclaimed
+# the shot, fish/lure tracking can never own the rig again until the cast is
+# explicitly reset or a new cast is armed. This is deliberately separate from
+# `fishing_player_return_active`: the return is temporary, ownership is not.
+var fishing_player_camera_locked: bool = false
+
 var fishing_follow_returning: bool = false
 var _fishing_follow_return_tween: Tween = null
 var fishing_camera_frozen: bool = false
@@ -160,6 +166,7 @@ func arm_fishing_follow(
 	fishing_player_return_start_distance = 0.0
 	fishing_player_return_progress = 0.0
 	fishing_follow_has_reached_water = false
+	fishing_player_camera_locked = false
 
 
 func notify_fishing_target_landed() -> void:
@@ -171,15 +178,39 @@ func notify_fishing_target_landed() -> void:
 
 
 func begin_fishing_player_return() -> void:
-	if (
-		not fishing_follow_active
-		or target == null
-		or not is_instance_valid(fishing_follow_target)
-	):
+	# This is an ownership transition, not merely a movement request. The old
+	# implementation required `fishing_follow_active`, which meant a waterborne
+	# cast that was still only ARMED could ignore the player's screen re-entry.
+	# Later, a hard A/D pull could then activate the tracking boundary and steal
+	# the camera again. Latch player ownership first, regardless of whether the
+	# lure had already activated camera follow.
+	if target == null:
+		return
+
+	if fishing_player_camera_locked:
+		return
+
+	fishing_player_camera_locked = true
+
+	# From this line onward fish-centric tracking is permanently disabled for
+	# this cast. The rig may still need to travel home, but the fish can never
+	# move it sideways again.
+	fishing_follow_armed = false
+	fishing_follow_active = false
+
+	if not is_instance_valid(fishing_follow_target):
+		_lock_fishing_camera_to_player()
 		return
 
 	var tracked_position := fishing_follow_target.global_position
 	var distance := _get_flat_player_distance(tracked_position)
+
+	# If the rig is already at its fishing-home anchor, do not create a return
+	# state at all. This is the exact short-cast / visible-Ryu case that used to
+	# remain armed and become breakable later.
+	if global_position.distance_squared_to(target.global_position) <= 0.000001:
+		_lock_fishing_camera_to_player()
+		return
 
 	fishing_player_return_active = true
 	fishing_player_return_start_camera_position = global_position
@@ -191,6 +222,7 @@ func begin_fishing_player_return() -> void:
 
 
 func reset_fishing_follow() -> void:
+	fishing_player_camera_locked = false
 	_stop_fishing_follow_return(false)
 	_clear_fishing_follow_state()
 
@@ -199,6 +231,8 @@ func reset_fishing_follow() -> void:
 
 
 func return_fishing_follow_to_target() -> void:
+	fishing_player_camera_locked = false
+
 	# Quick-cancel path: stop tracking the discarded lure, but preserve the
 	# current camera position and glide the rig back to Ryu instead of
 	# snapping there in a single frame.
@@ -255,6 +289,16 @@ func _clear_fishing_follow_state() -> void:
 	fishing_follow_has_reached_water = false
 
 
+func _lock_fishing_camera_to_player() -> void:
+	# The cast may continue, but camera ownership is now final. Clear every
+	# fish-tracking degree of freedom while preserving the ownership latch.
+	_clear_fishing_follow_state()
+	fishing_player_camera_locked = true
+
+	if target != null:
+		global_position = target.global_position
+
+
 func _finish_fishing_follow_return() -> void:
 	fishing_follow_returning = false
 	_fishing_follow_return_tween = null
@@ -278,6 +322,24 @@ func _stop_fishing_follow_return(snap_to_target: bool) -> void:
 
 
 func _update_fishing_follow() -> bool:
+	# Absolute invariant: once player ownership is latched for this cast, no
+	# lure/fish position, tracking boundary, or A/D spam may move the rig again.
+	# During the distance-driven return we still advance toward home; once home
+	# we pin the rig to the player every frame until the cast is reset.
+	if fishing_player_camera_locked:
+		if fishing_player_return_active:
+			if is_instance_valid(fishing_follow_target):
+				_update_fishing_player_return(
+					fishing_follow_target.global_position
+				)
+			else:
+				_lock_fishing_camera_to_player()
+		else:
+			if target != null:
+				global_position = target.global_position
+
+		return true
+
 	if not fishing_follow_armed and not fishing_follow_active:
 		return false
 
@@ -436,7 +498,11 @@ func _update_fishing_follow() -> bool:
 func should_hand_off_fishing_follow_to_player(
 	player_inside_frame: bool
 ) -> bool:
-	if not fishing_follow_active:
+	# Player ownership is based on gameplay phase + visibility, not whether the
+	# camera happened to have crossed a tracking threshold already. This closes
+	# the ARMED-but-not-ACTIVE hole that allowed a later lateral pull to steal
+	# the shot.
+	if fishing_player_camera_locked:
 		return false
 
 	if fishing_player_return_active:
@@ -454,7 +520,7 @@ func _try_begin_fishing_player_return() -> bool:
 		return false
 
 	begin_fishing_player_return()
-	return fishing_player_return_active
+	return fishing_player_camera_locked
 
 
 func _get_flat_player_distance(
@@ -506,6 +572,7 @@ func get_fishing_follow_debug_snapshot() -> Dictionary:
 		"armed": fishing_follow_armed,
 		"active": fishing_follow_active,
 		"player_return_active": fishing_player_return_active,
+		"player_camera_locked": fishing_player_camera_locked,
 		"return_progress": fishing_player_return_progress,
 		"follow_offset": fishing_follow_offset,
 		"has_reached_water": fishing_follow_has_reached_water,
@@ -554,14 +621,17 @@ func _update_fishing_player_return(
 	if (
 		current_distance <= fishing_player_return_end_distance
 		or fishing_player_return_progress >= 0.9999
+		or global_position.distance_squared_to(player_position) <= 0.000001
 	):
-		global_position = player_position
-		_clear_fishing_follow_state()
+		_lock_fishing_camera_to_player()
 
 
 func _enforce_fishing_tracking_zone(
 	world_position: Vector3
 ) -> void:
+	if fishing_player_camera_locked:
+		return
+
 	# Hard invariant: after water contact, a visible real Ryu owns the framing.
 	# The old left/right limits behaved like an invisible collider: crossing one
 	# let the fish drag the whole camera sideways. Never run those corrections in
