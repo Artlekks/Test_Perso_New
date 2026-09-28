@@ -8,7 +8,7 @@ const COLOR_PLAYER := Color(0.32, 0.70, 1.0, 1.0)
 const COLOR_OPPONENT := Color(1.0, 0.42, 0.66, 1.0)
 const COLOR_SELECTED := Color(1.0, 0.88, 0.30, 1.0)
 const COLOR_EMPTY := Color(0.43, 0.43, 0.47, 0.92)
-const CAPTURE_HALF_DURATION := 0.20
+const CAPTURE_HALF_DURATION := 0.28
 
 @onready var portrait_background: ColorRect = $Root/PortraitBackground
 @onready var portrait: TextureRect = $Root/Portrait
@@ -96,7 +96,9 @@ func _refresh_content() -> void:
 	if has_card and not is_hidden:
 		portrait.texture = card.portrait
 		var is_fish_card: bool = card.source_kind == &"fish"
-		portrait.stretch_mode = 5 if is_fish_card else 6
+		# Every portrait uses covered scaling. Wide fish portraits therefore fill
+		# the full card vertically and intentionally crop the horizontal edges.
+		portrait.stretch_mode = 6
 		portrait_background.color = (
 			Color(0.42, 0.48, 0.41, 1.0)
 			if is_fish_card

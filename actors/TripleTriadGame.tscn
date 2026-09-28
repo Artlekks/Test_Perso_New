@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_game.gd" id="1_script"]
 [ext_resource type="Resource" path="res://data/triple_triad/card_catalog.tres" id="2_catalog"]
 [ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="3_rules"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="4_font"]
+[ext_resource type="PackedScene" path="res://actors/TripleTriadRewardView.tscn" id="5_reward"]
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_animation_director.gd" id="6_animation"]
 
 [node name="TripleTriadGame" type="CanvasLayer"]
 process_mode = 3
@@ -11,7 +13,7 @@ layer = 80
 script = ExtResource("1_script")
 card_catalog = ExtResource("2_catalog")
 rule_set = ExtResource("3_rules")
-ai_delay_seconds = 0.55
+ai_delay_seconds = 0.75
 
 [node name="Root" type="Control" parent="."]
 visible = false
@@ -105,11 +107,33 @@ horizontal_alignment = 1
 [node name="MessageLabel" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 142.0
-offset_top = 433.0
+offset_top = 415.0
 offset_right = 498.0
-offset_bottom = 454.0
+offset_bottom = 434.0
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InfoPanel" type="ColorRect" parent="Root"]
+layout_mode = 0
+offset_left = 170.0
+offset_top = 435.0
+offset_right = 470.0
+offset_bottom = 458.0
+color = Color(0.25, 0.25, 0.28, 0.92)
+mouse_filter = 2
+
+[node name="InfoLabel" type="Label" parent="Root/InfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 10
 text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -117,14 +141,55 @@ vertical_alignment = 1
 [node name="HelpLabel" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 126.0
-offset_top = 458.0
+offset_top = 459.0
 offset_right = 514.0
-offset_bottom = 478.0
+offset_bottom = 479.0
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 9
 text = "W/S: Card   K: Select   I: Leave"
 horizontal_alignment = 1
 
+[node name="SelectionArrow" type="Polygon2D" parent="Root"]
+visible = false
+polygon = PackedVector2Array(0, 0, 0, 12, 10, 6)
+color = Color(1, 0.88, 0.3, 1)
+z_index = 700
+
+[node name="TurnArrow" type="Polygon2D" parent="Root"]
+visible = false
+polygon = PackedVector2Array(0, 0, 12, 0, 6, 9)
+color = Color(1, 0.88, 0.3, 1)
+z_index = 700
+
+[node name="ResultLabel" type="Label" parent="Root"]
+visible = false
+layout_mode = 0
+offset_left = 90.0
+offset_top = 190.0
+offset_right = 550.0
+offset_bottom = 280.0
+theme_override_colors/font_outline_color = Color(0.06, 0.055, 0.065, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 36
+text = "YOU WIN!"
+horizontal_alignment = 1
+vertical_alignment = 1
+z_index = 800
+
+[node name="TripleTriadRewardView" parent="Root" instance=ExtResource("5_reward")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 900
+
+[node name="AnimationDirector" type="Node" parent="."]
+process_mode = 3
+script = ExtResource("6_animation")
+
 [node name="AITimer" type="Timer" parent="."]
-wait_time = 0.55
+wait_time = 0.75
 one_shot = true

@@ -1,0 +1,125 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_reward_view.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[node name="TripleTriadRewardView" type="Control"]
+visible = false
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.045, 0.035, 0.055, 0.97)
+mouse_filter = 2
+
+[node name="PromptLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 128.0
+offset_top = 28.0
+offset_right = 512.0
+offset_bottom = 58.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "Select one card you want"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SelectionArrow" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 0, 0, 12, 10, 6)
+color = Color(1, 0.88, 0.3, 1)
+position = Vector2(55, 134)
+
+[node name="InfoPanel" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 410.0
+offset_right = 490.0
+offset_bottom = 445.0
+color = Color(0.25, 0.25, 0.28, 0.94)
+mouse_filter = 2
+
+[node name="InfoLabel" type="Label" parent="InfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 13
+text = "Card"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HelpLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 110.0
+offset_top = 452.0
+offset_right = 530.0
+offset_bottom = 476.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = "A/D: Choose   K: Select   I: Leave"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ConfirmDim" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.02, 0.028, 0.78)
+mouse_filter = 2
+z_index = 100
+
+[node name="ConfirmPrompt" type="Label" parent="ConfirmDim"]
+layout_mode = 0
+offset_left = 180.0
+offset_top = 54.0
+offset_right = 460.0
+offset_bottom = 88.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "Are you sure?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ChoiceLabel" type="Label" parent="ConfirmDim"]
+layout_mode = 0
+offset_left = 170.0
+offset_top = 374.0
+offset_right = 470.0
+offset_bottom = 410.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "> YES     NO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AcquiredLabel" type="Label" parent="ConfirmDim"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 360.0
+offset_right = 520.0
+offset_bottom = 400.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
