@@ -12,6 +12,12 @@ const FishingPauseControllerScript = preload(
 const FishingCastInputGateScript = preload(
 	"res://scripts/fishing_cast_input_gate.gd"
 )
+const FishingOutcomeServiceScript = preload(
+	"res://scripts/fishing_outcome_service.gd"
+)
+const DefaultFishingOutcomePolicy = preload(
+	"res://data/bof4/outcomes/default_outcome_policy.tres"
+)
 
 const FishingMenuScene = preload(
 	"res://actors/FishingMenu.tscn"
@@ -123,6 +129,8 @@ var fishing_journal_service: FishingJournalService = null
 var fishing_menu: FishingMenu = null
 var catch_record_result: Dictionary = {}
 var last_lure_loss_result: Dictionary = {}
+var last_outcome_result: Dictionary = {}
+var outcome_service = null
 
 var locked_cast_power: float = 0.0
 # Player input / desired curve amount.
@@ -225,6 +233,14 @@ func _ready() -> void:
 
 	if loadout != null:
 		loadout.set_inventory(fishing_inventory)
+
+	outcome_service = FishingOutcomeServiceScript.new()
+	outcome_service.configure(
+		fishing_catch_repository,
+		loadout,
+		fishing_reward_service,
+		DefaultFishingOutcomePolicy
+	)
 
 	_setup_fishing_menu()
 
@@ -565,6 +581,9 @@ func _on_mode_changed(new_mode) -> void:
 		if technique_view != null:
 			technique_view.clear()
 
+		if outcome_service != null:
+			outcome_service.reset_session()
+
 		return
 
 	cast_input_gate.reset(
@@ -623,6 +642,10 @@ func get_fishing_inventory() -> FishingInventory:
 
 func get_last_lure_loss_result() -> Dictionary:
 	return last_lure_loss_result.duplicate(true)
+
+
+func get_last_outcome_result() -> Dictionary:
+	return last_outcome_result.duplicate(true)
 
 
 func get_fishing_trade_service() -> FishingTradeService:
@@ -1000,6 +1023,11 @@ func _on_world_player_reentered_fishing_view() -> void:
 
 
 func _on_bait_landed(point: Vector3) -> void:
+	last_lure_loss_result = {}
+	last_outcome_result = {}
+	if outcome_service != null:
+		outcome_service.begin_cast()
+
 	_spawn_surface_splash(
 		point,
 		landing_splash_strength,
@@ -1021,7 +1049,6 @@ func _on_bait_landed(point: Vector3) -> void:
 		
 func _enter_in_water() -> void:
 	phase = Phase.IN_WATER
-	last_lure_loss_result = {}
 	technique_detector.reset()
 	technique_view.clear()
 
@@ -1038,6 +1065,9 @@ func _enter_in_water() -> void:
 func _cancel_water_cast_to_aim() -> void:
 	if phase != Phase.IN_WATER:
 		return
+
+	if outcome_service != null:
+		last_outcome_result = outcome_service.resolve_cancelled()
 
 	# Stop any held reel state before destroying the lure.
 	encounter.set_player_reeling(false)
@@ -1310,22 +1340,43 @@ func _on_fish_caught(fish: FishInstance) -> void:
 	caught_fish = fish
 	catch_record_result = {}
 
-	if fish == null or fishing_catch_repository == null:
+	if fish == null:
+		push_error("Fishing: Encounter emitted a null caught fish.")
 		return
 
-	# Forced fish / king / technique tests do not pollute the player's
-	# permanent records unless SAVE DBG is explicitly enabled.
-	if (
-		debug_controller != null
-		and not debug_controller.should_record_catch()
-	):
+	var should_record: bool = true
+	if debug_controller != null:
+		should_record = debug_controller.should_record_catch()
+
+	if outcome_service == null:
+		push_error("Fishing: outcome service is unavailable during catch resolution.")
 		return
 
-	catch_record_result = fishing_catch_repository.commit_catch(
+	last_outcome_result = outcome_service.resolve_catch(
 		fish,
-		_build_catch_record_context()
+		_build_catch_record_context(),
+		should_record
 	)
-	
+
+	var raw_catch_result: Variant = last_outcome_result.get(
+		"catch_result",
+		{}
+	)
+	if raw_catch_result is Dictionary:
+		catch_record_result = (raw_catch_result as Dictionary).duplicate(true)
+
+	# A physical catch is still presented if disk/backend persistence fails, but
+	# never fail silently. The outcome snapshot remains available for QA and the
+	# pending-journal path can recover durable writes when applicable.
+	if (
+		should_record
+		and not bool(last_outcome_result.get("backend_ok", false))
+	):
+		push_error(
+			"Fishing: caught fish was not committed to progression/inventory. "
+			+ "Outcome="
+			+ str(last_outcome_result)
+		)
 
 func _build_catch_record_context() -> Dictionary:
 	var context := {
@@ -1384,6 +1435,9 @@ func _on_bite_opportunity_started() -> void:
 func _on_bite_missed() -> void:
 	if phase != Phase.IN_WATER:
 		return
+
+	if outcome_service != null:
+		last_outcome_result = outcome_service.resolve_miss()
 
 	caster.hide_bait_ripple()
 
@@ -1498,17 +1552,7 @@ func _spawn_surface_splash(
 		splash.set_follow_target(caster.active_bait)
 
 func _on_line_broken() -> void:
-	_resolve_failed_fight(true)
-
-
-func _consume_equipped_lure_for_line_break() -> void:
-	last_lure_loss_result = {}
-	if loadout == null or not loadout.has_method("consume_equipped_lure"):
-		return
-
-	var result = loadout.consume_equipped_lure(&"line_break")
-	if result is Dictionary:
-		last_lure_loss_result = (result as Dictionary).duplicate(true)
+	_resolve_failed_fight(FishingOutcomeServiceScript.OUTCOME_LINE_BREAK)
 
 
 func _freeze_failed_fight() -> void:
@@ -1518,19 +1562,41 @@ func _freeze_failed_fight() -> void:
 
 
 func _on_fight_failed() -> void:
-	_resolve_failed_fight(false)
+	_resolve_failed_fight(FishingOutcomeServiceScript.OUTCOME_HOOK_OFF)
 
 
-func _resolve_failed_fight(consume_lure: bool) -> void:
-	# Phase is the macro terminal latch. Once the first failure signal wins, any
-	# re-entrant/stale signal from tension or animation is ignored for this cast.
+func _resolve_failed_fight(outcome: StringName) -> void:
+	# Phase is the macro terminal latch. Encounter has its own one-shot lifecycle,
+	# and OutcomeService independently guarantees that gameplay consequences such
+	# as lure loss can only be applied once.
 	if phase != Phase.FIGHT:
 		return
 
-	phase = Phase.LINE_BROKEN
+	if outcome_service == null:
+		push_error("Fishing: outcome service unavailable during fight failure.")
+		return
 
-	if consume_lure:
-		_consume_equipped_lure_for_line_break()
+	var result: Dictionary = {}
+	if outcome == FishingOutcomeServiceScript.OUTCOME_LINE_BREAK:
+		result = outcome_service.resolve_line_break()
+	elif outcome == FishingOutcomeServiceScript.OUTCOME_HOOK_OFF:
+		result = outcome_service.resolve_hook_off()
+	else:
+		push_error("Fishing: unsupported failure outcome " + str(outcome))
+		return
+
+	if not bool(result.get("applied", false)):
+		return
+
+	last_outcome_result = result.duplicate(true)
+	var raw_lure_loss: Variant = result.get("lure_loss", {})
+	last_lure_loss_result = (
+		(raw_lure_loss as Dictionary).duplicate(true)
+		if raw_lure_loss is Dictionary
+		else {}
+	)
+
+	phase = Phase.LINE_BROKEN
 
 	if caster.has_method("set_hold_returned_bait_for_landing"):
 		caster.set_hold_returned_bait_for_landing(false)
@@ -1543,8 +1609,10 @@ func _resolve_failed_fight(consume_lure: bool) -> void:
 	bite_animation_active = false
 	manual_pull_animation_active = false
 
+	# Hook Off and Line Break already have distinct feedback textures. Until a
+	# dedicated Hook-Off character animation exists, both reuse the existing
+	# terminal reel-back animation; outcome consequences remain fully distinct.
 	sprite_director.play(&"Reel_Broken_Rod")
-
 
 func _begin_result_transition() -> void:
 	if phase != Phase.WAIT_RESULT:

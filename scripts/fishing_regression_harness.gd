@@ -64,6 +64,12 @@ const DIFFICULTY_POLICY = preload(
 const TensionScript = preload(
 	"res://scripts/tension.gd"
 )
+const OutcomeServiceScript = preload(
+	"res://scripts/fishing_outcome_service.gd"
+)
+const OUTCOME_POLICY = preload(
+	"res://data/bof4/outcomes/default_outcome_policy.tres"
+)
 
 const QA_PROFILE_DIRECTORY: String = "res://data/debug/qa_profiles"
 
@@ -105,6 +111,7 @@ func run_all() -> Dictionary:
 	_test_debug_persistence_gate_regression(report)
 	_test_debug_specimen_forcing(report)
 	_test_rewards(report)
+	_test_outcome_loop(report)
 	_test_trades(report)
 	_test_fight_stat_resolution(report)
 	_test_tackle_differentiation(report)
@@ -1056,6 +1063,109 @@ func _test_rewards(report: Dictionary) -> void:
 	var master: FishingRewardDefinition = REWARD_CATALOG.get_reward_by_key(&"gyosil_masters_rod_9500")
 	_assert(report, spanner != null and spanner.threshold == 6000, "Spanner 6000 milestone", group)
 	_assert(report, master != null and master.threshold == 9500, "Master's Rod 9500 milestone", group)
+
+
+func _test_outcome_loop(report: Dictionary) -> void:
+	var group: String = "outcomes"
+
+	_assert(
+		report,
+		OUTCOME_POLICY != null,
+		"default outcome policy exists",
+		group
+	)
+	if OUTCOME_POLICY == null:
+		return
+
+	_assert(
+		report,
+		bool(OUTCOME_POLICY.call("is_valid_policy")),
+		"default outcome policy is valid",
+		group
+	)
+
+	var miss_rule: Dictionary = OUTCOME_POLICY.call("get_rule", &"miss")
+	var hook_rule: Dictionary = OUTCOME_POLICY.call("get_rule", &"hook_off")
+	var break_rule: Dictionary = OUTCOME_POLICY.call("get_rule", &"line_break")
+	var catch_rule: Dictionary = OUTCOME_POLICY.call("get_rule", &"catch")
+
+	_assert(report, not bool(miss_rule.get("terminal", true)), "miss is non-terminal", group)
+	_assert(report, not bool(miss_rule.get("consume_lure", true)), "miss keeps lure", group)
+	_assert(report, bool(hook_rule.get("terminal", false)), "hook off is terminal", group)
+	_assert(report, not bool(hook_rule.get("consume_lure", true)), "hook off keeps lure", group)
+	_assert(report, bool(break_rule.get("terminal", false)), "line break is terminal", group)
+	_assert(report, bool(break_rule.get("consume_lure", false)), "line break requests lure loss", group)
+	_assert(report, bool(catch_rule.get("record_catch", false)), "catch records progress", group)
+	_assert(report, bool(catch_rule.get("evaluate_rewards", false)), "catch evaluates rewards", group)
+	_assert(report, bool(OUTCOME_POLICY.get("protect_last_owned_lure")), "last lure soft-lock protection enabled", group)
+	_assert(report, OutcomeServiceScript.should_protect_last_lure(true, 1), "one remaining lure is protected", group)
+	_assert(report, not OutcomeServiceScript.should_protect_last_lure(true, 2), "two remaining lures allow one loss", group)
+	_assert(report, not OutcomeServiceScript.should_protect_last_lure(false, 1), "protection can be disabled when economy is ready", group)
+
+	var service = OutcomeServiceScript.new()
+	service.configure(null, null, null, OUTCOME_POLICY)
+	var first_serial: int = service.begin_cast()
+	_assert_equal_int(report, first_serial, 1, "first outcome cast serial", group)
+
+	var miss_one: Dictionary = service.resolve_miss()
+	var miss_two: Dictionary = service.resolve_miss()
+	_assert(report, bool(miss_one.get("applied", false)), "first miss applies", group)
+	_assert(report, not bool(miss_one.get("terminal", true)), "first miss keeps cast alive", group)
+	_assert_equal_int(report, int(miss_two.get("miss_count", 0)), 2, "multiple misses stay in same cast", group)
+
+	var hook_off: Dictionary = service.resolve_hook_off()
+	_assert(report, bool(hook_off.get("applied", false)), "hook off applies once", group)
+	_assert(report, bool(hook_off.get("terminal", false)), "hook off resolves cast", group)
+	var hook_loss: Dictionary = hook_off.get("lure_loss", {})
+	_assert_equal_string(report, str(hook_loss.get("reason", "")), "kept_by_outcome_policy", "hook off does not consume lure", group)
+
+	var late_break: Dictionary = service.resolve_line_break()
+	_assert(report, bool(late_break.get("duplicate", false)), "late line break cannot overwrite hook off", group)
+
+	service.begin_cast()
+	var line_break: Dictionary = service.resolve_line_break()
+	_assert(report, bool(line_break.get("applied", false)), "line break applies once", group)
+	var no_loadout_loss: Dictionary = line_break.get("lure_loss", {})
+	_assert_equal_string(report, str(no_loadout_loss.get("reason", "")), "loadout_unavailable", "line break reports missing loadout instead of faking loss", group)
+
+	service.begin_cast()
+	var cancelled: Dictionary = service.resolve_cancelled()
+	_assert(report, bool(cancelled.get("terminal", false)), "cancel resolves cast", group)
+	var cancel_loss: Dictionary = cancelled.get("lure_loss", {})
+	_assert_equal_string(report, str(cancel_loss.get("reason", "")), "kept_by_outcome_policy", "cancel keeps lure", group)
+
+	service.begin_cast()
+	var sample_fish := FishInstance.new()
+	var sample_species: FishData = CONTENT_CATALOG.fish[0]
+	sample_fish.setup(
+		sample_species,
+		0,
+		maxf(sample_species.average_size, 1.0),
+		{}
+	)
+	var debug_catch: Dictionary = service.resolve_catch(sample_fish, {}, false)
+	_assert(report, bool(debug_catch.get("applied", false)), "debug catch resolves terminal outcome", group)
+	_assert(report, bool(debug_catch.get("recording_skipped", false)), "debug catch explicitly reports skipped persistence", group)
+	_assert(report, bool(debug_catch.get("backend_ok", false)), "intentional debug skip is not treated as backend failure", group)
+	var debug_record: Dictionary = debug_catch.get("catch_result", {})
+	_assert_equal_string(report, str(debug_record.get("reason", "")), "debug_recording_disabled", "debug catch skip reason is explicit", group)
+
+	service.begin_cast()
+	var king_fish := FishInstance.new()
+	king_fish.setup(
+		sample_species,
+		1,
+		maxf(sample_species.king_size, 1.0),
+		{}
+	)
+	var debug_king: Dictionary = service.resolve_catch(king_fish, {}, false)
+	_assert(report, bool(debug_king.get("is_king", false)), "king catch remains explicit in outcome", group)
+
+	service.begin_cast()
+	var missing_repo: Dictionary = service.resolve_catch(sample_fish, {}, true)
+	_assert(report, not bool(missing_repo.get("backend_ok", true)), "missing catch backend cannot report success", group)
+	var missing_repo_record: Dictionary = missing_repo.get("catch_result", {})
+	_assert_equal_string(report, str(missing_repo_record.get("reason", "")), "repository_unavailable", "missing repository failure is explicit", group)
 
 
 func _test_trades(report: Dictionary) -> void:

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dfy6b0on0efja"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/spoon.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://deevinshdaaii" path="res://data/bof4/lure_actions/spoon.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -11,13 +11,11 @@ lure_type = 6
 description = "Attracts any and all kinds of fish."
 visual_tint = Color(0.9, 0.72, 0.28, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "UNIVERSAL BALANCE"
-fight_fatigue_multiplier = 1.00
-hook_security_multiplier = 1.00
 sink_depth = 0.6
 reel_speed = 0.055
 reel_rise_speed = 0.55
 reel_steer_strength = 0.85
+fight_role_label = "UNIVERSAL BALANCE"
 bottom_snag_resistance = 0.55
 obstacle_snag_resistance = 0.5
 metadata/acquisition = "Trade: Shyde (Sea Bream x1, Man-o'-War x1) (20z)."

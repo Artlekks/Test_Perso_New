@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_outcome_policy.gd" id="1_policy"]
+
+[resource]
+script = ExtResource("1_policy")
+miss_ends_cast = false
+miss_consumes_lure = false
+hook_off_ends_cast = true
+hook_off_consumes_lure = false
+line_break_ends_cast = true
+line_break_consumes_lure = true
+catch_ends_cast = true
+catch_consumes_lure = false
+catch_records_progress = true
+catch_evaluates_rewards = true
+cancel_ends_cast = true
+cancel_consumes_lure = false
+protect_last_owned_lure = true

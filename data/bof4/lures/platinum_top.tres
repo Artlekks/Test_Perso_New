@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://bc7naqpa4v0cq"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/platinum_top.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://bnm4u78v75t2" path="res://data/bof4/lure_actions/platinum_top.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,13 +12,13 @@ level = 3
 description = "Its shiny metal surface attracts humans as well as fish."
 visual_tint = Color(0.55, 0.82, 0.78, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "POWER SPINNER"
-fight_fatigue_multiplier = 1.15
-hook_security_multiplier = 0.92
 sink_depth = 0.68
 sink_speed = 0.22
 reel_speed = 0.065
 reel_rise_speed = 0.42
+fight_role_label = "POWER SPINNER"
+fight_fatigue_multiplier = 1.15
+hook_security_multiplier = 0.92
 bottom_snag_resistance = 0.45
 obstacle_snag_resistance = 0.35
 metadata/acquisition = "Trade: Lyp (Angelfish x1, Blue Gill x1, Bass x1)."

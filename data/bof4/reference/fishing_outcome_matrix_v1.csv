@@ -1,0 +1,9 @@
+outcome,terminal,catch_recorded,fish_added_to_inventory,lure_consumed,reward_evaluation,recovery
+MISS,no,no,no,no,no,stay in water and retry bite
+CANCELLED,yes,no,no,no,no,return to aim
+HOOK_OFF,yes,no,no,no,no,failure result then return to aim
+LINE_BREAK,yes,no,no,yes*,no,failure result then return to aim
+CATCH,yes,yes,yes,no,yes,catch result then return to aim
+KING_CATCH,yes,yes,yes,no,yes,catch result + king record/rewards then return to aim
+
+* The final owned lure is protected until a replenishment economy (shop/gathering) is available, preventing a fishing soft-lock.

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dpffa00genhoc"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/flattop.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://cs77jh0r7k30t" path="res://data/bof4/lure_actions/flattop.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,14 +12,14 @@ level = 2
 description = "Moves like a shallow water fish."
 visual_tint = Color(0.96, 0.58, 0.24, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "SHALLOW RUNNER"
-fight_fatigue_multiplier = 1.04
-hook_security_multiplier = 0.96
 sink_depth = 0.08
 sink_speed = 0.05
 reel_speed = 0.055
 reel_rise_speed = 1.1
 reel_steer_strength = 0.85
+fight_role_label = "SHALLOW RUNNER"
+fight_fatigue_multiplier = 1.04
+hook_security_multiplier = 0.96
 bottom_snag_resistance = 0.1
 obstacle_snag_resistance = 0.6
 metadata/acquisition = "Satchel (? areas); Trade: Wyndia (Blowfish x2) (80z)."

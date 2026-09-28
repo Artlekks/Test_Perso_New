@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://dkuldfbpatel"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/warbler.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://ytpfb47ilyn3" path="res://data/bof4/lure_actions/warbler.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,14 +12,14 @@ level = 2
 description = "Well balanced; attracts fish with its floating motion."
 visual_tint = Color(0.67, 0.45, 0.86, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "BALANCED WINDER"
-fight_fatigue_multiplier = 1.08
-hook_security_multiplier = 1.02
 sink_depth = 0.65
 sink_speed = 0.19
 reel_speed = 0.057
 reel_rise_speed = 0.52
 reel_steer_strength = 0.92
+fight_role_label = "BALANCED WINDER"
+fight_fatigue_multiplier = 1.08
+hook_security_multiplier = 1.02
 bottom_snag_resistance = 0.4
 obstacle_snag_resistance = 0.4
 metadata/acquisition = "Trade: Shyde (Flying Fish x3); Buy: Chiqua (80z)."

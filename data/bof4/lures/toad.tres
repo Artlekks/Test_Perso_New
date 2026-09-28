@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://wdstdo1c83mm"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/toad.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://ctyvadh7tl643" path="res://data/bof4/lure_actions/toad.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,13 +12,13 @@ level = 2
 description = "Sinks slowly but rises quickly. Has a cute pink color."
 visual_tint = Color(0.38, 0.82, 0.32, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "SECURE RISER"
-fight_fatigue_multiplier = 0.99
-hook_security_multiplier = 1.14
 sink_depth = 0.3
 sink_speed = 0.12
 reel_rise_speed = 1.0
 reel_steer_strength = 0.85
+fight_role_label = "SECURE RISER"
+fight_fatigue_multiplier = 0.99
+hook_security_multiplier = 1.14
 bottom_snag_resistance = 0.3
 obstacle_snag_resistance = 0.7
 metadata/acquisition = "Drop: Tadpole (Kyria/Synesta); Trade: Wyndia (Flying Fish x3); Buy: Chiqua (80z)."

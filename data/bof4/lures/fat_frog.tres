@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://cxyirb84rpwuu"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/fat_frog.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://cikqasabk8wm0" path="res://data/bof4/lure_actions/fat_frog.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,13 +12,13 @@ level = 3
 description = "Best frogger, has an almost prideful look on its face."
 visual_tint = Color(0.38, 0.82, 0.32, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "HEAVY FROG"
-fight_fatigue_multiplier = 1.03
-hook_security_multiplier = 1.16
 sink_depth = 0.38
 sink_speed = 0.16
 reel_speed = 0.052
 reel_rise_speed = 1.1
+fight_role_label = "HEAVY FROG"
+fight_fatigue_multiplier = 1.03
+hook_security_multiplier = 1.16
 bottom_snag_resistance = 0.35
 obstacle_snag_resistance = 0.75
 metadata/acquisition = "Drop: Mud Pup (Fane); Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://krra076nich7"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/crab.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://y4lln6n2ae8d" path="res://data/bof4/lure_actions/crab.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -11,13 +11,13 @@ level = 3
 description = "Rises slightly when wound. Good for catching bottom dwellers."
 visual_tint = Color(0.95, 0.42, 0.6, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "BOTTOM GRIP"
-fight_fatigue_multiplier = 1.06
-hook_security_multiplier = 1.14
 sink_speed = 0.26
 reel_speed = 0.045
 reel_rise_speed = 0.8
 reel_steer_strength = 0.65
+fight_role_label = "BOTTOM GRIP"
+fight_fatigue_multiplier = 1.06
+hook_security_multiplier = 1.14
 bottom_snag_resistance = 0.7
 obstacle_snag_resistance = 0.5
 metadata/acquisition = "Trade: Lyp (Black Bass x1, Blue Gill x1, Piranha x1)."

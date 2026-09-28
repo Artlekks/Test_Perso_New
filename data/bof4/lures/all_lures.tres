@@ -21,7 +21,7 @@
 [ext_resource type="Resource" uid="uid://ch7r51jhqx3hd" path="res://data/bof4/lures/gold_top.tres" id="18_lure"]
 [ext_resource type="Resource" uid="uid://bc7naqpa4v0cq" path="res://data/bof4/lures/platinum_top.tres" id="19_lure"]
 [ext_resource type="Resource" uid="uid://dfy6b0on0efja" path="res://data/bof4/lures/spoon.tres" id="20_lure"]
-[ext_resource type="Resource" path="res://data/bof4/lures/king_frog.tres" id="21_lure"]
+[ext_resource type="Resource" uid="uid://6ibutncfrbie" path="res://data/bof4/lures/king_frog.tres" id="21_lure"]
 
 [resource]
 script = ExtResource("1_catalog")

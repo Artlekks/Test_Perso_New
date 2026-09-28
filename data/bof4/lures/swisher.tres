@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://b2p2f36qg0sww"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/swisher.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://btjdmbsctgwov" path="res://data/bof4/lure_actions/swisher.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,13 +12,13 @@ level = 3
 description = "Attracts fish with a propeller that churns up the surface."
 visual_tint = Color(0.96, 0.58, 0.24, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "SURFACE POWER"
-fight_fatigue_multiplier = 1.12
-hook_security_multiplier = 0.92
 sink_depth = 0.04
 sink_speed = 0.04
 reel_speed = 0.06
 reel_rise_speed = 1.2
+fight_role_label = "SURFACE POWER"
+fight_fatigue_multiplier = 1.12
+hook_security_multiplier = 0.92
 bottom_snag_resistance = 0.1
 obstacle_snag_resistance = 0.65
 metadata/acquisition = "Trade: Lyp (Browntail x1, Trout x1, Sweetfish x1)."

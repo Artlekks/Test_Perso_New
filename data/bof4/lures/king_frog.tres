@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BaitData" format=3 uid="uid://6ibutncfrbie"]
 
 [ext_resource type="Script" uid="uid://t00bl10tj0xr" path="res://scripts/bait_data.gd" id="1_bait"]
-[ext_resource type="Resource" path="res://data/bof4/lure_actions/king_frog.tres" id="2_action"]
+[ext_resource type="Resource" uid="uid://csnt8ov43wttd" path="res://data/bof4/lure_actions/king_frog.tres" id="2_action"]
 
 [resource]
 script = ExtResource("1_bait")
@@ -12,13 +12,13 @@ level = 2
 description = "No fish can resist the temptation of this lure."
 visual_tint = Color(0.38, 0.82, 0.32, 1)
 action_profile = ExtResource("2_action")
-fight_role_label = "UNIVERSAL TEMPTATION"
-fight_fatigue_multiplier = 0.97
-hook_security_multiplier = 1.02
 sink_depth = 0.6
 reel_speed = 0.055
 reel_rise_speed = 0.55
 reel_steer_strength = 0.85
+fight_role_label = "UNIVERSAL TEMPTATION"
+fight_fatigue_multiplier = 0.97
+hook_security_multiplier = 1.02
 bottom_snag_resistance = 0.9
 obstacle_snag_resistance = 0.9
 metadata/acquisition = "Post-game: Rey and Teepo's Shop, Abandoned Village (800z)."
