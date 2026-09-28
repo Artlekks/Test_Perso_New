@@ -1,0 +1,18 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_environment_condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"dawn"
+display_name = "Dawn"
+stacking_group = &"time"
+tags = PackedStringArray("dawn", "morning")
+description = "Early activity favors frequent bites and ordinary schooling fish."
+bite_activity_multiplier = 1.1
+surface_activity_multiplier = 1.08
+mid_activity_multiplier = 1.03
+deep_activity_multiplier = 0.97
+quality_bonus_roll_chance = 0.04
+quality_bonus_rolls = 1
+tier_selection_multipliers = PackedFloat32Array(1.08, 1.05, 1, 0.98, 0.95)

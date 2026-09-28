@@ -80,6 +80,7 @@ var _no_readable_shadow_time: float = 0.0
 var _debug_forced_fish: FishData = null
 var _debug_shadow_count_override: int = 0
 var _ambient_profile: AmbientFishProfile = null
+var _environment_context: Dictionary = {}
 var _active_bait: Node3D = null
 var _active_bait_id: int = 0
 var _bait_lookup_cooldown: float = 0.0
@@ -397,6 +398,17 @@ func get_population_debug_counts() -> Vector2i:
 	)
 
 
+func set_environment_context(context: Dictionary) -> void:
+	var next_context: Dictionary = context.duplicate(true)
+	if next_context == _environment_context:
+		return
+	_environment_context = next_context
+	# Never destroy the active fight shadow because weather/time changed. Ambient
+	# population can refresh immediately when no hooked fish owns a shadow.
+	if not is_instance_valid(_fight_shadow):
+		rebuild_population()
+
+
 func rebuild_population() -> void:
 	_refresh_spot_identity()
 	_clear_population()
@@ -665,7 +677,7 @@ func _pick_weighted_fish(population: Array[FishSpawnEntry]) -> FishData:
 	for entry in population:
 		if entry == null:
 			continue
-		total_weight += entry.get_ambient_weight()
+		total_weight += entry.get_ambient_weight(_environment_context)
 
 	if total_weight <= 0.0:
 		for entry in population:
@@ -673,6 +685,7 @@ func _pick_weighted_fish(population: Array[FishSpawnEntry]) -> FishData:
 				entry != null
 				and entry.fish != null
 				and entry.enabled_for_ambient
+				and entry.is_environment_available(_environment_context)
 			):
 				return entry.fish
 		return null
@@ -687,7 +700,7 @@ func _pick_weighted_fish(population: Array[FishSpawnEntry]) -> FishData:
 		if entry == null:
 			continue
 
-		cumulative += entry.get_ambient_weight()
+		cumulative += entry.get_ambient_weight(_environment_context)
 
 		if roll <= cumulative and entry.fish != null:
 			return entry.fish
@@ -699,6 +712,7 @@ func _pick_weighted_fish(population: Array[FishSpawnEntry]) -> FishData:
 			fallback_entry != null
 			and fallback_entry.fish != null
 			and fallback_entry.enabled_for_ambient
+			and fallback_entry.is_environment_available(_environment_context)
 		):
 			return fallback_entry.fish
 

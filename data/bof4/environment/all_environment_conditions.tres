@@ -1,0 +1,13 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_environment_catalog.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bof4/environment/calm.tres" id="2"]
+[ext_resource type="Resource" path="res://data/bof4/environment/rain.tres" id="3"]
+[ext_resource type="Resource" path="res://data/bof4/environment/tempest.tres" id="4"]
+[ext_resource type="Resource" path="res://data/bof4/environment/dawn.tres" id="5"]
+[ext_resource type="Resource" path="res://data/bof4/environment/night.tres" id="6"]
+
+[resource]
+script = ExtResource("1")
+default_condition_ids = PackedStringArray("calm")
+conditions = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

@@ -9,6 +9,7 @@ const RADAR_MAX_DOTS: int = 14
 
 var fishing_spot: FishingSpotData = null
 var swim_bounds: FishSwimBounds = null
+var environment_context: Dictionary = {}
 
 
 func configure(
@@ -17,6 +18,10 @@ func configure(
 ) -> void:
 	fishing_spot = new_spot
 	swim_bounds = new_swim_bounds
+
+
+func set_environment_context(context: Dictionary) -> void:
+	environment_context = context.duplicate(true)
 
 
 func sample(
@@ -193,7 +198,7 @@ func build_radar_snapshot(
 			0.0
 		)
 		var weight: float = (
-			entry.get_ambient_weight()
+			entry.get_ambient_weight(environment_context)
 			* local_multiplier
 		)
 

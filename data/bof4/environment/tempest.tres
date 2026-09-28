@@ -1,0 +1,23 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_environment_condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"tempest"
+display_name = "Tempest"
+stacking_group = &"weather"
+tags = PackedStringArray("tempest", "storm", "rough_water")
+description = "High-risk weather: rare/high-tier fish become more active and specimen quality improves, but fights are harsher."
+bite_activity_multiplier = 1.25
+surface_activity_multiplier = 0.9
+mid_activity_multiplier = 1.1
+deep_activity_multiplier = 1.2
+quality_bonus_roll_chance = 0.2
+quality_bonus_rolls = 1
+tier_selection_multipliers = PackedFloat32Array(0.85, 0.95, 1.15, 1.35, 1.6)
+stamina_drain_multiplier = 0.95
+hook_off_delay_multiplier = 0.92
+line_tolerance_multiplier = 0.92
+counter_steer_multiplier = 0.95
+fish_pressure_multiplier = 1.18

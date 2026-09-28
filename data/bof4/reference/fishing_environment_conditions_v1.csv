@@ -1,0 +1,6 @@
+condition_id,group,bite_activity,surface_activity,mid_activity,deep_activity,quality_bonus_chance,quality_bonus_rolls,tier1_weight,tier2_weight,tier3_weight,tier4_weight,tier5_weight,stamina_drain,hook_grace,line_tolerance,counter_steer,fish_pressure,design_role
+calm,weather,1.00,1.00,1.00,1.00,0.00,0,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,Neutral baseline
+rain,weather,1.12,1.00,1.04,1.08,0.08,1,1.00,1.03,1.06,1.08,1.10,1.00,1.00,1.00,1.00,1.05,Mild activity and quality boost
+tempest,weather,1.25,0.90,1.10,1.20,0.20,1,0.85,0.95,1.15,1.35,1.60,0.95,0.92,0.92,0.95,1.18,High-risk rare/high-tier opportunity
+dawn,time,1.10,1.08,1.03,0.97,0.04,1,1.08,1.05,1.00,0.98,0.95,1.00,1.00,1.00,1.00,1.00,Frequent early-day activity
+night,time,0.95,0.90,1.00,1.12,0.06,1,0.95,1.00,1.08,1.12,1.15,1.00,1.00,1.00,1.00,1.03,Deeper/higher-tier bias

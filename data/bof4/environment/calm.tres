@@ -1,0 +1,12 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_environment_condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"calm"
+display_name = "Calm"
+stacking_group = &"weather"
+tags = PackedStringArray("calm", "clear")
+description = "Neutral baseline fishing conditions."
+tier_selection_multipliers = PackedFloat32Array(1, 1, 1, 1, 1)

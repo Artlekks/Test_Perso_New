@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_environment_condition_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+condition_id = &"night"
+display_name = "Night"
+stacking_group = &"time"
+tags = PackedStringArray("night", "dark")
+description = "Lower overall activity, but deeper and higher-tier fish gain a mild selection bias."
+bite_activity_multiplier = 0.95
+surface_activity_multiplier = 0.9
+mid_activity_multiplier = 1
+deep_activity_multiplier = 1.12
+quality_bonus_roll_chance = 0.06
+quality_bonus_rolls = 1
+tier_selection_multipliers = PackedFloat32Array(0.95, 1, 1.08, 1.12, 1.15)
+fish_pressure_multiplier = 1.03

@@ -8,7 +8,8 @@ func choose(
 	current_depth: float,
 	total_depth: float,
 	is_reeling: bool = false,
-	spatial_context: Dictionary = {}
+	spatial_context: Dictionary = {},
+	environment_context: Dictionary = {}
 ) -> FishSpawnEntry:
 	var total_weight: float = 0.0
 
@@ -21,7 +22,8 @@ func choose(
 				bait,
 				current_depth,
 				total_depth,
-				is_reeling
+				is_reeling,
+				environment_context
 			)
 			* _get_spatial_species_multiplier(
 				entry,
@@ -43,7 +45,8 @@ func choose(
 				bait,
 				current_depth,
 				total_depth,
-				is_reeling
+				is_reeling,
+				environment_context
 			)
 			* _get_spatial_species_multiplier(
 				entry,
@@ -63,7 +66,8 @@ func get_attraction_ratio(
 	current_depth: float,
 	total_depth: float,
 	is_reeling: bool = false,
-	spatial_context: Dictionary = {}
+	spatial_context: Dictionary = {},
+	environment_context: Dictionary = {}
 ) -> float:
 	var base_weight_total: float = 0.0
 	var effective_weight_total: float = 0.0
@@ -72,13 +76,14 @@ func get_attraction_ratio(
 		if entry == null:
 			continue
 
-		base_weight_total += entry.get_base_bite_weight()
+		base_weight_total += entry.get_base_bite_weight(environment_context)
 		effective_weight_total += (
 			entry.get_bite_selection_weight(
 				bait,
 				current_depth,
 				total_depth,
-				is_reeling
+				is_reeling,
+				environment_context
 			)
 			* _get_spatial_species_multiplier(
 				entry,

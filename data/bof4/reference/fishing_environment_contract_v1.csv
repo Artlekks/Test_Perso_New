@@ -1,0 +1,9 @@
+layer,owner,responsibility,rule
+Spot population,FishingSpotData/FishSpawnEntry,Defines what can exist at a location,Entries may require/block condition IDs or tags
+World conditions,FishingEnvironmentService,Composes weather/time/event resources,One active condition per stacking group; different groups compose
+Species selection,FishSpawnEntry/FishSelector,Applies availability and species-weight context,Conditions change encounter odds but never FishData identity
+Bite activity,Encounter,Consumes resolved environment bite multiplier,Environment cannot start/resolve fights directly
+Specimen quality,FishingSpecimenGenerator,Consumes environment extra-roll context,Extra natural rolls only; no forced record or crown
+Fight context,FishingFightResolver,Composes fish+tackle+session+environment,Environment modifiers are visible and bounded
+Ambient shadows,FishShadowPresence,Uses the same availability/weight context,Presentation follows encounter availability without owning gameplay
+Future world systems,Weather/time/event controllers,Activate/deactivate condition IDs,No direct mutation of fish/Encounter/tension

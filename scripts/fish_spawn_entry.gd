@@ -49,26 +49,43 @@ var recommended_min_cast_distance_m: float = 0.0
 
 @export var hotspot_tag: StringName = &""
 
+@export_category("Environment Availability")
+## Optional world-condition gates. Empty arrays preserve the normal population.
+## These are evaluated by stable condition ID, not display text.
+@export var required_environment_conditions: PackedStringArray = PackedStringArray()
+@export var blocked_environment_conditions: PackedStringArray = PackedStringArray()
+
+## Tag gates allow broader authoring such as "storm" or "night" without
+## tying the spot entry to one exact condition resource.
+@export var required_environment_tags: PackedStringArray = PackedStringArray()
+@export var blocked_environment_tags: PackedStringArray = PackedStringArray()
+
 @export_multiline var strategy_note: String = ""
 
 
-func get_base_bite_weight() -> float:
+func get_base_bite_weight(environment_context: Dictionary = {}) -> float:
 	if not enabled_for_bites or fish == null:
+		return 0.0
+	if not is_environment_available(environment_context):
 		return 0.0
 
 	return (
 		maxf(weight, 0.0)
 		* maxf(bite_weight_multiplier, 0.0)
+		* _get_environment_species_multiplier(environment_context)
 	)
 
 
-func get_ambient_weight() -> float:
+func get_ambient_weight(environment_context: Dictionary = {}) -> float:
 	if not enabled_for_ambient or fish == null:
+		return 0.0
+	if not is_environment_available(environment_context):
 		return 0.0
 
 	return (
 		maxf(weight, 0.0)
 		* maxf(ambient_weight_multiplier, 0.0)
+		* _get_environment_species_multiplier(environment_context)
 	)
 
 
@@ -76,9 +93,10 @@ func get_bite_selection_weight(
 	bait: BaitData,
 	current_depth: float,
 	total_depth: float,
-	is_reeling: bool = false
+	is_reeling: bool = false,
+	environment_context: Dictionary = {}
 ) -> float:
-	var base_weight: float = get_base_bite_weight()
+	var base_weight: float = get_base_bite_weight(environment_context)
 
 	if base_weight <= 0.0:
 		return 0.0
@@ -181,6 +199,53 @@ func get_depth_match_multiplier(
 		),
 		eased
 	)
+
+
+func is_environment_available(environment_context: Dictionary = {}) -> bool:
+	if environment_context.is_empty():
+		return (
+			required_environment_conditions.is_empty()
+			and required_environment_tags.is_empty()
+		)
+
+	var active_ids: PackedStringArray = _to_normalized_string_array(
+		environment_context.get("active_condition_ids", PackedStringArray())
+	)
+	var active_tags: PackedStringArray = _to_normalized_string_array(
+		environment_context.get("active_environment_tags", PackedStringArray())
+	)
+
+	for raw_id in required_environment_conditions:
+		if not active_ids.has(str(raw_id).strip_edges().to_lower()):
+			return false
+	for raw_id in blocked_environment_conditions:
+		if active_ids.has(str(raw_id).strip_edges().to_lower()):
+			return false
+	for raw_tag in required_environment_tags:
+		if not active_tags.has(str(raw_tag).strip_edges().to_lower()):
+			return false
+	for raw_tag in blocked_environment_tags:
+		if active_tags.has(str(raw_tag).strip_edges().to_lower()):
+			return false
+
+	return true
+
+
+func _get_environment_species_multiplier(environment_context: Dictionary) -> float:
+	if fish == null or environment_context.is_empty():
+		return 1.0
+	var multipliers: Dictionary = environment_context.get("species_multipliers", {}) as Dictionary
+	var species_id: String = fish.get_stable_species_id().strip_edges().to_lower()
+	return maxf(float(multipliers.get(species_id, 1.0)), 0.0)
+
+
+func _to_normalized_string_array(value) -> PackedStringArray:
+	var result: PackedStringArray = PackedStringArray()
+	var value_type: int = typeof(value)
+	if value_type == TYPE_PACKED_STRING_ARRAY or value_type == TYPE_ARRAY:
+		for raw_value in value:
+			result.append(str(raw_value).strip_edges().to_lower())
+	return result
 
 
 func get_debug_summary() -> String:

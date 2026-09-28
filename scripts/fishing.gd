@@ -125,6 +125,7 @@ var fishing_catch_repository: FishingCatchRepository = null
 var fishing_trade_service: FishingTradeService = null
 var fishing_economy_service = null
 var fishing_session_modifier_service = null
+var fishing_environment_service = null
 var fishing_fish_consumable_service = null
 var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
@@ -226,6 +227,7 @@ func _ready() -> void:
 	fishing_trade_service = session_services.trade_service
 	fishing_economy_service = session_services.economy_service
 	fishing_session_modifier_service = session_services.session_modifier_service
+	fishing_environment_service = session_services.environment_service
 	fishing_fish_consumable_service = session_services.fish_consumable_service
 	fishing_unlock_state = session_services.unlock_state
 	fishing_reward_service = session_services.reward_service
@@ -244,6 +246,31 @@ func _ready() -> void:
 		encounter.set_session_modifier_service(
 			fishing_session_modifier_service
 		)
+
+	if (
+		encounter != null
+		and encounter.has_method("set_environment_service")
+	):
+		encounter.set_environment_service(
+			fishing_environment_service
+		)
+
+	if (
+		fishing_environment_service != null
+		and fishing_environment_service.has_signal("environment_changed")
+	):
+		var environment_callback: Callable = Callable(
+			self,
+			"_on_fishing_environment_changed"
+		)
+		if not fishing_environment_service.is_connected(
+			"environment_changed",
+			environment_callback
+		):
+			fishing_environment_service.connect(
+				"environment_changed",
+				environment_callback
+			)
 
 	if loadout != null:
 		loadout.set_inventory(fishing_inventory)
@@ -586,6 +613,12 @@ func _on_mode_changed(new_mode) -> void:
 			encounter.set_fish_zone(null)
 
 		if (
+			fishing_environment_service != null
+			and fishing_environment_service.has_method("set_spot")
+		):
+			fishing_environment_service.set_spot(null)
+
+		if (
 			depth_meter_view != null
 			and depth_meter_view.has_method(
 				"set_fish_zone"
@@ -621,6 +654,14 @@ func _on_mode_changed(new_mode) -> void:
 			zone.get_fish_population()
 		)
 
+		if (
+			fishing_environment_service != null
+			and fishing_environment_service.has_method("set_spot")
+		):
+			fishing_environment_service.set_spot(
+				zone.get_fishing_spot()
+			)
+
 		if encounter.has_method("set_fish_zone"):
 			encounter.set_fish_zone(zone)
 
@@ -635,12 +676,34 @@ func _on_mode_changed(new_mode) -> void:
 		if debug_controller != null:
 			debug_controller.set_fish_zone(zone)
 			debug_controller.sync_environment()
+		_sync_environment_context_to_zone()
 		camera_rig.enter_fishing_view()
 
 
 
 
 
+
+
+func _on_fishing_environment_changed(_snapshot: Dictionary) -> void:
+	_sync_environment_context_to_zone()
+
+
+func _sync_environment_context_to_zone() -> void:
+	if fishing_environment_service == null:
+		return
+	var zone = game_mode.active_fish_zone
+	if zone == null or not zone.has_method("set_environment_context"):
+		return
+	var population: Array = zone.get_fish_population()
+	var context: Dictionary = fishing_environment_service.get_selection_context(
+		population
+	)
+	zone.set_environment_context(context)
+
+
+func get_fishing_environment_service() -> Node:
+	return fishing_environment_service
 
 
 func get_fishing_progress() -> FishingProgress:

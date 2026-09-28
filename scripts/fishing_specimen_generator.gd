@@ -146,6 +146,47 @@ static func _roll_internal(
 				selected = session_candidate
 				session_selected_better_candidate = true
 
+	var environment_quality_active: bool = bool(
+		mercy_context.get("environment_quality_active", false)
+	)
+	var environment_quality_chance: float = clampf(
+		float(mercy_context.get("environment_quality_bonus_chance", 0.0)),
+		0.0,
+		0.50
+	)
+	var environment_quality_rolls: int = clampi(
+		int(mercy_context.get("environment_quality_bonus_rolls", 0)),
+		0,
+		2
+	)
+	var environment_bonus_rolls_used: int = 0
+	var environment_selected_better_candidate: bool = false
+
+	# World conditions use the same safe rule as session buffs: extra natural
+	# rolls only. Explicit QA specimen overrides remain absolute.
+	if king_override != -1:
+		environment_quality_active = false
+
+	if environment_quality_active and environment_quality_chance > 0.0:
+		for _environment_index in range(environment_quality_rolls):
+			if _randf(rng) >= environment_quality_chance:
+				continue
+
+			var environment_candidate: Dictionary = _base_roll(
+				data,
+				-1,
+				rng
+			)
+			var environment_candidate_size: float = float(
+				environment_candidate.get("size", 0.0)
+			)
+			candidate_sizes.append(environment_candidate_size)
+			environment_bonus_rolls_used += 1
+
+			if environment_candidate_size > float(selected.get("size", 0.0)):
+				selected = environment_candidate
+				environment_selected_better_candidate = true
+
 	var result: Dictionary = selected.duplicate(true)
 	result["mercy_active"] = mercy_active
 	result["mercy_miss_streak"] = maxi(
@@ -163,6 +204,18 @@ static func _roll_internal(
 	result["session_quality_bonus_rolls_used"] = session_bonus_rolls_used
 	result["session_quality_selected_better_candidate"] = (
 		session_selected_better_candidate
+	)
+	result["environment_quality_active"] = environment_quality_active
+	result["environment_quality_bonus_chance"] = (
+		environment_quality_chance if environment_quality_active else 0.0
+	)
+	result["environment_quality_bonus_rolls_used"] = environment_bonus_rolls_used
+	result["environment_quality_selected_better_candidate"] = (
+		environment_selected_better_candidate
+	)
+	result["environment_condition_ids"] = mercy_context.get(
+		"environment_condition_ids",
+		PackedStringArray()
 	)
 	result["candidate_sizes"] = candidate_sizes
 	result["session_effect_ids"] = mercy_context.get(

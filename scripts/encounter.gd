@@ -145,6 +145,7 @@ var active_bait_data: BaitData = null
 var debug_settings = null
 var fishing_progress: FishingProgress = null
 var session_modifier_service = null
+var environment_service = null
 var active_rod_data: RodData = null
 ## Immutable per-hook snapshot of fish + rod + lure fight values. Encounter only
 ## consumes this resolved package; it does not reinterpret source resources.
@@ -242,6 +243,8 @@ func _on_bite_timer_timeout() -> void:
 		)
 		last_spatial_context = spatial_context.duplicate(true)
 
+		var environment_context: Dictionary = _get_environment_selection_context()
+
 		var shadow_candidate := _get_visible_shadow_candidate()
 
 		# If a visible fish is actively performing the pre-bite sequence but has
@@ -257,7 +260,8 @@ func _on_bite_timer_timeout() -> void:
 			caster.get_current_bait_depth(),
 			caster.get_current_total_depth(),
 			caster.is_active_bait_reeling(),
-			spatial_context
+			spatial_context,
+			environment_context
 		)
 
 		var session_bite_multiplier: float = 1.0
@@ -270,11 +274,25 @@ func _on_bite_timer_timeout() -> void:
 				0.01
 			)
 
+		var environment_bite_multiplier: float = 1.0
+		if (
+			environment_service != null
+			and environment_service.has_method("get_bite_activity_multiplier")
+		):
+			environment_bite_multiplier = maxf(
+				float(environment_service.get_bite_activity_multiplier(
+					caster.get_current_bait_depth(),
+					caster.get_current_total_depth()
+				)),
+				0.01
+			)
+
 		var bite_chance := (
 			attraction
 			* max_bite_chance_per_check
 			* _get_tech_attraction_multiplier()
 			* session_bite_multiplier
+			* environment_bite_multiplier
 			* _get_spatial_bite_density_multiplier(
 				spatial_context
 			)
@@ -315,7 +333,8 @@ func _on_bite_timer_timeout() -> void:
 				caster.get_current_bait_depth(),
 				caster.get_current_total_depth(),
 				caster.is_active_bait_reeling(),
-				spatial_context
+				spatial_context,
+				environment_context
 			)
 
 	if (
@@ -405,6 +424,16 @@ func _confirm_hit() -> bool:
 		)
 		for key in session_generation:
 			generation_context[key] = session_generation[key]
+
+	if (
+		environment_service != null
+		and environment_service.has_method("get_specimen_generation_context")
+	):
+		var environment_generation: Dictionary = (
+			environment_service.get_specimen_generation_context()
+		)
+		for key in environment_generation:
+			generation_context[key] = environment_generation[key]
 
 	active_fish.setup(
 		pending_fish_entry.fish,
@@ -1096,6 +1125,15 @@ func get_fish_debug_snapshot() -> Dictionary:
 			session_modifier_service.get_composite_snapshot()
 		)
 
+	if (
+		environment_service != null
+		and environment_service.has_method("get_debug_snapshot")
+	):
+		snapshot["environment"] = environment_service.get_debug_snapshot(
+			caster.get_current_bait_depth(),
+			caster.get_current_total_depth()
+		)
+
 	return snapshot
 
 
@@ -1125,6 +1163,15 @@ func set_active_bait_data(bait_data: BaitData) -> void:
 	if active_fish != null:
 		_rebuild_active_fight_context()
 	_apply_rod_tension_settings()
+
+func _get_environment_selection_context() -> Dictionary:
+	if (
+		environment_service == null
+		or not environment_service.has_method("get_selection_context")
+	):
+		return {}
+	return environment_service.get_selection_context(fish_population)
+
 
 func _get_spatial_context() -> Dictionary:
 	if (
@@ -1328,6 +1375,33 @@ func _on_session_modifiers_changed(_snapshot: Dictionary) -> void:
 	_apply_rod_tension_settings()
 
 
+func set_environment_service(service) -> void:
+	var callback: Callable = Callable(self, "_on_environment_changed")
+	if (
+		environment_service != null
+		and environment_service.has_signal("environment_changed")
+		and environment_service.is_connected("environment_changed", callback)
+	):
+		environment_service.disconnect("environment_changed", callback)
+
+	environment_service = service
+
+	if (
+		environment_service != null
+		and environment_service.has_signal("environment_changed")
+		and not environment_service.is_connected("environment_changed", callback)
+	):
+		environment_service.connect("environment_changed", callback)
+
+	_on_environment_changed({})
+
+
+func _on_environment_changed(_snapshot: Dictionary) -> void:
+	if active_fish != null:
+		_rebuild_active_fight_context()
+	_apply_rod_tension_settings()
+
+
 func set_rod_data(rod_data: RodData) -> void:
 	active_rod_data = rod_data
 	if active_fish != null:
@@ -1347,11 +1421,19 @@ func _rebuild_active_fight_context() -> void:
 	):
 		session_fight_modifiers = session_modifier_service.get_fight_modifiers()
 
+	var environment_fight_modifiers: Dictionary = {}
+	if (
+		environment_service != null
+		and environment_service.has_method("get_fight_modifiers")
+	):
+		environment_fight_modifiers = environment_service.get_fight_modifiers()
+
 	active_fight_context = FightResolver.resolve_context(
 		active_fish,
 		active_rod_data,
 		active_bait_data,
-		session_fight_modifiers
+		session_fight_modifiers,
+		environment_fight_modifiers
 	)
 
 	if not FightResolver.is_valid_context(active_fight_context):
@@ -1509,15 +1591,15 @@ func _on_fish_behavior_pressure_changed(value: float) -> void:
 		fish_behavior_pressure = 0.0
 		return
 
-	var session_pressure_multiplier := maxf(
+	var runtime_pressure_multiplier: float = maxf(
 		float(active_fight_context.get(
-			"session_fish_pressure_multiplier",
+			"runtime_fish_pressure_multiplier",
 			1.0
 		)),
 		0.01
 	)
 	fish_behavior_pressure = clampf(
-		value * session_pressure_multiplier,
+		value * runtime_pressure_multiplier,
 		0.0,
 		1.0
 	)

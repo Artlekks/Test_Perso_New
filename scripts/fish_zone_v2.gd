@@ -81,6 +81,20 @@ func set_fishing_spot(new_spot: FishingSpotData) -> void:
 	fishing_spot_changed.emit(fishing_spot)
 
 
+func set_environment_context(context: Dictionary) -> void:
+	if concentration_field != null and concentration_field.has_method("set_environment_context"):
+		concentration_field.set_environment_context(context)
+
+	if shadow_presence == null:
+		shadow_presence = get_node_or_null("FishShadowPresence")
+
+	if (
+		shadow_presence != null
+		and shadow_presence.has_method("set_environment_context")
+	):
+		shadow_presence.set_environment_context(context)
+
+
 func set_debug_shadow_overrides(fish: FishData, count: int) -> void:
 	if shadow_presence == null:
 		shadow_presence = get_node_or_null("FishShadowPresence")

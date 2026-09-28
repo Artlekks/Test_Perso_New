@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cm5qvbif7v2rv"
+
+[deps]
+
+files=["res://data/bof4/reference/fishing_environment_contract_v1.owner.translation", "res://data/bof4/reference/fishing_environment_contract_v1.responsibility.translation", "res://data/bof4/reference/fishing_environment_contract_v1.rule.translation"]
+
+source_file="res://data/bof4/reference/fishing_environment_contract_v1.csv"
+dest_files=["res://data/bof4/reference/fishing_environment_contract_v1.owner.translation", "res://data/bof4/reference/fishing_environment_contract_v1.responsibility.translation", "res://data/bof4/reference/fishing_environment_contract_v1.rule.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

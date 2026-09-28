@@ -100,6 +100,15 @@ const SessionModifierServiceScript = preload(
 const FishEffectIntegrityScript = preload(
 	"res://scripts/fishing_fish_effect_integrity.gd"
 )
+const EnvironmentServiceScript = preload(
+	"res://scripts/fishing_environment_service.gd"
+)
+const EnvironmentIntegrityScript = preload(
+	"res://scripts/fishing_environment_integrity.gd"
+)
+const ENVIRONMENT_CATALOG = preload(
+	"res://data/bof4/environment/all_environment_conditions.tres"
+)
 const FishInstanceScript = preload(
 	"res://scripts/fish_instance.gd"
 )
@@ -119,6 +128,7 @@ const EXPECTED_REWARD_COUNT: int = 2
 const EXPECTED_TRADE_COUNT: int = 14
 const EXPECTED_SHOP_OFFER_COUNT: int = 16
 const EXPECTED_FISH_EFFECT_COUNT: int = 30
+const EXPECTED_ENVIRONMENT_CONDITION_COUNT: int = 5
 const EXPECTED_MAX_FISHING_POINTS: int = 9999
 
 
@@ -154,6 +164,7 @@ func run_all() -> Dictionary:
 	_test_trades(report)
 	_test_economy_contract(report)
 	_test_fish_consumable_effects(report)
+	_test_environment_conditions(report)
 	_test_fight_stat_resolution(report)
 	_test_tackle_differentiation(report)
 	_test_difficulty_accessibility_curve(report)
@@ -2632,6 +2643,85 @@ func _test_qa_profiles(report: Dictionary) -> void:
 		_assert(report, not profile.purpose.strip_edges().is_empty(), "%s has purpose" % file_name, group)
 
 	_assert(report, profile_count >= 10, "at least 10 QA scenarios", group)
+
+
+func _test_environment_conditions(report: Dictionary) -> void:
+	var group: String = "environment"
+	var integrity: Dictionary = EnvironmentIntegrityScript.audit(
+		ENVIRONMENT_CATALOG,
+		CONTENT_CATALOG
+	)
+	_assert(report, bool(integrity.get("valid", false)), "environment catalog integrity", group)
+	_assert_equal_int(
+		report,
+		int(integrity.get("condition_count", 0)),
+		EXPECTED_ENVIRONMENT_CONDITION_COUNT,
+		"environment condition count",
+		group
+	)
+
+	var service = EnvironmentServiceScript.new()
+	service.configure(ENVIRONMENT_CATALOG)
+	var defaults: PackedStringArray = service.get_active_condition_ids()
+	_assert(report, defaults.has("calm"), "calm is the default weather", group)
+
+	var ocean_two: FishingSpotData = null
+	for spot in CONTENT_CATALOG.spots:
+		if spot != null and str(spot.spot_id) == "ocean_2":
+			ocean_two = spot
+			break
+	_assert(report, ocean_two != null, "Ocean 2 exists for environment QA", group)
+	if ocean_two == null:
+		service.free()
+		return
+
+	service.set_spot(ocean_two)
+	var calm_context: Dictionary = service.get_selection_context(ocean_two.get_fish_population())
+	_assert_float_close(
+		report,
+		service.get_bite_activity_multiplier(5.0, 10.0),
+		1.0,
+		0.0001,
+		"calm bite activity is neutral",
+		group
+	)
+
+	_assert(report, service.activate_condition(&"tempest"), "tempest activates", group)
+	var tempest_ids: PackedStringArray = service.get_active_condition_ids()
+	_assert(report, tempest_ids.has("tempest"), "tempest is active", group)
+	_assert(report, not tempest_ids.has("calm"), "tempest replaces calm in weather group", group)
+	_assert(report, service.get_bite_activity_multiplier(5.0, 10.0) > 1.0, "tempest raises bite activity", group)
+
+	var tempest_context: Dictionary = service.get_selection_context(ocean_two.get_fish_population())
+	var calm_weights: Dictionary = calm_context.get("species_multipliers", {}) as Dictionary
+	var tempest_weights: Dictionary = tempest_context.get("species_multipliers", {}) as Dictionary
+	var sea_bass_weight: float = float(tempest_weights.get("sea_bass", 1.0))
+	var whale_weight: float = float(tempest_weights.get("whale", 1.0))
+	_assert(report, whale_weight > sea_bass_weight, "tempest biases higher-tier species", group)
+	_assert(report, float(calm_weights.get("whale", 1.0)) == 1.0, "calm species weighting is neutral", group)
+
+	var generation_context: Dictionary = service.get_specimen_generation_context()
+	_assert(report, bool(generation_context.get("environment_quality_active", false)), "tempest enables quality rolls", group)
+	_assert(report, float(generation_context.get("environment_quality_bonus_chance", 0.0)) > 0.0, "tempest quality chance is positive", group)
+
+	var fight_modifiers: Dictionary = service.get_fight_modifiers()
+	_assert(report, float(fight_modifiers.get("fish_pressure_multiplier", 1.0)) > 1.0, "tempest raises fight pressure", group)
+	_assert(report, float(fight_modifiers.get("line_tolerance_multiplier", 1.0)) < 1.0, "tempest reduces line forgiveness", group)
+
+	_assert(report, service.activate_condition(&"night"), "night activates independently", group)
+	var composed_ids: PackedStringArray = service.get_active_condition_ids()
+	_assert(report, composed_ids.has("tempest") and composed_ids.has("night"), "weather and time conditions compose", group)
+
+	var test_entry: FishSpawnEntry = FishSpawnEntry.new()
+	test_entry.fish = CONTENT_CATALOG.get_fish_by_id(&"sea_bass")
+	test_entry.weight = 1.0
+	test_entry.required_environment_conditions = PackedStringArray(["tempest"])
+	_assert(report, test_entry.get_base_bite_weight(tempest_context) > 0.0, "required tempest entry is available in tempest", group)
+	service.reset_to_defaults()
+	var reset_context: Dictionary = service.get_selection_context([test_entry])
+	_assert_float_close(report, test_entry.get_base_bite_weight(reset_context), 0.0, 0.0001, "required tempest entry is hidden in calm", group)
+
+	service.free()
 
 
 func _packed_int_arrays_equal(a: PackedInt32Array, b: PackedInt32Array) -> bool:
