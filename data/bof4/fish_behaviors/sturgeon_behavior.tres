@@ -1,30 +1,32 @@
-[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://yj4g6fsm7u8k"]
 
-[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
 
 [resource]
 script = ExtResource("1_profile")
 archetype = 3
 profile_name = "HEAVY"
-movement_response_multiplier = 0.65
-release_reaction_multiplier = 1.1
-recovery_time_multiplier = 1.25
-bite_aggression_multiplier = 0.916
-bite_window_multiplier = 1.032
-bite_retry_multiplier = 1.1
-fight_intensity_multiplier = 1.1
-pressure_multiplier = 1.15
-pull_multiplier = 1.195
-stamina_recovery_multiplier = 0.936
-lateral_activity = 0.50
+personality_name = "DEEP BULLDOZER"
+difficulty_tier = 5
+lateral_activity = 0.5
 vertical_activity = 0.95
-direction_change_min = 1.20
-direction_change_max = 2.50
-surge_weight = 2.00
-side_run_weight = 0.50
-dive_weight = 3.20
+direction_change_min = 1.2
+direction_change_max = 2.5
+movement_response_multiplier = 0.55
+release_reaction_multiplier = 1.2
+recovery_time_multiplier = 1.35
+bite_aggression_multiplier = 0.9
+bite_window_multiplier = 1.05
+bite_retry_multiplier = 1.08
+fight_intensity_multiplier = 1.12
+pressure_multiplier = 1.25
+pull_multiplier = 1.28
+stamina_recovery_multiplier = 0.88
+surge_weight = 2.0
+side_run_weight = 0.5
+dive_weight = 3.2
 rise_weight = 0.05
-erratic_weight = 0.20
+erratic_weight = 0.2
 thrash_chance = 0.28
 thrash_multiplier = 1.45
-metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."
+metadata/balance_origin = "V2 species fight tuning: canonical/reference movement weights preserved; high-level bite/cadence/output multipliers are authored gameplay tuning for distinct species identity and scalable balancing."

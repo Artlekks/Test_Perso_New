@@ -708,6 +708,8 @@ func get_debug_snapshot() -> Dictionary:
 	return {
 		"active": active,
 		"profile": (behavior_profile.get_archetype_label() if behavior_profile != null else "NONE"),
+		"personality": (behavior_profile.get_personality_label() if behavior_profile != null else "NONE"),
+		"difficulty_tier": (behavior_profile.difficulty_tier if behavior_profile != null else 1),
 		"dominant_action": (behavior_profile.get_dominant_action_label() if behavior_profile != null else "NONE"),
 		"state": _get_fight_back_label(current_fight_back),
 		"lateral": lateral,

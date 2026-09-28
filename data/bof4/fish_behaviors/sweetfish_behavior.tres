@@ -1,30 +1,26 @@
-[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://bhq3vygs6gh7t"]
 
-[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
 
 [resource]
 script = ExtResource("1_profile")
-archetype = 0
-profile_name = "STEADY"
-movement_response_multiplier = 0.9
-release_reaction_multiplier = 0.85
-recovery_time_multiplier = 1
-bite_aggression_multiplier = 0.923
-bite_window_multiplier = 1.131
-bite_retry_multiplier = 1.05
-fight_intensity_multiplier = 0.95
-pressure_multiplier = 0.95
-pull_multiplier = 0.914
-stamina_recovery_multiplier = 0.923
-lateral_activity = 0.80
-vertical_activity = 0.90
+personality_name = "SURFACE RISER"
+lateral_activity = 0.8
+vertical_activity = 0.9
 direction_change_min = 0.45
-direction_change_max = 1.10
-surge_weight = 0.30
-side_run_weight = 1.20
-dive_weight = 0.40
-rise_weight = 1.70
-erratic_weight = 1.30
+direction_change_max = 1.1
+release_reaction_multiplier = 0.95
+recovery_time_multiplier = 0.95
+bite_aggression_multiplier = 0.95
+bite_window_multiplier = 1.12
+fight_intensity_multiplier = 0.93
+pressure_multiplier = 0.9
+pull_multiplier = 0.9
+surge_weight = 0.3
+side_run_weight = 1.2
+dive_weight = 0.4
+rise_weight = 1.7
+erratic_weight = 1.3
 thrash_chance = 0.12
-thrash_multiplier = 1.20
-metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."
+thrash_multiplier = 1.2
+metadata/balance_origin = "V2 species fight tuning: canonical/reference movement weights preserved; high-level bite/cadence/output multipliers are authored gameplay tuning for distinct species identity and scalable balancing."

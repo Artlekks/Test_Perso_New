@@ -57,6 +57,8 @@ static func resolve_specimen(
 	var profile_recovery: float = 1.0
 	var recovery_time_multiplier: float = 1.0
 	var archetype_label: String = "UNPROFILED"
+	var personality_label: String = "UNPROFILED"
+	var difficulty_tier: int = 1
 	var dominant_action: String = "UNPROFILED"
 
 	if profile != null:
@@ -81,6 +83,9 @@ static func resolve_specimen(
 			0.5
 		)
 		archetype_label = profile.get_archetype_label()
+		if profile.has_method("get_personality_label"):
+			personality_label = profile.get_personality_label()
+		difficulty_tier = clampi(int(profile.difficulty_tier), 1, 5)
 		if profile.has_method("get_dominant_action_label"):
 			dominant_action = profile.get_dominant_action_label()
 
@@ -159,6 +164,8 @@ static func resolve_specimen(
 		"stamina_recovery_multiplier": profile_recovery,
 		"behavior_profile": profile,
 		"archetype": archetype_label,
+		"personality": personality_label,
+		"difficulty_tier": difficulty_tier,
 		"dominant_action": dominant_action,
 	}
 
@@ -200,6 +207,8 @@ static func resolve_context(
 		"rod_id": "",
 		"lure_id": "",
 		"archetype": str(fish.archetype_label),
+		"personality": str(fish.personality_label),
+		"difficulty_tier": clampi(int(fish.difficulty_tier), 1, 5),
 		"dominant_action": str(fish.dominant_action),
 		"size_ratio_to_average": float(fish.size_ratio_to_average),
 		"is_king": bool(fish.is_king),
@@ -285,6 +294,8 @@ static func _empty_specimen_stats() -> Dictionary:
 		"stamina_recovery_multiplier": 1.0,
 		"behavior_profile": null,
 		"archetype": "UNPROFILED",
+		"personality": "UNPROFILED",
+		"difficulty_tier": 1,
 		"dominant_action": "UNPROFILED",
 		"size_ratio_to_average": 0.0,
 		"size_ratio_to_king": 0.0,
@@ -309,6 +320,8 @@ static func _empty_context_stats() -> Dictionary:
 		"rod_id": "",
 		"lure_id": "",
 		"archetype": "UNPROFILED",
+		"personality": "UNPROFILED",
+		"difficulty_tier": 1,
 		"dominant_action": "UNPROFILED",
 		"size_ratio_to_average": 0.0,
 		"is_king": false,

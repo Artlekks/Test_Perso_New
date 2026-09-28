@@ -880,6 +880,8 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 	var group: String = "fight_stats"
 	var archetypes: Dictionary = {}
 	var dominant_actions: Dictionary = {}
+	var personality_labels: Dictionary = {}
+	var difficulty_tiers: Dictionary = {}
 	var personality_signatures: Dictionary = {}
 	var resolved_species: int = 0
 
@@ -897,7 +899,15 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 		_assert(report, profile.is_valid_profile(), "%s profile valid" % fish_name, group)
 		archetypes[profile.get_archetype_label()] = true
 		dominant_actions[profile.get_dominant_action_label()] = true
+		personality_labels[profile.get_personality_label()] = true
+		difficulty_tiers[profile.difficulty_tier] = true
 		personality_signatures[profile.get_personality_signature()] = true
+		_assert(
+			report,
+			profile.difficulty_tier >= 1 and profile.difficulty_tier <= 5,
+			"%s difficulty tier in range" % fish_name,
+			group
+		)
 
 		var distribution: Dictionary = profile.get_action_distribution()
 		var distribution_total := (
@@ -1039,6 +1049,20 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 					"%s rod does not secretly rewrite stamina" % fish_name,
 					group
 				)
+				_assert_equal_int(
+					report,
+					int(context.get("difficulty_tier", 0)),
+					profile.difficulty_tier,
+					"%s context preserves difficulty tier" % fish_name,
+					group
+				)
+				_assert_equal_string(
+					report,
+					str(context.get("personality", "")),
+					profile.get_personality_label(),
+					"%s context preserves personality" % fish_name,
+					group
+				)
 
 		# Lures currently own attraction/retrieve behavior, not hooked-fish
 		# strength. Verify that contract explicitly so a future lure trait must be
@@ -1089,6 +1113,20 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 		report,
 		dominant_actions.size() >= 5,
 		"all five dominant movement identities represented",
+		group
+	)
+	_assert_equal_int(
+		report,
+		personality_labels.size(),
+		EXPECTED_FISH_COUNT,
+		"every species has a distinct design personality label",
+		group
+	)
+	_assert_equal_int(
+		report,
+		difficulty_tiers.size(),
+		5,
+		"all five design difficulty tiers represented",
 		group
 	)
 	_assert(

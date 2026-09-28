@@ -1,30 +1,30 @@
-[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://tfmu51pv3wsc"]
 
-[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
 
 [resource]
 script = ExtResource("1_profile")
-archetype = 0
-profile_name = "STEADY"
-movement_response_multiplier = 0.9
-release_reaction_multiplier = 0.85
-recovery_time_multiplier = 1
-bite_aggression_multiplier = 0.925
-bite_window_multiplier = 1.128
-bite_retry_multiplier = 1.05
-fight_intensity_multiplier = 0.95
-pressure_multiplier = 0.95
-pull_multiplier = 0.919
-stamina_recovery_multiplier = 0.925
+personality_name = "GRACEFUL RISER"
+difficulty_tier = 2
 lateral_activity = 0.65
-vertical_activity = 0.90
+vertical_activity = 0.9
 direction_change_min = 0.75
-direction_change_max = 1.60
-surge_weight = 0.20
-side_run_weight = 0.70
-dive_weight = 0.40
-rise_weight = 2.20
-erratic_weight = 1.40
-thrash_chance = 0.10
-thrash_multiplier = 1.20
-metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."
+direction_change_max = 1.6
+movement_response_multiplier = 0.95
+release_reaction_multiplier = 0.9
+recovery_time_multiplier = 1.05
+bite_aggression_multiplier = 0.92
+bite_window_multiplier = 1.14
+bite_retry_multiplier = 1.05
+fight_intensity_multiplier = 0.94
+pressure_multiplier = 0.9
+pull_multiplier = 0.88
+stamina_recovery_multiplier = 0.96
+surge_weight = 0.2
+side_run_weight = 0.7
+dive_weight = 0.4
+rise_weight = 2.2
+erratic_weight = 1.4
+thrash_chance = 0.1
+thrash_multiplier = 1.2
+metadata/balance_origin = "V2 species fight tuning: canonical/reference movement weights preserved; high-level bite/cadence/output multipliers are authored gameplay tuning for distinct species identity and scalable balancing."

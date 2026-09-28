@@ -14,6 +14,15 @@ enum FightArchetype {
 var archetype: int = FightArchetype.STEADY
 @export var profile_name: String = "STEADY"
 
+## Human-facing design identity used by QA/debug tooling. This does not drive
+## mechanics directly; the authored values below remain authoritative.
+@export var personality_name: String = "STEADY"
+
+## Relative roster difficulty for design/debug visibility. Runtime difficulty is
+## still produced by FishData stats + this profile, so this never double-scales.
+@export_range(1, 5, 1)
+var difficulty_tier: int = 1
+
 @export_category("Movement")
 @export_range(0.0, 1.0, 0.05)
 var lateral_activity: float = 1.0
@@ -98,6 +107,9 @@ func is_valid_profile() -> bool:
 	return (
 		archetype >= FightArchetype.STEADY
 		and archetype <= FightArchetype.ERRATIC
+		and not get_personality_label().is_empty()
+		and difficulty_tier >= 1
+		and difficulty_tier <= 5
 		and lateral_activity >= 0.0
 		and lateral_activity <= 1.0
 		and vertical_activity >= 0.0
@@ -177,10 +189,22 @@ func get_dominant_action_label() -> String:
 	return dominant
 
 
+func get_personality_label() -> String:
+	if not personality_name.strip_edges().is_empty():
+		return personality_name.strip_edges()
+
+	return "%s / %s" % [
+		get_archetype_label(),
+		get_dominant_action_label(),
+	]
+
+
 func get_personality_signature() -> String:
 	var distribution := get_action_distribution()
-	return "%s|%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f" % [
+	return "%s|T%d|%s|%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f" % [
 		get_archetype_label(),
+		difficulty_tier,
+		get_personality_label(),
 		get_dominant_action_label(),
 		float(distribution.get("surge", 0.0)),
 		float(distribution.get("side_run", 0.0)),
@@ -210,10 +234,13 @@ func get_archetype_label() -> String:
 
 func get_debug_summary() -> String:
 	return (
-		"%s | bite %.2f window %.2f retry %.2f | "
+		"%s | T%d %s / %s | bite %.2f window %.2f retry %.2f | "
 		+ "fight %.2f pressure %.2f pull %.2f recover %.2f"
 	) % [
 		get_archetype_label(),
+		difficulty_tier,
+		get_personality_label(),
+		get_dominant_action_label(),
 		bite_aggression_multiplier,
 		bite_window_multiplier,
 		bite_retry_multiplier,

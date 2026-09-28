@@ -1,30 +1,32 @@
-[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://hdw6vevexmrx"]
 
-[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
 
 [resource]
 script = ExtResource("1_profile")
 archetype = 3
 profile_name = "HEAVY"
+personality_name = "DEEP ANCHOR"
+difficulty_tier = 4
+lateral_activity = 0.5
+vertical_activity = 0.85
+direction_change_min = 1.0
+direction_change_max = 2.2
 movement_response_multiplier = 0.65
 release_reaction_multiplier = 1.1
 recovery_time_multiplier = 1.25
-bite_aggression_multiplier = 0.907
-bite_window_multiplier = 1.042
-bite_retry_multiplier = 1.1
+bite_aggression_multiplier = 0.9
+bite_window_multiplier = 1.05
+bite_retry_multiplier = 1.08
 fight_intensity_multiplier = 1.1
-pressure_multiplier = 1.15
-pull_multiplier = 1.176
-stamina_recovery_multiplier = 0.927
-lateral_activity = 0.50
-vertical_activity = 0.85
-direction_change_min = 1.00
-direction_change_max = 2.20
-surge_weight = 1.40
-side_run_weight = 0.50
-dive_weight = 2.50
-rise_weight = 0.10
-erratic_weight = 0.40
+pressure_multiplier = 1.18
+pull_multiplier = 1.22
+stamina_recovery_multiplier = 0.9
+surge_weight = 1.4
+side_run_weight = 0.5
+dive_weight = 2.5
+rise_weight = 0.1
+erratic_weight = 0.4
 thrash_chance = 0.25
 thrash_multiplier = 1.45
-metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."
+metadata/balance_origin = "V2 species fight tuning: canonical/reference movement weights preserved; high-level bite/cadence/output multipliers are authored gameplay tuning for distinct species identity and scalable balancing."

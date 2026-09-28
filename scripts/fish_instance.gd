@@ -37,6 +37,8 @@ var recovery_time_min: float = 0.8
 var recovery_time_max: float = 1.5
 var behavior_profile: FishBehaviorProfile
 var archetype_label: String = "UNPROFILED"
+var personality_label: String = "UNPROFILED"
+var difficulty_tier: int = 1
 var dominant_action: String = "UNPROFILED"
 var behavior_intensity_multiplier: float = 1.0
 var pressure_multiplier: float = 1.0
@@ -81,6 +83,8 @@ func _apply_resolved_fight_stats(stats: Dictionary) -> void:
 		recovery_time_max = 1.5
 		behavior_profile = species.behavior_profile if species != null else null
 		archetype_label = "UNPROFILED"
+		personality_label = "UNPROFILED"
+		difficulty_tier = 1
 		dominant_action = "UNPROFILED"
 		behavior_intensity_multiplier = 1.0
 		pressure_multiplier = 1.0
@@ -99,6 +103,8 @@ func _apply_resolved_fight_stats(stats: Dictionary) -> void:
 	)
 	behavior_profile = stats.get("behavior_profile", null) as FishBehaviorProfile
 	archetype_label = str(stats.get("archetype", "UNPROFILED"))
+	personality_label = str(stats.get("personality", "UNPROFILED"))
+	difficulty_tier = clampi(int(stats.get("difficulty_tier", 1)), 1, 5)
 	dominant_action = str(stats.get("dominant_action", "UNPROFILED"))
 	behavior_intensity_multiplier = maxf(
 		float(stats.get("behavior_intensity_multiplier", 1.0)),
@@ -189,6 +195,8 @@ func get_debug_snapshot() -> Dictionary:
 		"strength": strength,
 		"resistance_rounds": resistance_rounds,
 		"profile": archetype_label,
+		"personality": personality_label,
+		"difficulty_tier": difficulty_tier,
 		"dominant_action": dominant_action,
 		"behavior_intensity": behavior_intensity_multiplier,
 		"pressure_multiplier": pressure_multiplier,

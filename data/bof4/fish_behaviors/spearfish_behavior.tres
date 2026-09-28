@@ -1,30 +1,31 @@
-[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://cr7xl00v24xrh"]
 
-[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
 
 [resource]
 script = ExtResource("1_profile")
 archetype = 2
 profile_name = "AGGRESSIVE"
-movement_response_multiplier = 1.2
-release_reaction_multiplier = 1.35
-recovery_time_multiplier = 0.72
-bite_aggression_multiplier = 1.157
-bite_window_multiplier = 0.845
-bite_retry_multiplier = 0.85
-fight_intensity_multiplier = 1.08
-pressure_multiplier = 1.08
-pull_multiplier = 1.102
-stamina_recovery_multiplier = 1.087
-lateral_activity = 0.80
-vertical_activity = 0.80
-direction_change_min = 0.80
-direction_change_max = 1.70
-surge_weight = 3.80
-side_run_weight = 0.70
-dive_weight = 1.50
-rise_weight = 0.20
-erratic_weight = 0.30
+personality_name = "EXPLOSIVE SURGER"
+difficulty_tier = 4
+lateral_activity = 0.8
+vertical_activity = 0.8
+direction_change_max = 1.7
+movement_response_multiplier = 1.4
+release_reaction_multiplier = 1.55
+recovery_time_multiplier = 0.62
+bite_aggression_multiplier = 1.25
+bite_window_multiplier = 0.72
+bite_retry_multiplier = 0.68
+fight_intensity_multiplier = 1.15
+pressure_multiplier = 1.2
+pull_multiplier = 1.18
+stamina_recovery_multiplier = 1.12
+surge_weight = 3.8
+side_run_weight = 0.7
+dive_weight = 1.5
+rise_weight = 0.2
+erratic_weight = 0.3
 thrash_chance = 0.35
 thrash_multiplier = 1.55
-metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."
+metadata/balance_origin = "V2 species fight tuning: canonical/reference movement weights preserved; high-level bite/cadence/output multipliers are authored gameplay tuning for distinct species identity and scalable balancing."

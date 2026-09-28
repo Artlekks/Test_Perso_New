@@ -1,30 +1,31 @@
-[gd_resource type="Resource" script_class="FishBehaviorProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FishBehaviorProfile" format=3 uid="uid://dbvapxgf08k0q"]
 
-[ext_resource type="Script" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://cnbuavdbjasl4" path="res://scripts/fish_behavior_profile.gd" id="1_profile"]
 
 [resource]
 script = ExtResource("1_profile")
 archetype = 4
 profile_name = "ERRATIC"
-movement_response_multiplier = 1.55
-release_reaction_multiplier = 1.45
-recovery_time_multiplier = 0.82
-bite_aggression_multiplier = 1.043
-bite_window_multiplier = 0.805
-bite_retry_multiplier = 0.9
-fight_intensity_multiplier = 1.05
-pressure_multiplier = 1
-pull_multiplier = 1.03
-stamina_recovery_multiplier = 1.043
+personality_name = "CHAOTIC PRESSURE"
+difficulty_tier = 4
 lateral_activity = 0.85
-vertical_activity = 0.90
-direction_change_min = 0.50
-direction_change_max = 1.20
-surge_weight = 1.50
-side_run_weight = 1.00
-dive_weight = 1.60
-rise_weight = 0.40
-erratic_weight = 2.50
+vertical_activity = 0.9
+direction_change_min = 0.5
+direction_change_max = 1.2
+movement_response_multiplier = 1.7
+release_reaction_multiplier = 1.55
+recovery_time_multiplier = 0.7
+bite_aggression_multiplier = 1.15
+bite_window_multiplier = 0.7
+bite_retry_multiplier = 0.72
+fight_intensity_multiplier = 1.12
+pressure_multiplier = 1.1
+pull_multiplier = 1.12
+stamina_recovery_multiplier = 1.1
+surge_weight = 1.5
+dive_weight = 1.6
+rise_weight = 0.4
+erratic_weight = 2.5
 thrash_chance = 0.35
 thrash_multiplier = 1.45
-metadata/balance_origin = "Species movement values were already authored in-project; bite/fight-output multipliers are V1 gameplay tuning derived from the existing archetype and species strength, not claimed canonical BOF4 hidden numbers."
+metadata/balance_origin = "V2 species fight tuning: canonical/reference movement weights preserved; high-level bite/cadence/output multipliers are authored gameplay tuning for distinct species identity and scalable balancing."
