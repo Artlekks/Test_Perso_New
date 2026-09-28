@@ -5,6 +5,9 @@ signal lure_changed(lure: BaitData)
 signal lure_consumed(lure: BaitData, remaining_count: int, reason: StringName)
 signal rod_changed(rod: RodData)
 
+const SAVE_VERSION: int = 1
+const SAVE_PATH: String = "user://fishing_loadout.json"
+
 @export_category("Fishing Database")
 @export var lure_catalog: FishingLureCatalog
 
@@ -13,6 +16,8 @@ signal rod_changed(rod: RodData)
 @export var selected_rod: RodData
 
 var _inventory: FishingInventory = null
+var _tackle_catalog: FishingTackleCatalog = null
+var _restoring_persistent_selection: bool = false
 
 
 func _ready() -> void:
@@ -32,6 +37,16 @@ func _ready() -> void:
 
 func set_inventory(inventory: FishingInventory) -> void:
 	_inventory = inventory
+
+
+func configure_persistence(
+	inventory: FishingInventory,
+	tackle_catalog: FishingTackleCatalog
+) -> void:
+	_inventory = inventory
+	_tackle_catalog = tackle_catalog
+	load_from_disk()
+	repair_selection(true)
 
 
 func get_inventory() -> FishingInventory:
@@ -245,6 +260,7 @@ func _clear_lure_internal() -> void:
 		return
 	selected_lure = null
 	lure_changed.emit(null)
+	_save_selection_if_ready()
 
 
 func _equip_lure_internal(lure: BaitData) -> void:
@@ -262,6 +278,7 @@ func _equip_lure_internal(lure: BaitData) -> void:
 
 	selected_lure = lure
 	lure_changed.emit(selected_lure)
+	_save_selection_if_ready()
 
 
 func _equip_rod_internal(rod: RodData) -> void:
@@ -270,3 +287,111 @@ func _equip_rod_internal(rod: RodData) -> void:
 
 	selected_rod = rod
 	rod_changed.emit(selected_rod)
+	_save_selection_if_ready()
+
+
+# -----------------------------------------------------------------------------
+# Persistent equipped tackle
+# -----------------------------------------------------------------------------
+
+func save_to_disk() -> bool:
+	if _restoring_persistent_selection:
+		return true
+	var payload: Dictionary = {
+		"version": SAVE_VERSION,
+		"lure_id": str(selected_lure.lure_id) if selected_lure != null else "",
+		"rod_id": str(selected_rod.rod_id) if selected_rod != null else "",
+	}
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("FishingLoadout: could not open loadout save for writing.")
+		return false
+	file.store_string(JSON.stringify(payload, "\t"))
+	file.close()
+	return true
+
+
+func load_from_disk() -> bool:
+	if _tackle_catalog == null:
+		return false
+	if not FileAccess.file_exists(SAVE_PATH):
+		return true
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("FishingLoadout: could not open loadout save for reading.")
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not (parsed is Dictionary):
+		push_warning("FishingLoadout: invalid loadout save; using owned fallback tackle.")
+		return false
+	var data: Dictionary = parsed
+	if int(data.get("version", 0)) > SAVE_VERSION:
+		push_warning("FishingLoadout: loadout save is newer than this build.")
+		return false
+
+	_restoring_persistent_selection = true
+	var lure_id: StringName = StringName(str(data.get("lure_id", "")))
+	var rod_id: StringName = StringName(str(data.get("rod_id", "")))
+	var saved_lure: BaitData = _tackle_catalog.get_lure_by_id(lure_id)
+	var saved_rod: RodData = _tackle_catalog.get_rod_by_id(rod_id)
+	if saved_lure != null and (_inventory == null or _inventory.owns_lure(saved_lure)):
+		_equip_lure_internal(saved_lure)
+	if saved_rod != null and (_inventory == null or _inventory.owns_rod(saved_rod)):
+		_equip_rod_internal(saved_rod)
+	_restoring_persistent_selection = false
+	return true
+
+
+func repair_selection(persist: bool = true) -> Dictionary:
+	var repaired_lure: bool = false
+	var repaired_rod: bool = false
+
+	if _inventory != null:
+		if selected_lure == null or not _inventory.owns_lure(selected_lure):
+			var fallback_lure: BaitData = _find_first_owned_lure()
+			_restoring_persistent_selection = true
+			if fallback_lure != null:
+				_equip_lure_internal(fallback_lure)
+			else:
+				_clear_lure_internal()
+			_restoring_persistent_selection = false
+			repaired_lure = true
+
+		if selected_rod == null or not _inventory.owns_rod(selected_rod):
+			var fallback_rod: RodData = _find_first_owned_rod()
+			if fallback_rod != null:
+				_restoring_persistent_selection = true
+				_equip_rod_internal(fallback_rod)
+				_restoring_persistent_selection = false
+			repaired_rod = true
+
+	if persist:
+		save_to_disk()
+
+	return {
+		"repaired_lure": repaired_lure,
+		"repaired_rod": repaired_rod,
+		"lure_id": str(selected_lure.lure_id) if selected_lure != null else "",
+		"rod_id": str(selected_rod.rod_id) if selected_rod != null else "",
+	}
+
+
+func reset_persistent_selection(delete_save: bool = true) -> void:
+	if delete_save and FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	repair_selection(not delete_save)
+
+
+func _find_first_owned_rod() -> RodData:
+	if _tackle_catalog == null:
+		return null
+	for rod in _tackle_catalog.rods:
+		if rod != null and (_inventory == null or _inventory.owns_rod(rod)):
+			return rod
+	return null
+
+
+func _save_selection_if_ready() -> void:
+	if not _restoring_persistent_selection and _tackle_catalog != null:
+		save_to_disk()

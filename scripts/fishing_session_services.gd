@@ -21,6 +21,12 @@ const FishingTradeServiceScript = preload(
 const FishingEconomyServiceScript = preload(
 	"res://scripts/fishing_economy_service.gd"
 )
+const FishingEconomyAccessScript = preload(
+	"res://scripts/fishing_economy_access.gd"
+)
+const FishingSaveIntegrityServiceScript = preload(
+	"res://scripts/fishing_save_integrity_service.gd"
+)
 const FishingSessionModifierServiceScript = preload(
 	"res://scripts/fishing_session_modifier_service.gd"
 )
@@ -91,6 +97,8 @@ var inventory: FishingInventory = null
 var catch_repository: FishingCatchRepository = null
 var trade_service: FishingTradeService = null
 var economy_service = null
+var economy_access = null
+var save_integrity_service = null
 var session_modifier_service = null
 var environment_service = null
 var fish_consumable_service = null
@@ -102,6 +110,7 @@ var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
+var save_integrity_report: Dictionary = {}
 
 var _initialized: bool = false
 
@@ -199,6 +208,24 @@ func initialize() -> void:
 		session_modifier_service
 	)
 
+	economy_access = FishingEconomyAccessScript.new()
+	economy_access.name = "FishingEconomyAccess"
+	add_child(economy_access)
+	economy_access.configure(
+		inventory,
+		economy_service,
+		trade_service,
+		fish_consumable_service,
+		session_modifier_service,
+		FishingContentCatalogResource,
+		FishingShopCatalogResource,
+		FishingTradeCatalogResource
+	)
+	# Until world NPC/shop entry points are authored, expose the complete catalog
+	# through the basic vertical-slice economy menu. The access façade already
+	# supports narrowing this to real shop contexts later.
+	economy_access.enable_vertical_slice_full_access()
+
 	reward_service = FishingRewardServiceScript.new()
 	reward_service.name = "FishingRewardService"
 	add_child(reward_service)
@@ -218,6 +245,25 @@ func initialize() -> void:
 		inventory,
 		FishingJournalCatalogResource
 	)
+
+	save_integrity_service = FishingSaveIntegrityServiceScript.new()
+	save_integrity_service.name = "FishingSaveIntegrityService"
+	add_child(save_integrity_service)
+	save_integrity_service.configure(
+		progress,
+		inventory,
+		catch_repository,
+		reward_service,
+		unlock_state,
+		session_modifier_service,
+		FishingContentCatalogResource,
+		FishingTackleCatalogResource
+	)
+	save_integrity_report = save_integrity_service.get_last_report()
+	for warning in save_integrity_report.get("warnings", PackedStringArray()):
+		push_warning("Fishing save integrity: %s" % str(warning))
+	for error in save_integrity_report.get("errors", PackedStringArray()):
+		push_error("Fishing save integrity: %s" % str(error))
 
 	_run_progression_integrity_audit()
 	_run_economy_integrity_audit()
@@ -278,6 +324,29 @@ func get_progression_integrity_report() -> Dictionary:
 	return progression_integrity_report.duplicate(true)
 
 
+func get_save_integrity_report() -> Dictionary:
+	return save_integrity_report.duplicate(true)
+
+
+func bind_loadout(loadout) -> Dictionary:
+	if loadout == null:
+		return {}
+	loadout.configure_persistence(
+		inventory,
+		FishingTackleCatalogResource
+	)
+	if save_integrity_service == null:
+		return {}
+	save_integrity_report = save_integrity_service.bind_loadout(loadout)
+	return save_integrity_report.duplicate(true)
+
+
+func save_all_fishing_state() -> Dictionary:
+	if save_integrity_service == null:
+		return {"durable": false, "reason": "integrity_service_unavailable"}
+	return save_integrity_service.save_all()
+
+
 func is_ready() -> bool:
 	return (
 		_initialized
@@ -286,6 +355,8 @@ func is_ready() -> bool:
 		and catch_repository != null
 		and trade_service != null
 		and economy_service != null
+		and economy_access != null
+		and save_integrity_service != null
 		and session_modifier_service != null
 		and environment_service != null
 		and fish_consumable_service != null

@@ -79,7 +79,8 @@ func use_fish(
 	var apply_result: Dictionary = modifier_service.apply_modifier(
 		effect,
 		&"fish_consumable",
-		str(species_id).strip_edges().to_lower()
+		str(species_id).strip_edges().to_lower(),
+		false
 	)
 	if not bool(apply_result.get("success", false)):
 		inventory.restore_transaction_snapshot(inventory_snapshot)
@@ -87,11 +88,23 @@ func use_fish(
 		result["reason"] = "effect_apply_failed"
 		return result
 
-	if persist and not inventory.commit_changes():
-		inventory.restore_transaction_snapshot(inventory_snapshot)
-		modifier_service.restore_runtime_snapshot(modifier_snapshot)
-		result["reason"] = "inventory_save_failed"
-		return result
+	if persist:
+		var inventory_saved: bool = inventory.commit_changes()
+		var modifier_saved: bool = modifier_service.commit_changes()
+		if not (inventory_saved and modifier_saved):
+			inventory.restore_transaction_snapshot(inventory_snapshot)
+			modifier_service.restore_runtime_snapshot(modifier_snapshot, false)
+			# Force the restored snapshots back to disk. restore_transaction_snapshot()
+			# deliberately restores the previous dirty flag, so commit_changes() could
+			# otherwise no-op after the first store had already saved the transaction.
+			inventory.save_to_disk()
+			modifier_service.save_to_disk()
+			result["reason"] = (
+				"inventory_save_failed"
+				if not inventory_saved
+				else "modifier_save_failed"
+			)
+			return result
 
 	result["success"] = true
 	result["effect"] = apply_result

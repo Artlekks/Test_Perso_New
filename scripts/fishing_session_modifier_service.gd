@@ -14,14 +14,26 @@ const MAX_BITE_MULTIPLIER: float = 2.0
 const MAX_PRESSURE_MULTIPLIER: float = 1.50
 const MAX_QUALITY_CHANCE: float = 0.50
 const MAX_QUALITY_ROLLS: int = 2
+const SAVE_VERSION: int = 1
+const SAVE_PATH: String = "user://fishing_session_modifiers.json"
+const AUTOSAVE_INTERVAL_SECONDS: float = 10.0
 
 var _catalog = null
 ## stacking_group -> {definition, remaining_seconds, source_kind, source_id}
 var _active: Dictionary = {}
+var _save_accumulator: float = 0.0
+var _suspend_persistence: bool = false
+var _persistence_enabled: bool = true
 
 
-func configure(catalog) -> void:
+func configure(catalog, load_persisted: bool = true) -> void:
 	_catalog = catalog
+	_persistence_enabled = load_persisted
+	if load_persisted:
+		load_from_disk()
+	else:
+		_active.clear()
+		_save_accumulator = 0.0
 	set_process(true)
 
 
@@ -30,7 +42,16 @@ func _process(delta: float) -> void:
 
 
 func advance(delta: float) -> void:
-	if delta <= 0.0 or _active.is_empty():
+	if delta <= 0.0:
+		return
+
+	if not _active.is_empty():
+		_save_accumulator += delta
+		if _save_accumulator >= AUTOSAVE_INTERVAL_SECONDS:
+			_save_accumulator = 0.0
+			save_to_disk()
+
+	if _active.is_empty():
 		return
 
 	var expired_groups: Array[StringName] = []
@@ -54,12 +75,14 @@ func advance(delta: float) -> void:
 			modifier_expired.emit(definition.effect_id)
 
 	_emit_changed()
+	save_to_disk()
 
 
 func apply_modifier(
 	definition,
 	source_kind: StringName = &"system",
-	source_id: String = ""
+	source_id: String = "",
+	persist: bool = true
 ) -> Dictionary:
 	var effect := definition as ModifierDefinitionScript
 	var result := {
@@ -106,14 +129,18 @@ func apply_modifier(
 	result["success"] = true
 	modifier_applied.emit(effect.effect_id, source_kind, source_id)
 	_emit_changed()
+	if persist:
+		save_to_disk()
 	return result
 
 
-func clear_all() -> void:
+func clear_all(persist: bool = true) -> void:
 	if _active.is_empty():
 		return
 	_active.clear()
 	_emit_changed()
+	if persist:
+		save_to_disk()
 
 
 func get_composite_snapshot() -> Dictionary:
@@ -254,7 +281,7 @@ func create_runtime_snapshot() -> Dictionary:
 	return {"entries": entries}
 
 
-func restore_runtime_snapshot(snapshot: Dictionary) -> void:
+func restore_runtime_snapshot(snapshot: Dictionary, persist: bool = false) -> void:
 	_active.clear()
 	if _catalog == null:
 		_emit_changed()
@@ -282,6 +309,65 @@ func restore_runtime_snapshot(snapshot: Dictionary) -> void:
 			"source_id": str(entry.get("source_id", "")),
 		}
 	_emit_changed()
+	if persist:
+		save_to_disk()
+
+
+func commit_changes() -> bool:
+	return save_to_disk()
+
+
+func save_to_disk() -> bool:
+	if not _persistence_enabled:
+		return true
+	if _suspend_persistence:
+		return true
+	var payload: Dictionary = {
+		"version": SAVE_VERSION,
+		"runtime": create_runtime_snapshot(),
+	}
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("FishingSessionModifierService: could not open save file for writing.")
+		return false
+	file.store_string(JSON.stringify(payload, "\t"))
+	file.close()
+	return true
+
+
+func load_from_disk() -> bool:
+	_persistence_enabled = true
+	_active.clear()
+	_save_accumulator = 0.0
+	if not FileAccess.file_exists(SAVE_PATH):
+		return true
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("FishingSessionModifierService: could not open save file for reading.")
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not (parsed is Dictionary):
+		push_warning("FishingSessionModifierService: invalid save; clearing active effects.")
+		return false
+	var data: Dictionary = parsed
+	if int(data.get("version", 0)) > SAVE_VERSION:
+		push_warning("FishingSessionModifierService: save version is newer than this build.")
+		return false
+	_suspend_persistence = true
+	restore_runtime_snapshot((data.get("runtime", {}) as Dictionary), false)
+	_suspend_persistence = false
+	return true
+
+
+func reset_persistent_state(delete_save: bool = true) -> void:
+	_active.clear()
+	_save_accumulator = 0.0
+	if delete_save and FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	_emit_changed()
+	if not delete_save:
+		save_to_disk()
 
 
 func _clear_polarities(polarities: Array) -> PackedStringArray:

@@ -115,6 +115,18 @@ const FishInstanceScript = preload(
 const TradeServiceScript = preload(
 	"res://scripts/fishing_trade_service.gd"
 )
+const EconomyServiceScript = preload(
+	"res://scripts/fishing_economy_service.gd"
+)
+const EconomyAccessScript = preload(
+	"res://scripts/fishing_economy_access.gd"
+)
+const FishConsumableServiceScript = preload(
+	"res://scripts/fishing_fish_consumable_service.gd"
+)
+const SaveIntegrityServiceScript = preload(
+	"res://scripts/fishing_save_integrity_service.gd"
+)
 
 const QA_PROFILE_DIRECTORY: String = "res://data/debug/qa_profiles"
 
@@ -165,6 +177,7 @@ func run_all() -> Dictionary:
 	_test_economy_contract(report)
 	_test_fish_consumable_effects(report)
 	_test_environment_conditions(report)
+	_test_player_economy_access_and_save_integrity(report)
 	_test_fight_stat_resolution(report)
 	_test_tackle_differentiation(report)
 	_test_difficulty_accessibility_curve(report)
@@ -1420,6 +1433,131 @@ func _test_economy_contract(report: Dictionary) -> void:
 		_assert_equal_int(report, service.get_current_trade_value_units(tail_recipe), 450, "Manillo value rises with improved record", group)
 
 
+func _test_player_economy_access_and_save_integrity(report: Dictionary) -> void:
+	var group: String = "economy_access_save_integrity"
+
+	var inventory = FishingInventory.new()
+	inventory.grant_lure(&"straight", 1, false)
+	inventory.grant_rod(&"wooden_rod", 1, false)
+	inventory.zenny_balance = 500
+	inventory.add_fish_specimen(
+		"sweetfish",
+		"Sweetfish",
+		20.0,
+		120,
+		false,
+		false
+	)
+
+	var progress = FishingProgress.new()
+	progress.configure_progression_catalog(PROGRESSION_CATALOG)
+	progress.record_catch_snapshot({
+		"species_id": "sweetfish",
+		"fish_name": "Sweetfish",
+		"size": 20.0,
+		"points": 120,
+		"max_points": 150,
+		"is_king": false,
+	}, false, false)
+
+	var trade_service = TradeServiceScript.new()
+	trade_service.configure(
+		inventory,
+		CONTENT_CATALOG.tackle,
+		TRADE_CATALOG,
+		null,
+		progress
+	)
+
+	var economy_service = EconomyServiceScript.new()
+	economy_service.configure(
+		inventory,
+		CONTENT_CATALOG,
+		CONTENT_CATALOG.tackle,
+		SHOP_CATALOG,
+		trade_service
+	)
+
+	var modifiers = SessionModifierServiceScript.new()
+	modifiers.configure(FISH_EFFECT_CATALOG, false)
+	var consumables = FishConsumableServiceScript.new()
+	consumables.configure(inventory, FISH_EFFECT_CATALOG, modifiers)
+
+	var access = EconomyAccessScript.new()
+	access.configure(
+		inventory,
+		economy_service,
+		trade_service,
+		consumables,
+		modifiers,
+		CONTENT_CATALOG,
+		SHOP_CATALOG,
+		TRADE_CATALOG
+	)
+	access.enable_vertical_slice_full_access()
+
+	var sell_entries: Array[Dictionary] = access.get_sell_entries()
+	_assert(report, not sell_entries.is_empty(), "owned fish appear in Sell access", group)
+	if not sell_entries.is_empty():
+		_assert_equal_string(report, str(sell_entries[0].get("id", "")), "sweetfish", "Sell entry species", group)
+		_assert_equal_int(report, int(sell_entries[0].get("unit_value_zenny", 0)), 20, "Sell entry BOF4 value", group)
+
+	var buy_entries: Array[Dictionary] = access.get_buy_entries()
+	_assert_equal_int(report, buy_entries.size(), EXPECTED_SHOP_OFFER_COUNT, "full-access Buy exposes authored offers", group)
+
+	var trade_entries: Array[Dictionary] = access.get_trade_entries()
+	_assert_equal_int(report, trade_entries.size(), EXPECTED_TRADE_COUNT, "full-access Trade exposes authored recipes", group)
+
+	var use_entries: Array[Dictionary] = access.get_use_entries()
+	_assert(report, not use_entries.is_empty(), "owned fish with effects appear in Use access", group)
+
+	# Corrupt only derived state and specimen ids; the integrity service must
+	# repair both without writing test data to disk.
+	progress.fishing_points = 999
+	var second_specimen = inventory.add_fish_specimen(
+		"sweetfish",
+		"Sweetfish",
+		17.0,
+		102,
+		false,
+		false
+	)
+	if second_specimen != null:
+		var raw_specimens: Array = inventory.fish_specimens.get("sweetfish", [])
+		if raw_specimens.size() >= 2:
+			var first = raw_specimens[0] as FishingFishSpecimen
+			var second = raw_specimens[1] as FishingFishSpecimen
+			if first != null and second != null:
+				second.specimen_id = first.specimen_id
+
+	var integrity = SaveIntegrityServiceScript.new()
+	integrity.configure(
+		progress,
+		inventory,
+		null,
+		null,
+		null,
+		modifiers,
+		CONTENT_CATALOG,
+		CONTENT_CATALOG.tackle,
+		false
+	)
+	var integrity_report: Dictionary = integrity.get_last_report()
+	_assert(report, bool(integrity_report.get("ok", false)), "save integrity audit repairs recoverable state", group)
+	_assert_equal_int(report, progress.get_fishing_points(), 120, "derived fishing points repaired from records", group)
+
+	var ids: Dictionary = {}
+	var duplicate_ids: int = 0
+	for specimen_value in inventory.fish_specimens.get("sweetfish", []):
+		var specimen = specimen_value as FishingFishSpecimen
+		if specimen == null:
+			continue
+		if ids.has(specimen.specimen_id):
+			duplicate_ids += 1
+		ids[specimen.specimen_id] = true
+	_assert_equal_int(report, duplicate_ids, 0, "duplicate specimen ids repaired", group)
+
+
 func _test_fish_consumable_effects(report: Dictionary) -> void:
 	var group: String = "fish_consumable_effects"
 
@@ -1456,7 +1594,7 @@ func _test_fish_consumable_effects(report: Dictionary) -> void:
 			_assert(report, effect.is_valid_definition(), "%s effect valid" % fish.fish_name, group)
 
 	var modifiers = SessionModifierServiceScript.new()
-	modifiers.configure(FISH_EFFECT_CATALOG)
+	modifiers.configure(FISH_EFFECT_CATALOG, false)
 
 	var focus = FISH_EFFECT_CATALOG.get_effect_by_id(&"focus_ii")
 	var guard = FISH_EFFECT_CATALOG.get_effect_by_id(&"line_guard")

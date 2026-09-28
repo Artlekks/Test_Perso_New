@@ -22,6 +22,9 @@ const DefaultFishingOutcomePolicy = preload(
 const FishingMenuScene = preload(
 	"res://actors/FishingMenu.tscn"
 )
+const FishingEconomyMenuScene = preload(
+	"res://actors/FishingEconomyMenu.tscn"
+)
 
 const FishingTechniqueDetectorScript = preload(
 	"res://scripts/fishing_technique_detector.gd"
@@ -124,6 +127,7 @@ var fishing_inventory: FishingInventory = null
 var fishing_catch_repository: FishingCatchRepository = null
 var fishing_trade_service: FishingTradeService = null
 var fishing_economy_service = null
+var fishing_economy_access = null
 var fishing_session_modifier_service = null
 var fishing_environment_service = null
 var fishing_fish_consumable_service = null
@@ -131,6 +135,7 @@ var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
 var fishing_journal_service: FishingJournalService = null
 var fishing_menu: FishingMenu = null
+var fishing_economy_menu: CanvasLayer = null
 var catch_record_result: Dictionary = {}
 var last_lure_loss_result: Dictionary = {}
 var last_outcome_result: Dictionary = {}
@@ -226,6 +231,7 @@ func _ready() -> void:
 	fishing_catch_repository = session_services.catch_repository
 	fishing_trade_service = session_services.trade_service
 	fishing_economy_service = session_services.economy_service
+	fishing_economy_access = session_services.economy_access
 	fishing_session_modifier_service = session_services.session_modifier_service
 	fishing_environment_service = session_services.environment_service
 	fishing_fish_consumable_service = session_services.fish_consumable_service
@@ -273,7 +279,7 @@ func _ready() -> void:
 			)
 
 	if loadout != null:
-		loadout.set_inventory(fishing_inventory)
+		session_services.bind_loadout(loadout)
 
 	outcome_service = FishingOutcomeServiceScript.new()
 	outcome_service.configure(
@@ -284,6 +290,7 @@ func _ready() -> void:
 	)
 
 	_setup_fishing_menu()
+	_setup_fishing_economy_menu()
 
 	debug_controller = FishingDebugControllerScript.new()
 	debug_controller.name = "FishingDebugController"
@@ -342,6 +349,28 @@ func _setup_fishing_menu() -> void:
 		fishing_journal_service,
 		FishingTackleCatalogResource
 	)
+
+
+func _setup_fishing_economy_menu() -> void:
+	if fishing_economy_menu != null or fishing_economy_access == null:
+		return
+
+	var menu = FishingEconomyMenuScene.instantiate()
+	if menu == null:
+		push_warning("Fishing: failed to instantiate FishingEconomyMenu.")
+		return
+
+	var menu_parent: Node = get_node_or_null("../../UI")
+	if menu_parent == null:
+		menu_parent = get_tree().current_scene
+	if menu_parent == null:
+		menu.queue_free()
+		return
+
+	menu_parent.add_child(menu)
+	fishing_economy_menu = menu as CanvasLayer
+	if menu.has_method("configure"):
+		menu.configure(game_mode, fishing_economy_access)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -590,6 +619,14 @@ func _on_mode_changed(new_mode) -> void:
 	set_process_unhandled_input(active)
 
 	if not active:
+		if fishing_economy_menu != null and fishing_economy_menu.has_method("is_open"):
+			if bool(fishing_economy_menu.is_open()):
+				fishing_economy_menu.close_menu()
+		if session_services != null:
+			var save_result: Dictionary = session_services.save_all_fishing_state()
+			if not bool(save_result.get("durable", false)):
+				push_warning("Fishing: one or more fishing save domains failed to persist on exit.")
+
 		cast_input_gate.reset(false)
 		buffered_prep_power = -1.0
 		cast_power_locked = false

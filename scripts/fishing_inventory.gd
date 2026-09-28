@@ -741,6 +741,35 @@ func _emit_manillo_balance_changed() -> void:
 # Persistence / migration
 # -----------------------------------------------------------------------------
 
+func repair_specimen_ids(persist: bool = true) -> int:
+	var seen: Dictionary = {}
+	var repaired: int = 0
+
+	# First reserve every unique, valid id so replacements are always above the
+	# current range and cannot collide with a later specimen in the scan.
+	_repair_next_specimen_id()
+
+	for raw_species_id in fish_specimens.keys():
+		var species_id: String = str(raw_species_id)
+		var specimens: Array = _get_specimen_array(species_id)
+		for value in specimens:
+			var specimen := value as FishingFishSpecimen
+			if specimen == null:
+				continue
+			if specimen.specimen_id <= 0 or seen.has(specimen.specimen_id):
+				specimen.specimen_id = _allocate_specimen_id()
+				repaired += 1
+			seen[specimen.specimen_id] = true
+
+	if repaired > 0:
+		_dirty = true
+		changed.emit()
+		if persist:
+			commit_changes()
+
+	return repaired
+
+
 func commit_changes() -> bool:
 	if not _dirty:
 		return true

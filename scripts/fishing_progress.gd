@@ -773,6 +773,28 @@ func commit_changes() -> bool:
 	return save_to_disk()
 
 
+func repair_derived_totals(persist: bool = true) -> Dictionary:
+	var before_points: int = fishing_points
+	var before_catches: int = total_catches
+	_recalculate_total_catches()
+	_recalculate_fishing_points()
+	var changed_state: bool = (
+		before_points != fishing_points
+		or before_catches != total_catches
+	)
+	if changed_state:
+		changed.emit()
+	if persist and changed_state:
+		commit_changes()
+	return {
+		"changed": changed_state,
+		"points_before": before_points,
+		"points_after": fishing_points,
+		"catches_before": before_catches,
+		"catches_after": total_catches,
+	}
+
+
 func _remember_catch_transaction(transaction_id: String) -> void:
 	var key: String = transaction_id.strip_edges()
 	if key.is_empty() or recent_catch_transaction_ids.has(key):

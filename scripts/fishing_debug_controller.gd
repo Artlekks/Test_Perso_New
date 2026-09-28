@@ -237,6 +237,9 @@ func _on_reset_fishing_progress_requested() -> void:
 	):
 		_session_modifier_service.clear_all()
 
+	if _loadout != null and _loadout.has_method("repair_selection"):
+		_loadout.repair_selection(true)
+
 	print("Fishing QA reset complete: Beginner / 0 fishing points / no records / no session buffs.")
 
 
