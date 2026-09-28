@@ -23,12 +23,15 @@ const FishingManilloLedgerScript = preload(
 )
 const FishingUnlockStateScript = preload(
 	"res://scripts/fishing_unlock_state.gd"
-)	
+)
 const FishingRewardServiceScript = preload(
 	"res://scripts/fishing_reward_service.gd"
 )
 const FishingJournalServiceScript = preload(
 	"res://scripts/fishing_journal_service.gd"
+)
+const FishingProgressionIntegrityScript = preload(
+	"res://scripts/fishing_progression_integrity.gd"
 )
 
 const FishingTackleCatalogResource = preload(
@@ -46,6 +49,9 @@ const FishingJournalCatalogResource = preload(
 const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 	"res://data/bof4/progression/all_progression.tres"
 )
+const FishingContentCatalogResource: FishingContentCatalog = preload(
+	"res://data/bof4/catalogs/all_content.tres"
+)
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -55,6 +61,7 @@ var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
 var reward_service: FishingRewardService = null
 var journal_service: FishingJournalService = null
+var progression_integrity_report: Dictionary = {}
 
 var _initialized: bool = false
 
@@ -140,6 +147,26 @@ func initialize() -> void:
 		inventory,
 		FishingJournalCatalogResource
 	)
+
+	_run_progression_integrity_audit()
+
+
+func _run_progression_integrity_audit() -> void:
+	progression_integrity_report = FishingProgressionIntegrityScript.audit(
+		FishingProgressionCatalogResource,
+		FishingRewardCatalogResource,
+		FishingContentCatalogResource
+	)
+
+	for warning in progression_integrity_report.get("warnings", PackedStringArray()):
+		push_warning("Fishing progression audit: %s" % str(warning))
+
+	for error in progression_integrity_report.get("errors", PackedStringArray()):
+		push_error("Fishing progression audit: %s" % str(error))
+
+
+func get_progression_integrity_report() -> Dictionary:
+	return progression_integrity_report.duplicate(true)
 
 
 func is_ready() -> bool:

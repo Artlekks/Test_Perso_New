@@ -15,17 +15,29 @@ func is_valid_catalog() -> bool:
 		return false
 
 	var previous_min: int = -1
+	var seen_ids: Dictionary = {}
+	var seen_names: Dictionary = {}
 
-	for rank in ranks:
+	for index in range(ranks.size()):
+		var rank: FishingRankDefinition = ranks[index]
 		if rank == null or not rank.is_valid_definition():
 			return false
 
-		if rank.min_points < previous_min:
+		# Rank zero is the baseline state and must exist before the player has
+		# caught anything. Every later threshold must be strictly increasing.
+		if index == 0 and rank.min_points != 0:
 			return false
-
+		if index > 0 and rank.min_points <= previous_min:
+			return false
 		if rank.min_points > max_fishing_points:
 			return false
 
+		var id_key: String = str(rank.rank_id).strip_edges().to_lower()
+		var name_key: String = rank.display_name.strip_edges().to_lower()
+		if seen_ids.has(id_key) or seen_names.has(name_key):
+			return false
+		seen_ids[id_key] = true
+		seen_names[name_key] = true
 		previous_min = rank.min_points
 
 	return true
@@ -180,6 +192,35 @@ func get_rank_progress(points: int) -> Dictionary:
 		),
 		"max_fishing_points": max_fishing_points,
 	}
+
+
+func get_crossed_ranks(from_points: int, to_points: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if ranks.is_empty():
+		return result
+
+	var from_value: int = clamp_points(from_points)
+	var to_value: int = clamp_points(to_points)
+	if to_value <= from_value:
+		return result
+
+	var from_index: int = get_rank_index(from_value)
+	var to_index: int = get_rank_index(to_value)
+	if to_index <= from_index:
+		return result
+
+	for index in range(from_index + 1, to_index + 1):
+		var rank: FishingRankDefinition = ranks[index]
+		if rank == null:
+			continue
+		result.append({
+			"index": index,
+			"id": str(rank.rank_id),
+			"name": rank.display_name,
+			"threshold": rank.min_points,
+		})
+
+	return result
 
 
 func get_debug_summary(points: int) -> String:

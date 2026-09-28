@@ -305,6 +305,15 @@ func record_catch_snapshot(
 	var current_rank_name: String = get_rank_name(
 		fishing_points
 	)
+	var current_rank_progress: Dictionary = get_rank_progress(
+		fishing_points
+	)
+	var rank_changes: Array[Dictionary] = []
+	if progression_catalog != null:
+		rank_changes = progression_catalog.get_crossed_ranks(
+			previous_fishing_points,
+			fishing_points
+		)
 
 	var result: Dictionary = {
 		"transaction_id": transaction_id,
@@ -351,8 +360,16 @@ func record_catch_snapshot(
 			current_rank_index
 			> previous_rank_index
 		),
+		"rank_changes": rank_changes.duplicate(true),
+		"rank_progress": current_rank_progress.duplicate(true),
 		"next_rank_points": get_next_rank_threshold(
 			fishing_points
+		),
+		"points_to_next_rank": int(
+			current_rank_progress.get(
+				"points_to_next",
+				0
+			)
 		),
 		"catch_context": context.duplicate(true),
 	}

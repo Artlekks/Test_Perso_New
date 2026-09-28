@@ -267,6 +267,7 @@ func claim_reward(
 ) -> Dictionary:
 	var result: Dictionary = {
 		"claimed": false,
+		"durable": false,
 		"reason": "",
 		"reward_key": reward_key,
 		"reward_type": -1,
@@ -325,17 +326,22 @@ func claim_reward(
 		return result
 
 	_claimed_reward_keys[key] = true
-
-	if not save_to_disk():
-		# Unique rod grants are duplicate-safe, so a future retry can safely
-		# repair the claim without creating a second rod.
-		result["reason"] = "claim_save_failed"
-		return result
-
 	_known_available_keys.erase(key)
 
+	# Granting equipment and persisting the reward ledger are two separate
+	# durable writes. If the ledger write fails, the reward is still claimed in
+	# this runtime and the already-granted unique equipment remains authoritative.
+	# A later load/claim is duplicate-safe and repairs the ledger. Never report
+	# "not claimed" after the gameplay reward was already granted.
+	var durable: bool = save_to_disk()
+
 	result["claimed"] = true
-	result["reason"] = "ok"
+	result["durable"] = durable
+	result["reason"] = (
+		"ok"
+		if durable
+		else "claim_save_failed"
+	)
 	result["reward_type"] = reward.reward_type
 	result["reward_item_id"] = reward.reward_item_id
 	result["quantity"] = reward.quantity

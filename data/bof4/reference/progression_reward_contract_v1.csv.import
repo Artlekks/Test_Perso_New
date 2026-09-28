@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://p8v27uwtdkw6"
+
+[deps]
+
+files=["res://data/bof4/reference/progression_reward_contract_v1.id.translation", "res://data/bof4/reference/progression_reward_contract_v1.display.translation", "res://data/bof4/reference/progression_reward_contract_v1.threshold.translation", "res://data/bof4/reference/progression_reward_contract_v1.condition.translation", "res://data/bof4/reference/progression_reward_contract_v1.reward.translation", "res://data/bof4/reference/progression_reward_contract_v1.source.translation", "res://data/bof4/reference/progression_reward_contract_v1.notes.translation"]
+
+source_file="res://data/bof4/reference/progression_reward_contract_v1.csv"
+dest_files=["res://data/bof4/reference/progression_reward_contract_v1.id.translation", "res://data/bof4/reference/progression_reward_contract_v1.display.translation", "res://data/bof4/reference/progression_reward_contract_v1.threshold.translation", "res://data/bof4/reference/progression_reward_contract_v1.condition.translation", "res://data/bof4/reference/progression_reward_contract_v1.reward.translation", "res://data/bof4/reference/progression_reward_contract_v1.source.translation", "res://data/bof4/reference/progression_reward_contract_v1.notes.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

@@ -70,6 +70,12 @@ const OutcomeServiceScript = preload(
 const OUTCOME_POLICY = preload(
 	"res://data/bof4/outcomes/default_outcome_policy.tres"
 )
+const ProgressionIntegrityScript = preload(
+	"res://scripts/fishing_progression_integrity.gd"
+)
+const RewardServiceScript = preload(
+	"res://scripts/fishing_reward_service.gd"
+)
 
 const QA_PROFILE_DIRECTORY: String = "res://data/debug/qa_profiles"
 
@@ -111,6 +117,7 @@ func run_all() -> Dictionary:
 	_test_debug_persistence_gate_regression(report)
 	_test_debug_specimen_forcing(report)
 	_test_rewards(report)
+	_test_progression_reward_contract(report)
 	_test_outcome_loop(report)
 	_test_trades(report)
 	_test_fight_stat_resolution(report)
@@ -1042,6 +1049,7 @@ func _test_debug_specimen_forcing(report: Dictionary) -> void:
 
 func _test_rewards(report: Dictionary) -> void:
 	var group: String = "rewards"
+	_assert(report, REWARD_CATALOG.is_valid_catalog(), "reward catalog valid", group)
 	var seen_keys: Dictionary = {}
 	var rewards: Array[FishingRewardDefinition] = REWARD_CATALOG.get_all_rewards()
 
@@ -1063,6 +1071,98 @@ func _test_rewards(report: Dictionary) -> void:
 	var master: FishingRewardDefinition = REWARD_CATALOG.get_reward_by_key(&"gyosil_masters_rod_9500")
 	_assert(report, spanner != null and spanner.threshold == 6000, "Spanner 6000 milestone", group)
 	_assert(report, master != null and master.threshold == 9500, "Master's Rod 9500 milestone", group)
+
+
+func _test_progression_reward_contract(report: Dictionary) -> void:
+	var group: String = "progression_reward_contract"
+
+	var audit: Dictionary = ProgressionIntegrityScript.audit(
+		PROGRESSION_CATALOG,
+		REWARD_CATALOG,
+		CONTENT_CATALOG
+	)
+	_assert(report, bool(audit.get("ok", false)), "cross-catalog progression audit passes", group)
+	var audit_details: Dictionary = audit.get("details", {}) as Dictionary
+	_assert_equal_int(
+		report,
+		int(audit_details.get("species_max_points_total", -1)),
+		EXPECTED_MAX_FISHING_POINTS,
+		"all species max scores close exactly at 9999",
+		group
+	)
+
+	# Every rank changes exactly on its inclusive threshold, never one point early.
+	for index in range(PROGRESSION_CATALOG.ranks.size()):
+		var rank: FishingRankDefinition = PROGRESSION_CATALOG.ranks[index]
+		if rank == null:
+			continue
+		_assert_equal_int(
+			report,
+			PROGRESSION_CATALOG.get_rank_index(rank.min_points),
+			index,
+			"rank %s activates at threshold" % rank.display_name,
+			group
+		)
+		if index > 0:
+			_assert_equal_int(
+				report,
+				PROGRESSION_CATALOG.get_rank_index(rank.min_points - 1),
+				index - 1,
+				"rank %s does not activate early" % rank.display_name,
+				group
+			)
+
+	var crossed: Array[Dictionary] = PROGRESSION_CATALOG.get_crossed_ranks(0, 1000)
+	_assert_equal_int(report, crossed.size(), 3, "0 to 1000 crosses three rank milestones", group)
+	if crossed.size() == 3:
+		_assert_equal_string(report, str(crossed[0].get("name", "")), "Beginner+", "first crossed rank", group)
+		_assert_equal_string(report, str(crossed[1].get("name", "")), "Beginner++", "second crossed rank", group)
+		_assert_equal_string(report, str(crossed[2].get("name", "")), "Rodman", "third crossed rank", group)
+
+	# Reward availability is tied to the same authoritative point total. The
+	# rewards remain manual Gyosil claims; this verifies only availability.
+	var progress := FishingProgress.new()
+	progress.progression_catalog = PROGRESSION_CATALOG
+	var rewards = RewardServiceScript.new()
+	rewards.progress = progress
+	rewards.reward_catalog = REWARD_CATALOG
+	rewards.tackle_catalog = CONTENT_CATALOG.tackle
+
+	progress.fishing_points = 5999
+	_assert_equal_string(
+		report,
+		str(rewards.get_reward_status(&"gyosil_spanner_6000").get("state_label", "")),
+		"LOCKED",
+		"Spanner remains locked at 5999",
+		group
+	)
+	progress.fishing_points = 6000
+	_assert_equal_string(
+		report,
+		str(rewards.get_reward_status(&"gyosil_spanner_6000").get("state_label", "")),
+		"AVAILABLE",
+		"Spanner becomes available at 6000",
+		group
+	)
+	progress.fishing_points = 9499
+	_assert_equal_string(
+		report,
+		str(rewards.get_reward_status(&"gyosil_masters_rod_9500").get("state_label", "")),
+		"LOCKED",
+		"Master's Rod remains locked at 9499",
+		group
+	)
+	progress.fishing_points = 9500
+	_assert_equal_string(
+		report,
+		str(rewards.get_reward_status(&"gyosil_masters_rod_9500").get("state_label", "")),
+		"AVAILABLE",
+		"Master's Rod becomes available at 9500",
+		group
+	)
+
+	progress.free()
+	rewards.free()
 
 
 func _test_outcome_loop(report: Dictionary) -> void:

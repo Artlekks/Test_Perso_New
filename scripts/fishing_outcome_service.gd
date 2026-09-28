@@ -152,6 +152,7 @@ func resolve_catch(
 		bool(result["catch_committed"])
 		or bool(result["recording_skipped"])
 	)
+	result["progression_change"] = _build_progression_change(catch_result)
 
 	if (
 		bool(rule.get("evaluate_rewards", true))
@@ -320,6 +321,37 @@ func _should_protect_last_owned_lure() -> bool:
 			return false
 
 	return should_protect_last_lure(true, total_units)
+
+
+func _build_progression_change(catch_result: Dictionary) -> Dictionary:
+	if not bool(catch_result.get("committed", false)):
+		return {}
+
+	var progress_result: Dictionary = (
+		catch_result.get("progress_result", {}) as Dictionary
+	)
+	if progress_result.is_empty():
+		# Older repository snapshots may expose the progression fields directly.
+		progress_result = catch_result
+
+	return {
+		"points_before": int(progress_result.get("fishing_points_before", 0)),
+		"points_after": int(progress_result.get("fishing_points", 0)),
+		"points_gained": int(progress_result.get("fishing_points_gained", 0)),
+		"rank_before": str(progress_result.get("rank_before", "")),
+		"rank_after": str(progress_result.get("rank_name", "")),
+		"rank_id": str(progress_result.get("rank_id", "")),
+		"rank_index": int(progress_result.get("rank_index", 0)),
+		"rank_up": bool(progress_result.get("rank_up", false)),
+		"rank_changes": (progress_result.get("rank_changes", []) as Array).duplicate(true),
+		"rank_progress": (progress_result.get("rank_progress", {}) as Dictionary).duplicate(true),
+		"next_rank_points": int(progress_result.get("next_rank_points", 0)),
+		"points_to_next_rank": int(progress_result.get("points_to_next_rank", 0)),
+		"new_species": bool(progress_result.get("new_species", false)),
+		"new_best_size": bool(progress_result.get("new_best_size", false)),
+		"new_best_points": bool(progress_result.get("new_best_points", false)),
+		"first_king": bool(progress_result.get("first_king", false)),
+	}
 
 
 func _capture_reward_states() -> Dictionary:

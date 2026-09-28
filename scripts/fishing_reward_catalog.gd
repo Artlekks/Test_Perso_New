@@ -4,6 +4,21 @@ class_name FishingRewardCatalog
 @export var rewards: Array[FishingRewardDefinition] = []
 
 
+func is_valid_catalog() -> bool:
+	var seen_keys: Dictionary = {}
+
+	for reward in rewards:
+		if reward == null or not reward.is_valid_definition():
+			return false
+
+		var key: String = str(reward.reward_key).strip_edges().to_lower()
+		if key.is_empty() or seen_keys.has(key):
+			return false
+		seen_keys[key] = true
+
+	return true
+
+
 func get_all_rewards() -> Array[FishingRewardDefinition]:
 	var result: Array[FishingRewardDefinition] = []
 

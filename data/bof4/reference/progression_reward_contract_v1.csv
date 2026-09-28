@@ -1,0 +1,14 @@
+kind,id,display_name,threshold,condition,reward,source,notes
+rank,beginner,Beginner,0,fishing_points,,,Baseline rank; visible before first catch
+rank,beginner_plus,Beginner+,200,fishing_points,,,
+rank,beginner_plus_plus,Beginner++,500,fishing_points,,,
+rank,rodman,Rodman,1000,fishing_points,,,
+rank,rodman_plus,Rodman+,2000,fishing_points,,,
+rank,rodman_plus_plus,Rodman++,4000,fishing_points,,,
+rank,rodmaster,Rodmaster,5000,fishing_points,,,
+reward,gyosil_spanner_6000,Spanner,6000,fishing_points,spanner,Master Gyosil,Manual claim; BOF4 reference milestone
+rank,rodmaster_plus,Rodmaster+,7000,fishing_points,,,
+rank,rodmaster_plus_plus,Rodmaster++,9000,fishing_points,,,
+rank,the_fish,The Fish,9500,fishing_points,,,
+reward,gyosil_masters_rod_9500,Master's Rod,9500,fishing_points,masters_rod,Master Gyosil,Manual claim; BOF4 reference milestone
+perfect_score,perfect_score,Perfect Score,9999,sum_species_best_points,,,All 30 species at their maximum authored score
