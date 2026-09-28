@@ -1,31 +1,31 @@
-species,species_id,tier,difficulty_band,personality,recommended_rod,effective_hook_window_s,tier_min_hook_window_s,average_active_reel_s,average_budget_s,king_active_reel_s,king_budget_s
-Jellyfish,jellyfish,1,INTRODUCTORY,PULSE DRIFTER,Wooden Rod,0.960,0.70,2.17,3.0,3.35,4.5
-Man-o'-War,man_o_war,1,INTRODUCTORY,SLOW DRIFTER,Wooden Rod,0.944,0.70,2.17,3.0,3.35,4.5
-Sweetfish,sweetfish,1,INTRODUCTORY,SURFACE RISER,Wooden Rod,0.896,0.70,2.19,3.0,3.45,4.5
-Angelfish,angelfish,2,FOUNDATION,GRACEFUL RISER,Wooden Rod,0.912,0.68,4.67,6.0,7.22,8.5
-Blowfish,blowfish,2,FOUNDATION,WOBBLE FEINT,Wooden Rod,0.896,0.68,4.93,6.0,7.55,8.5
-Moorfish,moorfish,2,FOUNDATION,NERVOUS DRIFTER,Wooden Rod,0.864,0.68,2.30,6.0,3.56,8.5
-Browntail,browntail,2,FOUNDATION,LONG RUNNER,Wooden Rod,0.848,0.68,5.37,6.0,8.20,8.5
-Sea Bream,sea_bream,2,FOUNDATION,STEADY RUNNER,Wooden Rod,0.864,0.68,5.21,6.0,7.95,8.5
-Flatfish,flatfish,3,INTERMEDIATE,BOTTOM HUGGER,Level 2 Rod,0.864,0.58,8.36,10.0,12.81,14.5
-Flying Fish,flying_fish,1,INTRODUCTORY,SURFACE LAUNCHER,Wooden Rod,0.720,0.70,2.28,3.0,3.49,4.5
-Bass,bass,2,FOUNDATION,SIDE RUNNER,Wooden Rod,0.760,0.68,5.11,6.0,7.72,8.5
-Blue Gill,blue_gill,2,FOUNDATION,QUICK JINKER,Wooden Rod,0.720,0.68,5.03,6.0,7.70,8.5
-Trout,trout,2,FOUNDATION,UPSTREAM RISER,Wooden Rod,0.720,0.68,4.76,6.0,7.20,8.5
-Rainbow Trout,rainbow_trout,3,INTERMEDIATE,ACROBATIC RISER,Level 2 Rod,0.672,0.58,8.36,10.0,12.76,14.5
-Bonito,bonito,3,INTERMEDIATE,BURST RUNNER,Level 2 Rod,0.656,0.58,9.03,10.0,13.65,14.5
-Dorado,dorado,3,INTERMEDIATE,FAST RUNNER,Level 2 Rod,0.672,0.58,9.03,10.0,13.75,14.5
-Piranha,piranha,1,INTRODUCTORY,FRENZIED NIPPER,Wooden Rod,0.720,0.70,2.33,3.0,3.52,4.5
-Black Bass,black_bass,3,INTERMEDIATE,HARD RUNNER,Level 2 Rod,0.672,0.58,8.21,10.0,12.54,14.5
-Bullcat,bullcat,3,INTERMEDIATE,BOTTOM BULLY,Level 2 Rod,0.720,0.58,8.73,10.0,13.20,14.5
-Sea Bass,sea_bass,3,INTERMEDIATE,COASTAL RUNNER,Level 2 Rod,0.672,0.58,8.49,10.0,12.96,14.5
-Salmon,salmon,4,ADVANCED,POWER SURGER,Level 3 Rod,0.640,0.52,10.35,20.0,15.65,30.0
-Black Porgy,black_porgy,4,ADVANCED,DEEP FIGHTER,Level 3 Rod,0.688,0.52,9.20,20.0,14.05,30.0
-Spearfish,spearfish,4,ADVANCED,EXPLOSIVE SURGER,Level 3 Rod,0.576,0.52,19.25,20.0,29.21,30.0
-Angler,angler,4,ADVANCED,DEEP ANCHOR,Level 3 Rod,0.840,0.52,15.73,20.0,23.79,30.0
-Barandy,barandy,5,ENDGAME,HEAVY SURGER,Max Rod,0.800,0.60,17.08,27.0,25.83,38.5
-Sturgeon,sturgeon,5,ENDGAME,DEEP BULLDOZER,Max Rod,0.840,0.60,17.79,27.0,26.89,38.5
-Whale,whale,5,ENDGAME,LONG POWER SURGE,Max Rod,0.800,0.60,25.00,27.0,37.91,38.5
-Martian Squid,martian_squid,3,INTERMEDIATE,CHAOTIC DIVER,Level 2 Rod,0.600,0.58,8.36,10.0,12.76,14.5
-Octopus,octopus,3,INTERMEDIATE,DEEP TRICKSTER,Level 2 Rod,0.624,0.58,8.36,10.0,12.64,14.5
-Acheron,acheron,4,ADVANCED,CHAOTIC PRESSURE,Level 3 Rod,0.560,0.52,12.95,20.0,19.84,30.0
+species,species_id,tier,difficulty_band,personality,recommended_rod,effective_hook_window_s,tier_min_hook_window_s,average_active_reel_s,average_budget_s,king_active_reel_s,king_budget_s,reference_average_loadout,reference_king_loadout
+Jellyfish,jellyfish,1,INTRODUCTORY,PULSE DRIFTER,Wooden Rod,0.960,0.70,2.36,3.0,2.79,4.5,Wooden Rod + Straight,Master's Rod + Spoon
+Man-o'-War,man_o_war,1,INTRODUCTORY,SLOW DRIFTER,Wooden Rod,0.944,0.70,2.36,3.0,2.79,4.5,Wooden Rod + Straight,Master's Rod + Spoon
+Sweetfish,sweetfish,1,INTRODUCTORY,SURFACE RISER,Wooden Rod,0.896,0.70,2.38,3.0,2.88,4.5,Wooden Rod + Straight,Master's Rod + Spoon
+Angelfish,angelfish,2,FOUNDATION,GRACEFUL RISER,Wooden Rod,0.912,0.68,5.08,6.0,6.02,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Blowfish,blowfish,2,FOUNDATION,WOBBLE FEINT,Wooden Rod,0.896,0.68,5.36,6.0,6.29,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Moorfish,moorfish,2,FOUNDATION,NERVOUS DRIFTER,Wooden Rod,0.864,0.68,2.50,6.0,2.97,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Browntail,browntail,2,FOUNDATION,LONG RUNNER,Wooden Rod,0.848,0.68,5.84,6.0,6.83,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Sea Bream,sea_bream,2,FOUNDATION,STEADY RUNNER,Wooden Rod,0.864,0.68,5.66,6.0,6.62,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Flatfish,flatfish,3,INTERMEDIATE,BOTTOM HUGGER,Level 2 Rod,0.864,0.58,8.53,10.0,10.68,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Flying Fish,flying_fish,1,INTRODUCTORY,SURFACE LAUNCHER,Wooden Rod,0.720,0.70,2.48,3.0,2.91,4.5,Wooden Rod + Straight,Master's Rod + Spoon
+Bass,bass,2,FOUNDATION,SIDE RUNNER,Wooden Rod,0.760,0.68,5.55,6.0,6.43,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Blue Gill,blue_gill,2,FOUNDATION,QUICK JINKER,Wooden Rod,0.720,0.68,5.47,6.0,6.42,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Trout,trout,2,FOUNDATION,UPSTREAM RISER,Wooden Rod,0.720,0.68,5.17,6.0,6.00,8.5,Wooden Rod + Straight,Master's Rod + Spoon
+Rainbow Trout,rainbow_trout,3,INTERMEDIATE,ACROBATIC RISER,Level 2 Rod,0.672,0.58,8.53,10.0,10.63,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Bonito,bonito,3,INTERMEDIATE,BURST RUNNER,Level 2 Rod,0.656,0.58,9.21,10.0,11.38,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Dorado,dorado,3,INTERMEDIATE,FAST RUNNER,Level 2 Rod,0.672,0.58,9.21,10.0,11.46,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Piranha,piranha,1,INTRODUCTORY,FRENZIED NIPPER,Wooden Rod,0.720,0.70,2.53,3.0,2.93,4.5,Wooden Rod + Straight,Master's Rod + Spoon
+Black Bass,black_bass,3,INTERMEDIATE,HARD RUNNER,Level 2 Rod,0.672,0.58,8.38,10.0,10.45,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Bullcat,bullcat,3,INTERMEDIATE,BOTTOM BULLY,Level 2 Rod,0.720,0.58,8.91,10.0,11.00,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Sea Bass,sea_bass,3,INTERMEDIATE,COASTAL RUNNER,Level 2 Rod,0.672,0.58,8.66,10.0,10.80,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Salmon,salmon,4,ADVANCED,POWER SURGER,Level 3 Rod,0.640,0.52,9.41,20.0,13.04,30.0,Spanner + Spoon,Master's Rod + Spoon
+Black Porgy,black_porgy,4,ADVANCED,DEEP FIGHTER,Level 3 Rod,0.688,0.52,8.36,20.0,11.71,30.0,Spanner + Spoon,Master's Rod + Spoon
+Spearfish,spearfish,4,ADVANCED,EXPLOSIVE SURGER,Level 3 Rod,0.576,0.52,17.50,20.0,24.34,30.0,Spanner + Spoon,Master's Rod + Spoon
+Angler,angler,4,ADVANCED,DEEP ANCHOR,Level 3 Rod,0.840,0.52,14.30,20.0,19.82,30.0,Spanner + Spoon,Master's Rod + Spoon
+Barandy,barandy,5,ENDGAME,HEAVY SURGER,Max Rod,0.800,0.60,14.23,27.0,21.52,38.5,Master's Rod + Spoon,Master's Rod + Spoon
+Sturgeon,sturgeon,5,ENDGAME,DEEP BULLDOZER,Max Rod,0.840,0.60,14.82,27.0,22.41,38.5,Master's Rod + Spoon,Master's Rod + Spoon
+Whale,whale,5,ENDGAME,LONG POWER SURGE,Max Rod,0.800,0.60,20.83,27.0,31.59,38.5,Master's Rod + Spoon,Master's Rod + Spoon
+Martian Squid,martian_squid,3,INTERMEDIATE,CHAOTIC DIVER,Level 2 Rod,0.600,0.58,8.53,10.0,10.63,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Octopus,octopus,3,INTERMEDIATE,DEEP TRICKSTER,Level 2 Rod,0.624,0.58,8.53,10.0,10.53,14.5,Deluxe Rod + Spoon,Master's Rod + Spoon
+Acheron,acheron,4,ADVANCED,CHAOTIC PRESSURE,Level 3 Rod,0.560,0.52,11.77,20.0,16.53,30.0,Spanner + Spoon,Master's Rod + Spoon

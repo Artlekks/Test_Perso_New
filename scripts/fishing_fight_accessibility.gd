@@ -44,7 +44,8 @@ static func audit_specimen(
 	tension_profile,
 	is_king: bool,
 	base_bite_window_seconds: float = -1.0,
-	stamina_drain_per_second: float = -1.0
+	stamina_drain_per_second: float = -1.0,
+	lure = null
 ) -> Dictionary:
 	if fish_data == null or fight_stats.is_empty():
 		return {"valid": false}
@@ -64,6 +65,15 @@ static func audit_specimen(
 		if stamina_drain_per_second > 0.0
 		else float(POLICY.reference_stamina_drain_per_second)
 	)
+	var stamina_drain_multiplier: float = 1.0
+	var hook_off_delay_multiplier: float = 1.0
+	if rod != null:
+		stamina_drain_multiplier *= maxf(float(rod.fight_fatigue_multiplier), 0.01)
+		hook_off_delay_multiplier *= maxf(float(rod.hook_security_multiplier), 0.01)
+	if lure != null:
+		stamina_drain_multiplier *= maxf(float(lure.fight_fatigue_multiplier), 0.01)
+		hook_off_delay_multiplier *= maxf(float(lure.hook_security_multiplier), 0.01)
+	drain_speed *= stamina_drain_multiplier
 	var bite_window_seconds := (
 		bite_base * maxf(float(profile.bite_window_multiplier), 0.0)
 	)
@@ -82,6 +92,7 @@ static func audit_specimen(
 		hook_off_grace = maxf(float(tension_profile.hook_off_delay), 0.0)
 	if rod != null:
 		line_break_grace *= maxf(float(rod.line_tolerance_multiplier), 0.01)
+	hook_off_grace *= hook_off_delay_multiplier
 
 	var equipment := build_context_metadata(fish_tier, rod)
 	var bite_accessible := bite_window_seconds + 0.0001 >= minimum_bite
@@ -105,6 +116,8 @@ static func audit_specimen(
 		"active_reel_budget_seconds": duration_budget,
 		"line_break_grace_seconds": line_break_grace,
 		"hook_off_grace_seconds": hook_off_grace,
+		"stamina_drain_multiplier": stamina_drain_multiplier,
+		"hook_off_delay_multiplier": hook_off_delay_multiplier,
 		"bite_accessible": bite_accessible,
 		"duration_accessible": duration_accessible,
 		"line_failure_readable": line_failure_readable,

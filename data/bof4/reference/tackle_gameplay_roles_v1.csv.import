@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://ddhp0jc47qvss"
+
+[deps]
+
+files=["res://data/bof4/reference/tackle_gameplay_roles_v1.id.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.fight.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.fatigue.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.hook.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.design.translation"]
+
+source_file="res://data/bof4/reference/tackle_gameplay_roles_v1.csv"
+dest_files=["res://data/bof4/reference/tackle_gameplay_roles_v1.id.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.fight.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.fatigue.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.hook.translation", "res://data/bof4/reference/tackle_gameplay_roles_v1.design.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

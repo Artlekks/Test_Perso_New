@@ -107,6 +107,7 @@ func run_all() -> Dictionary:
 	_test_rewards(report)
 	_test_trades(report)
 	_test_fight_stat_resolution(report)
+	_test_tackle_differentiation(report)
 	_test_difficulty_accessibility_curve(report)
 	_test_tension_profile(report)
 	_test_fight_lifecycle_regression(report)
@@ -296,6 +297,9 @@ func _test_lure_database(report: Dictionary) -> void:
 		_assert(report, lure.sink_speed >= 0.0, "%s sink speed" % lure_id, group)
 		_assert(report, lure.reel_speed > 0.0, "%s reel speed" % lure_id, group)
 		_assert(report, lure.reel_steer_strength >= 0.0, "%s steer strength" % lure_id, group)
+		_assert(report, not lure.fight_role_label.strip_edges().is_empty(), "%s fight role" % lure_id, group)
+		_assert(report, lure.fight_fatigue_multiplier >= 0.80 and lure.fight_fatigue_multiplier <= 1.20, "%s fight fatigue range" % lure_id, group)
+		_assert(report, lure.hook_security_multiplier >= 0.80 and lure.hook_security_multiplier <= 1.20, "%s hook security range" % lure_id, group)
 		_assert(report, lure.has_method("get_action_profile"), "%s action-profile API" % lure_id, group)
 
 		if lure.has_method("get_action_profile"):
@@ -335,6 +339,9 @@ func _test_rod_database(report: Dictionary) -> void:
 		_assert(report, rod.reel_speed_multiplier > 0.0, "%s reel multiplier" % rod_id, group)
 		_assert(report, rod.line_tolerance_multiplier > 0.0, "%s line tolerance" % rod_id, group)
 		_assert(report, rod.counter_steer_multiplier > 0.0, "%s counter-steer" % rod_id, group)
+		_assert(report, not rod.fight_role_label.strip_edges().is_empty(), "%s fight role" % rod_id, group)
+		_assert(report, rod.fight_fatigue_multiplier >= 0.75 and rod.fight_fatigue_multiplier <= 1.35, "%s fight fatigue range" % rod_id, group)
+		_assert(report, rod.hook_security_multiplier >= 0.75 and rod.hook_security_multiplier <= 1.35, "%s hook security range" % rod_id, group)
 		_assert(report, rod.steering_strength_multiplier > 0.0, "%s steer strength" % rod_id, group)
 		_assert(report, rod.steering_response_multiplier > 0.0, "%s steer response" % rod_id, group)
 		_assert(report, rod.twitch_strength_multiplier > 0.0, "%s twitch strength" % rod_id, group)
@@ -1272,9 +1279,9 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 					group
 				)
 
-		# Lures currently own attraction/retrieve behavior, not hooked-fish
-		# strength. Verify that contract explicitly so a future lure trait must be
-		# added in the resolver rather than as an Encounter special case.
+		# Lures may alter bounded tackle traits after the hook, but they must never
+		# rewrite the fish's authored strength/stamina/personality. All changes pass
+		# through FightResolver rather than Encounter-side lure special cases.
 		if (
 			CONTENT_CATALOG.tackle != null
 			and CONTENT_CATALOG.tackle.lure_catalog != null
@@ -1301,6 +1308,17 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 					"%s lure %s keeps fish strength authoritative" % [fish_name, lure.display_name],
 					group
 				)
+				_assert(
+					report,
+					absf(
+						float(lure_context.get("max_stamina", 0.0))
+						- float(base_context.get("max_stamina", 0.0))
+					) <= 0.001,
+					"%s lure %s keeps fish stamina authoritative" % [fish_name, lure.display_name],
+					group
+				)
+				_assert(report, float(lure_context.get("stamina_drain_multiplier", 0.0)) > 0.0, "%s lure %s resolved fatigue" % [fish_name, lure.display_name], group)
+				_assert(report, float(lure_context.get("hook_off_delay_multiplier", 0.0)) > 0.0, "%s lure %s resolved hook security" % [fish_name, lure.display_name], group)
 
 		resolved_species += 1
 
@@ -1346,6 +1364,78 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 
 
 
+func _test_tackle_differentiation(report: Dictionary) -> void:
+	var group: String = "tackle_differentiation"
+	if CONTENT_CATALOG.tackle == null or CONTENT_CATALOG.tackle.lure_catalog == null:
+		_assert(report, false, "tackle data available", group)
+		return
+
+	var rods = CONTENT_CATALOG.tackle.rods
+	var lures: Array[BaitData] = CONTENT_CATALOG.tackle.lure_catalog.lures
+	var rod_pairs: Dictionary = {}
+	var lure_pairs: Dictionary = {}
+	var rod_roles: Dictionary = {}
+	var lure_roles: Dictionary = {}
+
+	for rod in rods:
+		if rod == null:
+			continue
+		rod_roles[rod.fight_role_label] = true
+		rod_pairs["%.2f/%.2f" % [rod.fight_fatigue_multiplier, rod.hook_security_multiplier]] = true
+
+	for lure in lures:
+		if lure == null:
+			continue
+		lure_roles[lure.fight_role_label] = true
+		lure_pairs["%.2f/%.2f" % [lure.fight_fatigue_multiplier, lure.hook_security_multiplier]] = true
+
+	_assert(report, rod_roles.size() >= 5, "rods expose multiple design roles", group)
+	_assert(report, rod_pairs.size() >= 5, "rods have meaningful fight-stat variety", group)
+	_assert(report, lure_roles.size() >= 12, "lures expose broad design roles", group)
+	_assert(report, lure_pairs.size() >= 10, "lures have meaningful fight-stat variety", group)
+
+	# Use one ordinary fish as a deterministic matrix probe. Tackle may change
+	# exhaustion efficiency and failure grace, but never fish-authored stats.
+	var probe_data = CONTENT_CATALOG.fish[0] if not CONTENT_CATALOG.fish.is_empty() else null
+	_assert(report, probe_data != null, "matrix probe fish exists", group)
+	if probe_data == null:
+		return
+	var probe := FishInstance.new()
+	probe.setup(probe_data, -1, probe_data.average_size)
+
+	for rod in rods:
+		if rod == null:
+			continue
+		for lure in lures:
+			if lure == null:
+				continue
+			var context: Dictionary = FightResolver.resolve_context(probe, rod, lure)
+			_assert(report, FightResolver.is_valid_context(context), "%s/%s context valid" % [rod.rod_id, lure.lure_id], group)
+			_assert(report, absf(float(context.get("strength", 0.0)) - probe.strength) <= 0.001, "%s/%s preserves fish strength" % [rod.rod_id, lure.lure_id], group)
+			_assert(report, absf(float(context.get("max_stamina", 0.0)) - probe.max_stamina) <= 0.001, "%s/%s preserves fish stamina" % [rod.rod_id, lure.lure_id], group)
+			var drain_mult := float(context.get("stamina_drain_multiplier", 0.0))
+			var hook_mult := float(context.get("hook_off_delay_multiplier", 0.0))
+			_assert(report, drain_mult >= 0.50 and drain_mult <= 1.65, "%s/%s bounded fatigue" % [rod.rod_id, lure.lure_id], group)
+			_assert(report, hook_mult >= 0.50 and hook_mult <= 1.65, "%s/%s bounded hook security" % [rod.rod_id, lure.lure_id], group)
+			var effective_hook := TENSION_PROFILE.hook_off_delay * hook_mult
+			_assert(report, effective_hook + 0.0001 >= DIFFICULTY_POLICY.minimum_hook_off_grace_seconds, "%s/%s preserves readable hook-off grace" % [rod.rod_id, lure.lure_id], group)
+
+	# Explicitly verify the intended tradeoff: high-action surface/spinner lures
+	# can exhaust faster while secure worm/frog styles retain longer slack grace.
+	var straight = null
+	var popper = null
+	for lure in lures:
+		if lure == null:
+			continue
+		if lure.lure_id == &"straight":
+			straight = lure
+		elif lure.lure_id == &"popper":
+			popper = lure
+	if straight != null and popper != null:
+		_assert(report, straight.hook_security_multiplier > popper.hook_security_multiplier, "worm is more hook-secure than popper", group)
+		_assert(report, popper.fight_fatigue_multiplier > straight.fight_fatigue_multiplier, "popper exhausts faster than baseline worm", group)
+
+
 func _test_difficulty_accessibility_curve(report: Dictionary) -> void:
 	var group: String = "difficulty_accessibility"
 	_assert(report, DIFFICULTY_POLICY != null, "difficulty policy exists", group)
@@ -1354,12 +1444,30 @@ func _test_difficulty_accessibility_curve(report: Dictionary) -> void:
 	_assert(report, DIFFICULTY_POLICY.is_valid_policy(), "difficulty policy valid", group)
 
 	var wooden_rod = null
+	var deluxe_rod = null
+	var spanner_rod = null
 	var masters_rod = null
+	var starter_lure = null
+	var neutral_lure = null
 	if CONTENT_CATALOG.tackle != null:
 		wooden_rod = CONTENT_CATALOG.tackle.get_rod_by_id(&"wooden_rod")
+		deluxe_rod = CONTENT_CATALOG.tackle.get_rod_by_id(&"deluxe_rod")
+		spanner_rod = CONTENT_CATALOG.tackle.get_rod_by_id(&"spanner")
 		masters_rod = CONTENT_CATALOG.tackle.get_rod_by_id(&"masters_rod")
+		if CONTENT_CATALOG.tackle.lure_catalog != null:
+			for candidate_lure in CONTENT_CATALOG.tackle.lure_catalog.lures:
+				if candidate_lure == null:
+					continue
+				if candidate_lure.lure_id == &"straight":
+					starter_lure = candidate_lure
+				elif candidate_lure.lure_id == &"spoon":
+					neutral_lure = candidate_lure
 	_assert(report, wooden_rod != null, "Wooden Rod exists for starter audit", group)
+	_assert(report, deluxe_rod != null, "Deluxe Rod exists for tier-2 audit", group)
+	_assert(report, spanner_rod != null, "Spanner exists for tier-3 audit", group)
 	_assert(report, masters_rod != null, "Master's Rod exists for endgame audit", group)
+	_assert(report, starter_lure != null, "Straight exists for starter audit", group)
+	_assert(report, neutral_lure != null, "Spoon exists for endgame neutral audit", group)
 
 	var tier_duration_totals: Dictionary = {}
 	var tier_counts: Dictionary = {}
@@ -1376,19 +1484,37 @@ func _test_difficulty_accessibility_curve(report: Dictionary) -> void:
 		var king := FishInstance.new()
 		king.setup(fish_data, 1, king_max_size)
 
+		var reference_rod = wooden_rod
+		var reference_lure = starter_lure
+		if tier == 3:
+			reference_rod = deluxe_rod
+			reference_lure = neutral_lure
+		elif tier == 4:
+			reference_rod = spanner_rod
+			reference_lure = neutral_lure
+		elif tier >= 5:
+			reference_rod = masters_rod
+			reference_lure = neutral_lure
+
 		var average_audit: Dictionary = FightAccessibility.audit_specimen(
 			fish_data,
 			average.get_fight_stats(),
-			wooden_rod,
+			reference_rod,
 			TENSION_PROFILE,
-			false
+			false,
+			-1.0,
+			-1.0,
+			reference_lure
 		)
 		var king_audit: Dictionary = FightAccessibility.audit_specimen(
 			fish_data,
 			king.get_fight_stats(),
 			masters_rod,
 			TENSION_PROFILE,
-			true
+			true,
+			-1.0,
+			-1.0,
+			neutral_lure
 		)
 
 		_assert(report, bool(average_audit.get("valid", false)), "%s average audit valid" % fish_name, group)
@@ -1453,6 +1579,12 @@ func _test_tension_profile(report: Dictionary) -> void:
 				continue
 			var effective_delay: float = TENSION_PROFILE.line_break_delay * rod.line_tolerance_multiplier
 			_assert(report, effective_delay > 0.0, "%s effective snap delay" % rod.rod_id, group)
+			if CONTENT_CATALOG.tackle.lure_catalog != null:
+				for lure in CONTENT_CATALOG.tackle.lure_catalog.lures:
+					if lure == null:
+						continue
+					var hook_delay := TENSION_PROFILE.hook_off_delay * rod.hook_security_multiplier * lure.hook_security_multiplier
+					_assert(report, hook_delay + 0.0001 >= DIFFICULTY_POLICY.minimum_hook_off_grace_seconds, "%s/%s hook-off grace" % [rod.rod_id, lure.lure_id], group)
 
 
 func _test_fight_lifecycle_regression(report: Dictionary) -> void:

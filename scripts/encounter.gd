@@ -723,6 +723,13 @@ func _process(delta: float) -> void:
 	if player_reeling:
 		if current_tension_state == FishingTension.State.SAFE:
 			var drain_speed := stamina_drain_speed
+			drain_speed *= maxf(
+				float(active_fight_context.get(
+					"stamina_drain_multiplier",
+					1.0
+				)),
+				0.01
+			)
 
 			var player_is_steering := absf(player_steering) > steering_deadzone
 			var fish_is_running_sideways := absf(current_fish_lateral) > steering_deadzone
@@ -1088,6 +1095,7 @@ func set_active_bait_data(bait_data: BaitData) -> void:
 	active_bait_data = bait_data
 	if active_fish != null:
 		_rebuild_active_fight_context()
+	_apply_rod_tension_settings()
 
 func _get_spatial_context() -> Dictionary:
 	if (
@@ -1294,10 +1302,13 @@ func _rebuild_active_fight_context() -> void:
 
 
 func _apply_rod_tension_settings() -> void:
+	# Kept under the historical function name because callers already use it,
+	# but this now applies the full resolved tackle safety package.
 	if tension == null:
 		return
 
 	var tolerance_multiplier: float = 1.0
+	var hook_delay_multiplier: float = 1.0
 
 	if not active_fight_context.is_empty():
 		tolerance_multiplier = maxf(
@@ -1307,15 +1318,25 @@ func _apply_rod_tension_settings() -> void:
 			)),
 			0.01
 		)
+		hook_delay_multiplier = maxf(
+			float(active_fight_context.get(
+				"hook_off_delay_multiplier",
+				1.0
+			)),
+			0.01
+		)
 	elif active_rod_data != null:
 		tolerance_multiplier = maxf(
 			active_rod_data.line_tolerance_multiplier,
 			0.01
 		)
+		hook_delay_multiplier = maxf(
+			active_rod_data.hook_security_multiplier,
+			0.01
+		)
 
-	tension.set_line_tolerance_multiplier(
-		tolerance_multiplier
-	)
+	tension.set_line_tolerance_multiplier(tolerance_multiplier)
+	tension.set_hook_off_delay_multiplier(hook_delay_multiplier)
 
 
 func get_tension_debug_snapshot() -> Dictionary:

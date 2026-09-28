@@ -208,8 +208,12 @@ static func resolve_context(
 		"line_tolerance_multiplier": 1.0,
 		"counter_steer_multiplier": 1.0,
 		"rod_reel_speed_multiplier": 1.0,
+		"stamina_drain_multiplier": 1.0,
+		"hook_off_delay_multiplier": 1.0,
 		"rod_id": "",
+		"rod_fight_role": "NONE",
 		"lure_id": "",
+		"lure_fight_role": "NONE",
 		"archetype": str(fish.archetype_label),
 		"personality": str(fish.personality_label),
 		"difficulty_tier": clampi(int(fish.difficulty_tier), 1, 5),
@@ -231,13 +235,31 @@ static func resolve_context(
 			float(rod.reel_speed_multiplier),
 			MIN_RUNTIME_MULTIPLIER
 		)
+		result["stamina_drain_multiplier"] *= maxf(
+			float(rod.fight_fatigue_multiplier),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["hook_off_delay_multiplier"] *= maxf(
+			float(rod.hook_security_multiplier),
+			MIN_RUNTIME_MULTIPLIER
+		)
 		result["rod_id"] = str(rod.rod_id)
+		result["rod_fight_role"] = str(rod.fight_role_label)
 
-	# Lures do not currently modify hooked-fish strength/tension. Keeping their
-	# identity in the resolved context gives future lure fight traits one clean
-	# extension point instead of encouraging Encounter-side special cases.
+	# Lure identity already owns attraction, depth, retrieve action and snag risk.
+	# Once hooked, the lure contributes only two bounded traits here: exhaustion
+	# efficiency and hook security. Fish strength/pressure remain authoritative.
 	if bait != null:
+		result["stamina_drain_multiplier"] *= maxf(
+			float(bait.fight_fatigue_multiplier),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["hook_off_delay_multiplier"] *= maxf(
+			float(bait.hook_security_multiplier),
+			MIN_RUNTIME_MULTIPLIER
+		)
 		result["lure_id"] = str(bait.lure_id)
+		result["lure_fight_role"] = str(bait.fight_role_label)
 
 	# Difficulty metadata is descriptive only. It makes the authored progression
 	# curve visible to QA/debug systems without allowing Encounter to reinterpret
@@ -280,6 +302,8 @@ static func is_valid_context(stats: Dictionary) -> bool:
 		and float(stats.get("line_tolerance_multiplier", 0.0)) > 0.0
 		and float(stats.get("counter_steer_multiplier", 0.0)) > 0.0
 		and float(stats.get("rod_reel_speed_multiplier", 0.0)) > 0.0
+		and float(stats.get("stamina_drain_multiplier", 0.0)) > 0.0
+		and float(stats.get("hook_off_delay_multiplier", 0.0)) > 0.0
 	)
 
 
@@ -331,8 +355,12 @@ static func _empty_context_stats() -> Dictionary:
 		"line_tolerance_multiplier": 1.0,
 		"counter_steer_multiplier": 1.0,
 		"rod_reel_speed_multiplier": 1.0,
+		"stamina_drain_multiplier": 1.0,
+		"hook_off_delay_multiplier": 1.0,
 		"rod_id": "",
+		"rod_fight_role": "NONE",
 		"lure_id": "",
+		"lure_fight_role": "NONE",
 		"archetype": "UNPROFILED",
 		"personality": "UNPROFILED",
 		"difficulty_tier": 1,

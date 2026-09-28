@@ -33,6 +33,21 @@ var level: int = 1
 @export_category("Casting")
 @export var cast_weight: float = 1.0
 
+@export_category("Hooked Fish")
+## Designer-facing fight role. Attraction/depth still determine how the lure gets
+## the bite; these values only matter after a fish is actually hooked.
+@export var fight_role_label: String = "BALANCED"
+
+## Multiplies fish stamina drain while the player is safely reeling. High-action
+## lures can exhaust fish faster, but are intentionally not always secure hooks.
+@export_range(0.80, 1.20, 0.01)
+var fight_fatigue_multiplier: float = 1.0
+
+## Multiplies sustained-slack grace before Hook Off. This lets frog/worm-style
+## lures feel secure while aggressive surface/spinner lures trade security for pace.
+@export_range(0.80, 1.20, 0.01)
+var hook_security_multiplier: float = 1.0
+
 @export_category("Snag Profile")
 ## 0.0 = no protection, 1.0 = completely ignores bottom snag pressure.
 ## This changes only how quickly snag risk builds; it does not prevent the
@@ -108,10 +123,13 @@ func get_action_debug_summary() -> String:
 	if action_profile == null:
 		return "NO ACTION PROFILE"
 
-	return "%s/%s  ATTR %.2f idle / %.2f reel%s" % [
+	return "%s/%s  ATTR %.2f idle / %.2f reel  FIGHT %s %.2f/%.2f%s" % [
 		action_profile.display_name,
 		action_profile.get_style_label(),
 		action_profile.idle_attraction_multiplier,
 		action_profile.reel_attraction_multiplier,
+		fight_role_label,
+		fight_fatigue_multiplier,
+		hook_security_multiplier,
 		("  UNIVERSAL" if action_profile.universal_compatibility else ""),
 	]

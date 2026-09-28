@@ -47,6 +47,20 @@ var steering_response_multiplier: float = 1.0
 @export_range(0.5, 2.0, 0.01)
 var twitch_strength_multiplier: float = 1.0
 
+@export_category("Fight Identity")
+## Designer-facing role label only. Runtime mechanics read the numeric traits below.
+@export var fight_role_label: String = "BALANCED"
+
+## Multiplies stamina drain while safely reeling a hooked fish. This changes how
+## efficiently the rod converts good tension management into fish exhaustion.
+@export_range(0.75, 1.35, 0.01)
+var fight_fatigue_multiplier: float = 1.0
+
+## Multiplies the sustained-slack grace period before Hook Off. This is separate
+## from line-break tolerance so a rod can be forgiving without also being strong.
+@export_range(0.75, 1.35, 0.01)
+var hook_security_multiplier: float = 1.0
+
 @export_category("Fight")
 ## Multiplies how long the tension gauge may remain overloaded before break.
 @export_range(0.5, 2.0, 0.01)
@@ -59,11 +73,14 @@ var counter_steer_multiplier: float = 1.0
 
 func get_debug_summary() -> String:
 	return (
-		"cast %.2f | reel %.2f | line %.2f | "
+		"%s | cast %.2f | reel %.2f | fatigue %.2f | hook %.2f | line %.2f | "
 		+ "steer %.2f/%.2f | twitch %.2f | pull %.2f/%.2f"
 	) % [
+		fight_role_label,
 		cast_speed_multiplier,
 		reel_speed_multiplier,
+		fight_fatigue_multiplier,
+		hook_security_multiplier,
 		line_tolerance_multiplier,
 		steering_strength_multiplier,
 		steering_response_multiplier,

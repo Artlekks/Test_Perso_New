@@ -86,6 +86,7 @@ var player_tension_bias: float = 0.0
 var overload_time: float = 0.0
 var hook_off_time: float = 0.0
 var line_tolerance_multiplier: float = 1.0
+var hook_off_delay_multiplier: float = 1.0
 var last_target_tension: float = 0.0
 var last_failure_reason: FailureReason = FailureReason.NONE
 
@@ -317,13 +318,14 @@ func _update_failure(delta: float) -> void:
 	var profile: FishingTensionProfile = _get_profile()
 
 	if value <= profile.hook_off_threshold:
-		if profile.hook_off_delay <= 0.0:
+		var effective_hook_off_delay := get_effective_hook_off_delay()
+		if effective_hook_off_delay <= 0.0:
 			_trigger_hook_off()
 			return
 
 		hook_off_time += delta
 
-		if hook_off_time >= profile.hook_off_delay:
+		if hook_off_time >= effective_hook_off_delay:
 			_trigger_hook_off()
 			return
 	else:
@@ -384,6 +386,18 @@ func get_effective_line_break_delay() -> float:
 	return maxf(
 		_get_profile().line_break_delay
 		* line_tolerance_multiplier,
+		0.0
+	)
+
+
+func set_hook_off_delay_multiplier(multiplier: float) -> void:
+	hook_off_delay_multiplier = maxf(multiplier, 0.01)
+
+
+func get_effective_hook_off_delay() -> float:
+	return maxf(
+		_get_profile().hook_off_delay
+		* hook_off_delay_multiplier,
 		0.0
 	)
 
@@ -531,6 +545,7 @@ func get_failure_reason_label() -> String:
 func get_debug_snapshot() -> Dictionary:
 	var profile: FishingTensionProfile = _get_profile()
 	var break_delay: float = get_effective_line_break_delay()
+	var hook_delay: float = get_effective_hook_off_delay()
 	var break_progress: float = 0.0
 	var escape_progress: float = 0.0
 
@@ -543,9 +558,9 @@ func get_debug_snapshot() -> Dictionary:
 	elif current_state == State.OVERLOAD:
 		break_progress = 1.0
 
-	if profile.hook_off_delay > 0.0:
+	if hook_delay > 0.0:
 		escape_progress = clampf(
-			hook_off_time / profile.hook_off_delay,
+			hook_off_time / hook_delay,
 			0.0,
 			1.0
 		)
@@ -571,7 +586,10 @@ func get_debug_snapshot() -> Dictionary:
 		"overload_time": overload_time,
 		"break_progress": break_progress,
 		"hook_off_threshold": profile.hook_off_threshold,
-		"hook_off_delay": profile.hook_off_delay,
+		"base_hook_off_delay": profile.hook_off_delay,
+		"hook_off_delay_multiplier": hook_off_delay_multiplier,
+		"hook_off_delay": hook_delay,
+		"effective_hook_off_delay": hook_delay,
 		"hook_off_time": hook_off_time,
 		"escape_progress": escape_progress,
 		"last_failure_reason": last_failure_reason,

@@ -1,0 +1,27 @@
+kind,id,fight_role,fatigue_multiplier,hook_security_multiplier,design_note
+rod,wooden_rod,FORGIVING STARTER,0.92,1.10,line tolerance/counter steer/cast/reel remain authored in rod resource
+rod,bamboo_rod,LONG-CAST TECHNICAL,1.00,0.90,line tolerance/counter steer/cast/reel remain authored in rod resource
+rod,deluxe_rod,PRECISION CONTROL,0.98,1.18,line tolerance/counter steer/cast/reel remain authored in rod resource
+rod,spanner,POWER BALANCED,1.10,1.05,line tolerance/counter steer/cast/reel remain authored in rod resource
+rod,angling_rod,POWER RANGE,1.18,0.98,line tolerance/counter steer/cast/reel remain authored in rod resource
+rod,masters_rod,MASTER ALL-ROUNDER,1.20,1.20,line tolerance/counter steer/cast/reel remain authored in rod resource
+lure,baby_frog,SECURE SURFACE,0.96,1.12,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,crab,BOTTOM GRIP,1.06,1.14,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,dancer,HEAVY WINDER,1.13,0.98,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,deep_diver,DEEP CONTROL,1.07,1.05,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,fat_frog,HEAVY FROG,1.03,1.16,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,flattop,SHALLOW RUNNER,1.04,0.96,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,floater,EASY MINNOW,0.99,1.04,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,gold_top,ATTRACTOR SPINNER,1.11,0.94,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,hanger,SUSPENDING CONTROL,1.02,1.08,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,king_frog,UNIVERSAL TEMPTATION,0.97,1.02,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,platinum_top,POWER SPINNER,1.15,0.92,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,popper,SURFACE AGGRESSOR,1.08,0.90,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,silver_top,FAST SPINNER,1.09,0.96,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,spoon,UNIVERSAL BALANCE,1.00,1.00,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,straight,RELIABLE WORM,1.00,1.10,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,swisher,SURFACE POWER,1.12,0.92,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,tail,BALANCED WORM,1.02,1.08,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,toad,SECURE RISER,0.99,1.14,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,twister,AGILE WINDER,1.07,0.96,attraction/depth/retrieve/snag remain authored in lure/action resources
+lure,warbler,BALANCED WINDER,1.08,1.02,attraction/depth/retrieve/snag remain authored in lure/action resources
