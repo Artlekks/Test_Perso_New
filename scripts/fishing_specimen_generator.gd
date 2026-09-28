@@ -78,7 +78,7 @@ static func _roll_internal(
 		3
 	)
 	var bonus_rolls_used: int = 0
-	var selected_better_candidate: bool = false
+	var mercy_selected_better_candidate: bool = false
 
 	# Explicit QA band overrides own specimen generation. Mercy must never fight
 	# FORCE NORMAL / FORCE KING or make deterministic QA nondeterministic.
@@ -103,7 +103,48 @@ static func _roll_internal(
 
 			if candidate_size > float(selected.get("size", 0.0)):
 				selected = candidate
-				selected_better_candidate = true
+				mercy_selected_better_candidate = true
+
+	var session_quality_active: bool = bool(
+		mercy_context.get("session_quality_active", false)
+	)
+	var session_quality_chance: float = clampf(
+		float(mercy_context.get("session_quality_bonus_chance", 0.0)),
+		0.0,
+		0.50
+	)
+	var session_quality_rolls: int = clampi(
+		int(mercy_context.get("session_quality_bonus_rolls", 0)),
+		0,
+		2
+	)
+	var session_bonus_rolls_used: int = 0
+	var session_selected_better_candidate: bool = false
+
+	# Explicit QA specimen overrides remain absolute. Temporary session effects
+	# are a normal gameplay layer and must never make deterministic QA random.
+	if king_override != -1:
+		session_quality_active = false
+
+	if session_quality_active and session_quality_chance > 0.0:
+		for _session_index in range(session_quality_rolls):
+			if _randf(rng) >= session_quality_chance:
+				continue
+
+			var session_candidate: Dictionary = _base_roll(
+				data,
+				-1,
+				rng
+			)
+			var session_candidate_size: float = float(
+				session_candidate.get("size", 0.0)
+			)
+			candidate_sizes.append(session_candidate_size)
+			session_bonus_rolls_used += 1
+
+			if session_candidate_size > float(selected.get("size", 0.0)):
+				selected = session_candidate
+				session_selected_better_candidate = true
 
 	var result: Dictionary = selected.duplicate(true)
 	result["mercy_active"] = mercy_active
@@ -113,8 +154,21 @@ static func _roll_internal(
 	)
 	result["mercy_bonus_roll_chance"] = bonus_chance if mercy_active else 0.0
 	result["mercy_bonus_rolls_used"] = bonus_rolls_used
-	result["mercy_selected_better_candidate"] = selected_better_candidate
+	result["mercy_selected_better_candidate"] = mercy_selected_better_candidate
 	result["mercy_candidate_sizes"] = candidate_sizes
+	result["session_quality_active"] = session_quality_active
+	result["session_quality_bonus_chance"] = (
+		session_quality_chance if session_quality_active else 0.0
+	)
+	result["session_quality_bonus_rolls_used"] = session_bonus_rolls_used
+	result["session_quality_selected_better_candidate"] = (
+		session_selected_better_candidate
+	)
+	result["candidate_sizes"] = candidate_sizes
+	result["session_effect_ids"] = mercy_context.get(
+		"session_effect_ids",
+		PackedStringArray()
+	)
 	return result
 
 

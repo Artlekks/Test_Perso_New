@@ -124,6 +124,8 @@ var fishing_inventory: FishingInventory = null
 var fishing_catch_repository: FishingCatchRepository = null
 var fishing_trade_service: FishingTradeService = null
 var fishing_economy_service = null
+var fishing_session_modifier_service = null
+var fishing_fish_consumable_service = null
 var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
 var fishing_journal_service: FishingJournalService = null
@@ -223,6 +225,8 @@ func _ready() -> void:
 	fishing_catch_repository = session_services.catch_repository
 	fishing_trade_service = session_services.trade_service
 	fishing_economy_service = session_services.economy_service
+	fishing_session_modifier_service = session_services.session_modifier_service
+	fishing_fish_consumable_service = session_services.fish_consumable_service
 	fishing_unlock_state = session_services.unlock_state
 	fishing_reward_service = session_services.reward_service
 	fishing_journal_service = session_services.journal_service
@@ -232,6 +236,14 @@ func _ready() -> void:
 		and encounter.has_method("set_fishing_progress")
 	):
 		encounter.set_fishing_progress(fishing_progress)
+
+	if (
+		encounter != null
+		and encounter.has_method("set_session_modifier_service")
+	):
+		encounter.set_session_modifier_service(
+			fishing_session_modifier_service
+		)
 
 	if loadout != null:
 		loadout.set_inventory(fishing_inventory)
@@ -257,7 +269,8 @@ func _ready() -> void:
 		fishing_progress,
 		fishing_journal_service,
 		fishing_unlock_state,
-		fishing_reward_service
+		fishing_reward_service,
+		fishing_session_modifier_service
 	)
 
 	technique_detector = FishingTechniqueDetectorScript.new()

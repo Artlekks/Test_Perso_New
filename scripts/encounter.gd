@@ -144,6 +144,7 @@ var active_fight_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
 var fishing_progress: FishingProgress = null
+var session_modifier_service = null
 var active_rod_data: RodData = null
 ## Immutable per-hook snapshot of fish + rod + lure fight values. Encounter only
 ## consumes this resolved package; it does not reinterpret source resources.
@@ -259,10 +260,21 @@ func _on_bite_timer_timeout() -> void:
 			spatial_context
 		)
 
+		var session_bite_multiplier: float = 1.0
+		if (
+			session_modifier_service != null
+			and session_modifier_service.has_method("get_bite_attraction_multiplier")
+		):
+			session_bite_multiplier = maxf(
+				float(session_modifier_service.get_bite_attraction_multiplier()),
+				0.01
+			)
+
 		var bite_chance := (
 			attraction
 			* max_bite_chance_per_check
 			* _get_tech_attraction_multiplier()
+			* session_bite_multiplier
 			* _get_spatial_bite_density_multiplier(
 				spatial_context
 			)
@@ -383,6 +395,16 @@ func _confirm_hit() -> bool:
 		generation_context = fishing_progress.get_record_mercy_context(
 			pending_fish_entry.fish
 		)
+
+	if (
+		session_modifier_service != null
+		and session_modifier_service.has_method("get_specimen_generation_context")
+	):
+		var session_generation: Dictionary = (
+			session_modifier_service.get_specimen_generation_context()
+		)
+		for key in session_generation:
+			generation_context[key] = session_generation[key]
 
 	active_fish.setup(
 		pending_fish_entry.fish,
@@ -1066,6 +1088,13 @@ func get_fish_debug_snapshot() -> Dictionary:
 	snapshot["lifecycle"] = lifecycle.get_debug_snapshot()
 	snapshot["technique"] = get_technique_debug_snapshot()
 	snapshot["tension"] = get_tension_debug_snapshot()
+	if (
+		session_modifier_service != null
+		and session_modifier_service.has_method("get_composite_snapshot")
+	):
+		snapshot["session_modifiers"] = (
+			session_modifier_service.get_composite_snapshot()
+		)
 
 	return snapshot
 
@@ -1272,6 +1301,33 @@ func set_fishing_progress(progress: FishingProgress) -> void:
 	fishing_progress = progress
 
 
+func set_session_modifier_service(service) -> void:
+	var callback := Callable(self, "_on_session_modifiers_changed")
+	if (
+		session_modifier_service != null
+		and session_modifier_service.has_signal("modifiers_changed")
+		and session_modifier_service.is_connected("modifiers_changed", callback)
+	):
+		session_modifier_service.disconnect("modifiers_changed", callback)
+
+	session_modifier_service = service
+
+	if (
+		session_modifier_service != null
+		and session_modifier_service.has_signal("modifiers_changed")
+		and not session_modifier_service.is_connected("modifiers_changed", callback)
+	):
+		session_modifier_service.connect("modifiers_changed", callback)
+
+	_on_session_modifiers_changed({})
+
+
+func _on_session_modifiers_changed(_snapshot: Dictionary) -> void:
+	if active_fish != null:
+		_rebuild_active_fight_context()
+	_apply_rod_tension_settings()
+
+
 func set_rod_data(rod_data: RodData) -> void:
 	active_rod_data = rod_data
 	if active_fish != null:
@@ -1284,10 +1340,18 @@ func _rebuild_active_fight_context() -> void:
 		active_fight_context.clear()
 		return
 
+	var session_fight_modifiers: Dictionary = {}
+	if (
+		session_modifier_service != null
+		and session_modifier_service.has_method("get_fight_modifiers")
+	):
+		session_fight_modifiers = session_modifier_service.get_fight_modifiers()
+
 	active_fight_context = FightResolver.resolve_context(
 		active_fish,
 		active_rod_data,
-		active_bait_data
+		active_bait_data,
+		session_fight_modifiers
 	)
 
 	if not FightResolver.is_valid_context(active_fight_context):
@@ -1445,7 +1509,18 @@ func _on_fish_behavior_pressure_changed(value: float) -> void:
 		fish_behavior_pressure = 0.0
 		return
 
-	fish_behavior_pressure = clampf(value, 0.0, 1.0)
+	var session_pressure_multiplier := maxf(
+		float(active_fight_context.get(
+			"session_fish_pressure_multiplier",
+			1.0
+		)),
+		0.01
+	)
+	fish_behavior_pressure = clampf(
+		value * session_pressure_multiplier,
+		0.0,
+		1.0
+	)
 
 
 func add_lure_tension(amount: float) -> void:

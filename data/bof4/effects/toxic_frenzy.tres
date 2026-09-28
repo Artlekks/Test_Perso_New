@@ -1,0 +1,23 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_session_modifier_definition.gd" id="1_effect"]
+
+[resource]
+script = ExtResource("1_effect")
+effect_id = &"toxic_frenzy"
+display_name = "Toxic Frenzy"
+description = "For 5 minutes, greatly increases bites and specimen-quality odds, but fish pressure rises and the line becomes less forgiving."
+stacking_group = &"activity"
+polarity = 2
+duration_seconds = 300.0
+bite_attraction_multiplier = 1.35
+quality_bonus_roll_chance = 0.2
+quality_bonus_rolls = 1
+stamina_drain_multiplier = 1.1
+hook_off_delay_multiplier = 0.85
+line_tolerance_multiplier = 0.9
+counter_steer_multiplier = 1.0
+fish_pressure_multiplier = 1.25
+clear_positive_modifiers = false
+clear_negative_modifiers = false
+legacy_bof4_effect = "Mapped from BOF4 poison-everyone effect."

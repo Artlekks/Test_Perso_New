@@ -29,6 +29,7 @@ var _progress: FishingProgress = null
 var _journal: FishingJournalService = null
 var _unlock_state: FishingUnlockState = null
 var _reward_service: FishingRewardService = null
+var _session_modifier_service = null
 var _open: bool = false
 
 
@@ -40,7 +41,8 @@ func configure(
 	progress: FishingProgress,
 	journal: FishingJournalService = null,
 	unlock_state: FishingUnlockState = null,
-	reward_service: FishingRewardService = null
+	reward_service: FishingRewardService = null,
+	session_modifier_service = null
 ) -> void:
 	_game_mode = game_mode
 	_encounter = encounter
@@ -50,6 +52,7 @@ func configure(
 	_journal = journal
 	_unlock_state = unlock_state
 	_reward_service = reward_service
+	_session_modifier_service = session_modifier_service
 
 	settings = FishingDebugSettingsScript.new()
 	if settings.has_method("configure_progress"):
@@ -228,7 +231,13 @@ func _on_reset_fishing_progress_requested() -> void:
 	if is_instance_valid(_reward_service):
 		_reward_service.reset_rewards(true)
 
-	print("Fishing QA reset complete: Beginner / 0 fishing points / no records.")
+	if (
+		_session_modifier_service != null
+		and _session_modifier_service.has_method("clear_all")
+	):
+		_session_modifier_service.clear_all()
+
+	print("Fishing QA reset complete: Beginner / 0 fishing points / no records / no session buffs.")
 
 
 func _on_spot_requested(spot: FishingSpotData) -> void:

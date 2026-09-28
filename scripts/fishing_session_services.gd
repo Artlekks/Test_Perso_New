@@ -21,6 +21,12 @@ const FishingTradeServiceScript = preload(
 const FishingEconomyServiceScript = preload(
 	"res://scripts/fishing_economy_service.gd"
 )
+const FishingSessionModifierServiceScript = preload(
+	"res://scripts/fishing_session_modifier_service.gd"
+)
+const FishingFishConsumableServiceScript = preload(
+	"res://scripts/fishing_fish_consumable_service.gd"
+)
 const FishingManilloLedgerScript = preload(
 	"res://scripts/fishing_manillo_ledger.gd"
 )
@@ -39,6 +45,9 @@ const FishingProgressionIntegrityScript = preload(
 const FishingEconomyIntegrityScript = preload(
 	"res://scripts/fishing_economy_integrity.gd"
 )
+const FishingFishEffectIntegrityScript = preload(
+	"res://scripts/fishing_fish_effect_integrity.gd"
+)
 
 const FishingTackleCatalogResource = preload(
 	"res://data/bof4/tackle/all_tackle.tres"
@@ -55,6 +64,9 @@ const FishingRewardCatalogResource = preload(
 const FishingJournalCatalogResource = preload(
 	"res://data/bof4/journal/all_journal_data.tres"
 )
+const FishingFishEffectCatalogResource = preload(
+	"res://data/bof4/effects/all_fish_effects.tres"
+)
 const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 	"res://data/bof4/progression/all_progression.tres"
 )
@@ -67,12 +79,15 @@ var inventory: FishingInventory = null
 var catch_repository: FishingCatchRepository = null
 var trade_service: FishingTradeService = null
 var economy_service = null
+var session_modifier_service = null
+var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
 var reward_service: FishingRewardService = null
 var journal_service: FishingJournalService = null
 var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
+var fish_effect_integrity_report: Dictionary = {}
 
 var _initialized: bool = false
 
@@ -151,6 +166,20 @@ func initialize() -> void:
 		trade_service
 	)
 
+	session_modifier_service = FishingSessionModifierServiceScript.new()
+	session_modifier_service.name = "FishingSessionModifierService"
+	add_child(session_modifier_service)
+	session_modifier_service.configure(FishingFishEffectCatalogResource)
+
+	fish_consumable_service = FishingFishConsumableServiceScript.new()
+	fish_consumable_service.name = "FishingFishConsumableService"
+	add_child(fish_consumable_service)
+	fish_consumable_service.configure(
+		inventory,
+		FishingFishEffectCatalogResource,
+		session_modifier_service
+	)
+
 	reward_service = FishingRewardServiceScript.new()
 	reward_service.name = "FishingRewardService"
 	add_child(reward_service)
@@ -173,6 +202,7 @@ func initialize() -> void:
 
 	_run_progression_integrity_audit()
 	_run_economy_integrity_audit()
+	_run_fish_effect_integrity_audit()
 
 
 func _run_progression_integrity_audit() -> void:
@@ -201,6 +231,21 @@ func _run_economy_integrity_audit() -> void:
 		push_error("Fishing economy audit: %s" % str(error))
 
 
+func _run_fish_effect_integrity_audit() -> void:
+	fish_effect_integrity_report = FishingFishEffectIntegrityScript.audit(
+		FishingContentCatalogResource,
+		FishingFishEffectCatalogResource
+	)
+	for warning in fish_effect_integrity_report.get("warnings", PackedStringArray()):
+		push_warning("Fishing fish-effect audit: %s" % str(warning))
+	for error in fish_effect_integrity_report.get("errors", PackedStringArray()):
+		push_error("Fishing fish-effect audit: %s" % str(error))
+
+
+func get_fish_effect_integrity_report() -> Dictionary:
+	return fish_effect_integrity_report.duplicate(true)
+
+
 func get_economy_integrity_report() -> Dictionary:
 	return economy_integrity_report.duplicate(true)
 
@@ -217,6 +262,8 @@ func is_ready() -> bool:
 		and catch_repository != null
 		and trade_service != null
 		and economy_service != null
+		and session_modifier_service != null
+		and fish_consumable_service != null
 		and manillo_ledger != null
 		and unlock_state != null
 		and reward_service != null

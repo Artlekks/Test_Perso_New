@@ -1,0 +1,23 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_session_modifier_definition.gd" id="1_effect"]
+
+[resource]
+script = ExtResource("1_effect")
+effect_id = &"power_reel"
+display_name = "Power Reel"
+description = "For 5 minutes, fish lose stamina faster while you reel safely."
+stacking_group = &"power"
+polarity = 0
+duration_seconds = 300.0
+bite_attraction_multiplier = 1.0
+quality_bonus_roll_chance = 0.0
+quality_bonus_rolls = 0
+stamina_drain_multiplier = 1.18
+hook_off_delay_multiplier = 1.0
+line_tolerance_multiplier = 1.0
+counter_steer_multiplier = 1.0
+fish_pressure_multiplier = 1.0
+clear_positive_modifiers = false
+clear_negative_modifiers = false
+legacy_bof4_effect = "Mapped from BOF4 attack increase."

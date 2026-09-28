@@ -1,0 +1,8 @@
+contract,value,notes
+Ownership,FishingSessionModifierService,Temporary fishing-session effects are composed in one service; producers do not edit Encounter/Tension directly.
+Fish consumption,FishingFishConsumableService,Consumes one physical specimen and applies the mapped effect atomically.
+Duration,Session runtime,Timed effects tick in real gameplay seconds while the session service is active.
+Stacking,One effect per stacking_group,Using a new effect in the same group replaces/refreshes that group; different groups can stack within hard caps.
+Specimen quality,Extra natural roll,Quality buffs never fabricate a size or guarantee a record/crown; they add bounded extra rolls and keep the largest candidate.
+Future weather,Same modifier service,A tempest/event can apply a weather-group modifier without changing fish-consumable code.
+Persistence,Fish inventory only,Consumed fish is saved; temporary session modifiers are intentionally session-scoped and are not persisted yet.

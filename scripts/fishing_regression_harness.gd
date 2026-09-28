@@ -88,6 +88,21 @@ const RewardServiceScript = preload(
 const EconomyIntegrityScript = preload(
 	"res://scripts/fishing_economy_integrity.gd"
 )
+const FishEffectCatalogScript = preload(
+	"res://scripts/fishing_fish_effect_catalog.gd"
+)
+const FISH_EFFECT_CATALOG: FishEffectCatalogScript = preload(
+	"res://data/bof4/effects/all_fish_effects.tres"
+)
+const SessionModifierServiceScript = preload(
+	"res://scripts/fishing_session_modifier_service.gd"
+)
+const FishEffectIntegrityScript = preload(
+	"res://scripts/fishing_fish_effect_integrity.gd"
+)
+const FishInstanceScript = preload(
+	"res://scripts/fish_instance.gd"
+)
 const TradeServiceScript = preload(
 	"res://scripts/fishing_trade_service.gd"
 )
@@ -103,6 +118,7 @@ const EXPECTED_RANK_COUNT: int = 10
 const EXPECTED_REWARD_COUNT: int = 2
 const EXPECTED_TRADE_COUNT: int = 14
 const EXPECTED_SHOP_OFFER_COUNT: int = 16
+const EXPECTED_FISH_EFFECT_COUNT: int = 30
 const EXPECTED_MAX_FISHING_POINTS: int = 9999
 
 
@@ -137,6 +153,7 @@ func run_all() -> Dictionary:
 	_test_outcome_loop(report)
 	_test_trades(report)
 	_test_economy_contract(report)
+	_test_fish_consumable_effects(report)
 	_test_fight_stat_resolution(report)
 	_test_tackle_differentiation(report)
 	_test_difficulty_accessibility_curve(report)
@@ -698,7 +715,7 @@ func _test_record_mercy_system(report: Dictionary) -> void:
 		var bonus_rolls: int = int(generated.get("mercy_bonus_rolls_used", 0))
 		if bonus_rolls > 0:
 			mercy_applied_count += 1
-			var candidate_sizes: Array = generated.get("mercy_candidate_sizes", []) as Array
+			var candidate_sizes = generated.get("candidate_sizes", []) as Array
 			var largest_candidate: float = 0.0
 			for raw_size in candidate_sizes:
 				largest_candidate = maxf(largest_candidate, float(raw_size))
@@ -1390,6 +1407,144 @@ func _test_economy_contract(report: Dictionary) -> void:
 			"is_king": true,
 		}, false, false)
 		_assert_equal_int(report, service.get_current_trade_value_units(tail_recipe), 450, "Manillo value rises with improved record", group)
+
+
+func _test_fish_consumable_effects(report: Dictionary) -> void:
+	var group: String = "fish_consumable_effects"
+
+	_assert(report, FISH_EFFECT_CATALOG.is_valid_catalog(), "effect catalog valid", group)
+	_assert_equal_int(
+		report,
+		FISH_EFFECT_CATALOG.get_species_ids().size(),
+		EXPECTED_FISH_EFFECT_COUNT,
+		"all fish have effect mappings",
+		group
+	)
+
+	var integrity: Dictionary = FishEffectIntegrityScript.audit(
+		CONTENT_CATALOG,
+		FISH_EFFECT_CATALOG
+	)
+	_assert(report, bool(integrity.get("valid", false)), "effect integrity audit passes", group)
+	_assert_equal_int(
+		report,
+		int(integrity.get("fish_count", 0)),
+		EXPECTED_FISH_COUNT,
+		"effect audit sees all fish",
+		group
+	)
+
+	for fish in CONTENT_CATALOG.fish:
+		if fish == null:
+			continue
+		var effect = FISH_EFFECT_CATALOG.get_effect_for_species(
+			fish.get_stable_species_id()
+		)
+		_assert(report, effect != null, "%s has mapped fishing effect" % fish.fish_name, group)
+		if effect != null:
+			_assert(report, effect.is_valid_definition(), "%s effect valid" % fish.fish_name, group)
+
+	var modifiers = SessionModifierServiceScript.new()
+	modifiers.configure(FISH_EFFECT_CATALOG)
+
+	var focus = FISH_EFFECT_CATALOG.get_effect_by_id(&"focus_ii")
+	var guard = FISH_EFFECT_CATALOG.get_effect_by_id(&"line_guard")
+	var frenzy = FISH_EFFECT_CATALOG.get_effect_by_id(&"toxic_frenzy")
+	var cleanse = FISH_EFFECT_CATALOG.get_effect_by_id(&"cleanse_all")
+	var dispel = FISH_EFFECT_CATALOG.get_effect_by_id(&"dispel_positive")
+	_assert(report, focus != null and guard != null and frenzy != null and cleanse != null and dispel != null, "core effects load", group)
+
+	if focus != null and guard != null:
+		modifiers.apply_modifier(focus, &"qa", "focus")
+		modifiers.apply_modifier(guard, &"qa", "guard")
+		var combined: Dictionary = modifiers.get_composite_snapshot()
+		_assert(report, float(combined.get("bite_attraction_multiplier", 1.0)) > 1.0, "focus raises bite activity", group)
+		_assert(report, float(combined.get("quality_bonus_roll_chance", 0.0)) > 0.0, "focus raises specimen quality odds", group)
+		_assert(report, float(combined.get("line_tolerance_multiplier", 1.0)) > 1.0, "guard raises line tolerance", group)
+		_assert_equal_int(report, int(combined.get("active_count", 0)), 2, "different effect groups stack", group)
+
+	# Same-group effects replace rather than multiply forever.
+	var steady = FISH_EFFECT_CATALOG.get_effect_by_id(&"steady_hands_i")
+	if guard != null and steady != null:
+		modifiers.apply_modifier(steady, &"qa", "steady")
+		var active_after_replace := modifiers.get_active_effects()
+		var safety_count := 0
+		for effect_snapshot in active_after_replace:
+			if str(effect_snapshot.get("stacking_group", "")) == "safety":
+				safety_count += 1
+		_assert_equal_int(report, safety_count, 1, "one active effect per stacking group", group)
+
+	# Harmful/mixed effects can be cleaned without touching unrelated positive groups.
+	if frenzy != null and cleanse != null:
+		modifiers.apply_modifier(frenzy, &"qa", "frenzy")
+		_assert(report, float(modifiers.get_composite_snapshot().get("fish_pressure_multiplier", 1.0)) > 1.0, "frenzy increases pressure", group)
+		modifiers.apply_modifier(cleanse, &"qa", "cleanse")
+		_assert(report, float(modifiers.get_composite_snapshot().get("fish_pressure_multiplier", 1.0)) <= 1.0001, "cleanse removes harmful pressure modifier", group)
+
+	# BOF4-style dispel is intentionally still a downside: it clears positive buffs.
+	if focus != null and dispel != null:
+		modifiers.clear_all()
+		modifiers.apply_modifier(focus, &"qa", "focus")
+		_assert(report, int(modifiers.get_composite_snapshot().get("active_count", 0)) > 0, "positive modifier active before dispel", group)
+		modifiers.apply_modifier(dispel, &"qa", "dispel")
+		_assert_equal_int(report, int(modifiers.get_composite_snapshot().get("active_count", 0)), 0, "dispel clears positive modifiers", group)
+
+	# Timed effects expire deterministically.
+	if focus != null:
+		modifiers.apply_modifier(focus, &"qa", "focus")
+		modifiers.advance(float(focus.duration_seconds) + 0.01)
+		_assert_equal_int(report, int(modifiers.get_composite_snapshot().get("active_count", 0)), 0, "timed modifier expires", group)
+
+	# Specimen-quality buffs add natural rolls rather than fabricating a record.
+	var sample_fish = CONTENT_CATALOG.fish[0] if not CONTENT_CATALOG.fish.is_empty() else null
+	if sample_fish != null:
+		var saw_session_bonus := false
+		for seed in range(1, 96):
+			var rng := RandomNumberGenerator.new()
+			rng.seed = seed
+			var generated: Dictionary = SpecimenGenerator.roll_with_rng(
+				sample_fish,
+				rng,
+				-1,
+				{
+					"session_quality_active": true,
+					"session_quality_bonus_chance": 0.50,
+					"session_quality_bonus_rolls": 2,
+				}
+			)
+			if int(generated.get("session_quality_bonus_rolls_used", 0)) <= 0:
+				continue
+			saw_session_bonus = true
+			var candidate_sizes = generated.get("candidate_sizes", [])
+			var largest_candidate := 0.0
+			for candidate_size in candidate_sizes:
+				largest_candidate = maxf(largest_candidate, float(candidate_size))
+			_assert_float_close(report, float(generated.get("size", 0.0)), largest_candidate, 0.001, "quality bonus keeps largest natural candidate", group)
+			break
+		_assert(report, saw_session_bonus, "quality bonus can produce an extra roll", group)
+
+	# Fight modifiers are composed without rewriting immutable fish stats.
+	if sample_fish != null:
+		var instance = FishInstanceScript.new()
+		instance.setup(sample_fish, 0, sample_fish.average_size, {})
+		var base_context: Dictionary = FightResolver.resolve_context(instance, null, null)
+		var buffed_context: Dictionary = FightResolver.resolve_context(
+			instance,
+			null,
+			null,
+			{
+				"stamina_drain_multiplier": 1.20,
+				"hook_off_delay_multiplier": 1.10,
+				"line_tolerance_multiplier": 1.10,
+				"counter_steer_multiplier": 1.05,
+				"fish_pressure_multiplier": 0.90,
+			}
+		)
+		_assert_float_close(report, float(buffed_context.get("max_stamina", 0.0)), float(base_context.get("max_stamina", 0.0)), 0.001, "session buff does not rewrite fish stamina", group)
+		_assert(report, float(buffed_context.get("stamina_drain_multiplier", 1.0)) > float(base_context.get("stamina_drain_multiplier", 1.0)), "session buff changes player exhaustion efficiency", group)
+		_assert(report, float(buffed_context.get("session_fish_pressure_multiplier", 1.0)) < 1.0, "session pressure modifier is explicit", group)
+
+	modifiers.free()
 
 
 func _test_fight_stat_resolution(report: Dictionary) -> void:

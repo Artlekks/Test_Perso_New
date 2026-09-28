@@ -1,0 +1,33 @@
+[gd_resource type="Resource" load_steps=27 format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_fish_effect_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/bof4/effects/steady_hands_i.tres" id="2_steady_hands_i"]
+[ext_resource type="Resource" path="res://data/bof4/effects/steady_hands_ii.tres" id="3_steady_hands_ii"]
+[ext_resource type="Resource" path="res://data/bof4/effects/steady_hands_iii.tres" id="4_steady_hands_iii"]
+[ext_resource type="Resource" path="res://data/bof4/effects/active_water_i.tres" id="5_active_water_i"]
+[ext_resource type="Resource" path="res://data/bof4/effects/focus_i.tres" id="6_focus_i"]
+[ext_resource type="Resource" path="res://data/bof4/effects/line_guard.tres" id="7_line_guard"]
+[ext_resource type="Resource" path="res://data/bof4/effects/steady_hands_iv.tres" id="8_steady_hands_iv"]
+[ext_resource type="Resource" path="res://data/bof4/effects/second_wind.tres" id="9_second_wind"]
+[ext_resource type="Resource" path="res://data/bof4/effects/focus_ii.tres" id="10_focus_ii"]
+[ext_resource type="Resource" path="res://data/bof4/effects/power_reel.tres" id="11_power_reel"]
+[ext_resource type="Resource" path="res://data/bof4/effects/active_water_ii.tres" id="12_active_water_ii"]
+[ext_resource type="Resource" path="res://data/bof4/effects/dispel_positive.tres" id="13_dispel_positive"]
+[ext_resource type="Resource" path="res://data/bof4/effects/group_recovery.tres" id="14_group_recovery"]
+[ext_resource type="Resource" path="res://data/bof4/effects/focus_group.tres" id="15_focus_group"]
+[ext_resource type="Resource" path="res://data/bof4/effects/perfect_form.tres" id="16_perfect_form"]
+[ext_resource type="Resource" path="res://data/bof4/effects/never_quit.tres" id="17_never_quit"]
+[ext_resource type="Resource" path="res://data/bof4/effects/cleanse_minor.tres" id="18_cleanse_minor"]
+[ext_resource type="Resource" path="res://data/bof4/effects/cleanse_all.tres" id="19_cleanse_all"]
+[ext_resource type="Resource" path="res://data/bof4/effects/focus_iii.tres" id="20_focus_iii"]
+[ext_resource type="Resource" path="res://data/bof4/effects/calm_water.tres" id="21_calm_water"]
+[ext_resource type="Resource" path="res://data/bof4/effects/focus_iv.tres" id="22_focus_iv"]
+[ext_resource type="Resource" path="res://data/bof4/effects/storm_chaser.tres" id="23_storm_chaser"]
+[ext_resource type="Resource" path="res://data/bof4/effects/group_recovery_plus.tres" id="24_group_recovery_plus"]
+[ext_resource type="Resource" path="res://data/bof4/effects/clean_perfect_form.tres" id="25_clean_perfect_form"]
+[ext_resource type="Resource" path="res://data/bof4/effects/toxic_frenzy.tres" id="26_toxic_frenzy"]
+
+[resource]
+script = ExtResource("1_catalog")
+species_ids = PackedStringArray("jellyfish", "piranha", "bass", "blue_gill", "sweetfish", "browntail", "black_bass", "angelfish", "trout", "rainbow_trout", "bullcat", "martian_squid", "dorado", "salmon", "barandy", "sturgeon", "man_o_war", "flying_fish", "blowfish", "moorfish", "sea_bass", "flatfish", "sea_bream", "octopus", "bonito", "black_porgy", "angler", "spearfish", "whale", "acheron")
+effects = Array[Resource]([ExtResource("2_steady_hands_i"), ExtResource("3_steady_hands_ii"), ExtResource("4_steady_hands_iii"), ExtResource("5_active_water_i"), ExtResource("6_focus_i"), ExtResource("7_line_guard"), ExtResource("8_steady_hands_iv"), ExtResource("9_second_wind"), ExtResource("10_focus_ii"), ExtResource("11_power_reel"), ExtResource("12_active_water_ii"), ExtResource("13_dispel_positive"), ExtResource("14_group_recovery"), ExtResource("15_focus_group"), ExtResource("16_perfect_form"), ExtResource("17_never_quit"), ExtResource("2_steady_hands_i"), ExtResource("3_steady_hands_ii"), ExtResource("18_cleanse_minor"), ExtResource("9_second_wind"), ExtResource("4_steady_hands_iii"), ExtResource("19_cleanse_all"), ExtResource("20_focus_iii"), ExtResource("21_calm_water"), ExtResource("16_perfect_form"), ExtResource("22_focus_iv"), ExtResource("23_storm_chaser"), ExtResource("24_group_recovery_plus"), ExtResource("25_clean_perfect_form"), ExtResource("26_toxic_frenzy")])

@@ -177,7 +177,8 @@ static func resolve_specimen(
 static func resolve_context(
 	fish,
 	rod,
-	bait
+	bait,
+	session_modifiers: Dictionary = {}
 ) -> Dictionary:
 	if fish == null:
 		return _empty_context_stats()
@@ -210,6 +211,7 @@ static func resolve_context(
 		"rod_reel_speed_multiplier": 1.0,
 		"stamina_drain_multiplier": 1.0,
 		"hook_off_delay_multiplier": 1.0,
+		"session_fish_pressure_multiplier": 1.0,
 		"rod_id": "",
 		"rod_fight_role": "NONE",
 		"lure_id": "",
@@ -260,6 +262,52 @@ static func resolve_context(
 		)
 		result["lure_id"] = str(bait.lure_id)
 		result["lure_fight_role"] = str(bait.fight_role_label)
+
+	# Temporary session modifiers are composed here, after fish + tackle, so the
+	# fight still has one authoritative resolution path. They modify the player's
+	# leverage/safety or resulting pressure; they never rewrite fish identity.
+	if not session_modifiers.is_empty():
+		result["stamina_drain_multiplier"] *= maxf(
+			float(session_modifiers.get("stamina_drain_multiplier", 1.0)),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["hook_off_delay_multiplier"] *= maxf(
+			float(session_modifiers.get("hook_off_delay_multiplier", 1.0)),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["line_tolerance_multiplier"] *= maxf(
+			float(session_modifiers.get("line_tolerance_multiplier", 1.0)),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["counter_steer_multiplier"] *= maxf(
+			float(session_modifiers.get("counter_steer_multiplier", 1.0)),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["session_fish_pressure_multiplier"] = maxf(
+			float(session_modifiers.get("fish_pressure_multiplier", 1.0)),
+			MIN_RUNTIME_MULTIPLIER
+		)
+		result["session_effect_ids"] = session_modifiers.get(
+			"session_effect_ids",
+			PackedStringArray()
+		)
+
+	# Bound the composed outputs so future buffs/weather can stack safely.
+	result["stamina_drain_multiplier"] = clampf(
+		float(result["stamina_drain_multiplier"]), 0.50, 2.50
+	)
+	result["hook_off_delay_multiplier"] = clampf(
+		float(result["hook_off_delay_multiplier"]), 0.50, 3.0
+	)
+	result["line_tolerance_multiplier"] = clampf(
+		float(result["line_tolerance_multiplier"]), 0.50, 3.0
+	)
+	result["counter_steer_multiplier"] = clampf(
+		float(result["counter_steer_multiplier"]), 0.50, 2.50
+	)
+	result["session_fish_pressure_multiplier"] = clampf(
+		float(result["session_fish_pressure_multiplier"]), 0.50, 1.50
+	)
 
 	# Difficulty metadata is descriptive only. It makes the authored progression
 	# curve visible to QA/debug systems without allowing Encounter to reinterpret
@@ -357,6 +405,7 @@ static func _empty_context_stats() -> Dictionary:
 		"rod_reel_speed_multiplier": 1.0,
 		"stamina_drain_multiplier": 1.0,
 		"hook_off_delay_multiplier": 1.0,
+		"session_fish_pressure_multiplier": 1.0,
 		"rod_id": "",
 		"rod_fight_role": "NONE",
 		"lure_id": "",

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/database/fishing_session_modifier_definition.gd" id="1_effect"]
+
+[resource]
+script = ExtResource("1_effect")
+effect_id = &"cleanse_minor"
+display_name = "Clear Head"
+description = "Removes harmful session effects and grants a short hook-security bonus."
+stacking_group = &"cleanse"
+polarity = 0
+duration_seconds = 180.0
+bite_attraction_multiplier = 1.0
+quality_bonus_roll_chance = 0.0
+quality_bonus_rolls = 0
+stamina_drain_multiplier = 1.0
+hook_off_delay_multiplier = 1.05
+line_tolerance_multiplier = 1.0
+counter_steer_multiplier = 1.0
+fish_pressure_multiplier = 1.0
+clear_positive_modifiers = false
+clear_negative_modifiers = true
+legacy_bof4_effect = "Mapped from BOF4 poison cure."
