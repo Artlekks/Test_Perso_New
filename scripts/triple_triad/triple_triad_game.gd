@@ -43,7 +43,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @onready var player_hand_container: Control = $Root/PlayerHand
 @onready var opponent_score_label: Label = $Root/OpponentScoreLabel
 @onready var player_score_label: Label = $Root/PlayerScoreLabel
-@onready var turn_label: Label = $Root/TurnLabel
+@onready var turn_label: Label = $Root/InfoPanel/TurnLabel
 @onready var message_label: Label = $Root/MessageLabel
 @onready var help_label: Label = $Root/HelpLabel
 @onready var info_panel: Control = $Root/InfoPanel
@@ -277,7 +277,7 @@ func _run_deal_sequence(starting_owner: int) -> void:
 	if not is_open() or _phase != PHASE_DEALING:
 		return
 	_phase = PHASE_SELECT_CARD if starting_owner == OWNER_PLAYER else PHASE_AI
-	message_label.text = _region_trait_text()
+	message_label.text = ""
 	_refresh_views()
 	if _phase == PHASE_AI:
 		_schedule_ai()
