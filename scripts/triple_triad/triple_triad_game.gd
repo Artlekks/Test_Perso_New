@@ -424,7 +424,19 @@ func _run_result_transition(winner: int) -> void:
 
 	result_label.visible = false
 	if winner not in [OWNER_PLAYER, OWNER_OPPONENT]:
-		close_game()
+		# A draw is a replay, not an exit. Re-deal behind the black result fade,
+		# then reveal the fresh match using the same active QA/opponent profile.
+		_start_new_match()
+		transition_fade.visible = true
+		transition_fade.modulate = Color.WHITE
+		var replay_fade: Tween = transition_fade.create_tween()
+		replay_fade.set_trans(Tween.TRANS_QUAD)
+		replay_fade.set_ease(Tween.EASE_IN_OUT)
+		replay_fade.tween_property(transition_fade, "modulate", Color(1, 1, 1, 0), RESULT_FADE_OUT_SECONDS)
+		await replay_fade.finished
+		if not is_open():
+			return
+		transition_fade.visible = false
 		return
 
 	_phase = PHASE_REWARD
@@ -545,7 +557,7 @@ func _refresh_phase_ui() -> void:
 		PHASE_DEALING:
 			turn_label.text = ""
 			help_label.text = ""
-			info_label.text = ""
+			info_label.text = _region_trait_text()
 		PHASE_SELECT_CARD:
 			turn_label.text = "Your turn: choose a card"
 			help_label.text = _player_help_text(false)
@@ -560,11 +572,11 @@ func _refresh_phase_ui() -> void:
 			turn_label.text = "Opponent's turn"
 			help_label.text = "I: Leave"
 			_turn_arrow_for_owner(OWNER_OPPONENT)
-			info_label.text = _info_text(_last_info_name)
+			info_label.text = _region_trait_text()
 		PHASE_ANIMATING:
 			turn_label.text = ""
 			help_label.text = ""
-			info_label.text = _info_text(_last_info_name)
+			info_label.text = _region_trait_text()
 		PHASE_RESULT:
 			turn_label.text = ""
 			help_label.text = ""
@@ -591,25 +603,9 @@ func _turn_arrow_for_owner(turn_owner: int) -> void:
 
 
 func _update_selected_card_info() -> void:
-	if _selected_hand_index < 0 or _selected_hand_index >= _match.player_hand.size():
-		info_label.text = _info_text("")
-		return
-	var selected_card = _match.player_hand[_selected_hand_index]
-	var selected_rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
-	var rotated_text: String = "  ROTATED" if selected_rotation != 0 else ""
-	var headline := "%s   Cost %d%s" % [str(selected_card.display_name), int(selected_card.deck_cost), rotated_text]
-	info_label.text = _info_text(headline)
-
-
-
-
-func _info_text(headline: String) -> String:
-	var trait_text: String = _region_trait_text()
-	if headline.is_empty():
-		return trait_text
-	if trait_text.is_empty():
-		return headline
-	return "%s\n%s" % [headline, trait_text]
+	# Keep the match header clean for now. Card name/cost can return later once
+	# the permanent information hierarchy is decided.
+	info_label.text = _region_trait_text()
 
 func _capture_message(result: Dictionary) -> String:
 	var combo_captured: Array = result.get("combo_captured", [])

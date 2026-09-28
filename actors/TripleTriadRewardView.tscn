@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_reward_view.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="3_menu_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/triple_triad_info_panel.png" id="4_info_panel"]
 
 [node name="TripleTriadRewardView" type="Control"]
 visible = false
@@ -15,34 +17,38 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 
-[node name="Backdrop" type="ColorRect" parent="."]
+[node name="Backdrop" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.045, 0.035, 0.055, 0.97)
+texture_filter = 1
+texture = ExtResource("3_menu_bg")
+expand_mode = 1
 mouse_filter = 2
 
-[node name="PromptPanel" type="ColorRect" parent="."]
+[node name="PromptPanel" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 150.0
-offset_top = 22.0
-offset_right = 490.0
-offset_bottom = 70.0
-color = Color(0.25, 0.25, 0.28, 0.96)
+offset_left = 161.0
+offset_top = 2.0
+offset_right = 479.0
+offset_bottom = 48.0
+texture_filter = 1
+texture = ExtResource("4_info_panel")
+expand_mode = 1
 mouse_filter = 2
+z_index = 650
 
 [node name="PromptLabel" type="Label" parent="PromptPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 0
+offset_left = 14.0
+offset_top = 4.0
+offset_right = 304.0
+offset_bottom = 42.0
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 20
 text = "Select 1 card you want"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -53,13 +59,12 @@ color = Color(1, 0.88, 0.3, 1)
 position = Vector2(55, 134)
 z_index = 30
 
-[node name="InfoPanel" type="ColorRect" parent="."]
+[node name="InfoPanel" type="Control" parent="."]
 layout_mode = 0
 offset_left = 150.0
-offset_top = 410.0
+offset_top = 418.0
 offset_right = 490.0
-offset_bottom = 445.0
-color = Color(0.25, 0.25, 0.28, 0.94)
+offset_bottom = 440.0
 mouse_filter = 2
 
 [node name="InfoLabel" type="Label" parent="InfoPanel"]
@@ -70,17 +75,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 text = "Card"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HelpLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 110.0
-offset_top = 452.0
-offset_right = 530.0
-offset_bottom = 476.0
+offset_left = 80.0
+offset_top = 454.0
+offset_right = 560.0
+offset_bottom = 480.0
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 10
 text = "A/D: Choose   K: Select   I: Leave"

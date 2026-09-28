@@ -17,8 +17,8 @@ const STATE_FOCUS_HOLD := 5
 
 const ROW_SCALE := Vector2(0.88, 0.88)
 const ROW_STEP_X := 108.0
-const TOP_ROW_ORIGIN := Vector2(42.0, 84.0)
-const BOTTOM_ROW_ORIGIN := Vector2(42.0, 286.0)
+const TOP_ROW_ORIGIN := Vector2(42.0, 92.0)
+const BOTTOM_ROW_ORIGIN := Vector2(42.0, 294.0)
 
 # FFVIII-style result-screen entrance: opponent row comes in from the left,
 # player row from the right, with a readable but tightening stagger.
@@ -86,6 +86,7 @@ func open_reward(
 	prompt_label.text = ""
 	info_label.text = ""
 	help_label.text = ""
+	_set_help_large(false)
 
 	if not defer_entrance:
 		start_entrance()
@@ -261,6 +262,7 @@ func _run_row_entrance(sequence_id: int) -> void:
 		selection_arrow.visible = false
 		prompt_label.text = "Opponent selects one of your cards"
 		info_label.text = ""
+		_set_help_large(false)
 		help_label.text = ""
 		_run_opponent_take_sequence(sequence_id)
 
@@ -287,6 +289,7 @@ func _refresh_selection() -> void:
 	var card = _opponent_cards[_selected_index]
 	info_label.text = str(card.display_name)
 	prompt_label.text = "Select 1 card you want"
+	_set_help_large(false)
 	help_label.text = "A/D: Choose   K: Select   I: Leave"
 
 
@@ -387,6 +390,7 @@ func _animate_card_transfer(
 	_focus_exit_down = exit_down
 	_focus_sequence_id = sequence_id
 	_state = STATE_FOCUS_HOLD
+	_set_help_large(true)
 	help_label.text = "K: Continue"
 
 
@@ -434,6 +438,7 @@ func _arrow_position(row_origin: Vector2, index: int) -> Vector2:
 func _refresh_confirm_choices() -> void:
 	choice_label.text = "YES          NO"
 	choice_arrow.position = Vector2(52.0, 86.0) if _yes_selected else Vector2(158.0, 86.0)
+	_set_help_large(false)
 	help_label.text = "A/D: Choice   K: Confirm   I: Back"
 
 
@@ -449,6 +454,10 @@ func _clear_focus_card() -> void:
 	if is_instance_valid(_focus_card):
 		_focus_card.queue_free()
 	_focus_card = null
+
+
+func _set_help_large(value: bool) -> void:
+	help_label.add_theme_font_size_override("font_size", 15 if value else 10)
 
 
 func _accept_input() -> void:

@@ -51,7 +51,7 @@ func animate_placement(
 	presentation_root.add_child(ghost)
 	ghost.configure(card_definition, card_owner, false, false, rotation_quarters, rank_bonus)
 	ghost.set_selected(false)
-	ghost.z_index = 500
+	ghost.z_index = 1200
 	ghost.global_position = source_view.global_position
 	ghost.scale = source_view.scale
 	ghost.pivot_offset = ghost.size * 0.5

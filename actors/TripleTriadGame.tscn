@@ -47,17 +47,17 @@ mouse_filter = 2
 [node name="OpponentHand" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 14.0
-offset_top = 4.0
+offset_top = 8.0
 offset_right = 130.0
-offset_bottom = 432.0
+offset_bottom = 436.0
 mouse_filter = 2
 
 [node name="Board" type="GridContainer" parent="Root"]
 layout_mode = 0
 offset_left = 146.0
-offset_top = 82.0
+offset_top = 68.0
 offset_right = 494.0
-offset_bottom = 478.0
+offset_bottom = 464.0
 theme_override_constants/h_separation = 0
 theme_override_constants/v_separation = 0
 columns = 3
@@ -65,17 +65,17 @@ columns = 3
 [node name="PlayerHand" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 510.0
-offset_top = 4.0
+offset_top = 8.0
 offset_right = 626.0
-offset_bottom = 432.0
+offset_bottom = 436.0
 mouse_filter = 2
 
 [node name="OpponentScoreLabel" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 16.0
-offset_top = 438.0
+offset_top = 436.0
 offset_right = 116.0
-offset_bottom = 476.0
+offset_bottom = 474.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 40
 text = "5"
@@ -84,9 +84,9 @@ horizontal_alignment = 1
 [node name="PlayerScoreLabel" type="Label" parent="Root"]
 layout_mode = 0
 offset_left = 524.0
-offset_top = 438.0
+offset_top = 436.0
 offset_right = 624.0
-offset_bottom = 476.0
+offset_bottom = 474.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 40
 text = "5"
@@ -94,10 +94,10 @@ horizontal_alignment = 1
 
 [node name="MessageLabel" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 164.0
-offset_top = 427.0
-offset_right = 476.0
-offset_bottom = 444.0
+offset_left = 150.0
+offset_top = 438.0
+offset_right = 490.0
+offset_bottom = 454.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 10
 text = ""
@@ -107,9 +107,9 @@ vertical_alignment = 1
 [node name="InfoPanel" type="TextureRect" parent="Root"]
 layout_mode = 0
 offset_left = 161.0
-offset_top = 18.0
+offset_top = 2.0
 offset_right = 479.0
-offset_bottom = 64.0
+offset_bottom = 48.0
 texture_filter = 1
 texture = ExtResource("11_info_panel")
 expand_mode = 1
@@ -118,37 +118,37 @@ z_index = 650
 
 [node name="TurnLabel" type="Label" parent="Root/InfoPanel"]
 layout_mode = 0
-offset_left = 42.0
+offset_left = 14.0
 offset_top = 4.0
-offset_right = 310.0
-offset_bottom = 22.0
+offset_right = 304.0
+offset_bottom = 42.0
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 20
 text = "Your turn: choose a card"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="InfoLabel" type="Label" parent="Root/InfoPanel"]
 layout_mode = 0
-offset_left = 12.0
-offset_top = 21.0
-offset_right = 309.0
-offset_bottom = 44.0
+offset_left = -42.0
+offset_top = 48.0
+offset_right = 360.0
+offset_bottom = 65.0
 autowrap_mode = 3
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 7
+theme_override_font_sizes/font_size = 8
 text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HelpLabel" type="Label" parent="Root"]
 layout_mode = 0
-offset_left = 128.0
-offset_top = 459.0
-offset_right = 512.0
-offset_bottom = 479.0
+offset_left = 72.0
+offset_top = 464.0
+offset_right = 568.0
+offset_bottom = 480.0
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 12
 text = "W/S: Card   K: Select   I: Leave"
 horizontal_alignment = 1
 
