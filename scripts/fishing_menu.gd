@@ -200,6 +200,7 @@ const HINT_X: float = 63.0
 const OFF_LEFT_X: float = -160.0
 const OFF_RIGHT_X: float = 330.0
 const OFF_BOTTOM_Y: float = 250.0
+const DEFAULT_RANK_BADGE_PATH: String = "res://assets/ui/fishing_menu/ranks/Rank_Beginner.png"
 
 @onready var root: Control = $Root
 @onready var selector_layer: Control = $SelectorLayer
@@ -216,6 +217,7 @@ const OFF_BOTTOM_Y: float = 250.0
 @onready var main_rod_label: Label = $Root/MainPage/EquipPanel/RodLabel
 @onready var main_lure_label: Label = $Root/MainPage/EquipPanel/LureLabel
 @onready var rank_label: Label = $Root/MainPage/StatusPanel/RankLabel
+@onready var rank_badge: TextureRect = $Root/MainPage/StatusPanel/RankBadge
 @onready var points_label: Label = $Root/MainPage/StatusPanel/PointsLabel
 @onready var time_label: Label = $Root/MainPage/LeftMask/TimePanel/TimeLabel
 
@@ -1315,8 +1317,49 @@ func _refresh_main_page() -> void:
 		points = int(progression.get("fishing_points", 0))
 
 	rank_label.text = rank_name
+	_update_main_rank_badge(rank_name)
 	points_label.text = "%d" % points
 	_update_time_label()
+
+
+func _update_main_rank_badge(rank_name: String) -> void:
+	if not is_instance_valid(rank_badge):
+		return
+
+	rank_badge.visible = false
+
+	var texture := _resolve_rank_badge_texture(rank_name)
+	if texture == null:
+		texture = load(DEFAULT_RANK_BADGE_PATH) as Texture2D
+
+	rank_badge.texture = texture
+	rank_badge.visible = texture != null
+
+
+func _resolve_rank_badge_texture(rank_name: String) -> Texture2D:
+	var normalized := str(rank_name).strip_edges()
+	if normalized.is_empty():
+		normalized = "Beginner"
+
+	var candidates: Array[String] = []
+	candidates.append(normalized)
+	candidates.append(normalized.replace(" ", "_"))
+	candidates.append(normalized.replace("+", "Plus"))
+	candidates.append(normalized.replace("+", "Plus").replace(" ", "_"))
+	candidates.append(normalized.to_lower())
+	candidates.append(normalized.to_lower().replace(" ", "_"))
+	candidates.append(normalized.to_lower().replace("+", "plus"))
+	candidates.append(normalized.to_lower().replace("+", "plus").replace(" ", "_"))
+
+	for candidate in candidates:
+		var path := "res://assets/ui/fishing_menu/ranks/Rank_%s.png" % candidate
+		if ResourceLoader.exists(path):
+			return load(path) as Texture2D
+		path = "res://assets/ui/fishing_menu/ranks/%s.png" % candidate
+		if ResourceLoader.exists(path):
+			return load(path) as Texture2D
+
+	return null
 
 
 func _refresh_equip_page() -> void:

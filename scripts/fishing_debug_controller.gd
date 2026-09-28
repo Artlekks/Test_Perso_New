@@ -26,6 +26,9 @@ var _encounter: Node = null
 var _aim: Node = null
 var _loadout: FishingLoadout = null
 var _progress: FishingProgress = null
+var _journal: FishingJournalService = null
+var _unlock_state: FishingUnlockState = null
+var _reward_service: FishingRewardService = null
 var _open: bool = false
 
 
@@ -34,13 +37,19 @@ func configure(
 	encounter: Node,
 	aim: Node,
 	loadout: FishingLoadout,
-	progress: FishingProgress
+	progress: FishingProgress,
+	journal: FishingJournalService = null,
+	unlock_state: FishingUnlockState = null,
+	reward_service: FishingRewardService = null
 ) -> void:
 	_game_mode = game_mode
 	_encounter = encounter
 	_aim = aim
 	_loadout = loadout
 	_progress = progress
+	_journal = journal
+	_unlock_state = unlock_state
+	_reward_service = reward_service
 
 	settings = FishingDebugSettingsScript.new()
 	regression_harness = FishingRegressionHarnessScript.new()
@@ -64,6 +73,10 @@ func configure(
 	debug_menu.connect(
 		"debug_environment_changed",
 		Callable(self, "sync_environment")
+	)
+	debug_menu.connect(
+		"reset_fishing_progress_requested",
+		Callable(self, "_on_reset_fishing_progress_requested")
 	)
 
 	set_fish_zone(_get_active_zone())
@@ -184,14 +197,36 @@ func should_record_catch() -> bool:
 	if settings == null:
 		return true
 
-	var override_active: bool = bool(
-		settings.is_encounter_override_active()
+	# Persistence is gated only by QA controls that can alter the actual catch
+	# outcome. Presentation-only shadow overrides are deliberately excluded so
+	# profiles such as SHADOWS / FIVE cannot silently disable progression.
+	var outcome_override_active: bool = bool(
+		settings.is_catch_outcome_override_active()
 	)
 	var allow_debug_record: bool = bool(
 		settings.should_record_debug_catches()
 	)
 
-	return not override_active or allow_debug_record
+	return not outcome_override_active or allow_debug_record
+
+
+func _on_reset_fishing_progress_requested() -> void:
+	# One authoritative QA reset path. The journal owns progress + physical fish
+	# inventory, while unlock/reward services own their own persistence. This
+	# produces the same baseline as a new fishing player without touching camera,
+	# environment, or unrelated game systems.
+	if is_instance_valid(_journal):
+		_journal.reset_all_fishing_data(true, true)
+	elif is_instance_valid(_progress):
+		_progress.reset_all_progress(true)
+
+	if is_instance_valid(_unlock_state):
+		_unlock_state.reset_unlocks(true)
+
+	if is_instance_valid(_reward_service):
+		_reward_service.reset_rewards(true)
+
+	print("Fishing QA reset complete: Beginner / 0 fishing points / no records.")
 
 
 func _on_spot_requested(spot: FishingSpotData) -> void:

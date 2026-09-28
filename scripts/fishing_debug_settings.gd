@@ -92,12 +92,30 @@ func get_forced_tech_label() -> String:
 
 
 func is_encounter_override_active() -> bool:
+	# Broad QA-state diagnostic: true for either gameplay-affecting overrides
+	# or presentation-only shadow overrides. Do NOT use this to decide whether
+	# a catch is allowed to enter permanent progression.
+	return (
+		is_catch_outcome_override_active()
+		or is_presentation_override_active()
+	)
+
+
+func is_catch_outcome_override_active() -> bool:
+	# Only overrides capable of changing the catch itself should make a catch
+	# "debug" for persistence purposes. Ambient shadow species/count are visual
+	# QA controls and must never disable legitimate catch records.
 	return (
 		forced_fish != null
-		or shadow_fish_override != null
-		or shadow_count_override > 0
 		or king_mode != KingMode.DEFAULT
 		or forced_tech_level > 0
+	)
+
+
+func is_presentation_override_active() -> bool:
+	return (
+		shadow_fish_override != null
+		or shadow_count_override > 0
 	)
 
 

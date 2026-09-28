@@ -2,6 +2,7 @@ extends CanvasLayer
 
 signal spot_requested(spot: FishingSpotData)
 signal debug_environment_changed
+signal reset_fishing_progress_requested
 
 const CONTENT_CATALOG: FishingContentCatalog = preload(
 	"res://data/bof4/catalogs/all_content.tres"
@@ -118,6 +119,19 @@ func handle_input(event: InputEvent) -> bool:
 	if _is_key_press(event, KEY_F9):
 		_run_regression_suite()
 		return false
+
+	# Deliberately require Shift+R because this is a destructive QA action.
+	# It resets records/points/inventory back to a clean new-player fishing state.
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if (
+			key_event.pressed
+			and not key_event.echo
+			and key_event.shift_pressed
+			and (key_event.keycode == KEY_R or key_event.physical_keycode == KEY_R)
+		):
+			reset_fishing_progress_requested.emit()
+			return false
 
 	if event.is_action_pressed("ui_up") or event.is_action_pressed("move_forward"):
 		_selected_row = posmod(_selected_row - 1, ROW_COUNT)
@@ -500,6 +514,7 @@ func _refresh() -> void:
 		+ "\nTension: " + tension_runtime_text
 		+ "\nQA: " + _last_regression_summary
 		+ " | F9 run regression"
+		+ "\nShift+R RESET fishing progress"
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
 

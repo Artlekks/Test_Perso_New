@@ -1,12 +1,12 @@
 extends RefCounted
 
-## Authoritative BOF4-style specimen classification + score math.
+## Authoritative specimen classification + score math.
 ##
 ## This file owns the definition of:
 ## - king/crown threshold
 ## - normal / near-record / king size band
-## - 10% score tier
-## - points awarded for one specimen
+## - coarse 10% score tier metadata
+## - continuous per-centimetre points awarded for one specimen
 ##
 ## Runtime fish, persistence migration, debug catches and journal screens all
 ## consume this same policy instead of reimplementing size/king logic.
@@ -108,6 +108,8 @@ static func get_size_band(
 	return &"normal"
 
 
+## Coarse metadata retained for journal/debug compatibility. Actual points are
+## intentionally more granular and are calculated per centimetre below.
 static func get_score_tier(
 	data: FishData,
 	size: float
@@ -134,8 +136,6 @@ static func get_score_tier(
 		0.999999
 	)
 
-	# BOF4 points advance through 10% bands. Floor is intentional:
-	# 97% of crown size still belongs to the 90% score tier.
 	return clampi(
 		int(floor(size_ratio * float(SCORE_TIER_COUNT))),
 		1,
@@ -152,28 +152,31 @@ static func calculate_points(
 		return 0
 
 	var max_points: int = maxi(data.max_points, 0)
-	if max_points <= 0:
+	var normalized_size: float = normalize_size_cm(size)
+	if max_points <= 0 or normalized_size <= 0.0:
 		return 0
 
-	var score_tier: int = get_score_tier(
-		data,
-		size
-	)
-
-	if score_tier <= 0:
-		return 0
-
-	if score_tier >= KING_SCORE_TIER:
+	if is_king_size(data, normalized_size):
 		return max_points
 
-	return maxi(
-		int(
-			floor(
-				float(max_points * score_tier)
-				/ float(SCORE_TIER_COUNT)
-			)
-		),
-		1
+	var king_threshold: float = maxf(
+		get_king_threshold_cm(data),
+		0.001
+	)
+	var size_ratio: float = clampf(
+		normalized_size / king_threshold,
+		0.0,
+		0.999999
+	)
+
+	# Each centimetre now contributes directly toward the species' maximum
+	# score. This keeps the familiar larger-fish = more-points rule while
+	# avoiding broad 10% plateaus where several visibly different specimens
+	# produced identical points.
+	return clampi(
+		roundi(float(max_points) * size_ratio),
+		1,
+		maxi(max_points - 1, 1)
 	)
 
 

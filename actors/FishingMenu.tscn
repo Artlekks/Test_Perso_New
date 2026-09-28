@@ -248,6 +248,16 @@ theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 12
 text = "The Fish"
 
+[node name="RankBadge" type="TextureRect" parent="Root/MainPage/StatusPanel"]
+layout_mode = 0
+offset_left = 46
+offset_top = 14
+offset_right = 111
+offset_bottom = 23
+texture_filter = 1
+mouse_filter = 2
+stretch_mode = 0
+
 [node name="PointsLabel" type="Label" parent="Root/MainPage/StatusPanel"]
 layout_mode = 0
 offset_left = 60

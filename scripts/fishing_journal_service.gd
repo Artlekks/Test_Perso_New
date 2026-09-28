@@ -79,14 +79,19 @@ func get_summary() -> Dictionary:
 
 	var points: int = 0
 	var total_catches: int = 0
-	var rank_name: String = ""
+	# A player has a rank before the first catch. Beginner is the authored
+	# baseline, not a discovery state, so the journal must never expose an
+	# empty rank string just because there are no records yet.
+	var rank_name: String = "Beginner"
 	var rank_index: int = 0
 	var rank_progress: Dictionary = {}
 
 	if is_instance_valid(_progress):
 		points = _progress.get_fishing_points()
 		total_catches = _progress.get_total_catches()
-		rank_name = _progress.get_rank_name()
+		var resolved_rank_name := _progress.get_rank_name().strip_edges()
+		if not resolved_rank_name.is_empty():
+			rank_name = resolved_rank_name
 		rank_index = _progress.get_rank_index()
 		rank_progress = _progress.get_rank_progress()
 

@@ -52,10 +52,11 @@ var near_record_min_size_ratio: float = 0.90
 @export_range(0.25, 1.0, 0.05)
 var normal_min_average_multiplier: float = 0.80
 
-## Averaging several random samples makes ordinary catches cluster around the
-## species average instead of distributing uniformly from tiny to near-record.
+## Number of random samples averaged for an ordinary specimen. 1 gives an
+## even spread across the normal range (more visible specimen variety). Higher
+## values progressively bias catches toward the species average.
 @export_range(1, 6, 1)
-var normal_roll_samples: int = 3
+var normal_roll_samples: int = 1
 
 ## Near-record sizes are biased toward the bottom of their band, so a fish one
 ## centimetre below crown is rarer than simply entering the near-record band.

@@ -22,6 +22,9 @@ const TENSION_PROFILE: FishingTensionProfile = preload(
 const CatchScoring = preload(
 	"res://scripts/fishing_catch_scoring.gd"
 )
+const SizeRoller = preload(
+	"res://scripts/fishing_size_roller.gd"
+)
 const BaitScript = preload(
 	"res://scripts/bait_V2.gd"
 )
@@ -30,6 +33,12 @@ const CameraRigScript = preload(
 )
 const CastInputGateScript = preload(
 	"res://scripts/fishing_cast_input_gate.gd"
+)
+const DebugSettingsScript = preload(
+	"res://scripts/fishing_debug_settings.gd"
+)
+const CatchEvaluatorScript = preload(
+	"res://scripts/fishing_catch_evaluator.gd"
 )
 const ShoreBoundaryScript = preload(
 	"res://scripts/fishing_shore_boundary.gd"
@@ -65,9 +74,12 @@ func run_all() -> Dictionary:
 	_test_lure_database(report)
 	_test_rod_database(report)
 	_test_spot_database(report)
+	_test_specimen_generation(report)
 	_test_scoring_invariants(report)
 	_test_techniques(report)
 	_test_progression(report)
+	_test_catch_persistence_regression(report)
+	_test_debug_persistence_gate_regression(report)
 	_test_rewards(report)
 	_test_trades(report)
 	_test_tension_profile(report)
@@ -316,6 +328,70 @@ func _test_spot_database(report: Dictionary) -> void:
 				_assert(report, hotspot.is_valid_definition(), "%s hotspot %s valid" % [spot_id, hotspot.hotspot_id], group)
 
 
+func _test_specimen_generation(report: Dictionary) -> void:
+	var group: String = "specimen_generation"
+	var species_index: int = 0
+
+	for fish in CONTENT_CATALOG.fish:
+		if fish == null:
+			continue
+
+		var species_id: String = fish.get_stable_species_id()
+		var bounds: Vector2i = SizeRoller.get_normal_size_bounds(fish)
+		_assert(
+			report,
+			bounds.x > 0 and bounds.y >= bounds.x,
+			"%s valid normal size bounds" % species_id,
+			group
+		)
+
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 1597463007 + species_index * 7919
+		var seen_sizes: Dictionary = {}
+		var smallest_seen: int = bounds.y
+		var largest_seen: int = bounds.x
+
+		for _roll_index in range(96):
+			var result: Dictionary = SizeRoller.roll_with_rng(
+				fish,
+				rng,
+				0
+			)
+			var size_cm: int = roundi(float(result.get("size", 0.0)))
+			seen_sizes[size_cm] = true
+			smallest_seen = mini(smallest_seen, size_cm)
+			largest_seen = maxi(largest_seen, size_cm)
+			_assert(
+				report,
+				size_cm >= bounds.x and size_cm <= bounds.y,
+				"%s forced-normal roll stays in band" % species_id,
+				group
+			)
+			_assert(
+				report,
+				not bool(result.get("is_king", false)),
+				"%s forced-normal roll is not King" % species_id,
+				group
+			)
+
+		var authored_span: int = bounds.y - bounds.x
+		if authored_span >= 4:
+			_assert(
+				report,
+				seen_sizes.size() >= 4,
+				"%s normal rolls produce visible variety" % species_id,
+				group
+			)
+			_assert(
+				report,
+				largest_seen - smallest_seen >= 3,
+				"%s sampled normal spread reaches at least 3cm" % species_id,
+				group
+			)
+
+		species_index += 1
+
+
 func _test_scoring_invariants(report: Dictionary) -> void:
 	var group: String = "scoring"
 	var maximum_total: int = 0
@@ -336,6 +412,18 @@ func _test_scoring_invariants(report: Dictionary) -> void:
 			var points: int = int(score.get("points", 0))
 			_assert(report, points >= previous_points, "%s score monotonic at %dcm" % [fish.get_stable_species_id(), size_cm], group)
 			_assert(report, points <= fish.max_points, "%s score capped at %dcm" % [fish.get_stable_species_id(), size_cm], group)
+
+			# When a species has at least one point available per centimetre,
+			# adjacent whole-centimetre specimens should no longer collapse onto
+			# the same score plateau.
+			if size_cm > 1 and fish.max_points >= crown_cm:
+				_assert(
+					report,
+					points > previous_points,
+					"%s score distinguishes %dcm from %dcm" % [fish.get_stable_species_id(), size_cm - 1, size_cm],
+					group
+				)
+
 			previous_points = points
 
 	_assert_equal_int(report, maximum_total, EXPECTED_MAX_FISHING_POINTS, "catalog max score", group)
@@ -372,12 +460,157 @@ func _test_progression(report: Dictionary) -> void:
 	_assert_equal_int(report, PROGRESSION_CATALOG.max_fishing_points, EXPECTED_MAX_FISHING_POINTS, "progression max points", group)
 	var expected_thresholds := PackedInt32Array([0, 200, 500, 1000, 2000, 4000, 5000, 7000, 9000, 9500])
 	_assert_equal_int(report, PROGRESSION_CATALOG.ranks.size(), expected_thresholds.size(), "rank threshold count", group)
+	_assert_equal_string(report, PROGRESSION_CATALOG.get_rank_name(0), "Beginner", "zero points starts at Beginner", group)
 
 	for index in range(mini(PROGRESSION_CATALOG.ranks.size(), expected_thresholds.size())):
 		var rank: FishingRankDefinition = PROGRESSION_CATALOG.ranks[index]
 		_assert(report, rank != null, "rank %d resource" % index, group)
 		if rank != null:
 			_assert_equal_int(report, rank.min_points, expected_thresholds[index], "rank %d threshold" % index, group)
+
+
+func _test_catch_persistence_regression(report: Dictionary) -> void:
+	var group: String = "catch_persistence"
+	var sweetfish: FishData = null
+	var sea_bass: FishData = null
+
+	for fish in CONTENT_CATALOG.fish:
+		if fish == null:
+			continue
+		match fish.get_stable_species_id().to_lower():
+			"sweetfish":
+				sweetfish = fish
+			"sea_bass":
+				sea_bass = fish
+
+	_assert(report, sweetfish != null, "Sweetfish exists", group)
+	_assert(report, sea_bass != null, "Sea Bass exists", group)
+	if sweetfish == null or sea_bass == null:
+		return
+
+	var progress := FishingProgress.new()
+	progress.progression_catalog = PROGRESSION_CATALOG
+
+	# Exact regression from playtest: an existing 18 cm / 108 pt Sweetfish
+	# must be replaced by a later 20 cm / 120 pt Sweetfish.
+	var sweet_18: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+		sweetfish,
+		18.0
+	)
+	var first: Dictionary = progress.record_catch_snapshot(
+		sweet_18,
+		false,
+		false
+	)
+	_assert(report, bool(first.get("new_species", false)), "first Sweetfish registers", group)
+	_assert_equal_int(report, int(first.get("fishing_points", -1)), 108, "18 cm Sweetfish contributes 108 total points", group)
+
+	var sweet_20: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+		sweetfish,
+		20.0
+	)
+	var second: Dictionary = progress.record_catch_snapshot(
+		sweet_20,
+		false,
+		false
+	)
+	_assert(report, bool(second.get("new_best_size", false)), "20 cm Sweetfish replaces 18 cm size record", group)
+	_assert(report, bool(second.get("new_best_points", false)), "120 pt Sweetfish replaces 108 pt score record", group)
+	_assert_equal_int(report, int(second.get("fishing_points", -1)), 120, "Sweetfish best score raises total to 120", group)
+
+	var sweet_record: Dictionary = progress.get_species_record_by_key("sweetfish")
+	_assert_equal_int(report, roundi(float(sweet_record.get("best_size", 0.0))), 20, "Sweetfish best size persisted in runtime state", group)
+	_assert_equal_int(report, int(sweet_record.get("best_points", 0)), 120, "Sweetfish best points persisted in runtime state", group)
+
+	# A worse specimen still counts as a catch but must not reduce or add to the
+	# species' best-score contribution.
+	var sweet_17: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+		sweetfish,
+		17.0
+	)
+	var third: Dictionary = progress.record_catch_snapshot(
+		sweet_17,
+		false,
+		false
+	)
+	_assert(report, not bool(third.get("new_best_size", true)), "smaller Sweetfish is not a size record", group)
+	_assert(report, not bool(third.get("new_best_points", true)), "lower-score Sweetfish is not a point record", group)
+	_assert_equal_int(report, int(third.get("fishing_points", -1)), 120, "lower Sweetfish score does not inflate total", group)
+
+	# Lifetime fishing points are the sum of each species' best score, not the
+	# sum of every fish caught.
+	var bass_52: Dictionary = CatchEvaluatorScript.create_snapshot_from_values(
+		sea_bass,
+		52.0
+	)
+	var fourth: Dictionary = progress.record_catch_snapshot(
+		bass_52,
+		false,
+		false
+	)
+	var expected_bass_points: int = CatchScoring.calculate_points(sea_bass, 52.0)
+	_assert_equal_int(
+		report,
+		int(fourth.get("fishing_points", -1)),
+		120 + expected_bass_points,
+		"second species adds only its best score to lifetime total",
+		group
+	)
+	_assert_equal_int(
+		report,
+		int(fourth.get("fishing_points", -1)),
+		progress.get_fishing_points(),
+		"catch result exposes the same authoritative total used by menus",
+		group
+	)
+
+	# QA/new-player reset must return the same backend to the exact baseline the
+	# player sees in the J menu before any catch: Beginner, 0 points, no records.
+	progress.reset_all_progress(false)
+	_assert_equal_int(report, progress.get_fishing_points(), 0, "reset clears fishing points", group)
+	_assert_equal_int(report, progress.get_total_catches(), 0, "reset clears catch count", group)
+	_assert_equal_string(report, progress.get_rank_name(), "Beginner", "reset returns rank to Beginner", group)
+	_assert(report, progress.get_all_records().is_empty(), "reset clears species records", group)
+
+	progress.free()
+
+
+func _test_debug_persistence_gate_regression(report: Dictionary) -> void:
+	var group: String = "debug_persistence"
+	var settings = DebugSettingsScript.new()
+	var controller := FishingDebugController.new()
+	controller.settings = settings
+	var sweetfish: FishData = null
+
+	for fish in CONTENT_CATALOG.fish:
+		if fish != null and fish.get_stable_species_id().to_lower() == "sweetfish":
+			sweetfish = fish
+			break
+
+	_assert(report, sweetfish != null, "Sweetfish available for QA gate test", group)
+	if sweetfish == null:
+		return
+
+	# The exact bug found in playtest: SHADOWS / FIVE sets this to 5. That is a
+	# presentation override and must NOT turn off legitimate catch persistence.
+	settings.set_shadow_count_override(5)
+	_assert(report, settings.is_encounter_override_active(), "five-shadow profile is still reported as QA-active", group)
+	_assert(report, not settings.is_catch_outcome_override_active(), "shadow count does not alter catch outcome", group)
+	_assert(report, settings.is_presentation_override_active(), "shadow count is classified as presentation override", group)
+	_assert(report, controller.should_record_catch(), "five-shadow profile allows normal catch recording", group)
+
+	settings.set_shadow_fish_override(sweetfish)
+	_assert(report, not settings.is_catch_outcome_override_active(), "shadow species override does not alter caught species RNG", group)
+
+	# Outcome-forcing QA remains protected unless SAVE DBG is explicitly on.
+	settings.set_forced_fish(sweetfish)
+	_assert(report, settings.is_catch_outcome_override_active(), "forced fish is a catch outcome override", group)
+	_assert(report, not controller.should_record_catch(), "forced fish is not persisted by default", group)
+
+	settings.set_record_debug_catches(true)
+	_assert(report, controller.should_record_catch(), "SAVE DBG explicitly allows forced catches", group)
+
+	controller.free()
 
 
 func _test_rewards(report: Dictionary) -> void:
@@ -796,6 +1029,21 @@ func _assert_equal_int(
 		report,
 		actual == expected,
 		"%s (%d == %d)" % [label, actual, expected],
+		group
+	)
+
+
+func _assert_equal_string(
+	report: Dictionary,
+	actual: String,
+	expected: String,
+	label: String,
+	group: String
+) -> void:
+	_assert(
+		report,
+		actual == expected,
+		'%s ("%s" == "%s")' % [label, actual, expected],
 		group
 	)
 

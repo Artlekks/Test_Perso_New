@@ -230,7 +230,10 @@ func _ready() -> void:
 		encounter,
 		aim,
 		loadout,
-		fishing_progress
+		fishing_progress,
+		fishing_journal_service,
+		fishing_unlock_state,
+		fishing_reward_service
 	)
 
 	technique_detector = FishingTechniqueDetectorScript.new()
