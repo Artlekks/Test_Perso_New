@@ -43,6 +43,12 @@ const CatchEvaluatorScript = preload(
 const ShoreBoundaryScript = preload(
 	"res://scripts/fishing_shore_boundary.gd"
 )
+const FightLifecycleScript = preload(
+	"res://scripts/fishing_fight_lifecycle.gd"
+)
+const TensionScript = preload(
+	"res://scripts/tension.gd"
+)
 
 const QA_PROFILE_DIRECTORY: String = "res://data/debug/qa_profiles"
 
@@ -85,6 +91,8 @@ func run_all() -> Dictionary:
 	_test_rewards(report)
 	_test_trades(report)
 	_test_tension_profile(report)
+	_test_fight_lifecycle_regression(report)
+	_test_tension_failure_regression(report)
 	_test_landing_regression(report)
 	_test_shore_boundary_regression(report)
 	_test_camera_return_regression(report)
@@ -203,7 +211,17 @@ func _test_fish_database(report: Dictionary) -> void:
 		_assert(report, fish.max_points > 0, "%s max points > 0" % species_id, group)
 		_assert(report, fish.base_stamina > 0.0, "%s stamina > 0" % species_id, group)
 		_assert(report, fish.base_strength > 0.0, "%s strength > 0" % species_id, group)
+		_assert(report, fish.resistance_rounds >= 1, "%s resistance rounds" % species_id, group)
+		_assert(report, fish.recovery_time_min >= 0.0, "%s recovery min" % species_id, group)
+		_assert(report, fish.recovery_time_max >= fish.recovery_time_min, "%s ordered recovery window" % species_id, group)
 		_assert(report, fish.behavior_profile != null, "%s behavior profile" % species_id, group)
+		if fish.behavior_profile != null:
+			_assert(
+				report,
+				fish.behavior_profile.is_valid_profile(),
+				"%s valid fight behavior profile" % species_id,
+				group
+			)
 		_assert(report, fish.preferred_depth_min >= 0.0 and fish.preferred_depth_min <= 1.0, "%s depth min" % species_id, group)
 		_assert(report, fish.preferred_depth_max >= 0.0 and fish.preferred_depth_max <= 1.0, "%s depth max" % species_id, group)
 		_assert(report, fish.preferred_depth_min <= fish.preferred_depth_max, "%s ordered depth band" % species_id, group)
@@ -218,6 +236,22 @@ func _test_fish_database(report: Dictionary) -> void:
 				"%s depth probe %d" % [species_id, depth_step],
 				group
 			)
+
+
+		# Build deterministic ordinary + crown specimens through the real FishInstance
+		# path. Every species must produce usable fight stats at both ends.
+		var ordinary := FishInstance.new()
+		ordinary.setup(fish, 0, fish.average_size)
+		_assert(report, ordinary.max_stamina > 0.0, "%s ordinary stamina" % species_id, group)
+		_assert(report, ordinary.strength > 0.0, "%s ordinary strength" % species_id, group)
+		_assert(report, ordinary.pull_multiplier > 0.0, "%s ordinary pull" % species_id, group)
+		_assert(report, ordinary.stamina_recovery_multiplier > 0.0, "%s ordinary recovery multiplier" % species_id, group)
+
+		var crown := FishInstance.new()
+		crown.setup(fish, 1, fish.king_size)
+		_assert(report, crown.is_king, "%s crown specimen is king" % species_id, group)
+		_assert(report, crown.max_stamina >= ordinary.max_stamina, "%s crown stamina not weaker" % species_id, group)
+		_assert(report, crown.strength >= ordinary.strength, "%s crown strength not weaker" % species_id, group)
 
 
 func _test_lure_database(report: Dictionary) -> void:
@@ -855,6 +889,278 @@ func _test_tension_profile(report: Dictionary) -> void:
 				continue
 			var effective_delay: float = TENSION_PROFILE.line_break_delay * rod.line_tolerance_multiplier
 			_assert(report, effective_delay > 0.0, "%s effective snap delay" % rod.rod_id, group)
+
+
+func _test_fight_lifecycle_regression(report: Dictionary) -> void:
+	var group: String = "fight_lifecycle"
+	var lifecycle = FightLifecycleScript.new()
+
+	_assert_equal_int(
+		report,
+		lifecycle.state,
+		FightLifecycleScript.State.IDLE,
+		"new lifecycle starts idle",
+		group
+	)
+
+	# Direct-hit path: WAITING_BITE -> HOOKED without a bite window.
+	_assert(report, lifecycle.begin_cast(), "cast begins", group)
+	_assert(
+		report,
+		not lifecycle.begin_cast(),
+		"active cast rejects a second begin",
+		group
+	)
+	_assert(
+		report,
+		lifecycle.confirm_hook(),
+		"direct hit hooks from waiting state",
+		group
+	)
+	_assert(
+		report,
+		not lifecycle.open_bite_window(),
+		"hooked fight rejects stale bite-window activation",
+		group
+	)
+	_assert(
+		report,
+		lifecycle.begin_landing(),
+		"hooked fight enters landing",
+		group
+	)
+	_assert(
+		report,
+		lifecycle.begin_landing(),
+		"landing transition is idempotent",
+		group
+	)
+	_assert(
+		report,
+		lifecycle.resolve_catch(),
+		"landing resolves catch exactly once",
+		group
+	)
+	_assert(
+		report,
+		not lifecycle.resolve_catch(),
+		"resolved catch cannot commit twice",
+		group
+	)
+	_assert(
+		report,
+		not lifecycle.resolve_line_break(),
+		"resolved catch rejects late failure",
+		group
+	)
+	_assert(
+		report,
+		not lifecycle.cancel_cast(),
+		"resolved catch cannot be rewritten as cancellation",
+		group
+	)
+	_assert_equal_int(
+		report,
+		lifecycle.resolution,
+		FightLifecycleScript.Resolution.CATCH,
+		"catch resolution remains immutable",
+		group
+	)
+	lifecycle.finish_cast()
+
+	# Bite-window path: WAIT -> WINDOW -> MISS -> WAIT -> WINDOW -> HOOK.
+	_assert(report, lifecycle.begin_cast(), "second cast begins", group)
+	_assert(report, lifecycle.open_bite_window(), "bite window opens", group)
+	_assert(report, lifecycle.miss_bite(), "miss returns to waiting", group)
+	_assert(
+		report,
+		not lifecycle.miss_bite(),
+		"stale miss callback is ignored",
+		group
+	)
+	_assert(report, lifecycle.open_bite_window(), "retry window opens", group)
+	_assert(report, lifecycle.confirm_hook(), "retry hooks", group)
+	_assert(report, lifecycle.resolve_line_break(), "line break resolves fight", group)
+	_assert(
+		report,
+		not lifecycle.resolve_hook_off(),
+		"second terminal failure cannot override first",
+		group
+	)
+	_assert_equal_int(
+		report,
+		lifecycle.resolution,
+		FightLifecycleScript.Resolution.LINE_BREAK,
+		"line-break resolution remains authoritative",
+		group
+	)
+	lifecycle.finish_cast()
+
+	# Stress many cast lifecycles so state never leaks across recasts.
+	for index in range(128):
+		lifecycle.begin_cast()
+		_assert(
+			report,
+			lifecycle.resolution == FightLifecycleScript.Resolution.NONE,
+			"stress cast %d clears previous resolution" % index,
+			group
+		)
+
+		if index % 3 == 0:
+			lifecycle.open_bite_window()
+			lifecycle.miss_bite()
+			lifecycle.cancel_cast()
+		elif index % 3 == 1:
+			lifecycle.confirm_hook()
+			lifecycle.resolve_hook_off()
+		else:
+			lifecycle.confirm_hook()
+			lifecycle.begin_landing()
+			lifecycle.resolve_catch()
+
+		_assert(
+			report,
+			lifecycle.is_resolved(),
+			"stress cast %d reaches one terminal state" % index,
+			group
+		)
+		lifecycle.finish_cast()
+		_assert_equal_int(
+			report,
+			lifecycle.state,
+			FightLifecycleScript.State.IDLE,
+			"stress cast %d returns idle" % index,
+			group
+		)
+
+
+func _test_tension_failure_regression(report: Dictionary) -> void:
+	var group: String = "fight_tension"
+	var profile := TENSION_PROFILE.duplicate(true) as FishingTensionProfile
+
+	_assert(report, profile != null, "tension profile duplicates", group)
+	if profile == null:
+		return
+
+	# Deliberately short deterministic values for regression simulation. Runtime
+	# balance remains authored in the real profile/scene; these are test-only.
+	profile.safe_min = 0.30
+	profile.safe_max = 0.40
+	profile.tension_response_speed = 10.0
+	profile.release_tension_speed = 10.0
+	profile.line_break_delay = 0.30
+	profile.hook_off_threshold = 0.10
+	profile.hook_off_delay = 0.20
+
+	var line_break_30 := _simulate_tension_failure_time(
+		profile,
+		FishingTension.FailureReason.LINE_BREAK,
+		1.0 / 30.0
+	)
+	var line_break_60 := _simulate_tension_failure_time(
+		profile,
+		FishingTension.FailureReason.LINE_BREAK,
+		1.0 / 60.0
+	)
+
+	_assert(report, line_break_30 > 0.0, "line break occurs at 30 Hz", group)
+	_assert(report, line_break_60 > 0.0, "line break occurs at 60 Hz", group)
+	_assert(
+		report,
+		absf(line_break_30 - line_break_60) <= 0.08,
+		"line-break timing is frame-rate stable",
+		group
+	)
+
+	var hook_off_30 := _simulate_tension_failure_time(
+		profile,
+		FishingTension.FailureReason.HOOK_OFF,
+		1.0 / 30.0
+	)
+	var hook_off_60 := _simulate_tension_failure_time(
+		profile,
+		FishingTension.FailureReason.HOOK_OFF,
+		1.0 / 60.0
+	)
+
+	_assert(report, hook_off_30 > 0.0, "hook off occurs at 30 Hz", group)
+	_assert(report, hook_off_60 > 0.0, "hook off occurs at 60 Hz", group)
+	_assert(
+		report,
+		absf(hook_off_30 - hook_off_60) <= 0.08,
+		"hook-off timing is frame-rate stable",
+		group
+	)
+
+	# Free-reel mode must never invoke fight failures no matter how violently a
+	# lure twitch changes the gauge before any fish is hooked.
+	var free_reel: FishingTension = TensionScript.new()
+	free_reel.configure_profile(profile)
+	free_reel.start_free_reel()
+	free_reel.add_impulse(1.0)
+	for _index in range(120):
+		free_reel.advance(1.0 / 60.0)
+	_assert_equal_int(
+		report,
+		free_reel.last_failure_reason,
+		FishingTension.FailureReason.NONE,
+		"free reel cannot trigger fight failure",
+		group
+	)
+	_assert(report, free_reel.active, "free reel remains active", group)
+	free_reel.stop()
+	_assert_equal_int(
+		report,
+		free_reel.current_state,
+		FishingTension.State.SAFE,
+		"stop clears stale tension state",
+		group
+	)
+	_assert(
+		report,
+		is_zero_approx(free_reel.value),
+		"stop clears stale tension value",
+		group
+	)
+	free_reel.free()
+
+
+func _simulate_tension_failure_time(
+	profile: FishingTensionProfile,
+	reason: int,
+	step: float
+) -> float:
+	var tension: FishingTension = TensionScript.new()
+	tension.configure_profile(profile)
+	tension.start()
+
+	if reason == FishingTension.FailureReason.LINE_BREAK:
+		tension.set_player_reeling(true)
+		tension.set_fish_resistance(1.0)
+	else:
+		tension.set_player_reeling(false)
+		tension.set_fish_resistance(0.0)
+
+	var elapsed := 0.0
+	var max_time := 5.0
+
+	while elapsed < max_time and tension.last_failure_reason == FishingTension.FailureReason.NONE:
+		tension.advance(step)
+		elapsed += step
+
+	var result := -1.0
+	if tension.last_failure_reason == reason:
+		result = elapsed
+
+	# Once terminal, extra updates must not mutate the reason or restart timers.
+	var terminal_reason := tension.last_failure_reason
+	for _index in range(30):
+		tension.advance(step)
+	if tension.last_failure_reason != terminal_reason:
+		result = -1.0
+
+	tension.free()
+	return result
 
 
 func _test_landing_regression(

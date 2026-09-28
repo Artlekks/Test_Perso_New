@@ -3,6 +3,9 @@ extends Node
 const DefaultTechniqueCatalog: FishingTechniqueCatalog = preload(
 	"res://data/bof4/techniques/all_techniques.tres"
 )
+const FightLifecycleScript = preload(
+	"res://scripts/fishing_fight_lifecycle.gd"
+)
 
 signal bite_opportunity_started
 signal bite_triggered
@@ -126,6 +129,7 @@ var bite_active: bool = false
 var active_fish: FishInstance = null
 
 var fight_state: int = FightState.NONE
+var lifecycle = FightLifecycleScript.new()
 var rounds_remaining: int = 0
 var recovery_time_left: float = 0.0
 var fish_population: Array[FishSpawnEntry] = []
@@ -162,34 +166,52 @@ func _ready() -> void:
 	_apply_rod_tension_settings()
 	
 func _on_bait_landed(_point: Vector3) -> void:
+	# One authoritative start point for a waterborne encounter. If a future bug
+	# somehow leaves the prior cast open, close that lifecycle before resetting
+	# runtime state. Preserve the newly selected bait/rod/debug configuration.
+	if lifecycle.state != FightLifecycleScript.State.IDLE:
+		lifecycle.cancel_cast()
+		lifecycle.finish_cast()
+
+	_reset_cast_runtime(false)
+	if not lifecycle.begin_cast():
+		push_error("Encounter: unable to begin a clean fishing-fight lifecycle.")
+		return
+
 	_reset_technique()
 	tension.start_free_reel()
 	bite_timer.start(first_bite_delay)
 
+
 func _on_bait_returned() -> void:
-	# A successful hooked return can enter a short landing presentation. Keep
-	# the fight shadow and active fish alive until Fishing explicitly commits
-	# the catch; otherwise the fish would disappear before the landing splash.
+	# Fishing owns the macro transition from FIGHT -> LANDING. When Caster is
+	# deliberately holding the returned hooked bait, do not also begin landing
+	# here. That used to make Encounter enter landing twice from the same signal.
 	if (
-		caster != null
+		lifecycle.is_hooked()
+		and caster != null
 		and caster.has_method("is_holding_returned_bait_for_landing")
 		and caster.is_holding_returned_bait_for_landing()
 	):
-		begin_catch_landing()
 		return
 
-	_end_active_fight_shadow(false)
-	bite_timer.stop()
-	bite_window_timer.stop()
-	bite_active = false
-	pending_fish_entry = null
-	pending_shadow = null
-	active_bait_data = null
-	last_spatial_context.clear()
-	_reset_technique()
-	tension.stop()
-	
+	if lifecycle.is_landing():
+		return
+
+	# Normal lure return / quick cancel ends the cast immediately.
+	if lifecycle.state != FightLifecycleScript.State.IDLE:
+		lifecycle.cancel_cast()
+
+	_reset_cast_runtime(true)
+	lifecycle.finish_cast()
+
+
 func _on_bite_timer_timeout() -> void:
+	# Stale one-shot timer callbacks are harmless. Only the explicit waiting
+	# state may select a new fish or open a bite window.
+	if not lifecycle.is_waiting_for_bite():
+		return
+
 	# Each bite check owns a fresh pending selection.
 	pending_fish_entry = null
 	pending_shadow = null
@@ -290,24 +312,39 @@ func _on_bite_timer_timeout() -> void:
 		_confirm_hit()
 		return
 
+	if not lifecycle.open_bite_window():
+		pending_fish_entry = null
+		pending_shadow = null
+		return
+
 	bite_active = true
 	bite_opportunity_started.emit()
 	bite_window_timer.start(_get_pending_bite_window_time())
 
 func try_hook() -> bool:
-	if not bite_active:
+	if not bite_active or not lifecycle.is_bite_window_open():
 		return false
 
 	return _confirm_hit()
 
 func _confirm_hit() -> bool:
+	if (
+		not lifecycle.is_waiting_for_bite()
+		and not lifecycle.is_bite_window_open()
+	):
+		return false
+
 	if pending_fish_entry == null:
 		return false
 
 	if pending_fish_entry.fish == null:
 		return false
 
+	if not lifecycle.confirm_hook():
+		return false
+
 	bite_active = false
+	bite_timer.stop()
 	bite_window_timer.stop()
 
 	active_fish = FishInstance.new()
@@ -371,6 +408,9 @@ func _confirm_hit() -> bool:
 	return true
 	
 func _on_bite_window_timeout() -> void:
+	if not lifecycle.is_bite_window_open():
+		return
+
 	bite_active = false
 
 	var retry_delay: float = (
@@ -383,8 +423,11 @@ func _on_bite_window_timeout() -> void:
 
 	pending_shadow = null
 	pending_fish_entry = null
-	bite_missed.emit()
 
+	if not lifecycle.miss_bite():
+		return
+
+	bite_missed.emit()
 	bite_timer.start(retry_delay)
 
 func _get_visible_shadow_candidate() -> Node:
@@ -502,10 +545,15 @@ func _end_active_fight_shadow(dive_away: bool) -> void:
 	active_fight_shadow = null
 
 
-func begin_catch_landing() -> void:
-	# Freeze the fight without consuming the fish yet. This is intentionally a
-	# presentation-only bridge between the final reel return and catch result.
+func begin_catch_landing() -> bool:
+	# Idempotent because Caster/Fishing can observe the same return event in the
+	# same frame. The lifecycle is the authority; presentation may call twice
+	# without changing gameplay twice.
+	if not lifecycle.begin_landing():
+		return false
+
 	bite_active = false
+	pending_fish_entry = null
 	pending_shadow = null
 	bite_timer.stop()
 	bite_window_timer.stop()
@@ -515,6 +563,9 @@ func begin_catch_landing() -> void:
 	rounds_remaining = 0
 	recovery_time_left = 0.0
 	player_reeling = false
+	player_steering = 0.0
+	current_fish_lateral = 0.0
+	fish_behavior_pressure = 0.0
 	fish_behavior.stop()
 
 	_set_active_fight_shadow_visual_state(&"spent")
@@ -524,28 +575,48 @@ func begin_catch_landing() -> void:
 	):
 		active_fight_shadow.begin_catch_landing()
 
+	return true
 
-func catch_fish() -> void:
+
+func catch_fish() -> bool:
+	if not lifecycle.is_landing() or active_fish == null:
+		return false
+
+	if not lifecycle.resolve_catch():
+		return false
+
+	var caught: FishInstance = active_fish
+
 	_end_active_fight_shadow(false)
 	bite_active = false
+	pending_fish_entry = null
 	pending_shadow = null
 	bite_timer.stop()
 	bite_window_timer.stop()
-
 	tension.stop()
 
 	fight_state = FightState.NONE
 	rounds_remaining = 0
 	recovery_time_left = 0.0
 	player_reeling = false
+	player_steering = 0.0
+	current_fish_lateral = 0.0
+	fish_behavior_pressure = 0.0
 	fish_behavior.stop()
+	active_fish = null
 	active_bait_data = null
-	fish_caught.emit(active_fish)
+
+	# Emit the immutable result exactly once, after Encounter has become terminal.
+	# Re-entrant listeners can no longer call catch_fish() a second time.
+	fish_caught.emit(caught)
+	lifecycle.finish_cast()
+	return true
+
 
 func _process(delta: float) -> void:
 	_update_technique_timer(delta)
 
-	if fight_state == FightState.NONE:
+	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
 
 	if fight_state == FightState.SPENT:
@@ -725,15 +796,30 @@ func _get_stamina_recovery_multiplier() -> float:
 
 
 func set_player_reeling(active: bool) -> void:
-	var was_reeling := player_reeling
+	# Free reeling is valid while waiting for a bite; fight reeling is valid only
+	# while a fish is actually hooked. Resolved/landing states reject stale input.
+	var accepts_reel_input := (
+		lifecycle.is_waiting_for_bite()
+		or lifecycle.is_bite_window_open()
+		or lifecycle.is_hooked()
+	)
 
+	if not accepts_reel_input:
+		active = false
+
+	var was_reeling := player_reeling
 	player_reeling = active
 	tension.set_player_reeling(active)
 
-	# Only react on the transition:
-	# K held -> K released.
-	if was_reeling and not active:
+	# Only a hooked fish owns release reactions. Releasing free-reel input must
+	# never wake FishBehavior or mutate a future fight.
+	if (
+		lifecycle.is_hooked()
+		and was_reeling
+		and not active
+	):
 		_react_to_reel_release()
+
 
 func _react_to_reel_release() -> void:
 	if fight_state == FightState.NONE:
@@ -752,6 +838,10 @@ func _react_to_reel_release() -> void:
 	)
 	
 func set_player_steering(value: float) -> void:
+	if not lifecycle.is_hooked():
+		player_steering = 0.0
+		return
+
 	player_steering = clampf(value, -1.0, 1.0)
 	
 func _get_max_stamina() -> float:
@@ -768,14 +858,14 @@ func _get_strength() -> float:
 	return 1.0
 
 func _on_fish_behavior_movement_changed(lateral: float) -> void:
-	if fight_state == FightState.NONE:
+	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
 
 	current_fish_lateral = lateral
 	fish_movement_changed.emit(lateral)
 
 func _on_fish_behavior_depth_changed(value: float) -> void:
-	if fight_state == FightState.NONE:
+	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
 
 	fish_depth_intent_changed.emit(value)
@@ -921,6 +1011,7 @@ func get_fish_debug_snapshot() -> Dictionary:
 	if fish_behavior != null and fish_behavior.has_method("get_debug_snapshot"):
 		snapshot["behavior"] = fish_behavior.get_debug_snapshot()
 
+	snapshot["lifecycle"] = lifecycle.get_debug_snapshot()
 	snapshot["technique"] = get_technique_debug_snapshot()
 	snapshot["tension"] = get_tension_debug_snapshot()
 
@@ -1177,15 +1268,31 @@ func _on_tension_state_changed(state: int) -> void:
 
 
 func _on_hook_off() -> void:
-	_fail_fight()
+	if not _fail_fight(FightLifecycleScript.Resolution.HOOK_OFF):
+		return
+
 	hook_off.emit()
 
 
 func _on_line_broken() -> void:
-	_fail_fight()
+	if not _fail_fight(FightLifecycleScript.Resolution.LINE_BREAK):
+		return
+
 	line_broken.emit()
 
-func _fail_fight() -> void:
+
+func _fail_fight(reason: int) -> bool:
+	var accepted := false
+
+	match reason:
+		FightLifecycleScript.Resolution.HOOK_OFF:
+			accepted = lifecycle.resolve_hook_off()
+		FightLifecycleScript.Resolution.LINE_BREAK:
+			accepted = lifecycle.resolve_line_break()
+
+	if not accepted:
+		return false
+
 	_end_active_fight_shadow(true)
 	tension.stop()
 
@@ -1193,6 +1300,9 @@ func _fail_fight() -> void:
 	rounds_remaining = 0
 	recovery_time_left = 0.0
 	player_reeling = false
+	player_steering = 0.0
+	current_fish_lateral = 0.0
+	fish_behavior_pressure = 0.0
 
 	fish_behavior.stop()
 
@@ -1203,11 +1313,13 @@ func _fail_fight() -> void:
 
 	active_fish = null
 	pending_fish_entry = null
+	pending_shadow = null
 	active_bait_data = null
+	return true
 
 
 func _on_fish_behavior_thrash_started(intensity: float) -> void:
-	if fight_state == FightState.NONE:
+	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
 
 	var clamped_intensity := clampf(intensity, 0.0, 1.0)
@@ -1221,10 +1333,63 @@ func _on_fish_behavior_thrash_started(intensity: float) -> void:
 	fish_thrash_started.emit(clamped_intensity)
 
 func _on_fish_behavior_pressure_changed(value: float) -> void:
+	if not lifecycle.is_hooked():
+		fish_behavior_pressure = 0.0
+		return
+
 	fish_behavior_pressure = clampf(value, 0.0, 1.0)
 
+
 func add_lure_tension(amount: float) -> void:
-	tension.add_impulse(amount)
+	if (
+		lifecycle.is_waiting_for_bite()
+		or lifecycle.is_bite_window_open()
+	):
+		tension.add_impulse(amount)
+
 
 func set_player_tension_bias(value: float) -> void:
-	tension.set_player_tension_bias(value)
+	if lifecycle.is_hooked():
+		tension.set_player_tension_bias(value)
+	else:
+		tension.set_player_tension_bias(0.0)
+
+
+func reset_cast_session() -> void:
+	if lifecycle.state != FightLifecycleScript.State.IDLE:
+		lifecycle.cancel_cast()
+
+	_reset_cast_runtime(true)
+	lifecycle.finish_cast()
+
+
+func _reset_cast_runtime(clear_bait_data: bool) -> void:
+	_end_active_fight_shadow(false)
+	bite_timer.stop()
+	bite_window_timer.stop()
+	bite_active = false
+	pending_fish_entry = null
+	pending_shadow = null
+	active_fish = null
+
+	fight_state = FightState.NONE
+	rounds_remaining = 0
+	recovery_time_left = 0.0
+	player_reeling = false
+	player_steering = 0.0
+	current_fish_lateral = 0.0
+	fish_behavior_pressure = 0.0
+
+	fish_behavior.stop()
+	tension.stop()
+
+	fish_resistance_changed.emit(0.0)
+	fish_pull_changed.emit(0.0)
+	fish_movement_changed.emit(0.0)
+	fish_depth_intent_changed.emit(0.0)
+
+	if clear_bait_data:
+		active_bait_data = null
+		last_spatial_context.clear()
+
+	_reset_technique()

@@ -540,6 +540,11 @@ func _on_mode_changed(new_mode) -> void:
 		if technique_detector != null:
 			technique_detector.reset()
 
+		# Macro Fishing owns session teardown. Encounter then clears every pending
+		# timer/fight input so an interrupted mode can never leak into the next cast.
+		if encounter != null and encounter.has_method("reset_cast_session"):
+			encounter.reset_cast_session()
+
 		if encounter.has_method("set_fish_zone"):
 			encounter.set_fish_zone(null)
 
@@ -1082,15 +1087,26 @@ func _begin_catch_landing() -> void:
 	if phase != Phase.FIGHT:
 		return
 
+	# Encounter owns bite/fight legality. Fishing requests the transition once and
+	# only advances the macro phase if Encounter accepts it. This prevents camera/
+	# animation state from entering LANDING with no valid hooked fish behind it.
+	if (
+		encounter.has_method("begin_catch_landing")
+		and not bool(encounter.begin_catch_landing())
+	):
+		push_warning(
+			"Fishing: rejected invalid FIGHT -> LANDING transition."
+		)
+		return
+
 	phase = Phase.LANDING
 
 	# The fish has genuinely reached the catch threshold. Stop player/fight
-	# control immediately so a new resistance round cannot start during the
-	# presentation beat.
+	# control immediately so no new resistance round can start during the
+	# presentation beat. Encounter already rejects stale input in LANDING.
 	encounter.set_player_reeling(false)
 	caster.set_reeling(false)
 	caster.set_bait_frozen(true)
-	encounter.begin_catch_landing()
 
 	current_reel_animation = &"Reel_Idle"
 	fish_resisting = false
@@ -1126,13 +1142,41 @@ func _run_catch_landing_sequence() -> void:
 
 	# This is the actual commit point. Records/CATCH feedback happen here, after
 	# the visual landing beat, not the instant the bait crosses the threshold.
-	encounter.catch_fish()
+	if encounter.has_method("catch_fish") and not bool(encounter.catch_fish()):
+		push_warning("Fishing: catch commit rejected because landing was no longer valid.")
+		_abort_invalid_catch_landing()
+		return
 
 	if caster.has_method("release_returned_bait_after_landing"):
 		caster.release_returned_bait_after_landing()
 
 	phase = Phase.CATCH
 	sprite_director.play(&"Fishing_Catch")
+
+
+func _abort_invalid_catch_landing() -> void:
+	# Defensive recovery only. A valid runtime should never need this path, but a
+	# stale async timer or future feature must not strand the player in LANDING.
+	if caster.has_method("set_hold_returned_bait_for_landing"):
+		caster.set_hold_returned_bait_for_landing(false)
+	if caster.has_method("release_returned_bait_after_landing"):
+		caster.release_returned_bait_after_landing()
+
+	camera_rig.set_fishing_camera_frozen(false)
+	camera_rig.reset_fishing_follow()
+
+	if encounter.has_method("reset_cast_session"):
+		encounter.reset_cast_session()
+
+	current_reel_animation = &""
+	fish_resisting = false
+	bite_opportunity_animation_active = false
+	bite_animation_active = false
+	manual_pull_animation_active = false
+
+	phase = Phase.AIM
+	sprite_director.play(&"Fishing_Idle")
+	aim.resume()
 
 
 func _process(delta: float) -> void:
@@ -1448,24 +1492,8 @@ func _spawn_surface_splash(
 		splash.set_follow_target(caster.active_bait)
 
 func _on_line_broken() -> void:
-	if phase != Phase.FIGHT:
-		return
+	_resolve_failed_fight(true)
 
-	_consume_equipped_lure_for_line_break()
-
-	if caster.has_method("set_hold_returned_bait_for_landing"):
-		caster.set_hold_returned_bait_for_landing(false)
-
-	_freeze_failed_fight()
-
-	current_reel_animation = &""
-	fish_resisting = false
-	bite_opportunity_animation_active = false
-	bite_animation_active = false
-	manual_pull_animation_active = false
-
-	phase = Phase.LINE_BROKEN
-	sprite_director.play(&"Reel_Broken_Rod")
 
 func _consume_equipped_lure_for_line_break() -> void:
 	last_lure_loss_result = {}
@@ -1481,10 +1509,22 @@ func _freeze_failed_fight() -> void:
 	caster.set_reeling(false)
 	caster.set_bait_frozen(true)
 	camera_rig.set_fishing_camera_frozen(true)
-	
+
+
 func _on_fight_failed() -> void:
+	_resolve_failed_fight(false)
+
+
+func _resolve_failed_fight(consume_lure: bool) -> void:
+	# Phase is the macro terminal latch. Once the first failure signal wins, any
+	# re-entrant/stale signal from tension or animation is ignored for this cast.
 	if phase != Phase.FIGHT:
 		return
+
+	phase = Phase.LINE_BROKEN
+
+	if consume_lure:
+		_consume_equipped_lure_for_line_break()
 
 	if caster.has_method("set_hold_returned_bait_for_landing"):
 		caster.set_hold_returned_bait_for_landing(false)
@@ -1497,8 +1537,8 @@ func _on_fight_failed() -> void:
 	bite_animation_active = false
 	manual_pull_animation_active = false
 
-	phase = Phase.LINE_BROKEN
 	sprite_director.play(&"Reel_Broken_Rod")
+
 
 func _begin_result_transition() -> void:
 	if phase != Phase.WAIT_RESULT:
@@ -1519,6 +1559,9 @@ func _on_result_screen_covered() -> void:
 	if caster.has_method("set_hold_returned_bait_for_landing"):
 		caster.set_hold_returned_bait_for_landing(false)
 	caster.cancel_bait()
+
+	if encounter.has_method("reset_cast_session"):
+		encounter.reset_cast_session()
 
 	camera_rig.set_fishing_camera_frozen(false)
 	camera_rig.reset_fishing_follow()
@@ -1548,6 +1591,9 @@ func _on_catch_view_dismissed() -> void:
 	if caster.has_method("set_hold_returned_bait_for_landing"):
 		caster.set_hold_returned_bait_for_landing(false)
 	caster.cancel_bait()
+
+	if encounter.has_method("reset_cast_session"):
+		encounter.reset_cast_session()
 
 	camera_rig.set_fishing_camera_frozen(false)
 	camera_rig.reset_fishing_follow()

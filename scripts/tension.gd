@@ -13,6 +13,12 @@ enum State {
 	OVERLOAD,
 }
 
+enum FailureReason {
+	NONE,
+	HOOK_OFF,
+	LINE_BREAK,
+}
+
 const DefaultTensionProfile: FishingTensionProfile = preload(
 	"res://data/bof4/fight/default_tension.tres"
 )
@@ -81,6 +87,7 @@ var overload_time: float = 0.0
 var hook_off_time: float = 0.0
 var line_tolerance_multiplier: float = 1.0
 var last_target_tension: float = 0.0
+var last_failure_reason: FailureReason = FailureReason.NONE
 
 var _runtime_profile: FishingTensionProfile = null
 
@@ -91,7 +98,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not active:
+	advance(delta)
+
+
+func advance(delta: float) -> void:
+	# Single deterministic update entry point. Runtime _process and regression
+	# simulations use the exact same path, so frame-rate/input stress tests cannot
+	# accidentally exercise a second implementation.
+	if not active or delta <= 0.0:
 		return
 
 	if not failure_enabled:
@@ -325,6 +339,10 @@ func _update_failure(delta: float) -> void:
 
 
 func _trigger_hook_off() -> void:
+	if not active or last_failure_reason != FailureReason.NONE:
+		return
+
+	last_failure_reason = FailureReason.HOOK_OFF
 	active = false
 	hook_off_time = 0.0
 	overload_time = 0.0
@@ -333,6 +351,10 @@ func _trigger_hook_off() -> void:
 
 
 func _trigger_line_break() -> void:
+	if not active or last_failure_reason != FailureReason.NONE:
+		return
+
+	last_failure_reason = FailureReason.LINE_BREAK
 	active = false
 	hook_off_time = 0.0
 	overload_time = 0.0
@@ -378,6 +400,7 @@ func start() -> void:
 	player_tension_bias = 0.0
 	overload_time = 0.0
 	hook_off_time = 0.0
+	last_failure_reason = FailureReason.NONE
 	last_target_tension = value
 	set_process(true)
 
@@ -396,6 +419,14 @@ func stop() -> void:
 	hook_off_time = 0.0
 	last_target_tension = 0.0
 	set_process(false)
+
+	# Stopped means neutral. Do not leave stale OVERLOAD/SLACK or a stale gauge
+	# value around for debug/UI consumers after a catch, failure, or recast.
+	value = 0.0
+	if current_state != State.SAFE:
+		current_state = State.SAFE
+		state_changed.emit(current_state)
+	tension_changed.emit(value)
 
 
 func set_player_reeling(
@@ -446,6 +477,7 @@ func start_free_reel() -> void:
 	player_tension_bias = 0.0
 	overload_time = 0.0
 	hook_off_time = 0.0
+	last_failure_reason = FailureReason.NONE
 	last_target_tension = value
 	set_process(true)
 
@@ -484,6 +516,16 @@ func get_state_label() -> String:
 			return "OVERLOAD"
 		_:
 			return "SAFE"
+
+
+func get_failure_reason_label() -> String:
+	match last_failure_reason:
+		FailureReason.HOOK_OFF:
+			return "HOOK_OFF"
+		FailureReason.LINE_BREAK:
+			return "LINE_BREAK"
+		_:
+			return "NONE"
 
 
 func get_debug_snapshot() -> Dictionary:
@@ -532,5 +574,7 @@ func get_debug_snapshot() -> Dictionary:
 		"hook_off_delay": profile.hook_off_delay,
 		"hook_off_time": hook_off_time,
 		"escape_progress": escape_progress,
+		"last_failure_reason": last_failure_reason,
+		"last_failure_label": get_failure_reason_label(),
 		"profile": profile.get_debug_summary(),
 	}

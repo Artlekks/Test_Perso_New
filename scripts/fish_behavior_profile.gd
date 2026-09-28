@@ -92,6 +92,35 @@ var thrash_chance: float = 0.20
 var thrash_multiplier: float = 1.35
 
 
+func is_valid_profile() -> bool:
+	var action_weight_total := (
+		surge_weight
+		+ side_run_weight
+		+ dive_weight
+		+ rise_weight
+		+ erratic_weight
+	)
+
+	return (
+		direction_change_min > 0.0
+		and direction_change_max >= direction_change_min
+		and movement_response_multiplier > 0.0
+		and release_reaction_multiplier > 0.0
+		and recovery_time_multiplier > 0.0
+		and bite_aggression_multiplier >= 0.0
+		and bite_window_multiplier > 0.0
+		and bite_retry_multiplier > 0.0
+		and fight_intensity_multiplier > 0.0
+		and pressure_multiplier > 0.0
+		and pull_multiplier > 0.0
+		and stamina_recovery_multiplier > 0.0
+		and action_weight_total > 0.0
+		and thrash_chance >= 0.0
+		and thrash_chance <= 1.0
+		and thrash_multiplier >= 1.0
+	)
+
+
 func get_archetype_label() -> String:
 	if not profile_name.is_empty():
 		return profile_name
