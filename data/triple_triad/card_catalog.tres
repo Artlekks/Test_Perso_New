@@ -1,17 +1,11 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" format=3 uid="uid://birtee8vg3o5r"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_card_catalog.gd" id="1_catalog"]
-[ext_resource type="Texture2D" path="res://assets/triple_triad/mugshots_atlas.png" id="2_atlas"]
+[ext_resource type="Script" uid="uid://p84g6d7m3ia8" path="res://scripts/triple_triad/triple_triad_card_catalog.gd" id="1_catalog"]
+[ext_resource type="Texture2D" uid="uid://cls5qqqomc7hi" path="res://assets/triple_triad/mugshots_atlas.png" id="2_atlas"]
+[ext_resource type="Resource" path="res://data/bof4/catalogs/all_content.tres" id="3_content"]
 
 [resource]
 script = ExtResource("1_catalog")
 portrait_atlas = ExtResource("2_atlas")
-columns = 16
-rows = 16
-cell_stride_x = 44
-cell_stride_y = 52
-portrait_width = 40
-portrait_height = 48
-origin = Vector2i(4, 4)
-card_count = 256
 disabled_indices = PackedInt32Array(148)
+supplemental_content_catalog = ExtResource("3_content")

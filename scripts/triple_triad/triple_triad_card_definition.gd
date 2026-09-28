@@ -9,6 +9,7 @@ extends Resource
 @export_range(1, 10, 1) var left_rank: int = 1
 @export var portrait: Texture2D
 @export var source_index: int = -1
+@export var source_kind: StringName = &"portrait"
 
 
 func rank_for_side(side: int) -> int:
@@ -32,6 +33,7 @@ func rank_total() -> int:
 func is_valid_definition() -> bool:
 	return (
 		not String(card_id).is_empty()
+		and not String(source_kind).is_empty()
 		and level >= 1
 		and level <= 10
 		and top_rank >= 1

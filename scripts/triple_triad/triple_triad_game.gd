@@ -18,11 +18,14 @@ const PHASE_SELECT_CELL := 2
 const PHASE_AI := 3
 const PHASE_FINISHED := 4
 
+const HAND_STEP_Y := 64.0
+const HAND_SELECTED_Y_OFFSET := -8.0
+
 @export var card_catalog: Resource
 @export var rule_set: Resource
 @export_range(1, 10, 1) var prototype_min_level: int = 1
 @export_range(1, 10, 1) var prototype_max_level: int = 3
-@export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.35
+@export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.55
 
 @onready var root: Control = $Root
 @onready var opponent_hand_container: Control = $Root/OpponentHand
@@ -111,9 +114,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if _phase == PHASE_SELECT_CARD:
-		var horizontal: int = _horizontal_step(event)
-		if horizontal != 0:
-			_selected_hand_index = clampi(_selected_hand_index + horizontal, 0, maxi(_match.player_hand.size() - 1, 0))
+		var hand_step: int = _hand_step(event)
+		if hand_step != 0:
+			_selected_hand_index = clampi(
+				_selected_hand_index + hand_step,
+				0,
+				maxi(_match.player_hand.size() - 1, 0)
+			)
 			_refresh_views()
 			get_viewport().set_input_as_handled()
 			return
@@ -188,11 +195,12 @@ func _try_player_move() -> void:
 		return
 	_selected_hand_index = clampi(_selected_hand_index, 0, maxi(_match.player_hand.size() - 1, 0))
 	message_label.text = _capture_message(result)
+	var captured_cells: Array = result.get("captured", [])
 	if bool(result.get("game_over", false)):
-		_finish_match()
+		_finish_match(captured_cells)
 	else:
 		_phase = PHASE_AI
-		_refresh_views()
+		_refresh_views(captured_cells)
 		_schedule_ai()
 
 
@@ -209,16 +217,17 @@ func _on_ai_timer_timeout() -> void:
 		int(move.get("cell_index", 0))
 	)
 	message_label.text = _capture_message(result)
+	var captured_cells: Array = result.get("captured", [])
 	if bool(result.get("game_over", false)):
-		_finish_match()
+		_finish_match(captured_cells)
 	else:
 		_phase = PHASE_SELECT_CARD
 		_selected_hand_index = clampi(_selected_hand_index, 0, maxi(_match.player_hand.size() - 1, 0))
 		_selected_cell_index = _find_nearest_empty_cell(_selected_cell_index)
-		_refresh_views()
+		_refresh_views(captured_cells)
 
 
-func _finish_match() -> void:
+func _finish_match(captured_cells: Array = []) -> void:
 	_phase = PHASE_FINISHED
 	var score: Dictionary = _match.get_score()
 	var winner: int = _match.get_winner()
@@ -229,7 +238,7 @@ func _finish_match() -> void:
 			message_label.text = "YOU LOSE  %d - %d" % [int(score["player"]), int(score["opponent"])]
 		_:
 			message_label.text = "DRAW  %d - %d" % [int(score["player"]), int(score["opponent"])]
-	_refresh_views()
+	_refresh_views(captured_cells)
 	match_finished.emit({
 		"winner": winner,
 		"score": score,
@@ -241,7 +250,6 @@ func _schedule_ai() -> void:
 
 
 func _build_views() -> void:
-	const HAND_STEP_Y := 58.0
 	for index in range(5):
 		var opponent_view = CardViewScene.instantiate()
 		opponent_hand_container.add_child(opponent_view)
@@ -260,16 +268,18 @@ func _build_views() -> void:
 		_player_views.append(player_view)
 
 
-func _refresh_views() -> void:
+func _refresh_views(captured_cells: Array = []) -> void:
 	if _match == null:
 		return
-	var show_opponent_cards: bool = rule_set != null and bool(rule_set.open_rule)
+	var show_opponent_cards: bool = rule_set == null or bool(rule_set.open_rule)
+
 	for index in range(_opponent_views.size()):
 		var view = _opponent_views[index]
 		if index < _match.opponent_hand.size():
 			view.visible = true
 			view.configure(_match.opponent_hand[index], OWNER_OPPONENT, not show_opponent_cards)
 			view.set_selected(false)
+			view.position = Vector2(0.0, index * HAND_STEP_Y)
 			view.z_index = index
 		else:
 			view.visible = false
@@ -279,9 +289,18 @@ func _refresh_views() -> void:
 		if index < _match.player_hand.size():
 			view.visible = true
 			view.configure(_match.player_hand[index], OWNER_PLAYER, false)
-			var is_selected: bool = _phase == PHASE_SELECT_CARD and index == _selected_hand_index
+			var is_selected: bool = (
+				_phase in [PHASE_SELECT_CARD, PHASE_SELECT_CELL]
+				and index == _selected_hand_index
+			)
 			view.set_selected(is_selected)
-			view.z_index = 20 if is_selected else index
+			view.position = Vector2(
+				0.0,
+				index * HAND_STEP_Y + (HAND_SELECTED_Y_OFFSET if is_selected else 0.0)
+			)
+			# Keep physical stack order. Later cards remain above earlier cards, so
+			# selecting the top card never hides the card underneath it.
+			view.z_index = index
 		else:
 			view.visible = false
 
@@ -292,7 +311,12 @@ func _refresh_views() -> void:
 			board_view.configure(null, OWNER_NONE, false)
 		else:
 			var slot: Dictionary = slot_variant
-			board_view.configure(slot["card"], int(slot["owner"]), false)
+			board_view.configure(
+				slot["card"],
+				int(slot["owner"]),
+				false,
+				captured_cells.has(cell_index)
+			)
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
 	var score: Dictionary = _match.get_score()
@@ -301,7 +325,7 @@ func _refresh_views() -> void:
 	match _phase:
 		PHASE_SELECT_CARD:
 			turn_label.text = "Your turn: choose a card"
-			help_label.text = "A/D: Card   K: Select   I: Leave"
+			help_label.text = "W/S: Card   K: Select   I: Leave"
 		PHASE_SELECT_CELL:
 			turn_label.text = "Choose a board space"
 			help_label.text = "W/A/S/D: Move   K: Place   I: Back"
@@ -365,10 +389,10 @@ func _is_down(event: InputEvent) -> bool:
 	return _key_matches(event, KEY_S) or _key_matches(event, KEY_DOWN)
 
 
-func _horizontal_step(event: InputEvent) -> int:
-	if _is_left(event):
+func _hand_step(event: InputEvent) -> int:
+	if _is_up(event) or _is_left(event):
 		return -1
-	if _is_right(event):
+	if _is_down(event) or _is_right(event):
 		return 1
 	return 0
 

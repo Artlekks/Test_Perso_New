@@ -1,12 +1,7 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" format=3 uid="uid://bop8hafk7xbag"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_rule_set.gd" id="1_rules"]
+[ext_resource type="Script" uid="uid://dngcef2ebkffn" path="res://scripts/triple_triad/triple_triad_rule_set.gd" id="1_rules"]
 
 [resource]
 script = ExtResource("1_rules")
-open_rule = false
-same_rule = false
-same_wall_rule = false
-plus_rule = false
-combo_rule = false
-elemental_rule = false
+open_rule = true
