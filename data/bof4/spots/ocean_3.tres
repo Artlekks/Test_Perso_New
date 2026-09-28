@@ -17,33 +17,57 @@
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
 weight = 27.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
 weight = 27.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
 weight = 17.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_4"]
 script = ExtResource("2_spawn")
 fish = ExtResource("6_fish")
 weight = 13.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_5"]
 script = ExtResource("2_spawn")
 fish = ExtResource("7_fish")
 weight = 11.0
 ambient_weight_multiplier = 0.9
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_6"]
 script = ExtResource("2_spawn")
 fish = ExtResource("8_fish")
 weight = 5.0
 ambient_weight_multiplier = 0.55
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 strategy_note = "Rare deep Ocean 3 target; guides place it near the rock peninsula / second buoy."
 
 [resource]

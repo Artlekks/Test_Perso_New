@@ -14,22 +14,38 @@
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
 weight = 35.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
 weight = 25.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
 weight = 25.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_4"]
 script = ExtResource("2_spawn")
 fish = ExtResource("6_fish")
 weight = 15.0
 ambient_weight_multiplier = 0.85
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [resource]
 script = ExtResource("1_spot")

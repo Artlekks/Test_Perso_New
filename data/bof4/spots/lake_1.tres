@@ -15,17 +15,29 @@
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
 weight = 15.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
 weight = 25.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
 fish = ExtResource("5_fish")
 weight = 25.0
 hotspot_tag = &"rocks"
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 strategy_note = "Rocks are the documented Bass/Blue Gill tip."
 
 [sub_resource type="Resource" id="FishSpawnEntry_4"]
@@ -33,6 +45,10 @@ script = ExtResource("2_spawn")
 fish = ExtResource("6_fish")
 weight = 20.0
 hotspot_tag = &"rocks"
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 strategy_note = "Rocks are the documented Bass/Blue Gill tip."
 
 [sub_resource type="Resource" id="FishSpawnEntry_5"]
@@ -40,6 +56,10 @@ script = ExtResource("2_spawn")
 fish = ExtResource("7_fish")
 weight = 15.0
 ambient_weight_multiplier = 0.9
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [resource]
 script = ExtResource("1_spot")

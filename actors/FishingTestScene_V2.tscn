@@ -238,8 +238,8 @@ transform = Transform3D(1.5887823, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("BoxShape3D_shore_blocker")
 debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
-[node name="BeachMerchantNPC" parent="World" instance=ExtResource("72_merchant_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0, 0.42)
+[node name="BeachMerchantNPC" parent="World" unique_id=1332911730 instance=ExtResource("72_merchant_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9465082, 0.09538448, 0.42)
 
 [node name="Player" type="Node" parent="." unique_id=1284942496]
 

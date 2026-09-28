@@ -13,11 +13,19 @@
 script = ExtResource("2_spawn")
 fish = ExtResource("3_fish")
 weight = 50.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_2"]
 script = ExtResource("2_spawn")
 fish = ExtResource("4_fish")
 weight = 40.0
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 
 [sub_resource type="Resource" id="FishSpawnEntry_3"]
 script = ExtResource("2_spawn")
@@ -26,6 +34,10 @@ weight = 10.0
 ambient_weight_multiplier = 0.5
 recommended_min_cast_distance_m = 25.0
 hotspot_tag = &"between_buildings"
+required_environment_conditions = null
+blocked_environment_conditions = null
+required_environment_tags = null
+blocked_environment_tags = null
 strategy_note = "Documented tip: target between buildings with roughly a 25m cast."
 
 [resource]
