@@ -38,14 +38,14 @@ var thrash_threshold: float = 0.70
 ## Seconds continuously above safe_max before the line snaps.
 @export var line_break_delay: float = 1.50
 
-## Tension value at/below which the hook-off timer can run.
-## 0.0 preserves the previous project's exact low-tension failure behavior.
+## Tension value at/below which the hook-off timer can run. A small readable
+## slack band is easier to understand than failing on one exact zero value.
 @export_range(0.0, 1.0, 0.01)
-var hook_off_threshold: float = 0.0
+var hook_off_threshold: float = 0.08
 
-## Seconds continuously at/below hook_off_threshold before the fish escapes.
-## 0.0 preserves the previous immediate-at-zero behavior.
-@export var hook_off_delay: float = 0.0
+## Continuous slack grace before the fish escapes. This prevents one-frame or
+## frame-rate-sensitive hook-off while still punishing sustained loose line.
+@export var hook_off_delay: float = 0.80
 
 
 func is_valid_profile() -> bool:

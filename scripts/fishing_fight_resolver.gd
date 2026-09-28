@@ -1,5 +1,9 @@
 extends RefCounted
 
+const FightAccessibility = preload(
+	"res://scripts/fishing_fight_accessibility.gd"
+)
+
 ## Single authority for converting authored fish/specimen/loadout data into the
 ## plain runtime values consumed by the fishing fight. Keeping this calculation
 ## here prevents Encounter, FishBehavior and UI/debug code from independently
@@ -235,6 +239,16 @@ static func resolve_context(
 	if bait != null:
 		result["lure_id"] = str(bait.lure_id)
 
+	# Difficulty metadata is descriptive only. It makes the authored progression
+	# curve visible to QA/debug systems without allowing Encounter to reinterpret
+	# or secretly modify fish stats.
+	var accessibility_meta: Dictionary = FightAccessibility.build_context_metadata(
+		int(result.get("difficulty_tier", 1)),
+		rod
+	)
+	for key in accessibility_meta:
+		result[key] = accessibility_meta[key]
+
 	return result
 
 
@@ -322,6 +336,12 @@ static func _empty_context_stats() -> Dictionary:
 		"archetype": "UNPROFILED",
 		"personality": "UNPROFILED",
 		"difficulty_tier": 1,
+		"difficulty_band": "INTRODUCTORY",
+		"recommended_rod_power_tier": 0,
+		"rod_power_tier": 0,
+		"rod_tier_gap": 0,
+		"rod_meets_recommendation": true,
+		"starter_rod_supported": true,
 		"dominant_action": "UNPROFILED",
 		"size_ratio_to_average": 0.0,
 		"is_king": false,

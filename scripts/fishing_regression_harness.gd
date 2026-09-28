@@ -49,6 +49,12 @@ const FightLifecycleScript = preload(
 const FightResolver = preload(
 	"res://scripts/fishing_fight_resolver.gd"
 )
+const FightAccessibility = preload(
+	"res://scripts/fishing_fight_accessibility.gd"
+)
+const DIFFICULTY_POLICY = preload(
+	"res://data/bof4/fight/default_difficulty_policy.tres"
+)
 const TensionScript = preload(
 	"res://scripts/tension.gd"
 )
@@ -94,6 +100,7 @@ func run_all() -> Dictionary:
 	_test_rewards(report)
 	_test_trades(report)
 	_test_fight_stat_resolution(report)
+	_test_difficulty_accessibility_curve(report)
 	_test_tension_profile(report)
 	_test_fight_lifecycle_regression(report)
 	_test_tension_failure_regression(report)
@@ -1136,6 +1143,97 @@ func _test_fight_stat_resolution(report: Dictionary) -> void:
 		group
 	)
 
+
+
+func _test_difficulty_accessibility_curve(report: Dictionary) -> void:
+	var group: String = "difficulty_accessibility"
+	_assert(report, DIFFICULTY_POLICY != null, "difficulty policy exists", group)
+	if DIFFICULTY_POLICY == null:
+		return
+	_assert(report, DIFFICULTY_POLICY.is_valid_policy(), "difficulty policy valid", group)
+
+	var wooden_rod = null
+	var masters_rod = null
+	if CONTENT_CATALOG.tackle != null:
+		wooden_rod = CONTENT_CATALOG.tackle.get_rod_by_id(&"wooden_rod")
+		masters_rod = CONTENT_CATALOG.tackle.get_rod_by_id(&"masters_rod")
+	_assert(report, wooden_rod != null, "Wooden Rod exists for starter audit", group)
+	_assert(report, masters_rod != null, "Master's Rod exists for endgame audit", group)
+
+	var tier_duration_totals: Dictionary = {}
+	var tier_counts: Dictionary = {}
+
+	for fish_data in CONTENT_CATALOG.fish:
+		if fish_data == null or fish_data.behavior_profile == null:
+			continue
+
+		var fish_name: String = fish_data.fish_name
+		var tier := clampi(int(fish_data.behavior_profile.difficulty_tier), 1, 5)
+		var average := FishInstance.new()
+		average.setup(fish_data, -1, fish_data.average_size)
+		var king_max_size := fish_data.king_size * fish_data.king_max_size_multiplier
+		var king := FishInstance.new()
+		king.setup(fish_data, 1, king_max_size)
+
+		var average_audit: Dictionary = FightAccessibility.audit_specimen(
+			fish_data,
+			average.get_fight_stats(),
+			wooden_rod,
+			TENSION_PROFILE,
+			false
+		)
+		var king_audit: Dictionary = FightAccessibility.audit_specimen(
+			fish_data,
+			king.get_fight_stats(),
+			masters_rod,
+			TENSION_PROFILE,
+			true
+		)
+
+		_assert(report, bool(average_audit.get("valid", false)), "%s average audit valid" % fish_name, group)
+		_assert(report, bool(king_audit.get("valid", false)), "%s king audit valid" % fish_name, group)
+		_assert(report, bool(average_audit.get("bite_accessible", false)), "%s hook window respects tier floor" % fish_name, group)
+		_assert(report, bool(average_audit.get("duration_accessible", false)), "%s average endurance fits tier budget" % fish_name, group)
+		_assert(report, bool(king_audit.get("duration_accessible", false)), "%s max king endurance fits tier budget" % fish_name, group)
+		_assert(report, bool(average_audit.get("line_failure_readable", false)), "%s starter line-break grace readable" % fish_name, group)
+		_assert(report, bool(average_audit.get("hook_failure_readable", false)), "%s slack failure has grace" % fish_name, group)
+		_assert(report, bool(king_audit.get("rod_meets_recommendation", false)), "%s Master's Rod meets recommendation" % fish_name, group)
+
+		if DIFFICULTY_POLICY.starter_rod_should_support(tier):
+			_assert(report, bool(average_audit.get("rod_meets_recommendation", false)), "%s starter rod supports early tier" % fish_name, group)
+
+		var total := float(tier_duration_totals.get(tier, 0.0))
+		tier_duration_totals[tier] = total + float(average_audit.get("active_reel_seconds", 0.0))
+		tier_counts[tier] = int(tier_counts.get(tier, 0)) + 1
+
+	# The broad curve must rise from beginner to endgame. Individual personalities
+	# may overlap; forcing every single fish to be harder than the previous tier
+	# would destroy variety, so compare tier averages instead.
+	var previous_average := -1.0
+	for tier in range(1, 6):
+		var count := maxi(int(tier_counts.get(tier, 0)), 1)
+		var tier_average := float(tier_duration_totals.get(tier, 0.0)) / float(count)
+		_assert(report, tier_average > previous_average, "tier %d average endurance rises" % tier, group)
+		previous_average = tier_average
+
+	if CONTENT_CATALOG.tackle != null:
+		for rod in CONTENT_CATALOG.tackle.rods:
+			if rod == null:
+				continue
+			var grace := TENSION_PROFILE.line_break_delay * rod.line_tolerance_multiplier
+			_assert(
+				report,
+				grace + 0.0001 >= DIFFICULTY_POLICY.minimum_line_break_grace_seconds,
+				"%s preserves minimum line-break grace" % rod.rod_name,
+				group
+			)
+
+	_assert(
+		report,
+		TENSION_PROFILE.hook_off_delay + 0.0001 >= DIFFICULTY_POLICY.minimum_hook_off_grace_seconds,
+		"default hook-off has sustained slack grace",
+		group
+	)
 
 func _test_tension_profile(report: Dictionary) -> void:
 	var group: String = "tension"

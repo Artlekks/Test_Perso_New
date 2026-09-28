@@ -1,0 +1,16 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/fishing_difficulty_policy.gd" id="1_policy"]
+
+[resource]
+script = ExtResource("1_policy")
+tier_labels = PackedStringArray("INTRODUCTORY", "FOUNDATION", "INTERMEDIATE", "ADVANCED", "ENDGAME")
+minimum_bite_window_seconds = PackedFloat32Array(0.7, 0.68, 0.58, 0.52, 0.6)
+max_average_active_reel_seconds = PackedFloat32Array(3, 6, 10, 20, 27)
+max_king_active_reel_seconds = PackedFloat32Array(4.5, 8.5, 14.5, 30, 38.5)
+recommended_rod_power_tier = PackedInt32Array(0, 0, 1, 2, 3)
+starter_rod_supported_through_fish_tier = 2
+minimum_line_break_grace_seconds = 1.0
+minimum_hook_off_grace_seconds = 0.5
+reference_stamina_drain_per_second = 30.0
+reference_bite_window_seconds = 0.8
