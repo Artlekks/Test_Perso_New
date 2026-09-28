@@ -217,6 +217,12 @@ func _ready() -> void:
 	fishing_reward_service = session_services.reward_service
 	fishing_journal_service = session_services.journal_service
 
+	if (
+		encounter != null
+		and encounter.has_method("set_fishing_progress")
+	):
+		encounter.set_fishing_progress(fishing_progress)
+
 	if loadout != null:
 		loadout.set_inventory(fishing_inventory)
 

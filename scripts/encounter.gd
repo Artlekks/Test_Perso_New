@@ -143,6 +143,7 @@ var pending_shadow: Node = null
 var active_fight_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
+var fishing_progress: FishingProgress = null
 var active_rod_data: RodData = null
 ## Immutable per-hook snapshot of fish + rod + lure fight values. Encounter only
 ## consumes this resolved package; it does not reinterpret source resources.
@@ -374,10 +375,20 @@ func _confirm_hit() -> bool:
 			)
 		)
 
+	var generation_context: Dictionary = {}
+	if (
+		is_instance_valid(fishing_progress)
+		and fishing_progress.has_method("get_record_mercy_context")
+	):
+		generation_context = fishing_progress.get_record_mercy_context(
+			pending_fish_entry.fish
+		)
+
 	active_fish.setup(
 		pending_fish_entry.fish,
 		king_override,
-		size_override_cm
+		size_override_cm,
+		generation_context
 	)
 
 	_rebuild_active_fight_context()
@@ -1247,6 +1258,11 @@ func _reset_technique() -> void:
 
 func set_debug_settings(settings) -> void:
 	debug_settings = settings
+
+
+func set_fishing_progress(progress: FishingProgress) -> void:
+	fishing_progress = progress
+
 
 func set_rod_data(rod_data: RodData) -> void:
 	active_rod_data = rod_data

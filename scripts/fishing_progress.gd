@@ -10,6 +10,9 @@ const CatchEvaluator = preload(
 const DefaultProgressionCatalog: FishingProgressionCatalog = preload(
 	"res://data/bof4/progression/all_progression.tres"
 )
+const DefaultRecordMercyPolicy = preload(
+	"res://data/bof4/progression/default_record_mercy.tres"
+)
 
 signal changed
 signal catch_recorded(
@@ -22,7 +25,7 @@ signal catch_specimen_recorded(
 	specimen_data: Dictionary
 )
 
-const SAVE_VERSION: int = 6
+const SAVE_VERSION: int = 7
 const SAVE_PATH: String = "user://fishing_progress.json"
 
 var fishing_points: int = 0
@@ -36,6 +39,7 @@ const MAX_RECENT_CATCH_TRANSACTION_IDS: int = 256
 var progression_catalog: FishingProgressionCatalog = (
 	DefaultProgressionCatalog
 )
+var record_mercy_policy = DefaultRecordMercyPolicy
 
 var _initialized: bool = false
 
@@ -58,6 +62,17 @@ func configure_progression_catalog(
 	if _initialized:
 		_recalculate_fishing_points()
 		changed.emit()
+
+
+func configure_record_mercy_policy(new_policy) -> void:
+	if (
+		new_policy == null
+		or not new_policy.has_method("is_valid_policy")
+		or not bool(new_policy.is_valid_policy())
+	):
+		return
+
+	record_mercy_policy = new_policy
 
 
 func initialize() -> void:
@@ -160,6 +175,10 @@ func record_catch_snapshot(
 	var previous_king_caught: bool = bool(
 		record.get("king_caught", false)
 	)
+	var previous_record_miss_streak: int = maxi(
+		int(record.get("record_miss_streak", 0)),
+		0
+	)
 	var previous_fishing_points: int = fishing_points
 	var previous_rank_index: int = get_rank_index(
 		previous_fishing_points
@@ -207,6 +226,47 @@ func record_catch_snapshot(
 			"best_points",
 			context
 		)
+
+	# Per-species anti-bad-luck state. Only completed catches can advance this
+	# streak. Any genuine record improvement resets it, and a species whose
+	# maximum score has already been reached never accumulates mercy.
+	var record_improved: bool = (
+		size > previous_best_size
+		or improves_points
+	)
+	var max_points: int = maxi(
+		int(snapshot.get("max_points", 0)),
+		0
+	)
+	var best_points_after: int = maxi(
+		previous_best_points,
+		int(record.get("best_points", 0))
+	)
+	var record_complete: bool = (
+		max_points > 0
+		and best_points_after >= max_points
+	)
+	var next_record_miss_streak: int = 0
+
+	if (
+		record_mercy_policy != null
+		and record_mercy_policy.has_method("get_next_miss_streak")
+	):
+		next_record_miss_streak = int(
+			record_mercy_policy.call(
+				"get_next_miss_streak",
+				previous_record_miss_streak,
+				record_improved,
+				record_complete
+			)
+		)
+	elif not record_improved and not record_complete:
+		next_record_miss_streak = previous_record_miss_streak + 1
+
+	record["record_miss_streak"] = maxi(
+		next_record_miss_streak,
+		0
+	)
 
 	record["last_catch_size"] = size
 	record["last_catch_points"] = points
@@ -270,6 +330,10 @@ func record_catch_snapshot(
 		),
 		"previous_best_size": previous_best_size,
 		"previous_best_points": previous_best_points,
+		"record_improved": record_improved,
+		"record_miss_streak_before": previous_record_miss_streak,
+		"record_miss_streak": int(record.get("record_miss_streak", 0)),
+		"record_complete": record_complete,
 		"fishing_points_before": previous_fishing_points,
 		"fishing_points": fishing_points,
 		"fishing_points_gained": maxi(
@@ -459,6 +523,55 @@ func has_caught(species: FishData) -> bool:
 	var record := get_species_record(species)
 
 	return int(record.get("caught_count", 0)) > 0
+
+
+func get_record_mercy_context(species: FishData) -> Dictionary:
+	if species == null:
+		return {}
+
+	var record: Dictionary = get_species_record(species)
+	var miss_streak: int = maxi(
+		int(record.get("record_miss_streak", 0)),
+		0
+	)
+	var best_points: int = maxi(
+		int(record.get("best_points", 0)),
+		0
+	)
+
+	if (
+		record_mercy_policy != null
+		and record_mercy_policy.has_method("build_generation_context")
+	):
+		return record_mercy_policy.call(
+			"build_generation_context",
+			miss_streak,
+			best_points,
+			maxi(species.max_points, 0)
+		) as Dictionary
+
+	return {
+		"active": false,
+		"miss_streak": miss_streak,
+		"bonus_roll_chance": 0.0,
+		"max_bonus_rolls": 1,
+		"record_complete": (
+			species.max_points > 0
+			and best_points >= species.max_points
+		),
+	}
+
+
+func get_record_miss_streak(species: FishData) -> int:
+	return maxi(
+		int(
+			get_species_record(species).get(
+				"record_miss_streak",
+				0
+			)
+		),
+		0
+	)
 
 
 func get_species_key(species: FishData) -> String:
@@ -912,6 +1025,7 @@ func _create_empty_record_from_values(
 	return {
 		"fish_name": fish_name,
 		"caught_count": 0,
+		"record_miss_streak": 0,
 		"best_size": 0.0,
 		"best_size_points": 0,
 		"best_size_score_tier": 0,
@@ -958,6 +1072,11 @@ func _sanitize_record(
 				)
 			),
 			0
+		),
+		"record_miss_streak": clampi(
+			maxi(int(record.get("record_miss_streak", 0)), 0),
+			0,
+			999
 		),
 		"best_size": float(maxi(roundi(float(record.get("best_size", 0.0))), 0)),
 		"best_size_points": maxi(int(record.get("best_size_points", 0)), 0),

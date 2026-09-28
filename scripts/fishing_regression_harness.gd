@@ -25,6 +25,12 @@ const CatchScoring = preload(
 const SizeRoller = preload(
 	"res://scripts/fishing_size_roller.gd"
 )
+const SpecimenGenerator = preload(
+	"res://scripts/fishing_specimen_generator.gd"
+)
+const RECORD_MERCY_POLICY = preload(
+	"res://data/bof4/progression/default_record_mercy.tres"
+)
 const BaitScript = preload(
 	"res://scripts/bait_V2.gd"
 )
@@ -93,6 +99,7 @@ func run_all() -> Dictionary:
 	_test_scoring_invariants(report)
 	_test_techniques(report)
 	_test_progression(report)
+	_test_record_mercy_system(report)
 	_test_catch_persistence_regression(report)
 	_test_all_species_record_delta_regression(report)
 	_test_debug_persistence_gate_regression(report)
@@ -514,6 +521,200 @@ func _test_progression(report: Dictionary) -> void:
 		_assert(report, rank != null, "rank %d resource" % index, group)
 		if rank != null:
 			_assert_equal_int(report, rank.min_points, expected_thresholds[index], "rank %d threshold" % index, group)
+
+
+func _test_record_mercy_system(report: Dictionary) -> void:
+	var group: String = "record_mercy"
+	_assert(report, RECORD_MERCY_POLICY != null, "record mercy policy exists", group)
+	if RECORD_MERCY_POLICY == null:
+		return
+
+	_assert(
+		report,
+		RECORD_MERCY_POLICY.has_method("is_valid_policy")
+		and bool(RECORD_MERCY_POLICY.call("is_valid_policy")),
+		"record mercy policy valid",
+		group
+	)
+
+	var sweetfish: FishData = null
+	for fish in CONTENT_CATALOG.fish:
+		if (
+			fish != null
+			and fish.get_stable_species_id().to_lower() == "sweetfish"
+		):
+			sweetfish = fish
+			break
+
+	_assert(report, sweetfish != null, "Sweetfish exists for mercy test", group)
+	if sweetfish == null:
+		return
+
+	var progress := FishingProgress.new()
+	progress.progression_catalog = PROGRESSION_CATALOG
+	progress.record_mercy_policy = RECORD_MERCY_POLICY
+
+	# A real first record starts clean. Only completed non-record catches advance
+	# the per-species dry streak.
+	progress.record_catch_snapshot(
+		CatchEvaluatorScript.create_snapshot_from_values(sweetfish, 18.0),
+		false,
+		false
+	)
+	_assert_equal_int(
+		report,
+		progress.get_record_miss_streak(sweetfish),
+		0,
+		"first record starts with zero miss streak",
+		group
+	)
+
+	for expected_streak in range(1, 4):
+		progress.record_catch_snapshot(
+			CatchEvaluatorScript.create_snapshot_from_values(sweetfish, 17.0),
+			false,
+			false
+		)
+		_assert_equal_int(
+			report,
+			progress.get_record_miss_streak(sweetfish),
+			expected_streak,
+			"non-record catch advances streak to %d" % expected_streak,
+			group
+		)
+
+	var mercy_context: Dictionary = progress.get_record_mercy_context(sweetfish)
+	_assert(report, bool(mercy_context.get("active", false)), "mercy activates after configured dry streak", group)
+	_assert_float_close(
+		report,
+		float(mercy_context.get("bonus_roll_chance", 0.0)),
+		0.10,
+		0.0001,
+		"first mercy step grants ten-percent bonus-roll chance",
+		group
+	)
+
+	progress.record_catch_snapshot(
+		CatchEvaluatorScript.create_snapshot_from_values(sweetfish, 17.0),
+		false,
+		false
+	)
+	mercy_context = progress.get_record_mercy_context(sweetfish)
+	_assert_float_close(
+		report,
+		float(mercy_context.get("bonus_roll_chance", 0.0)),
+		0.20,
+		0.0001,
+		"mercy chance grows after another failed record catch",
+		group
+	)
+
+	# A genuine improved record immediately clears the dry streak.
+	var improved: Dictionary = progress.record_catch_snapshot(
+		CatchEvaluatorScript.create_snapshot_from_values(sweetfish, 20.0),
+		false,
+		false
+	)
+	_assert(report, bool(improved.get("record_improved", false)), "improved specimen is recognized as record improvement", group)
+	_assert_equal_int(report, progress.get_record_miss_streak(sweetfish), 0, "new record resets mercy streak", group)
+	_assert(report, not bool(progress.get_record_mercy_context(sweetfish).get("active", true)), "new record disables mercy again", group)
+
+	# A completed/crown score can never accumulate anti-bad-luck pressure because
+	# there is no higher score left to chase.
+	progress.record_catch_snapshot(
+		CatchEvaluatorScript.create_snapshot_from_values(sweetfish, sweetfish.king_size),
+		false,
+		false
+	)
+	for _index in range(4):
+		progress.record_catch_snapshot(
+			CatchEvaluatorScript.create_snapshot_from_values(sweetfish, 17.0),
+			false,
+			false
+		)
+	_assert_equal_int(report, progress.get_record_miss_streak(sweetfish), 0, "completed species never accumulates mercy", group)
+	_assert(report, not bool(progress.get_record_mercy_context(sweetfish).get("active", true)), "completed species keeps mercy disabled", group)
+
+	# Pressure-test the generator at maximum mercy. It may add one extra roll and
+	# select the larger candidate, but the 65% cap means neither the bonus roll
+	# nor a crown is guaranteed.
+	var maximum_context: Dictionary = RECORD_MERCY_POLICY.call(
+		"build_generation_context",
+		99,
+		1,
+		maxi(sweetfish.max_points, 2)
+	) as Dictionary
+	var mercy_applied_count: int = 0
+	var no_mercy_count: int = 0
+	var non_king_count: int = 0
+
+	for seed in range(256):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed + 1001
+		var generated: Dictionary = SpecimenGenerator.roll_with_rng(
+			sweetfish,
+			rng,
+			-1,
+			maximum_context
+		)
+		var bonus_rolls: int = int(generated.get("mercy_bonus_rolls_used", 0))
+		if bonus_rolls > 0:
+			mercy_applied_count += 1
+			var candidate_sizes: Array = generated.get("mercy_candidate_sizes", []) as Array
+			var largest_candidate: float = 0.0
+			for raw_size in candidate_sizes:
+				largest_candidate = maxf(largest_candidate, float(raw_size))
+			_assert_float_close(
+				report,
+				float(generated.get("size", 0.0)),
+				largest_candidate,
+				0.001,
+				"mercy keeps the larger specimen candidate",
+				group
+			)
+		else:
+			no_mercy_count += 1
+
+		if not bool(generated.get("is_king", false)):
+			non_king_count += 1
+
+	_assert(report, mercy_applied_count > 0, "maximum mercy sometimes grants bonus roll", group)
+	_assert(report, no_mercy_count > 0, "maximum mercy still sometimes grants no bonus roll", group)
+	_assert(report, non_king_count > 0, "maximum mercy never guarantees a crown", group)
+
+	# Explicit QA band forcing must bypass mercy so deterministic QA stays
+	# deterministic instead of being secretly modified by player progression.
+	var forced_rng := RandomNumberGenerator.new()
+	forced_rng.seed = 42
+	var forced_king: Dictionary = SpecimenGenerator.roll_with_rng(
+		sweetfish,
+		forced_rng,
+		1,
+		maximum_context
+	)
+	_assert(report, bool(forced_king.get("is_king", false)), "forced king remains king under mercy context", group)
+	_assert_equal_int(report, int(forced_king.get("mercy_bonus_rolls_used", -1)), 0, "QA king override bypasses mercy bonus roll", group)
+	_assert(report, not bool(forced_king.get("mercy_active", true)), "QA king override marks mercy inactive", group)
+
+	# Every species must cleanly disable mercy after its own maximum score is
+	# achieved; this catches catalog/resource mismatches across all 30 fish.
+	for fish in CONTENT_CATALOG.fish:
+		if fish == null:
+			continue
+		var complete_context: Dictionary = RECORD_MERCY_POLICY.call(
+			"build_generation_context",
+			99,
+			maxi(fish.max_points, 0),
+			maxi(fish.max_points, 0)
+		) as Dictionary
+		_assert(
+			report,
+			not bool(complete_context.get("active", true)),
+			"%s completed record disables mercy" % fish.get_stable_species_id(),
+			group
+		)
+
+	progress.free()
 
 
 func _test_catch_persistence_regression(report: Dictionary) -> void:
@@ -1852,6 +2053,22 @@ func _packed_int_arrays_equal(a: PackedInt32Array, b: PackedInt32Array) -> bool:
 		if a[index] != b[index]:
 			return false
 	return true
+
+
+func _assert_float_close(
+	report: Dictionary,
+	actual: float,
+	expected: float,
+	tolerance: float,
+	label: String,
+	group: String
+) -> void:
+	_assert(
+		report,
+		absf(actual - expected) <= maxf(tolerance, 0.0),
+		"%s (expected %.4f, got %.4f)" % [label, expected, actual],
+		group
+	)
 
 
 func _assert_equal_int(

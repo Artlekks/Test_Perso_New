@@ -5,8 +5,8 @@ class_name FishInstance
 const CatchScoring = preload(
 	"res://scripts/fishing_catch_scoring.gd"
 )
-const SizeRoller = preload(
-	"res://scripts/fishing_size_roller.gd"
+const SpecimenGenerator = preload(
+	"res://scripts/fishing_specimen_generator.gd"
 )
 const FightResolver = preload(
 	"res://scripts/fishing_fight_resolver.gd"
@@ -45,12 +45,14 @@ var pressure_multiplier: float = 1.0
 var pull_multiplier: float = 1.0
 var stamina_recovery_multiplier: float = 1.0
 var _fight_stats: Dictionary = {}
+var _specimen_generation: Dictionary = {}
 
 
 func setup(
 	data: FishData,
 	king_override: int = -1,
-	size_override_cm: float = -1.0
+	size_override_cm: float = -1.0,
+	generation_context: Dictionary = {}
 ) -> void:
 	species = data
 
@@ -58,7 +60,12 @@ func setup(
 		_fight_stats.clear()
 		return
 
-	_roll_size_and_king(data, king_override, size_override_cm)
+	_roll_size_and_king(
+		data,
+		king_override,
+		size_override_cm,
+		generation_context
+	)
 	_apply_resolved_fight_stats(
 		FightResolver.resolve_specimen(
 			data,
@@ -135,15 +142,25 @@ func get_fight_stats() -> Dictionary:
 func _roll_size_and_king(
 	data: FishData,
 	king_override: int,
-	size_override_cm: float = -1.0
+	size_override_cm: float = -1.0,
+	generation_context: Dictionary = {}
 ) -> void:
+	_specimen_generation.clear()
+
 	if size_override_cm >= 0.0:
 		size = CatchScoring.normalize_size_cm(size_override_cm)
+		_specimen_generation = {
+			"forced_size": true,
+			"mercy_active": false,
+			"mercy_bonus_rolls_used": 0,
+		}
 	else:
-		var result: Dictionary = SizeRoller.roll(
+		var result: Dictionary = SpecimenGenerator.roll(
 			data,
-			king_override
+			king_override,
+			generation_context
 		)
+		_specimen_generation = result.duplicate(true)
 		size = float(result.get("size", 0.0))
 
 	var score: Dictionary = CatchScoring.evaluate(
@@ -202,4 +219,16 @@ func get_debug_snapshot() -> Dictionary:
 		"pressure_multiplier": pressure_multiplier,
 		"pull_multiplier": pull_multiplier,
 		"stamina_recovery_multiplier": stamina_recovery_multiplier,
+		"record_mercy_active": bool(
+			_specimen_generation.get("mercy_active", false)
+		),
+		"record_mercy_miss_streak": int(
+			_specimen_generation.get("mercy_miss_streak", 0)
+		),
+		"record_mercy_bonus_chance": float(
+			_specimen_generation.get("mercy_bonus_roll_chance", 0.0)
+		),
+		"record_mercy_bonus_rolls": int(
+			_specimen_generation.get("mercy_bonus_rolls_used", 0)
+		),
 	}
