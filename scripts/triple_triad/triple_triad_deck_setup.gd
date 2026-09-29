@@ -9,24 +9,25 @@ const OWNER_PLAYER := 1
 const PROFILE_COUNT := 6
 const HAND_SIZE := 5
 const COLLECTION_COLUMNS := 5
-const COLLECTION_ROWS := 3
+const COLLECTION_ROWS := 2
 const PAGE_SIZE := COLLECTION_COLUMNS * COLLECTION_ROWS
-const COLLECTION_SCALE := Vector2(0.62, 0.62)
-const COLLECTION_STEP_X := 80.0
-const COLLECTION_STEP_Y := 93.333333
-const DECK_SCALE := Vector2(0.58, 0.58)
-const DECK_STEP_Y := 61.0
+const COLLECTION_SCALE := Vector2(0.71, 0.71)
+const COLLECTION_STEP_X := 91.2
+const COLLECTION_STEP_Y := 106.4
+const DECK_SCALE := Vector2(0.71, 0.71)
+const DECK_STEP_Y := 0.0
+const DECK_STEP_X := 91.2
 const SAVE_PATH := "user://triple_triad_decks.cfg"
 
 const STATE_BROWSE := 0
 const STATE_REPLACE := 1
 const STATE_ANIMATING := 2
 
-const COLLECTION_FOCUS_SCALE := Vector2(0.66, 0.66)
-const COLLECTION_FOCUS_Y := -5.0
-const COLLECTION_CARD_OFFSET := Vector2(3.333333, -2.5)
-const DECK_SLOT_SIZE := Vector2(74.0, 61.0)
-const DECK_CARD_OFFSET := Vector2(14.285714, 0.0)
+const COLLECTION_FOCUS_SCALE := Vector2(0.71, 0.71)
+const COLLECTION_FOCUS_Y := 0.0
+const COLLECTION_CARD_OFFSET := Vector2(95.5, 206.7)
+const DECK_SLOT_SIZE := Vector2(85.5, 95.0)
+const DECK_CARD_OFFSET := Vector2(95.5, 58.5)
 const DECK_SELECTED_X_OFFSET := -7.0
 const USED_CARD_MODULATE := Color(0.38, 0.38, 0.38, 1.0)
 const CARD_TRANSFER_LIFT_Y := 60.0
@@ -119,11 +120,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if _state == STATE_REPLACE:
-		if _is_up(event):
+		if _is_left(event):
 			_move_replace_slot(-1)
 			_accept_input()
 			return
-		if _is_down(event):
+		if _is_right(event):
 			_move_replace_slot(1)
 			_accept_input()
 			return
@@ -200,7 +201,7 @@ func _build_views() -> void:
 
 	for index in range(HAND_SIZE):
 		var slot_panel := Panel.new()
-		slot_panel.position = Vector2(0.0, float(index) * DECK_STEP_Y)
+		slot_panel.position = DECK_CARD_OFFSET + Vector2(float(index) * DECK_STEP_X, 0.0)
 		slot_panel.size = DECK_SLOT_SIZE
 		slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot_panel.visible = false
@@ -211,7 +212,7 @@ func _build_views() -> void:
 		deck_root.add_child(deck_view)
 		deck_view.pivot_offset = Vector2.ZERO
 		deck_view.scale = DECK_SCALE
-		deck_view.position = DECK_CARD_OFFSET + Vector2(0.0, float(index) * DECK_STEP_Y)
+		deck_view.position = DECK_CARD_OFFSET + Vector2(float(index) * DECK_STEP_X, 0.0)
 		deck_view.z_index = 20 + index
 		_deck_views.append(deck_view)
 
@@ -264,8 +265,8 @@ func _refresh_deck() -> void:
 		view.pivot_offset = Vector2.ZERO
 		var is_replace_target: bool = _state == STATE_REPLACE and index == _replace_slot_index
 		view.position = DECK_CARD_OFFSET + Vector2(
-			DECK_SELECTED_X_OFFSET if is_replace_target else 0.0,
-			float(index) * DECK_STEP_Y
+			float(index) * DECK_STEP_X + (DECK_SELECTED_X_OFFSET if is_replace_target else 0.0),
+			0.0
 		)
 		if index < _deck.size():
 			view.visible = true
@@ -277,9 +278,9 @@ func _refresh_deck() -> void:
 
 	_refresh_slot_styles()
 	if _state == STATE_REPLACE:
-		deck_arrow.position = deck_root.position + Vector2(
-			-14.0,
-			float(_replace_slot_index) * DECK_STEP_Y + 26.0
+		deck_arrow.position = deck_root.position + DECK_CARD_OFFSET + Vector2(
+			float(_replace_slot_index) * DECK_STEP_X - 14.0,
+			(DECK_SLOT_SIZE.y * 0.5) - 6.0
 		)
 
 func _refresh_labels() -> void:
@@ -303,7 +304,7 @@ func _refresh_labels() -> void:
 		card_info_label.text = ""
 
 	if _state == STATE_REPLACE:
-		help_label.text = "W/S: Deck slot   K: Replace   I: Cancel"
+		help_label.text = "A/D: Deck slot   K: Replace   I: Cancel"
 	else:
 		help_label.text = "W/A/S/D: Card   K: Select   Q/E: Page   1-6: Deck   Enter: Play   I: Leave"
 
@@ -437,7 +438,7 @@ func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
 
 	var target_view: Control = _deck_views[target_slot]
 	var target_global: Vector2 = target_view.global_position
-	var target_visual_scale: Vector2 = target_view.get_global_transform().get_scale()
+	var target_visual_scale: Vector2 = target_view.scale
 
 	var ghost: Control = CardViewScene.instantiate() as Control
 	add_child(ghost)

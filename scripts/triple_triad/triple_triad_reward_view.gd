@@ -31,7 +31,7 @@ const OPPONENT_THINK_SECONDS := 0.55
 const OPPONENT_PICK_HOLD_SECONDS := 0.45
 const FOCUS_TRAVEL_SECONDS := 0.32
 const EXIT_SECONDS := 0.34
-const FOCUS_SCALE := Vector2(1.75, 1.75)
+const FOCUS_SCALE := Vector2(1.4875, 1.4875)
 
 @onready var prompt_label: Label = $PromptPanel/PromptLabel
 @onready var info_label: Label = $InfoPanel/InfoLabel
@@ -376,12 +376,13 @@ func _animate_card_transfer(
 	_focus_card.pivot_offset = _focus_card.size * 0.5
 	_focus_card.scale = ROW_SCALE
 	_focus_card.z_index = 800
-	_focus_card.global_position = source_view.global_position
+	_focus_card.position = source_view.position
 	source_view.visible = false
 
-	# The card scales around its center pivot, so center the pivot itself.
-	# This keeps the enlarged reward card visually centered on screen.
-	var center_global := global_position + Vector2(
+	# Work in this full-screen Control's local coordinates. With the pivot at the
+	# card center, this top-left position puts the enlarged card exactly on the
+	# visual center of the 640x480 reward screen at every scale.
+	var center_position := Vector2(
 		(size.x - _focus_card.size.x) * 0.5,
 		(size.y - _focus_card.size.y) * 0.5
 	)
@@ -390,7 +391,7 @@ func _animate_card_transfer(
 	var focus_tween: Tween = _focus_card.create_tween()
 	focus_tween.set_trans(Tween.TRANS_QUINT)
 	focus_tween.set_ease(Tween.EASE_OUT)
-	focus_tween.tween_property(_focus_card, "global_position", center_global, FOCUS_TRAVEL_SECONDS)
+	focus_tween.tween_property(_focus_card, "position", center_position, FOCUS_TRAVEL_SECONDS)
 	focus_tween.parallel().tween_property(_focus_card, "scale", FOCUS_SCALE, FOCUS_TRAVEL_SECONDS)
 	focus_tween.parallel().tween_property(focus_dim, "modulate", Color.WHITE, FOCUS_TRAVEL_SECONDS)
 	await focus_tween.finished
@@ -411,16 +412,16 @@ func _run_focus_exit(exit_down: bool, sequence_id: int) -> void:
 		completed.emit()
 		return
 
-	var exit_global := _focus_card.global_position
+	var exit_position := _focus_card.position
 	if exit_down:
-		exit_global.y = global_position.y + size.y + _focus_card.size.y * 1.7
+		exit_position.y = size.y + _focus_card.size.y * 1.7
 	else:
-		exit_global.y = global_position.y - _focus_card.size.y * 2.0
+		exit_position.y = -_focus_card.size.y * 2.0
 
 	var exit_tween: Tween = _focus_card.create_tween()
 	exit_tween.set_trans(Tween.TRANS_QUAD)
 	exit_tween.set_ease(Tween.EASE_IN)
-	exit_tween.tween_property(_focus_card, "global_position", exit_global, EXIT_SECONDS)
+	exit_tween.tween_property(_focus_card, "position", exit_position, EXIT_SECONDS)
 	exit_tween.parallel().tween_property(focus_dim, "modulate", Color(1, 1, 1, 0), EXIT_SECONDS)
 	await exit_tween.finished
 	if not _sequence_is_current(sequence_id):
