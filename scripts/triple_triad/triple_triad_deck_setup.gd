@@ -11,12 +11,24 @@ const HAND_SIZE := 5
 const COLLECTION_COLUMNS := 5
 const COLLECTION_ROWS := 3
 const PAGE_SIZE := COLLECTION_COLUMNS * COLLECTION_ROWS
-const COLLECTION_SCALE := Vector2(0.46, 0.46)
+const COLLECTION_SCALE := Vector2(0.62, 0.62)
 const COLLECTION_STEP_X := 76.0
-const COLLECTION_STEP_Y := 94.0
-const DECK_SCALE := Vector2(0.42, 0.42)
+const COLLECTION_STEP_Y := 91.0
+const DECK_SCALE := Vector2(0.58, 0.58)
 const DECK_STEP_Y := 61.0
 const SAVE_PATH := "user://triple_triad_decks.cfg"
+
+const STATE_BROWSE := 0
+const STATE_REPLACE := 1
+const STATE_ANIMATING := 2
+
+const COLLECTION_FOCUS_SCALE := Vector2(0.66, 0.66)
+const COLLECTION_FOCUS_Y := -5.0
+const DECK_SLOT_SIZE := Vector2(74.0, 61.0)
+const DECK_CARD_OFFSET := Vector2(3.0, 0.0)
+const CARD_TRANSFER_LIFT_Y := 60.0
+const CARD_TRANSFER_LIFT_SECONDS := 0.22
+const CARD_TRANSFER_DROP_SECONDS := 0.16
 
 @onready var collection_root: Control = $CollectionRoot
 @onready var deck_root: Control = $DeckRoot
@@ -29,6 +41,8 @@ const SAVE_PATH := "user://triple_triad_decks.cfg"
 @onready var card_info_label: Label = $CardInfoLabel
 @onready var status_label: Label = $StatusLabel
 @onready var help_label: Label = $HelpLabel
+@onready var collection_arrow: Polygon2D = $CollectionArrow
+@onready var deck_arrow: Polygon2D = $DeckArrow
 
 var _catalog: Resource = null
 var _cards: Array = []
@@ -42,6 +56,10 @@ var _cursor_index: int = 0
 var _budget_limit: int = 30
 var _player_rank: int = 6
 var _status_text: String = ""
+var _state: int = STATE_BROWSE
+var _replace_card = null
+var _replace_source_index: int = -1
+var _replace_slot_index: int = 0
 
 
 func _ready() -> void:
@@ -62,6 +80,10 @@ func open_setup(catalog: Resource, budget_limit: int, player_rank: int = 6) -> v
 	_cursor_index = 0
 	_page_index = 0
 	_status_text = ""
+	_state = STATE_BROWSE
+	_replace_card = null
+	_replace_source_index = -1
+	_replace_slot_index = 0
 	visible = true
 	_refresh_all()
 
@@ -69,6 +91,11 @@ func open_setup(catalog: Resource, budget_limit: int, player_rank: int = 6) -> v
 func close_setup() -> void:
 	if visible:
 		_save_current_profile()
+	_state = STATE_BROWSE
+	_replace_card = null
+	_replace_source_index = -1
+	collection_arrow.visible = false
+	deck_arrow.visible = false
 	visible = false
 
 
@@ -78,6 +105,30 @@ func is_active() -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or not _pressed(event):
+		return
+
+	if _state == STATE_ANIMATING:
+		_accept_input()
+		return
+
+	if _state == STATE_REPLACE:
+		if _is_up(event):
+			_move_replace_slot(-1)
+			_accept_input()
+			return
+		if _is_down(event):
+			_move_replace_slot(1)
+			_accept_input()
+			return
+		if _is_confirm(event):
+			_confirm_replacement()
+			_accept_input()
+			return
+		if _is_back(event):
+			_cancel_replacement()
+			_accept_input()
+			return
+		_accept_input()
 		return
 
 	var profile_number: int = _profile_number(event)
@@ -113,7 +164,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if _is_confirm(event):
-		_toggle_cursor_card()
+		_select_cursor_card()
 		_accept_input()
 		return
 
@@ -127,11 +178,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		cancelled.emit()
 		_accept_input()
 
-
 func _build_views() -> void:
 	for index in range(PAGE_SIZE):
 		var view: Control = CardViewScene.instantiate() as Control
 		collection_root.add_child(view)
+		view.pivot_offset = Vector2.ZERO
 		view.scale = COLLECTION_SCALE
 		view.position = Vector2(
 			float(index % COLLECTION_COLUMNS) * COLLECTION_STEP_X,
@@ -143,26 +194,20 @@ func _build_views() -> void:
 	for index in range(HAND_SIZE):
 		var slot_panel := Panel.new()
 		slot_panel.position = Vector2(0.0, float(index) * DECK_STEP_Y)
-		slot_panel.size = Vector2(58.0, 57.0)
+		slot_panel.size = DECK_SLOT_SIZE
 		slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var slot_style := StyleBoxFlat.new()
-		slot_style.bg_color = Color(0.05, 0.04, 0.06, 0.38)
-		slot_style.border_color = Color(0.72, 0.67, 0.54, 0.72)
-		slot_style.border_width_left = 1
-		slot_style.border_width_top = 1
-		slot_style.border_width_right = 1
-		slot_style.border_width_bottom = 1
-		slot_panel.add_theme_stylebox_override("panel", slot_style)
 		deck_root.add_child(slot_panel)
 		_deck_slot_panels.append(slot_panel)
 
 		var deck_view: Control = CardViewScene.instantiate() as Control
 		deck_root.add_child(deck_view)
+		deck_view.pivot_offset = Vector2.ZERO
 		deck_view.scale = DECK_SCALE
-		deck_view.position = Vector2(2.0, float(index) * DECK_STEP_Y + 1.0)
+		deck_view.position = DECK_CARD_OFFSET + Vector2(0.0, float(index) * DECK_STEP_Y)
 		deck_view.z_index = 20 + index
 		_deck_views.append(deck_view)
 
+	_refresh_slot_styles()
 
 func _refresh_all() -> void:
 	_refresh_collection()
@@ -172,6 +217,7 @@ func _refresh_all() -> void:
 
 func _refresh_collection() -> void:
 	var page_start: int = _page_index * PAGE_SIZE
+	collection_arrow.visible = false
 	for local_index in range(_collection_views.size()):
 		var view: Control = _collection_views[local_index]
 		var card_index: int = page_start + local_index
@@ -179,23 +225,47 @@ func _refresh_collection() -> void:
 			var card = _cards[card_index]
 			view.visible = true
 			view.configure(card, OWNER_PLAYER, false)
-			view.scale = COLLECTION_SCALE
-			view.set_selected(card_index == _cursor_index)
+			view.pivot_offset = Vector2.ZERO
+			var is_cursor: bool = card_index == _cursor_index
+			var is_replace_source: bool = _state == STATE_REPLACE and card_index == _replace_source_index
+			view.scale = COLLECTION_FOCUS_SCALE if is_replace_source else COLLECTION_SCALE
+			var base_position := Vector2(
+				float(local_index % COLLECTION_COLUMNS) * COLLECTION_STEP_X,
+				float(floori(float(local_index) / float(COLLECTION_COLUMNS))) * COLLECTION_STEP_Y
+			)
+			view.position = base_position + (
+				Vector2(0.0, COLLECTION_FOCUS_Y) if is_replace_source else Vector2.ZERO
+			)
+			view.set_selected(is_cursor or is_replace_source)
+			if is_replace_source:
+				collection_arrow.visible = true
+				collection_arrow.position = collection_root.position + view.position + Vector2(
+					(view.size.x * view.scale.x) * 0.5 - 6.0,
+					-12.0
+				)
 		else:
 			view.visible = false
 
-
 func _refresh_deck() -> void:
+	deck_arrow.visible = _state == STATE_REPLACE
 	for index in range(_deck_views.size()):
 		var view: Control = _deck_views[index]
+		view.pivot_offset = Vector2.ZERO
+		view.position = DECK_CARD_OFFSET + Vector2(0.0, float(index) * DECK_STEP_Y)
 		if index < _deck.size():
 			view.visible = true
 			view.configure(_deck[index], OWNER_PLAYER, false)
 			view.scale = DECK_SCALE
-			view.set_selected(false)
+			view.set_selected(_state == STATE_REPLACE and index == _replace_slot_index)
 		else:
 			view.visible = false
 
+	_refresh_slot_styles()
+	if _state == STATE_REPLACE:
+		deck_arrow.position = deck_root.position + Vector2(
+			-14.0,
+			float(_replace_slot_index) * DECK_STEP_Y + 26.0
+		)
 
 func _refresh_labels() -> void:
 	title_label.text = "Choose your deck"
@@ -217,7 +287,10 @@ func _refresh_labels() -> void:
 	else:
 		card_info_label.text = ""
 
-	help_label.text = "W/A/S/D: Card   K: Add/Remove   Q/E: Page   1-6: Deck   Enter: Play   I: Leave"
+	if _state == STATE_REPLACE:
+		help_label.text = "W/S: Deck slot   K: Replace   I: Cancel"
+	else:
+		help_label.text = "W/A/S/D: Card   K: Select   Q/E: Page   1-6: Deck   Enter: Play   I: Leave"
 
 
 func _move_cursor(dx: int, dy: int) -> void:
@@ -254,33 +327,148 @@ func _change_page(direction: int) -> void:
 	_refresh_all()
 
 
-func _toggle_cursor_card() -> void:
+func _select_cursor_card() -> void:
 	if _cursor_index < 0 or _cursor_index >= _cards.size():
 		return
-	var card = _cards[_cursor_index]
-	var deck_index: int = _deck_index_of(card)
-	if deck_index >= 0:
-		_deck.remove_at(deck_index)
-		_status_text = "Removed from deck."
-		_save_current_profile()
-		_refresh_all()
-		return
 
-	if _deck.size() >= HAND_SIZE:
-		_status_text = "Deck already has 5 cards."
+	var card = _cards[_cursor_index]
+	if _deck_has_card(card):
+		_status_text = "That card is already in this deck."
 		_refresh_labels()
 		return
-	var next_cost: int = _deck_cost() + int(card.deck_cost)
+
+	if _deck.size() < HAND_SIZE:
+		var next_cost: int = _deck_cost() + int(card.deck_cost)
+		if next_cost > _budget_limit:
+			_status_text = "Point limit exceeded: %d / %d" % [next_cost, _budget_limit]
+			_refresh_labels()
+			return
+		var target_slot: int = _deck.size()
+		_animate_add_to_deck(card, _cursor_index, target_slot)
+		return
+
+	_replace_card = card
+	_replace_source_index = _cursor_index
+	_replace_slot_index = clampi(_replace_slot_index, 0, HAND_SIZE - 1)
+	_state = STATE_REPLACE
+	_status_text = "Choose the deck card to replace."
+	_refresh_all()
+
+
+func _move_replace_slot(direction: int) -> void:
+	_replace_slot_index = wrapi(_replace_slot_index + direction, 0, HAND_SIZE)
+	_status_text = "Choose the deck card to replace."
+	_refresh_deck()
+	_refresh_labels()
+
+
+func _cancel_replacement() -> void:
+	_state = STATE_BROWSE
+	_replace_card = null
+	_replace_source_index = -1
+	_status_text = ""
+	_refresh_all()
+
+
+func _confirm_replacement() -> void:
+	if _replace_card == null or _replace_slot_index < 0 or _replace_slot_index >= _deck.size():
+		_cancel_replacement()
+		return
+
+	var old_card = _deck[_replace_slot_index]
+	var next_cost: int = _deck_cost() - int(old_card.deck_cost) + int(_replace_card.deck_cost)
 	if next_cost > _budget_limit:
 		_status_text = "Point limit exceeded: %d / %d" % [next_cost, _budget_limit]
 		_refresh_labels()
 		return
 
+	_animate_replace_deck_card(_replace_card, _replace_source_index, _replace_slot_index)
+
+
+func _animate_add_to_deck(card, source_index: int, target_slot: int) -> void:
+	_state = STATE_ANIMATING
+	_status_text = ""
+	_refresh_all()
+	await _animate_card_transfer(card, source_index, target_slot)
 	_deck.append(card)
-	_status_text = "Added to deck."
 	_save_current_profile()
+	_state = STATE_BROWSE
+	_status_text = "Added to deck."
 	_refresh_all()
 
+
+func _animate_replace_deck_card(card, source_index: int, target_slot: int) -> void:
+	_state = STATE_ANIMATING
+	_status_text = ""
+	_refresh_all()
+	await _animate_card_transfer(card, source_index, target_slot)
+	_deck[target_slot] = card
+	_save_current_profile()
+	_state = STATE_BROWSE
+	_replace_card = null
+	_replace_source_index = -1
+	_status_text = "Deck updated."
+	_refresh_all()
+
+
+func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
+	var local_source_index: int = source_index - _page_index * PAGE_SIZE
+	if local_source_index < 0 or local_source_index >= _collection_views.size():
+		return
+
+	var source_view: Control = _collection_views[local_source_index]
+	if source_view == null or not is_instance_valid(source_view):
+		return
+
+	var ghost: Control = CardViewScene.instantiate() as Control
+	add_child(ghost)
+	ghost.configure(card, OWNER_PLAYER, false)
+	ghost.pivot_offset = Vector2.ZERO
+	ghost.scale = source_view.scale
+	ghost.global_position = source_view.global_position
+	ghost.z_index = 1200
+
+	var target_view: Control = _deck_views[target_slot]
+	var target_global: Vector2 = target_view.global_position
+	var lift_global := Vector2(target_global.x, CARD_TRANSFER_LIFT_Y)
+
+	var tween := ghost.create_tween()
+	tween.set_trans(Tween.TRANS_QUART)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(ghost, "global_position", lift_global, CARD_TRANSFER_LIFT_SECONDS)
+	tween.parallel().tween_property(
+		ghost,
+		"scale",
+		Vector2(DECK_SCALE.x + 0.04, DECK_SCALE.y + 0.04),
+		CARD_TRANSFER_LIFT_SECONDS
+	)
+
+	var drop = tween.tween_property(
+		ghost,
+		"global_position",
+		target_global,
+		CARD_TRANSFER_DROP_SECONDS
+	)
+	drop.set_trans(Tween.TRANS_QUAD)
+	drop.set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(ghost, "scale", DECK_SCALE, CARD_TRANSFER_DROP_SECONDS)
+	await tween.finished
+	ghost.queue_free()
+
+
+func _refresh_slot_styles() -> void:
+	for index in range(_deck_slot_panels.size()):
+		var slot_panel: Panel = _deck_slot_panels[index]
+		var slot_style := StyleBoxFlat.new()
+		slot_style.bg_color = Color(0.05, 0.04, 0.06, 0.38)
+		slot_style.border_color = Color(1.0, 0.88, 0.30, 1.0) if (
+			_state == STATE_REPLACE and index == _replace_slot_index
+		) else Color(0.72, 0.67, 0.54, 0.72)
+		slot_style.border_width_left = 1
+		slot_style.border_width_top = 1
+		slot_style.border_width_right = 1
+		slot_style.border_width_bottom = 1
+		slot_panel.add_theme_stylebox_override("panel", slot_style)
 
 func _try_confirm_deck() -> void:
 	if _deck.size() != HAND_SIZE:

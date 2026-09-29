@@ -7,5 +7,5 @@
 [resource]
 script = ExtResource("1_catalog")
 portrait_atlas = ExtResource("2_atlas")
-disabled_indices = PackedInt32Array(148)
+disabled_indices = PackedInt32Array(4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 18, 20, 21, 22, 24, 26, 28, 31, 32, 35, 36, 46, 48, 52, 55, 60, 193, 194, 195, 197, 198, 199, 201, 202, 203, 206, 207, 209, 210, 211, 213, 214, 215, 217, 218, 219, 222, 223, 225, 226, 227, 229, 230, 231, 233, 234, 235, 238, 239, 241, 242, 243, 245, 246, 247, 249, 250, 251, 254, 255)
 supplemental_content_catalog = ExtResource("3_content")

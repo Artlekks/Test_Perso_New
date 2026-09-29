@@ -51,14 +51,13 @@ expand_mode = 1
 mouse_filter = 2
 
 [node name="TitleLabel" type="Label" parent="InfoPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 0
+offset_left = 14.0
+offset_top = 9.0
+offset_right = 304.0
+offset_bottom = 47.0
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 text = "Choose your deck"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -154,18 +153,18 @@ mouse_filter = 2
 
 [node name="DeckRoot" type="Control" parent="."]
 layout_mode = 0
-offset_left = 500.0
-offset_top = 111.0
-offset_right = 560.0
-offset_bottom = 414.0
+offset_left = 492.0
+offset_top = 103.0
+offset_right = 566.0
+offset_bottom = 425.0
 mouse_filter = 2
 
 [node name="CardInfoLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 425.0
+offset_top = 432.0
 offset_right = 620.0
-offset_bottom = 443.0
+offset_bottom = 450.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 9
 text = "Portrait 001   Cost 1"
@@ -174,18 +173,30 @@ horizontal_alignment = 1
 [node name="StatusLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 20.0
-offset_top = 442.0
+offset_top = 449.0
 offset_right = 620.0
-offset_bottom = 458.0
+offset_bottom = 464.0
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 8
 text = ""
 horizontal_alignment = 1
 
+[node name="CollectionArrow" type="Polygon2D" parent="."]
+visible = false
+polygon = PackedVector2Array(0, 0, 12, 0, 6, 9)
+color = Color(1, 0.88, 0.3, 1)
+z_index = 800
+
+[node name="DeckArrow" type="Polygon2D" parent="."]
+visible = false
+polygon = PackedVector2Array(0, 0, 0, 12, 10, 6)
+color = Color(1, 0.88, 0.3, 1)
+z_index = 800
+
 [node name="HelpLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 4.0
-offset_top = 460.0
+offset_top = 463.0
 offset_right = 636.0
 offset_bottom = 480.0
 theme_override_fonts/font = ExtResource("4_font")
