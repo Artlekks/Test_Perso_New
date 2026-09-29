@@ -12,8 +12,8 @@ const COLLECTION_COLUMNS := 5
 const COLLECTION_ROWS := 3
 const PAGE_SIZE := COLLECTION_COLUMNS * COLLECTION_ROWS
 const COLLECTION_SCALE := Vector2(0.62, 0.62)
-const COLLECTION_STEP_X := 76.0
-const COLLECTION_STEP_Y := 91.0
+const COLLECTION_STEP_X := 80.0
+const COLLECTION_STEP_Y := 93.333333
 const DECK_SCALE := Vector2(0.58, 0.58)
 const DECK_STEP_Y := 61.0
 const SAVE_PATH := "user://triple_triad_decks.cfg"
@@ -24,8 +24,9 @@ const STATE_ANIMATING := 2
 
 const COLLECTION_FOCUS_SCALE := Vector2(0.66, 0.66)
 const COLLECTION_FOCUS_Y := -5.0
+const COLLECTION_CARD_OFFSET := Vector2(3.333333, -2.5)
 const DECK_SLOT_SIZE := Vector2(74.0, 61.0)
-const DECK_CARD_OFFSET := Vector2(3.0, 0.0)
+const DECK_CARD_OFFSET := Vector2(14.285714, 0.0)
 const DECK_SELECTED_X_OFFSET := -7.0
 const USED_CARD_MODULATE := Color(0.38, 0.38, 0.38, 1.0)
 const CARD_TRANSFER_LIFT_Y := 60.0
@@ -190,7 +191,7 @@ func _build_views() -> void:
 		collection_root.add_child(view)
 		view.pivot_offset = Vector2.ZERO
 		view.scale = COLLECTION_SCALE
-		view.position = Vector2(
+		view.position = COLLECTION_CARD_OFFSET + Vector2(
 			float(index % COLLECTION_COLUMNS) * COLLECTION_STEP_X,
 			float(floori(float(index) / float(COLLECTION_COLUMNS))) * COLLECTION_STEP_Y
 		)
@@ -202,6 +203,7 @@ func _build_views() -> void:
 		slot_panel.position = Vector2(0.0, float(index) * DECK_STEP_Y)
 		slot_panel.size = DECK_SLOT_SIZE
 		slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot_panel.visible = false
 		deck_root.add_child(slot_panel)
 		_deck_slot_panels.append(slot_panel)
 
@@ -237,7 +239,7 @@ func _refresh_collection() -> void:
 			var is_cursor: bool = card_index == _cursor_index
 			var is_replace_source: bool = _state == STATE_REPLACE and card_index == _replace_source_index
 			view.scale = COLLECTION_FOCUS_SCALE if is_replace_source else COLLECTION_SCALE
-			var base_position := Vector2(
+			var base_position := COLLECTION_CARD_OFFSET + Vector2(
 				float(local_index % COLLECTION_COLUMNS) * COLLECTION_STEP_X,
 				float(floori(float(local_index) / float(COLLECTION_COLUMNS))) * COLLECTION_STEP_Y
 			)
@@ -435,7 +437,7 @@ func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
 
 	var target_view: Control = _deck_views[target_slot]
 	var target_global: Vector2 = target_view.global_position
-	var target_visual_scale: Vector2 = target_view.global_transform.get_scale()
+	var target_visual_scale: Vector2 = target_view.get_global_transform().get_scale()
 
 	var ghost: Control = CardViewScene.instantiate() as Control
 	add_child(ghost)
@@ -473,18 +475,9 @@ func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
 
 
 func _refresh_slot_styles() -> void:
-	for index in range(_deck_slot_panels.size()):
-		var slot_panel: Panel = _deck_slot_panels[index]
-		var slot_style := StyleBoxFlat.new()
-		slot_style.bg_color = Color(0.05, 0.04, 0.06, 0.38)
-		slot_style.border_color = Color(1.0, 0.88, 0.30, 1.0) if (
-			_state == STATE_REPLACE and index == _replace_slot_index
-		) else Color(0.72, 0.67, 0.54, 0.72)
-		slot_style.border_width_left = 1
-		slot_style.border_width_top = 1
-		slot_style.border_width_right = 1
-		slot_style.border_width_bottom = 1
-		slot_panel.add_theme_stylebox_override("panel", slot_style)
+	# Deck_Screen.png is the authoritative visual grid.
+	# The generated slot panels stay hidden and are used only as internal geometry.
+	pass
 
 func _try_confirm_deck() -> void:
 	if _deck.size() != HAND_SIZE:
