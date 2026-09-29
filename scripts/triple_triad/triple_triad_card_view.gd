@@ -7,7 +7,7 @@ const OWNER_OPPONENT := 2
 const COLOR_PLAYER := Color(0.32, 0.70, 1.0, 1.0)
 const COLOR_OPPONENT := Color(1.0, 0.42, 0.66, 1.0)
 const COLOR_SELECTED := Color(1.0, 0.88, 0.30, 1.0)
-const COLOR_EMPTY := Color(0.43, 0.43, 0.47, 0.92)
+const COLOR_EMPTY := Color(0, 0, 0, 0)
 
 # Board captures keep the quick flip that already feels right.
 const CAPTURE_HALF_DURATION := 0.08
@@ -151,7 +151,7 @@ func _refresh_content() -> void:
 	var show_back: bool = has_card and (is_hidden or _showing_back)
 	var show_empty_slot: bool = not has_card
 
-	empty_slot_fill.visible = show_empty_slot
+	empty_slot_fill.visible = false
 	portrait_background.visible = show_face
 	portrait.visible = show_face
 	hidden_fill.visible = false

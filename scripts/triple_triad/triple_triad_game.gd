@@ -21,6 +21,7 @@ const PHASE_ANIMATING := 4
 const PHASE_AI := 5
 const PHASE_RESULT := 6
 const PHASE_REWARD := 7
+const PHASE_DECK_SETUP := 8
 
 const HAND_STEP_Y := 72.0
 const HAND_SELECTED_X_OFFSET := -10.0
@@ -33,6 +34,8 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @export var region_profile: Resource
 @export var ai_profile: Resource
 @export_range(5, 50, 1) var deck_budget: int = 30
+@export_range(5, 50, 1) var player_deck_budget: int = 30
+@export_range(1, 6, 1) var player_card_rank: int = 6
 @export_range(1, 10, 1) var prototype_min_level: int = 1
 @export_range(1, 10, 1) var prototype_max_level: int = 3
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.75
@@ -41,8 +44,8 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @onready var opponent_hand_container: Control = $Root/OpponentHand
 @onready var board_container: GridContainer = $Root/Board
 @onready var player_hand_container: Control = $Root/PlayerHand
-@onready var opponent_score_label: Label = $Root/OpponentScoreLabel
-@onready var player_score_label: Label = $Root/PlayerScoreLabel
+@onready var opponent_score_label: Control = $Root/OpponentScoreLabel/Digits
+@onready var player_score_label: Control = $Root/PlayerScoreLabel/Digits
 @onready var turn_label: Label = $Root/InfoPanel/TurnLabel
 @onready var message_label: Label = $Root/MessageLabel
 @onready var help_label: Label = $Root/HelpLabel
@@ -56,6 +59,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @onready var animation_director = $AnimationDirector
 @onready var ai_timer: Timer = $AITimer
 @onready var debug_menu = $TripleTriadDebugMenu
+@onready var deck_setup = $Root/TripleTriadDeckSetup
 
 var _match = null
 var _ai = null
@@ -82,6 +86,7 @@ var _qa_profile_override: Resource = null
 var _qa_forced_starting_owner: int = OWNER_NONE
 var _qa_hand_seed: int = 0
 var _qa_base_summary: Dictionary = {}
+var _active_player_deck: Array = []
 
 
 func _ready() -> void:
@@ -98,6 +103,8 @@ func _ready() -> void:
 	reward_view.completed.connect(_on_reward_completed)
 	reward_view.leave_requested.connect(_on_reward_leave_requested)
 	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
+	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
+	deck_setup.cancelled.connect(_on_deck_cancelled)
 	if card_catalog != null and card_catalog.has_method("validate_catalog"):
 		var audit: Dictionary = card_catalog.validate_catalog()
 		if not bool(audit.get("valid", false)):
@@ -117,7 +124,8 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	_previous_pause = tree.paused
 	_resolve_active_configuration(opponent_profile_override)
 	root.visible = true
-	_start_new_match()
+	_phase = PHASE_DECK_SETUP
+	deck_setup.open_setup(card_catalog, player_deck_budget, player_card_rank)
 	tree.paused = true
 	opened.emit()
 
@@ -128,6 +136,7 @@ func close_game() -> void:
 	ai_timer.stop()
 	reward_view.close_reward()
 	debug_menu.close_menu()
+	deck_setup.close_setup()
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_phase = PHASE_CLOSED
@@ -140,6 +149,9 @@ func close_game() -> void:
 
 func _input(event: InputEvent) -> void:
 	if not is_open() or not _pressed(event):
+		return
+
+	if _phase == PHASE_DECK_SETUP:
 		return
 
 	# F10 belongs to the card-game QA overlay while Triple Triad is open. The
@@ -159,6 +171,9 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_open() or not _pressed(event):
+		return
+
+	if _phase == PHASE_DECK_SETUP:
 		return
 
 	# The reward view owns input while it is active.
@@ -239,7 +254,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_accept_input()
 
 
-func _start_new_match() -> void:
+func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
 	reward_view.close_reward()
 	result_label.visible = false
@@ -252,7 +267,13 @@ func _start_new_match() -> void:
 	if _qa_hand_seed > 0:
 		_rng.seed = _qa_hand_seed
 
-	var player_cards: Array = _build_budgeted_hand(_active_min_level, _active_max_level)
+	var player_cards: Array = []
+	if player_cards_override.size() == 5:
+		player_cards = player_cards_override.duplicate()
+	elif _active_player_deck.size() == 5:
+		player_cards = _active_player_deck.duplicate()
+	else:
+		player_cards = _build_budgeted_hand(_active_min_level, _active_max_level)
 	var opponent_cards: Array = _build_budgeted_hand(_active_min_level, _active_max_level)
 	_starting_player_cards = player_cards.duplicate()
 	_starting_opponent_cards = opponent_cards.duplicate()
@@ -426,7 +447,7 @@ func _run_result_transition(winner: int) -> void:
 	if winner not in [OWNER_PLAYER, OWNER_OPPONENT]:
 		# A draw is a replay, not an exit. Re-deal behind the black result fade,
 		# then reveal the fresh match using the same active QA/opponent profile.
-		_start_new_match()
+		_start_new_match(_active_player_deck)
 		transition_fade.visible = true
 		transition_fade.modulate = Color.WHITE
 		var replay_fade: Tween = transition_fade.create_tween()
@@ -543,9 +564,27 @@ func _refresh_views(captured_cells: Array = []) -> void:
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
 	var score: Dictionary = _match.get_score()
-	opponent_score_label.text = str(int(score["opponent"]))
-	player_score_label.text = str(int(score["player"]))
+	_set_score_digits(opponent_score_label, int(score["opponent"]))
+	_set_score_digits(player_score_label, int(score["player"]))
 	_refresh_phase_ui()
+
+
+func _set_score_digits(target: Control, value: int) -> void:
+	if target == null:
+		return
+	var score_text := str(value)
+	target.call("set_text", score_text)
+	var score_parent := target.get_parent() as Control
+	if score_parent == null:
+		return
+	var glyph_count: int = score_text.length()
+	var unscaled_width := float(glyph_count * 16)
+	var scaled_width := unscaled_width * target.scale.x
+	var scaled_height := 16.0 * target.scale.y
+	target.position = Vector2(
+		(score_parent.size.x - scaled_width) * 0.5,
+		(score_parent.size.y - scaled_height) * 0.5
+	)
 
 
 func _refresh_phase_ui() -> void:
@@ -627,6 +666,20 @@ func _on_reward_completed() -> void:
 
 
 func _on_reward_leave_requested() -> void:
+	close_game()
+
+
+func _on_deck_confirmed(cards: Array) -> void:
+	if _phase != PHASE_DECK_SETUP or cards.size() != 5:
+		return
+	_active_player_deck = cards.duplicate()
+	deck_setup.close_setup()
+	_start_new_match(_active_player_deck)
+
+
+func _on_deck_cancelled() -> void:
+	if _phase != PHASE_DECK_SETUP:
+		return
 	close_game()
 
 
@@ -719,7 +772,7 @@ func _on_qa_profile_apply_requested(selected_profile: Resource) -> void:
 	if _qa_profile_override == null:
 		_rng.randomize()
 	_resolve_active_configuration(_active_opponent_profile)
-	_start_new_match()
+	_start_new_match(_active_player_deck)
 
 
 func _configuration_summary() -> Dictionary:

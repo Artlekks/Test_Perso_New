@@ -41,6 +41,7 @@ const FOCUS_SCALE := Vector2(1.75, 1.75)
 @onready var choice_label: Label = $ConfirmOverlay/ConfirmPanel/ChoiceLabel
 @onready var choice_arrow: Polygon2D = $ConfirmOverlay/ConfirmPanel/ChoiceArrow
 @onready var help_label: Label = $HelpLabel
+@onready var focus_dim: ColorRect = $FocusDim
 
 var _state: int = STATE_CLOSED
 var _winner: int = OWNER_PLAYER
@@ -79,6 +80,8 @@ func open_reward(
 	visible = true
 	confirm_overlay.visible = false
 	selection_arrow.visible = false
+	focus_dim.visible = false
+	focus_dim.modulate = Color(1, 1, 1, 0)
 	_clear_focus_card()
 	_refresh_rows()
 	_prepare_row_entrance()
@@ -86,6 +89,8 @@ func open_reward(
 	prompt_label.text = ""
 	info_label.text = ""
 	help_label.text = ""
+	focus_dim.visible = false
+	focus_dim.modulate = Color(1, 1, 1, 0)
 	_set_help_large(false)
 
 	if not defer_entrance:
@@ -369,20 +374,24 @@ func _animate_card_transfer(
 	_focus_card.set_selected(false)
 	_focus_card.pivot_offset = _focus_card.size * 0.5
 	_focus_card.scale = ROW_SCALE
-	_focus_card.z_index = 250
+	_focus_card.z_index = 800
 	_focus_card.global_position = source_view.global_position
 	source_view.visible = false
 
-	var focus_size := _focus_card.size * FOCUS_SCALE
+	# The card scales around its center pivot, so center the pivot itself.
+	# This keeps the enlarged reward card visually centered on screen.
 	var center_global := global_position + Vector2(
-		(size.x - focus_size.x) * 0.5,
-		(size.y - focus_size.y) * 0.5
+		(size.x - _focus_card.size.x) * 0.5,
+		(size.y - _focus_card.size.y) * 0.5
 	)
+	focus_dim.visible = true
+	focus_dim.modulate = Color(1, 1, 1, 0)
 	var focus_tween: Tween = _focus_card.create_tween()
 	focus_tween.set_trans(Tween.TRANS_QUINT)
 	focus_tween.set_ease(Tween.EASE_OUT)
 	focus_tween.tween_property(_focus_card, "global_position", center_global, FOCUS_TRAVEL_SECONDS)
 	focus_tween.parallel().tween_property(_focus_card, "scale", FOCUS_SCALE, FOCUS_TRAVEL_SECONDS)
+	focus_tween.parallel().tween_property(focus_dim, "modulate", Color.WHITE, FOCUS_TRAVEL_SECONDS)
 	await focus_tween.finished
 	if not _sequence_is_current(sequence_id):
 		return
@@ -411,10 +420,12 @@ func _run_focus_exit(exit_down: bool, sequence_id: int) -> void:
 	exit_tween.set_trans(Tween.TRANS_QUAD)
 	exit_tween.set_ease(Tween.EASE_IN)
 	exit_tween.tween_property(_focus_card, "global_position", exit_global, EXIT_SECONDS)
+	exit_tween.parallel().tween_property(focus_dim, "modulate", Color(1, 1, 1, 0), EXIT_SECONDS)
 	await exit_tween.finished
 	if not _sequence_is_current(sequence_id):
 		return
 
+	focus_dim.visible = false
 	_clear_focus_card()
 	completed.emit()
 

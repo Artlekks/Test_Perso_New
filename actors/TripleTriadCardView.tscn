@@ -1,57 +1,57 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://dnhccy8iax4ye"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_card_view.gd" id="1_script"]
-[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Menu_Background_Solo.png" id="3_back"]
-[ext_resource type="Script" path="res://scripts/bitmap_text.gd" id="4_bitmap"]
-[ext_resource type="Texture2D" path="res://assets/sprites/DistanceNumbers.png" id="5_numbers"]
+[ext_resource type="Script" uid="uid://bhp3cnwfo4hvn" path="res://scripts/triple_triad/triple_triad_card_view.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://dnl6klv4lvu30" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+[ext_resource type="Texture2D" uid="uid://bw8285b10qp56" path="res://assets/sprites/Menu_Background_Solo.png" id="3_back"]
+[ext_resource type="Script" uid="uid://hcvmop3q460c" path="res://scripts/bitmap_text.gd" id="4_bitmap"]
+[ext_resource type="Texture2D" uid="uid://bsukwqrtcgkxc" path="res://assets/sprites/DistanceNumbers.png" id="5_numbers"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
-[node name="TripleTriadCardView" type="PanelContainer"]
+[node name="TripleTriadCardView" type="PanelContainer" unique_id=1210078436]
 custom_minimum_size = Vector2(116, 132)
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_script")
 
-[node name="Root" type="Control" parent="."]
-clip_contents = true
+[node name="Root" type="Control" parent="." unique_id=1438844431]
 custom_minimum_size = Vector2(116, 132)
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="EmptySlotFill" type="ColorRect" parent="Root"]
+[node name="EmptySlotFill" type="ColorRect" parent="Root" unique_id=612141479]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.86, 0.82, 0.72, 0.14)
-mouse_filter = 2
 
-[node name="PortraitBackground" type="ColorRect" parent="Root"]
+[node name="PortraitBackground" type="ColorRect" parent="Root" unique_id=1551941034]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.16, 0.15, 0.17, 1)
-mouse_filter = 2
 
-[node name="Portrait" type="TextureRect" parent="Root"]
+[node name="Portrait" type="TextureRect" parent="Root" unique_id=876220254]
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_filter = 1
-expand_mode = 1
 mouse_filter = 2
+expand_mode = 1
 
-[node name="HiddenFill" type="ColorRect" parent="Root"]
+[node name="HiddenFill" type="ColorRect" parent="Root" unique_id=1352336917]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -59,58 +59,58 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.09, 0.075, 0.11, 1)
-mouse_filter = 2
 
-[node name="Top" type="Control" parent="Root"]
+[node name="Top" type="Control" parent="Root" unique_id=70274937]
 texture_filter = 1
-layout_mode = 0
-offset_left = 11.0
-offset_top = 1.0
-offset_right = 27.0
-offset_bottom = 17.0
+anchors_preset = 0
+offset_left = -1.0
+offset_top = -9.0
+offset_right = 14.999985
+offset_bottom = 7.0
 scale = Vector2(3, 3)
 mouse_filter = 2
 script = ExtResource("4_bitmap")
 font_texture = ExtResource("5_numbers")
 
-[node name="Right" type="Control" parent="Root"]
+[node name="Right" type="Control" parent="Root" unique_id=1001866629]
 texture_filter = 1
-layout_mode = 0
-offset_left = 22.0
-offset_top = 13.0
-offset_right = 38.0
-offset_bottom = 29.0
+anchors_preset = 0
+offset_left = 10.0
+offset_top = 12.0
+offset_right = 25.99997
+offset_bottom = 27.999989
 scale = Vector2(3, 3)
 mouse_filter = 2
 script = ExtResource("4_bitmap")
 font_texture = ExtResource("5_numbers")
 
-[node name="Bottom" type="Control" parent="Root"]
+[node name="Bottom" type="Control" parent="Root" unique_id=1032125188]
 texture_filter = 1
-layout_mode = 0
-offset_left = 11.0
-offset_top = 25.0
-offset_right = 27.0
-offset_bottom = 41.0
+anchors_preset = 0
+offset_left = -1.0
+offset_top = 33.0
+offset_right = 14.999985
+offset_bottom = 49.0
 scale = Vector2(3, 3)
 mouse_filter = 2
 script = ExtResource("4_bitmap")
 font_texture = ExtResource("5_numbers")
 
-[node name="Left" type="Control" parent="Root"]
+[node name="Left" type="Control" parent="Root" unique_id=1374178174]
 texture_filter = 1
-layout_mode = 0
-offset_left = 0.0
-offset_top = 13.0
-offset_right = 16.0
-offset_bottom = 29.0
+anchors_preset = 0
+offset_left = -12.0
+offset_top = 12.0
+offset_right = 4.0
+offset_bottom = 28.0
 scale = Vector2(3, 3)
 mouse_filter = 2
 script = ExtResource("4_bitmap")
 font_texture = ExtResource("5_numbers")
 
-[node name="Hidden" type="Label" parent="Root"]
+[node name="Hidden" type="Label" parent="Root" unique_id=1890477342]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -126,24 +126,19 @@ text = "?"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardBack" type="TextureRect" parent="Root"]
+[node name="CardBack" type="TextureRect" parent="Root" unique_id=1740837516]
 visible = false
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_filter = 1
+mouse_filter = 2
 texture = ExtResource("3_back")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="BorderOverlay" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="BorderOverlay" type="Panel" parent="." unique_id=1160138810]
+layout_mode = 2
 mouse_filter = 2
