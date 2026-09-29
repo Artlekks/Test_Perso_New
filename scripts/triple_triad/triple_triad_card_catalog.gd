@@ -12,6 +12,8 @@ const CardDefinitionScript = preload("res://scripts/triple_triad/triple_triad_ca
 @export var origin: Vector2i = Vector2i(4, 4)
 @export_range(1, 4096, 1) var card_count: int = 256
 @export var disabled_indices: PackedInt32Array = PackedInt32Array()
+@export var stable_portrait_ids: PackedInt32Array = PackedInt32Array()
+@export var legacy_portrait_ids: PackedInt32Array = PackedInt32Array()
 
 # Optional shared content source. Triple Triad does not depend on fishing runtime
 # services; it only reads portrait/name data from this catalog when present.
@@ -37,6 +39,27 @@ func get_card(index: int):
 	var card = _build_card(index)
 	_cache[index] = card
 	return card
+
+
+func get_card_by_id(card_id: StringName):
+	var wanted: String = String(card_id)
+	if wanted.is_empty():
+		return null
+	for source_index in range(get_total_source_count()):
+		var card = get_card(source_index)
+		if card != null and String(card.card_id) == wanted:
+			return card
+	return null
+
+
+func get_card_by_legacy_source_index(legacy_index: int):
+	if legacy_index < 0:
+		return null
+	if legacy_index < legacy_portrait_ids.size():
+		var stable_id: int = int(legacy_portrait_ids[legacy_index])
+		return get_card_by_id(StringName("mugshot_%03d" % stable_id))
+	# Pre-compaction saves used the original source index directly.
+	return get_card_by_id(StringName("mugshot_%03d" % legacy_index))
 
 
 func get_total_source_count() -> int:
@@ -125,6 +148,8 @@ func validate_catalog() -> Dictionary:
 		errors.append("portrait atlas is missing")
 	if card_count <= 0 or card_count > columns * rows:
 		errors.append("card_count exceeds configured atlas grid")
+	if not stable_portrait_ids.is_empty() and stable_portrait_ids.size() != card_count:
+		errors.append("stable portrait id count does not match card_count")
 
 	var valid_count: int = 0
 	var fish_count: int = 0
@@ -154,13 +179,17 @@ func _build_card(index: int):
 
 
 func _build_portrait_card(index: int):
+	var stable_id: int = index
+	if index >= 0 and index < stable_portrait_ids.size():
+		stable_id = int(stable_portrait_ids[index])
+
 	var card = CardDefinitionScript.new()
-	card.card_id = StringName("mugshot_%03d" % index)
-	card.display_name = "Portrait %03d" % (index + 1)
+	card.card_id = StringName("mugshot_%03d" % stable_id)
+	card.display_name = "Portrait %03d" % (stable_id + 1)
 	card.source_index = index
 	card.source_kind = &"portrait"
-	card.level = 1 + (index % 10)
-	var ranks: Array[int] = _generate_ranks(index, card.level)
+	card.level = 1 + (stable_id % 10)
+	var ranks: Array[int] = _generate_ranks(stable_id, card.level)
 	_assign_ranks(card, ranks)
 	card.deck_cost = _cost_from_ranks(card.rank_total())
 	card.portrait = _build_portrait_texture(index)

@@ -8,6 +8,7 @@ signal card_reward_selected(card_definition)
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
 const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
+const CollectionScript = preload("res://scripts/triple_triad/triple_triad_collection.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -87,6 +88,7 @@ var _qa_forced_starting_owner: int = OWNER_NONE
 var _qa_hand_seed: int = 0
 var _qa_base_summary: Dictionary = {}
 var _active_player_deck: Array = []
+var _collection_backend = null
 
 
 func _ready() -> void:
@@ -96,6 +98,8 @@ func _ready() -> void:
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_match = MatchScript.new()
 	_ai = AIScript.new()
+	_collection_backend = CollectionScript.new()
+	_collection_backend.initialize(card_catalog)
 	_rng.randomize()
 	_build_views()
 	ai_timer.timeout.connect(_on_ai_timer_timeout)
@@ -125,7 +129,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	_resolve_active_configuration(opponent_profile_override)
 	root.visible = true
 	_phase = PHASE_DECK_SETUP
-	deck_setup.open_setup(card_catalog, player_deck_budget, player_card_rank)
+	deck_setup.open_setup(card_catalog, player_deck_budget, player_card_rank, _collection_backend)
 	tree.paused = true
 	opened.emit()
 
@@ -656,8 +660,29 @@ func _capture_message(result: Dictionary) -> String:
 
 
 func _on_reward_selected(card_definition) -> void:
+	if card_definition == null:
+		return
+
 	_last_info_name = str(card_definition.display_name)
-	card_reward_selected.emit(card_definition)
+
+	if _result_winner == OWNER_PLAYER:
+		# Winning a card increases ownership quantity. The current UI presents
+		# unique cards, but quantities are stored so duplicate rewards are safe.
+		_collection_backend.acquire_card(card_definition)
+		card_reward_selected.emit(card_definition)
+		return
+
+	if _result_winner == OWNER_OPPONENT:
+		# Losing removes one owned copy. If that was the final copy, remove it
+		# from every saved deck profile and from the active match deck too.
+		_collection_backend.remove_card(card_definition)
+		if not _collection_backend.owns_card(card_definition):
+			deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))
+			var filtered_active_deck: Array = []
+			for card in _active_player_deck:
+				if card != null and String(card.card_id) != String(card_definition.card_id):
+					filtered_active_deck.append(card)
+			_active_player_deck = filtered_active_deck
 
 
 func _on_reward_completed() -> void:

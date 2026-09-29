@@ -347,6 +347,7 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 
 	selection_arrow.visible = false
 	prompt_label.text = "Opponent takes %s" % str(card.display_name)
+	reward_selected.emit(card)
 	var source_view = _player_views[_selected_index]
 	_animate_card_transfer(card, source_view, OWNER_OPPONENT, false, sequence_id)
 

@@ -26,6 +26,8 @@ const COLLECTION_FOCUS_SCALE := Vector2(0.66, 0.66)
 const COLLECTION_FOCUS_Y := -5.0
 const DECK_SLOT_SIZE := Vector2(74.0, 61.0)
 const DECK_CARD_OFFSET := Vector2(3.0, 0.0)
+const DECK_SELECTED_X_OFFSET := -7.0
+const USED_CARD_MODULATE := Color(0.38, 0.38, 0.38, 1.0)
 const CARD_TRANSFER_LIFT_Y := 60.0
 const CARD_TRANSFER_LIFT_SECONDS := 0.22
 const CARD_TRANSFER_DROP_SECONDS := 0.16
@@ -45,6 +47,7 @@ const CARD_TRANSFER_DROP_SECONDS := 0.16
 @onready var deck_arrow: Polygon2D = $DeckArrow
 
 var _catalog: Resource = null
+var _collection_backend = null
 var _cards: Array = []
 var _deck: Array = []
 var _collection_views: Array = []
@@ -68,12 +71,15 @@ func _ready() -> void:
 	_build_views()
 
 
-func open_setup(catalog: Resource, budget_limit: int, player_rank: int = 6) -> void:
+func open_setup(catalog: Resource, budget_limit: int, player_rank: int = 6, collection_backend = null) -> void:
 	_catalog = catalog
+	_collection_backend = collection_backend
 	_budget_limit = maxi(5, budget_limit)
 	_player_rank = maxi(1, player_rank)
 	_cards.clear()
-	if _catalog != null and _catalog.has_method("get_cards_for_level_range"):
+	if _collection_backend != null and _collection_backend.has_method("get_owned_cards"):
+		_cards = _collection_backend.call("get_owned_cards")
+	elif _catalog != null and _catalog.has_method("get_cards_for_level_range"):
 		_cards = _catalog.call("get_cards_for_level_range", 1, 10)
 	_profile_index = _load_last_profile_index()
 	_load_profile(_profile_index)
@@ -226,6 +232,8 @@ func _refresh_collection() -> void:
 			view.visible = true
 			view.configure(card, OWNER_PLAYER, false)
 			view.pivot_offset = Vector2.ZERO
+			var is_in_deck: bool = _deck_has_card(card)
+			view.modulate = USED_CARD_MODULATE if is_in_deck else Color.WHITE
 			var is_cursor: bool = card_index == _cursor_index
 			var is_replace_source: bool = _state == STATE_REPLACE and card_index == _replace_source_index
 			view.scale = COLLECTION_FOCUS_SCALE if is_replace_source else COLLECTION_SCALE
@@ -244,6 +252,7 @@ func _refresh_collection() -> void:
 					-12.0
 				)
 		else:
+			view.modulate = Color.WHITE
 			view.visible = false
 
 func _refresh_deck() -> void:
@@ -251,12 +260,16 @@ func _refresh_deck() -> void:
 	for index in range(_deck_views.size()):
 		var view: Control = _deck_views[index]
 		view.pivot_offset = Vector2.ZERO
-		view.position = DECK_CARD_OFFSET + Vector2(0.0, float(index) * DECK_STEP_Y)
+		var is_replace_target: bool = _state == STATE_REPLACE and index == _replace_slot_index
+		view.position = DECK_CARD_OFFSET + Vector2(
+			DECK_SELECTED_X_OFFSET if is_replace_target else 0.0,
+			float(index) * DECK_STEP_Y
+		)
 		if index < _deck.size():
 			view.visible = true
 			view.configure(_deck[index], OWNER_PLAYER, false)
 			view.scale = DECK_SCALE
-			view.set_selected(_state == STATE_REPLACE and index == _replace_slot_index)
+			view.set_selected(is_replace_target)
 		else:
 			view.visible = false
 
@@ -420,26 +433,30 @@ func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
 	if source_view == null or not is_instance_valid(source_view):
 		return
 
+	var target_view: Control = _deck_views[target_slot]
+	var target_global: Vector2 = target_view.global_position
+	var target_visual_scale: Vector2 = target_view.global_transform.get_scale()
+
 	var ghost: Control = CardViewScene.instantiate() as Control
 	add_child(ghost)
 	ghost.configure(card, OWNER_PLAYER, false)
 	ghost.pivot_offset = Vector2.ZERO
-	ghost.scale = source_view.scale
+	# Keep one constant visual size for the whole transfer. The old version
+	# used local scales after reparenting, which made the card visibly shrink
+	# and then pop back to the deck size.
+	ghost.scale = target_visual_scale
 	ghost.global_position = source_view.global_position
 	ghost.z_index = 1200
 
-	var target_view: Control = _deck_views[target_slot]
-	var target_global: Vector2 = target_view.global_position
 	var lift_global := Vector2(target_global.x, CARD_TRANSFER_LIFT_Y)
 
 	var tween := ghost.create_tween()
 	tween.set_trans(Tween.TRANS_QUART)
 	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(ghost, "global_position", lift_global, CARD_TRANSFER_LIFT_SECONDS)
-	tween.parallel().tween_property(
+	tween.tween_property(
 		ghost,
-		"scale",
-		Vector2(DECK_SCALE.x + 0.04, DECK_SCALE.y + 0.04),
+		"global_position",
+		lift_global,
 		CARD_TRANSFER_LIFT_SECONDS
 	)
 
@@ -451,7 +468,6 @@ func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
 	)
 	drop.set_trans(Tween.TRANS_QUAD)
 	drop.set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(ghost, "scale", DECK_SCALE, CARD_TRANSFER_DROP_SECONDS)
 	await tween.finished
 	ghost.queue_free()
 
@@ -500,36 +516,123 @@ func _load_profile(profile_index: int) -> void:
 	_deck.clear()
 	var config := ConfigFile.new()
 	var load_error: Error = config.load(SAVE_PATH)
-	if load_error == OK:
-		var key: String = "deck_%d" % (profile_index + 1)
-		var raw_indices = config.get_value("decks", key, PackedInt32Array())
-		if raw_indices is PackedInt32Array or raw_indices is Array:
-			for raw_index in raw_indices:
-				var source_index: int = int(raw_index)
-				if _catalog == null or not _catalog.has_method("get_card"):
-					continue
-				var card = _catalog.call("get_card", source_index)
-				if card != null and not _deck_has_card(card) and _deck.size() < HAND_SIZE:
-					_deck.append(card)
+	var had_saved_profile: bool = false
 
-	if _deck.is_empty():
+	if load_error == OK:
+		var id_key: String = "deck_ids_%d" % (profile_index + 1)
+		var legacy_key: String = "deck_%d" % (profile_index + 1)
+
+		if config.has_section_key("decks", id_key):
+			had_saved_profile = true
+			var raw_ids = config.get_value("decks", id_key, PackedStringArray())
+			if raw_ids is PackedStringArray or raw_ids is Array:
+				for raw_id in raw_ids:
+					if _catalog == null or not _catalog.has_method("get_card_by_id"):
+						continue
+					var card = _catalog.call("get_card_by_id", StringName(str(raw_id)))
+					if _can_use_card(card) and not _deck_has_card(card) and _deck.size() < HAND_SIZE:
+						_deck.append(card)
+
+		elif config.has_section_key("decks", legacy_key):
+			had_saved_profile = true
+			var raw_indices = config.get_value("decks", legacy_key, PackedInt32Array())
+			if raw_indices is PackedInt32Array or raw_indices is Array:
+				for raw_index in raw_indices:
+					if _catalog == null:
+						continue
+					var card = null
+					if _catalog.has_method("get_card_by_legacy_source_index"):
+						card = _catalog.call("get_card_by_legacy_source_index", int(raw_index))
+					elif _catalog.has_method("get_card"):
+						card = _catalog.call("get_card", int(raw_index))
+					if _can_use_card(card) and not _deck_has_card(card) and _deck.size() < HAND_SIZE:
+						_deck.append(card)
+
+	# Only brand-new deck profiles are initialized automatically.
+	# A profile missing a card because the player LOST it stays short so the
+	# player explicitly chooses a replacement instead of silently receiving one.
+	if not had_saved_profile:
 		_deck = _build_default_deck()
+
+	_save_current_profile()
 
 
 func _save_current_profile() -> void:
 	if _catalog == null:
 		return
+
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
-	var indices := PackedInt32Array()
+
+	var ids := PackedStringArray()
 	for card in _deck:
-		if card != null:
-			indices.append(int(card.source_index))
-	config.set_value("decks", "deck_%d" % (_profile_index + 1), indices)
+		if card != null and _can_use_card(card):
+			ids.append(String(card.card_id))
+
+	config.set_value("decks", "deck_ids_%d" % (_profile_index + 1), ids)
 	config.set_value("meta", "last_profile", _profile_index)
+
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not save deck profiles (%s)." % error_string(save_error))
+
+
+func remove_card_from_all_profiles(card_id: StringName) -> void:
+	if String(card_id).is_empty():
+		return
+
+	var config := ConfigFile.new()
+	config.load(SAVE_PATH)
+
+	for profile_index in range(PROFILE_COUNT):
+		var id_key: String = "deck_ids_%d" % (profile_index + 1)
+		var legacy_key: String = "deck_%d" % (profile_index + 1)
+		var ids := PackedStringArray()
+
+		if config.has_section_key("decks", id_key):
+			var raw_ids = config.get_value("decks", id_key, PackedStringArray())
+			if raw_ids is PackedStringArray or raw_ids is Array:
+				for raw_id in raw_ids:
+					var saved_id: String = str(raw_id)
+					if saved_id != String(card_id):
+						ids.append(saved_id)
+
+		elif config.has_section_key("decks", legacy_key):
+			var raw_indices = config.get_value("decks", legacy_key, PackedInt32Array())
+			if raw_indices is PackedInt32Array or raw_indices is Array:
+				for raw_index in raw_indices:
+					if _catalog == null:
+						continue
+					var legacy_card = null
+					if _catalog.has_method("get_card_by_legacy_source_index"):
+						legacy_card = _catalog.call("get_card_by_legacy_source_index", int(raw_index))
+					elif _catalog.has_method("get_card"):
+						legacy_card = _catalog.call("get_card", int(raw_index))
+					if legacy_card != null and String(legacy_card.card_id) != String(card_id):
+						ids.append(String(legacy_card.card_id))
+
+		config.set_value("decks", id_key, ids)
+
+	var filtered_deck: Array = []
+	for card in _deck:
+		if card != null and String(card.card_id) != String(card_id):
+			filtered_deck.append(card)
+	_deck = filtered_deck
+
+	var save_error: Error = config.save(SAVE_PATH)
+	if save_error != OK:
+		push_warning("TripleTriadDeckSetup: could not prune deck profiles (%s)." % error_string(save_error))
+
+	if visible:
+		_refresh_all()
+
+
+func _can_use_card(card) -> bool:
+	if card == null:
+		return false
+	if _collection_backend == null or not _collection_backend.has_method("owns_card"):
+		return true
+	return bool(_collection_backend.call("owns_card", card))
 
 
 func _load_last_profile_index() -> int:
@@ -551,6 +654,8 @@ func _build_default_deck() -> Array:
 	var result: Array = []
 	var running_cost: int = 0
 	for card in sorted_cards:
+		if not _can_use_card(card):
+			continue
 		var card_cost: int = int(card.deck_cost)
 		if running_cost + card_cost > _budget_limit:
 			continue
