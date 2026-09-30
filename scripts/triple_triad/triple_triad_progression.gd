@@ -171,6 +171,53 @@ func get_snapshot(base_budget: int = 30) -> Dictionary:
 	}
 
 
+func save_state() -> Error:
+	return _save()
+
+
+func audit_state() -> Dictionary:
+	var repairs: int = 0
+	var warnings: Array[String] = []
+
+	var clean_points: int = progression_catalog.clamp_points(_points)
+	if clean_points != _points:
+		_points = clean_points
+		repairs += 1
+
+	var clean_wins: int = maxi(0, _wins)
+	var clean_losses: int = maxi(0, _losses)
+	var clean_draws: int = maxi(0, _draws)
+	var clean_matches: int = maxi(
+		0,
+		maxi(_matches, clean_wins + clean_losses + clean_draws)
+	)
+
+	if clean_wins != _wins:
+		_wins = clean_wins
+		repairs += 1
+	if clean_losses != _losses:
+		_losses = clean_losses
+		repairs += 1
+	if clean_draws != _draws:
+		_draws = clean_draws
+		repairs += 1
+	if clean_matches != _matches:
+		_matches = clean_matches
+		repairs += 1
+
+	var save_error: Error = _save()
+	var valid: bool = save_error == OK
+	if not valid:
+		warnings.append("Progression repair could not be saved.")
+
+	return {
+		"valid": valid,
+		"repairs": repairs,
+		"warnings": warnings,
+		"snapshot": get_snapshot(),
+	}
+
+
 func _win_reward(opponent_profile: Resource) -> int:
 	if opponent_profile != null:
 		var value = opponent_profile.get("progression_points_on_win")

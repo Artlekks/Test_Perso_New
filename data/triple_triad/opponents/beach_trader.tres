@@ -8,8 +8,16 @@
 script = ExtResource("1_profile")
 opponent_id = &"beach_trader"
 display_name = "Beach Trader"
+duel_rank = 1
+required_player_rank = 1
+enabled_by_default = true
+encounter_tags = PackedStringArray("coast", "merchant", "prototype")
 ai_profile = ExtResource("2_ai")
 region_profile = ExtResource("3_region")
 min_card_level = 1
 max_card_level = 3
 deck_budget_override = 0
+native_card_ids = PackedStringArray()
+preferred_deck_ids = PackedStringArray()
+initial_collection_size = 15
+progression_points_on_win = 3

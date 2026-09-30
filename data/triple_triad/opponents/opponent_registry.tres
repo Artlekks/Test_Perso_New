@@ -1,0 +1,8 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_registry.gd" id="1_registry"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/beach_trader.tres" id="2_beach"]
+
+[resource]
+script = ExtResource("1_registry")
+opponents = Array[ExtResource("2_beach")]([ExtResource("2_beach")])

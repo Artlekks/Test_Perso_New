@@ -12,6 +12,8 @@ const CollectionScript = preload("res://scripts/triple_triad/triple_triad_collec
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
 const CardEconomyScript = preload("res://scripts/triple_triad/triple_triad_card_economy.gd")
 const ProgressionScript = preload("res://scripts/triple_triad/triple_triad_progression.gd")
+const SaveIntegrityScript = preload("res://scripts/triple_triad/triple_triad_save_integrity.gd")
+const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -37,6 +39,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @export var rule_set: Resource
 @export var region_profile: Resource
 @export var ai_profile: Resource
+@export var opponent_registry: Resource = DefaultOpponentRegistry
 @export_range(5, 50, 1) var deck_budget: int = 30
 @export_range(5, 50, 1) var player_deck_budget: int = 30
 @export_range(1, 6, 1) var player_card_rank: int = 6
@@ -95,6 +98,7 @@ var _collection_backend = null
 var _opponent_collection_backend = null
 var _card_economy = null
 var _progression = null
+var _save_integrity = null
 
 
 func _ready() -> void:
@@ -104,12 +108,28 @@ func _ready() -> void:
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_match = MatchScript.new()
 	_ai = AIScript.new()
+
+	# Restore a known-good semantic backup before any backend gets a chance to
+	# seed/overwrite a config that merely failed to parse.
+	_save_integrity = SaveIntegrityScript.new()
+	var preflight_report: Dictionary = _save_integrity.preflight_restore_backups()
+	if not bool(preflight_report.get("valid", true)):
+		push_warning(
+			"TripleTriadGame: one or more corrupted saves had no valid backup."
+		)
+
 	_collection_backend = CollectionScript.new()
 	_collection_backend.initialize(card_catalog)
-	_card_economy = CardEconomyScript.new()
-	_card_economy.recover_pending(card_catalog, _collection_backend)
+
 	_progression = ProgressionScript.new()
 	_progression.initialize()
+
+	# Transfer journal recovery must happen before the global audit because an
+	# interrupted card trade is more authoritative than either owner file.
+	_card_economy = CardEconomyScript.new()
+	_card_economy.recover_pending(card_catalog, _collection_backend)
+
+	_checkpoint_save_integrity("boot")
 	_rng.randomize()
 	_build_views()
 	ai_timer.timeout.connect(_on_ai_timer_timeout)
@@ -124,9 +144,39 @@ func _ready() -> void:
 		if not bool(audit.get("valid", false)):
 			push_error("TripleTriadGame: invalid card catalog: %s" % str(audit.get("errors", [])))
 
+	if opponent_registry != null and opponent_registry.has_method("validate_registry"):
+		var registry_audit: Dictionary = opponent_registry.call(
+			"validate_registry",
+			card_catalog
+		)
+		if not bool(registry_audit.get("valid", false)):
+			push_error(
+				"TripleTriadGame: invalid opponent registry: %s"
+				% str(registry_audit.get("errors", []))
+			)
+		for warning in registry_audit.get("warnings", []):
+			push_warning("TripleTriadGame: %s" % str(warning))
+
 
 func is_open() -> bool:
 	return _phase != PHASE_CLOSED
+
+
+func open_game_by_id(opponent_id: StringName) -> bool:
+	if opponent_registry == null or not opponent_registry.has_method("get_opponent"):
+		push_error("TripleTriadGame: opponent registry is unavailable.")
+		return false
+
+	var profile = opponent_registry.call("get_opponent", opponent_id)
+	if profile == null:
+		push_error(
+			"TripleTriadGame: unknown opponent_id '%s'."
+			% String(opponent_id)
+		)
+		return false
+
+	open_game(profile)
+	return is_open()
 
 
 func open_game(opponent_profile_override: Resource = null) -> void:
@@ -169,6 +219,7 @@ func close_game() -> void:
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_phase = PHASE_CLOSED
 	root.visible = false
+	_checkpoint_save_integrity("close_game")
 	_opponent_collection_backend = null
 	var tree: SceneTree = get_tree()
 	if tree != null:
@@ -754,6 +805,31 @@ func _on_reward_selected(card_definition) -> void:
 					filtered_active_deck.append(card)
 			_active_player_deck = filtered_active_deck
 
+	# The transfer journal is clear at this point. Refresh the save backup now so
+	# a card won/lost in this result screen is part of the latest healthy snapshot.
+	_checkpoint_save_integrity("reward_transfer")
+
+
+func _checkpoint_save_integrity(reason: String) -> void:
+	if _save_integrity == null:
+		return
+	if card_catalog == null or _collection_backend == null or _progression == null:
+		return
+
+	var report: Dictionary = _save_integrity.audit_and_checkpoint(
+		card_catalog,
+		_collection_backend,
+		_progression,
+		player_deck_budget,
+		reason
+	)
+	if not bool(report.get("valid", true)):
+		push_warning(
+			"TripleTriadGame: save integrity checkpoint '%s' reported: %s"
+			% [reason, str(report.get("warnings", []))]
+		)
+
+
 
 func _on_reward_completed() -> void:
 	reward_view.close_reward()
@@ -883,6 +959,13 @@ func _active_opponent_id() -> StringName:
 
 func _configuration_summary() -> Dictionary:
 	return {
+		"opponent_id": String(_active_opponent_id()),
+		"opponent": _resource_display_name(_active_opponent_profile, "Default Opponent"),
+		"opponent_rank": (
+			int(_active_opponent_profile.get("duel_rank"))
+			if _active_opponent_profile != null
+			else 1
+		),
 		"region": _resource_display_name(_active_region_profile, "Default"),
 		"ai": _resource_display_name(_active_ai_profile, "Default"),
 		"budget": _active_deck_budget,

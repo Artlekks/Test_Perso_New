@@ -1,6 +1,9 @@
 extends Node3D
 
 @export var interaction_prompt: String = "K : Cards"
+## Stable registry key. New NPC instances should use this.
+@export var opponent_id: StringName = &""
+## Legacy/fallback direct profile reference for older scenes.
 @export var opponent_profile: Resource
 
 @onready var prompt_label: Label3D = $PromptLabel3D
@@ -26,8 +29,14 @@ func _input(event: InputEvent) -> void:
 	if not _is_confirm(event):
 		return
 	var game: Node = _find_game()
-	if game != null and game.has_method("open_game"):
-		game.call("open_game", opponent_profile)
+	if game != null:
+		if (
+			opponent_id != &""
+			and game.has_method("open_game_by_id")
+		):
+			game.call("open_game_by_id", opponent_id)
+		elif game.has_method("open_game"):
+			game.call("open_game", opponent_profile)
 	get_viewport().set_input_as_handled()
 
 

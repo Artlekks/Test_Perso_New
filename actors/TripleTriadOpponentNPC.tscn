@@ -22,6 +22,7 @@ radius = 0.8
 
 [node name="TripleTriadOpponentNPC" type="Node3D"]
 script = ExtResource("1_script")
+opponent_id = &"beach_trader"
 opponent_profile = ExtResource("4_profile")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
