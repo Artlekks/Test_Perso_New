@@ -138,9 +138,12 @@ func place_card(card_owner: int, hand_index: int, cell_index: int) -> Dictionary
 		"captured": capture_result["captured"],
 		"basic_captured": capture_result["basic_captured"],
 		"same_captured": capture_result["same_captured"],
+		"plus_captured": capture_result["plus_captured"],
 		"combo_captured": capture_result["combo_captured"],
 		"same_match_count": capture_result["same_match_count"],
+		"plus_match_count": capture_result["plus_match_count"],
 		"same_triggered": capture_result["same_triggered"],
+		"plus_triggered": capture_result["plus_triggered"],
 		"game_over": game_over,
 		"score": get_score(),
 		"winner": get_winner(),
@@ -154,7 +157,9 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 			"captured": [],
 			"capture_count": -1,
 			"same_triggered": false,
+			"plus_triggered": false,
 			"same_match_count": 0,
+			"plus_match_count": 0,
 		}
 
 	var original_board: Array = board
@@ -172,9 +177,12 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 		"capture_count": (capture_result["captured"] as Array).size(),
 		"basic_captured": capture_result["basic_captured"],
 		"same_captured": capture_result["same_captured"],
+		"plus_captured": capture_result["plus_captured"],
 		"combo_captured": capture_result["combo_captured"],
 		"same_triggered": capture_result["same_triggered"],
+		"plus_triggered": capture_result["plus_triggered"],
 		"same_match_count": capture_result["same_match_count"],
+		"plus_match_count": capture_result["plus_match_count"],
 	}
 
 
@@ -266,24 +274,40 @@ func validate_state() -> bool:
 
 func _resolve_captures(cell_index: int, card_owner: int) -> Dictionary:
 	var same_result: Dictionary = _resolve_same_captures(cell_index, card_owner)
+	var plus_result: Dictionary = _resolve_plus_captures(cell_index, card_owner)
+
 	var same_captured: Array[int] = []
 	same_captured.assign(same_result.get("captured", []))
+	var plus_captured: Array[int] = []
+	plus_captured.assign(plus_result.get("captured", []))
+
 	var basic_captured: Array[int] = _resolve_basic_captures(cell_index, card_owner)
+
+	# Only cards flipped by a special rule seed Combo. Same and Plus can both
+	# trigger on the same placement, so merge their seeds without duplicates.
+	var combo_seeds: Array[int] = []
+	_append_unique_cells(combo_seeds, same_captured)
+	_append_unique_cells(combo_seeds, plus_captured)
+
 	var combo_captured: Array[int] = []
-	if _rule_enabled("combo_rule") and not same_captured.is_empty():
-		combo_captured = _resolve_combo_captures(same_captured, card_owner)
+	if _rule_enabled("combo_rule") and not combo_seeds.is_empty():
+		combo_captured = _resolve_combo_captures(combo_seeds, card_owner)
 
 	var captured: Array[int] = []
 	_append_unique_cells(captured, same_captured)
+	_append_unique_cells(captured, plus_captured)
 	_append_unique_cells(captured, basic_captured)
 	_append_unique_cells(captured, combo_captured)
 	return {
 		"captured": captured,
 		"basic_captured": basic_captured,
 		"same_captured": same_captured,
+		"plus_captured": plus_captured,
 		"combo_captured": combo_captured,
 		"same_match_count": int(same_result["match_count"]),
+		"plus_match_count": int(plus_result["match_count"]),
 		"same_triggered": bool(same_result["triggered"]),
+		"plus_triggered": bool(plus_result["triggered"]),
 	}
 
 
@@ -318,6 +342,67 @@ func _resolve_same_captures(cell_index: int, card_owner: int) -> Dictionary:
 		board[neighbor_index] = neighbor
 		captured.append(neighbor_index)
 	return {"captured": captured, "match_count": matching_neighbors.size(), "triggered": true}
+
+
+func _resolve_plus_captures(cell_index: int, card_owner: int) -> Dictionary:
+	if not _rule_enabled("plus_rule"):
+		return {"captured": [], "match_count": 0, "triggered": false}
+
+	var placed_slot: Dictionary = board[cell_index]
+	var neighbors_by_sum: Dictionary = {}
+
+	for direction_variant in DIRECTIONS:
+		var direction: Dictionary = direction_variant
+		var side: int = int(direction["side"])
+		var neighbor_index: int = cell_index + int(direction["offset"])
+		if not _is_valid_neighbor(cell_index, neighbor_index, side):
+			continue
+
+		var neighbor_variant = board[neighbor_index]
+		if neighbor_variant == null:
+			continue
+
+		var neighbor: Dictionary = neighbor_variant
+		var rank_sum: int = (
+			_slot_rank(placed_slot, side, cell_index)
+			+ _slot_rank(neighbor, int(direction["opposite"]), neighbor_index)
+		)
+		if not neighbors_by_sum.has(rank_sum):
+			neighbors_by_sum[rank_sum] = []
+		var group: Array = neighbors_by_sum[rank_sum]
+		group.append(neighbor_index)
+		neighbors_by_sum[rank_sum] = group
+
+	var matching_neighbors: Array[int] = []
+	for raw_sum in neighbors_by_sum.keys():
+		var group: Array = neighbors_by_sum[raw_sum]
+		if group.size() < 2:
+			continue
+		for neighbor_index in group:
+			if not matching_neighbors.has(int(neighbor_index)):
+				matching_neighbors.append(int(neighbor_index))
+
+	if matching_neighbors.size() < 2:
+		return {
+			"captured": [],
+			"match_count": matching_neighbors.size(),
+			"triggered": false,
+		}
+
+	var captured: Array[int] = []
+	for neighbor_index in matching_neighbors:
+		var neighbor: Dictionary = board[neighbor_index]
+		if int(neighbor["owner"]) == card_owner:
+			continue
+		neighbor["owner"] = card_owner
+		board[neighbor_index] = neighbor
+		captured.append(neighbor_index)
+
+	return {
+		"captured": captured,
+		"match_count": matching_neighbors.size(),
+		"triggered": true,
+	}
 
 
 func _resolve_basic_captures(cell_index: int, card_owner: int) -> Array[int]:

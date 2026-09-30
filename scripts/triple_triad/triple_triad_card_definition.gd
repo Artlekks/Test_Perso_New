@@ -11,6 +11,15 @@ extends Resource
 @export var portrait: Texture2D
 @export var source_index: int = -1
 @export var source_kind: StringName = &"portrait"
+@export var group_id: StringName = &""
+@export var tags: PackedStringArray = PackedStringArray()
+
+
+func strength_points() -> int:
+	# Deck points are currently the authoritative strength/economy value.
+	# Keeping this method on the definition means UI/AI code does not need to know
+	# where that value came from.
+	return deck_cost
 
 
 func rank_for_side(side: int) -> int:

@@ -11,6 +11,7 @@ const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
 const CollectionScript = preload("res://scripts/triple_triad/triple_triad_collection.gd")
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
 const CardEconomyScript = preload("res://scripts/triple_triad/triple_triad_card_economy.gd")
+const ProgressionScript = preload("res://scripts/triple_triad/triple_triad_progression.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -93,6 +94,7 @@ var _active_player_deck: Array = []
 var _collection_backend = null
 var _opponent_collection_backend = null
 var _card_economy = null
+var _progression = null
 
 
 func _ready() -> void:
@@ -106,6 +108,8 @@ func _ready() -> void:
 	_collection_backend.initialize(card_catalog)
 	_card_economy = CardEconomyScript.new()
 	_card_economy.recover_pending(card_catalog, _collection_backend)
+	_progression = ProgressionScript.new()
+	_progression.initialize()
 	_rng.randomize()
 	_build_views()
 	ai_timer.timeout.connect(_on_ai_timer_timeout)
@@ -144,7 +148,12 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	)
 	root.visible = true
 	_phase = PHASE_DECK_SETUP
-	deck_setup.open_setup(card_catalog, player_deck_budget, player_card_rank, _collection_backend)
+	deck_setup.open_setup(
+		card_catalog,
+		_progression.get_deck_budget(player_deck_budget) if _progression != null else player_deck_budget,
+		_progression.get_rank_number() if _progression != null else player_card_rank,
+		_collection_backend
+	)
 	tree.paused = true
 	opened.emit()
 
@@ -433,6 +442,16 @@ func _finish_match() -> void:
 	_refresh_views()
 	var score: Dictionary = _match.get_score()
 	_result_winner = _match.get_winner()
+
+	var progression_change: Dictionary = {}
+	# QA/debug matches must never mutate permanent progression.
+	if _progression != null and _qa_profile_override == null:
+		progression_change = _progression.record_result(
+			_result_winner,
+			OWNER_PLAYER,
+			_active_opponent_profile
+		)
+
 	match _result_winner:
 		OWNER_PLAYER:
 			result_label.text = "YOU WIN!"
@@ -448,6 +467,7 @@ func _finish_match() -> void:
 	match_finished.emit({
 		"winner": _result_winner,
 		"score": score,
+		"progression": progression_change,
 	})
 
 
@@ -675,11 +695,22 @@ func _update_selected_card_info() -> void:
 
 func _capture_message(result: Dictionary) -> String:
 	var combo_captured: Array = result.get("combo_captured", [])
-	if bool(result.get("same_triggered", false)):
-		if not combo_captured.is_empty():
-			return "SAME!  COMBO x%d" % combo_captured.size()
-		return "SAME!"
-	return ""
+	var same_triggered: bool = bool(result.get("same_triggered", false))
+	var plus_triggered: bool = bool(result.get("plus_triggered", false))
+
+	var special_text: String = ""
+	if same_triggered and plus_triggered:
+		special_text = "SAME + PLUS!"
+	elif same_triggered:
+		special_text = "SAME!"
+	elif plus_triggered:
+		special_text = "PLUS!"
+
+	if special_text.is_empty():
+		return ""
+	if not combo_captured.is_empty():
+		return "%s  COMBO x%d" % [special_text, combo_captured.size()]
+	return special_text
 
 
 func _on_reward_selected(card_definition) -> void:
@@ -866,6 +897,8 @@ func _rules_summary(active_rules: Resource, active_region: Resource) -> String:
 	if active_rules != null:
 		if bool(active_rules.get("same_rule")):
 			labels.append("Same")
+		if bool(active_rules.get("plus_rule")):
+			labels.append("Plus")
 		if bool(active_rules.get("combo_rule")):
 			labels.append("Combo")
 	if active_region != null and bool(active_region.get("allow_rotate")):

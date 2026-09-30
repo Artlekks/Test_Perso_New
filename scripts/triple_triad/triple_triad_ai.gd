@@ -9,6 +9,7 @@ func choose_move(match_state, card_owner: int, rng: RandomNumberGenerator, ai_pr
 
 	var capture_weight: float = _profile_float(ai_profile, &"capture_weight", 100.0)
 	var same_trigger_weight: float = _profile_float(ai_profile, &"same_trigger_weight", 65.0)
+	var plus_trigger_weight: float = _profile_float(ai_profile, &"plus_trigger_weight", 65.0)
 	var positional_weight: float = _profile_float(ai_profile, &"positional_weight", 1.0)
 	var card_strength_weight: float = _profile_float(ai_profile, &"card_strength_weight", 0.08)
 	var conserve_cost_weight: float = _profile_float(ai_profile, &"conserve_cost_weight", 0.3)
@@ -32,6 +33,8 @@ func choose_move(match_state, card_owner: int, rng: RandomNumberGenerator, ai_pr
 				var move_score: float = float(capture_count) * capture_weight
 				if bool(preview.get("same_triggered", false)):
 					move_score += same_trigger_weight
+				if bool(preview.get("plus_triggered", false)):
+					move_score += plus_trigger_weight
 				move_score += _positional_bonus(match_state, card, cell_index, rotation) * positional_weight
 				move_score += float(card.rank_total()) * card_strength_weight
 				move_score -= float(card.deck_cost) * conserve_cost_weight

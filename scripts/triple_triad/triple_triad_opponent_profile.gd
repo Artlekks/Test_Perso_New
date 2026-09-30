@@ -14,3 +14,6 @@ extends Resource
 @export var native_card_ids: PackedStringArray = PackedStringArray()
 @export var preferred_deck_ids: PackedStringArray = PackedStringArray()
 @export_range(5, 50, 1) var initial_collection_size: int = 15
+
+# Player progression reward for defeating this opponent.
+@export_range(0, 100, 1) var progression_points_on_win: int = 3

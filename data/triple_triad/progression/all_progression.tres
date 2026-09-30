@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="TripleTriadProgressionCatalog" format=3 uid="uid://dv1atq4bqkm7k"]
+
+[ext_resource type="Script" uid="uid://dnflq1xd7macx" path="res://scripts/triple_triad/triple_triad_progression_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" uid="uid://dv47ua3bxdbe2" path="res://scripts/triple_triad/triple_triad_rank_definition.gd" id="2_rank"]
+
+[sub_resource type="Resource" id="Rank_1"]
+script = ExtResource("2_rank")
+rank_id = &"rank_1"
+display_name = "Rank 1"
+
+[sub_resource type="Resource" id="Rank_2"]
+script = ExtResource("2_rank")
+rank_id = &"rank_2"
+display_name = "Rank 2"
+min_points = 6
+deck_budget_bonus = 2
+
+[sub_resource type="Resource" id="Rank_3"]
+script = ExtResource("2_rank")
+rank_id = &"rank_3"
+display_name = "Rank 3"
+min_points = 15
+deck_budget_bonus = 4
+
+[sub_resource type="Resource" id="Rank_4"]
+script = ExtResource("2_rank")
+rank_id = &"rank_4"
+display_name = "Rank 4"
+min_points = 30
+deck_budget_bonus = 6
+
+[sub_resource type="Resource" id="Rank_5"]
+script = ExtResource("2_rank")
+rank_id = &"rank_5"
+display_name = "Rank 5"
+min_points = 50
+deck_budget_bonus = 8
+
+[sub_resource type="Resource" id="Rank_6"]
+script = ExtResource("2_rank")
+rank_id = &"rank_6"
+display_name = "Rank 6"
+min_points = 80
+deck_budget_bonus = 10
+
+[resource]
+script = ExtResource("1_catalog")
+ranks = Array[ExtResource("2_rank")]([SubResource("Rank_1"), SubResource("Rank_2"), SubResource("Rank_3"), SubResource("Rank_4"), SubResource("Rank_5"), SubResource("Rank_6")])
