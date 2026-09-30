@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "notes": "Authoritative Triple Triad portrait-card stats. card_id is the stable identity; atlas_slot is informational only. Edit display_name, level, points, ranks, group, and tags without changing card_id.",
+  "schema_version": 2,
+  "notes": "Authoritative Triple Triad card data. Existing ranks/points are unchanged. rarity, required_player_rank, and acquisition_tags are now authored backend fields for acquisition/progression. All current cards remain Rank 1 / standard until the deliberate content-balancing pass.",
   "cards": [
     {
       "card_id": "mugshot_000",
@@ -15,7 +15,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_001",
@@ -30,7 +36,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_002",
@@ -45,7 +57,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_003",
@@ -60,7 +78,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_013",
@@ -75,7 +99,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_016",
@@ -90,7 +120,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_017",
@@ -105,7 +141,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_019",
@@ -120,7 +162,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_023",
@@ -135,7 +183,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_025",
@@ -150,7 +204,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_027",
@@ -165,7 +225,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_029",
@@ -180,7 +246,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_030",
@@ -195,7 +267,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_033",
@@ -210,7 +288,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_034",
@@ -225,7 +309,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_037",
@@ -240,7 +330,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_038",
@@ -255,7 +351,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_039",
@@ -270,7 +372,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_040",
@@ -285,7 +393,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_041",
@@ -300,7 +414,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_042",
@@ -315,7 +435,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_043",
@@ -330,7 +456,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_044",
@@ -345,7 +477,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_045",
@@ -360,7 +498,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_047",
@@ -375,7 +519,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_049",
@@ -390,7 +540,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_050",
@@ -405,7 +561,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_051",
@@ -420,7 +582,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_053",
@@ -435,7 +603,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_054",
@@ -450,7 +624,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_056",
@@ -465,7 +645,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_057",
@@ -480,7 +666,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_058",
@@ -495,7 +687,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_059",
@@ -510,7 +708,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_061",
@@ -525,7 +729,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_062",
@@ -540,7 +750,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_063",
@@ -555,7 +771,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_064",
@@ -570,7 +792,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_065",
@@ -585,7 +813,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_066",
@@ -600,7 +834,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_067",
@@ -615,7 +855,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_068",
@@ -630,7 +876,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_069",
@@ -645,7 +897,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_070",
@@ -660,7 +918,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_071",
@@ -675,7 +939,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_072",
@@ -690,7 +960,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_073",
@@ -705,7 +981,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_074",
@@ -720,7 +1002,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_075",
@@ -735,7 +1023,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_076",
@@ -750,7 +1044,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_077",
@@ -765,7 +1065,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_078",
@@ -780,7 +1086,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_079",
@@ -795,7 +1107,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_080",
@@ -810,7 +1128,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_081",
@@ -825,7 +1149,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_082",
@@ -840,7 +1170,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_083",
@@ -855,7 +1191,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_084",
@@ -870,7 +1212,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_085",
@@ -885,7 +1233,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_086",
@@ -900,7 +1254,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_087",
@@ -915,7 +1275,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_088",
@@ -930,7 +1296,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_089",
@@ -945,7 +1317,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_090",
@@ -960,7 +1338,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_091",
@@ -975,7 +1359,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_092",
@@ -990,7 +1380,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_093",
@@ -1005,7 +1401,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_094",
@@ -1020,7 +1422,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_095",
@@ -1035,7 +1443,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_096",
@@ -1050,7 +1464,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_097",
@@ -1065,7 +1485,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_098",
@@ -1080,7 +1506,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_099",
@@ -1095,7 +1527,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_100",
@@ -1110,7 +1548,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_101",
@@ -1125,7 +1569,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_102",
@@ -1140,7 +1590,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_103",
@@ -1155,7 +1611,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_104",
@@ -1170,7 +1632,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_105",
@@ -1185,7 +1653,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_106",
@@ -1200,7 +1674,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_107",
@@ -1215,7 +1695,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_108",
@@ -1230,7 +1716,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_109",
@@ -1245,7 +1737,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_110",
@@ -1260,7 +1758,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_111",
@@ -1275,7 +1779,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_112",
@@ -1290,7 +1800,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_113",
@@ -1305,7 +1821,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_114",
@@ -1320,7 +1842,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_117",
@@ -1335,7 +1863,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_118",
@@ -1350,7 +1884,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_119",
@@ -1365,7 +1905,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_120",
@@ -1380,7 +1926,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_121",
@@ -1395,7 +1947,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_122",
@@ -1410,7 +1968,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_123",
@@ -1425,7 +1989,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_124",
@@ -1440,7 +2010,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_125",
@@ -1455,7 +2031,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_126",
@@ -1470,7 +2052,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_127",
@@ -1485,7 +2073,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_128",
@@ -1500,7 +2094,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_129",
@@ -1515,7 +2115,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_130",
@@ -1530,7 +2136,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_131",
@@ -1545,7 +2157,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_132",
@@ -1560,7 +2178,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_133",
@@ -1575,7 +2199,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_134",
@@ -1590,7 +2220,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_135",
@@ -1605,7 +2241,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_136",
@@ -1620,7 +2262,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_137",
@@ -1635,7 +2283,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_138",
@@ -1650,7 +2304,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_139",
@@ -1665,7 +2325,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_140",
@@ -1680,7 +2346,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_141",
@@ -1695,7 +2367,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_142",
@@ -1710,7 +2388,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_143",
@@ -1725,7 +2409,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_144",
@@ -1740,7 +2430,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_145",
@@ -1755,7 +2451,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_146",
@@ -1770,7 +2472,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_147",
@@ -1785,7 +2493,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_148",
@@ -1800,7 +2514,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_149",
@@ -1815,7 +2535,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_150",
@@ -1830,7 +2556,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_151",
@@ -1845,7 +2577,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_152",
@@ -1860,7 +2598,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_153",
@@ -1875,7 +2619,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_154",
@@ -1890,7 +2640,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_155",
@@ -1905,7 +2661,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_156",
@@ -1920,7 +2682,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_157",
@@ -1935,7 +2703,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_158",
@@ -1950,7 +2724,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_159",
@@ -1965,7 +2745,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_160",
@@ -1980,7 +2766,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_161",
@@ -1995,7 +2787,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_162",
@@ -2010,7 +2808,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_163",
@@ -2025,7 +2829,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_164",
@@ -2040,7 +2850,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_165",
@@ -2055,7 +2871,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_166",
@@ -2070,7 +2892,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_167",
@@ -2085,7 +2913,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_168",
@@ -2100,7 +2934,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_169",
@@ -2115,7 +2955,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_170",
@@ -2130,7 +2976,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_171",
@@ -2145,7 +2997,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_172",
@@ -2160,7 +3018,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_173",
@@ -2175,7 +3039,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_174",
@@ -2190,7 +3060,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_175",
@@ -2205,7 +3081,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_176",
@@ -2220,7 +3102,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_177",
@@ -2235,7 +3123,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_178",
@@ -2250,7 +3144,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_179",
@@ -2265,7 +3165,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_180",
@@ -2280,7 +3186,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_181",
@@ -2295,7 +3207,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_182",
@@ -2310,7 +3228,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_183",
@@ -2325,7 +3249,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_184",
@@ -2340,7 +3270,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_185",
@@ -2355,7 +3291,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_186",
@@ -2370,7 +3312,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_187",
@@ -2385,7 +3333,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_188",
@@ -2400,7 +3354,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_189",
@@ -2415,7 +3375,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_190",
@@ -2430,7 +3396,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_191",
@@ -2445,7 +3417,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_192",
@@ -2460,7 +3438,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_196",
@@ -2475,7 +3459,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_200",
@@ -2490,7 +3480,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_204",
@@ -2505,7 +3501,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_208",
@@ -2520,7 +3522,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_212",
@@ -2535,7 +3543,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_216",
@@ -2550,7 +3564,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_220",
@@ -2565,7 +3585,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_224",
@@ -2580,7 +3606,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_228",
@@ -2595,7 +3627,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_232",
@@ -2610,7 +3648,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_236",
@@ -2625,7 +3669,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_240",
@@ -2640,7 +3690,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_244",
@@ -2655,7 +3711,13 @@
         "left": 6
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_248",
@@ -2670,7 +3732,13 @@
         "left": 2
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     },
     {
       "card_id": "mugshot_252",
@@ -2685,7 +3753,13 @@
         "left": 4
       },
       "group": "",
-      "tags": []
+      "tags": [],
+      "rarity": "standard",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "starter",
+        "opponent_win"
+      ]
     }
   ]
 }

@@ -1,26 +1,28 @@
 extends RefCounted
 
 const SAVE_PATH := "user://triple_triad_collection.cfg"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 var _catalog: Resource = null
 var _quantities: Dictionary = {}
+var _acquisition_policy: Resource = null
 
 
-func initialize(catalog: Resource) -> void:
+func initialize(catalog: Resource, acquisition_policy: Resource = null) -> void:
 	_catalog = catalog
+	_acquisition_policy = acquisition_policy
 	_quantities.clear()
 
 	var config := ConfigFile.new()
 	var load_error: Error = config.load(SAVE_PATH)
 	if load_error != OK:
-		_seed_full_collection()
+		_seed_new_collection()
 		_save()
 		return
 
 	var stored_version: int = int(config.get_value("meta", "version", 0))
 	if stored_version <= 0:
-		_seed_full_collection()
+		_seed_new_collection()
 		_save()
 		return
 
@@ -115,9 +117,28 @@ func total_owned_count() -> int:
 	return total
 
 
-func _seed_full_collection() -> void:
+func _seed_new_collection() -> void:
 	_quantities.clear()
-	if _catalog == null or not _catalog.has_method("get_total_source_count"):
+	if _catalog == null:
+		return
+
+	if (
+		_acquisition_policy != null
+		and _acquisition_policy.has_method("build_starting_collection")
+	):
+		var starter_cards: Array = _acquisition_policy.call(
+			"build_starting_collection",
+			_catalog
+		)
+		for card in starter_cards:
+			if card != null:
+				_quantities[StringName(card.card_id)] = 1
+		if not _quantities.is_empty():
+			return
+
+	# Compatibility fallback for projects that intentionally omit an acquisition
+	# policy. The actual TripleTriadGame now always supplies the default policy.
+	if not _catalog.has_method("get_total_source_count"):
 		return
 	for source_index in range(int(_catalog.call("get_total_source_count"))):
 		var card = _catalog.call("get_card", source_index)

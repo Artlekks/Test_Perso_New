@@ -54,6 +54,7 @@ const CARD_TRANSFER_DROP_SECONDS := 0.16
 
 var _catalog: Resource = null
 var _collection_backend = null
+var _acquisition_policy: Resource = null
 var _cards: Array = []
 var _deck: Array = []
 var _collection_views: Array = []
@@ -81,9 +82,16 @@ func _ready() -> void:
 	profile_button.pressed.connect(_on_profile_button_pressed)
 
 
-func open_setup(catalog: Resource, budget_limit: int, player_rank: int = 6, collection_backend = null) -> void:
+func open_setup(
+	catalog: Resource,
+	budget_limit: int,
+	player_rank: int = 6,
+	collection_backend = null,
+	acquisition_policy: Resource = null
+) -> void:
 	_catalog = catalog
 	_collection_backend = collection_backend
+	_acquisition_policy = acquisition_policy
 	_budget_limit = maxi(5, budget_limit)
 	_player_rank = maxi(1, player_rank)
 	_sort_descending = _load_sort_descending()
@@ -367,6 +375,10 @@ func _select_cursor_card() -> void:
 		return
 
 	var card = _cards[_cursor_index]
+	if not _can_use_card(card):
+		_status_text = _card_lock_reason(card)
+		_refresh_labels()
+		return
 	if _deck_has_card(card):
 		_status_text = "That card is already in this deck."
 		_refresh_labels()
@@ -799,9 +811,39 @@ func remove_card_from_all_profiles(card_id: StringName) -> void:
 func _can_use_card(card) -> bool:
 	if card == null:
 		return false
-	if _collection_backend == null or not _collection_backend.has_method("owns_card"):
-		return true
-	return bool(_collection_backend.call("owns_card", card))
+	if (
+		_collection_backend != null
+		and _collection_backend.has_method("owns_card")
+		and not bool(_collection_backend.call("owns_card", card))
+	):
+		return false
+	if (
+		_acquisition_policy != null
+		and _acquisition_policy.has_method("can_use_card")
+	):
+		return bool(_acquisition_policy.call(
+			"can_use_card",
+			card,
+			_player_rank
+		))
+	if card.has_method("is_usable_at_player_rank"):
+		return bool(card.call("is_usable_at_player_rank", _player_rank))
+	return true
+
+
+func _card_lock_reason(card) -> String:
+	if _can_use_card(card):
+		return ""
+	if (
+		_acquisition_policy != null
+		and _acquisition_policy.has_method("get_card_lock_reason")
+	):
+		return str(_acquisition_policy.call(
+			"get_card_lock_reason",
+			card,
+			_player_rank
+		))
+	return "Card unavailable at this Duel Rank."
 
 
 func _load_last_profile_index() -> int:

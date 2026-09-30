@@ -8,6 +8,7 @@ const OPPONENTS_PATH := "user://triple_triad_opponents.cfg"
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const PROGRESSION_PATH := "user://triple_triad_progression.cfg"
 const TRANSFER_JOURNAL_PATH := "user://triple_triad_transfer_journal.cfg"
+const ACQUISITION_HISTORY_PATH := "user://triple_triad_acquisition_history.cfg"
 
 const PROFILE_COUNT := 6
 const HAND_SIZE := 5
@@ -544,6 +545,7 @@ func _protected_paths() -> Array[String]:
 		OPPONENTS_PATH,
 		DECKS_PATH,
 		PROGRESSION_PATH,
+		ACQUISITION_HISTORY_PATH,
 	]
 
 

@@ -14,6 +14,8 @@ const CardEconomyScript = preload("res://scripts/triple_triad/triple_triad_card_
 const ProgressionScript = preload("res://scripts/triple_triad/triple_triad_progression.gd")
 const SaveIntegrityScript = preload("res://scripts/triple_triad/triple_triad_save_integrity.gd")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
+const AcquisitionTrackerScript = preload("res://scripts/triple_triad/triple_triad_acquisition_tracker.gd")
+const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -40,6 +42,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @export var region_profile: Resource
 @export var ai_profile: Resource
 @export var opponent_registry: Resource = DefaultOpponentRegistry
+@export var acquisition_policy: Resource = DefaultAcquisitionPolicy
 @export_range(5, 50, 1) var deck_budget: int = 30
 @export_range(5, 50, 1) var player_deck_budget: int = 30
 @export_range(1, 6, 1) var player_card_rank: int = 6
@@ -99,6 +102,7 @@ var _opponent_collection_backend = null
 var _card_economy = null
 var _progression = null
 var _save_integrity = null
+var _acquisition_tracker = null
 
 
 func _ready() -> void:
@@ -119,7 +123,10 @@ func _ready() -> void:
 		)
 
 	_collection_backend = CollectionScript.new()
-	_collection_backend.initialize(card_catalog)
+	_collection_backend.initialize(card_catalog, acquisition_policy)
+
+	_acquisition_tracker = AcquisitionTrackerScript.new()
+	_acquisition_tracker.initialize(card_catalog)
 
 	_progression = ProgressionScript.new()
 	_progression.initialize()
@@ -202,7 +209,8 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		card_catalog,
 		_progression.get_deck_budget(player_deck_budget) if _progression != null else player_deck_budget,
 		_progression.get_rank_number() if _progression != null else player_card_rank,
-		_collection_backend
+		_collection_backend,
+		acquisition_policy
 	)
 	tree.paused = true
 	opened.emit()
@@ -781,6 +789,12 @@ func _on_reward_selected(card_definition) -> void:
 			_collection_backend,
 			_opponent_collection_backend
 		):
+			if _acquisition_tracker != null:
+				_acquisition_tracker.record_acquisition(
+					card_definition,
+					&"opponent_win",
+					_active_opponent_id()
+				)
 			card_reward_selected.emit(card_definition)
 		else:
 			push_error("TripleTriadGame: failed to transfer reward card to player.")
@@ -796,6 +810,13 @@ func _on_reward_selected(card_definition) -> void:
 		):
 			push_error("TripleTriadGame: failed to transfer lost card to opponent.")
 			return
+
+		if _acquisition_tracker != null:
+			_acquisition_tracker.record_loss(
+				card_definition,
+				&"opponent_loss",
+				_active_opponent_id()
+			)
 
 		if not _collection_backend.owns_card(card_definition):
 			deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))

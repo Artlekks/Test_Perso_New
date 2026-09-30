@@ -13,6 +13,9 @@ extends Resource
 @export var source_kind: StringName = &"portrait"
 @export var group_id: StringName = &""
 @export var tags: PackedStringArray = PackedStringArray()
+@export var rarity_id: StringName = &"standard"
+@export_range(1, 10, 1) var required_player_rank: int = 1
+@export var acquisition_tags: PackedStringArray = PackedStringArray()
 
 
 func strength_points() -> int:
@@ -20,6 +23,20 @@ func strength_points() -> int:
 	# Keeping this method on the definition means UI/AI code does not need to know
 	# where that value came from.
 	return deck_cost
+
+
+func is_usable_at_player_rank(player_rank: int) -> bool:
+	return maxi(1, player_rank) >= required_player_rank
+
+
+func has_acquisition_tag(tag: StringName) -> bool:
+	var wanted: String = String(tag).strip_edges().to_lower()
+	if wanted.is_empty():
+		return false
+	for raw_tag in acquisition_tags:
+		if str(raw_tag).strip_edges().to_lower() == wanted:
+			return true
+	return false
 
 
 func rank_for_side(side: int) -> int:
@@ -63,5 +80,8 @@ func is_valid_definition() -> bool:
 		and bottom_rank <= 10
 		and left_rank >= 1
 		and left_rank <= 10
+		and required_player_rank >= 1
+		and required_player_rank <= 10
+		and not String(rarity_id).strip_edges().is_empty()
 		and portrait != null
 	)

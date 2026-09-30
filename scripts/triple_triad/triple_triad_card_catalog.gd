@@ -76,7 +76,8 @@ func _ensure_card_stats_loaded() -> void:
 		_card_stats_errors.append("card stats root must be a Dictionary")
 		return
 	var root: Dictionary = parsed
-	if int(root.get("schema_version", 0)) != 1:
+	var schema_version: int = int(root.get("schema_version", 0))
+	if schema_version not in [1, 2]:
 		_card_stats_errors.append("unsupported card stats schema_version")
 	var raw_cards = root.get("cards", [])
 	if typeof(raw_cards) != TYPE_ARRAY:
@@ -117,6 +118,25 @@ func _apply_authored_stats(card) -> bool:
 	card.level = clampi(int(entry.get("level", card.level)), 1, 10)
 	card.deck_cost = clampi(int(entry.get("points", card.deck_cost)), 1, 10)
 	card.group_id = StringName(str(entry.get("group", "")).strip_edges())
+	card.rarity_id = StringName(
+		str(entry.get("rarity", "standard")).strip_edges()
+	)
+	if String(card.rarity_id).is_empty():
+		card.rarity_id = &"standard"
+	card.required_player_rank = clampi(
+		int(entry.get("required_player_rank", 1)),
+		1,
+		10
+	)
+
+	var raw_acquisition_tags = entry.get("acquisition_tags", [])
+	var parsed_acquisition_tags := PackedStringArray()
+	if typeof(raw_acquisition_tags) == TYPE_ARRAY:
+		for raw_tag in raw_acquisition_tags:
+			var acquisition_tag: String = str(raw_tag).strip_edges()
+			if not acquisition_tag.is_empty():
+				parsed_acquisition_tags.append(acquisition_tag)
+	card.acquisition_tags = parsed_acquisition_tags
 
 	var raw_tags = entry.get("tags", [])
 	var parsed_tags := PackedStringArray()
@@ -140,10 +160,19 @@ func _apply_authored_stats(card) -> bool:
 func _validate_authored_entry(card_id: String, entry: Dictionary, errors: PackedStringArray) -> void:
 	var level: int = int(entry.get("level", 0))
 	var points: int = int(entry.get("points", 0))
+	var required_player_rank: int = int(entry.get("required_player_rank", 1))
+	var rarity: String = str(entry.get("rarity", "standard")).strip_edges()
 	if level < 1 or level > 10:
 		errors.append("%s has invalid level %d" % [card_id, level])
 	if points < 1 or points > 10:
 		errors.append("%s has invalid points %d" % [card_id, points])
+	if required_player_rank < 1 or required_player_rank > 10:
+		errors.append(
+			"%s has invalid required_player_rank %d"
+			% [card_id, required_player_rank]
+		)
+	if rarity.is_empty():
+		errors.append("%s has an empty rarity" % card_id)
 	var raw_ranks = entry.get("ranks", {})
 	if typeof(raw_ranks) != TYPE_DICTIONARY:
 		errors.append("%s is missing ranks" % card_id)
@@ -202,6 +231,35 @@ func get_cards_for_level_range(min_level: int, max_level: int) -> Array:
 			continue
 		if card.level >= low and card.level <= high:
 			result.append(card)
+	return result
+
+
+func get_cards_for_player_rank(player_rank: int) -> Array:
+	var result: Array = []
+	var clean_rank: int = maxi(1, player_rank)
+	for source_index in range(get_total_source_count()):
+		if source_index < card_count and disabled_indices.has(source_index):
+			continue
+		var card = get_card(source_index)
+		if card == null:
+			continue
+		if card.has_method("is_usable_at_player_rank"):
+			if not bool(card.call("is_usable_at_player_rank", clean_rank)):
+				continue
+		result.append(card)
+	return result
+
+
+func get_cards_with_acquisition_tag(
+	tag: StringName,
+	player_rank: int = 10
+) -> Array:
+	var result: Array = []
+	var clean_rank: int = maxi(1, player_rank)
+	for card in get_cards_for_player_rank(clean_rank):
+		if card != null and card.has_method("has_acquisition_tag"):
+			if bool(card.call("has_acquisition_tag", tag)):
+				result.append(card)
 	return result
 
 

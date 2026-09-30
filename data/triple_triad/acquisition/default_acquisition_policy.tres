@@ -1,0 +1,11 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_acquisition_policy.gd" id="1_policy"]
+
+[resource]
+script = ExtResource("1_policy")
+starter_collection_size = 10
+starter_required_tag = &"starter"
+starter_player_rank = 1
+allow_duplicate_ownership = true
+enforce_card_rank_for_decks = true
