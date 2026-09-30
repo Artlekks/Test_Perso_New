@@ -93,6 +93,7 @@ func open_setup(catalog: Resource, budget_limit: int, player_rank: int = 6, coll
 	elif _catalog != null and _catalog.has_method("get_cards_for_level_range"):
 		_cards = _catalog.call("get_cards_for_level_range", 1, 10)
 	_sort_cards()
+	_sanitize_all_saved_profiles()
 	_profile_index = _load_last_profile_index()
 	_load_profile(_profile_index)
 	_cursor_index = 0
@@ -595,8 +596,81 @@ func _switch_profile(new_profile_index: int) -> void:
 	_refresh_all()
 
 
+func _sanitize_all_saved_profiles() -> void:
+	if _catalog == null:
+		return
+	var config := ConfigFile.new()
+	if config.load(SAVE_PATH) != OK:
+		return
+	var changed: bool = false
+	for profile_index in range(PROFILE_COUNT):
+		var id_key: String = "deck_ids_%d" % (profile_index + 1)
+		var legacy_key: String = "deck_%d" % (profile_index + 1)
+		var source_cards: Array = []
+		var had_profile: bool = false
+		if config.has_section_key("decks", id_key):
+			had_profile = true
+			var raw_ids = config.get_value("decks", id_key, PackedStringArray())
+			if raw_ids is PackedStringArray or raw_ids is Array:
+				for raw_id in raw_ids:
+					if _catalog.has_method("get_card_by_id"):
+						var card = _catalog.call("get_card_by_id", StringName(str(raw_id)))
+						if card != null:
+							source_cards.append(card)
+		elif config.has_section_key("decks", legacy_key):
+			had_profile = true
+			var raw_indices = config.get_value("decks", legacy_key, PackedInt32Array())
+			if raw_indices is PackedInt32Array or raw_indices is Array:
+				for raw_index in raw_indices:
+					var card = null
+					if _catalog.has_method("get_card_by_legacy_source_index"):
+						card = _catalog.call("get_card_by_legacy_source_index", int(raw_index))
+					elif _catalog.has_method("get_card"):
+						card = _catalog.call("get_card", int(raw_index))
+					if card != null:
+						source_cards.append(card)
+
+		if not had_profile:
+			continue
+		var clean_cards: Array = _sanitize_card_array(source_cards)
+		var clean_ids := PackedStringArray()
+		for card in clean_cards:
+			clean_ids.append(String(card.card_id))
+		var current_ids = config.get_value("decks", id_key, PackedStringArray())
+		if current_ids != clean_ids:
+			config.set_value("decks", id_key, clean_ids)
+			changed = true
+
+	if changed:
+		var save_error: Error = config.save(SAVE_PATH)
+		if save_error != OK:
+			push_warning("TripleTriadDeckSetup: could not sanitize deck profiles (%s)." % error_string(save_error))
+
+
+func _sanitize_card_array(cards: Array) -> Array:
+	var clean: Array = []
+	var seen_ids: Dictionary = {}
+	var running_cost: int = 0
+	for card in cards:
+		if card == null or not _can_use_card(card):
+			continue
+		var card_id := StringName(card.card_id)
+		if seen_ids.has(card_id):
+			continue
+		if clean.size() >= HAND_SIZE:
+			break
+		var card_cost: int = int(card.deck_cost)
+		if running_cost + card_cost > _budget_limit:
+			continue
+		clean.append(card)
+		seen_ids[card_id] = true
+		running_cost += card_cost
+	return clean
+
+
 func _load_profile(profile_index: int) -> void:
 	_deck.clear()
+	var running_cost: int = 0
 	var config := ConfigFile.new()
 	var load_error: Error = config.load(SAVE_PATH)
 	var had_saved_profile: bool = false
@@ -613,8 +687,14 @@ func _load_profile(profile_index: int) -> void:
 					if _catalog == null or not _catalog.has_method("get_card_by_id"):
 						continue
 					var card = _catalog.call("get_card_by_id", StringName(str(raw_id)))
-					if _can_use_card(card) and not _deck_has_card(card) and _deck.size() < HAND_SIZE:
+					if (
+						_can_use_card(card)
+						and not _deck_has_card(card)
+						and _deck.size() < HAND_SIZE
+						and running_cost + int(card.deck_cost) <= _budget_limit
+					):
 						_deck.append(card)
+						running_cost += int(card.deck_cost)
 
 		elif config.has_section_key("decks", legacy_key):
 			had_saved_profile = true
@@ -628,8 +708,14 @@ func _load_profile(profile_index: int) -> void:
 						card = _catalog.call("get_card_by_legacy_source_index", int(raw_index))
 					elif _catalog.has_method("get_card"):
 						card = _catalog.call("get_card", int(raw_index))
-					if _can_use_card(card) and not _deck_has_card(card) and _deck.size() < HAND_SIZE:
+					if (
+						_can_use_card(card)
+						and not _deck_has_card(card)
+						and _deck.size() < HAND_SIZE
+						and running_cost + int(card.deck_cost) <= _budget_limit
+					):
 						_deck.append(card)
+						running_cost += int(card.deck_cost)
 
 	# Only brand-new deck profiles are initialized automatically.
 	# A profile missing a card because the player LOST it stays short so the
@@ -647,10 +733,10 @@ func _save_current_profile() -> void:
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
 
+	_deck = _sanitize_card_array(_deck)
 	var ids := PackedStringArray()
 	for card in _deck:
-		if card != null and _can_use_card(card):
-			ids.append(String(card.card_id))
+		ids.append(String(card.card_id))
 
 	config.set_value("decks", "deck_ids_%d" % (_profile_index + 1), ids)
 	config.set_value("meta", "last_profile", _profile_index)

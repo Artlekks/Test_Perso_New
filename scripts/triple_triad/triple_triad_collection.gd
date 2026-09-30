@@ -1,7 +1,7 @@
 extends RefCounted
 
 const SAVE_PATH := "user://triple_triad_collection.cfg"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 var _catalog: Resource = null
 var _quantities: Dictionary = {}
@@ -63,17 +63,18 @@ func get_quantity_by_id(card_id: StringName) -> int:
 	return maxi(0, int(_quantities.get(card_id, 0)))
 
 
-func acquire_card(card, amount: int = 1) -> int:
+func acquire_card(card, amount: int = 1, save_now: bool = true) -> int:
 	if card == null or amount <= 0:
 		return 0
 	var card_id := StringName(card.card_id)
 	var new_quantity: int = get_quantity_by_id(card_id) + amount
 	_quantities[card_id] = new_quantity
-	_save()
+	if save_now:
+		_save()
 	return new_quantity
 
 
-func remove_card(card, amount: int = 1) -> int:
+func remove_card(card, amount: int = 1, save_now: bool = true) -> int:
 	if card == null or amount <= 0:
 		return 0
 	var card_id := StringName(card.card_id)
@@ -83,8 +84,24 @@ func remove_card(card, amount: int = 1) -> int:
 		_quantities.erase(card_id)
 	else:
 		_quantities[card_id] = new_quantity
-	_save()
+	if save_now:
+		_save()
 	return new_quantity
+
+
+func set_quantity_by_id(card_id: StringName, quantity: int, save_now: bool = true) -> int:
+	var clean_quantity: int = maxi(0, quantity)
+	if clean_quantity <= 0:
+		_quantities.erase(card_id)
+	else:
+		_quantities[card_id] = clean_quantity
+	if save_now:
+		_save()
+	return clean_quantity
+
+
+func save_state() -> Error:
+	return _save()
 
 
 func unique_owned_count() -> int:
@@ -120,7 +137,7 @@ func _sanitize_against_catalog() -> void:
 		_quantities.erase(card_id)
 
 
-func _save() -> void:
+func _save() -> Error:
 	var config := ConfigFile.new()
 	config.set_value("meta", "version", SAVE_VERSION)
 	for raw_id in _quantities.keys():
@@ -132,3 +149,4 @@ func _save() -> void:
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadCollection: could not save collection (%s)." % error_string(save_error))
+	return save_error

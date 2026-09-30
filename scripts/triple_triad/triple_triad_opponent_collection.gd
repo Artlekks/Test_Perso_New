@@ -1,15 +1,19 @@
 extends RefCounted
 
 const SAVE_PATH := "user://triple_triad_opponents.cfg"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 const HAND_SIZE := 5
-const INITIAL_COLLECTION_SIZE := 15
+const DEFAULT_INITIAL_COLLECTION_SIZE := 15
 
 var _catalog: Resource = null
 var _opponent_id: StringName = &"opponent"
 var _min_level: int = 1
 var _max_level: int = 3
 var _budget: int = 30
+var _initial_collection_size: int = DEFAULT_INITIAL_COLLECTION_SIZE
+var _profile: Resource = null
+var _native_card_ids: Array = []
+var _preferred_deck_ids: Array = []
 var _quantities: Dictionary = {}
 var _deck_ids: Array = []
 var _priority_ids: Array = []
@@ -20,16 +24,22 @@ func initialize(
 	opponent_id: StringName,
 	min_level: int,
 	max_level: int,
-	budget: int
+	budget: int,
+	profile: Resource = null
 ) -> void:
 	_catalog = catalog
 	_opponent_id = opponent_id if not String(opponent_id).is_empty() else &"opponent"
 	_min_level = clampi(min_level, 1, 10)
 	_max_level = clampi(max_level, _min_level, 10)
 	_budget = maxi(5, budget)
+	_profile = profile
+	_initial_collection_size = DEFAULT_INITIAL_COLLECTION_SIZE
+	_native_card_ids.clear()
+	_preferred_deck_ids.clear()
 	_quantities.clear()
 	_deck_ids.clear()
 	_priority_ids.clear()
+	_read_profile_data()
 
 	var config := ConfigFile.new()
 	var load_error: Error = config.load(SAVE_PATH)
@@ -65,11 +75,17 @@ func initialize(
 	_save()
 
 
+func get_opponent_id() -> StringName:
+	return _opponent_id
+
+
 func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 	_budget = maxi(5, budget)
 	var target_size: int = maxi(1, hand_size)
 	var ordered_ids: Array = []
+	# Cards won from the player are first so a rematch actually offers them back.
 	_append_unique_ids(ordered_ids, _priority_ids)
+	_append_unique_ids(ordered_ids, _preferred_deck_ids)
 	_append_unique_ids(ordered_ids, _deck_ids)
 
 	var owned_cards: Array = get_owned_cards()
@@ -89,32 +105,22 @@ func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 		if not ordered_ids.has(card_id):
 			ordered_ids.append(card_id)
 
-	var result: Array = []
-	var running_cost: int = 0
+	var ordered_cards: Array = []
 	for raw_id in ordered_ids:
-		if result.size() >= target_size:
-			break
 		var card = _card_for_id(StringName(raw_id))
 		if card == null or not owns_card(card):
 			continue
-		if _contains_card_id(result, StringName(card.card_id)):
+		if _contains_card_id(ordered_cards, StringName(card.card_id)):
 			continue
-		var card_cost: int = int(card.deck_cost)
-		if running_cost + card_cost > _budget:
-			continue
-		result.append(card)
-		running_cost += card_cost
+		ordered_cards.append(card)
 
-	# The profile should normally have enough legal cards to satisfy its budget.
-	# If authored data later creates an impossible budget, still return a full hand
-	# rather than breaking the match. The UI/game can surface the tuning issue.
-	if result.size() < target_size:
-		for card in owned_cards:
-			if result.size() >= target_size:
-				break
-			if _contains_card_id(result, StringName(card.card_id)):
-				continue
-			result.append(card)
+	var result: Array = _find_legal_deck(ordered_cards, target_size, _budget, 0, [], 0)
+	if result.size() != target_size:
+		push_warning(
+			"TripleTriadOpponentCollection: %s has no legal %d-card deck under budget %d."
+			% [String(_opponent_id), target_size, _budget]
+		)
+		return []
 
 	_deck_ids.clear()
 	for card in result:
@@ -124,43 +130,57 @@ func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 	return result
 
 
-func acquire_card(card, make_priority: bool = true) -> int:
+func acquire_card(card, make_priority: bool = true, save_now: bool = true) -> int:
 	if card == null:
 		return 0
 	var card_id := StringName(card.card_id)
 	var new_quantity: int = get_quantity_by_id(card_id) + 1
 	_quantities[card_id] = new_quantity
-
 	if make_priority:
-		_priority_ids.erase(card_id)
-		_priority_ids.push_front(card_id)
-
-		# Put a newly won player card straight into the opponent's saved deck.
-		# The next build_match_deck() keeps it first, which guarantees the player
-		# gets a real chance to win their card back from this same NPC.
-		_deck_ids.erase(card_id)
-		_deck_ids.push_front(card_id)
-		while _deck_ids.size() > HAND_SIZE:
-			_deck_ids.pop_back()
-
-	_save()
+		promote_card(card_id, false)
+	if save_now:
+		_save()
 	return new_quantity
 
 
-func remove_card(card) -> int:
+func remove_card(card, save_now: bool = true) -> int:
 	if card == null:
 		return 0
-	var card_id := StringName(card.card_id)
-	var current_quantity: int = get_quantity_by_id(card_id)
-	var new_quantity: int = maxi(0, current_quantity - 1)
-	if new_quantity <= 0:
+	return set_quantity_by_id(
+		StringName(card.card_id),
+		get_quantity_by_id(StringName(card.card_id)) - 1,
+		save_now
+	)
+
+
+func set_quantity_by_id(card_id: StringName, quantity: int, save_now: bool = true) -> int:
+	var clean_quantity: int = maxi(0, quantity)
+	if clean_quantity <= 0:
 		_quantities.erase(card_id)
 		_deck_ids.erase(card_id)
 		_priority_ids.erase(card_id)
 	else:
-		_quantities[card_id] = new_quantity
-	_save()
-	return new_quantity
+		_quantities[card_id] = clean_quantity
+	if save_now:
+		_save()
+	return clean_quantity
+
+
+func promote_card(card_id: StringName, save_now: bool = true) -> void:
+	if get_quantity_by_id(card_id) <= 0:
+		return
+	_priority_ids.erase(card_id)
+	_priority_ids.push_front(card_id)
+	_deck_ids.erase(card_id)
+	_deck_ids.push_front(card_id)
+	while _deck_ids.size() > HAND_SIZE:
+		_deck_ids.pop_back()
+	if save_now:
+		_save()
+
+
+func save_state() -> Error:
+	return _save()
 
 
 func owns_card(card) -> bool:
@@ -184,31 +204,58 @@ func get_owned_cards() -> Array:
 	return result
 
 
+func _read_profile_data() -> void:
+	if _profile == null:
+		return
+	var initial_size_value = _profile.get("initial_collection_size")
+	if initial_size_value != null:
+		_initial_collection_size = maxi(HAND_SIZE, int(initial_size_value))
+	var raw_native = _profile.get("native_card_ids")
+	if raw_native is PackedStringArray or raw_native is Array:
+		for raw_id in raw_native:
+			var card_id := StringName(str(raw_id))
+			if not String(card_id).is_empty() and not _native_card_ids.has(card_id):
+				_native_card_ids.append(card_id)
+	var raw_preferred = _profile.get("preferred_deck_ids")
+	if raw_preferred is PackedStringArray or raw_preferred is Array:
+		for raw_id in raw_preferred:
+			var card_id := StringName(str(raw_id))
+			if not String(card_id).is_empty() and not _preferred_deck_ids.has(card_id):
+				_preferred_deck_ids.append(card_id)
+
+
 func _seed_initial_collection() -> void:
 	_quantities.clear()
 	_deck_ids.clear()
 	_priority_ids.clear()
-	if _catalog == null or not _catalog.has_method("get_cards_for_level_range"):
+	if _catalog == null:
 		return
 
-	var candidates: Array = _catalog.call(
-		"get_cards_for_level_range",
-		_min_level,
-		_max_level
-	)
-	candidates.sort_custom(func(card_a, card_b):
-		return _stable_seed_value(card_a) < _stable_seed_value(card_b)
-	)
+	# Authored native cards are deterministic and always attempted first.
+	for raw_id in _native_card_ids:
+		var card_id := StringName(raw_id)
+		var authored_card = _card_for_id(card_id)
+		if authored_card != null:
+			_quantities[card_id] = 1
 
-	var seed_count: int = mini(INITIAL_COLLECTION_SIZE, candidates.size())
-	for index in range(seed_count):
-		var card = candidates[index]
-		if card == null:
-			continue
-		var card_id := StringName(card.card_id)
-		_quantities[card_id] = 1
+	# Empty/unfilled authored pools keep the old prototype behavior, but the seed
+	# remains stable for this opponent id across saves and sessions.
+	if _catalog.has_method("get_cards_for_level_range") and _quantities.size() < _initial_collection_size:
+		var candidates: Array = _catalog.call("get_cards_for_level_range", _min_level, _max_level)
+		candidates.sort_custom(func(card_a, card_b):
+			return _stable_seed_value(card_a) < _stable_seed_value(card_b)
+		)
+		for card in candidates:
+			if _quantities.size() >= _initial_collection_size:
+				break
+			if card == null:
+				continue
+			var card_id := StringName(card.card_id)
+			if not _quantities.has(card_id):
+				_quantities[card_id] = 1
 
-	# Build a legal five-card baseline from the seeded collection.
+	# Keep only preferred cards that are actually owned. The legal solver below
+	# fills the remaining slots without breaking the opponent budget.
 	var initial_deck: Array = build_match_deck(HAND_SIZE, _budget)
 	_deck_ids.clear()
 	for card in initial_deck:
@@ -234,6 +281,12 @@ func _sanitize() -> void:
 			clean_deck.append(card_id)
 	_deck_ids = clean_deck
 
+	var clean_preferred: Array = []
+	for raw_id in _preferred_deck_ids:
+		var card_id := StringName(raw_id)
+		if get_quantity_by_id(card_id) > 0 and _card_for_id(card_id) != null and not clean_preferred.has(card_id):
+			clean_preferred.append(card_id)
+	_preferred_deck_ids = clean_preferred
 	_trim_priority_ids()
 
 
@@ -244,6 +297,33 @@ func _trim_priority_ids() -> void:
 		if get_quantity_by_id(card_id) > 0 and _card_for_id(card_id) != null and not clean_priority.has(card_id):
 			clean_priority.append(card_id)
 	_priority_ids = clean_priority
+
+
+func _find_legal_deck(
+	cards: Array,
+	target_size: int,
+	budget: int,
+	index: int,
+	chosen: Array,
+	running_cost: int
+) -> Array:
+	if chosen.size() == target_size:
+		return chosen.duplicate()
+	if index >= cards.size():
+		return []
+	if chosen.size() + (cards.size() - index) < target_size:
+		return []
+
+	var card = cards[index]
+	if card != null:
+		var next_cost: int = running_cost + int(card.deck_cost)
+		if next_cost <= budget:
+			chosen.append(card)
+			var with_card: Array = _find_legal_deck(cards, target_size, budget, index + 1, chosen, next_cost)
+			chosen.pop_back()
+			if with_card.size() == target_size:
+				return with_card
+	return _find_legal_deck(cards, target_size, budget, index + 1, chosen, running_cost)
 
 
 func _append_unique_ids(target: Array, source: Array) -> void:
@@ -280,7 +360,7 @@ func _cards_section() -> String:
 	return "opponent_%s_cards" % String(_opponent_id)
 
 
-func _save() -> void:
+func _save() -> Error:
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
 
@@ -304,6 +384,7 @@ func _save() -> void:
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadOpponentCollection: could not save NPC cards (%s)." % error_string(save_error))
+	return save_error
 
 
 func _to_packed_string_array(values: Array) -> PackedStringArray:

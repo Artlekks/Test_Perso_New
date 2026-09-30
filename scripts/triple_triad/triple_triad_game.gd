@@ -10,6 +10,7 @@ const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
 const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
 const CollectionScript = preload("res://scripts/triple_triad/triple_triad_collection.gd")
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
+const CardEconomyScript = preload("res://scripts/triple_triad/triple_triad_card_economy.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -91,6 +92,7 @@ var _qa_base_summary: Dictionary = {}
 var _active_player_deck: Array = []
 var _collection_backend = null
 var _opponent_collection_backend = null
+var _card_economy = null
 
 
 func _ready() -> void:
@@ -102,6 +104,8 @@ func _ready() -> void:
 	_ai = AIScript.new()
 	_collection_backend = CollectionScript.new()
 	_collection_backend.initialize(card_catalog)
+	_card_economy = CardEconomyScript.new()
+	_card_economy.recover_pending(card_catalog, _collection_backend)
 	_rng.randomize()
 	_build_views()
 	ai_timer.timeout.connect(_on_ai_timer_timeout)
@@ -135,7 +139,8 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		_active_opponent_id(),
 		_active_min_level,
 		_active_max_level,
-		_active_deck_budget
+		_active_deck_budget,
+		_active_opponent_profile
 	)
 	root.visible = true
 	_phase = PHASE_DECK_SETUP
@@ -293,7 +298,10 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 	if _opponent_collection_backend != null:
 		opponent_cards = _opponent_collection_backend.build_match_deck(5, _active_deck_budget)
 	if opponent_cards.size() != 5:
-		opponent_cards = _build_budgeted_hand(_active_min_level, _active_max_level)
+		push_error("TripleTriadGame: opponent %s has no legal persistent deck." % String(_active_opponent_id()))
+		message_label.text = "Opponent deck is invalid."
+		close_game()
+		return
 	_starting_player_cards = player_cards.duplicate()
 	_starting_opponent_cards = opponent_cards.duplicate()
 	var starting_owner: int
@@ -679,23 +687,33 @@ func _on_reward_selected(card_definition) -> void:
 		return
 
 	_last_info_name = str(card_definition.display_name)
+	if _card_economy == null or _opponent_collection_backend == null:
+		push_error("TripleTriadGame: card economy is unavailable during reward transfer.")
+		return
 
 	if _result_winner == OWNER_PLAYER:
-		# This is a real transfer: the selected card leaves this NPC's persistent
-		# collection/deck and becomes available to the player again.
-		if _opponent_collection_backend != null:
-			_opponent_collection_backend.remove_card(card_definition)
-		_collection_backend.acquire_card(card_definition)
-		card_reward_selected.emit(card_definition)
+		# One journaled transaction moves the exact quantity from this NPC to the
+		# player. If saving is interrupted, the journal repairs both sides next run.
+		if _card_economy.transfer_opponent_to_player(
+			card_definition,
+			_collection_backend,
+			_opponent_collection_backend
+		):
+			card_reward_selected.emit(card_definition)
+		else:
+			push_error("TripleTriadGame: failed to transfer reward card to player.")
 		return
 
 	if _result_winner == OWNER_OPPONENT:
-		# The opponent physically receives the player's lost card. It is marked as
-		# priority in that NPC's saved deck so it appears in a later rematch and can
-		# actually be won back from the same NPC.
-		_collection_backend.remove_card(card_definition)
-		if _opponent_collection_backend != null:
-			_opponent_collection_backend.acquire_card(card_definition, true)
+		# The same atomic/journaled path transfers a lost player card to the exact
+		# NPC. promote_for_rematch keeps that stolen card at the front of its deck.
+		if not _card_economy.transfer_player_to_opponent(
+			card_definition,
+			_collection_backend,
+			_opponent_collection_backend
+		):
+			push_error("TripleTriadGame: failed to transfer lost card to opponent.")
+			return
 
 		if not _collection_backend.owns_card(card_definition):
 			deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))
@@ -761,6 +779,9 @@ func _resolve_active_configuration(opponent_profile_override: Resource) -> void:
 			_active_deck_budget = maxi(5, int(region_budget))
 
 	if _active_opponent_profile != null:
+		var profile_rules = _active_opponent_profile.get("rule_set_override")
+		if profile_rules != null:
+			_active_rule_set = profile_rules
 		var budget_override = _active_opponent_profile.get("deck_budget_override")
 		if budget_override != null and int(budget_override) > 0:
 			_active_deck_budget = int(budget_override)
