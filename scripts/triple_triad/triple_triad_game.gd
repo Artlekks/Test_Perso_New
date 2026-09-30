@@ -4,6 +4,7 @@ signal opened
 signal closed
 signal match_finished(result: Dictionary)
 signal card_reward_selected(card_definition)
+signal backend_state_changed(reason: String)
 
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
@@ -16,6 +17,9 @@ const SaveIntegrityScript = preload("res://scripts/triple_triad/triple_triad_sav
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const AcquisitionTrackerScript = preload("res://scripts/triple_triad/triple_triad_acquisition_tracker.gd")
 const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
+const BackendQAScript = preload("res://scripts/triple_triad/triple_triad_backend_qa.gd")
+const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
+const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -49,6 +53,8 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @export_range(1, 10, 1) var prototype_min_level: int = 1
 @export_range(1, 10, 1) var prototype_max_level: int = 3
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.75
+## Debug builds only. Pure backend QA; does not touch player save files.
+@export var run_backend_qa_on_startup: bool = true
 
 @onready var root: Control = $Root
 @onready var opponent_hand_container: Control = $Root/OpponentHand
@@ -103,6 +109,8 @@ var _card_economy = null
 var _progression = null
 var _save_integrity = null
 var _acquisition_tracker = null
+var _encounter_records = null
+var _state_api = null
 
 
 func _ready() -> void:
@@ -130,6 +138,21 @@ func _ready() -> void:
 
 	_progression = ProgressionScript.new()
 	_progression.initialize()
+
+	_encounter_records = EncounterRecordsScript.new()
+	_encounter_records.initialize()
+
+	_state_api = StateAPIScript.new()
+	_state_api.initialize(
+		card_catalog,
+		_collection_backend,
+		_progression,
+		opponent_registry,
+		_encounter_records,
+		_acquisition_tracker,
+		acquisition_policy,
+		player_deck_budget
+	)
 
 	# Transfer journal recovery must happen before the global audit because an
 	# interrupted card trade is more authoritative than either owner file.
@@ -163,6 +186,84 @@ func _ready() -> void:
 			)
 		for warning in registry_audit.get("warnings", []):
 			push_warning("TripleTriadGame: %s" % str(warning))
+
+	if OS.is_debug_build() and run_backend_qa_on_startup:
+		_run_backend_qa()
+
+
+func run_backend_qa() -> Dictionary:
+	return _run_backend_qa()
+
+
+func _run_backend_qa() -> Dictionary:
+	var qa_runner = BackendQAScript.new()
+	var report: Dictionary = qa_runner.run_all()
+
+	if bool(report.get("passed", false)):
+		print(
+			"TripleTriad QA: %d/%d backend tests passed."
+			% [
+				int(report.get("passed_count", 0)),
+				int(report.get("test_count", 0)),
+			]
+		)
+	else:
+		push_error(
+			"TripleTriad QA: %d/%d tests failed: %s"
+			% [
+				int(report.get("failed_count", 0)),
+				int(report.get("test_count", 0)),
+				str(report.get("failures", [])),
+			]
+		)
+		for result in report.get("results", []):
+			if not bool(result.get("passed", false)):
+				push_error(
+					"  QA FAIL — %s: %s"
+					% [
+						str(result.get("name", "unknown")),
+						str(result.get("error", "")),
+					]
+				)
+	return report
+
+
+func get_state_api():
+	return _state_api
+
+
+func get_player_snapshot() -> Dictionary:
+	return _state_api.get_player_snapshot() if _state_api != null else {}
+
+
+func get_collection_snapshot() -> Array:
+	return _state_api.get_collection_snapshot() if _state_api != null else []
+
+
+func get_deck_profiles_snapshot() -> Array:
+	return _state_api.get_deck_profiles() if _state_api != null else []
+
+
+func get_opponent_snapshot(opponent_id: StringName) -> Dictionary:
+	return _state_api.get_opponent_snapshot(opponent_id) if _state_api != null else {}
+
+
+func get_opponents_snapshot() -> Array:
+	return _state_api.get_all_opponents_snapshot() if _state_api != null else []
+
+
+func get_global_triple_triad_snapshot() -> Dictionary:
+	var snapshot: Dictionary = (
+		_state_api.get_global_snapshot()
+		if _state_api != null
+		else {}
+	)
+	snapshot["runtime"] = {
+		"is_open": is_open(),
+		"phase": _phase,
+		"active_opponent_id": String(_active_opponent_id()) if is_open() else "",
+	}
+	return snapshot
 
 
 func is_open() -> bool:
@@ -510,6 +611,13 @@ func _finish_match() -> void:
 			OWNER_PLAYER,
 			_active_opponent_profile
 		)
+		if _encounter_records != null:
+			_encounter_records.record_result(
+				_active_opponent_id(),
+				_result_winner,
+				OWNER_PLAYER,
+				OWNER_OPPONENT
+			)
 
 	match _result_winner:
 		OWNER_PLAYER:
@@ -528,6 +636,7 @@ func _finish_match() -> void:
 		"score": score,
 		"progression": progression_change,
 	})
+	backend_state_changed.emit("match_result")
 
 
 func _begin_result_transition() -> void:
@@ -795,6 +904,11 @@ func _on_reward_selected(card_definition) -> void:
 					&"opponent_win",
 					_active_opponent_id()
 				)
+			if _encounter_records != null:
+				_encounter_records.record_card_recovered(
+					_active_opponent_id(),
+					StringName(card_definition.card_id)
+				)
 			card_reward_selected.emit(card_definition)
 		else:
 			push_error("TripleTriadGame: failed to transfer reward card to player.")
@@ -817,6 +931,11 @@ func _on_reward_selected(card_definition) -> void:
 				&"opponent_loss",
 				_active_opponent_id()
 			)
+		if _encounter_records != null:
+			_encounter_records.record_card_stolen(
+				_active_opponent_id(),
+				StringName(card_definition.card_id)
+			)
 
 		if not _collection_backend.owns_card(card_definition):
 			deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))
@@ -829,6 +948,7 @@ func _on_reward_selected(card_definition) -> void:
 	# The transfer journal is clear at this point. Refresh the save backup now so
 	# a card won/lost in this result screen is part of the latest healthy snapshot.
 	_checkpoint_save_integrity("reward_transfer")
+	backend_state_changed.emit("card_transfer")
 
 
 func _checkpoint_save_integrity(reason: String) -> void:
@@ -866,6 +986,7 @@ func _on_deck_confirmed(cards: Array) -> void:
 		return
 	_active_player_deck = cards.duplicate()
 	deck_setup.close_setup()
+	backend_state_changed.emit("deck_selected")
 	_start_new_match(_active_player_deck)
 
 
