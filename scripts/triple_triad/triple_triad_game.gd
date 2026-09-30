@@ -9,6 +9,7 @@ const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
 const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
 const CollectionScript = preload("res://scripts/triple_triad/triple_triad_collection.gd")
+const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -89,6 +90,7 @@ var _qa_hand_seed: int = 0
 var _qa_base_summary: Dictionary = {}
 var _active_player_deck: Array = []
 var _collection_backend = null
+var _opponent_collection_backend = null
 
 
 func _ready() -> void:
@@ -127,6 +129,14 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		return
 	_previous_pause = tree.paused
 	_resolve_active_configuration(opponent_profile_override)
+	_opponent_collection_backend = OpponentCollectionScript.new()
+	_opponent_collection_backend.initialize(
+		card_catalog,
+		_active_opponent_id(),
+		_active_min_level,
+		_active_max_level,
+		_active_deck_budget
+	)
 	root.visible = true
 	_phase = PHASE_DECK_SETUP
 	deck_setup.open_setup(card_catalog, player_deck_budget, player_card_rank, _collection_backend)
@@ -145,6 +155,7 @@ func close_game() -> void:
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_phase = PHASE_CLOSED
 	root.visible = false
+	_opponent_collection_backend = null
 	var tree: SceneTree = get_tree()
 	if tree != null:
 		tree.paused = _previous_pause
@@ -278,7 +289,11 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 		player_cards = _active_player_deck.duplicate()
 	else:
 		player_cards = _build_budgeted_hand(_active_min_level, _active_max_level)
-	var opponent_cards: Array = _build_budgeted_hand(_active_min_level, _active_max_level)
+	var opponent_cards: Array = []
+	if _opponent_collection_backend != null:
+		opponent_cards = _opponent_collection_backend.build_match_deck(5, _active_deck_budget)
+	if opponent_cards.size() != 5:
+		opponent_cards = _build_budgeted_hand(_active_min_level, _active_max_level)
 	_starting_player_cards = player_cards.duplicate()
 	_starting_opponent_cards = opponent_cards.duplicate()
 	var starting_owner: int
@@ -666,16 +681,22 @@ func _on_reward_selected(card_definition) -> void:
 	_last_info_name = str(card_definition.display_name)
 
 	if _result_winner == OWNER_PLAYER:
-		# Winning a card increases ownership quantity. The current UI presents
-		# unique cards, but quantities are stored so duplicate rewards are safe.
+		# This is a real transfer: the selected card leaves this NPC's persistent
+		# collection/deck and becomes available to the player again.
+		if _opponent_collection_backend != null:
+			_opponent_collection_backend.remove_card(card_definition)
 		_collection_backend.acquire_card(card_definition)
 		card_reward_selected.emit(card_definition)
 		return
 
 	if _result_winner == OWNER_OPPONENT:
-		# Losing removes one owned copy. If that was the final copy, remove it
-		# from every saved deck profile and from the active match deck too.
+		# The opponent physically receives the player's lost card. It is marked as
+		# priority in that NPC's saved deck so it appears in a later rematch and can
+		# actually be won back from the same NPC.
 		_collection_backend.remove_card(card_definition)
+		if _opponent_collection_backend != null:
+			_opponent_collection_backend.acquire_card(card_definition, true)
+
 		if not _collection_backend.owns_card(card_definition):
 			deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))
 			var filtered_active_deck: Array = []
@@ -798,6 +819,14 @@ func _on_qa_profile_apply_requested(selected_profile: Resource) -> void:
 		_rng.randomize()
 	_resolve_active_configuration(_active_opponent_profile)
 	_start_new_match(_active_player_deck)
+
+
+func _active_opponent_id() -> StringName:
+	if _active_opponent_profile != null:
+		var raw_id = _active_opponent_profile.get("opponent_id")
+		if raw_id != null and not str(raw_id).is_empty():
+			return StringName(str(raw_id))
+	return &"default_opponent"
 
 
 func _configuration_summary() -> Dictionary:

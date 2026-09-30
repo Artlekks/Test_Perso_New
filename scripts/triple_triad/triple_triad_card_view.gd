@@ -34,6 +34,7 @@ var selected: bool = false
 var is_hidden: bool = false
 var rotation_quarters: int = 0
 var rank_bonus: int = 0
+var owner_outline_visible: bool = true
 var _showing_back: bool = false
 var _capture_tween: Tween = null
 var _capture_base_scale := Vector2.ONE
@@ -102,6 +103,11 @@ func set_selected(value: bool) -> void:
 	_refresh_style()
 
 
+func set_owner_outline_visible(value: bool) -> void:
+	owner_outline_visible = value
+	_refresh_style()
+
+
 # Full 2D Y-axis-style card rotation for the post-match card transfer. In a
 # Control node, squeezing scale.x to almost zero gives the same visual read as
 # a 3D card rotating edge-on. The real menu background is shown on the reverse.
@@ -149,8 +155,6 @@ func _refresh_content() -> void:
 	var has_card: bool = card != null
 	var show_face: bool = has_card and not is_hidden and not _showing_back
 	var show_back: bool = has_card and (is_hidden or _showing_back)
-	var show_empty_slot: bool = not has_card
-
 	empty_slot_fill.visible = false
 	portrait_background.visible = show_face
 	portrait.visible = show_face
@@ -182,14 +186,13 @@ func _refresh_style() -> void:
 		return
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0)
-	style.border_width_left = 3
-	style.border_width_top = 3
-	style.border_width_right = 3
-	style.border_width_bottom = 3
+	var border_width: int = 3 if owner_outline_visible or selected else 0
+	style.border_width_left = border_width
+	style.border_width_top = border_width
+	style.border_width_right = border_width
+	style.border_width_bottom = border_width
 	style.set_corner_radius_all(3)
-	style.border_color = _owner_color(card_owner)
-	if selected:
-		style.border_color = COLOR_SELECTED
+	style.border_color = COLOR_SELECTED if selected else _owner_color(card_owner)
 	border_overlay.add_theme_stylebox_override("panel", style)
 
 

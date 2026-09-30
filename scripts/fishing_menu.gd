@@ -606,11 +606,27 @@ func _fill_static_lists() -> void:
 
 
 func _can_open_menu() -> bool:
+	# The fishing menu must never overlap the card-game state machine. Triple
+	# Triad owns the paused input layer from deck setup through the reward screen.
+	if _is_triple_triad_active():
+		return false
 	if _game_mode == null:
 		return true
 	if _game_mode.has_method("is_fishing"):
 		return not bool(_game_mode.call("is_fishing"))
 	return true
+
+
+func _is_triple_triad_active() -> bool:
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.current_scene == null:
+		return false
+	var card_game: Node = tree.current_scene.find_child("TripleTriadGame", true, false)
+	return (
+		card_game != null
+		and card_game.has_method("is_open")
+		and bool(card_game.call("is_open"))
+	)
 
 
 func _set_page(page: int) -> void:

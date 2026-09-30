@@ -379,12 +379,14 @@ func _animate_card_transfer(
 	_focus_card.position = source_view.position
 	source_view.visible = false
 
-	# Work in this full-screen Control's local coordinates. With the pivot at the
-	# card center, this top-left position puts the enlarged card exactly on the
-	# visual center of the 640x480 reward screen at every scale.
+	# Center the reward card in the actual gap between the two card rows, not in
+	# the whole 640x480 viewport. Because both row cards use the same scale and
+	# pivot, the visual midpoint of that gap is the midpoint of their row origins.
+	# This keeps the enlarged card equidistant from the bottom of the top row and
+	# the top of the bottom row.
 	var center_position := Vector2(
 		(size.x - _focus_card.size.x) * 0.5,
-		(size.y - _focus_card.size.y) * 0.5
+		(TOP_ROW_ORIGIN.y + BOTTOM_ROW_ORIGIN.y) * 0.5
 	)
 	focus_dim.visible = true
 	focus_dim.modulate = Color(1, 1, 1, 0)
