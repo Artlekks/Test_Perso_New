@@ -829,10 +829,11 @@ func _test_authored_opponent_ladder() -> Dictionary:
 		)
 
 	var profiles: Array = DefaultOpponentRegistry.get_all_opponents()
-	if profiles.size() != 5:
-		return _ok(false, "Expected exactly five authored opponent archetypes.")
+	if profiles.size() != 6:
+		return _ok(false, "Expected exactly six authored opponent archetypes.")
 
 	var previous_duel_rank: int = 0
+	var expected_duel_rank: int = 1
 	var archetypes: Dictionary = {}
 	for profile in profiles:
 		if profile == null:
@@ -840,7 +841,13 @@ func _test_authored_opponent_ladder() -> Dictionary:
 		var opponent_id: String = String(profile.opponent_id)
 		if profile.duel_rank < previous_duel_rank:
 			return _ok(false, "Opponent ladder is not ordered by Duel Rank.")
+		if profile.duel_rank != expected_duel_rank:
+			return _ok(
+				false,
+				"Opponent ladder is missing Duel Rank %d." % expected_duel_rank
+			)
 		previous_duel_rank = profile.duel_rank
+		expected_duel_rank += 1
 
 		var archetype_id: String = String(profile.archetype_id)
 		if archetypes.has(archetype_id):

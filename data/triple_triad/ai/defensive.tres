@@ -1,6 +1,6 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" format=3 uid="uid://bv5pssv4a5dfp"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
+[ext_resource type="Script" uid="uid://cfu4ehkguuow3" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
 
 [resource]
 script = ExtResource("1_ai")
@@ -8,9 +8,10 @@ profile_id = &"defensive"
 display_name = "Defensive"
 capture_weight = 76.0
 same_trigger_weight = 72.0
+plus_trigger_weight = 72.0
 influence_weight = 10.0
+vulnerability_weight = 8.0
 positional_weight = 2.1
 card_strength_weight = 0.02
-conserve_cost_weight = 0.75
 rotate_spend_penalty = 20.0
 randomness = 0.8

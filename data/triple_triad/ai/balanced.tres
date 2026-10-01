@@ -1,16 +1,8 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" format=3 uid="uid://davpdabdae32q"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
+[ext_resource type="Script" uid="uid://cfu4ehkguuow3" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
 
 [resource]
 script = ExtResource("1_ai")
-profile_id = &"balanced"
-display_name = "Balanced"
-capture_weight = 100.0
-same_trigger_weight = 65.0
-influence_weight = 8.0
-positional_weight = 1.0
-card_strength_weight = 0.08
-conserve_cost_weight = 0.3
-rotate_spend_penalty = 16.0
-randomness = 1.5
+future_setup_weight = 5.0
+influence_source_capture_weight = 16.0

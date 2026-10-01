@@ -1,0 +1,29 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/trickster.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/rules/same_combo.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"storm_captain"
+display_name = "Storm Captain"
+archetype_id = &"same_combo_specialist"
+strategy_summary = "A high-rank tactician who builds deliberate Same chains and punishes predictable edge play."
+content_revision = 1
+duel_rank = 5
+required_player_rank = 4
+enabled_by_default = true
+encounter_tags = PackedStringArray("coast", "captain", "advanced", "same", "combo")
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+rule_set_override = ExtResource("4_rules")
+min_card_level = 5
+max_card_level = 9
+deck_budget_override = 38
+native_card_ids = PackedStringArray("mugshot_023", "mugshot_025", "mugshot_002", "mugshot_062", "mugshot_127", "mugshot_029", "mugshot_034", "mugshot_045", "mugshot_063", "mugshot_074", "mugshot_112", "mugshot_128", "mugshot_131", "mugshot_133", "mugshot_135")
+preferred_deck_ids = PackedStringArray("mugshot_023", "mugshot_025", "mugshot_002", "mugshot_062", "mugshot_127")
+reward_card_ids = PackedStringArray("mugshot_023", "mugshot_025", "mugshot_002", "mugshot_127")
+initial_collection_size = 15
+progression_points_on_win = 20

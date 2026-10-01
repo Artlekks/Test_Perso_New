@@ -15,10 +15,10 @@ const STATE_RESOLVING := 3
 const STATE_ENTERING := 4
 const STATE_FOCUS_HOLD := 5
 
-const ROW_SCALE := Vector2(0.88, 0.88)
-const ROW_STEP_X := 108.0
-const TOP_ROW_ORIGIN := Vector2(42.0, 92.0)
-const BOTTOM_ROW_ORIGIN := Vector2(42.0, 294.0)
+const ROW_SCALE := Vector2(0.82, 0.82)
+const ROW_STEP_X := 104.0
+const TOP_ROW_ORIGIN := Vector2(56.0, 89.0)
+const BOTTOM_ROW_ORIGIN := Vector2(56.0, 210.0)
 
 # FFVIII-style result-screen entrance: opponent row comes in from the left,
 # player row from the right, with a readable but tightening stagger.
@@ -31,7 +31,7 @@ const OPPONENT_THINK_SECONDS := 0.55
 const OPPONENT_PICK_HOLD_SECONDS := 0.45
 const FOCUS_TRAVEL_SECONDS := 0.32
 const EXIT_SECONDS := 0.34
-const FOCUS_SCALE := Vector2(1.4875, 1.4875)
+const FOCUS_SCALE := Vector2(1.42, 1.42)
 
 @onready var prompt_label: Label = $PromptPanel/PromptLabel
 @onready var info_label: Label = $InfoPanel/InfoLabel
@@ -290,7 +290,7 @@ func _run_row_entrance(sequence_id: int) -> void:
 	else:
 		_state = STATE_RESOLVING
 		selection_arrow.visible = false
-		prompt_label.text = "Opponent selects one of your cards"
+		prompt_label.text = "Opponent chooses a card"
 		info_label.text = ""
 		_set_help_large(false)
 		help_label.text = ""
@@ -348,16 +348,16 @@ func _refresh_selection() -> void:
 	selection_arrow.position = _arrow_position(TOP_ROW_ORIGIN, _selected_index)
 	var card = _opponent_cards[_selected_index]
 	info_label.text = str(card.display_name)
-	prompt_label.text = "Select 1 card you want"
+	prompt_label.text = "Choose your reward"
 	_set_help_large(false)
-	help_label.text = "A/D: Choose   K: Select"
+	help_label.text = "A/D: Choose   K: Confirm"
 
 
 func _enter_confirm() -> void:
 	_state = STATE_CONFIRM
 	_yes_selected = true
 	confirm_overlay.visible = true
-	confirm_prompt.text = "Are you sure?"
+	confirm_prompt.text = "Take this card?"
 	_refresh_confirm_choices()
 
 
@@ -511,7 +511,7 @@ func _refresh_confirm_choices() -> void:
 	choice_label.text = "YES          NO"
 	choice_arrow.position = Vector2(52.0, 86.0) if _yes_selected else Vector2(158.0, 86.0)
 	_set_help_large(false)
-	help_label.text = "A/D: Choice   K: Confirm   I: Back"
+	help_label.text = "A/D: Choose   K: Confirm   I: Back"
 
 
 func _entry_sequence_is_current(sequence_id: int) -> bool:
@@ -529,7 +529,7 @@ func _clear_focus_card() -> void:
 
 
 func _set_help_large(value: bool) -> void:
-	help_label.add_theme_font_size_override("font_size", 15 if value else 10)
+	help_label.add_theme_font_size_override("font_size", 15 if value else 11)
 
 
 func _accept_input() -> void:

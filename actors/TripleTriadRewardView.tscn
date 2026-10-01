@@ -1,9 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_reward_view.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
-[ext_resource type="Texture2D" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="3_menu_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/triple_triad_info_panel.png" id="4_info_panel"]
+[ext_resource type="Texture2D" path="res://assets/ui/triple_triad/card_game/CardGame_Result_Background.png" id="3_result_bg"]
 
 [node name="TripleTriadRewardView" type="Control"]
 visible = false
@@ -25,47 +24,49 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture_filter = 1
-texture = ExtResource("3_menu_bg")
+texture = ExtResource("3_result_bg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="PromptPanel" type="TextureRect" parent="."]
+[node name="PromptPanel" type="Control" parent="."]
 layout_mode = 0
-offset_left = 161.0
+offset_left = 122.0
 offset_top = 7.0
-offset_right = 479.0
-offset_bottom = 53.0
-texture_filter = 1
-texture = ExtResource("4_info_panel")
-expand_mode = 1
+offset_right = 521.0
+offset_bottom = 41.0
 mouse_filter = 2
 z_index = 650
 
 [node name="PromptLabel" type="Label" parent="PromptPanel"]
-layout_mode = 0
-offset_left = 14.0
-offset_top = 9.0
-offset_right = 304.0
-offset_bottom = 47.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.96, 0.93, 0.80, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
-text = "Select 1 card you want"
+theme_override_font_sizes/font_size = 18
+text = "Choose your reward"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="SelectionArrow" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(0, 0, 0, 12, 10, 6)
 color = Color(1, 0.88, 0.3, 1)
-position = Vector2(55, 134)
-z_index = 30
+position = Vector2(42, 128)
+z_index = 80
 
 [node name="InfoPanel" type="Control" parent="."]
 layout_mode = 0
-offset_left = 150.0
-offset_top = 418.0
-offset_right = 490.0
-offset_bottom = 440.0
+offset_left = 112.0
+offset_top = 402.0
+offset_right = 528.0
+offset_bottom = 424.0
 mouse_filter = 2
+z_index = 120
 
 [node name="InfoLabel" type="Label" parent="InfoPanel"]
 layout_mode = 1
@@ -74,21 +75,27 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_colors/font_color = Color(0.95, 0.92, 0.83, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 12
-text = "Card"
+theme_override_font_sizes/font_size = 13
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HelpLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 455.0
-offset_right = 560.0
-offset_bottom = 481.0
+offset_left = 22.0
+offset_top = 449.0
+offset_right = 618.0
+offset_bottom = 473.0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.83, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 10
-text = "A/D: Choose   K: Select   I: Leave"
+theme_override_font_sizes/font_size = 11
+text = "A/D: Choose   K: Confirm"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -119,22 +126,25 @@ z_index = 100
 
 [node name="ConfirmPanel" type="ColorRect" parent="ConfirmOverlay"]
 layout_mode = 0
-offset_left = 190.0
-offset_top = 174.0
-offset_right = 450.0
-offset_bottom = 300.0
-color = Color(0.25, 0.25, 0.28, 0.98)
+offset_left = 188.0
+offset_top = 176.0
+offset_right = 452.0
+offset_bottom = 304.0
+color = Color(0.15, 0.11, 0.08, 0.95)
 mouse_filter = 2
 
 [node name="ConfirmPrompt" type="Label" parent="ConfirmOverlay/ConfirmPanel"]
 layout_mode = 0
-offset_left = 20.0
+offset_left = 18.0
 offset_top = 16.0
-offset_right = 240.0
+offset_right = 246.0
 offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.96, 0.93, 0.80, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 16
-text = "Are you sure?"
+text = "Take this card?"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -144,6 +154,9 @@ offset_left = 34.0
 offset_top = 69.0
 offset_right = 226.0
 offset_bottom = 104.0
+theme_override_colors/font_color = Color(0.96, 0.93, 0.80, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 14
 text = "YES          NO"

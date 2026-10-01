@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="TripleTriadOpponentProfile" format=3 uid="uid://cs7kqixt84hc3"]
+[gd_resource type="Resource" load_steps=5 format=3]
 
-[ext_resource type="Script" uid="uid://dwr2w67nod5iv" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
 [ext_resource type="Resource" path="res://data/triple_triad/ai/balanced.tres" id="2_ai"]
 [ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="3_region"]
 [ext_resource type="Resource" path="res://data/triple_triad/rules/intro_influence.tres" id="4_rules"]
@@ -11,14 +11,19 @@ opponent_id = &"beach_trader"
 display_name = "Beach Trader"
 archetype_id = &"beginner_balanced"
 strategy_summary = "A forgiving coastal duelist who teaches positioning and basic Influence."
-content_revision = 1
+content_revision = 5
+duel_rank = 1
+required_player_rank = 1
+enabled_by_default = true
 encounter_tags = PackedStringArray("coast", "merchant", "beginner", "balanced")
 ai_profile = ExtResource("2_ai")
 region_profile = ExtResource("3_region")
 rule_set_override = ExtResource("4_rules")
+min_card_level = 1
 max_card_level = 5
-deck_budget_override = 23
+deck_budget_override = 26
 native_card_ids = PackedStringArray("mugshot_170", "mugshot_180", "mugshot_181", "mugshot_053", "mugshot_071", "mugshot_185", "mugshot_186", "mugshot_182", "mugshot_184", "mugshot_049", "mugshot_047", "mugshot_054", "mugshot_168", "mugshot_082", "mugshot_172")
-preferred_deck_ids = PackedStringArray("mugshot_170", "mugshot_180", "mugshot_181", "mugshot_053", "mugshot_071")
-reward_card_ids = PackedStringArray("mugshot_180", "mugshot_053", "mugshot_071")
+preferred_deck_ids = PackedStringArray("mugshot_047", "mugshot_053", "mugshot_071", "mugshot_054", "mugshot_181")
+reward_card_ids = PackedStringArray("mugshot_054", "mugshot_047", "mugshot_053")
+initial_collection_size = 15
 progression_points_on_win = 2

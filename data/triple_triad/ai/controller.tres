@@ -1,17 +1,17 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" format=3 uid="uid://qhinvaiu6k1v"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
+[ext_resource type="Script" uid="uid://cfu4ehkguuow3" path="res://scripts/triple_triad/triple_triad_ai_profile.gd" id="1_ai"]
 
 [resource]
 script = ExtResource("1_ai")
 profile_id = &"controller"
 display_name = "Controller"
-capture_weight = 82.0
 same_trigger_weight = 90.0
-plus_trigger_weight = 120.0
-influence_weight = 28.0
-positional_weight = 1.05
-card_strength_weight = 0.05
-conserve_cost_weight = 0.2
+plus_trigger_weight = 110.0
+influence_weight = 15.0
+future_setup_weight = 10.0
+influence_source_capture_weight = 28.0
+vulnerability_weight = 8.0
+positional_weight = 1.1
 rotate_spend_penalty = 6.0
-randomness = 1.2
+randomness = 1.0

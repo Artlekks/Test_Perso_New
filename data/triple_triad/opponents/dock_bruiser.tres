@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
 [ext_resource type="Resource" path="res://data/triple_triad/ai/aggressive.tres" id="2_ai"]
-[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_docks.tres" id="3_region"]
 [ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="4_rules"]
 
 [resource]
@@ -11,7 +11,7 @@ opponent_id = &"dock_bruiser"
 display_name = "Dock Bruiser"
 archetype_id = &"aggressive"
 strategy_summary = "Pushes immediate captures and strong exposed sides instead of conserving cards."
-content_revision = 1
+content_revision = 3
 duel_rank = 2
 required_player_rank = 1
 enabled_by_default = true

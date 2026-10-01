@@ -1,23 +1,18 @@
-Triple Triad opponent registry
-==============================
+Triple Triad opponent registry - V6
 
-V1 authored ladder:
-- beach_trader      : beginner balanced, Rank 1
-- dock_bruiser      : aggressive, Rank 2
-- highland_keeper   : defensive, Rank 3
-- tide_oracle       : Influence/control, Rank 4
-- ash_champion      : champion, Rank 6
+Authored progression ladder:
+1. Beach Trader      - beginner / Influence introduction
+2. Dock Bruiser      - aggressive capture pressure
+3. Highland Keeper   - defensive / protected-side play
+4. Tide Oracle       - Plus + Influence control
+5. Storm Captain     - Same + Combo specialist
+6. Ash Champion      - endgame capstone
 
-Each profile owns:
-- a deterministic native collection,
-- an authored five-card preferred deck,
-- an AI profile,
-- a region/rule configuration,
-- a player-rank availability gate,
-- progression points on win,
-- a normal reward pool,
-- a content_revision for development-safe NPC collection migration.
+Progression spine:
+Beach +2, Dock +4 = 6
++ Highland +9 = 15
++ Tide +15 = 30
++ Storm Captain +20 = 50
++ Ash Champion +30 = 80
 
-Cards previously stolen from the player remain priority deck cards and are also
-made selectable as rewards on a successful rematch, even when they are not in
-the opponent's normal reward pool.
+These totals intentionally land on the existing Duel Rank thresholds.

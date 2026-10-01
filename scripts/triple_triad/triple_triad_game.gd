@@ -24,7 +24,7 @@ const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake
 const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
 const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 
-const BACKEND_VERSION := "1.3.0"
+const BACKEND_VERSION := "1.4.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -348,14 +348,26 @@ func run_balance_simulation(
 	if bool(report.get("valid", false)):
 		var global: Dictionary = report.get("global", {})
 		print(
-			"TripleTriad Balance: %d games, first-player win %.1f%%, draw %.1f%%. Report: %s"
+			"TripleTriad Balance: %d games, first-player %.1f%% / second-player %.1f%% of decisive games, draw %.1f%%. Report: %s"
 			% [
 				int(global.get("games", 0)),
 				float(global.get("first_player_win_rate", 0.0)) * 100.0,
+				float(global.get("second_player_win_rate", 0.0)) * 100.0,
 				float(global.get("draw_rate", 0.0)) * 100.0,
 				str(report.get("report_path", "")),
 			]
 		)
+		for raw_check in report.get("ladder_checks", []):
+			var check: Dictionary = raw_check
+			print(
+				"  Ladder %s -> %s: %.1f%% decisive wins (%s)"
+				% [
+					str(check.get("lower_name", "?")),
+					str(check.get("higher_name", "?")),
+					float(check.get("higher_decisive_win_rate", 0.0)) * 100.0,
+					str(check.get("status", "")),
+				]
+			)
 	else:
 		push_error(
 			"TripleTriad Balance simulation failed: %s"
