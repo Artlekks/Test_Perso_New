@@ -34,8 +34,9 @@ const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad
 const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
 const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
+const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
 
-const BACKEND_VERSION := "2.0.0"
+const BACKEND_VERSION := "2.1.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -180,6 +181,7 @@ var _world_reward_ledger = null
 var _competition_catalog = null
 var _competition_service = null
 var _competition_match_active: bool = false
+var _completion_tracker = null
 
 
 func _ready() -> void:
@@ -261,6 +263,17 @@ func _ready() -> void:
 
 	_competition_service = CompetitionServiceScript.new()
 	_competition_service.initialize(_competition_catalog)
+
+	_completion_tracker = CompletionTrackerScript.new()
+	_completion_tracker.initialize(
+		card_catalog,
+		_collection_backend,
+		_world_acquisition_catalog,
+		_encounter_records,
+		_progression,
+		_competition_service,
+		opponent_registry
+	)
 
 	# Transfer journal recovery happens before the global save audit. If recovery
 	# is still pending after the attempt, opening a new match would risk stacking
@@ -958,6 +971,22 @@ func get_opponents_snapshot() -> Array:
 	return _state_api.get_all_opponents_snapshot() if _state_api != null else []
 
 
+func get_collection_completion_snapshot() -> Dictionary:
+	if _completion_tracker == null:
+		return {}
+	return _completion_tracker.call("get_snapshot")
+
+
+func get_missing_card_diagnostics() -> Array:
+	var snapshot: Dictionary = get_collection_completion_snapshot()
+	return snapshot.get("missing_cards", []).duplicate(true)
+
+
+func get_source_completion_snapshot() -> Array:
+	var snapshot: Dictionary = get_collection_completion_snapshot()
+	return snapshot.get("source_progress", []).duplicate(true)
+
+
 func get_global_triple_triad_snapshot() -> Dictionary:
 	var snapshot: Dictionary = (
 		_state_api.get_global_snapshot()
@@ -970,6 +999,8 @@ func get_global_triple_triad_snapshot() -> Dictionary:
 		"phase": _phase,
 		"active_opponent_id": String(_active_opponent_id()) if is_open() else "",
 	}
+	snapshot["completion"] = get_collection_completion_snapshot()
+	snapshot["competitive"] = get_competitive_snapshot()
 	return snapshot
 
 
@@ -1124,6 +1155,8 @@ func _invalidate_state_api(reason: String = "") -> void:
 
 
 func _publish_backend_state_change(reason: String) -> void:
+	if _completion_tracker != null:
+		_completion_tracker.call("refresh", reason, true)
 	_invalidate_state_api(reason)
 	backend_state_changed.emit(reason)
 

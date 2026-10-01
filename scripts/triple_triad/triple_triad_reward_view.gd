@@ -30,6 +30,7 @@ const OPPONENT_PICK_HOLD_SECONDS := 0.45
 const FOCUS_TRAVEL_SECONDS := 0.32
 const EXIT_SECONDS := 0.34
 const FOCUS_SCALE := Vector2(1.42, 1.42)
+const FOCUS_AUTHORED_Y := 183.0
 
 @onready var prompt_label: Label = $PromptPanel/PromptLabel
 @onready var opponent_row_root: Control = $OpponentRowRoot
@@ -463,18 +464,10 @@ func _animate_card_transfer(
 	_focus_card.global_position = source_view.global_position
 	source_view.visible = false
 
-	# Center the focused reward card in the actual authored gap between the two
-	# row roots. The roots live in the .tscn so the whole rows can be nudged by
-	# hand without rewriting gameplay code.
-	var row_visual_height: float = source_view.size.y * ROW_SCALE.y
-	var gap_center_y: float = (
-		opponent_row_root.position.y
-		+ row_visual_height
-		+ player_row_root.position.y
-	) * 0.5
+	# Focus Y is authored directly for the final result-screen composition.
 	var center_position := Vector2(
 		(size.x - _focus_card.size.x) * 0.5,
-		gap_center_y - _focus_card.size.y * 0.5
+		FOCUS_AUTHORED_Y
 	)
 	focus_dim.visible = true
 	focus_dim.modulate = Color(1, 1, 1, 0)

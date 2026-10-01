@@ -31,9 +31,9 @@ mouse_filter = 2
 [node name="PromptPanel" type="Control" parent="."]
 layout_mode = 0
 offset_left = 122.0
-offset_top = 7.0
+offset_top = 44.0
 offset_right = 521.0
-offset_bottom = 41.0
+offset_bottom = 78.0
 mouse_filter = 2
 z_index = 650
 
@@ -55,18 +55,18 @@ vertical_alignment = 1
 
 [node name="OpponentRowRoot" type="Control" parent="."]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 101.0
-offset_right = 80.0
-offset_bottom = 101.0
+offset_left = 73.0
+offset_top = 112.0
+offset_right = 73.0
+offset_bottom = 112.0
 mouse_filter = 2
 
 [node name="PlayerRowRoot" type="Control" parent="."]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 235.0
-offset_right = 80.0
-offset_bottom = 235.0
+offset_left = 73.0
+offset_top = 251.0
+offset_right = 73.0
+offset_bottom = 251.0
 mouse_filter = 2
 
 [node name="SelectionArrow" type="Polygon2D" parent="."]
@@ -102,10 +102,11 @@ vertical_alignment = 1
 
 [node name="FooterHints" type="Control" parent="."]
 layout_mode = 0
-offset_left = 0.0
-offset_top = 438.0
-offset_right = 640.0
-offset_bottom = 478.0
+offset_left = -156.0
+offset_top = 414.0
+offset_right = 484.0
+offset_bottom = 454.0
+scale = Vector2(1.6, 1.6)
 mouse_filter = 2
 
 [node name="SelectIconAnchor" type="Control" parent="FooterHints"]
@@ -197,7 +198,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.12)
+color = Color(0, 0, 0, 0.294117647058824)
 modulate = Color(1, 1, 1, 0)
 mouse_filter = 2
 z_index = 700

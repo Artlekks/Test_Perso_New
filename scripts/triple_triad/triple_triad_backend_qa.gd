@@ -21,6 +21,7 @@ const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/
 const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
 const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
+const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -173,6 +174,7 @@ func run_all() -> Dictionary:
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
+	_run("Collection tracker covers all 179 cards", _test_collection_completion_tracker)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -499,6 +501,54 @@ func _test_competitive_progression_flow() -> Dictionary:
 		and bool(snapshot.get("card_master", false))
 		and bool(snapshot.get("card_game_completed", false)),
 		"First Masters' Cup clear must award Card Master and complete the card-game campaign."
+	)
+
+
+func _test_collection_completion_tracker() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var competition_audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	if not bool(competition_audit.get("valid", false)):
+		return _ok(false, "Competition catalog failed before collection tracking QA.")
+
+	var competition_service = CompetitionServiceScript.new()
+	competition_service.initialize(competition_catalog, false)
+
+	var tracker = CompletionTrackerScript.new()
+	tracker.initialize(
+		DefaultCardCatalog,
+		null,
+		world_catalog,
+		null,
+		null,
+		competition_service,
+		DefaultOpponentRegistry,
+		false
+	)
+	var snapshot: Dictionary = tracker.get_snapshot()
+	var missing_cards: Array = snapshot.get("missing_cards", [])
+	if int(snapshot.get("catalog_total_unique", 0)) != 179:
+		return _ok(false, "Collection tracker must cover exactly 179 authored cards.")
+	if int(snapshot.get("missing_unique", 0)) != 179:
+		return _ok(false, "Empty QA collection must report all 179 cards missing.")
+	if missing_cards.size() != 179:
+		return _ok(false, "Missing-card diagnostics must contain all 179 cards.")
+	for diagnostic in missing_cards:
+		if not (diagnostic is Dictionary):
+			return _ok(false, "Missing-card diagnostic is malformed.")
+		if (diagnostic as Dictionary).get("sources", []).is_empty():
+			return _ok(false, "Every missing card must expose at least one acquisition source.")
+	return _ok(
+		int(snapshot.get("sources_total", 0)) == 23,
+		"Collection tracker must expose all 23 authored acquisition sources."
 	)
 
 
