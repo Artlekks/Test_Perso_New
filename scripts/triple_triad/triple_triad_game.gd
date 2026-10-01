@@ -28,8 +28,10 @@ const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake
 const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
 const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
+const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
+const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
 
-const BACKEND_VERSION := "1.6.0"
+const BACKEND_VERSION := "1.8.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -169,6 +171,8 @@ var _default_backdrop_texture: Texture2D = null
 var _result_dim: ColorRect = null
 var _round_number: int = 1
 var _fishing_salvage_bridge: Node = null
+var _world_acquisition_catalog = null
+var _world_reward_ledger = null
 
 
 func _ready() -> void:
@@ -192,6 +196,13 @@ func _ready() -> void:
 	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
 	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
 	deck_setup.cancelled.connect(_on_deck_cancelled)
+
+	_world_acquisition_catalog = WorldAcquisitionCatalogScript.new()
+	_world_acquisition_catalog.initialize(
+		card_catalog,
+		opponent_registry,
+		acquisition_registry
+	)
 
 	# Validate authored/static data before any subsystem is allowed to mutate a
 	# persistent save. A broken catalog must never be able to sanitize good saves.
@@ -229,6 +240,9 @@ func _ready() -> void:
 	_progression = ProgressionScript.new()
 	_progression.initialize()
 
+	_world_reward_ledger = WorldRewardLedgerScript.new()
+	_world_reward_ledger.initialize()
+
 	_encounter_records = EncounterRecordsScript.new()
 	_encounter_records.initialize()
 
@@ -261,6 +275,7 @@ func _ready() -> void:
 		_acquisition_tracker,
 		_acquisition_service,
 		acquisition_policy,
+		_world_acquisition_catalog,
 		player_deck_budget
 	)
 
@@ -559,6 +574,21 @@ func _validate_static_backend() -> bool:
 		for warning in acquisition_audit.get("warnings", []):
 			push_warning("TripleTriadGame acquisition: %s" % str(warning))
 
+
+	if _world_acquisition_catalog == null:
+		_backend_errors.append("World acquisition catalog is missing.")
+	elif _world_acquisition_catalog.has_method("validate_map"):
+		var world_acquisition_audit: Dictionary = _world_acquisition_catalog.call(
+			"validate_map"
+		)
+		if not bool(world_acquisition_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid world acquisition map: %s"
+				% str(world_acquisition_audit.get("errors", []))
+			)
+		for warning in world_acquisition_audit.get("warnings", []):
+			push_warning("TripleTriadGame acquisition map: %s" % str(warning))
+
 	var progression_probe = ProgressionScript.new()
 	if (
 		progression_probe.progression_catalog == null
@@ -581,6 +611,307 @@ func get_player_snapshot() -> Dictionary:
 
 func get_collection_snapshot() -> Array:
 	return _state_api.get_collection_snapshot() if _state_api != null else []
+
+
+
+func get_card_acquisition_sources(card_id: StringName) -> Array:
+	if _world_acquisition_catalog == null:
+		return []
+	return _world_acquisition_catalog.call("get_sources_for_card", card_id)
+
+
+func get_acquisition_source_snapshot(
+	source_type: StringName,
+	source_id: StringName
+) -> Dictionary:
+	if _world_acquisition_catalog == null:
+		return {}
+	return _world_acquisition_catalog.call(
+		"get_source_snapshot",
+		source_type,
+		source_id
+	)
+
+
+func get_world_acquisition_sources() -> Array:
+	if _world_acquisition_catalog == null:
+		return []
+	return _world_acquisition_catalog.call("get_all_source_snapshots")
+
+
+func claim_world_source_card(
+	source_type: StringName,
+	source_id: StringName,
+	card_id: StringName,
+	source_context: StringName = &""
+) -> Dictionary:
+	if not _backend_ready:
+		return {"success": false, "reason": "backend_not_ready"}
+	if _world_acquisition_catalog == null or _acquisition_service == null:
+		return {"success": false, "reason": "acquisition_backend_unavailable"}
+	var player_rank: int = 1
+	if _progression != null and _progression.has_method("get_rank_number"):
+		player_rank = int(_progression.call("get_rank_number"))
+	var validation: Dictionary = _world_acquisition_catalog.call(
+		"validate_claim",
+		source_type,
+		source_id,
+		card_id,
+		player_rank
+	)
+	if not bool(validation.get("valid", false)):
+		return {
+			"success": false,
+			"reason": str(validation.get("reason", "invalid_source_claim")),
+			"required_duel_rank": int(validation.get("required_duel_rank", 1)),
+		}
+	var context_text: String = String(source_context)
+	if context_text.is_empty():
+		context_text = "%s:%s" % [String(source_type), String(source_id)]
+	var result: Dictionary = _acquisition_service.call(
+		"grant_card",
+		card_id,
+		source_type,
+		StringName(context_text),
+		1
+	)
+	if bool(result.get("success", false)):
+		_checkpoint_save_integrity("world_card_acquired")
+		acquisition_completed.emit(result.duplicate(true))
+		_publish_backend_state_change("world_card_acquired")
+	return result
+
+
+func claim_world_source_reward(
+	source_type: StringName,
+	source_id: StringName,
+	source_context: StringName = &"",
+	event_id: StringName = &"",
+	one_shot: bool = false
+) -> Dictionary:
+	if not _backend_ready:
+		return {
+			"success": false,
+			"reason": "backend_not_ready",
+		}
+	if _world_acquisition_catalog == null:
+		return {
+			"success": false,
+			"reason": "acquisition_catalog_unavailable",
+		}
+	if not bool(
+		_world_acquisition_catalog.call(
+			"can_direct_claim_source",
+			source_type
+		)
+	):
+		return {
+			"success": false,
+			"reason": "source_owned_by_other_system",
+		}
+	if (
+		one_shot
+		and not String(event_id).is_empty()
+		and has_world_reward_event_claimed(event_id)
+	):
+		return {
+			"success": false,
+			"reason": "event_already_claimed",
+			"event_id": String(event_id),
+		}
+
+	var source: Dictionary = get_acquisition_source_snapshot(
+		source_type,
+		source_id
+	)
+	if source.is_empty():
+		return {
+			"success": false,
+			"reason": "unknown_source",
+		}
+
+	var player_rank: int = 1
+	if _progression != null and _progression.has_method("get_rank_number"):
+		player_rank = int(_progression.call("get_rank_number"))
+	var required_rank: int = maxi(
+		1,
+		int(source.get("min_duel_rank", 1))
+	)
+	if player_rank < required_rank:
+		return {
+			"success": false,
+			"reason": "duel_rank_too_low",
+			"required_duel_rank": required_rank,
+		}
+
+	var source_cards: Array = _world_acquisition_catalog.call(
+		"get_cards_for_source",
+		source_type,
+		source_id,
+		player_rank
+	)
+	if source_cards.is_empty():
+		return {
+			"success": false,
+			"reason": "source_has_no_eligible_cards",
+		}
+
+	var unowned_cards: Array = []
+	for card in source_cards:
+		if card == null:
+			continue
+		var card_id := StringName(str(card.get("card_id")))
+		var quantity: int = 0
+		if (
+			_collection_backend != null
+			and _collection_backend.has_method("get_quantity_by_id")
+		):
+			quantity = int(
+				_collection_backend.call(
+					"get_quantity_by_id",
+					card_id
+				)
+			)
+		if quantity <= 0:
+			unowned_cards.append(card)
+
+	if unowned_cards.is_empty():
+		return {
+			"success": false,
+			"reason": "source_complete",
+			"source_type": String(source_type),
+			"source_id": String(source_id),
+			"source_display_name": str(
+				source.get("display_name", "")
+			),
+		}
+
+	var chosen_index: int = _rng.randi_range(
+		0,
+		unowned_cards.size() - 1
+	)
+	var chosen_card = unowned_cards[chosen_index]
+	var chosen_id := StringName(
+		str(chosen_card.get("card_id"))
+	)
+
+	var resolved_context: StringName = source_context
+	if String(resolved_context).is_empty():
+		resolved_context = StringName(
+			"%s:%s"
+			% [
+				String(source_type),
+				String(source_id),
+			]
+		)
+
+	var result: Dictionary = claim_world_source_card(
+		source_type,
+		source_id,
+		chosen_id,
+		resolved_context
+	)
+	result["source_id"] = String(source_id)
+	result["source_display_name"] = str(
+		source.get("display_name", "")
+	)
+	result["event_id"] = String(event_id)
+	result["remaining_unowned_before_claim"] = unowned_cards.size()
+
+	if (
+		bool(result.get("success", false))
+		and one_shot
+		and not String(event_id).is_empty()
+		and _world_reward_ledger != null
+	):
+		_world_reward_ledger.call(
+			"mark_claimed",
+			event_id
+		)
+
+	return result
+
+
+func claim_fishing_salvage_reward(
+	source_id: StringName,
+	source_context: StringName = &""
+) -> Dictionary:
+	return claim_world_source_reward(
+		&"fishing_salvage",
+		source_id,
+		source_context
+	)
+
+
+func claim_treasure_cache_reward(
+	source_id: StringName,
+	cache_event_id: StringName,
+	source_context: StringName = &""
+) -> Dictionary:
+	return claim_world_source_reward(
+		&"treasure_cache",
+		source_id,
+		source_context,
+		cache_event_id,
+		true
+	)
+
+
+func claim_quest_card_reward(
+	source_id: StringName,
+	quest_event_id: StringName,
+	source_context: StringName = &""
+) -> Dictionary:
+	return claim_world_source_reward(
+		&"quest_reward",
+		source_id,
+		source_context,
+		quest_event_id,
+		true
+	)
+
+
+func claim_tournament_card_reward(
+	source_id: StringName,
+	tournament_event_id: StringName,
+	source_context: StringName = &"",
+	one_shot: bool = true
+) -> Dictionary:
+	return claim_world_source_reward(
+		&"tournament_reward",
+		source_id,
+		source_context,
+		tournament_event_id,
+		one_shot
+	)
+
+
+func advance_world_reward_counter(counter_id: StringName) -> int:
+	if _world_reward_ledger == null:
+		return 0
+	return int(
+		_world_reward_ledger.call(
+			"increment_counter",
+			counter_id
+		)
+	)
+
+
+func get_world_reward_delivery_snapshot() -> Dictionary:
+	if _world_reward_ledger == null:
+		return {}
+	return _world_reward_ledger.call("get_snapshot")
+
+
+func has_world_reward_event_claimed(event_id: StringName) -> bool:
+	if _world_reward_ledger == null:
+		return false
+	return bool(
+		_world_reward_ledger.call(
+			"has_claimed",
+			event_id
+		)
+	)
 
 
 func get_deck_profiles_snapshot() -> Array:

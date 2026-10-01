@@ -60,3 +60,10 @@ What changed
 This is backend-focused. Final rarity names, card tiers, rank requirements,
 starter cards and NPC native collections can be authored later without changing
 the acquisition code.
+
+8. World acquisition map
+   res://data/triple_triad/acquisition/world_acquisition_map.json now provides
+   a validated source for every one of the 179 cards. Fixed starter/opponent
+   sources are cross-checked against their real resources. Fishing, treasure,
+   quest and tournament systems can grant mapped cards through the generic
+   TripleTriadGame world-source API.

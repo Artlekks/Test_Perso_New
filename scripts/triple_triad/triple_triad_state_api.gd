@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TripleTriadStateAPI
 
-const API_SCHEMA_VERSION := 5
+const API_SCHEMA_VERSION := 6
 
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const OPPONENT_COLLECTIONS_PATH := "user://triple_triad_opponents.cfg"
@@ -16,6 +16,7 @@ var _encounter_records = null
 var _acquisition_tracker = null
 var _acquisition_service = null
 var _acquisition_policy: Resource = null
+var _world_acquisition_catalog = null
 var _base_player_budget: int = 30
 
 var _deck_config = null
@@ -43,6 +44,7 @@ func initialize(
 	acquisition_tracker,
 	acquisition_service,
 	acquisition_policy: Resource,
+	world_acquisition_catalog,
 	base_player_budget: int = 30
 ) -> void:
 	_catalog = catalog
@@ -53,6 +55,7 @@ func initialize(
 	_acquisition_tracker = acquisition_tracker
 	_acquisition_service = acquisition_service
 	_acquisition_policy = acquisition_policy
+	_world_acquisition_catalog = world_acquisition_catalog
 	_base_player_budget = maxi(5, base_player_budget)
 	invalidate("initialize")
 
@@ -86,6 +89,24 @@ func get_player_snapshot() -> Dictionary:
 
 func get_acquisition_snapshot() -> Dictionary:
 	return _acquisition_snapshot().duplicate(true)
+
+
+func get_acquisition_sources_snapshot() -> Array:
+	if (
+		_world_acquisition_catalog == null
+		or not _world_acquisition_catalog.has_method("get_all_source_snapshots")
+	):
+		return []
+	return _world_acquisition_catalog.call("get_all_source_snapshots")
+
+
+func get_card_acquisition_sources(card_id: StringName) -> Array:
+	if (
+		_world_acquisition_catalog == null
+		or not _world_acquisition_catalog.has_method("get_sources_for_card")
+	):
+		return []
+	return _world_acquisition_catalog.call("get_sources_for_card", card_id)
 
 
 func get_available_opponents_snapshot() -> Array:
@@ -162,6 +183,7 @@ func get_global_snapshot() -> Dictionary:
 		"decks": get_deck_profiles(),
 		"opponents": get_all_opponents_snapshot(),
 		"acquisition": _acquisition_snapshot(),
+		"acquisition_sources": get_acquisition_sources_snapshot(),
 	}
 
 
@@ -450,6 +472,7 @@ func _card_snapshot(card, quantity: int, player_rank: int) -> Dictionary:
 		"group_id": String(card.group_id),
 		"tags": card.tags,
 		"acquisition_tags": card.acquisition_tags,
+		"acquisition_sources": get_card_acquisition_sources(card_id),
 		"influence": (
 			card.get_influence_snapshot()
 			if card.has_method("get_influence_snapshot")

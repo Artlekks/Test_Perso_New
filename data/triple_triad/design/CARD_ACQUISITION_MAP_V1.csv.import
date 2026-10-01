@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cya4fmrasey2w"
+
+[deps]
+
+files=["res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.name.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.rarity.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.group.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.required.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation"]
+
+source_file="res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.csv"
+dest_files=["res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.name.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.rarity.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.group.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.required.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation", "res://data/triple_triad/design/CARD_ACQUISITION_MAP_V1.source.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

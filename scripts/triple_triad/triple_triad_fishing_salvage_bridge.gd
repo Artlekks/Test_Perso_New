@@ -17,8 +17,11 @@ class_name TripleTriadFishingSalvageBridge
 
 signal repository_bound
 signal starter_case_discovered(result: Dictionary)
+signal salvage_card_recovered(result: Dictionary)
 
 const STARTER_BUNDLE_ID: StringName = &"salvaged_card_case"
+const COAST_SALVAGE_SOURCE_ID: StringName = &"coast_shallows"
+const COAST_SALVAGE_INTERVAL := 4
 
 var _triple_triad_game: Node = null
 var _catch_repository: Node = null
@@ -61,6 +64,7 @@ func get_debug_snapshot() -> Dictionary:
 		"auto_discovery_enabled": _auto_discovery_enabled,
 		"eligible_spot_ids": _eligible_spot_ids.duplicate(),
 		"last_result": _last_result.duplicate(true),
+		"post_starter_salvage_interval": COAST_SALVAGE_INTERVAL,
 	}
 
 
@@ -153,21 +157,11 @@ func _find_catch_repository() -> Node:
 
 
 func _on_catch_committed(result: Dictionary) -> void:
-	if not _auto_discovery_enabled:
-		return
 	if not bool(result.get("committed", false)):
 		return
 	if not is_instance_valid(_triple_triad_game):
 		return
 	if not _triple_triad_game.has_method("get_acquisition_snapshot"):
-		return
-
-	var acquisition: Dictionary = _triple_triad_game.call(
-		"get_acquisition_snapshot"
-	)
-	if bool(acquisition.get("card_game_unlocked", false)):
-		return
-	if _bundle_is_claimed(acquisition):
 		return
 
 	var catch_context: Dictionary = {}
@@ -181,20 +175,103 @@ func _on_catch_committed(result: Dictionary) -> void:
 	if not _is_eligible_spot(spot_id):
 		return
 
-	var source_context := StringName(
-		"fishing_salvage:%s" % spot_id
+	var acquisition: Dictionary = _triple_triad_game.call(
+		"get_acquisition_snapshot"
 	)
-	var claim_result: Dictionary = resolve_salvage_object(
-		source_context
+	var unlocked: bool = bool(
+		acquisition.get("card_game_unlocked", false)
 	)
 
-	if bool(claim_result.get("success", false)):
+	if not unlocked:
+		if not _auto_discovery_enabled:
+			return
+		if _bundle_is_claimed(acquisition):
+			return
+
+		var starter_context := StringName(
+			"fishing_salvage:%s" % spot_id
+		)
+		var starter_result: Dictionary = resolve_salvage_object(
+			starter_context
+		)
+		if bool(starter_result.get("success", false)):
+			print(
+				"TripleTriad Onboarding: recovered %s at %s; %d cards granted and card duels unlocked."
+				% [
+					str(
+						starter_result.get(
+							"display_name",
+							"Saltworn Card Case"
+						)
+					),
+					spot_id,
+					int(starter_result.get("granted_cards", 0)),
+				]
+			)
+		return
+
+	_try_post_starter_salvage(spot_id)
+
+
+func _try_post_starter_salvage(spot_id: String) -> void:
+	if spot_id != "ocean_2":
+		return
+	if (
+		not _triple_triad_game.has_method(
+			"advance_world_reward_counter"
+		)
+		or not _triple_triad_game.has_method(
+			"claim_fishing_salvage_reward"
+		)
+	):
+		return
+
+	var counter_id := StringName(
+		"fishing_salvage:%s"
+		% String(COAST_SALVAGE_SOURCE_ID)
+	)
+	var catch_count: int = int(
+		_triple_triad_game.call(
+			"advance_world_reward_counter",
+			counter_id
+		)
+	)
+	if catch_count <= 0:
+		return
+	if catch_count % COAST_SALVAGE_INTERVAL != 0:
+		return
+
+	var context := StringName(
+		"fishing_salvage:%s:catch_%d"
+		% [spot_id, catch_count]
+	)
+	var raw_result = _triple_triad_game.call(
+		"claim_fishing_salvage_reward",
+		COAST_SALVAGE_SOURCE_ID,
+		context
+	)
+	if not (raw_result is Dictionary):
+		return
+
+	var reward_result: Dictionary = (
+		raw_result as Dictionary
+	).duplicate(true)
+	_last_result = reward_result.duplicate(true)
+
+	if bool(reward_result.get("success", false)):
+		salvage_card_recovered.emit(
+			reward_result.duplicate(true)
+		)
 		print(
-			"TripleTriad Onboarding: recovered %s at %s; %d cards granted and card duels unlocked."
+			"TripleTriad Salvage: recovered %s from %s."
 			% [
-				str(claim_result.get("display_name", "Saltworn Card Case")),
+				str(
+					reward_result.get(
+						"display_name",
+						"card"
+					)
+				),
 				spot_id,
-				int(claim_result.get("granted_cards", 0)),
 			]
 		)
 

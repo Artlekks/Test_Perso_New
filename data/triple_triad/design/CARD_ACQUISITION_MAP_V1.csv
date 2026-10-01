@@ -1,0 +1,182 @@
+card_id,name,rarity,group,required_duel_rank,source_type,source_id,source_name,source_min_duel_rank
+mugshot_000,Ryn,gold,legend,3,opponent_win,ash_champion,Ash Champion,5
+mugshot_001,Ashmaw,gold,beast,3,opponent_win,ash_champion,Ash Champion,5
+mugshot_002,Teo,gold,legend,3,opponent_win,storm_captain,Storm Captain,4
+mugshot_002,Teo,gold,legend,3,opponent_win,wandering_sage,Wandering Sage,4
+mugshot_003,Elira,gold,legend,2,opponent_win,wandering_sage,Wandering Sage,4
+mugshot_013,Merek,gold,legend,4,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_016,Brass Watcher,gold,construct,6,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_017,Iron Watcher,gold,construct,4,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_019,Serah,gold,legend,5,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_023,Veyra,gold,legend,3,opponent_win,ash_champion,Ash Champion,5
+mugshot_025,Korr,gold,legend,3,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_027,Thornclaw,gold,beast,4,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_029,Moonmane,gold,beast,3,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_030,Grin-Eye,gold,beast,6,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_033,Nyla,gold,legend,5,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_034,Cael,gold,legend,3,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_037,Riven,gold,legend,5,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_038,Cael Vanguard,gold,legend,2,opponent_win,wandering_sage,Wandering Sage,4
+mugshot_039,Elder Lys,gold,legend,5,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_040,Marsh Drake,gold,beast,2,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_041,Stonecrest,gold,beast,2,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_042,Varen,gold,legend,4,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_043,Brassmask,gold,beast,5,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_044,Ironjaw,gold,beast,2,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_045,Nilo,gold,legend,3,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_047,Mina,silver,traveler,1,opponent_win,beach_trader,Beach Trader,1
+mugshot_049,Cask,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_050,Old Fen,silver,traveler,1,opponent_win,highland_keeper,Highland Keeper,2
+mugshot_051,Asha,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_053,Saltbeard,silver,traveler,1,opponent_win,beach_trader,Beach Trader,1
+mugshot_054,Gimbal,silver,traveler,1,opponent_win,beach_trader,Beach Trader,1
+mugshot_056,Boru,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_057,Boru Breaker,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_058,Boru Brawler,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,1
+mugshot_059,Crag,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_061,Iven,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_062,Jax,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_063,Mira,gold,legend,3,tournament_reward,regional_circuit,Regional Card Circuit,3
+mugshot_064,Pip and Pug,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_065,Toma and Pug,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_066,Neri and Pug,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_067,Sandbeak,silver,beast,1,opponent_win,marsh_keeper,Marsh Keeper,2
+mugshot_068,Undertow,silver,beast,3,opponent_win,tide_oracle,Tide Oracle,3
+mugshot_069,Pale Sentinel,silver,construct,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_070,Gearwheel,silver,construct,1,opponent_win,gearwright,Gearwright,1
+mugshot_071,Swiftfin,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_072,Bonejaw,silver,beast,3,fishing_salvage,deep_water,Deepwater Salvage,3
+mugshot_073,Mire Turtle,silver,beast,2,opponent_win,highland_keeper,Highland Keeper,2
+mugshot_074,Gloom Toad,silver,beast,2,opponent_win,storm_captain,Storm Captain,4
+mugshot_075,Wharf Cat,silver,beast,3,opponent_win,tide_oracle,Tide Oracle,3
+mugshot_076,Reed Frog,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_077,Moss Frog,silver,beast,1,opponent_win,marsh_keeper,Marsh Keeper,2
+mugshot_078,Night Frog,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_079,Duskhopper,silver,beast,1,opponent_win,marsh_keeper,Marsh Keeper,2
+mugshot_080,Red-Eye Toad,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_081,Thorn Toad,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_082,Pondling,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_083,Mireling,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_084,Razorbeak,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_085,Brass Beetle,silver,construct,3,opponent_win,lantern_gambler,Lantern Gambler,3
+mugshot_086,Scrap Beetle,silver,construct,1,opponent_win,gearwright,Gearwright,1
+mugshot_087,River Drake,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_088,Ash Drake,silver,beast,1,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_089,Thorn Drake,silver,beast,1,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_090,Ridge Hound,silver,beast,2,fishing_salvage,deep_water,Deepwater Salvage,3
+mugshot_091,Harbor Hound,silver,beast,2,fishing_salvage,deep_water,Deepwater Salvage,3
+mugshot_092,Dune Hound,silver,beast,1,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_093,Red Hound,silver,beast,2,fishing_salvage,deep_water,Deepwater Salvage,3
+mugshot_094,Mudbelly,silver,beast,3,fishing_salvage,deep_water,Deepwater Salvage,3
+mugshot_095,Lysa,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_096,Old Nemm,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_097,Nemm Stoic,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_098,Nemm Elder,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_099,Taren,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_100,Sil,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_101,Daro,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_102,Mogg,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_103,Brek,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_104,Nia,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_105,Grandma Osa,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_106,Master Pell,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_107,Sage Venn,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_108,Koro,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,1
+mugshot_109,Hamir,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_110,Hamir Bold,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_111,Cira,silver,traveler,3,opponent_win,lantern_gambler,Lantern Gambler,3
+mugshot_111,Cira,silver,traveler,3,opponent_win,tide_oracle,Tide Oracle,3
+mugshot_112,Dalen,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_113,Baro,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_114,Elder Kesh,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
+mugshot_117,Torren,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_118,Pello,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_119,Gearface,silver,construct,3,opponent_win,lantern_gambler,Lantern Gambler,3
+mugshot_120,Captain Rusk,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,1
+mugshot_121,Rusk Stern,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_122,Rusk Veteran,silver,traveler,1,opponent_win,storm_captain,Storm Captain,4
+mugshot_123,Fira,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_124,Mei,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_125,Kellen,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_126,Tali,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_127,Rena,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_128,Suri,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_129,Niko,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_130,Jori,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_131,Pina,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_132,Tobin,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_133,Ren,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_134,Luma,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_135,Vasko,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_136,Miri,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_137,Ena,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_138,Ena Dockside,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_139,Lio,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_140,Lio Quick,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_141,Fenric,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_142,Milo,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_143,Brother Odo,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_144,Kassim,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_145,Scalepriest,silver,beast,1,fishing_salvage,marsh_reeds,Reedwater Salvage,2
+mugshot_146,Bronn,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_147,Hark,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_148,Ogrin,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_149,Featherbeak,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
+mugshot_150,Glass-Eye,silver,traveler,1,opponent_win,storm_captain,Storm Captain,4
+mugshot_151,Masked Warden,silver,construct,2,opponent_win,highland_keeper,Highland Keeper,2
+mugshot_152,Corin,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
+mugshot_153,Embermane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_154,Cindermane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_155,Rustmane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_156,Ashmane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_157,Flamemane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_158,Cliff Ape,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_159,Cliff Alpha,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_160,Mud Ox,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_161,Cave Bear,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_162,Dune Horse,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_163,Ramhorn,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_164,Glow Ram,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_165,Ember Hound,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_166,Sand Hound,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_167,Pale Hound,bronze,beast,1,opponent_win,pier_apprentice,Pier Apprentice,1
+mugshot_168,Stray Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_169,Moon Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_170,Harbor Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_171,Alley Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_172,Suncrest Hen,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_173,Sky Talon,gold,beast,6,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_174,Solin,gold,beast,6,tournament_reward,masters_cup,Masters' Cup,5
+mugshot_175,Foxkin,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_176,Tin Walker,bronze,construct,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_177,Steel Walker,bronze,construct,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_178,Brass Walker,bronze,construct,1,opponent_win,gearwright,Gearwright,1
+mugshot_179,Iron Walker,bronze,construct,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_180,Dock Guard,bronze,soldier,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_181,Harbor Guard,bronze,soldier,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_182,Wharf Guard,bronze,soldier,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_183,Gate Guard,bronze,soldier,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_184,Tide Guard,bronze,soldier,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
+mugshot_185,Coast Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_186,Lantern Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_187,Chain Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_188,Blue Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_189,Red Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_190,Old Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_191,Veteran Guard,bronze,soldier,1,treasure_cache,highland_cache,Highland Caches,2
+mugshot_192,Pip,bronze,townsfolk,1,opponent_win,pier_apprentice,Pier Apprentice,1
+mugshot_196,Nemi,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_200,Miko,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_204,Tavi,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_208,Lani,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_212,Puck,bronze,townsfolk,1,opponent_win,pier_apprentice,Pier Apprentice,1
+mugshot_216,Sela,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_220,Rori,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_224,Kiko,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_228,Noma,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_232,Vivi,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_236,Lilo,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_240,Timi,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_244,Mela,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_248,Yori,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1
+mugshot_252,Bibi,bronze,townsfolk,1,quest_reward,town_requests,Town Requests,1

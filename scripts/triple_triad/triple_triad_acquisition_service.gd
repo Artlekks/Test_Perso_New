@@ -138,6 +138,57 @@ func claim_bundle(
 	return result
 
 
+func grant_card(
+	card_id: StringName,
+	source_type: StringName,
+	source_context: StringName = &"",
+	amount: int = 1
+) -> Dictionary:
+	var result: Dictionary = {
+		"success": false,
+		"reason": "",
+		"card_id": String(card_id),
+		"source_type": String(source_type),
+		"source_context": String(source_context),
+		"amount_requested": maxi(1, amount),
+		"quantity_before": 0,
+		"quantity_after": 0,
+	}
+	if _collection == null:
+		result["reason"] = "collection_unavailable"
+		return result
+	if _catalog == null or not _catalog.has_method("get_card_by_id"):
+		result["reason"] = "catalog_unavailable"
+		return result
+	var card = _catalog.call("get_card_by_id", card_id)
+	if card == null:
+		result["reason"] = "unknown_card"
+		return result
+	var before: int = 0
+	if _collection.has_method("get_quantity_by_id"):
+		before = int(_collection.call("get_quantity_by_id", card_id))
+	var after: int = before
+	for _index in range(maxi(1, amount)):
+		after = int(_collection.call("acquire_card", card, 1, false))
+	if _collection.has_method("save_state"):
+		_collection.call("save_state")
+	if after > before and _tracker != null and _tracker.has_method("record_acquisition"):
+		_tracker.call(
+			"record_acquisition",
+			card,
+			source_type,
+			source_context,
+			after - before
+		)
+	result["success"] = after > before
+	result["reason"] = "ok" if after > before else "not_granted"
+	result["quantity_before"] = before
+	result["quantity_after"] = after
+	result["granted"] = maxi(0, after - before)
+	result["display_name"] = str(card.get("display_name"))
+	return result
+
+
 func is_card_game_unlocked() -> bool:
 	return _card_game_unlocked
 

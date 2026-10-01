@@ -18,6 +18,7 @@ const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake
 const DefaultCardCatalog = preload("res://data/triple_triad/card_catalog.tres")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
+const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -165,6 +166,8 @@ func run_all() -> Dictionary:
 	_run("Authored opponent ladder is legal", _test_authored_opponent_ladder)
 	_run("Acquisition registry is legal", _test_acquisition_registry)
 	_run("Card-game discovery gates opponents", _test_card_game_discovery_gate)
+	_run("World acquisition map covers all cards", _test_world_acquisition_map)
+	_run("World delivery source contract is legal", _test_world_delivery_contract)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -289,6 +292,75 @@ func _test_card_game_discovery_gate() -> Dictionary:
 		not bool(locked.get("available", true))
 		and bool(unlocked.get("available", false)),
 		"Beach Trader must stay locked before discovery and unlock after the starter case."
+	)
+
+
+func _test_world_acquisition_map() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var audit: Dictionary = world_catalog.validate_map()
+	return _ok(
+		bool(audit.get("valid", false))
+		and int(audit.get("card_count", 0)) == 179
+		and int(audit.get("covered_card_count", 0)) == 179,
+		"All 179 cards must have a valid acquisition source: %s"
+		% str(audit.get("errors", []))
+	)
+
+
+func _test_world_delivery_contract() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+
+	var direct_types := PackedStringArray([
+		"fishing_salvage",
+		"treasure_cache",
+		"quest_reward",
+		"tournament_reward",
+	])
+	for type_name in direct_types:
+		if not bool(
+			world_catalog.can_direct_claim_source(
+				StringName(type_name)
+			)
+		):
+			return _ok(
+				false,
+				"World delivery source type %s is not direct-claimable."
+				% type_name
+			)
+
+	var required_sources := [
+		[&"fishing_salvage", &"coast_shallows"],
+		[&"treasure_cache", &"harbor_lockbox"],
+		[&"quest_reward", &"town_requests"],
+		[&"tournament_reward", &"regional_circuit"],
+	]
+	for pair in required_sources:
+		var source_type: StringName = pair[0]
+		var source_id: StringName = pair[1]
+		var snapshot: Dictionary = world_catalog.get_source_snapshot(
+			source_type,
+			source_id
+		)
+		if snapshot.is_empty():
+			return _ok(
+				false,
+				"Missing runtime world reward source %s:%s."
+				% [String(source_type), String(source_id)]
+			)
+
+	return _ok(
+		true,
+		"Runtime world reward source contract is valid."
 	)
 
 

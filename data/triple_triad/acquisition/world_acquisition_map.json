@@ -1,0 +1,400 @@
+{
+  "schema_version": 1,
+  "design_version": "world_acquisition_v1",
+  "source_types_direct_claim": [
+    "fishing_salvage",
+    "treasure_cache",
+    "quest_reward",
+    "tournament_reward"
+  ],
+  "sources": [
+    {
+      "source_type": "starter_bundle",
+      "source_id": "salvaged_card_case",
+      "display_name": "Saltworn Card Case",
+      "min_duel_rank": 1,
+      "card_ids": [
+        "mugshot_153",
+        "mugshot_154",
+        "mugshot_155",
+        "mugshot_156",
+        "mugshot_157",
+        "mugshot_158",
+        "mugshot_159",
+        "mugshot_160",
+        "mugshot_161",
+        "mugshot_162"
+      ],
+      "description": "The one-shot starter collection discovered through fishing salvage."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "ash_champion",
+      "display_name": "Ash Champion",
+      "min_duel_rank": 5,
+      "card_ids": [
+        "mugshot_000",
+        "mugshot_001",
+        "mugshot_023"
+      ],
+      "description": "Defeat Ash Champion and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "beach_trader",
+      "display_name": "Beach Trader",
+      "min_duel_rank": 1,
+      "card_ids": [
+        "mugshot_054",
+        "mugshot_047",
+        "mugshot_053"
+      ],
+      "description": "Defeat Beach Trader and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "dock_bruiser",
+      "display_name": "Dock Bruiser",
+      "min_duel_rank": 1,
+      "card_ids": [
+        "mugshot_058",
+        "mugshot_108",
+        "mugshot_120"
+      ],
+      "description": "Defeat Dock Bruiser and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "gearwright",
+      "display_name": "Gearwright",
+      "min_duel_rank": 1,
+      "card_ids": [
+        "mugshot_086",
+        "mugshot_070",
+        "mugshot_178"
+      ],
+      "description": "Defeat Gearwright and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "highland_keeper",
+      "display_name": "Highland Keeper",
+      "min_duel_rank": 2,
+      "card_ids": [
+        "mugshot_073",
+        "mugshot_050",
+        "mugshot_151"
+      ],
+      "description": "Defeat Highland Keeper and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "lantern_gambler",
+      "display_name": "Lantern Gambler",
+      "min_duel_rank": 3,
+      "card_ids": [
+        "mugshot_085",
+        "mugshot_119",
+        "mugshot_111"
+      ],
+      "description": "Defeat Lantern Gambler and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "marsh_keeper",
+      "display_name": "Marsh Keeper",
+      "min_duel_rank": 2,
+      "card_ids": [
+        "mugshot_067",
+        "mugshot_077",
+        "mugshot_079"
+      ],
+      "description": "Defeat Marsh Keeper and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "pier_apprentice",
+      "display_name": "Pier Apprentice",
+      "min_duel_rank": 1,
+      "card_ids": [
+        "mugshot_192",
+        "mugshot_212",
+        "mugshot_167"
+      ],
+      "description": "Defeat Pier Apprentice and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "storm_captain",
+      "display_name": "Storm Captain",
+      "min_duel_rank": 4,
+      "card_ids": [
+        "mugshot_002",
+        "mugshot_074",
+        "mugshot_122",
+        "mugshot_150"
+      ],
+      "description": "Defeat Storm Captain and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "tide_oracle",
+      "display_name": "Tide Oracle",
+      "min_duel_rank": 3,
+      "card_ids": [
+        "mugshot_068",
+        "mugshot_075",
+        "mugshot_111"
+      ],
+      "description": "Defeat Tide Oracle and choose an eligible reward card."
+    },
+    {
+      "source_type": "opponent_win",
+      "source_id": "wandering_sage",
+      "display_name": "Wandering Sage",
+      "min_duel_rank": 4,
+      "card_ids": [
+        "mugshot_003",
+        "mugshot_038",
+        "mugshot_002"
+      ],
+      "description": "Defeat Wandering Sage and choose an eligible reward card."
+    },
+    {
+      "source_type": "fishing_salvage",
+      "source_id": "coast_shallows",
+      "display_name": "Coast Shallows Salvage",
+      "min_duel_rank": 1,
+      "description": "Common cards recovered from bottles, tackle tins, and drift caught while fishing the coast.",
+      "card_ids": [
+        "mugshot_163",
+        "mugshot_164",
+        "mugshot_165",
+        "mugshot_166",
+        "mugshot_168",
+        "mugshot_169",
+        "mugshot_170",
+        "mugshot_171",
+        "mugshot_172",
+        "mugshot_175",
+        "mugshot_071",
+        "mugshot_076",
+        "mugshot_080",
+        "mugshot_081",
+        "mugshot_082"
+      ]
+    },
+    {
+      "source_type": "fishing_salvage",
+      "source_id": "marsh_reeds",
+      "display_name": "Reedwater Salvage",
+      "min_duel_rank": 2,
+      "description": "Cards recovered from marsh channels, reed beds, and waterlogged tackle caches.",
+      "card_ids": [
+        "mugshot_088",
+        "mugshot_089",
+        "mugshot_092",
+        "mugshot_145",
+        "mugshot_078",
+        "mugshot_083",
+        "mugshot_084",
+        "mugshot_087"
+      ]
+    },
+    {
+      "source_type": "fishing_salvage",
+      "source_id": "deep_water",
+      "display_name": "Deepwater Salvage",
+      "min_duel_rank": 3,
+      "description": "Less common cards brought up from deeper fishing water and offshore debris.",
+      "card_ids": [
+        "mugshot_090",
+        "mugshot_091",
+        "mugshot_093",
+        "mugshot_072",
+        "mugshot_094"
+      ]
+    },
+    {
+      "source_type": "treasure_cache",
+      "source_id": "harbor_lockbox",
+      "display_name": "Harbor Lockboxes",
+      "min_duel_rank": 1,
+      "description": "Cards found in dockside strongboxes, tool chests, and guarded harbor caches.",
+      "card_ids": [
+        "mugshot_176",
+        "mugshot_177",
+        "mugshot_179",
+        "mugshot_180",
+        "mugshot_181",
+        "mugshot_182",
+        "mugshot_183",
+        "mugshot_184"
+      ]
+    },
+    {
+      "source_type": "treasure_cache",
+      "source_id": "highland_cache",
+      "display_name": "Highland Caches",
+      "min_duel_rank": 2,
+      "description": "Cards hidden in old highland supply boxes and abandoned mechanical stores.",
+      "card_ids": [
+        "mugshot_185",
+        "mugshot_186",
+        "mugshot_187",
+        "mugshot_188",
+        "mugshot_189",
+        "mugshot_190",
+        "mugshot_191",
+        "mugshot_069"
+      ]
+    },
+    {
+      "source_type": "quest_reward",
+      "source_id": "town_requests",
+      "display_name": "Town Requests",
+      "min_duel_rank": 1,
+      "description": "Cards earned from small favors and local card-player requests.",
+      "card_ids": [
+        "mugshot_196",
+        "mugshot_200",
+        "mugshot_204",
+        "mugshot_208",
+        "mugshot_216",
+        "mugshot_220",
+        "mugshot_224",
+        "mugshot_228",
+        "mugshot_232",
+        "mugshot_236",
+        "mugshot_240",
+        "mugshot_244",
+        "mugshot_248",
+        "mugshot_252"
+      ]
+    },
+    {
+      "source_type": "quest_reward",
+      "source_id": "harbor_errands",
+      "display_name": "Harbor Errands",
+      "min_duel_rank": 1,
+      "description": "Traveler cards earned from early harbor jobs and deliveries.",
+      "card_ids": [
+        "mugshot_049",
+        "mugshot_051",
+        "mugshot_056",
+        "mugshot_057",
+        "mugshot_059",
+        "mugshot_065",
+        "mugshot_066",
+        "mugshot_095",
+        "mugshot_097",
+        "mugshot_098",
+        "mugshot_099",
+        "mugshot_100",
+        "mugshot_101",
+        "mugshot_102",
+        "mugshot_106",
+        "mugshot_107",
+        "mugshot_109",
+        "mugshot_114"
+      ]
+    },
+    {
+      "source_type": "quest_reward",
+      "source_id": "roadside_stories",
+      "display_name": "Roadside Card Stories",
+      "min_duel_rank": 2,
+      "description": "Cards earned by helping travelers and resolving small regional stories.",
+      "card_ids": [
+        "mugshot_117",
+        "mugshot_118",
+        "mugshot_121",
+        "mugshot_123",
+        "mugshot_125",
+        "mugshot_126",
+        "mugshot_129",
+        "mugshot_130",
+        "mugshot_132",
+        "mugshot_134",
+        "mugshot_138",
+        "mugshot_139",
+        "mugshot_141",
+        "mugshot_142",
+        "mugshot_143",
+        "mugshot_147",
+        "mugshot_152"
+      ]
+    },
+    {
+      "source_type": "quest_reward",
+      "source_id": "guild_commissions",
+      "display_name": "Travelers' Guild Commissions",
+      "min_duel_rank": 2,
+      "description": "Higher-value traveler cards from structured regional commissions.",
+      "card_ids": [
+        "mugshot_061",
+        "mugshot_062",
+        "mugshot_064",
+        "mugshot_096",
+        "mugshot_103",
+        "mugshot_104",
+        "mugshot_105",
+        "mugshot_110",
+        "mugshot_112",
+        "mugshot_113",
+        "mugshot_124",
+        "mugshot_127",
+        "mugshot_128",
+        "mugshot_131",
+        "mugshot_133",
+        "mugshot_135",
+        "mugshot_136",
+        "mugshot_137",
+        "mugshot_140",
+        "mugshot_144",
+        "mugshot_146",
+        "mugshot_148",
+        "mugshot_149"
+      ]
+    },
+    {
+      "source_type": "tournament_reward",
+      "source_id": "regional_circuit",
+      "display_name": "Regional Card Circuit",
+      "min_duel_rank": 3,
+      "description": "Gold cards awarded through regional card-player events and local championships.",
+      "card_ids": [
+        "mugshot_013",
+        "mugshot_017",
+        "mugshot_025",
+        "mugshot_027",
+        "mugshot_029",
+        "mugshot_034",
+        "mugshot_040",
+        "mugshot_041",
+        "mugshot_042",
+        "mugshot_044",
+        "mugshot_045",
+        "mugshot_063"
+      ]
+    },
+    {
+      "source_type": "tournament_reward",
+      "source_id": "masters_cup",
+      "display_name": "Masters' Cup",
+      "min_duel_rank": 5,
+      "description": "Late-game Gold cards reserved for master-level competition.",
+      "card_ids": [
+        "mugshot_016",
+        "mugshot_019",
+        "mugshot_030",
+        "mugshot_033",
+        "mugshot_037",
+        "mugshot_039",
+        "mugshot_043",
+        "mugshot_173",
+        "mugshot_174"
+      ]
+    }
+  ]
+}
