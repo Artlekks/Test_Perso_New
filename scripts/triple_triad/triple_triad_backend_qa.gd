@@ -22,6 +22,7 @@ const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple
 const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
+const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/triple_triad_world_progression_director.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -175,6 +176,8 @@ func run_all() -> Dictionary:
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
 	_run("Collection tracker covers all 179 cards", _test_collection_completion_tracker)
+	_run("World progression prioritizes discovery and active tournaments", _test_world_progression_priority)
+	_run("World progression enters collection cleanup after Card Master", _test_world_progression_collection_cleanup)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -549,6 +552,97 @@ func _test_collection_completion_tracker() -> Dictionary:
 	return _ok(
 		int(snapshot.get("sources_total", 0)) == 23,
 		"Collection tracker must expose all 23 authored acquisition sources."
+	)
+
+
+func _test_world_progression_priority() -> Dictionary:
+	var director = WorldProgressionDirectorScript.new()
+	var completion := {
+		"collection_complete": false,
+		"campaign_complete": false,
+		"full_card_game_completion": false,
+		"owned_unique": 60,
+		"catalog_total_unique": 179,
+		"missing_unique": 119,
+		"source_progress": [],
+	}
+	var competitive := {
+		"active": {
+			"active": true,
+			"competition_id": "regional_championship",
+			"display_name": "Regional Card Championship",
+			"next_opponent_id": "gearwright",
+		},
+		"circuits": [],
+		"competitions": [],
+	}
+
+	var locked: Dictionary = director.build_snapshot(
+		{"duel_rank": 4},
+		{"card_game_unlocked": false},
+		competitive,
+		completion,
+		PackedStringArray()
+	)
+	if str(locked.get("phase", "")) != "discover_cards":
+		return _ok(
+			false,
+			"Card discovery must remain the first world objective while locked."
+		)
+
+	var active: Dictionary = director.build_snapshot(
+		{"duel_rank": 4},
+		{"card_game_unlocked": true},
+		competitive,
+		completion,
+		PackedStringArray(["gearwright"])
+	)
+	var next_ids = active.get("next_opponent_ids", PackedStringArray())
+	return _ok(
+		str(active.get("phase", "")) == "active_competition"
+		and str(active.get("next_competition_id", "")) == "regional_championship"
+		and next_ids.has("gearwright"),
+		"An active tournament must override normal regional progression."
+	)
+
+
+func _test_world_progression_collection_cleanup() -> Dictionary:
+	var director = WorldProgressionDirectorScript.new()
+	var snapshot: Dictionary = director.build_snapshot(
+		{"duel_rank": 6},
+		{"card_game_unlocked": true},
+		{
+			"active": {"active": false},
+			"circuits": [],
+			"competitions": [],
+		},
+		{
+			"collection_complete": false,
+			"campaign_complete": true,
+			"full_card_game_completion": false,
+			"owned_unique": 170,
+			"catalog_total_unique": 179,
+			"missing_unique": 9,
+			"source_progress": [
+				{
+					"source_type": "fishing_salvage",
+					"source_id": "deep_water",
+					"display_name": "Deep Water Salvage",
+					"missing_count": 3,
+					"complete": false,
+					"rank_available": true,
+				},
+			],
+		},
+		PackedStringArray()
+	)
+	var suggestions: Array = snapshot.get("available_collection_sources", [])
+	return _ok(
+		str(snapshot.get("phase", "")) == "collection_cleanup"
+		and int(snapshot.get("collection_missing_unique", 0)) == 9
+		and suggestions.size() == 1
+		and str(suggestions[0].get("source_id", "")) == "deep_water",
+		"After Card Master, missing cards must become the next world objective."
 	)
 
 

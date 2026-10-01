@@ -9,6 +9,7 @@ signal runtime_state_changed(snapshot: Dictionary)
 signal acquisition_completed(result: Dictionary)
 signal card_game_unlock_changed(unlocked: bool)
 signal competition_state_changed(snapshot: Dictionary)
+signal world_progression_changed(snapshot: Dictionary)
 
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
@@ -35,8 +36,9 @@ const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_ec
 const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
+const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/triple_triad_world_progression_director.gd")
 
-const BACKEND_VERSION := "2.1.0"
+const BACKEND_VERSION := "2.2.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -182,6 +184,7 @@ var _competition_catalog = null
 var _competition_service = null
 var _competition_match_active: bool = false
 var _completion_tracker = null
+var _world_progression_director = null
 
 
 func _ready() -> void:
@@ -274,6 +277,8 @@ func _ready() -> void:
 		_competition_service,
 		opponent_registry
 	)
+
+	_world_progression_director = WorldProgressionDirectorScript.new()
 
 	# Transfer journal recovery happens before the global save audit. If recovery
 	# is still pending after the attempt, opening a new match would risk stacking
@@ -1001,7 +1006,21 @@ func get_global_triple_triad_snapshot() -> Dictionary:
 	}
 	snapshot["completion"] = get_collection_completion_snapshot()
 	snapshot["competitive"] = get_competitive_snapshot()
+	snapshot["world_progression"] = get_world_progression_snapshot()
 	return snapshot
+
+
+func get_world_progression_snapshot() -> Dictionary:
+	if _world_progression_director == null:
+		return {}
+	return _world_progression_director.call(
+		"build_snapshot",
+		get_player_snapshot(),
+		get_onboarding_snapshot(),
+		get_competitive_snapshot(),
+		get_collection_completion_snapshot(),
+		get_available_card_player_ids()
+	)
 
 
 func get_runtime_ui_snapshot() -> Dictionary:
@@ -1159,6 +1178,10 @@ func _publish_backend_state_change(reason: String) -> void:
 		_completion_tracker.call("refresh", reason, true)
 	_invalidate_state_api(reason)
 	backend_state_changed.emit(reason)
+	if _world_progression_director != null:
+		world_progression_changed.emit(
+			get_world_progression_snapshot()
+		)
 
 
 func is_open() -> bool:
