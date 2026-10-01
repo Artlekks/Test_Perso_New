@@ -14,6 +14,9 @@ const SCENARIO_REGIONAL_READY: StringName = &"regional_ready"
 const SCENARIO_MASTERS_READY: StringName = &"masters_ready"
 const SCENARIO_COLLECTION_170: StringName = &"collection_170"
 const SCENARIO_FULL: StringName = &"full"
+const SCENARIO_SIX_CARD_RECOVERY: StringName = &"six_card_recovery"
+const SCENARIO_VETERAN_REMATCH: StringName = &"veteran_rematch"
+const SCENARIO_REGIONAL_RESUME: StringName = &"regional_resume"
 
 const COLLECTION_PATH := "user://triple_triad_collection.cfg"
 const OPPONENTS_PATH := "user://triple_triad_opponents.cfg"
@@ -28,6 +31,7 @@ const WORLD_DELIVERY_PATH := "user://triple_triad_world_delivery.cfg"
 const COMPETITIONS_PATH := "user://triple_triad_competitions.cfg"
 const COMPLETION_PATH := "user://triple_triad_completion.cfg"
 const MANIFEST_PATH := "user://triple_triad_save_manifest.cfg"
+const QA_SNAPSHOT_PATH := "user://triple_triad_qa_snapshot_A.json"
 
 const FIVE_CARD_IDS = [
 	"mugshot_156",
@@ -81,6 +85,16 @@ func get_scenarios() -> Array:
 			"summary": "Exactly 5 playable cards. Lose a match to verify the opponent cannot take a sixth card and strand you at four.",
 		},
 		{
+			"id": String(SCENARIO_SIX_CARD_RECOVERY),
+			"name": "Six-Card Loss / Recovery",
+			"summary": "Exactly 6 playable starter cards. Lose once to drop to the protected floor of five, then rematch to recover the stolen card.",
+		},
+		{
+			"id": String(SCENARIO_VETERAN_REMATCH),
+			"name": "Veteran Rematch Ready",
+			"summary": "Rank 2 with six recorded wins against Dock Bruiser. His Stage-3 evolved deck/AI is immediately testable.",
+		},
+		{
 			"id": String(SCENARIO_EARLY),
 			"name": "Early Game",
 			"summary": "Rank 2, 24 cards, a couple of early NPC wins. Useful for deck growth and rematch testing.",
@@ -94,6 +108,11 @@ func get_scenarios() -> Array:
 			"id": String(SCENARIO_REGIONAL_READY),
 			"name": "Regional Championship Ready",
 			"summary": "Rank 3 with all three regional circuits cleared. Regional Championship is ready to enter.",
+		},
+		{
+			"id": String(SCENARIO_REGIONAL_RESUME),
+			"name": "Regional Round 2 Resume",
+			"summary": "A Regional Championship run is already active at round 2 with a locked five-card deck. Tests reload/resume continuity.",
 		},
 		{
 			"id": String(SCENARIO_MASTERS_READY),
@@ -137,6 +156,20 @@ func apply_scenario(
 			_seed_collection(FIVE_CARD_IDS, card_catalog)
 			_seed_progression(1)
 			_seed_acquisition_unlocked()
+		SCENARIO_SIX_CARD_RECOVERY:
+			var six_ids: PackedStringArray = _starter_ids()
+			if six_ids.size() > 6:
+				six_ids.resize(6)
+			_seed_collection(six_ids, card_catalog)
+			_seed_progression(1)
+			_seed_acquisition_unlocked()
+		SCENARIO_VETERAN_REMATCH:
+			_seed_collection(_cards_for_rank(card_catalog, 2, 32), card_catalog)
+			_seed_progression(2)
+			_seed_acquisition_unlocked()
+			_seed_encounters_with_wins({
+				"dock_bruiser": 6,
+			})
 		SCENARIO_EARLY:
 			_seed_collection(_cards_for_rank(card_catalog, 2, 24), card_catalog)
 			_seed_progression(2)
@@ -161,6 +194,12 @@ func apply_scenario(
 			_seed_progression(3)
 			_seed_acquisition_unlocked()
 			_seed_encounters(REGIONAL_CIRCUIT_OPPONENTS)
+		SCENARIO_REGIONAL_RESUME:
+			_seed_collection(_cards_for_rank(card_catalog, 3, 85), card_catalog)
+			_seed_progression(3)
+			_seed_acquisition_unlocked()
+			_seed_encounters(REGIONAL_CIRCUIT_OPPONENTS)
+			_seed_active_regional_round_two()
 		SCENARIO_MASTERS_READY:
 			_seed_collection(_cards_for_rank(card_catalog, 5, 125), card_catalog)
 			_seed_progression(5)
@@ -193,6 +232,130 @@ func apply_scenario(
 	}
 
 
+func save_qa_snapshot() -> Dictionary:
+	var files: Array = []
+	for path in _managed_save_paths(true):
+		if not FileAccess.file_exists(path):
+			continue
+		files.append({
+			"path": path,
+			"content": FileAccess.get_file_as_string(path),
+		})
+
+	var payload := {
+		"version": 1,
+		"created_unix": int(Time.get_unix_time_from_system()),
+		"files": files,
+	}
+	var file := FileAccess.open(QA_SNAPSHOT_PATH, FileAccess.WRITE)
+	if file == null:
+		return {
+			"success": false,
+			"reason": "snapshot_open_failed",
+		}
+	file.store_string(JSON.stringify(payload, "\t"))
+	file.close()
+	return {
+		"success": true,
+		"file_count": files.size(),
+		"path": QA_SNAPSHOT_PATH,
+		"created_unix": int(payload["created_unix"]),
+	}
+
+
+func restore_qa_snapshot() -> Dictionary:
+	if not FileAccess.file_exists(QA_SNAPSHOT_PATH):
+		return {
+			"success": false,
+			"reason": "snapshot_missing",
+		}
+
+	var parsed = JSON.parse_string(
+		FileAccess.get_file_as_string(QA_SNAPSHOT_PATH)
+	)
+	if not (parsed is Dictionary):
+		return {
+			"success": false,
+			"reason": "snapshot_invalid",
+		}
+	var payload: Dictionary = parsed
+	var raw_files = payload.get("files", [])
+	if not (raw_files is Array):
+		return {
+			"success": false,
+			"reason": "snapshot_files_invalid",
+		}
+
+	_clear_all_triple_triad_saves()
+	var restored: int = 0
+	for raw_entry in raw_files:
+		if not (raw_entry is Dictionary):
+			continue
+		var entry: Dictionary = raw_entry
+		var path: String = str(entry.get("path", ""))
+		if not _is_managed_save_path(path):
+			continue
+		var file := FileAccess.open(path, FileAccess.WRITE)
+		if file == null:
+			continue
+		file.store_string(str(entry.get("content", "")))
+		file.close()
+		restored += 1
+
+	return {
+		"success": true,
+		"restored_files": restored,
+		"created_unix": int(payload.get("created_unix", 0)),
+		"reload_required": true,
+	}
+
+
+func delete_qa_snapshot() -> Dictionary:
+	if FileAccess.file_exists(QA_SNAPSHOT_PATH):
+		var delete_error: Error = DirAccess.remove_absolute(QA_SNAPSHOT_PATH)
+		return {
+			"success": delete_error == OK,
+			"error": error_string(delete_error) if delete_error != OK else "",
+		}
+	return {
+		"success": true,
+		"already_missing": true,
+	}
+
+
+func get_qa_snapshot_info() -> Dictionary:
+	if not FileAccess.file_exists(QA_SNAPSHOT_PATH):
+		return {
+			"exists": false,
+			"path": QA_SNAPSHOT_PATH,
+		}
+	var parsed = JSON.parse_string(
+		FileAccess.get_file_as_string(QA_SNAPSHOT_PATH)
+	)
+	if not (parsed is Dictionary):
+		return {
+			"exists": true,
+			"valid": false,
+			"path": QA_SNAPSHOT_PATH,
+		}
+	var payload: Dictionary = parsed
+	var files = payload.get("files", [])
+	return {
+		"exists": true,
+		"valid": files is Array,
+		"path": QA_SNAPSHOT_PATH,
+		"created_unix": int(payload.get("created_unix", 0)),
+		"file_count": files.size() if files is Array else 0,
+	}
+
+
+func get_managed_save_paths() -> PackedStringArray:
+	var result := PackedStringArray()
+	for path in _managed_save_paths(true):
+		result.append(path)
+	return result
+
+
 func reset_decks_only() -> Dictionary:
 	_delete_with_backup(DECKS_PATH)
 	return {
@@ -201,7 +364,8 @@ func reset_decks_only() -> Dictionary:
 	}
 
 
-func _clear_all_triple_triad_saves() -> void:
+func _managed_save_paths(include_backups: bool) -> Array:
+	var result: Array = []
 	for path in [
 		COLLECTION_PATH,
 		OPPONENTS_PATH,
@@ -217,6 +381,18 @@ func _clear_all_triple_triad_saves() -> void:
 		COMPLETION_PATH,
 		MANIFEST_PATH,
 	]:
+		result.append(path)
+		if include_backups:
+			result.append("%s.bak" % path)
+	return result
+
+
+func _is_managed_save_path(path: String) -> bool:
+	return _managed_save_paths(true).has(path)
+
+
+func _clear_all_triple_triad_saves() -> void:
+	for path in _managed_save_paths(false):
 		_delete_with_backup(path)
 
 
@@ -271,6 +447,52 @@ func _seed_acquisition_unlocked() -> void:
 	config.set_value("meta", "card_game_unlocked", true)
 	config.set_value("claimed", "salvaged_card_case", true)
 	config.save(ACQUISITION_STATE_PATH)
+
+
+func _seed_encounters_with_wins(wins_by_opponent: Dictionary) -> void:
+	var config := ConfigFile.new()
+	config.set_value("meta", "version", 1)
+	for raw_id in wins_by_opponent.keys():
+		var opponent_id: String = str(raw_id)
+		var wins: int = maxi(0, int(wins_by_opponent[raw_id]))
+		var section: String = "opponent_%s_record" % opponent_id
+		config.set_value(section, "matches", wins)
+		config.set_value(section, "wins", wins)
+		config.set_value(section, "losses", 0)
+		config.set_value(section, "draws", 0)
+		config.set_value(section, "first_win_unix", 1 if wins > 0 else 0)
+		config.set_value(section, "last_result", "win" if wins > 0 else "")
+		config.set_value(section, "last_played_unix", 1 if wins > 0 else 0)
+		config.set_value(section, "cards_won_from_opponent", 0)
+		config.set_value(section, "cards_lost_to_opponent", 0)
+		config.set_value(section, "stolen_cards_recovered", 0)
+	config.save(ENCOUNTER_RECORDS_PATH)
+
+
+func _seed_active_regional_round_two() -> void:
+	var config := ConfigFile.new()
+	config.set_value("meta", "version", 3)
+	for competition_id in [
+		"regional_championship",
+		"masters_cup",
+	]:
+		config.set_value("attempts", competition_id, 0)
+		config.set_value("clears", competition_id, 0)
+		config.set_value("failures", competition_id, 0)
+		config.set_value("abandons", competition_id, 0)
+	config.set_value("attempts", "regional_championship", 1)
+	config.set_value(
+		"active",
+		"competition_id",
+		"regional_championship"
+	)
+	config.set_value("active", "round_index", 1)
+	config.set_value(
+		"active",
+		"locked_deck_ids",
+		FIVE_CARD_IDS
+	)
+	config.save(COMPETITIONS_PATH)
 
 
 func _seed_encounters(opponent_ids) -> void:

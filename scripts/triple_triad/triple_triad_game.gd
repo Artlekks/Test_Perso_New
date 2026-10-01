@@ -43,8 +43,9 @@ const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad
 const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
 const CampaignQAHarnessScript = preload("res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd")
 const CampaignQAMenuScene = preload("res://actors/TripleTriadCampaignQAMenu.tscn")
+const PlaytestRecorderScript = preload("res://scripts/triple_triad/triple_triad_playtest_recorder.gd")
 
-const BACKEND_VERSION := "2.6.0"
+const BACKEND_VERSION := "2.7.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -199,6 +200,7 @@ var _last_runtime_recovery: Dictionary = {}
 var _pending_competition_change: Dictionary = {}
 var _campaign_qa_harness = CampaignQAHarnessScript.new()
 var _campaign_qa_menu: CanvasLayer = null
+var _qa_playtest_recorder = PlaytestRecorderScript.new()
 
 
 func _ready() -> void:
@@ -339,6 +341,14 @@ func _ready() -> void:
 	_backend_ready = true
 	_install_fishing_salvage_bridge()
 	_last_runtime_recovery = reconcile_runtime_state()
+	if OS.is_debug_build():
+		_qa_playtest_recorder.append(
+			&"session_start",
+			{
+				"backend_version": BACKEND_VERSION,
+				"recovery": _last_runtime_recovery.duplicate(true),
+			}
+		)
 	if bool(_last_runtime_recovery.get("requires_reward_ui", false)):
 		call_deferred("_resume_pending_match_resolution")
 	if OS.is_debug_build() and run_backend_qa_on_startup:
@@ -381,6 +391,8 @@ func _campaign_qa_snapshot() -> Dictionary:
 			else {}
 		),
 		"recovery": _last_runtime_recovery.duplicate(true),
+		"qa_snapshot": _campaign_qa_harness.get_qa_snapshot_info(),
+		"playtest_log": _qa_playtest_recorder.get_info(),
 	}
 
 
@@ -413,6 +425,10 @@ func _on_campaign_qa_scenario_requested(
 				% str(result.get("reason", "unknown"))
 			)
 		return
+	_qa_playtest_recorder.append(
+		&"qa_scenario_applied",
+		result
+	)
 	_reload_scene_after_campaign_qa()
 
 
@@ -446,6 +462,47 @@ func _on_campaign_qa_action_requested(
 			_campaign_qa_status(
 				"Armed: next eligible Ocean 2 catch grants Coast Shallows salvage."
 			)
+		&"resume_active_tournament":
+			if open_active_competition_match():
+				_campaign_qa_menu.call("close_menu")
+			else:
+				_campaign_qa_status(
+					"No resumable tournament round is active."
+				)
+		&"save_qa_snapshot":
+			var save_result: Dictionary = (
+				_campaign_qa_harness.save_qa_snapshot()
+			)
+			_campaign_qa_status(
+				"QA Snapshot A saved (%d files)."
+				% int(save_result.get("file_count", 0))
+				if bool(save_result.get("success", false))
+				else "QA Snapshot save FAILED."
+			)
+		&"restore_qa_snapshot":
+			var restore_result: Dictionary = (
+				_campaign_qa_harness.restore_qa_snapshot()
+			)
+			if bool(restore_result.get("success", false)):
+				_qa_playtest_recorder.append(
+					&"qa_snapshot_restored",
+					restore_result
+				)
+				_reload_scene_after_campaign_qa()
+			else:
+				_campaign_qa_status(
+					"Restore FAILED: %s"
+					% str(restore_result.get("reason", "unknown"))
+				)
+		&"delete_qa_snapshot":
+			var delete_result: Dictionary = (
+				_campaign_qa_harness.delete_qa_snapshot()
+			)
+			_campaign_qa_status(
+				"QA Snapshot A deleted."
+				if bool(delete_result.get("success", false))
+				else "QA Snapshot delete FAILED."
+			)
 		&"reset_decks":
 			var result: Dictionary = (
 				_campaign_qa_harness.reset_decks_only()
@@ -464,15 +521,72 @@ func _on_campaign_qa_action_requested(
 					else "attention required"
 				)
 			)
+		&"capture_qa_report":
+			var report_result: Dictionary = _capture_campaign_qa_report()
+			_campaign_qa_status(
+				"Diagnostic report captured."
+				if bool(report_result.get("success", false))
+				else "Diagnostic report FAILED."
+			)
+		&"clear_playtest_log":
+			_campaign_qa_status(
+				"Playtest log cleared."
+				if _qa_playtest_recorder.clear()
+				else "Could not clear playtest log."
+			)
 		&"run_backend_qa":
 			var report: Dictionary = run_backend_qa()
 			_campaign_qa_status(
 				"Backend QA: %d / %d passed"
 				% [
-					int(report.get("passed", 0)),
-					int(report.get("total", 0)),
+					int(report.get("passed_count", 0)),
+					int(report.get("test_count", 0)),
 				]
 			)
+
+
+func _capture_campaign_qa_report() -> Dictionary:
+	const REPORT_PATH := "user://triple_triad_qa_report.json"
+	var tree: SceneTree = get_tree()
+	var report := {
+		"generated_time": Time.get_datetime_string_from_system(),
+		"generated_unix": int(Time.get_unix_time_from_system()),
+		"backend_version": BACKEND_VERSION,
+		"engine": Engine.get_version_info(),
+		"scene": (
+			str(tree.current_scene.scene_file_path)
+			if tree != null and tree.current_scene != null
+			else ""
+		),
+		"tree_paused": tree.paused if tree != null else false,
+		"backend_health": get_backend_health(),
+		"global": (
+			get_global_triple_triad_snapshot()
+			if _backend_ready
+			else {}
+		),
+		"recovery": get_runtime_recovery_snapshot(),
+		"pending_gameplay_events": get_pending_gameplay_events(),
+		"campaign_qa": _campaign_qa_snapshot(),
+		"qa_snapshot": _campaign_qa_harness.get_qa_snapshot_info(),
+		"playtest_log": _qa_playtest_recorder.get_info(),
+	}
+	var file := FileAccess.open(REPORT_PATH, FileAccess.WRITE)
+	if file == null:
+		return {
+			"success": false,
+			"reason": "report_open_failed",
+		}
+	file.store_string(JSON.stringify(report, "\t"))
+	file.close()
+	_qa_playtest_recorder.append(
+		&"diagnostic_report_captured",
+		{"path": REPORT_PATH}
+	)
+	return {
+		"success": true,
+		"path": REPORT_PATH,
+	}
 
 
 func _campaign_qa_status(text: String) -> void:
@@ -856,6 +970,11 @@ func _queue_gameplay_event(
 		priority
 	)
 	gameplay_event_queued.emit(event.duplicate(true))
+	if OS.is_debug_build():
+		_qa_playtest_recorder.append(
+			&"gameplay_event",
+			event
+		)
 	return event
 
 

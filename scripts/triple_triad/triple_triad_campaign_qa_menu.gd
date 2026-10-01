@@ -156,12 +156,17 @@ func _refresh() -> void:
 	if raw_acquisition is Dictionary:
 		acquisition = raw_acquisition
 
+	var qa_snapshot: Dictionary = {}
+	var raw_qa_snapshot = _snapshot.get("qa_snapshot", {})
+	if raw_qa_snapshot is Dictionary:
+		qa_snapshot = raw_qa_snapshot
 	snapshot_label.text = (
-		"CURRENT   Rank %d   Cards %d / 179   Unlocked %s"
+		"CURRENT   Rank %d   Cards %d / 179   Unlocked %s   QA-A %s"
 		% [
 			int(progression.get("duel_rank", progression.get("rank", 1))),
 			int(completion.get("owned_unique", 0)),
 			"YES" if bool(acquisition.get("card_game_unlocked", false)) else "NO",
+			"SAVED" if bool(qa_snapshot.get("exists", false)) else "EMPTY",
 		]
 	)
 
@@ -173,7 +178,7 @@ func _refresh() -> void:
 
 
 func _action_count() -> int:
-	return 4
+	return 10
 
 
 func _action_id(index: int) -> StringName:
@@ -181,10 +186,22 @@ func _action_id(index: int) -> StringName:
 		0:
 			return &"arm_next_coast_salvage"
 		1:
-			return &"reset_decks"
+			return &"resume_active_tournament"
 		2:
-			return &"reconcile"
+			return &"save_qa_snapshot"
 		3:
+			return &"restore_qa_snapshot"
+		4:
+			return &"delete_qa_snapshot"
+		5:
+			return &"reset_decks"
+		6:
+			return &"reconcile"
+		7:
+			return &"capture_qa_report"
+		8:
+			return &"clear_playtest_log"
+		9:
 			return &"run_backend_qa"
 		_:
 			return &""
@@ -195,10 +212,22 @@ func _action_name(index: int) -> String:
 		0:
 			return "Next Ocean 2 Catch = Coast Salvage Card"
 		1:
-			return "Reset Deck Profiles Only"
+			return "Open / Resume Active Tournament"
 		2:
-			return "Reconcile Runtime / Save State"
+			return "Save QA Snapshot A"
 		3:
+			return "Restore QA Snapshot A"
+		4:
+			return "Delete QA Snapshot A"
+		5:
+			return "Reset Deck Profiles Only"
+		6:
+			return "Reconcile Runtime / Save State"
+		7:
+			return "Capture Diagnostic Report"
+		8:
+			return "Clear Playtest Log"
+		9:
 			return "Run Backend QA"
 		_:
 			return ""
@@ -209,10 +238,22 @@ func _action_description(index: int) -> String:
 		0:
 			return "Keeps your collection/progression. Arms the normal 4-catch coast-salvage counter so the next eligible Ocean 2 catch grants a mapped salvage card."
 		1:
-			return "Deletes only Triple Triad deck profiles. Collection and progression stay intact; Deck #1 rebuilds from owned cards after reload."
+			return "If a tournament attempt is active, opens its expected next opponent immediately using the locked tournament deck."
 		2:
-			return "Runs the production recovery/reconciliation pass against the current card-game save."
+			return "Copies every Triple Triad save/journal plus backups into QA Snapshot A. Fishing state is never included."
 		3:
+			return "Restores QA Snapshot A exactly, replacing the current Triple Triad campaign state, then reloads the scene."
+		4:
+			return "Deletes only the stored QA Snapshot A. Your live campaign is unchanged."
+		5:
+			return "Deletes only Triple Triad deck profiles. Collection and progression stay intact; Deck #1 rebuilds from owned cards after reload."
+		6:
+			return "Runs the production recovery/reconciliation pass against the current card-game save."
+		7:
+			return "Writes user://triple_triad_qa_report.json with backend, progression, collection, tournament, recovery and pending-event diagnostics."
+		8:
+			return "Clears the debug JSON-lines playtest log. New gameplay events will start a fresh log automatically."
+		9:
 			return "Runs the backend regression suite without modifying campaign state."
 		_:
 			return ""
