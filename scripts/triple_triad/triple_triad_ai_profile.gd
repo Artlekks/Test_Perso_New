@@ -18,3 +18,12 @@ extends Resource
 @export_range(0.0, 10.0, 0.1) var conserve_cost_weight: float = 0.0
 @export_range(0.0, 100.0, 1.0) var rotate_spend_penalty: float = 16.0
 @export_range(0.0, 50.0, 0.5) var randomness: float = 1.5
+
+
+## Runtime-only rematch personality hooks. Authored .tres AI profiles leave these
+## neutral; TripleTriadOpponentEvolution duplicates the profile and fills them.
+@export_category("Signature Card Timing")
+@export var signature_card_ids: PackedStringArray = PackedStringArray()
+@export_range(0.0, 100.0, 0.5) var signature_early_play_penalty: float = 0.0
+@export_range(0.0, 100.0, 0.5) var signature_late_play_bonus: float = 0.0
+@export_range(1, 8, 1) var signature_late_empty_cell_threshold: int = 4

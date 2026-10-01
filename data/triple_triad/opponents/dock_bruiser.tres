@@ -28,3 +28,11 @@ preferred_deck_ids = PackedStringArray("mugshot_057", "mugshot_058", "mugshot_12
 reward_card_ids = PackedStringArray("mugshot_058", "mugshot_108", "mugshot_120")
 initial_collection_size = 15
 progression_points_on_win = 4
+
+rematch_evolution_enabled = true
+rematch_win_thresholds = PackedInt32Array(1, 3, 6)
+rematch_budget_bonuses = PackedInt32Array(0, 1, 2, 3)
+rematch_promoted_card_ids = PackedStringArray("mugshot_093", "mugshot_091", "mugshot_112")
+signature_card_ids = PackedStringArray("mugshot_093")
+signature_card_stage = 1
+adaptive_style_id = &"aggressive"

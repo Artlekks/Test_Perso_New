@@ -18,6 +18,7 @@ var _preferred_deck_ids: Array = []
 var _quantities: Dictionary = {}
 var _deck_ids: Array = []
 var _priority_ids: Array = []
+var _last_evolution_snapshot: Dictionary = {}
 
 
 func initialize(
@@ -102,16 +103,33 @@ func get_opponent_id() -> StringName:
 	return _opponent_id
 
 
-func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
+func build_match_deck(
+	hand_size: int = HAND_SIZE,
+	budget: int = 30,
+	evolution_snapshot: Dictionary = {}
+) -> Array:
 	_budget = maxi(5, budget)
 	var target_size: int = maxi(1, hand_size)
+	_last_evolution_snapshot = evolution_snapshot.duplicate(true)
 	_trim_priority_ids()
+
+	var evolution_forced_ids: Array = []
+	var raw_forced = evolution_snapshot.get(
+		"forced_card_ids",
+		PackedStringArray()
+	)
+	if raw_forced is PackedStringArray or raw_forced is Array:
+		for raw_id in raw_forced:
+			var card_id := StringName(str(raw_id))
+			if not evolution_forced_ids.has(card_id):
+				evolution_forced_ids.append(card_id)
 
 	var ordered_ids: Array = []
 	# Cards won from the player are ordered first. They are hard constraints for
 	# the next rematch (up to the hand size), so a player never loses access to a
 	# stolen card merely because an NPC's normal budget is temporarily too low.
 	_append_unique_ids(ordered_ids, _priority_ids)
+	_append_unique_ids(ordered_ids, evolution_forced_ids)
 	_append_unique_ids(ordered_ids, _preferred_deck_ids)
 	_append_unique_ids(ordered_ids, _deck_ids)
 
@@ -142,14 +160,18 @@ func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 		ordered_cards.append(card)
 
 	var forced_cards: Array = []
-	for raw_id in _priority_ids:
-		if forced_cards.size() >= target_size:
-			break
-		var priority_card = _card_for_id(StringName(raw_id))
-		if priority_card == null or not owns_card(priority_card):
-			continue
-		if not _contains_card_id(forced_cards, StringName(priority_card.card_id)):
-			forced_cards.append(priority_card)
+	_append_forced_owned_cards(
+		forced_cards,
+		_priority_ids,
+		target_size
+	)
+	# Stolen/recoverable cards remain the absolute first constraint. Evolution
+	# cards fill only remaining forced slots and never hide a stolen card.
+	_append_forced_owned_cards(
+		forced_cards,
+		evolution_forced_ids,
+		target_size
+	)
 
 	var remaining_cards: Array = []
 	for card in ordered_cards:
@@ -309,7 +331,26 @@ func get_runtime_snapshot() -> Dictionary:
 		"budget": _budget,
 		"min_level": _min_level,
 		"max_level": _max_level,
+		"evolution": _last_evolution_snapshot.duplicate(true),
 	}
+
+
+func _append_forced_owned_cards(
+	result: Array,
+	card_ids,
+	target_size: int
+) -> void:
+	if not (card_ids is PackedStringArray or card_ids is Array):
+		return
+	for raw_id in card_ids:
+		if result.size() >= target_size:
+			return
+		var card = _card_for_id(StringName(str(raw_id)))
+		if card == null or not owns_card(card):
+			continue
+		if _contains_card_id(result, StringName(card.card_id)):
+			continue
+		result.append(card)
 
 
 func _read_profile_data() -> void:

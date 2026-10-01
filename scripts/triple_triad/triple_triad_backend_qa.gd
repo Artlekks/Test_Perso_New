@@ -23,6 +23,7 @@ const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_tria
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
 const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/triple_triad_world_progression_director.gd")
+const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad_opponent_evolution.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -178,6 +179,8 @@ func run_all() -> Dictionary:
 	_run("Collection tracker covers all 179 cards", _test_collection_completion_tracker)
 	_run("World progression prioritizes discovery and active tournaments", _test_world_progression_priority)
 	_run("World progression enters collection cleanup after Card Master", _test_world_progression_collection_cleanup)
+	_run("Opponent rematch evolution advances at authored wins", _test_opponent_rematch_evolution)
+	_run("Opponent adapted AI preserves signature personality", _test_opponent_adapted_ai)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -643,6 +646,79 @@ func _test_world_progression_collection_cleanup() -> Dictionary:
 		and suggestions.size() == 1
 		and str(suggestions[0].get("source_id", "")) == "deep_water",
 		"After Card Master, missing cards must become the next world objective."
+	)
+
+
+func _test_opponent_rematch_evolution() -> Dictionary:
+	var profile = DefaultOpponentRegistry.get_opponent(&"beach_trader")
+	if profile == null:
+		return _ok(false, "Beach Trader profile is missing.")
+	var evolution = OpponentEvolutionScript.new()
+	var expected_stages := [0, 1, 2, 3]
+	var wins := [0, 1, 3, 6]
+	var previous_budget_bonus: int = -1
+	for index in range(wins.size()):
+		var snapshot: Dictionary = evolution.build_snapshot(
+			profile,
+			{"wins": wins[index]}
+		)
+		if int(snapshot.get("stage", -1)) != expected_stages[index]:
+			return _ok(
+				false,
+				"Beach Trader rematch stage did not match the authored win threshold."
+			)
+		var bonus: int = int(snapshot.get("budget_bonus", 0))
+		if bonus < previous_budget_bonus:
+			return _ok(
+				false,
+				"Rematch budget bonus must not decrease at a later stage."
+			)
+		previous_budget_bonus = bonus
+	var veteran: Dictionary = evolution.build_snapshot(
+		profile,
+		{"wins": 6}
+	)
+	return _ok(
+		(veteran.get("forced_card_ids", PackedStringArray()) as PackedStringArray).size() >= 3
+		and not (
+			veteran.get("signature_card_ids", PackedStringArray())
+			as PackedStringArray
+		).is_empty(),
+		"Veteran rematch should promote reserve cards and expose a signature card."
+	)
+
+
+func _test_opponent_adapted_ai() -> Dictionary:
+	var profile = DefaultOpponentRegistry.get_opponent(&"dock_bruiser")
+	if profile == null:
+		return _ok(false, "Dock Bruiser profile is missing.")
+	var base_ai: Resource = profile.get("ai_profile")
+	if base_ai == null:
+		return _ok(false, "Dock Bruiser AI profile is missing.")
+
+	var evolution = OpponentEvolutionScript.new()
+	var snapshot: Dictionary = evolution.build_snapshot(
+		profile,
+		{"wins": 3}
+	)
+	var adapted: Resource = evolution.build_adapted_ai(
+		base_ai,
+		snapshot
+	)
+	if adapted == null or adapted == base_ai:
+		return _ok(
+			false,
+			"An evolved opponent must use a duplicated runtime AI profile."
+		)
+	return _ok(
+		float(adapted.get("capture_weight")) > float(base_ai.get("capture_weight"))
+		and float(adapted.get("randomness")) < float(base_ai.get("randomness"))
+		and not (
+			adapted.get("signature_card_ids")
+			as PackedStringArray
+		).is_empty()
+		and float(adapted.get("signature_early_play_penalty")) > 0.0,
+		"Aggressive rematch AI must learn while preserving deliberate signature-card timing."
 	)
 
 

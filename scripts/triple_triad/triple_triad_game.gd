@@ -37,8 +37,9 @@ const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_tria
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
 const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/triple_triad_world_progression_director.gd")
+const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad_opponent_evolution.gd")
 
-const BACKEND_VERSION := "2.2.0"
+const BACKEND_VERSION := "2.3.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -185,6 +186,8 @@ var _competition_service = null
 var _competition_match_active: bool = false
 var _completion_tracker = null
 var _world_progression_director = null
+var _opponent_evolution = OpponentEvolutionScript.new()
+var _active_opponent_evolution: Dictionary = {}
 
 
 func _ready() -> void:
@@ -1413,6 +1416,30 @@ func abandon_active_competition() -> Dictionary:
 	return result
 
 
+func get_opponent_evolution_snapshot(
+	opponent_id: StringName
+) -> Dictionary:
+	if (
+		opponent_registry == null
+		or not opponent_registry.has_method("get_opponent")
+	):
+		return {}
+	var profile = opponent_registry.call("get_opponent", opponent_id)
+	if profile == null:
+		return {}
+	var encounter_snapshot: Dictionary = {}
+	if _encounter_records != null:
+		encounter_snapshot = _encounter_records.get_snapshot(opponent_id)
+	return _opponent_evolution.build_snapshot(
+		profile,
+		encounter_snapshot
+	)
+
+
+func get_active_opponent_evolution_snapshot() -> Dictionary:
+	return _active_opponent_evolution.duplicate(true)
+
+
 func get_opponent_availability(opponent_id: StringName) -> Dictionary:
 	if opponent_registry == null or not opponent_registry.has_method("get_availability"):
 		return {
@@ -1751,7 +1778,11 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 		player_cards = _build_budgeted_hand(_active_min_level, _active_max_level)
 	var opponent_cards: Array = []
 	if _opponent_collection_backend != null:
-		opponent_cards = _opponent_collection_backend.build_match_deck(5, _active_deck_budget)
+		opponent_cards = _opponent_collection_backend.build_match_deck(
+			5,
+			_active_deck_budget,
+			_active_opponent_evolution
+		)
 	if opponent_cards.size() != 5:
 		push_error("TripleTriadGame: opponent %s has no legal persistent deck." % String(_active_opponent_id()))
 		message_label.text = "Opponent deck is invalid."
@@ -2803,8 +2834,28 @@ func _resolve_active_configuration(opponent_profile_override: Resource) -> void:
 		if budget_override != null and int(budget_override) > 0:
 			_active_deck_budget = int(budget_override)
 
-	# Keep the NPC configuration as the debug menu's CURRENT/NPC baseline, then
-	# layer any temporary QA profile over it.
+	_active_opponent_evolution = {}
+	if _qa_profile_override == null and _active_opponent_profile != null:
+		var encounter_snapshot: Dictionary = {}
+		if _encounter_records != null:
+			encounter_snapshot = _encounter_records.get_snapshot(
+				_active_opponent_id()
+			)
+		_active_opponent_evolution = _opponent_evolution.build_snapshot(
+			_active_opponent_profile,
+			encounter_snapshot
+		)
+		_active_deck_budget += maxi(
+			0,
+			int(_active_opponent_evolution.get("budget_bonus", 0))
+		)
+		_active_ai_profile = _opponent_evolution.build_adapted_ai(
+			_active_ai_profile,
+			_active_opponent_evolution
+		)
+
+	# Keep the evolved NPC configuration as the debug menu's CURRENT/NPC baseline,
+	# then layer any temporary QA profile over it.
 	_qa_base_summary = _configuration_summary()
 	_apply_qa_profile_override()
 
@@ -2814,6 +2865,9 @@ func _apply_qa_profile_override() -> void:
 	_qa_hand_seed = 0
 	if _qa_profile_override == null:
 		return
+	# QA profiles are controlled experiments. They intentionally bypass persistent
+	# rematch evolution so the debug profile remains reproducible.
+	_active_opponent_evolution = {}
 
 	var qa_region: Resource = _qa_profile_override.get("region_profile")
 	if qa_region != null:
@@ -2882,6 +2936,11 @@ func _configuration_summary() -> Dictionary:
 		"min_level": _active_min_level,
 		"max_level": _active_max_level,
 		"rules": _rules_summary(_active_rule_set, _active_region_profile),
+		"rematch_stage": int(_active_opponent_evolution.get("stage", 0)),
+		"rematch_stage_label": str(
+			_active_opponent_evolution.get("stage_label", "Baseline")
+		),
+		"rematch_evolution": _active_opponent_evolution.duplicate(true),
 	}
 
 

@@ -52,6 +52,24 @@ class_name TripleTriadOpponentProfile
 @export_range(0, 100, 1) var rematch_progression_points_on_win: int = 0
 
 
+@export_category("Rematch Evolution")
+## Evolution is derived from the player's persistent win count against this NPC.
+## It never mutates the authored baseline profile or the balance simulator.
+@export var rematch_evolution_enabled: bool = true
+## Stage 1/2/3 thresholds. Default: after 1, 3, and 6 player wins.
+@export var rematch_win_thresholds: PackedInt32Array = PackedInt32Array([1, 3, 6])
+## Budget bonus indexed by stage. Must contain stage 0 plus every authored stage.
+@export var rematch_budget_bonuses: PackedInt32Array = PackedInt32Array([0, 1, 2, 3])
+## Ordered reserve cards. One additional card is promoted into the rematch deck
+## per stage, after stolen-card recovery constraints.
+@export var rematch_promoted_card_ids: PackedStringArray = PackedStringArray()
+## Signature cards are treated as deliberate late-game plays by the adapted AI.
+@export var signature_card_ids: PackedStringArray = PackedStringArray()
+@export_range(0, 3, 1) var signature_card_stage: int = 1
+## Behavioral learning family. Empty falls back to archetype_id.
+@export var adaptive_style_id: StringName = &""
+
+
 func validate_profile(card_catalog: Resource = null) -> Dictionary:
 	var errors := PackedStringArray()
 	var warnings := PackedStringArray()
@@ -139,6 +157,59 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 				"reward card '%s' is not in this opponent's native collection"
 				% card_id
 			)
+
+	var previous_threshold: int = 0
+	for threshold in rematch_win_thresholds:
+		var clean_threshold: int = int(threshold)
+		if clean_threshold <= previous_threshold:
+			errors.append("rematch_win_thresholds must be strictly increasing")
+			break
+		previous_threshold = clean_threshold
+	if rematch_budget_bonuses.size() < rematch_win_thresholds.size() + 1:
+		errors.append(
+			"rematch_budget_bonuses must contain stage 0 plus every rematch stage"
+		)
+	for bonus in rematch_budget_bonuses:
+		if int(bonus) < 0:
+			errors.append("rematch_budget_bonuses cannot contain negative values")
+			break
+	if signature_card_stage > rematch_win_thresholds.size():
+		errors.append("signature_card_stage exceeds the authored rematch stages")
+
+	for field_entry in [
+		{
+			"field": "rematch_promoted_card_ids",
+			"ids": rematch_promoted_card_ids,
+		},
+		{
+			"field": "signature_card_ids",
+			"ids": signature_card_ids,
+		},
+	]:
+		var seen_ids: Dictionary = {}
+		for raw_id in field_entry["ids"]:
+			var card_id: String = str(raw_id).strip_edges()
+			if card_id.is_empty():
+				errors.append("%s contains an empty id" % field_entry["field"])
+				continue
+			if seen_ids.has(card_id):
+				errors.append(
+					"%s contains duplicate card '%s'"
+					% [field_entry["field"], card_id]
+				)
+				continue
+			seen_ids[card_id] = true
+			if card_catalog != null and card_catalog.has_method("get_card_by_id"):
+				if card_catalog.call("get_card_by_id", StringName(card_id)) == null:
+					errors.append(
+						"%s contains unknown card '%s'"
+						% [field_entry["field"], card_id]
+					)
+			if not native_card_ids.is_empty() and not native_seen.has(card_id):
+				errors.append(
+					"%s card '%s' is not in this opponent's native collection"
+					% [field_entry["field"], card_id]
+				)
 
 	if deck_budget_override > 0 and deck_budget_override < 5:
 		errors.append("deck_budget_override is below a legal five-card budget")

@@ -30,3 +30,11 @@ initial_collection_size = 12
 progression_points_on_win = 8
 first_win_progression_only = true
 rematch_progression_points_on_win = 0
+
+rematch_evolution_enabled = true
+rematch_win_thresholds = PackedInt32Array(1, 3, 6)
+rematch_budget_bonuses = PackedInt32Array(0, 1, 2, 3)
+rematch_promoted_card_ids = PackedStringArray("mugshot_096", "mugshot_103", "mugshot_107")
+signature_card_ids = PackedStringArray("mugshot_096")
+signature_card_stage = 1
+adaptive_style_id = &"same_combo_specialist"

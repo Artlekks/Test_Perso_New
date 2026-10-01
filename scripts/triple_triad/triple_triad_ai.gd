@@ -33,6 +33,25 @@ func choose_move(match_state, card_owner: int, rng: RandomNumberGenerator, ai_pr
 	var conserve_cost_weight: float = _profile_float(ai_profile, &"conserve_cost_weight", 0.0)
 	var rotate_spend_penalty: float = _profile_float(ai_profile, &"rotate_spend_penalty", 16.0)
 	var randomness: float = _profile_float(ai_profile, &"randomness", 1.5)
+	var signature_card_ids: PackedStringArray = _profile_string_array(
+		ai_profile,
+		&"signature_card_ids"
+	)
+	var signature_early_play_penalty: float = _profile_float(
+		ai_profile,
+		&"signature_early_play_penalty",
+		0.0
+	)
+	var signature_late_play_bonus: float = _profile_float(
+		ai_profile,
+		&"signature_late_play_bonus",
+		0.0
+	)
+	var signature_late_threshold: int = _profile_int(
+		ai_profile,
+		&"signature_late_empty_cell_threshold",
+		4
+	)
 
 	var best_score: float = -INF
 	var candidates: Array[Dictionary] = []
@@ -79,6 +98,14 @@ func choose_move(match_state, card_owner: int, rng: RandomNumberGenerator, ai_pr
 					card_owner
 				) * positional_weight
 				move_score += float(card.rank_total()) * card_strength_weight
+				move_score += _signature_timing_value(
+					card,
+					empty_cells.size(),
+					signature_card_ids,
+					signature_early_play_penalty,
+					signature_late_play_bonus,
+					signature_late_threshold
+				)
 
 				# Deck cost is a construction constraint, not a resource spent during a
 				# duel. The hook remains for experiments, but shipped profiles use zero;
@@ -314,6 +341,51 @@ func _is_valid_neighbor(cell_index: int, neighbor_index: int, side: int) -> bool
 
 func _other_owner(card_owner: int) -> int:
 	return OWNER_OPPONENT if card_owner == OWNER_PLAYER else OWNER_PLAYER
+
+
+func _signature_timing_value(
+	card,
+	empty_cell_count: int,
+	signature_ids: PackedStringArray,
+	early_penalty: float,
+	late_bonus: float,
+	late_threshold: int
+) -> float:
+	if card == null or signature_ids.is_empty():
+		return 0.0
+	var card_id: String = String(card.get("card_id"))
+	if not signature_ids.has(card_id):
+		return 0.0
+	if empty_cell_count > maxi(1, late_threshold):
+		return -maxf(0.0, early_penalty)
+	return maxf(0.0, late_bonus)
+
+
+func _profile_int(
+	profile: Resource,
+	property_name: StringName,
+	fallback: int
+) -> int:
+	if profile == null:
+		return fallback
+	var value = profile.get(property_name)
+	if value == null:
+		return fallback
+	return int(value)
+
+
+func _profile_string_array(
+	profile: Resource,
+	property_name: StringName
+) -> PackedStringArray:
+	var result := PackedStringArray()
+	if profile == null:
+		return result
+	var value = profile.get(property_name)
+	if value is PackedStringArray or value is Array:
+		for raw_value in value:
+			result.append(str(raw_value))
+	return result
 
 
 func _profile_float(profile: Resource, property_name: StringName, fallback: float) -> float:
