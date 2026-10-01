@@ -22,8 +22,9 @@ const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
+const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 
-const BACKEND_VERSION := "1.2.2"
+const BACKEND_VERSION := "1.3.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -82,6 +83,13 @@ const CARD_VISUAL_SCALE := Vector2(
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.75
 ## Debug builds only. Pure backend QA; does not touch player save files.
 @export var run_backend_qa_on_startup: bool = true
+
+@export_category("Developer Balance")
+## Runs an offline AI-vs-AI balance suite after backend startup. Disabled by
+## default because a useful sample intentionally runs hundreds of full matches.
+@export var run_balance_simulation_on_startup: bool = false
+@export_range(1, 500, 1) var balance_games_per_matchup: int = 40
+@export var balance_simulation_seed: int = 1337
 
 @onready var root: Control = $Root
 @onready var backdrop: TextureRect = $Root/Backdrop
@@ -241,6 +249,12 @@ func _ready() -> void:
 	_backend_ready = true
 	if OS.is_debug_build() and run_backend_qa_on_startup:
 		_run_backend_qa()
+	if OS.is_debug_build() and run_balance_simulation_on_startup:
+		call_deferred(
+			"run_balance_simulation",
+			balance_games_per_matchup,
+			balance_simulation_seed
+		)
 
 
 func _apply_card_game_visual_layout() -> void:
@@ -312,6 +326,42 @@ func _board_cell_visual_rect(cell_index: int) -> Rect2:
 
 func run_backend_qa() -> Dictionary:
 	return _run_backend_qa()
+
+
+func run_balance_simulation(
+	games_per_matchup: int = 40,
+	seed: int = 1337
+) -> Dictionary:
+	if card_catalog == null or opponent_registry == null:
+		return {
+			"valid": false,
+			"errors": ["Card catalog or opponent registry is unavailable."],
+		}
+	var simulator = BalanceSimulatorScript.new()
+	var report: Dictionary = simulator.run_registry_suite(
+		card_catalog,
+		opponent_registry,
+		maxi(1, games_per_matchup),
+		seed,
+		true
+	)
+	if bool(report.get("valid", false)):
+		var global: Dictionary = report.get("global", {})
+		print(
+			"TripleTriad Balance: %d games, first-player win %.1f%%, draw %.1f%%. Report: %s"
+			% [
+				int(global.get("games", 0)),
+				float(global.get("first_player_win_rate", 0.0)) * 100.0,
+				float(global.get("draw_rate", 0.0)) * 100.0,
+				str(report.get("report_path", "")),
+			]
+		)
+	else:
+		push_error(
+			"TripleTriad Balance simulation failed: %s"
+			% str(report.get("errors", []))
+		)
+	return report
 
 
 func _run_backend_qa() -> Dictionary:
@@ -1171,12 +1221,16 @@ func _run_result_transition(winner: int) -> void:
 	var opponent_take_index: int = -1
 	if winner == OWNER_OPPONENT:
 		opponent_take_index = _stake_policy.choose_lost_card_index(_starting_player_cards)
+	var eligible_reward_ids := PackedStringArray()
+	if winner == OWNER_PLAYER:
+		eligible_reward_ids = _player_reward_candidate_ids()
 	reward_view.open_reward(
 		_starting_opponent_cards,
 		_starting_player_cards,
 		winner,
 		true,
-		opponent_take_index
+		opponent_take_index,
+		eligible_reward_ids
 	)
 	_refresh_phase_ui()
 
@@ -1190,6 +1244,42 @@ func _run_result_transition(winner: int) -> void:
 	if not is_open():
 		return
 	transition_fade.visible = false
+
+
+func _player_reward_candidate_ids() -> PackedStringArray:
+	if _active_opponent_profile == null:
+		return PackedStringArray()
+
+	var raw_reward_ids = _active_opponent_profile.get("reward_card_ids")
+	var reward_ids: Dictionary = {}
+	if raw_reward_ids is PackedStringArray or raw_reward_ids is Array:
+		for raw_id in raw_reward_ids:
+			reward_ids[str(raw_id)] = true
+
+	# Priority cards are cards this opponent previously won from the player.
+	# They are always valid reward choices so rematches can recover stolen cards.
+	var priority_ids: Dictionary = {}
+	if (
+		_opponent_collection_backend != null
+		and _opponent_collection_backend.has_method("get_priority_ids")
+	):
+		for raw_id in _opponent_collection_backend.call("get_priority_ids"):
+			priority_ids[str(raw_id)] = true
+
+	if reward_ids.is_empty() and priority_ids.is_empty():
+		return PackedStringArray()
+
+	var result := PackedStringArray()
+	for card in _starting_opponent_cards:
+		if card == null:
+			continue
+		var card_id: String = String(card.card_id)
+		if reward_ids.has(card_id) or priority_ids.has(card_id):
+			result.append(card_id)
+
+	# Empty means "all cards eligible" in RewardView. This safety fallback avoids
+	# a mandatory-stake soft lock if authored content and a migrated save drift.
+	return result
 
 
 func _schedule_ai() -> void:

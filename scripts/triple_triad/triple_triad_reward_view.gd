@@ -59,6 +59,7 @@ var _focus_sequence_id: int = -1
 var _transfer_result_received: bool = false
 var _transfer_result_ok: bool = false
 var _forced_opponent_take_index: int = -1
+var _eligible_opponent_ids: Dictionary = {}
 
 
 func _ready() -> void:
@@ -72,7 +73,8 @@ func open_reward(
 	player_cards: Array,
 	winner: int = OWNER_PLAYER,
 	defer_entrance: bool = false,
-	opponent_take_index: int = -1
+	opponent_take_index: int = -1,
+	eligible_opponent_card_ids: PackedStringArray = PackedStringArray()
 ) -> void:
 	_sequence_id += 1
 	_winner = winner
@@ -81,7 +83,10 @@ func open_reward(
 	_transfer_result_ok = false
 	_opponent_cards = opponent_cards.duplicate()
 	_player_cards = player_cards.duplicate()
-	_selected_index = 0
+	_eligible_opponent_ids.clear()
+	for raw_id in eligible_opponent_card_ids:
+		_eligible_opponent_ids[str(raw_id)] = true
+	_selected_index = _first_eligible_opponent_index()
 	_yes_selected = true
 	_entrance_started = false
 	visible = true
@@ -118,6 +123,7 @@ func close_reward() -> void:
 	_focus_exit_down = true
 	_focus_sequence_id = -1
 	_forced_opponent_take_index = -1
+	_eligible_opponent_ids.clear()
 	_transfer_result_received = false
 	_transfer_result_ok = false
 	visible = false
@@ -147,12 +153,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		STATE_SELECT:
 			if _is_left(event):
-				_selected_index = wrapi(_selected_index - 1, 0, maxi(_opponent_cards.size(), 1))
+				_selected_index = _step_eligible_opponent_index(-1)
 				_refresh_selection()
 				_accept_input()
 				return
 			if _is_right(event):
-				_selected_index = wrapi(_selected_index + 1, 0, maxi(_opponent_cards.size(), 1))
+				_selected_index = _step_eligible_opponent_index(1)
 				_refresh_selection()
 				_accept_input()
 				return
@@ -303,6 +309,36 @@ func _row_final_position(row_origin: Vector2, index: int) -> Vector2:
 	return row_origin + Vector2(float(index) * ROW_STEP_X, 0.0)
 
 
+func _opponent_index_is_eligible(index: int) -> bool:
+	if index < 0 or index >= _opponent_cards.size():
+		return false
+	if _eligible_opponent_ids.is_empty():
+		return true
+	var card = _opponent_cards[index]
+	return card != null and _eligible_opponent_ids.has(String(card.card_id))
+
+
+func _first_eligible_opponent_index() -> int:
+	for index in range(_opponent_cards.size()):
+		if _opponent_index_is_eligible(index):
+			return index
+	return 0
+
+
+func _step_eligible_opponent_index(direction: int) -> int:
+	if _opponent_cards.is_empty():
+		return 0
+	var step: int = 1
+	if direction < 0:
+		step = -1
+	var candidate: int = _selected_index
+	for _attempt in range(_opponent_cards.size()):
+		candidate = wrapi(candidate + step, 0, _opponent_cards.size())
+		if _opponent_index_is_eligible(candidate):
+			return candidate
+	return _selected_index
+
+
 func _refresh_selection() -> void:
 	if _opponent_cards.is_empty():
 		selection_arrow.visible = false
@@ -333,6 +369,8 @@ func _return_to_selection() -> void:
 
 func _begin_player_reward_sequence() -> void:
 	if _selected_index < 0 or _selected_index >= _opponent_cards.size():
+		return
+	if not _opponent_index_is_eligible(_selected_index):
 		return
 	_state = STATE_RESOLVING
 	confirm_overlay.visible = false

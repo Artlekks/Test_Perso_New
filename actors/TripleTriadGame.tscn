@@ -24,6 +24,7 @@ card_catalog = ExtResource("2_catalog")
 rule_set = ExtResource("3_rules")
 region_profile = ExtResource("7_region")
 ai_profile = ExtResource("8_ai")
+run_balance_simulation_on_startup = true
 
 [node name="Root" type="Control" parent="." unique_id=541975065]
 visible = false

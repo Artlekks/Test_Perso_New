@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TripleTriadStateAPI
 
-const API_SCHEMA_VERSION := 3
+const API_SCHEMA_VERSION := 4
 
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const OPPONENT_COLLECTIONS_PATH := "user://triple_triad_opponents.cfg"
@@ -338,8 +338,12 @@ func _build_opponent_snapshot(opponent_id: StringName) -> Dictionary:
 		),
 		"deck_budget_override": int(profile.get("deck_budget_override")),
 		"progression_points_on_win": int(profile.get("progression_points_on_win")),
+		"archetype_id": String(profile.get("archetype_id")),
+		"strategy_summary": str(profile.get("strategy_summary")),
+		"content_revision": int(profile.get("content_revision")),
 		"native_card_ids": profile.get("native_card_ids"),
 		"preferred_deck_ids": profile.get("preferred_deck_ids"),
+		"reward_card_ids": profile.get("reward_card_ids"),
 		"record": record,
 		"beaten_before": bool(record.get("beaten_before", false)),
 		"current_owned_cards": persistent_collection.get("cards", []),

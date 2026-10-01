@@ -4,6 +4,11 @@ class_name TripleTriadOpponentProfile
 @export_category("Identity")
 @export var opponent_id: StringName = &"opponent"
 @export var display_name: String = "Card Player"
+@export var archetype_id: StringName = &"balanced"
+@export_multiline var strategy_summary: String = ""
+## Increment when authored collection/deck content changes during development.
+## Existing NPC saves merge newly-authored native cards when this increases.
+@export_range(0, 999, 1) var content_revision: int = 0
 ## Difficulty/content rank for this opponent. Separate from the player's Duel Rank.
 @export_range(1, 10, 1) var duel_rank: int = 1
 ## Minimum player Duel Rank required for registry availability queries.
@@ -25,6 +30,9 @@ class_name TripleTriadOpponentProfile
 @export var native_card_ids: PackedStringArray = PackedStringArray()
 ## Up to five preferred cards. They are tried before the rest of the owned collection.
 @export var preferred_deck_ids: PackedStringArray = PackedStringArray()
+## Cards the player is normally allowed to take after defeating this opponent.
+## Cards previously stolen from the player are always added to the reward choices.
+@export var reward_card_ids: PackedStringArray = PackedStringArray()
 @export_range(5, 100, 1) var initial_collection_size: int = 15
 
 @export_category("Progression")
@@ -40,6 +48,8 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 		errors.append("opponent_id is empty")
 	if display_name.strip_edges().is_empty():
 		errors.append("display_name is empty")
+	if String(archetype_id).strip_edges().is_empty():
+		errors.append("archetype_id is empty")
 	if duel_rank < 1:
 		errors.append("duel_rank must be at least 1")
 	if required_player_rank < 1:
@@ -50,7 +60,11 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 		errors.append("initial_collection_size must be at least 5")
 	if preferred_deck_ids.size() > 5:
 		errors.append("preferred_deck_ids cannot contain more than 5 cards")
+	if reward_card_ids.size() > 5:
+		errors.append("reward_card_ids cannot contain more than 5 cards")
 
+	if ai_profile == null:
+		warnings.append("ai_profile is missing; runtime fallback behavior will be used")
 	if region_profile != null and region_profile.has_method("validate_profile"):
 		var region_audit: Dictionary = region_profile.call("validate_profile")
 		for error_text in region_audit.get("errors", []):
@@ -90,6 +104,25 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 		if not native_card_ids.is_empty() and not native_seen.has(card_id):
 			errors.append(
 				"preferred card '%s' is not in this opponent's native collection"
+				% card_id
+			)
+
+	var reward_seen: Dictionary = {}
+	for raw_id in reward_card_ids:
+		var card_id: String = str(raw_id).strip_edges()
+		if card_id.is_empty():
+			errors.append("reward_card_ids contains an empty id")
+			continue
+		if reward_seen.has(card_id):
+			errors.append("duplicate reward card id: %s" % card_id)
+			continue
+		reward_seen[card_id] = true
+		if card_catalog != null and card_catalog.has_method("get_card_by_id"):
+			if card_catalog.call("get_card_by_id", StringName(card_id)) == null:
+				errors.append("unknown reward card id: %s" % card_id)
+		if not native_card_ids.is_empty() and not native_seen.has(card_id):
+			errors.append(
+				"reward card '%s' is not in this opponent's native collection"
 				% card_id
 			)
 

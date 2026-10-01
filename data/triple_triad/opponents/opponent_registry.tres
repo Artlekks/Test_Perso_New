@@ -1,8 +1,13 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="TripleTriadOpponentRegistry" format=3 uid="uid://eyojyhyt45l7"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_registry.gd" id="1_registry"]
-[ext_resource type="Resource" path="res://data/triple_triad/opponents/beach_trader.tres" id="2_beach"]
+[ext_resource type="Script" uid="uid://cgsf20urfkjow" path="res://scripts/triple_triad/triple_triad_opponent_registry.gd" id="1_registry"]
+[ext_resource type="Script" uid="uid://dwr2w67nod5iv" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_s27nb"]
+[ext_resource type="Resource" uid="uid://cs7kqixt84hc3" path="res://data/triple_triad/opponents/beach_trader.tres" id="2_beach"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/dock_bruiser.tres" id="3_dock"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/highland_keeper.tres" id="4_highland"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/tide_oracle.tres" id="5_tide"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/ash_champion.tres" id="6_ash"]
 
 [resource]
 script = ExtResource("1_registry")
-opponents = Array[ExtResource("2_beach")]([ExtResource("2_beach")])
+opponents = Array[ExtResource("1_s27nb")]([ExtResource("2_beach"), ExtResource("3_dock"), ExtResource("4_highland"), ExtResource("5_tide"), ExtResource("6_ash")])

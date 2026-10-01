@@ -1,53 +1,23 @@
-TRIPLE TRIAD OPPONENT / ENCOUNTER REGISTRY PASS
+Triple Triad opponent registry
+==============================
 
-Purpose
-=======
-Adding a card-playing NPC should now be data authoring, not new gameplay code.
+V1 authored ladder:
+- beach_trader      : beginner balanced, Rank 1
+- dock_bruiser      : aggressive, Rank 2
+- highland_keeper   : defensive, Rank 3
+- tide_oracle       : Influence/control, Rank 4
+- ash_champion      : champion, Rank 6
 
-Authoritative registry
-======================
-res://data/triple_triad/opponents/opponent_registry.tres
+Each profile owns:
+- a deterministic native collection,
+- an authored five-card preferred deck,
+- an AI profile,
+- a region/rule configuration,
+- a player-rank availability gate,
+- progression points on win,
+- a normal reward pool,
+- a content_revision for development-safe NPC collection migration.
 
-Each entry is a TripleTriadOpponentProfile and contains:
-- stable opponent_id
-- display name
-- opponent Duel Rank
-- minimum player Duel Rank
-- enabled flag
-- encounter tags
-- AI personality
-- region
-- optional rule-set override
-- card level range
-- optional deck-point budget override
-- authored native collection
-- preferred five-card deck
-- initial collection size
-- progression reward on victory
-
-Runtime lookup
-==============
-TripleTriadGame now exposes:
-    open_game_by_id(&"beach_trader")
-
-TripleTriadOpponentNPC uses opponent_id first and keeps its old direct
-opponent_profile reference only as a compatibility fallback.
-
-Registry queries
-================
-The registry supports:
-- get_opponent(id)
-- has_opponent(id)
-- get_all_opponents()
-- get_available_opponents(player_rank, region_id, required_tag)
-- validate_registry(card_catalog)
-
-This gives future towns/regions/story systems a clean way to ask which card
-players are currently available without reaching into match code.
-
-Current content
-===============
-Beach Trader is the first registered opponent.
-Its current prototype behavior has deliberately not been rebalanced.
-native_card_ids remains empty for now, so the existing deterministic collection
-seeding remains active until the deliberate card-authoring pass.
+Cards previously stolen from the player remain priority deck cards and are also
+made selectable as rewards on a successful rematch, even when they are not in
+the opponent's normal reward pool.

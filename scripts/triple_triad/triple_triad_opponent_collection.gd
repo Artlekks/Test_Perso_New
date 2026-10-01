@@ -12,6 +12,7 @@ var _max_level: int = 3
 var _budget: int = 30
 var _initial_collection_size: int = DEFAULT_INITIAL_COLLECTION_SIZE
 var _profile: Resource = null
+var _profile_content_revision: int = 0
 var _native_card_ids: Array = []
 var _preferred_deck_ids: Array = []
 var _quantities: Dictionary = {}
@@ -50,6 +51,21 @@ func initialize(
 		and config.has_section(meta_section)
 		and int(config.get_value(meta_section, "version", 0)) > 0
 	)
+	var saved_profile_revision: int = (
+		int(config.get_value(meta_section, "profile_content_revision", 0))
+		if has_saved_data
+		else -1
+	)
+	var saved_native_ids: Array = []
+	if has_saved_data:
+		var raw_saved_native = config.get_value(
+			meta_section,
+			"profile_native_ids",
+			PackedStringArray()
+		)
+		if raw_saved_native is PackedStringArray or raw_saved_native is Array:
+			for raw_id in raw_saved_native:
+				saved_native_ids.append(StringName(str(raw_id)))
 
 	if has_saved_data:
 		if config.has_section(cards_section):
@@ -68,6 +84,13 @@ func initialize(
 		if raw_priority is PackedStringArray or raw_priority is Array:
 			for raw_id in raw_priority:
 				_priority_ids.append(StringName(str(raw_id)))
+
+		# Development-safe authored-content migration. New native cards are merged
+		# into an existing NPC collection without deleting cards won from the
+		# player. Preferred deck ordering is refreshed, while priority/stolen cards
+		# still remain hard constraints during the next rematch.
+		if saved_profile_revision < _profile_content_revision:
+			_merge_profile_content(saved_native_ids)
 	else:
 		_seed_initial_collection()
 
@@ -292,6 +315,9 @@ func get_runtime_snapshot() -> Dictionary:
 func _read_profile_data() -> void:
 	if _profile == null:
 		return
+	var revision_value = _profile.get("content_revision")
+	if revision_value != null:
+		_profile_content_revision = maxi(0, int(revision_value))
 	var initial_size_value = _profile.get("initial_collection_size")
 	if initial_size_value != null:
 		_initial_collection_size = maxi(HAND_SIZE, int(initial_size_value))
@@ -307,6 +333,34 @@ func _read_profile_data() -> void:
 			var card_id := StringName(str(raw_id))
 			if not String(card_id).is_empty() and not _preferred_deck_ids.has(card_id):
 				_preferred_deck_ids.append(card_id)
+
+
+
+func _merge_profile_content(previous_native_ids: Array) -> void:
+	if _catalog == null:
+		return
+
+	# Only grant cards that are genuinely new to this authored profile revision.
+	# This is important after V1: if the player already won an older native card,
+	# a later content revision must not silently recreate a second NPC copy. Old
+	# prototype saves have no stored baseline, so revision 0 -> 1 intentionally
+	# treats the full authored native set as newly introduced content.
+	for raw_id in _native_card_ids:
+		var card_id := StringName(raw_id)
+		if previous_native_ids.has(card_id):
+			continue
+		var authored_card = _card_for_id(card_id)
+		if authored_card != null and get_quantity_by_id(card_id) <= 0:
+			_quantities[card_id] = 1
+
+	# Refresh the baseline ordering using cards the NPC still owns. Stolen/priority
+	# cards are never removed and build_match_deck() keeps them ahead of this list.
+	_deck_ids.clear()
+	for raw_id in _preferred_deck_ids:
+		var card_id := StringName(raw_id)
+		if get_quantity_by_id(card_id) > 0 and not _deck_ids.has(card_id):
+			_deck_ids.append(card_id)
+	_trim_priority_ids()
 
 
 func _seed_initial_collection() -> void:
@@ -493,6 +547,8 @@ func _save() -> Error:
 		config.erase_section(cards_section)
 
 	config.set_value(meta_section, "version", SAVE_VERSION)
+	config.set_value(meta_section, "profile_content_revision", _profile_content_revision)
+	config.set_value(meta_section, "profile_native_ids", _to_packed_string_array(_native_card_ids))
 	config.set_value(meta_section, "deck_ids", _to_packed_string_array(_deck_ids))
 	config.set_value(meta_section, "priority_ids", _to_packed_string_array(_priority_ids))
 

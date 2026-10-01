@@ -18,7 +18,7 @@ const COLLECTION_SCALE := Vector2(0.50, 0.50)
 const COLLECTION_STEP_X := 59.0
 const COLLECTION_STEP_Y := 69.0
 const DECK_SCALE := COLLECTION_SCALE
-const DECK_STEP_X := 59.0
+const DECK_STEP_X := 58.0
 const SAVE_PATH := "user://triple_triad_decks.cfg"
 const SAVE_VERSION := 1
 

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/controller.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/rules/plus_influence.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"tide_oracle"
+display_name = "Tide Oracle"
+archetype_id = &"influence_control"
+strategy_summary = "Uses overlapping Pressure fields and Plus setups to distort otherwise safe board positions."
+content_revision = 1
+duel_rank = 4
+required_player_rank = 3
+enabled_by_default = true
+encounter_tags = PackedStringArray("coast", "oracle", "control", "influence")
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+rule_set_override = ExtResource("4_rules")
+min_card_level = 4
+max_card_level = 8
+deck_budget_override = 37
+native_card_ids = PackedStringArray("mugshot_068", "mugshot_075", "mugshot_111", "mugshot_054", "mugshot_087", "mugshot_104", "mugshot_140", "mugshot_040", "mugshot_145", "mugshot_125", "mugshot_132", "mugshot_001", "mugshot_094", "mugshot_085", "mugshot_072")
+preferred_deck_ids = PackedStringArray("mugshot_068", "mugshot_075", "mugshot_111", "mugshot_054", "mugshot_087")
+reward_card_ids = PackedStringArray("mugshot_068", "mugshot_075", "mugshot_111")
+initial_collection_size = 15
+progression_points_on_win = 15

@@ -15,6 +15,8 @@ const RuleSetScript = preload(
 	"res://scripts/triple_triad/triple_triad_rule_set.gd"
 )
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
+const DefaultCardCatalog = preload("res://data/triple_triad/card_catalog.tres")
+const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -159,6 +161,7 @@ func run_all() -> Dictionary:
 	_run("Influence snapshot attributes its source", _test_influence_source_attribution)
 	_run("Preview exposes Influence deltas", _test_preview_influence_deltas)
 	_run("Unsupported rules are rejected", _test_unsupported_rule_guard)
+	_run("Authored opponent ladder is legal", _test_authored_opponent_ladder)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -812,3 +815,68 @@ func _test_unsupported_rule_guard() -> Dictionary:
 		and not audit.get("errors", []).is_empty(),
 		"Unimplemented rule toggles must fail validation instead of silently running."
 	)
+
+
+func _test_authored_opponent_ladder() -> Dictionary:
+	var registry_audit: Dictionary = DefaultOpponentRegistry.validate_registry(
+		DefaultCardCatalog
+	)
+	if not bool(registry_audit.get("valid", false)):
+		return _ok(
+			false,
+			"Opponent registry failed validation: %s"
+			% str(registry_audit.get("errors", []))
+		)
+
+	var profiles: Array = DefaultOpponentRegistry.get_all_opponents()
+	if profiles.size() != 5:
+		return _ok(false, "Expected exactly five authored opponent archetypes.")
+
+	var previous_duel_rank: int = 0
+	var archetypes: Dictionary = {}
+	for profile in profiles:
+		if profile == null:
+			return _ok(false, "Opponent ladder contains a null profile.")
+		var opponent_id: String = String(profile.opponent_id)
+		if profile.duel_rank < previous_duel_rank:
+			return _ok(false, "Opponent ladder is not ordered by Duel Rank.")
+		previous_duel_rank = profile.duel_rank
+
+		var archetype_id: String = String(profile.archetype_id)
+		if archetypes.has(archetype_id):
+			return _ok(false, "Duplicate opponent archetype: %s" % archetype_id)
+		archetypes[archetype_id] = true
+
+		if profile.content_revision < 1:
+			return _ok(false, "%s has no authored content revision." % opponent_id)
+		if profile.preferred_deck_ids.size() != 5:
+			return _ok(false, "%s does not have a five-card preferred deck." % opponent_id)
+		if profile.reward_card_ids.is_empty():
+			return _ok(false, "%s has no authored reward pool." % opponent_id)
+
+		var budget: int = int(profile.deck_budget_override)
+		if budget <= 0 and profile.region_profile != null:
+			budget = int(profile.region_profile.deck_budget)
+		budget = maxi(5, budget)
+		var deck_cost: int = 0
+		for raw_id in profile.preferred_deck_ids:
+			var card = DefaultCardCatalog.get_card_by_id(StringName(str(raw_id)))
+			if card == null:
+				return _ok(false, "%s references a missing preferred card." % opponent_id)
+			deck_cost += int(card.deck_cost)
+		if deck_cost > budget:
+			return _ok(
+				false,
+				"%s preferred deck costs %d over budget %d."
+				% [opponent_id, deck_cost, budget]
+			)
+
+		for raw_reward_id in profile.reward_card_ids:
+			if not profile.preferred_deck_ids.has(raw_reward_id):
+				return _ok(
+					false,
+					"%s reward card %s is not guaranteed to appear in its authored deck."
+					% [opponent_id, str(raw_reward_id)]
+				)
+
+	return _ok(true)

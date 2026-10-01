@@ -1,0 +1,29 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/defensive.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_highlands.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"highland_keeper"
+display_name = "Highland Keeper"
+archetype_id = &"defensive"
+strategy_summary = "Builds around protected corners, efficient cards, and difficult-to-attack edges."
+content_revision = 1
+duel_rank = 3
+required_player_rank = 2
+enabled_by_default = true
+encounter_tags = PackedStringArray("highlands", "warden", "defensive")
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+rule_set_override = ExtResource("4_rules")
+min_card_level = 2
+max_card_level = 7
+deck_budget_override = 31
+native_card_ids = PackedStringArray("mugshot_073", "mugshot_151", "mugshot_086", "mugshot_041", "mugshot_161", "mugshot_085", "mugshot_179", "mugshot_178", "mugshot_163", "mugshot_164", "mugshot_050", "mugshot_107", "mugshot_072", "mugshot_119", "mugshot_074")
+preferred_deck_ids = PackedStringArray("mugshot_073", "mugshot_151", "mugshot_086", "mugshot_041", "mugshot_161")
+reward_card_ids = PackedStringArray("mugshot_151", "mugshot_073", "mugshot_041")
+initial_collection_size = 15
+progression_points_on_win = 9
