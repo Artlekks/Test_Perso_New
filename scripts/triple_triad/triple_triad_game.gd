@@ -5,6 +5,7 @@ signal closed
 signal match_finished(result: Dictionary)
 signal card_reward_selected(card_definition)
 signal backend_state_changed(reason: String)
+signal runtime_state_changed(snapshot: Dictionary)
 
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
@@ -21,7 +22,7 @@ const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 
-const BACKEND_VERSION := "1.1.0"
+const BACKEND_VERSION := "1.2.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -37,14 +38,34 @@ const PHASE_RESULT := 6
 const PHASE_REWARD := 7
 const PHASE_DECK_SETUP := 8
 
-const HAND_STEP_Y := 72.0
-const HAND_SELECTED_X_OFFSET := -10.0
+const HAND_STEP_Y := 47.0
+const HAND_SELECTED_X_OFFSET := -8.0
 const CAPTURE_SETTLE_SECONDS := 0.24
 const RESULT_FADE_IN_SECONDS := 0.24
 const RESULT_FADE_OUT_SECONDS := 0.30
 const PREVIEW_GHOST_ALPHA := 0.72
 const PREVIEW_INFLUENCE_COLOR := Color(1.0, 0.76, 0.18, 0.28)
 const PREVIEW_PRESSURE_COLOR := Color(1.0, 0.24, 0.20, 0.34)
+
+const CARD_GAME_BACKGROUND = preload(
+	"res://assets/ui/triple_triad/card_game/CardGame_Background.png"
+)
+const CARD_GAME_SLOT_GUIDES = preload(
+	"res://assets/ui/triple_triad/card_game/CardGame_Slot_Guides.png"
+)
+
+# The new UI artwork is authored at the project's native 640x480 canvas.
+# CardView's sacred internal layout stays 116x132; the presentation layer scales
+# complete views to the new 74x88 card footprint instead of rewriting rank layout.
+const CARD_BASE_SIZE := Vector2(116.0, 132.0)
+const CARD_VISUAL_SIZE := Vector2(74.0, 88.0)
+const CARD_VISUAL_SCALE := Vector2(
+	CARD_VISUAL_SIZE.x / CARD_BASE_SIZE.x,
+	CARD_VISUAL_SIZE.y / CARD_BASE_SIZE.y
+)
+const BOARD_ORIGIN := Vector2(210.0, 107.0)
+const OPPONENT_HAND_ORIGIN := Vector2(42.0, 95.0)
+const PLAYER_HAND_ORIGIN := Vector2(526.0, 95.0)
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
@@ -62,6 +83,8 @@ const PREVIEW_PRESSURE_COLOR := Color(1.0, 0.24, 0.20, 0.34)
 @export var run_backend_qa_on_startup: bool = true
 
 @onready var root: Control = $Root
+@onready var backdrop: TextureRect = $Root/Backdrop
+@onready var grid_artwork: TextureRect = $Root/GridArtwork
 @onready var opponent_hand_container: Control = $Root/OpponentHand
 @onready var board_container: GridContainer = $Root/Board
 @onready var player_hand_container: Control = $Root/PlayerHand
@@ -124,10 +147,15 @@ var _surrendered: bool = false
 var _result_reason: StringName = &""
 var _preview_ghost: Control = null
 var _influence_preview_overlays: Array[ColorRect] = []
+var _slot_guides: TextureRect = null
+var _default_backdrop_texture: Texture2D = null
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_default_backdrop_texture = backdrop.texture
+	_apply_card_game_visual_layout()
+	_set_match_skin_visible(false)
 	root.visible = false
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
@@ -207,6 +235,47 @@ func _ready() -> void:
 	_backend_ready = true
 	if OS.is_debug_build() and run_backend_qa_on_startup:
 		_run_backend_qa()
+
+
+func _apply_card_game_visual_layout() -> void:
+	# Keep scene ownership/layout modular: the art skin is applied at runtime so
+	# TripleTriadCardView.tscn and its manually tuned number positions stay intact.
+	grid_artwork.visible = false
+	board_container.position = BOARD_ORIGIN
+	board_container.scale = CARD_VISUAL_SCALE
+	opponent_hand_container.position = OPPONENT_HAND_ORIGIN
+	player_hand_container.position = PLAYER_HAND_ORIGIN
+
+	backdrop.z_index = -100
+	if _slot_guides == null:
+		_slot_guides = TextureRect.new()
+		_slot_guides.name = "CardGameSlotGuides"
+		_slot_guides.texture = CARD_GAME_SLOT_GUIDES
+		_slot_guides.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_slot_guides.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_slot_guides.stretch_mode = TextureRect.STRETCH_SCALE
+		_slot_guides.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_slot_guides.position = Vector2.ZERO
+		_slot_guides.size = Vector2(640.0, 480.0)
+		_slot_guides.z_index = -50
+		root.add_child(_slot_guides)
+
+
+func _set_match_skin_visible(enabled: bool) -> void:
+	if backdrop != null:
+		backdrop.texture = CARD_GAME_BACKGROUND if enabled else _default_backdrop_texture
+	if _slot_guides != null:
+		_slot_guides.visible = enabled
+
+
+func _board_cell_visual_rect(cell_index: int) -> Rect2:
+	if cell_index < 0 or cell_index >= _board_views.size():
+		return Rect2()
+	var view: Control = _board_views[cell_index]
+	return Rect2(
+		board_container.position + view.position * board_container.scale,
+		view.size * board_container.scale
+	)
 
 
 func run_backend_qa() -> Dictionary:
@@ -410,6 +479,150 @@ func get_global_triple_triad_snapshot() -> Dictionary:
 	return snapshot
 
 
+func get_runtime_ui_snapshot() -> Dictionary:
+	var selected_card = null
+	var selected_rotation: int = 0
+	if (
+		_match != null
+		and _selected_hand_index >= 0
+		and _selected_hand_index < _match.player_hand.size()
+	):
+		selected_card = _match.player_hand[_selected_hand_index]
+		selected_rotation = _match.get_hand_rotation(
+			OWNER_PLAYER,
+			_selected_hand_index
+		)
+
+	var player_hand_snapshot: Array = []
+	var opponent_hand_snapshot: Array = []
+	if _match != null:
+		for hand_index in range(_match.player_hand.size()):
+			player_hand_snapshot.append(
+				_runtime_card_snapshot(
+					_match.player_hand[hand_index],
+					_match.get_hand_rotation(OWNER_PLAYER, hand_index)
+				)
+			)
+		var reveal_opponent: bool = (
+			_active_rule_set == null
+			or bool(_active_rule_set.open_rule)
+		)
+		for hand_index in range(_match.opponent_hand.size()):
+			if reveal_opponent:
+				opponent_hand_snapshot.append(
+					_runtime_card_snapshot(
+						_match.opponent_hand[hand_index],
+						_match.get_hand_rotation(
+							OWNER_OPPONENT,
+							hand_index
+						)
+					)
+				)
+			else:
+				opponent_hand_snapshot.append({"hidden": true})
+
+	return {
+		"schema_version": 1,
+		"backend_version": BACKEND_VERSION,
+		"is_open": is_open(),
+		"phase": _phase,
+		"phase_name": _phase_name(_phase),
+		"match_started": _match_started,
+		"current_owner": (
+			int(_match.current_owner)
+			if _match != null
+			else OWNER_NONE
+		),
+		"selected_hand_index": _selected_hand_index,
+		"selected_cell_index": _selected_cell_index,
+		"selected_rotation": selected_rotation,
+		"selected_card": (
+			_runtime_card_snapshot(selected_card, selected_rotation)
+			if selected_card != null
+			else {}
+		),
+		"player_hand": player_hand_snapshot,
+		"opponent_hand": opponent_hand_snapshot,
+		"opponent_hand_count": (
+			_match.opponent_hand.size()
+			if _match != null
+			else 0
+		),
+		"score": _match.get_score() if _match != null else {},
+		"board_influence": (
+			_match.get_influence_board_snapshot()
+			if _match != null
+			and _match.has_method("get_influence_board_snapshot")
+			else []
+		),
+		"placement_preview": _preview_for_current_selection(),
+		"can_surrender": (
+			_match_started
+			and _phase in [PHASE_SELECT_CARD, PHASE_AI]
+		),
+	}
+
+
+func _runtime_card_snapshot(card, rotation: int = 0) -> Dictionary:
+	if card == null:
+		return {}
+	var ranks: Array[int] = []
+	for side in range(4):
+		if card.has_method("rank_for_side_rotated"):
+			ranks.append(int(card.call("rank_for_side_rotated", side, rotation)))
+		else:
+			ranks.append(int(card.call("rank_for_side", side)))
+	return {
+		"card_id": String(card.get("card_id")),
+		"display_name": str(card.get("display_name")),
+		"rotation": posmod(rotation, 4),
+		"ranks": ranks,
+		"deck_cost": int(card.get("deck_cost")),
+		"influence": (
+			card.call("get_influence_snapshot", rotation)
+			if card.has_method("get_influence_snapshot")
+			else {
+				"mode": "none",
+				"strength": 0,
+				"display_name": "None",
+				"description": "This card does not project Influence.",
+				"rotation_quarters": posmod(rotation, 4),
+				"offsets": [],
+				"grid": {
+					"width": 1,
+					"height": 1,
+					"origin": [0, 0],
+					"cells": [[2]],
+				},
+			}
+		),
+	}
+
+
+func _phase_name(phase_value: int) -> String:
+	match phase_value:
+		PHASE_CLOSED:
+			return "closed"
+		PHASE_DEALING:
+			return "dealing"
+		PHASE_SELECT_CARD:
+			return "select_card"
+		PHASE_SELECT_CELL:
+			return "select_cell"
+		PHASE_ANIMATING:
+			return "animating"
+		PHASE_AI:
+			return "ai"
+		PHASE_RESULT:
+			return "result"
+		PHASE_REWARD:
+			return "reward"
+		PHASE_DECK_SETUP:
+			return "deck_setup"
+		_:
+			return "unknown"
+
+
 func _invalidate_state_api(reason: String = "") -> void:
 	if _state_api != null and _state_api.has_method("invalidate"):
 		_state_api.call("invalidate", reason)
@@ -481,6 +694,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	)
 	_invalidate_state_api("opponent_loaded")
 	root.visible = true
+	_set_match_skin_visible(false)
 	_phase = PHASE_DECK_SETUP
 	deck_setup.open_setup(
 		card_catalog,
@@ -507,6 +721,7 @@ func close_game() -> void:
 	_surrendered = false
 	_result_reason = &""
 	_phase = PHASE_CLOSED
+	_set_match_skin_visible(false)
 	root.visible = false
 	_checkpoint_save_integrity("close_game")
 	_invalidate_state_api("close_game")
@@ -640,6 +855,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
+	_set_match_skin_visible(true)
 	reward_view.close_reward()
 	result_label.visible = false
 	transition_fade.visible = false
@@ -935,7 +1151,7 @@ func _build_views() -> void:
 		var opponent_view: Control = CardViewScene.instantiate() as Control
 		opponent_hand_container.add_child(opponent_view)
 		opponent_view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
-		opponent_view.scale = Vector2(1.05, 1.05)
+		opponent_view.scale = CARD_VISUAL_SCALE
 		opponent_view.z_index = index
 		_opponent_views.append(opponent_view)
 	for _index in range(9):
@@ -946,7 +1162,7 @@ func _build_views() -> void:
 		var player_view: Control = CardViewScene.instantiate() as Control
 		player_hand_container.add_child(player_view)
 		player_view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
-		player_view.scale = Vector2(1.05, 1.05)
+		player_view.scale = CARD_VISUAL_SCALE
 		player_view.z_index = index
 		_player_views.append(player_view)
 	_build_preview_visuals()
@@ -1004,10 +1220,12 @@ func _refresh_preview_visuals(preview: Dictionary) -> void:
 	var card = _match.player_hand[_selected_hand_index]
 	var rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
 	var target_view: Control = _board_views[_selected_cell_index]
+	var target_rect: Rect2 = _board_cell_visual_rect(_selected_cell_index)
 	_preview_ghost.visible = true
 	_preview_ghost.modulate = Color(1, 1, 1, PREVIEW_GHOST_ALPHA)
-	_preview_ghost.position = board_container.position + target_view.position
+	_preview_ghost.position = target_rect.position
 	_preview_ghost.size = target_view.size
+	_preview_ghost.scale = board_container.scale
 	_preview_ghost.configure(
 		card,
 		OWNER_PLAYER,
@@ -1024,8 +1242,9 @@ func _refresh_preview_visuals(preview: Dictionary) -> void:
 			continue
 		var overlay: ColorRect = _influence_preview_overlays[cell_index]
 		var board_view: Control = _board_views[cell_index]
-		overlay.position = board_container.position + board_view.position
-		overlay.size = board_view.size
+		var board_rect: Rect2 = _board_cell_visual_rect(cell_index)
+		overlay.position = board_rect.position
+		overlay.size = board_rect.size
 		var slot_variant = _match.board[cell_index]
 		var pressures_enemy: bool = false
 		if slot_variant != null:
@@ -1052,7 +1271,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 	for index in range(_opponent_views.size()):
 		var view: Control = _opponent_views[index]
 		view.modulate = Color.WHITE
-		view.scale = Vector2(1.05, 1.05)
+		view.scale = CARD_VISUAL_SCALE
 		if index < _match.opponent_hand.size():
 			view.visible = true
 			view.configure(_match.opponent_hand[index], OWNER_OPPONENT, not show_opponent_cards, false, _match.get_hand_rotation(OWNER_OPPONENT, index), 0)
@@ -1065,7 +1284,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 	for index in range(_player_views.size()):
 		var view: Control = _player_views[index]
 		view.modulate = Color.WHITE
-		view.scale = Vector2(1.05, 1.05)
+		view.scale = CARD_VISUAL_SCALE
 		if index < _match.player_hand.size():
 			view.visible = true
 			view.configure(_match.player_hand[index], OWNER_PLAYER, false, false, _match.get_hand_rotation(OWNER_PLAYER, index), 0)
@@ -1112,6 +1331,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 	_set_score_digits(opponent_score_label, int(score["opponent"]))
 	_set_score_digits(player_score_label, int(score["player"]))
 	_refresh_phase_ui()
+	runtime_state_changed.emit(get_runtime_ui_snapshot())
 
 
 func _set_score_digits(target: Control, value: int) -> void:
@@ -1176,7 +1396,7 @@ func _update_player_selection_markers() -> void:
 	selection_arrow.visible = true
 	selection_arrow.position = Vector2(
 		player_hand_container.position.x - 16.0,
-		player_hand_container.position.y + float(_selected_hand_index) * HAND_STEP_Y + 48.0
+		player_hand_container.position.y + float(_selected_hand_index) * HAND_STEP_Y + 44.0
 	)
 	_turn_arrow_for_owner(OWNER_PLAYER)
 

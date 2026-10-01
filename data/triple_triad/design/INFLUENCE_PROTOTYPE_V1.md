@@ -123,3 +123,27 @@ Playtesting should answer:
 - Does the system remain fun when Same + Combo are baseline and Plus is absent?
 
 Do not expand the mechanic vocabulary until this core loop is proven.
+
+
+## Runtime UI contract — v1.2
+
+The gameplay prototype now exposes an explicit runtime snapshot for the new UI.
+Presentation code should not inspect `TripleTriadMatch` internals or recalculate
+Influence. `TripleTriadGame.get_runtime_ui_snapshot()` is the UI-facing source.
+
+It contains the selected card, its current rotation, a rotation-aware Influence
+mini-grid, player/opponent hand data respecting the Open rule, board Influence
+state, source attribution, effective ranks, and the authoritative placement
+preview. `runtime_state_changed(snapshot)` is emitted after the existing
+input-driven `_refresh_views()` path; there is still no per-frame backend work.
+
+Placement previews now expose three distinct Influence views:
+
+- `influence_before`: field before the ghost card is placed
+- `influence_resolution`: frozen field used for this placement's capture rules
+- `influence_next_action`: field after ownership changes, for the following turn
+- `influence_deltas`: only cells whose effective state changes in the preview
+
+This makes the current rule — captured control cards switch allegiance on the
+next action, never mid-resolution — directly explainable by the UI without a
+second gameplay implementation.

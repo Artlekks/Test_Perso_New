@@ -156,6 +156,8 @@ func run_all() -> Dictionary:
 	_run("Influence snapshot stays stable during Combo", _test_influence_snapshot_stable)
 	_run("Captured Influence changes allegiance next action", _test_influence_changes_allegiance)
 	_run("Stake policy takes strongest card", _test_stake_policy_strongest)
+	_run("Influence snapshot attributes its source", _test_influence_source_attribution)
+	_run("Preview exposes Influence deltas", _test_preview_influence_deltas)
 	_run("Unsupported rules are rejected", _test_unsupported_rule_guard)
 
 	var passed: int = 0
@@ -739,6 +741,65 @@ func _test_stake_policy_strongest() -> Dictionary:
 	return _ok(
 		policy.choose_lost_card_index(cards) == 3,
 		"Stake policy must prefer points, then rank total, then stable card_id."
+	)
+
+
+func _test_influence_source_attribution() -> Dictionary:
+	var rules = MockRuleSet.new()
+	rules.influence_rule = true
+	var state = _new_match(rules)
+	var source = MockCard.new(&"source", 4, 4, 4, 4)
+	source.influence_mode = &"pressure"
+	source.influence_strength = 1
+	source.influence_offsets.append(Vector2i(1, 0))
+	var target = MockCard.new(&"target", 6, 6, 6, 6)
+	state.board[4] = _slot(source, OWNER_PLAYER)
+	state.board[5] = _slot(target, OWNER_OPPONENT)
+
+	var snapshot: Array = state.get_influence_board_snapshot()
+	var target_cell: Dictionary = snapshot[5]
+	var sources: Array = target_cell.get("opposing_sources", [])
+	return _ok(
+		int(target_cell.get("influence_modifier", 0)) == -1
+		and sources.size() == 1
+		and int((sources[0] as Dictionary).get("source_cell", -1)) == 4
+		and str((sources[0] as Dictionary).get("card_id", "")) == "source",
+		"Expected cell 5 to attribute -1 Pressure to the source card at cell 4."
+	)
+
+
+func _test_preview_influence_deltas() -> Dictionary:
+	var rules = MockRuleSet.new()
+	rules.influence_rule = true
+	var state = _new_match(rules)
+	var target = MockCard.new(&"target", 6, 6, 6, 6)
+	state.board[5] = _slot(target, OWNER_OPPONENT)
+	var pressure = MockCard.new(&"pressure", 4, 4, 4, 4)
+	pressure.influence_mode = &"pressure"
+	pressure.influence_strength = 1
+	pressure.influence_offsets.append(Vector2i(1, 0))
+
+	var preview: Dictionary = state.preview_move(
+		pressure,
+		OWNER_PLAYER,
+		4
+	)
+	var found_target_delta: bool = false
+	for raw_delta in preview.get("influence_deltas", []):
+		var delta: Dictionary = raw_delta
+		if int(delta.get("cell_index", -1)) != 5:
+			continue
+		found_target_delta = (
+			int(delta.get("before_modifier", 0)) == 0
+			and int(delta.get("after_modifier", 0)) == -1
+			and int(delta.get("modifier_delta", 0)) == -1
+		)
+	return _ok(
+		bool(preview.get("valid", false))
+		and found_target_delta
+		and state.board[4] == null
+		and int((state.board[5] as Dictionary).get("owner", OWNER_NONE)) == OWNER_OPPONENT,
+		"Expected preview to expose the -1 delta without mutating match state."
 	)
 
 

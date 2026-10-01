@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TripleTriadStateAPI
 
-const API_SCHEMA_VERSION := 2
+const API_SCHEMA_VERSION := 3
 
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const OPPONENT_COLLECTIONS_PATH := "user://triple_triad_opponents.cfg"

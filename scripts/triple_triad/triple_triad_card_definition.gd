@@ -40,14 +40,84 @@ func get_influence_offsets_rotated(quarter_turns_clockwise: int) -> Array[Vector
 	return result
 
 
-func get_influence_snapshot() -> Dictionary:
+func get_influence_display_name() -> String:
+	match String(influence_mode):
+		"pressure":
+			return "Pressure"
+		_:
+			return "None"
+
+
+func get_influence_description() -> String:
+	if not has_influence():
+		return "This card does not project Influence."
+	match String(influence_mode):
+		"pressure":
+			return (
+				"Projects -%d Pressure onto highlighted cells. "
+				+ "Enemy cards there use reduced effective values."
+			) % influence_strength
+		_:
+			return ""
+
+
+func get_influence_grid_snapshot(quarter_turns_clockwise: int = 0) -> Dictionary:
+	var offsets: Array[Vector2i] = get_influence_offsets_rotated(quarter_turns_clockwise)
+	var min_x: int = 0
+	var max_x: int = 0
+	var min_y: int = 0
+	var max_y: int = 0
+	for offset in offsets:
+		min_x = mini(min_x, offset.x)
+		max_x = maxi(max_x, offset.x)
+		min_y = mini(min_y, offset.y)
+		max_y = maxi(max_y, offset.y)
+
+	var width: int = max_x - min_x + 1
+	var height: int = max_y - min_y + 1
+	var rows: Array = []
+	for _row in range(height):
+		var row: Array[int] = []
+		row.resize(width)
+		row.fill(0)
+		rows.append(row)
+
+	var origin := Vector2i(-min_x, -min_y)
+	if height > 0 and width > 0:
+		var source_row: Array = rows[origin.y]
+		source_row[origin.x] = 2
+		rows[origin.y] = source_row
+	for offset in offsets:
+		var grid_position := Vector2i(offset.x - min_x, offset.y - min_y)
+		if grid_position == origin:
+			continue
+		var target_row: Array = rows[grid_position.y]
+		target_row[grid_position.x] = 1
+		rows[grid_position.y] = target_row
+
+	return {
+		"width": width,
+		"height": height,
+		"origin": [origin.x, origin.y],
+		"cells": rows,
+	}
+
+
+func get_influence_snapshot(quarter_turns_clockwise: int = 0) -> Dictionary:
+	var rotated_offsets: Array[Vector2i] = get_influence_offsets_rotated(
+		quarter_turns_clockwise
+	)
 	var serialized_offsets: Array = []
-	for offset in influence_offsets:
+	for offset in rotated_offsets:
 		serialized_offsets.append([offset.x, offset.y])
 	return {
 		"mode": String(influence_mode),
 		"strength": influence_strength,
+		"display_name": get_influence_display_name(),
+		"description": get_influence_description(),
+		"rotation_quarters": posmod(quarter_turns_clockwise, 4),
 		"offsets": serialized_offsets,
+		"grid": get_influence_grid_snapshot(quarter_turns_clockwise),
 	}
 
 

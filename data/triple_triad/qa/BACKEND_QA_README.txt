@@ -33,10 +33,14 @@ Current deterministic tests (21)
 21. Unsupported Same Wall / Elemental toggles fail validation
 
 Success output:
-    TripleTriad QA: 21/21 backend tests passed.
+    TripleTriad QA: 23/23 backend tests passed.
 
 Manual access:
     TripleTriadGame.run_backend_qa() -> Dictionary
 
 The returned report contains passed/test_count/passed_count/failed_count,
 failures and per-test results.
+
+
+Backend 1.2 adds QA coverage for Influence source attribution and authoritative
+preview deltas. The expected healthy debug summary is now 23/23.

@@ -16,6 +16,19 @@ const CAPTURE_HALF_DURATION := 0.08
 const REWARD_FLIP_HALF_DURATION := 0.12
 const REWARD_BACK_HOLD_SECONDS := 0.07
 
+const CARD_BACK_TEXTURE = preload(
+	"res://assets/ui/triple_triad/card_game/Card_Back.png"
+)
+const BRONZE_FRAME_TEXTURE = preload(
+	"res://assets/ui/triple_triad/card_game/frames/Bronze.png"
+)
+const SILVER_FRAME_TEXTURE = preload(
+	"res://assets/ui/triple_triad/card_game/frames/Silver.png"
+)
+const GOLD_FRAME_TEXTURE = preload(
+	"res://assets/ui/triple_triad/card_game/frames/Gold.png"
+)
+
 @onready var empty_slot_fill: ColorRect = $Root/EmptySlotFill
 @onready var portrait_background: ColorRect = $Root/PortraitBackground
 @onready var portrait: TextureRect = $Root/Portrait
@@ -38,13 +51,16 @@ var owner_outline_visible: bool = true
 var _showing_back: bool = false
 var _capture_tween: Tween = null
 var _capture_base_scale := Vector2.ONE
+var _rarity_frame: TextureRect = null
 
 
 func _ready() -> void:
 	pivot_offset = size * 0.5
 	resized.connect(_on_resized)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	card_back.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	card_back.texture = CARD_BACK_TEXTURE
+	card_back.stretch_mode = TextureRect.STRETCH_SCALE
+	_build_rarity_frame()
 	_refresh()
 
 
@@ -165,6 +181,10 @@ func _refresh_content() -> void:
 	left_label.visible = show_face
 	hidden_label.visible = false
 	card_back.visible = show_back
+	if _rarity_frame != null:
+		var frame_texture: Texture2D = _rarity_frame_texture()
+		_rarity_frame.texture = frame_texture
+		_rarity_frame.visible = show_face and frame_texture != null
 
 	if show_face:
 		portrait.texture = card.portrait
@@ -179,6 +199,39 @@ func _refresh_content() -> void:
 		_set_rank_text(right_label, 0)
 		_set_rank_text(bottom_label, 0)
 		_set_rank_text(left_label, 0)
+
+
+func _build_rarity_frame() -> void:
+	if _rarity_frame != null:
+		return
+	_rarity_frame = TextureRect.new()
+	_rarity_frame.name = "RarityFrame"
+	_rarity_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rarity_frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_rarity_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_rarity_frame.stretch_mode = TextureRect.STRETCH_SCALE
+	_rarity_frame.visible = false
+	$Root.add_child(_rarity_frame)
+	_rarity_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Draw above the portrait but below the four bitmap number controls.
+	$Root.move_child(_rarity_frame, portrait.get_index() + 1)
+
+
+func _rarity_frame_texture() -> Texture2D:
+	if card == null:
+		return null
+	var rarity: String = String(card.get("rarity_id")).strip_edges().to_lower()
+	match rarity:
+		"bronze":
+			return BRONZE_FRAME_TEXTURE
+		"silver":
+			return SILVER_FRAME_TEXTURE
+		"gold":
+			return GOLD_FRAME_TEXTURE
+		_:
+			# "standard" is still the temporary authored backend value. Do not
+			# silently assign Bronze/Silver/Gold before content authoring is done.
+			return null
 
 
 func _refresh_style() -> void:

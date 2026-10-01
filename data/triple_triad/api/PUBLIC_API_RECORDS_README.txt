@@ -46,3 +46,15 @@ The v1 backend freeze audit remains in:
 
 The post-freeze Influence prototype contract is documented in:
     res://data/triple_triad/design/INFLUENCE_PROTOTYPE_V1.md
+
+
+RUNTIME UI CONTRACT (backend 1.2.0 / persistent API schema 3)
+==============================================================
+TripleTriadGame additionally exposes `get_runtime_ui_snapshot()` and emits
+`runtime_state_changed(snapshot)`. This contract is ephemeral match state, not
+persistent save state. It is intended for the redesigned match UI.
+
+The selected-card Influence payload includes `display_name`, `description`,
+rotation-aware offsets and a generic mini-grid payload. Influence board cells
+include source attribution and effective ranks, so presentation code never needs
+to duplicate resolver math.

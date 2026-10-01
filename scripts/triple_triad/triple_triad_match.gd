@@ -178,8 +178,18 @@ func place_card(card_owner: int, hand_index: int, cell_index: int) -> Dictionary
 	}
 
 
-func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int = 0) -> Dictionary:
-	if card == null or cell_index < 0 or cell_index >= board.size() or board[cell_index] != null:
+func preview_move(
+	card,
+	card_owner: int,
+	cell_index: int,
+	rotation_quarters: int = 0
+) -> Dictionary:
+	if (
+		card == null
+		or cell_index < 0
+		or cell_index >= board.size()
+		or board[cell_index] != null
+	):
 		return {
 			"valid": false,
 			"captured": [],
@@ -190,10 +200,15 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 			"plus_match_count": 0,
 			"influence_cells": [],
 			"influence_modifiers": {},
+			"influence_before": get_influence_board_snapshot(),
+			"influence_resolution": [],
+			"influence_next_action": [],
+			"influence_deltas": [],
 			"placed_total_modifier": 0,
 		}
 
 	var original_board: Array = board
+	var influence_before: Array = get_influence_board_snapshot()
 	board = board.duplicate(true)
 	var clean_rotation: int = posmod(rotation_quarters, 4)
 	board[cell_index] = {
@@ -201,13 +216,19 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 		"owner": card_owner,
 		"rotation": clean_rotation,
 	}
+
 	var influence_state: Dictionary = _build_influence_state()
+	var influence_resolution: Array = _build_influence_board_snapshot(
+		influence_state
+	)
 	var projected_influence: Array[int] = get_influence_cells_for_card(
 		card,
 		cell_index,
 		clean_rotation
 	)
-	var influence_modifiers: Dictionary = _occupied_influence_modifiers(influence_state)
+	var influence_modifiers: Dictionary = _occupied_influence_modifiers(
+		influence_state
+	)
 	var placed_total_modifier: int = (
 		get_cell_rank_bonus(cell_index)
 		+ _influence_resolver.modifier_for_cell(
@@ -221,11 +242,27 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 		card_owner,
 		influence_state
 	)
+
+	# Ownership changes caused by this move affect the field on the NEXT action,
+	# never halfway through the current resolution. Exposing both snapshots lets
+	# the UI explain that rule without reimplementing gameplay math.
+	_resolution_influence_state.clear()
+	_resolution_influence_modifiers.clear()
+	var influence_next_action: Array = _build_influence_board_snapshot(
+		_build_influence_state()
+	)
+	var influence_deltas: Array = _build_influence_deltas(
+		influence_before,
+		influence_resolution
+	)
+
 	board = original_board
 	_resolution_influence_state.clear()
 	_resolution_influence_modifiers.clear()
 	return {
 		"valid": true,
+		"cell_index": cell_index,
+		"rotation": clean_rotation,
 		"captured": capture_result["captured"],
 		"capture_count": (capture_result["captured"] as Array).size(),
 		"basic_captured": capture_result["basic_captured"],
@@ -238,11 +275,17 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 		"plus_match_count": capture_result["plus_match_count"],
 		"influence_cells": projected_influence,
 		"influence_modifiers": influence_modifiers,
+		"influence_before": influence_before,
+		"influence_resolution": influence_resolution,
+		"influence_next_action": influence_next_action,
+		"influence_deltas": influence_deltas,
 		"influence_enemy_count": _count_influenced_enemies(
 			projected_influence,
 			card_owner
 		),
-		"influence_empty_count": _count_influenced_empty_cells(projected_influence),
+		"influence_empty_count": _count_influenced_empty_cells(
+			projected_influence
+		),
 		"placed_total_modifier": placed_total_modifier,
 	}
 
@@ -312,6 +355,111 @@ func get_influence_cells_for_card(
 
 func get_current_influence_modifiers() -> Dictionary:
 	return _occupied_influence_modifiers(_build_influence_state())
+
+
+func get_influence_board_snapshot() -> Array:
+	return _build_influence_board_snapshot(_build_influence_state())
+
+
+func _build_influence_board_snapshot(state: Dictionary) -> Array:
+	var result: Array = []
+	for cell_index in range(board.size()):
+		var slot_variant = board[cell_index]
+		var owner: int = OWNER_NONE
+		var card = null
+		var rotation: int = 0
+		if slot_variant != null:
+			var slot: Dictionary = slot_variant
+			owner = int(slot.get("owner", OWNER_NONE))
+			card = slot.get("card", null)
+			rotation = int(slot.get("rotation", 0))
+
+		var influence: Dictionary = _influence_resolver.cell_snapshot(
+			state,
+			cell_index,
+			owner
+		)
+		var region_bonus: int = get_cell_rank_bonus(cell_index)
+		var modifier: int = int(influence.get("modifier", 0))
+		var printed_ranks: Array[int] = []
+		var effective_ranks: Array[int] = []
+		if card != null:
+			for side in range(4):
+				var printed: int = _card_rank_rotated(
+					card,
+					side,
+					rotation
+				)
+				printed_ranks.append(printed)
+				effective_ranks.append(
+					clampi(printed + region_bonus + modifier, 1, 10)
+				)
+
+		result.append({
+			"cell_index": cell_index,
+			"occupied": card != null,
+			"owner": owner,
+			"card_id": String(card.get("card_id")) if card != null else "",
+			"display_name": str(card.get("display_name")) if card != null else "",
+			"rotation": rotation,
+			"region_bonus": region_bonus,
+			"influence_modifier": modifier,
+			"printed_ranks": printed_ranks,
+			"effective_ranks": effective_ranks,
+			"player_pressure": int(influence.get("player_pressure", 0)),
+			"opponent_pressure": int(influence.get("opponent_pressure", 0)),
+			"player_sources": influence.get("player_sources", []),
+			"opponent_sources": influence.get("opponent_sources", []),
+			"opposing_sources": influence.get("opposing_sources", []),
+		})
+	return result
+
+
+func _build_influence_deltas(before: Array, after: Array) -> Array:
+	var result: Array = []
+	var cell_count: int = mini(before.size(), after.size())
+	for cell_index in range(cell_count):
+		var before_cell: Dictionary = before[cell_index]
+		var after_cell: Dictionary = after[cell_index]
+		var before_modifier: int = int(
+			before_cell.get("influence_modifier", 0)
+		)
+		var after_modifier: int = int(
+			after_cell.get("influence_modifier", 0)
+		)
+		var before_ranks: Array = before_cell.get("effective_ranks", [])
+		var after_ranks: Array = after_cell.get("effective_ranks", [])
+		var changed: bool = (
+			before_modifier != after_modifier
+			or before_ranks != after_ranks
+			or bool(before_cell.get("occupied", false))
+			!= bool(after_cell.get("occupied", false))
+		)
+		if not changed:
+			continue
+		result.append({
+			"cell_index": cell_index,
+			"before_modifier": before_modifier,
+			"after_modifier": after_modifier,
+			"modifier_delta": after_modifier - before_modifier,
+			"before_effective_ranks": before_ranks.duplicate(),
+			"after_effective_ranks": after_ranks.duplicate(),
+			"before_occupied": bool(before_cell.get("occupied", false)),
+			"after_occupied": bool(after_cell.get("occupied", false)),
+			"after_card_id": str(after_cell.get("card_id", "")),
+			"opposing_sources": (
+				after_cell.get("opposing_sources", []) as Array
+			).duplicate(true),
+		})
+	return result
+
+
+func _card_rank_rotated(card, side: int, rotation: int) -> int:
+	if card == null:
+		return 0
+	if card.has_method("rank_for_side_rotated"):
+		return int(card.call("rank_for_side_rotated", side, rotation))
+	return int(card.call("rank_for_side", side))
 
 
 func get_empty_cells() -> Array[int]:
