@@ -21,7 +21,7 @@ const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/de
 const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
-const MatchHUDScript = preload("res://scripts/triple_triad/triple_triad_match_hud.gd")
+const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
 
 const BACKEND_VERSION := "1.2.2"
 
@@ -61,9 +61,6 @@ const CARD_VISUAL_SCALE := Vector2(
 	CARD_VISUAL_SIZE.x / CARD_BASE_SIZE.x,
 	CARD_VISUAL_SIZE.y / CARD_BASE_SIZE.y
 )
-const BOARD_ORIGIN := Vector2(210.0, 107.0)
-const OPPONENT_HAND_ORIGIN := Vector2(41.0, 95.0)
-const PLAYER_HAND_ORIGIN := Vector2(525.0, 95.0)
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
@@ -244,10 +241,9 @@ func _apply_card_game_visual_layout() -> void:
 	# frame, and lower information shell as one authored texture. Runtime UI only
 	# adds live cards/text on top; no second slot-guide texture is composited.
 	grid_artwork.visible = false
-	board_container.position = BOARD_ORIGIN
-	board_container.scale = CARD_VISUAL_SCALE
-	opponent_hand_container.position = OPPONENT_HAND_ORIGIN
-	player_hand_container.position = PLAYER_HAND_ORIGIN
+	# Board/OpponentHand/PlayerHand layout now lives in TripleTriadGame.tscn.
+	# Move those nodes directly in the 2D editor; runtime no longer overwrites
+	# their positions/board scale here.
 
 	# Retire the old prototype HUD pieces. The dedicated match HUD owns scores,
 	# turn status, region trait, and selected-card information.
@@ -264,8 +260,7 @@ func _apply_card_game_visual_layout() -> void:
 func _build_match_hud() -> void:
 	if _match_hud != null:
 		return
-	_match_hud = MatchHUDScript.new()
-	_match_hud.name = "TripleTriadMatchHUD"
+	_match_hud = MatchHUDScene.instantiate() as Control
 	_match_hud.z_index = 580
 	root.add_child(_match_hud)
 	_match_hud.visible = false
@@ -594,30 +589,30 @@ func get_runtime_ui_snapshot() -> Dictionary:
 	}
 
 
-func _runtime_card_snapshot(card, rotation: int = 0) -> Dictionary:
+func _runtime_card_snapshot(card, rotation_quarters: int = 0) -> Dictionary:
 	if card == null:
 		return {}
 	var ranks: Array[int] = []
 	for side in range(4):
 		if card.has_method("rank_for_side_rotated"):
-			ranks.append(int(card.call("rank_for_side_rotated", side, rotation)))
+			ranks.append(int(card.call("rank_for_side_rotated", side, rotation_quarters)))
 		else:
 			ranks.append(int(card.call("rank_for_side", side)))
 	return {
 		"card_id": String(card.get("card_id")),
 		"display_name": str(card.get("display_name")),
-		"rotation": posmod(rotation, 4),
+		"rotation": posmod(rotation_quarters, 4),
 		"ranks": ranks,
 		"deck_cost": int(card.get("deck_cost")),
 		"influence": (
-			card.call("get_influence_snapshot", rotation)
+			card.call("get_influence_snapshot", rotation_quarters)
 			if card.has_method("get_influence_snapshot")
 			else {
 				"mode": "none",
 				"strength": 0,
 				"display_name": "None",
 				"description": "This card does not project Influence.",
-				"rotation_quarters": posmod(rotation, 4),
+				"rotation_quarters": posmod(rotation_quarters, 4),
 				"offsets": [],
 				"grid": {
 					"width": 1,
@@ -1260,8 +1255,8 @@ func _preview_for_current_selection() -> Dictionary:
 	):
 		return {}
 	var card = _match.player_hand[_selected_hand_index]
-	var rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
-	return _match.preview_move(card, OWNER_PLAYER, _selected_cell_index, rotation)
+	var rotation_quarters: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
+	return _match.preview_move(card, OWNER_PLAYER, _selected_cell_index, rotation_quarters)
 
 
 func _refresh_preview_visuals(preview: Dictionary) -> void:
@@ -1272,7 +1267,7 @@ func _refresh_preview_visuals(preview: Dictionary) -> void:
 		return
 
 	var card = _match.player_hand[_selected_hand_index]
-	var rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
+	var rotation_quarters: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
 	var target_view: Control = _board_views[_selected_cell_index]
 	var target_rect: Rect2 = _board_cell_visual_rect(_selected_cell_index)
 	_preview_ghost.visible = true
@@ -1285,7 +1280,7 @@ func _refresh_preview_visuals(preview: Dictionary) -> void:
 		OWNER_PLAYER,
 		false,
 		false,
-		rotation,
+		rotation_quarters,
 		int(preview.get("placed_total_modifier", 0))
 	)
 	_preview_ghost.set_owner_outline_visible(false)
@@ -1296,7 +1291,6 @@ func _refresh_preview_visuals(preview: Dictionary) -> void:
 		if cell_index < 0 or cell_index >= _influence_preview_overlays.size():
 			continue
 		var overlay: ColorRect = _influence_preview_overlays[cell_index]
-		var board_view: Control = _board_views[cell_index]
 		var board_rect: Rect2 = _board_cell_visual_rect(cell_index)
 		overlay.position = board_rect.position
 		overlay.size = board_rect.size

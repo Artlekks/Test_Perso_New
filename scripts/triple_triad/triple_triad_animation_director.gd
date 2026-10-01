@@ -52,15 +52,26 @@ func animate_placement(
 	ghost.configure(card_definition, card_owner, false, false, rotation_quarters, rank_bonus)
 	ghost.set_selected(false)
 	ghost.z_index = 1200
+
+	# IMPORTANT: hand cards are locally scaled, while board cards inherit their
+	# visual scale from the Board container. Using target_view.scale therefore
+	# made the placement ghost jump to 1.0x just before it settled, then shrink
+	# back to the board's ~0.64x visual scale when the real card appeared. Work
+	# in visual/global scale instead so the travelling card remains the same size.
+	var source_visual_scale: Vector2 = _visual_scale(source_view)
+	var target_visual_scale: Vector2 = _visual_scale(target_view)
+	# CardView sets a centered pivot in _ready() for flip animations. Placement
+	# ghosts need a top-left pivot so their global position matches the hand/board
+	# slots exactly while scaling.
+	ghost.pivot_offset = Vector2.ZERO
+	ghost.scale = source_visual_scale
 	ghost.global_position = source_view.global_position
-	ghost.scale = source_view.scale
-	ghost.pivot_offset = ghost.size * 0.5
 	source_view.visible = false
 
 	var target_position: Vector2 = target_view.global_position
 	var lift_position := Vector2(
 		target_position.x,
-		-ghost.size.y - 20.0
+		-ghost.size.y * source_visual_scale.y - 20.0
 	)
 
 	var tween: Tween = ghost.create_tween()
@@ -72,14 +83,6 @@ func animate_placement(
 	)
 	lift_move.set_trans(Tween.TRANS_QUART)
 	lift_move.set_ease(Tween.EASE_OUT)
-	var lift_scale = tween.parallel().tween_property(
-		ghost,
-		"scale",
-		Vector2(maxf(source_view.scale.x, 1.0) + 0.035, maxf(source_view.scale.y, 1.0) + 0.035),
-		placement_lift_seconds
-	)
-	lift_scale.set_trans(Tween.TRANS_QUART)
-	lift_scale.set_ease(Tween.EASE_OUT)
 
 	var drop_move = tween.tween_property(
 		ghost,
@@ -92,7 +95,7 @@ func animate_placement(
 	var drop_scale = tween.parallel().tween_property(
 		ghost,
 		"scale",
-		target_view.scale,
+		target_visual_scale,
 		placement_drop_seconds
 	)
 	drop_scale.set_trans(Tween.TRANS_QUAD)
@@ -102,6 +105,14 @@ func animate_placement(
 	if placement_hold_seconds > 0.0:
 		await get_tree().create_timer(placement_hold_seconds, true).timeout
 	ghost.queue_free()
+
+
+func _visual_scale(control: Control) -> Vector2:
+	# get_global_transform() is explicitly typed here because Godot 4.7's
+	# static analyzer cannot infer a stable type from Control.global_transform
+	# in this helper when warnings/errors are promoted during reload.
+	var global_xform: Transform2D = control.get_global_transform()
+	return Vector2(global_xform.x.length(), global_xform.y.length())
 
 
 func _prepare_deal_card(view: Control, index: int) -> void:
