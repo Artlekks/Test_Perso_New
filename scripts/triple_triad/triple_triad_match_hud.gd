@@ -126,21 +126,12 @@ func set_card_info(card, rotation_quarters: int) -> void:
 	_set_pattern(offsets)
 
 
-func _set_score(target: Control, anchor: Control, value: int) -> void:
-	var score_text: String = str(maxi(value, 0))
-	target.call("set_text", score_text)
-
-	# Scale belongs to TripleTriadMatchHUD.tscn now. The runtime only updates
-	# the number and keeps it centered, so manual editor tuning is never lost.
-	var visual_scale: Vector2 = target.scale
-	var scaled_size := Vector2(
-		float(score_text.length() * 16) * visual_scale.x,
-		16.0 * visual_scale.y
-	)
-	var anchor_center: Vector2 = Vector2.ZERO
-	if anchor != null:
-		anchor_center = anchor.size * 0.5
-	target.position = anchor_center - scaled_size * 0.5
+func _set_score(target: Control, _anchor: Control, value: int) -> void:
+	# Position and scale are fully authored in TripleTriadMatchHUD.tscn. Runtime
+	# changes only the glyph text. This makes X/Y 84,40 and 532,40 literal
+	# top-left positions instead of re-centering the digits behind the editor.
+	target.call("set_text", str(maxi(value, 0)))
+	target.position = Vector2.ZERO
 
 
 func _set_pattern(offsets: Array) -> void:

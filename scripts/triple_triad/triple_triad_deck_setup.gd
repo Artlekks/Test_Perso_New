@@ -7,51 +7,66 @@ const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
 
 const OWNER_PLAYER := 1
 const PROFILE_COUNT := 6
+const VISIBLE_PROFILE_COUNT := 5
 const HAND_SIZE := 5
-const COLLECTION_COLUMNS := 5
+const COLLECTION_COLUMNS := 10
 const COLLECTION_ROWS := 2
 const PAGE_SIZE := COLLECTION_COLUMNS * COLLECTION_ROWS
-const COLLECTION_SCALE := Vector2(0.71, 0.71)
-const COLLECTION_STEP_X := 91.2
-const COLLECTION_STEP_Y := 106.4
-const DECK_SCALE := Vector2(0.71, 0.71)
-const DECK_STEP_Y := 0.0
-const DECK_STEP_X := 91.2
+const COLLECTION_SCALE := Vector2(0.50, 0.50)
+# CardView is 116x132. At 0.50 scale the visible card is 58x66, so a
+# 59 px horizontal step gives both deck and collection cards a 1 px gap.
+const COLLECTION_STEP_X := 59.0
+const COLLECTION_STEP_Y := 69.0
+const DECK_SCALE := COLLECTION_SCALE
+const DECK_STEP_X := 59.0
 const SAVE_PATH := "user://triple_triad_decks.cfg"
 const SAVE_VERSION := 1
+
+const SORT_RANK_ASCENDING := 0
+const SORT_RANK_DESCENDING := 1
+const SORT_NUMBER := 2
+const SORT_NAME := 3
 
 const STATE_BROWSE := 0
 const STATE_REPLACE := 1
 const STATE_ANIMATING := 2
 
-const COLLECTION_FOCUS_SCALE := Vector2(0.71, 0.71)
+const COLLECTION_FOCUS_SCALE := COLLECTION_SCALE
 const COLLECTION_FOCUS_Y := 0.0
-const COLLECTION_CARD_OFFSET := Vector2(95.5, 206.7)
-const DECK_SLOT_SIZE := Vector2(85.5, 95.0)
-const DECK_CARD_OFFSET := Vector2(95.5, 60.5)
-const DECK_SELECTED_X_OFFSET := -7.0
-const USED_CARD_MODULATE := Color(0.38, 0.38, 0.38, 1.0)
-const CARD_TRANSFER_LIFT_Y := 60.0
+const COLLECTION_CARD_OFFSET := Vector2.ZERO
+const DECK_SLOT_SIZE := Vector2(58.0, 66.0)
+const DECK_CARD_OFFSET := Vector2.ZERO
+const DECK_SELECTED_X_OFFSET := -4.0
+const USED_CARD_MODULATE := Color(0.46, 0.46, 0.46, 1.0)
+const LOCKED_CARD_MODULATE := Color(0.30, 0.30, 0.30, 0.86)
+const CARD_TRANSFER_LIFT_Y := 82.0
 const CARD_TRANSFER_LIFT_SECONDS := 0.22
 const CARD_TRANSFER_DROP_SECONDS := 0.16
 
 @onready var collection_root: Control = $CollectionRoot
 @onready var deck_root: Control = $DeckRoot
-@onready var title_label: Label = $InfoPanel/TitleLabel
-@onready var profile_label: Label = $DeckPanel/ProfileLabel
-@onready var rank_label: Label = $DeckPanel/RankLabel
-@onready var card_count_label: Label = $DeckPanel/CardCountLabel
-@onready var points_label: Label = $DeckPanel/PointsLabel
-@onready var page_label: Label = $CollectionPanel/PageLabel
-@onready var card_info_label: Label = $CardInfoLabel
+@onready var current_deck_label: Label = $CurrentDeckLabel
+@onready var current_deck_count: Label = $CurrentDeckCount
+@onready var cards_owned_label: Label = $CardsOwnedLabel
+@onready var detail_card: Control = $DetailCard
+@onready var detail_name: Label = $DetailName
+@onready var detail_number: Label = $DetailNumber
+@onready var detail_rarity: Label = $DetailRarity
+@onready var detail_description: Label = $DetailDescription
 @onready var status_label: Label = $StatusLabel
-@onready var help_label: Label = $HelpLabel
 @onready var collection_arrow: Polygon2D = $CollectionArrow
 @onready var deck_arrow: Polygon2D = $DeckArrow
-@onready var rank_button: Button = $SortBar/RankButton
-@onready var sort_direction_button: Button = $SortBar/SortDirectionButton
-@onready var profile_button: Button = $SortBar/ProfileButton
-@onready var page_indicator: Label = $SortBar/PageIndicator
+@onready var profile_selection_arrow: Polygon2D = $DeckList/SelectionArrow
+@onready var rank_button: Button = $SortBar/Rank
+@onready var rank_arrow: Polygon2D = $SortBar/RankArrow
+@onready var number_button: Button = $SortBar/Number
+@onready var name_button: Button = $SortBar/Name
+@onready var page_indicator: Label = $PageIndicator
+@onready var new_deck_button: Button = $DeckList/NewDeckButton
+
+var _profile_name_labels: Array[Label] = []
+var _profile_count_labels: Array[Label] = []
+var _profile_buttons: Array[Button] = []
 
 var _catalog: Resource = null
 var _collection_backend = null
@@ -71,16 +86,34 @@ var _state: int = STATE_BROWSE
 var _replace_card = null
 var _replace_source_index: int = -1
 var _replace_slot_index: int = 0
-var _sort_descending: bool = false
+var _sort_mode: int = SORT_RANK_ASCENDING
+var _show_extended_details: bool = false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	_profile_name_labels = [
+		$DeckList/Deck1Name, $DeckList/Deck2Name, $DeckList/Deck3Name,
+		$DeckList/Deck4Name, $DeckList/Deck5Name,
+	]
+	_profile_count_labels = [
+		$DeckList/Deck1Count, $DeckList/Deck2Count, $DeckList/Deck3Count,
+		$DeckList/Deck4Count, $DeckList/Deck5Count,
+	]
+	_profile_buttons = [
+		$DeckList/Deck1Button, $DeckList/Deck2Button, $DeckList/Deck3Button,
+		$DeckList/Deck4Button, $DeckList/Deck5Button,
+	]
 	_build_views()
-	rank_button.pressed.connect(_on_rank_button_pressed)
-	sort_direction_button.pressed.connect(_on_sort_direction_button_pressed)
-	profile_button.pressed.connect(_on_profile_button_pressed)
+	for index in range(_profile_buttons.size()):
+		_profile_buttons[index].pressed.connect(_on_profile_row_pressed.bind(index))
+	new_deck_button.pressed.connect(_on_new_deck_pressed)
+	rank_button.pressed.connect(_on_rank_sort_pressed)
+	number_button.pressed.connect(_on_sort_mode_pressed.bind(SORT_NUMBER))
+	name_button.pressed.connect(_on_sort_mode_pressed.bind(SORT_NAME))
+	if detail_card.has_method("set_owner_outline_visible"):
+		detail_card.call("set_owner_outline_visible", false)
 
 
 func open_setup(
@@ -95,7 +128,7 @@ func open_setup(
 	_acquisition_policy = acquisition_policy
 	_budget_limit = maxi(5, budget_limit)
 	_player_rank = maxi(1, player_rank)
-	_sort_descending = _load_sort_descending()
+	_sort_mode = _load_sort_mode()
 	_cards.clear()
 	if _collection_backend != null and _collection_backend.has_method("get_owned_cards"):
 		_cards = _collection_backend.call("get_owned_cards")
@@ -103,7 +136,7 @@ func open_setup(
 		_cards = _catalog.call("get_cards_for_level_range", 1, 10)
 	_sort_cards()
 	_sanitize_all_saved_profiles()
-	_profile_index = _load_last_profile_index()
+	_profile_index = mini(_load_last_profile_index(), VISIBLE_PROFILE_COUNT - 1)
 	_load_profile(_profile_index)
 	_cursor_index = 0
 	_page_index = 0
@@ -112,6 +145,7 @@ func open_setup(
 	_replace_card = null
 	_replace_source_index = -1
 	_replace_slot_index = 0
+	_show_extended_details = false
 	visible = true
 	_refresh_all()
 
@@ -196,6 +230,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		_accept_input()
 		return
 
+	if _is_view_details(event):
+		_toggle_detail_mode()
+		_accept_input()
+		return
+
+	if _is_save_deck(event):
+		_save_current_profile()
+		_status_text = "Deck saved."
+		_refresh_labels()
+		_accept_input()
+		return
+
+	if _is_delete_deck(event):
+		_delete_current_deck()
+		_accept_input()
+		return
+
 	if _is_start(event):
 		_try_confirm_deck()
 		_accept_input()
@@ -260,7 +311,10 @@ func _refresh_collection() -> void:
 			view.configure(card, OWNER_PLAYER, false)
 			view.pivot_offset = Vector2.ZERO
 			var is_in_deck: bool = _deck_has_card(card)
-			view.modulate = USED_CARD_MODULATE if is_in_deck else Color.WHITE
+			if not _can_use_card(card):
+				view.modulate = LOCKED_CARD_MODULATE
+			else:
+				view.modulate = USED_CARD_MODULATE if is_in_deck else Color.WHITE
 			var is_cursor: bool = card_index == _cursor_index
 			var is_replace_source: bool = _state == STATE_REPLACE and card_index == _replace_source_index
 			view.scale = COLLECTION_FOCUS_SCALE if is_replace_source else COLLECTION_SCALE
@@ -308,33 +362,86 @@ func _refresh_deck() -> void:
 		)
 
 func _refresh_labels() -> void:
-	title_label.text = "Choose your deck"
-	profile_label.text = "Deck %d / %d" % [_profile_index + 1, PROFILE_COUNT]
-	rank_label.text = "Rank %d" % _player_rank
-	card_count_label.text = "Cards %d / %d" % [_deck.size(), HAND_SIZE]
-	points_label.text = "Points %d / %d" % [_deck_cost(), _budget_limit]
-	page_label.text = "Cards  %d / %d" % [_page_index + 1, _page_count()]
-	rank_button.text = "Rank"
-	sort_direction_button.text = "Descending" if _sort_descending else "Ascending"
-	profile_button.text = "Profile %d" % (_profile_index + 1)
+	current_deck_label.text = "Deck #%d" % (_profile_index + 1)
+	current_deck_count.text = "%d / %d" % [_deck.size(), HAND_SIZE]
+	cards_owned_label.text = "Cards Owned  %d / %d" % [
+		_cards.size(),
+		_total_catalog_card_count(),
+	]
 	page_indicator.text = "%d / %d" % [_page_index + 1, _page_count()]
 	status_label.text = _status_text
+	_refresh_sort_ui()
+
+	for index in range(_profile_name_labels.size()):
+		_profile_name_labels[index].text = "Deck #%d" % (index + 1)
+		var count: int = _deck.size() if index == _profile_index else _saved_profile_count(index)
+		_profile_count_labels[index].text = "%d / %d" % [count, HAND_SIZE]
+	profile_selection_arrow.position = Vector2(19.0, 84.0 + float(_profile_index) * 25.0)
 
 	if _cursor_index >= 0 and _cursor_index < _cards.size():
 		var card = _cards[_cursor_index]
-		var membership: String = "   IN DECK" if _deck_has_card(card) else ""
-		card_info_label.text = "%s   Cost %d%s" % [
-			str(card.display_name),
-			int(card.deck_cost),
-			membership,
-		]
+		detail_card.visible = true
+		detail_card.configure(card, OWNER_PLAYER, false)
+		detail_card.pivot_offset = Vector2.ZERO
+		detail_card.set_selected(false)
+		if detail_card.has_method("set_owner_outline_visible"):
+			detail_card.call("set_owner_outline_visible", false)
+		detail_name.text = str(card.display_name)
+		detail_number.text = "No. %03d" % (int(card.source_index) + 1)
+		detail_rarity.text = String(card.rarity_id).capitalize()
+		detail_description.text = _detail_description(card)
 	else:
-		card_info_label.text = ""
+		detail_card.visible = false
+		detail_name.text = ""
+		detail_number.text = ""
+		detail_rarity.text = ""
+		detail_description.text = ""
 
-	if _state == STATE_REPLACE:
-		help_label.text = "A/D: Deck slot   K: Replace   I: Cancel"
-	else:
-		help_label.text = "W/A/S/D: Card   K: Select   Q/E: Page   1-6: Profile   Enter: Play   I: Leave"
+
+func _detail_description(card) -> String:
+	if card == null:
+		return ""
+	var lines: Array[String] = []
+	lines.append("Cost %d" % int(card.deck_cost))
+	if _show_extended_details:
+		lines.append(
+			"Ranks %d / %d / %d / %d   Total %d"
+			% [
+				int(card.top_rank),
+				int(card.right_rank),
+				int(card.bottom_rank),
+				int(card.left_rank),
+				int(card.rank_total()),
+			]
+		)
+	if card.has_method("get_influence_description"):
+		var influence_text: String = str(card.call("get_influence_description")).strip_edges()
+		if not influence_text.is_empty():
+			lines.append(influence_text)
+	return "\n".join(lines)
+
+
+func _total_catalog_card_count() -> int:
+	if _catalog != null and _catalog.has_method("get_total_source_count"):
+		return maxi(_cards.size(), int(_catalog.call("get_total_source_count")))
+	return _cards.size()
+
+
+func _saved_profile_count(profile_index: int) -> int:
+	if profile_index == _profile_index:
+		return _deck.size()
+	var config := ConfigFile.new()
+	if config.load(SAVE_PATH) != OK:
+		return 0
+	var id_key: String = "deck_ids_%d" % (profile_index + 1)
+	if config.has_section_key("decks", id_key):
+		var raw_ids = config.get_value("decks", id_key, PackedStringArray())
+		return mini(HAND_SIZE, raw_ids.size()) if raw_ids is PackedStringArray or raw_ids is Array else 0
+	var legacy_key: String = "deck_%d" % (profile_index + 1)
+	if config.has_section_key("decks", legacy_key):
+		var raw_indices = config.get_value("decks", legacy_key, PackedInt32Array())
+		return mini(HAND_SIZE, raw_indices.size()) if raw_indices is PackedInt32Array or raw_indices is Array else 0
+	return 0
 
 
 func _move_cursor(dx: int, dy: int) -> void:
@@ -381,8 +488,12 @@ func _select_cursor_card() -> void:
 		_refresh_labels()
 		return
 	if _deck_has_card(card):
-		_status_text = "That card is already in this deck."
-		_refresh_labels()
+		var deck_index: int = _deck_index_of(card)
+		if deck_index >= 0:
+			_deck.remove_at(deck_index)
+			_save_current_profile()
+			_status_text = "Removed from deck."
+			_refresh_all()
 		return
 
 	if _deck.size() < HAND_SIZE:
@@ -528,24 +639,62 @@ func _try_confirm_deck() -> void:
 	deck_confirmed.emit(_deck.duplicate())
 
 
-func _on_rank_button_pressed() -> void:
-	# Rank currently means card point value (deck_cost). Keep this as the
-	# authoritative backend sort key so future UI skins do not change behavior.
-	_sort_cards_preserving_cursor()
-	_status_text = "Sorted by points."
-	_refresh_all()
+func _on_rank_sort_pressed() -> void:
+	if _sort_mode == SORT_RANK_ASCENDING:
+		_apply_sort_mode(SORT_RANK_DESCENDING)
+	else:
+		_apply_sort_mode(SORT_RANK_ASCENDING)
 
 
-func _on_sort_direction_button_pressed() -> void:
-	_sort_descending = not _sort_descending
+func _on_sort_mode_pressed(mode: int) -> void:
+	_apply_sort_mode(clampi(mode, SORT_RANK_ASCENDING, SORT_NAME))
+
+
+func _apply_sort_mode(mode: int) -> void:
+	_sort_mode = mode
 	_save_sort_preference()
 	_sort_cards_preserving_cursor()
 	_status_text = ""
 	_refresh_all()
 
 
-func _on_profile_button_pressed() -> void:
-	_switch_profile((_profile_index + 1) % PROFILE_COUNT)
+func _refresh_sort_ui() -> void:
+	# The BOF bitmap font does not contain the Unicode triangle glyphs, which is
+	# why the old Rank buttons rendered garbage such as "25C". The word Rank
+	# stays text and a real Polygon2D supplies the arrow instead.
+	rank_button.text = "Rank"
+	rank_arrow.rotation_degrees = 180.0 if _sort_mode == SORT_RANK_DESCENDING else 0.0
+
+
+func _toggle_detail_mode() -> void:
+	_show_extended_details = not _show_extended_details
+	_status_text = "Detailed card stats shown." if _show_extended_details else "Card details collapsed."
+	_refresh_labels()
+
+
+func _delete_current_deck() -> void:
+	_deck.clear()
+	_save_current_profile()
+	_state = STATE_BROWSE
+	_replace_card = null
+	_replace_source_index = -1
+	_status_text = "Deck #%d deleted." % (_profile_index + 1)
+	_refresh_all()
+
+
+func _on_profile_row_pressed(profile_index: int) -> void:
+	_switch_profile(profile_index)
+
+
+func _on_new_deck_pressed() -> void:
+	for profile_index in range(VISIBLE_PROFILE_COUNT):
+		if _saved_profile_count(profile_index) == 0:
+			_switch_profile(profile_index)
+			_status_text = "New deck slot selected."
+			_refresh_all()
+			return
+	_status_text = "All five deck slots are already in use."
+	_refresh_labels()
 
 
 func _sort_cards_preserving_cursor() -> void:
@@ -565,37 +714,50 @@ func _sort_cards_preserving_cursor() -> void:
 
 func _sort_cards() -> void:
 	_cards.sort_custom(func(card_a, card_b):
-		var cost_a: int = int(card_a.deck_cost)
-		var cost_b: int = int(card_b.deck_cost)
-		if cost_a != cost_b:
-			return cost_a > cost_b if _sort_descending else cost_a < cost_b
-
-		var strength_a: int = int(card_a.rank_total()) if card_a.has_method("rank_total") else 0
-		var strength_b: int = int(card_b.rank_total()) if card_b.has_method("rank_total") else 0
-		if strength_a != strength_b:
-			return strength_a > strength_b if _sort_descending else strength_a < strength_b
-
-		var source_a: int = int(card_a.source_index)
-		var source_b: int = int(card_b.source_index)
-		return source_a > source_b if _sort_descending else source_a < source_b
+		match _sort_mode:
+			SORT_NUMBER:
+				return int(card_a.source_index) < int(card_b.source_index)
+			SORT_NAME:
+				var name_compare: int = str(card_a.display_name).nocasecmp_to(str(card_b.display_name))
+				if name_compare != 0:
+					return name_compare < 0
+				return int(card_a.source_index) < int(card_b.source_index)
+			SORT_RANK_DESCENDING:
+				return _rank_sort_before(card_a, card_b, true)
+			_:
+				return _rank_sort_before(card_a, card_b, false)
 	)
+
+
+func _rank_sort_before(card_a, card_b, descending: bool) -> bool:
+	var cost_a: int = int(card_a.deck_cost)
+	var cost_b: int = int(card_b.deck_cost)
+	if cost_a != cost_b:
+		return cost_a > cost_b if descending else cost_a < cost_b
+	var strength_a: int = int(card_a.rank_total()) if card_a.has_method("rank_total") else 0
+	var strength_b: int = int(card_b.rank_total()) if card_b.has_method("rank_total") else 0
+	if strength_a != strength_b:
+		return strength_a > strength_b if descending else strength_a < strength_b
+	return int(card_a.source_index) > int(card_b.source_index) if descending else int(card_a.source_index) < int(card_b.source_index)
 
 
 func _stamp_config(config: ConfigFile) -> void:
 	config.set_value("meta", "version", SAVE_VERSION)
 
 
-func _load_sort_descending() -> bool:
+func _load_sort_mode() -> int:
 	var config := ConfigFile.new()
 	if config.load(SAVE_PATH) != OK:
-		return false
-	return bool(config.get_value("meta", "sort_descending", false))
+		return SORT_RANK_ASCENDING
+	if config.has_section_key("meta", "sort_mode"):
+		return clampi(int(config.get_value("meta", "sort_mode", SORT_RANK_ASCENDING)), SORT_RANK_ASCENDING, SORT_NAME)
+	return SORT_RANK_DESCENDING if bool(config.get_value("meta", "sort_descending", false)) else SORT_RANK_ASCENDING
 
 
 func _save_sort_preference() -> void:
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
-	config.set_value("meta", "sort_descending", _sort_descending)
+	config.set_value("meta", "sort_mode", _sort_mode)
 	_stamp_config(config)
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
@@ -603,7 +765,7 @@ func _save_sort_preference() -> void:
 
 
 func _switch_profile(new_profile_index: int) -> void:
-	if new_profile_index < 0 or new_profile_index >= PROFILE_COUNT:
+	if new_profile_index < 0 or new_profile_index >= VISIBLE_PROFILE_COUNT:
 		return
 	if new_profile_index == _profile_index:
 		return
@@ -736,11 +898,15 @@ func _load_profile(profile_index: int) -> void:
 						_deck.append(card)
 						running_cost += int(card.deck_cost)
 
-	# Only brand-new deck profiles are initialized automatically.
-	# A profile missing a card because the player LOST it stays short so the
-	# player explicitly chooses a replacement instead of silently receiving one.
+	# Deck #1 starts with the safe starter deck. The other visible deck slots
+	# intentionally begin empty so the deck-builder screen reads 0 / 5 until the
+	# player actually builds them. A profile missing a card because the player
+	# lost it still stays short; we never silently refill an existing profile.
 	if not had_saved_profile:
-		_deck = _build_default_deck()
+		if profile_index == 0:
+			_deck = _build_default_deck()
+		else:
+			_deck.clear()
 
 	_save_current_profile()
 
@@ -929,8 +1095,6 @@ func _profile_number(event: InputEvent) -> int:
 			return 3
 		KEY_5:
 			return 4
-		KEY_6:
-			return 5
 		_:
 			return -1
 
@@ -941,6 +1105,18 @@ func _pressed(event: InputEvent) -> bool:
 
 func _is_confirm(event: InputEvent) -> bool:
 	return _key_matches(event, KEY_K)
+
+
+func _is_view_details(event: InputEvent) -> bool:
+	return _key_matches(event, KEY_J)
+
+
+func _is_save_deck(event: InputEvent) -> bool:
+	return _key_matches(event, KEY_L)
+
+
+func _is_delete_deck(event: InputEvent) -> bool:
+	return _key_matches(event, KEY_R)
 
 
 func _is_start(event: InputEvent) -> bool:

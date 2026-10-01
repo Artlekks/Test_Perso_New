@@ -47,6 +47,12 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 const PREVIEW_GHOST_ALPHA := 0.72
 const PREVIEW_INFLUENCE_COLOR := Color(1.0, 0.76, 0.18, 0.28)
 const PREVIEW_PRESSURE_COLOR := Color(1.0, 0.24, 0.20, 0.34)
+const ACTIVE_INFLUENCE_PLAYER_FILL := Color(0.18, 0.48, 1.0, 0.13)
+const ACTIVE_INFLUENCE_PLAYER_BORDER := Color(0.28, 0.68, 1.0, 0.90)
+const ACTIVE_INFLUENCE_OPPONENT_FILL := Color(1.0, 0.18, 0.16, 0.13)
+const ACTIVE_INFLUENCE_OPPONENT_BORDER := Color(1.0, 0.34, 0.24, 0.90)
+const ACTIVE_INFLUENCE_BOTH_FILL := Color(0.78, 0.34, 0.92, 0.14)
+const ACTIVE_INFLUENCE_BOTH_BORDER := Color(0.96, 0.62, 1.0, 0.92)
 const RESULT_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.56)
 
 const CARD_GAME_BACKGROUND = preload(
@@ -142,6 +148,7 @@ var _surrendered: bool = false
 var _result_reason: StringName = &""
 var _preview_ghost: Control = null
 var _influence_preview_overlays: Array[ColorRect] = []
+var _active_influence_overlays: Array[Panel] = []
 var _match_hud: Control = null
 var _default_backdrop_texture: Texture2D = null
 var _result_dim: ColorRect = null
@@ -1234,6 +1241,15 @@ func _build_preview_visuals() -> void:
 		root.add_child(overlay)
 		_influence_preview_overlays.append(overlay)
 
+	_active_influence_overlays.clear()
+	for _cell_index in range(9):
+		var active_overlay := Panel.new()
+		active_overlay.visible = false
+		active_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		active_overlay.z_index = 608
+		root.add_child(active_overlay)
+		_active_influence_overlays.append(active_overlay)
+
 
 func _hide_preview_visuals() -> void:
 	if is_instance_valid(_preview_ghost):
@@ -1241,6 +1257,53 @@ func _hide_preview_visuals() -> void:
 	for overlay in _influence_preview_overlays:
 		if is_instance_valid(overlay):
 			overlay.visible = false
+
+
+func _refresh_active_influence_visuals() -> void:
+	for overlay in _active_influence_overlays:
+		if is_instance_valid(overlay):
+			overlay.visible = false
+	if _match == null or not _match.has_method("get_influence_board_snapshot"):
+		return
+
+	var influence_snapshot: Array = _match.call("get_influence_board_snapshot")
+	for cell_index in range(mini(influence_snapshot.size(), _active_influence_overlays.size())):
+		var cell_state: Dictionary = influence_snapshot[cell_index]
+		var player_pressure: int = int(cell_state.get("player_pressure", 0))
+		var opponent_pressure: int = int(cell_state.get("opponent_pressure", 0))
+		if player_pressure <= 0 and opponent_pressure <= 0:
+			continue
+
+		var overlay: Panel = _active_influence_overlays[cell_index]
+		var board_rect: Rect2 = _board_cell_visual_rect(cell_index)
+		overlay.position = board_rect.position
+		overlay.size = board_rect.size
+		overlay.add_theme_stylebox_override(
+			"panel",
+			_active_influence_style(player_pressure > 0, opponent_pressure > 0)
+		)
+		overlay.visible = true
+
+
+func _active_influence_style(has_player_pressure: bool, has_opponent_pressure: bool) -> StyleBoxFlat:
+	var fill: Color = ACTIVE_INFLUENCE_PLAYER_FILL
+	var border: Color = ACTIVE_INFLUENCE_PLAYER_BORDER
+	if has_player_pressure and has_opponent_pressure:
+		fill = ACTIVE_INFLUENCE_BOTH_FILL
+		border = ACTIVE_INFLUENCE_BOTH_BORDER
+	elif has_opponent_pressure:
+		fill = ACTIVE_INFLUENCE_OPPONENT_FILL
+		border = ACTIVE_INFLUENCE_OPPONENT_BORDER
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.set_corner_radius_all(2)
+	return style
 
 
 func _preview_for_current_selection() -> Dictionary:
@@ -1378,6 +1441,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 		board_view.set_owner_outline_visible(false)
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
+	_refresh_active_influence_visuals()
 	_refresh_preview_visuals(active_preview)
 	var score: Dictionary = _match.get_score()
 	if _match_hud != null:

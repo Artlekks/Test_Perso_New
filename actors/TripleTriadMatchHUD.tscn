@@ -48,7 +48,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 [node name="OpponentScoreAnchor" type="Control" parent="."]
 layout_mode = 0
-scale = Vector2(1.4, 1.4)
+scale = Vector2(1, 1)
 offset_left = 84.0
 offset_top = 40.0
 offset_right = 100.0
@@ -57,6 +57,7 @@ mouse_filter = 2
 [node name="Digits" type="Control" parent="OpponentScoreAnchor"]
 texture_filter = 1
 layout_mode = 0
+scale = Vector2(1.4, 1.4)
 offset_right = 16.0
 offset_bottom = 16.0
 mouse_filter = 2
@@ -66,7 +67,7 @@ text = "5"
 
 [node name="PlayerScoreAnchor" type="Control" parent="."]
 layout_mode = 0
-scale = Vector2(1.4, 1.4)
+scale = Vector2(1, 1)
 offset_left = 532.0
 offset_top = 40.0
 offset_right = 548.0
@@ -75,6 +76,7 @@ mouse_filter = 2
 [node name="Digits" type="Control" parent="PlayerScoreAnchor"]
 texture_filter = 1
 layout_mode = 0
+scale = Vector2(1.4, 1.4)
 offset_right = 16.0
 offset_bottom = 16.0
 mouse_filter = 2
