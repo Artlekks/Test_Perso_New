@@ -41,8 +41,10 @@ const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/tripl
 const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad_opponent_evolution.gd")
 const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad_gameplay_event_feed.gd")
 const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
+const CampaignQAHarnessScript = preload("res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd")
+const CampaignQAMenuScene = preload("res://actors/TripleTriadCampaignQAMenu.tscn")
 
-const BACKEND_VERSION := "2.5.0"
+const BACKEND_VERSION := "2.6.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -195,10 +197,13 @@ var _gameplay_event_feed = GameplayEventFeedScript.new()
 var _match_resolution_journal = MatchResolutionJournalScript.new()
 var _last_runtime_recovery: Dictionary = {}
 var _pending_competition_change: Dictionary = {}
+var _campaign_qa_harness = CampaignQAHarnessScript.new()
+var _campaign_qa_menu: CanvasLayer = null
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_build_campaign_qa_menu()
 	_default_backdrop_texture = backdrop.texture
 	_apply_card_game_visual_layout()
 	_build_match_hud()
@@ -344,6 +349,158 @@ func _ready() -> void:
 			balance_games_per_matchup,
 			balance_simulation_seed
 		)
+
+
+func _build_campaign_qa_menu() -> void:
+	if not OS.is_debug_build() or _campaign_qa_menu != null:
+		return
+	_campaign_qa_menu = CampaignQAMenuScene.instantiate() as CanvasLayer
+	add_child(_campaign_qa_menu)
+	if _campaign_qa_menu.has_method("configure"):
+		_campaign_qa_menu.call(
+			"configure",
+			_campaign_qa_harness
+		)
+	_campaign_qa_menu.connect(
+		"scenario_requested",
+		Callable(self, "_on_campaign_qa_scenario_requested")
+	)
+	_campaign_qa_menu.connect(
+		"action_requested",
+		Callable(self, "_on_campaign_qa_action_requested")
+	)
+
+
+func _campaign_qa_snapshot() -> Dictionary:
+	return {
+		"player": get_player_snapshot() if _backend_ready else {},
+		"acquisition": get_acquisition_snapshot() if _backend_ready else {},
+		"completion": (
+			get_collection_completion_snapshot()
+			if _backend_ready
+			else {}
+		),
+		"recovery": _last_runtime_recovery.duplicate(true),
+	}
+
+
+func _toggle_campaign_qa_menu() -> void:
+	if _campaign_qa_menu == null:
+		return
+	if bool(_campaign_qa_menu.call("is_open")):
+		_campaign_qa_menu.call("close_menu")
+	else:
+		_campaign_qa_menu.call(
+			"open_menu",
+			_campaign_qa_snapshot()
+		)
+
+
+func _on_campaign_qa_scenario_requested(
+	scenario_id: StringName
+) -> void:
+	if not OS.is_debug_build():
+		return
+	var result: Dictionary = _campaign_qa_harness.apply_scenario(
+		scenario_id,
+		card_catalog
+	)
+	if not bool(result.get("success", false)):
+		if _campaign_qa_menu != null:
+			_campaign_qa_menu.call(
+				"set_status",
+				"FAILED: %s"
+				% str(result.get("reason", "unknown"))
+			)
+		return
+	_reload_scene_after_campaign_qa()
+
+
+func _on_campaign_qa_action_requested(
+	action_id: StringName
+) -> void:
+	if not OS.is_debug_build():
+		return
+	match action_id:
+		&"arm_next_coast_salvage":
+			if not _backend_ready or _world_reward_ledger == null:
+				_campaign_qa_status("Backend unavailable.")
+				return
+			if not is_card_game_unlocked():
+				_campaign_qa_status(
+					"Card game is locked. Use Fresh / Undiscovered and catch the starter case first."
+				)
+				return
+			var counter_id := StringName(
+				"fishing_salvage:coast_shallows"
+			)
+			_world_reward_ledger.call(
+				"reset_counter",
+				counter_id
+			)
+			for _index in range(3):
+				_world_reward_ledger.call(
+					"increment_counter",
+					counter_id
+				)
+			_campaign_qa_status(
+				"Armed: next eligible Ocean 2 catch grants Coast Shallows salvage."
+			)
+		&"reset_decks":
+			var result: Dictionary = (
+				_campaign_qa_harness.reset_decks_only()
+			)
+			if bool(result.get("success", false)):
+				_reload_scene_after_campaign_qa()
+			else:
+				_campaign_qa_status("Could not reset decks.")
+		&"reconcile":
+			var recovery: Dictionary = reconcile_runtime_state()
+			_campaign_qa_status(
+				"Reconcile: %s"
+				% (
+					"clean"
+					if bool(recovery.get("valid", true))
+					else "attention required"
+				)
+			)
+		&"run_backend_qa":
+			var report: Dictionary = run_backend_qa()
+			_campaign_qa_status(
+				"Backend QA: %d / %d passed"
+				% [
+					int(report.get("passed", 0)),
+					int(report.get("total", 0)),
+				]
+			)
+
+
+func _campaign_qa_status(text: String) -> void:
+	if _campaign_qa_menu != null:
+		_campaign_qa_menu.call("set_status", text)
+
+
+func _reload_scene_after_campaign_qa() -> void:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	tree.paused = false
+	tree.reload_current_scene()
+
+
+func _is_campaign_qa_toggle(event: InputEvent) -> bool:
+	if not OS.is_debug_build() or not (event is InputEventKey):
+		return false
+	var key_event := event as InputEventKey
+	return (
+		key_event.pressed
+		and not key_event.echo
+		and key_event.shift_pressed
+		and (
+			key_event.keycode == KEY_F10
+			or key_event.physical_keycode == KEY_F10
+		)
+	)
 
 
 func _apply_card_game_visual_layout() -> void:
@@ -1901,6 +2058,27 @@ func close_game() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _is_campaign_qa_toggle(event):
+		_toggle_campaign_qa_menu()
+		_accept_input()
+		return
+
+	if (
+		_campaign_qa_menu != null
+		and bool(_campaign_qa_menu.call("is_open"))
+	):
+		if _pressed(event):
+			var close_requested: bool = bool(
+				_campaign_qa_menu.call(
+					"handle_input",
+					event
+				)
+			)
+			if close_requested:
+				_campaign_qa_menu.call("close_menu")
+			_accept_input()
+		return
+
 	if not is_open() or not _pressed(event):
 		return
 
