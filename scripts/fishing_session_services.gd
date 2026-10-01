@@ -63,6 +63,15 @@ const FishingEnvironmentIntegrityScript = preload(
 const FishingEnvironmentCatalogScript = preload(
 	"res://scripts/fishing_environment_catalog.gd"
 )
+const BeachGatheringInventoryScript = preload(
+	"res://scripts/beach_gathering_inventory.gd"
+)
+const BeachCraftingServiceScript = preload(
+	"res://scripts/beach_crafting_service.gd"
+)
+const BeachCraftingIntegrityScript = preload(
+	"res://scripts/beach_crafting_integrity.gd"
+)
 
 const FishingTackleCatalogResource = preload(
 	"res://data/bof4/tackle/all_tackle.tres"
@@ -91,6 +100,9 @@ const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 const FishingContentCatalogResource: FishingContentCatalog = preload(
 	"res://data/bof4/catalogs/all_content.tres"
 )
+const BeachCraftingCatalogResource: BeachCraftingCatalog = preload(
+	"res://data/crafting/beach/beach_vertical_slice_catalog.tres"
+)
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -110,7 +122,11 @@ var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
+var beach_crafting_integrity_report: Dictionary = {}
 var save_integrity_report: Dictionary = {}
+
+var beach_gathering_inventory: BeachGatheringInventory = null
+var beach_crafting_service: BeachCraftingService = null
 
 var _initialized: bool = false
 
@@ -146,6 +162,48 @@ func initialize() -> void:
 		progress,
 		false
 	)
+
+	beach_gathering_inventory = (
+		BeachGatheringInventoryScript.new()
+		as BeachGatheringInventory
+	)
+	beach_gathering_inventory.name = "BeachGatheringInventory"
+	add_child(beach_gathering_inventory)
+	beach_gathering_inventory.initialize()
+
+	beach_crafting_service = (
+		BeachCraftingServiceScript.new()
+		as BeachCraftingService
+	)
+	beach_crafting_service.name = "BeachCraftingService"
+	add_child(beach_crafting_service)
+	beach_crafting_service.configure(
+		beach_gathering_inventory,
+		inventory,
+		FishingTackleCatalogResource,
+		BeachCraftingCatalogResource
+	)
+
+	beach_crafting_integrity_report = (
+		BeachCraftingIntegrityScript.audit(
+			BeachCraftingCatalogResource,
+			FishingTackleCatalogResource
+		)
+	)
+	for warning in beach_crafting_integrity_report.get(
+		"warnings",
+		PackedStringArray()
+	):
+		push_warning(
+			"Beach crafting audit: %s" % str(warning)
+		)
+	for error in beach_crafting_integrity_report.get(
+		"errors",
+		PackedStringArray()
+	):
+		push_error(
+			"Beach crafting audit: %s" % str(error)
+		)
 
 	catch_repository = FishingCatchRepositoryScript.new()
 	catch_repository.name = "FishingCatchRepository"
@@ -328,6 +386,18 @@ func get_save_integrity_report() -> Dictionary:
 	return save_integrity_report.duplicate(true)
 
 
+func get_beach_crafting_integrity_report() -> Dictionary:
+	return beach_crafting_integrity_report.duplicate(true)
+
+
+func get_beach_gathering_inventory() -> BeachGatheringInventory:
+	return beach_gathering_inventory
+
+
+func get_beach_crafting_service() -> BeachCraftingService:
+	return beach_crafting_service
+
+
 func bind_loadout(loadout) -> Dictionary:
 	if loadout == null:
 		return {}
@@ -360,6 +430,8 @@ func is_ready() -> bool:
 		and session_modifier_service != null
 		and environment_service != null
 		and fish_consumable_service != null
+		and beach_gathering_inventory != null
+		and beach_crafting_service != null
 		and manillo_ledger != null
 		and unlock_state != null
 		and reward_service != null

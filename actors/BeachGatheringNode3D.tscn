@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_gathering_node_3d.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_placeholder"]
+shading_mode = 0
+albedo_color = Color(0.78, 0.72, 0.52, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_placeholder"]
+material = SubResource("StandardMaterial3D_placeholder")
+radius = 0.11
+height = 0.22
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
+radius = 0.65
+
+[node name="BeachGatheringNode3D" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="PlaceholderMesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.10, 0)
+material_override = SubResource("StandardMaterial3D_placeholder")
+mesh = SubResource("SphereMesh_placeholder")
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 3
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+position = Vector3(0, 0.25, 0)
+shape = SubResource("SphereShape3D_interaction")
+
+[node name="PromptLabel3D" type="Label3D" parent="."]
+position = Vector3(0, 0.55, 0)
+billboard = 1
+modulate = Color(1, 0.964706, 0.709804, 1)
+text = "K : Gather"
+font_size = 24
+outline_size = 7

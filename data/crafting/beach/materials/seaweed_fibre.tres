@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_material_definition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+material_id = &"seaweed_fibre"
+display_name = "Seaweed Fibre"
+description = "Tough flexible fibre used to improve control and movement."
+buoyancy_delta = 0
+handling_delta = 2
+attraction_delta = 0
+visual_tint = Color(0.30, 0.62, 0.33, 1)

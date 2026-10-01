@@ -1,0 +1,124 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_crafting_menu.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.035, 0.035, 0.045, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.82, 0.62, 0.26, 1)
+content_margin_left = 16.0
+content_margin_top = 14.0
+content_margin_right = 16.0
+content_margin_bottom = 14.0
+
+[node name="BeachCraftingMenu" type="CanvasLayer"]
+process_mode = 3
+layer = 110
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.58)
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -205.0
+offset_right = 300.0
+offset_bottom = 205.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="TitleLabel" type="Label" parent="Root/Panel"]
+offset_left = 18.0
+offset_top = 12.0
+offset_right = 582.0
+offset_bottom = 38.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "BEACH CRAFTING"
+horizontal_alignment = 1
+
+[node name="RecipeLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 48.0
+offset_right = 572.0
+offset_bottom = 102.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+text = "Recipe"
+
+[node name="SlotsLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 112.0
+offset_right = 300.0
+offset_bottom = 196.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "> BODY"
+
+[node name="PreviewLabel" type="Label" parent="Root/Panel"]
+offset_left = 310.0
+offset_top = 112.0
+offset_right = 572.0
+offset_bottom = 196.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+text = "Preview"
+
+[node name="InventoryLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 214.0
+offset_right = 572.0
+offset_bottom = 286.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+autowrap_mode = 2
+text = "MATERIALS"
+
+[node name="StatusLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 302.0
+offset_right = 572.0
+offset_bottom = 334.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = ""
+
+[node name="HelpLabel" type="Label" parent="Root/Panel"]
+offset_left = 20.0
+offset_top = 358.0
+offset_right = 580.0
+offset_bottom = 398.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "W/S Recipe   A/D Material   J Slot   K Craft   I Back"
+horizontal_alignment = 1

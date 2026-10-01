@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_crafting_recipe.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+recipe_id = &"beach_minnow"
+display_name = "Beach Minnow"
+description = "A general-purpose minnow lure. Material choice decides whether it floats, dives, or draws more attention."
+template_lure_id = &"floater"
+base_buoyancy = 0
+base_handling = 0
+base_attraction = 0
+body_material_ids = PackedStringArray("driftwood", "shell")
+core_material_ids = PackedStringArray("iron_scrap", "shell")
+accent_material_ids = PackedStringArray("sea_glass", "seaweed_fibre")
+accent_optional = true

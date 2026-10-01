@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_crafting_recipe.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+recipe_id = &"beach_sinker"
+display_name = "Beach Sinker"
+description = "A deep-running lure built around an iron core. Heavy, direct, and meant for lower water."
+template_lure_id = &"hanger"
+base_buoyancy = -2
+base_handling = -1
+base_attraction = 0
+body_material_ids = PackedStringArray("shell", "driftwood")
+core_material_ids = PackedStringArray("iron_scrap")
+accent_material_ids = PackedStringArray("sea_glass", "seaweed_fibre")
+accent_optional = true

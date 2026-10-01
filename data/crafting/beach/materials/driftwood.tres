@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_material_definition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+material_id = &"driftwood"
+display_name = "Driftwood"
+description = "Light beach wood. Naturally buoyant and easy to work."
+buoyancy_delta = 2
+handling_delta = 1
+attraction_delta = 0
+visual_tint = Color(0.55, 0.39, 0.23, 1)

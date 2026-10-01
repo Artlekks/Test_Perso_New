@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_crafting_recipe.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+recipe_id = &"beach_surface"
+display_name = "Beach Surface Lure"
+description = "A light surface lure that favors buoyancy and quick handling."
+template_lure_id = &"popper"
+base_buoyancy = 1
+base_handling = 1
+base_attraction = 0
+body_material_ids = PackedStringArray("driftwood", "shell")
+core_material_ids = PackedStringArray("seaweed_fibre", "shell", "iron_scrap")
+accent_material_ids = PackedStringArray("sea_glass", "seaweed_fibre")
+accent_optional = true
