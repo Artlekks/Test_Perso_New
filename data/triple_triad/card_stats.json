@@ -1,60 +1,52 @@
 {
   "schema_version": 3,
-  "notes": "Authored Triple Triad card data. Influence entries are prototype pressure patterns for spatial-control playtesting; final content assignment is intentionally deferred.",
+  "notes": "Content balance v1: 179 authored names, rarity-aware ranks/costs, Duel Rank gates, 10-card Bronze starter pool, and deliberate Pressure distribution. Stable card IDs, atlas slots, and Bronze/Silver/Gold rarity mapping are unchanged.",
   "cards": [
     {
       "card_id": "mugshot_000",
-      "display_name": "Portrait 001",
+      "display_name": "Ryn",
       "atlas_slot": 0,
-      "level": 1,
-      "points": 6,
+      "level": 8,
+      "points": 8,
       "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
+        "top": 8,
+        "right": 3,
+        "bottom": 7,
+        "left": 6
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
-      "influence": {
-        "mode": "pressure",
-        "strength": 1,
-        "offsets": [
-          [
-            -1,
-            -1
-          ],
-          [
-            1,
-            -1
-          ]
-        ]
-      }
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_001",
-      "display_name": "Portrait 002",
+      "display_name": "Ashmaw",
       "atlas_slot": 1,
-      "level": 2,
-      "points": 6,
+      "level": 7,
+      "points": 8,
       "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 2
+        "top": 7,
+        "right": 6,
+        "bottom": 4,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
       "influence": {
@@ -63,774 +55,465 @@
         "offsets": [
           [
             -1,
-            0
+            -1
           ],
           [
             1,
-            0
+            -1
           ]
         ]
-      }
+      },
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
     },
     {
       "card_id": "mugshot_002",
-      "display_name": "Portrait 003",
+      "display_name": "Teo",
       "atlas_slot": 2,
-      "level": 3,
-      "points": 7,
+      "level": 7,
+      "points": 8,
       "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 6
+        "top": 6,
+        "right": 5,
+        "bottom": 4,
+        "left": 7
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
-      "influence": {
-        "mode": "pressure",
-        "strength": 1,
-        "offsets": [
-          [
-            0,
-            -1
-          ],
-          [
-            0,
-            1
-          ]
-        ]
-      }
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_003",
-      "display_name": "Portrait 004",
+      "display_name": "Elira",
       "atlas_slot": 3,
-      "level": 4,
+      "level": 5,
       "points": 6,
       "ranks": {
         "top": 3,
-        "right": 6,
+        "right": 7,
         "bottom": 3,
-        "left": 4
+        "left": 5
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 2,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
-      "influence": {
-        "mode": "pressure",
-        "strength": 1,
-        "offsets": [
-          [
-            0,
-            -1
-          ],
-          [
-            1,
-            -1
-          ],
-          [
-            1,
-            0
-          ]
-        ]
-      }
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_013",
-      "display_name": "Portrait 014",
+      "display_name": "Merek",
       "atlas_slot": 4,
-      "level": 4,
-      "points": 2,
+      "level": 9,
+      "points": 9,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
+        "top": 5,
+        "right": 8,
+        "bottom": 5,
+        "left": 8
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 4,
       "acquisition_tags": [
-        "starter",
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_016",
+      "display_name": "Brass Watcher",
+      "atlas_slot": 5,
+      "level": 10,
+      "points": 10,
+      "ranks": {
+        "top": 4,
+        "right": 8,
+        "bottom": 4,
+        "left": 8
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "gold",
+        "influence"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 6,
+      "acquisition_tags": [
         "opponent_win"
       ],
       "influence": {
         "mode": "pressure",
-        "strength": 1,
+        "strength": 2,
         "offsets": [
           [
             0,
             -1
           ]
         ]
-      }
-    },
-    {
-      "card_id": "mugshot_016",
-      "display_name": "Portrait 017",
-      "atlas_slot": 5,
-      "level": 7,
-      "points": 2,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
       },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ],
-      "influence": {
-        "mode": "pressure",
-        "strength": 1,
-        "offsets": [
-          [
-            1,
-            0
-          ]
-        ]
-      }
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_017",
-      "display_name": "Portrait 018",
+      "display_name": "Iron Watcher",
       "atlas_slot": 6,
-      "level": 8,
-      "points": 4,
+      "level": 9,
+      "points": 9,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 6
+        "top": 4,
+        "right": 9,
+        "bottom": 4,
+        "left": 9
       },
-      "group": "",
-      "tags": [],
+      "group": "construct",
+      "tags": [
+        "construct",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 4,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_019",
-      "display_name": "Portrait 020",
+      "display_name": "Serah",
       "atlas_slot": 7,
-      "level": 10,
+      "level": 9,
+      "points": 9,
+      "ranks": {
+        "top": 6,
+        "right": 7,
+        "bottom": 6,
+        "left": 7
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 5,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_023",
+      "display_name": "Veyra",
+      "atlas_slot": 8,
+      "level": 8,
+      "points": 8,
+      "ranks": {
+        "top": 9,
+        "right": 8,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_025",
+      "display_name": "Korr",
+      "atlas_slot": 9,
+      "level": 8,
+      "points": 8,
+      "ranks": {
+        "top": 8,
+        "right": 4,
+        "bottom": 8,
+        "left": 4
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_027",
+      "display_name": "Thornclaw",
+      "atlas_slot": 10,
+      "level": 9,
       "points": 9,
       "ranks": {
         "top": 5,
         "right": 6,
-        "bottom": 5,
+        "bottom": 7,
         "left": 6
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 4,
       "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_023",
-      "display_name": "Portrait 024",
-      "atlas_slot": 8,
-      "level": 4,
-      "points": 5,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
       "influence": {
         "mode": "pressure",
         "strength": 1,
         "offsets": [
-          [
-            0,
-            -1
-          ],
-          [
-            -1,
-            -1
-          ],
-          [
-            -1,
-            0
-          ]
-        ]
-      }
-    },
-    {
-      "card_id": "mugshot_025",
-      "display_name": "Portrait 026",
-      "atlas_slot": 9,
-      "level": 6,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_027",
-      "display_name": "Portrait 028",
-      "atlas_slot": 10,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_029",
-      "display_name": "Portrait 030",
-      "atlas_slot": 11,
-      "level": 10,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_030",
-      "display_name": "Portrait 031",
-      "atlas_slot": 12,
-      "level": 1,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ],
-      "influence": {
-        "mode": "pressure",
-        "strength": 1,
-        "offsets": [
-          [
-            -1,
-            -1
-          ],
           [
             0,
             -1
           ],
           [
             1,
-            -1
+            0
+          ],
+          [
+            0,
+            1
           ]
         ]
       }
     },
     {
-      "card_id": "mugshot_033",
-      "display_name": "Portrait 034",
-      "atlas_slot": 13,
-      "level": 4,
-      "points": 6,
+      "card_id": "mugshot_029",
+      "display_name": "Moonmane",
+      "atlas_slot": 11,
+      "level": 7,
+      "points": 8,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
+        "top": 4,
+        "right": 3,
+        "bottom": 7,
+        "left": 8
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_030",
+      "display_name": "Grin-Eye",
+      "atlas_slot": 12,
+      "level": 10,
+      "points": 10,
+      "ranks": {
+        "top": 9,
+        "right": 5,
+        "bottom": 3,
+        "left": 9
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 6,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 2,
+        "offsets": [
+          [
+            1,
+            0
+          ]
+        ]
+      },
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_033",
+      "display_name": "Nyla",
+      "atlas_slot": 13,
+      "level": 9,
+      "points": 9,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 9,
+        "left": 9
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 5,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_034",
-      "display_name": "Portrait 035",
+      "display_name": "Cael",
       "atlas_slot": 14,
-      "level": 5,
-      "points": 5,
+      "level": 7,
+      "points": 8,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
+        "top": 2,
+        "right": 4,
+        "bottom": 9,
+        "left": 7
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_037",
-      "display_name": "Portrait 038",
+      "display_name": "Riven",
       "atlas_slot": 15,
-      "level": 8,
-      "points": 3,
+      "level": 9,
+      "points": 9,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
+        "top": 4,
+        "right": 7,
+        "bottom": 9,
+        "left": 6
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 5,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_038",
-      "display_name": "Portrait 039",
+      "display_name": "Cael Vanguard",
       "atlas_slot": 16,
-      "level": 9,
-      "points": 5,
+      "level": 5,
+      "points": 6,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
+        "top": 2,
+        "right": 3,
+        "bottom": 4,
+        "left": 9
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 2,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_039",
-      "display_name": "Portrait 040",
+      "display_name": "Elder Lys",
       "atlas_slot": 17,
-      "level": 10,
-      "points": 5,
+      "level": 9,
+      "points": 9,
       "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 3,
-        "left": 4
+        "top": 3,
+        "right": 8,
+        "bottom": 7,
+        "left": 8
       },
-      "group": "",
-      "tags": [],
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 5,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
     },
     {
       "card_id": "mugshot_040",
-      "display_name": "Portrait 041",
+      "display_name": "Marsh Drake",
       "atlas_slot": 18,
-      "level": 1,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_041",
-      "display_name": "Portrait 042",
-      "atlas_slot": 19,
-      "level": 2,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_042",
-      "display_name": "Portrait 043",
-      "atlas_slot": 20,
-      "level": 3,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_043",
-      "display_name": "Portrait 044",
-      "atlas_slot": 21,
-      "level": 4,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_044",
-      "display_name": "Portrait 045",
-      "atlas_slot": 22,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_045",
-      "display_name": "Portrait 046",
-      "atlas_slot": 23,
       "level": 6,
-      "points": 8,
+      "points": 7,
       "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 3,
-        "left": 6
+        "top": 1,
+        "right": 4,
+        "bottom": 6,
+        "left": 7
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 2,
       "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_047",
-      "display_name": "Portrait 048",
-      "atlas_slot": 24,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_049",
-      "display_name": "Portrait 050",
-      "atlas_slot": 25,
-      "level": 10,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_050",
-      "display_name": "Portrait 051",
-      "atlas_slot": 26,
-      "level": 1,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_051",
-      "display_name": "Portrait 052",
-      "atlas_slot": 27,
-      "level": 2,
-      "points": 4,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_053",
-      "display_name": "Portrait 054",
-      "atlas_slot": 28,
-      "level": 4,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_054",
-      "display_name": "Portrait 055",
-      "atlas_slot": 29,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_056",
-      "display_name": "Portrait 057",
-      "atlas_slot": 30,
-      "level": 7,
-      "points": 4,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_057",
-      "display_name": "Portrait 058",
-      "atlas_slot": 31,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_058",
-      "display_name": "Portrait 059",
-      "atlas_slot": 32,
-      "level": 9,
-      "points": 3,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_059",
-      "display_name": "Portrait 060",
-      "atlas_slot": 33,
-      "level": 10,
-      "points": 2,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
       "influence": {
         "mode": "pressure",
         "strength": 1,
@@ -838,75 +521,603 @@
           [
             -1,
             0
+          ],
+          [
+            0,
+            -1
           ]
         ]
       }
     },
     {
-      "card_id": "mugshot_061",
-      "display_name": "Portrait 062",
-      "atlas_slot": 34,
-      "level": 2,
+      "card_id": "mugshot_041",
+      "display_name": "Stonecrest",
+      "atlas_slot": 19,
+      "level": 5,
       "points": 6,
       "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_062",
-      "display_name": "Portrait 063",
-      "atlas_slot": 35,
-      "level": 3,
-      "points": 6,
-      "ranks": {
-        "top": 1,
+        "top": 5,
         "right": 6,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_063",
-      "display_name": "Portrait 064",
-      "atlas_slot": 36,
-      "level": 4,
-      "points": 2,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
+        "bottom": 5,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold"
+      ],
       "rarity": "gold",
-      "required_player_rank": 1,
+      "required_player_rank": 2,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_042",
+      "display_name": "Varen",
+      "atlas_slot": 20,
+      "level": 9,
+      "points": 9,
+      "ranks": {
+        "top": 7,
+        "right": 3,
+        "bottom": 7,
+        "left": 9
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 4,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_043",
+      "display_name": "Brassmask",
+      "atlas_slot": 21,
+      "level": 9,
+      "points": 9,
+      "ranks": {
+        "top": 7,
+        "right": 5,
+        "bottom": 7,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 5,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
       "influence": {
         "mode": "pressure",
         "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_044",
+      "display_name": "Ironjaw",
+      "atlas_slot": 22,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 6,
+        "right": 5,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_045",
+      "display_name": "Nilo",
+      "atlas_slot": 23,
+      "level": 7,
+      "points": 8,
+      "ranks": {
+        "top": 5,
+        "right": 7,
+        "bottom": 3,
+        "left": 7
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_047",
+      "display_name": "Mina",
+      "atlas_slot": 24,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 6,
+        "right": 5,
+        "bottom": 3,
+        "left": 2
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_049",
+      "display_name": "Cask",
+      "atlas_slot": 25,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 4,
+        "right": 7,
+        "bottom": 1,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_050",
+      "display_name": "Old Fen",
+      "atlas_slot": 26,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 4,
+        "right": 3,
+        "bottom": 6,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_051",
+      "display_name": "Asha",
+      "atlas_slot": 27,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 5,
+        "right": 3,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_053",
+      "display_name": "Saltbeard",
+      "atlas_slot": 28,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_054",
+      "display_name": "Gimbal",
+      "atlas_slot": 29,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 2,
+        "bottom": 3,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_056",
+      "display_name": "Boru",
+      "atlas_slot": 30,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 5,
+        "right": 7,
+        "bottom": 2,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_057",
+      "display_name": "Boru Breaker",
+      "atlas_slot": 31,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 1,
+        "right": 7,
+        "bottom": 1,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_058",
+      "display_name": "Boru Brawler",
+      "atlas_slot": 32,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 4,
+        "bottom": 3,
+        "left": 8
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_059",
+      "display_name": "Crag",
+      "atlas_slot": 33,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 6,
+        "bottom": 3,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_061",
+      "display_name": "Iven",
+      "atlas_slot": 34,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 5,
+        "bottom": 4,
+        "left": 8
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_062",
+      "display_name": "Jax",
+      "atlas_slot": 35,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 8,
+        "bottom": 4,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_063",
+      "display_name": "Mira",
+      "atlas_slot": 36,
+      "level": 7,
+      "points": 8,
+      "ranks": {
+        "top": 4,
+        "right": 7,
+        "bottom": 4,
+        "left": 7
+      },
+      "group": "legend",
+      "tags": [
+        "legend",
+        "gold"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A famed figure whose card is prized by serious duelists."
+    },
+    {
+      "card_id": "mugshot_064",
+      "display_name": "Pip and Pug",
+      "atlas_slot": 37,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 5,
+        "bottom": 1,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_065",
+      "display_name": "Toma and Pug",
+      "atlas_slot": 38,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 6,
+        "right": 5,
+        "bottom": 2,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_066",
+      "display_name": "Neri and Pug",
+      "atlas_slot": 39,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 5,
+        "right": 5,
+        "bottom": 1,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_067",
+      "display_name": "Sandbeak",
+      "atlas_slot": 40,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 7,
+        "right": 3,
+        "bottom": 2,
+        "left": 6
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_068",
+      "display_name": "Undertow",
+      "atlas_slot": 41,
+      "level": 6,
+      "points": 8,
+      "ranks": {
+        "top": 5,
+        "right": 4,
+        "bottom": 5,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 2,
         "offsets": [
           [
             0,
@@ -916,2251 +1127,188 @@
       }
     },
     {
-      "card_id": "mugshot_064",
-      "display_name": "Portrait 065",
-      "atlas_slot": 37,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_065",
-      "display_name": "Portrait 066",
-      "atlas_slot": 38,
-      "level": 6,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_066",
-      "display_name": "Portrait 067",
-      "atlas_slot": 39,
-      "level": 7,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_067",
-      "display_name": "Portrait 068",
-      "atlas_slot": 40,
-      "level": 8,
+      "card_id": "mugshot_069",
+      "display_name": "Pale Sentinel",
+      "atlas_slot": 42,
+      "level": 3,
       "points": 5,
       "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 1,
+        "top": 4,
+        "right": 3,
+        "bottom": 3,
         "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "construct",
+      "tags": [
+        "construct",
+        "silver"
+      ],
       "rarity": "silver",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_068",
-      "display_name": "Portrait 069",
-      "atlas_slot": 41,
-      "level": 9,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_069",
-      "display_name": "Portrait 070",
-      "atlas_slot": 42,
-      "level": 10,
-      "points": 8,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_070",
-      "display_name": "Portrait 071",
+      "display_name": "Gearwheel",
       "atlas_slot": 43,
-      "level": 1,
+      "level": 4,
       "points": 6,
       "ranks": {
-        "top": 5,
-        "right": 6,
+        "top": 6,
+        "right": 7,
         "bottom": 1,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "construct",
+      "tags": [
+        "construct",
+        "silver"
+      ],
       "rarity": "silver",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_071",
-      "display_name": "Portrait 072",
+      "display_name": "Swiftfin",
       "atlas_slot": 44,
-      "level": 2,
+      "level": 4,
       "points": 5,
       "ranks": {
-        "top": 3,
-        "right": 2,
+        "top": 4,
+        "right": 3,
         "bottom": 1,
-        "left": 6
+        "left": 7
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
       "rarity": "silver",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
     },
     {
       "card_id": "mugshot_072",
-      "display_name": "Portrait 073",
+      "display_name": "Bonejaw",
       "atlas_slot": 45,
-      "level": 3,
-      "points": 3,
+      "level": 7,
+      "points": 8,
       "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
+        "top": 7,
+        "right": 5,
+        "bottom": 2,
+        "left": 5
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver",
+        "influence"
+      ],
       "rarity": "silver",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            -1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_073",
-      "display_name": "Portrait 074",
+      "display_name": "Mire Turtle",
       "atlas_slot": 46,
-      "level": 4,
-      "points": 6,
+      "level": 6,
+      "points": 7,
       "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 6
+        "top": 4,
+        "right": 5,
+        "bottom": 2,
+        "left": 8
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
       "rarity": "silver",
-      "required_player_rank": 1,
+      "required_player_rank": 2,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
     },
     {
       "card_id": "mugshot_074",
-      "display_name": "Portrait 075",
+      "display_name": "Gloom Toad",
       "atlas_slot": 47,
-      "level": 5,
-      "points": 6,
+      "level": 6,
+      "points": 7,
       "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 4
+        "top": 4,
+        "right": 8,
+        "bottom": 2,
+        "left": 6
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
       "rarity": "silver",
-      "required_player_rank": 1,
+      "required_player_rank": 2,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
     },
     {
       "card_id": "mugshot_075",
-      "display_name": "Portrait 076",
+      "display_name": "Wharf Cat",
       "atlas_slot": 48,
-      "level": 6,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_076",
-      "display_name": "Portrait 077",
-      "atlas_slot": 49,
       "level": 7,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_077",
-      "display_name": "Portrait 078",
-      "atlas_slot": 50,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_078",
-      "display_name": "Portrait 079",
-      "atlas_slot": 51,
-      "level": 9,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_079",
-      "display_name": "Portrait 080",
-      "atlas_slot": 52,
-      "level": 10,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_080",
-      "display_name": "Portrait 081",
-      "atlas_slot": 53,
-      "level": 1,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_081",
-      "display_name": "Portrait 082",
-      "atlas_slot": 54,
-      "level": 2,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_082",
-      "display_name": "Portrait 083",
-      "atlas_slot": 55,
-      "level": 3,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_083",
-      "display_name": "Portrait 084",
-      "atlas_slot": 56,
-      "level": 4,
-      "points": 7,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_084",
-      "display_name": "Portrait 085",
-      "atlas_slot": 57,
-      "level": 5,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_085",
-      "display_name": "Portrait 086",
-      "atlas_slot": 58,
-      "level": 6,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_086",
-      "display_name": "Portrait 087",
-      "atlas_slot": 59,
-      "level": 7,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_087",
-      "display_name": "Portrait 088",
-      "atlas_slot": 60,
-      "level": 8,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_088",
-      "display_name": "Portrait 089",
-      "atlas_slot": 61,
-      "level": 9,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_089",
-      "display_name": "Portrait 090",
-      "atlas_slot": 62,
-      "level": 10,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_090",
-      "display_name": "Portrait 091",
-      "atlas_slot": 63,
-      "level": 1,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_091",
-      "display_name": "Portrait 092",
-      "atlas_slot": 64,
-      "level": 2,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_092",
-      "display_name": "Portrait 093",
-      "atlas_slot": 65,
-      "level": 3,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_093",
-      "display_name": "Portrait 094",
-      "atlas_slot": 66,
-      "level": 4,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_094",
-      "display_name": "Portrait 095",
-      "atlas_slot": 67,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_095",
-      "display_name": "Portrait 096",
-      "atlas_slot": 68,
-      "level": 6,
-      "points": 7,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_096",
-      "display_name": "Portrait 097",
-      "atlas_slot": 69,
-      "level": 7,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_097",
-      "display_name": "Portrait 098",
-      "atlas_slot": 70,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_098",
-      "display_name": "Portrait 099",
-      "atlas_slot": 71,
-      "level": 9,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_099",
-      "display_name": "Portrait 100",
-      "atlas_slot": 72,
-      "level": 10,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_100",
-      "display_name": "Portrait 101",
-      "atlas_slot": 73,
-      "level": 1,
-      "points": 7,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_101",
-      "display_name": "Portrait 102",
-      "atlas_slot": 74,
-      "level": 2,
-      "points": 4,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_102",
-      "display_name": "Portrait 103",
-      "atlas_slot": 75,
-      "level": 3,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_103",
-      "display_name": "Portrait 104",
-      "atlas_slot": 76,
-      "level": 4,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_104",
-      "display_name": "Portrait 105",
-      "atlas_slot": 77,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_105",
-      "display_name": "Portrait 106",
-      "atlas_slot": 78,
-      "level": 6,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_106",
-      "display_name": "Portrait 107",
-      "atlas_slot": 79,
-      "level": 7,
-      "points": 3,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_107",
-      "display_name": "Portrait 108",
-      "atlas_slot": 80,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_108",
-      "display_name": "Portrait 109",
-      "atlas_slot": 81,
-      "level": 9,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_109",
-      "display_name": "Portrait 110",
-      "atlas_slot": 82,
-      "level": 10,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_110",
-      "display_name": "Portrait 111",
-      "atlas_slot": 83,
-      "level": 1,
-      "points": 5,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_111",
-      "display_name": "Portrait 112",
-      "atlas_slot": 84,
-      "level": 2,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_112",
-      "display_name": "Portrait 113",
-      "atlas_slot": 85,
-      "level": 3,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_113",
-      "display_name": "Portrait 114",
-      "atlas_slot": 86,
-      "level": 4,
-      "points": 4,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_114",
-      "display_name": "Portrait 115",
-      "atlas_slot": 87,
-      "level": 5,
-      "points": 5,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_117",
-      "display_name": "Portrait 118",
-      "atlas_slot": 88,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_118",
-      "display_name": "Portrait 119",
-      "atlas_slot": 89,
-      "level": 9,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_119",
-      "display_name": "Portrait 120",
-      "atlas_slot": 90,
-      "level": 10,
-      "points": 7,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_120",
-      "display_name": "Portrait 121",
-      "atlas_slot": 91,
-      "level": 1,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_121",
-      "display_name": "Portrait 122",
-      "atlas_slot": 92,
-      "level": 2,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_122",
-      "display_name": "Portrait 123",
-      "atlas_slot": 93,
-      "level": 3,
-      "points": 3,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_123",
-      "display_name": "Portrait 124",
-      "atlas_slot": 94,
-      "level": 4,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_124",
-      "display_name": "Portrait 125",
-      "atlas_slot": 95,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_125",
-      "display_name": "Portrait 126",
-      "atlas_slot": 96,
-      "level": 6,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_126",
-      "display_name": "Portrait 127",
-      "atlas_slot": 97,
-      "level": 7,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_127",
-      "display_name": "Portrait 128",
-      "atlas_slot": 98,
-      "level": 8,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_128",
-      "display_name": "Portrait 129",
-      "atlas_slot": 99,
-      "level": 9,
-      "points": 7,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_129",
-      "display_name": "Portrait 130",
-      "atlas_slot": 100,
-      "level": 10,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_130",
-      "display_name": "Portrait 131",
-      "atlas_slot": 101,
-      "level": 1,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_131",
-      "display_name": "Portrait 132",
-      "atlas_slot": 102,
-      "level": 2,
-      "points": 3,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_132",
-      "display_name": "Portrait 133",
-      "atlas_slot": 103,
-      "level": 3,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_133",
-      "display_name": "Portrait 134",
-      "atlas_slot": 104,
-      "level": 4,
       "points": 8,
       "ranks": {
         "top": 5,
-        "right": 6,
-        "bottom": 5,
-        "left": 4
+        "right": 3,
+        "bottom": 8,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver",
+        "influence"
+      ],
       "rarity": "silver",
-      "required_player_rank": 1,
+      "required_player_rank": 3,
       "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_134",
-      "display_name": "Portrait 135",
-      "atlas_slot": 105,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_135",
-      "display_name": "Portrait 136",
-      "atlas_slot": 106,
-      "level": 6,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_136",
-      "display_name": "Portrait 137",
-      "atlas_slot": 107,
-      "level": 7,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_137",
-      "display_name": "Portrait 138",
-      "atlas_slot": 108,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_138",
-      "display_name": "Portrait 139",
-      "atlas_slot": 109,
-      "level": 9,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_139",
-      "display_name": "Portrait 140",
-      "atlas_slot": 110,
-      "level": 10,
-      "points": 5,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_140",
-      "display_name": "Portrait 141",
-      "atlas_slot": 111,
-      "level": 1,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_141",
-      "display_name": "Portrait 142",
-      "atlas_slot": 112,
-      "level": 2,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_142",
-      "display_name": "Portrait 143",
-      "atlas_slot": 113,
-      "level": 3,
-      "points": 8,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_143",
-      "display_name": "Portrait 144",
-      "atlas_slot": 114,
-      "level": 4,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_144",
-      "display_name": "Portrait 145",
-      "atlas_slot": 115,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_145",
-      "display_name": "Portrait 146",
-      "atlas_slot": 116,
-      "level": 6,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_146",
-      "display_name": "Portrait 147",
-      "atlas_slot": 117,
-      "level": 7,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_147",
-      "display_name": "Portrait 148",
-      "atlas_slot": 118,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_148",
-      "display_name": "Portrait 149",
-      "atlas_slot": 119,
-      "level": 9,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_149",
-      "display_name": "Portrait 150",
-      "atlas_slot": 120,
-      "level": 10,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_150",
-      "display_name": "Portrait 151",
-      "atlas_slot": 121,
-      "level": 1,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_151",
-      "display_name": "Portrait 152",
-      "atlas_slot": 122,
-      "level": 2,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_152",
-      "display_name": "Portrait 153",
-      "atlas_slot": 123,
-      "level": 3,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 3,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "silver",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_153",
-      "display_name": "Portrait 154",
-      "atlas_slot": 124,
-      "level": 4,
-      "points": 4,
-      "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_154",
-      "display_name": "Portrait 155",
-      "atlas_slot": 125,
-      "level": 5,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_155",
-      "display_name": "Portrait 156",
-      "atlas_slot": 126,
-      "level": 6,
-      "points": 3,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_156",
-      "display_name": "Portrait 157",
-      "atlas_slot": 127,
-      "level": 7,
-      "points": 4,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_157",
-      "display_name": "Portrait 158",
-      "atlas_slot": 128,
-      "level": 8,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_158",
-      "display_name": "Portrait 159",
-      "atlas_slot": 129,
-      "level": 9,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_159",
-      "display_name": "Portrait 160",
-      "atlas_slot": 130,
-      "level": 10,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_160",
-      "display_name": "Portrait 161",
-      "atlas_slot": 131,
-      "level": 1,
-      "points": 5,
-      "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_161",
-      "display_name": "Portrait 162",
-      "atlas_slot": 132,
-      "level": 2,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_162",
-      "display_name": "Portrait 163",
-      "atlas_slot": 133,
-      "level": 3,
-      "points": 6,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 3,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_163",
-      "display_name": "Portrait 164",
-      "atlas_slot": 134,
-      "level": 4,
-      "points": 7,
-      "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_164",
-      "display_name": "Portrait 165",
-      "atlas_slot": 135,
-      "level": 5,
-      "points": 4,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_165",
-      "display_name": "Portrait 166",
-      "atlas_slot": 136,
-      "level": 6,
-      "points": 4,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_166",
-      "display_name": "Portrait 167",
-      "atlas_slot": 137,
-      "level": 7,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_167",
-      "display_name": "Portrait 168",
-      "atlas_slot": 138,
-      "level": 8,
-      "points": 7,
-      "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_168",
-      "display_name": "Portrait 169",
-      "atlas_slot": 139,
-      "level": 9,
-      "points": 5,
-      "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 5,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_169",
-      "display_name": "Portrait 170",
-      "atlas_slot": 140,
-      "level": 10,
-      "points": 7,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_170",
-      "display_name": "Portrait 171",
-      "atlas_slot": 141,
-      "level": 1,
-      "points": 6,
-      "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_171",
-      "display_name": "Portrait 172",
-      "atlas_slot": 142,
-      "level": 2,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 6,
-        "bottom": 1,
-        "left": 4
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_172",
-      "display_name": "Portrait 173",
-      "atlas_slot": 143,
-      "level": 3,
-      "points": 2,
-      "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
       "influence": {
         "mode": "pressure",
         "strength": 1,
@@ -3177,94 +1325,2703 @@
       }
     },
     {
-      "card_id": "mugshot_173",
-      "display_name": "Portrait 174",
-      "atlas_slot": 144,
+      "card_id": "mugshot_076",
+      "display_name": "Reed Frog",
+      "atlas_slot": 49,
       "level": 4,
-      "points": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 3,
+        "bottom": 5,
+        "left": 6
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_077",
+      "display_name": "Moss Frog",
+      "atlas_slot": 50,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 6,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_078",
+      "display_name": "Night Frog",
+      "atlas_slot": 51,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 4,
+        "right": 7,
+        "bottom": 6,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_079",
+      "display_name": "Duskhopper",
+      "atlas_slot": 52,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 4,
+        "right": 3,
+        "bottom": 6,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_080",
+      "display_name": "Red-Eye Toad",
+      "atlas_slot": 53,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 8
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_081",
+      "display_name": "Thorn Toad",
+      "atlas_slot": 54,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 6,
+        "bottom": 2,
+        "left": 6
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_082",
+      "display_name": "Pondling",
+      "atlas_slot": 55,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 1,
+        "right": 6,
+        "bottom": 5,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_083",
+      "display_name": "Mireling",
+      "atlas_slot": 56,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 6,
+        "bottom": 5,
+        "left": 6
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_084",
+      "display_name": "Razorbeak",
+      "atlas_slot": 57,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 4,
+        "bottom": 9,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_085",
+      "display_name": "Brass Beetle",
+      "atlas_slot": 58,
+      "level": 7,
+      "points": 8,
+      "ranks": {
+        "top": 1,
+        "right": 5,
+        "bottom": 6,
+        "left": 7
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_086",
+      "display_name": "Scrap Beetle",
+      "atlas_slot": 59,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 5,
+        "bottom": 6,
+        "left": 5
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
+    },
+    {
+      "card_id": "mugshot_087",
+      "display_name": "River Drake",
+      "atlas_slot": 60,
+      "level": 5,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 8,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_088",
+      "display_name": "Ash Drake",
+      "atlas_slot": 61,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 5,
+        "right": 2,
+        "bottom": 3,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_089",
+      "display_name": "Thorn Drake",
+      "atlas_slot": 62,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 5,
+        "right": 4,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_090",
+      "display_name": "Ridge Hound",
+      "atlas_slot": 63,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 5,
+        "right": 5,
+        "bottom": 5,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_091",
+      "display_name": "Harbor Hound",
+      "atlas_slot": 64,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 7,
+        "bottom": 5,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_092",
+      "display_name": "Dune Hound",
+      "atlas_slot": 65,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 4,
+        "right": 2,
+        "bottom": 4,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_093",
+      "display_name": "Red Hound",
+      "atlas_slot": 66,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 3,
+        "bottom": 6,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_094",
+      "display_name": "Mudbelly",
+      "atlas_slot": 67,
+      "level": 7,
+      "points": 8,
+      "ranks": {
+        "top": 7,
+        "right": 5,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_095",
+      "display_name": "Lysa",
+      "atlas_slot": 68,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 6,
+        "bottom": 3,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_096",
+      "display_name": "Old Nemm",
+      "atlas_slot": 69,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 5,
+        "right": 3,
+        "bottom": 5,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_097",
+      "display_name": "Nemm Stoic",
+      "atlas_slot": 70,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 3,
+        "right": 3,
+        "bottom": 3,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_098",
+      "display_name": "Nemm Elder",
+      "atlas_slot": 71,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 3,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_099",
+      "display_name": "Taren",
+      "atlas_slot": 72,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 4,
+        "right": 7,
+        "bottom": 1,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_100",
+      "display_name": "Sil",
+      "atlas_slot": 73,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_101",
+      "display_name": "Daro",
+      "atlas_slot": 74,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 5,
+        "right": 3,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_102",
+      "display_name": "Mogg",
+      "atlas_slot": 75,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 6,
+        "bottom": 4,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_103",
+      "display_name": "Brek",
+      "atlas_slot": 76,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 9,
+        "bottom": 5,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_104",
+      "display_name": "Nia",
+      "atlas_slot": 77,
+      "level": 5,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 6,
+        "bottom": 3,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_105",
+      "display_name": "Grandma Osa",
+      "atlas_slot": 78,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 4,
+        "bottom": 6,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_106",
+      "display_name": "Master Pell",
+      "atlas_slot": 79,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 8,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_107",
+      "display_name": "Sage Venn",
+      "atlas_slot": 80,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 7,
+        "bottom": 2,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_108",
+      "display_name": "Koro",
+      "atlas_slot": 81,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 8,
+        "bottom": 2,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_109",
+      "display_name": "Hamir",
+      "atlas_slot": 82,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 9
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_110",
+      "display_name": "Hamir Bold",
+      "atlas_slot": 83,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 8,
+        "right": 3,
+        "bottom": 5,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_111",
+      "display_name": "Cira",
+      "atlas_slot": 84,
+      "level": 7,
+      "points": 8,
+      "ranks": {
+        "top": 5,
+        "right": 4,
+        "bottom": 4,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_112",
+      "display_name": "Dalen",
+      "atlas_slot": 85,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 7,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_113",
+      "display_name": "Baro",
+      "atlas_slot": 86,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 9,
+        "right": 4,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_114",
+      "display_name": "Elder Kesh",
+      "atlas_slot": 87,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 6,
+        "right": 3,
+        "bottom": 2,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_117",
+      "display_name": "Torren",
+      "atlas_slot": 88,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 4,
+        "right": 2,
+        "bottom": 4,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_118",
+      "display_name": "Pello",
+      "atlas_slot": 89,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 5,
+        "right": 3,
+        "bottom": 7,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_119",
+      "display_name": "Gearface",
+      "atlas_slot": 90,
+      "level": 7,
+      "points": 8,
+      "ranks": {
+        "top": 3,
+        "right": 4,
+        "bottom": 5,
+        "left": 6
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 3,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 2,
+        "offsets": [
+          [
+            -1,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_120",
+      "display_name": "Captain Rusk",
+      "atlas_slot": 91,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 6,
+        "bottom": 2,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_121",
+      "display_name": "Rusk Stern",
+      "atlas_slot": 92,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 7,
+        "bottom": 1,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_122",
+      "display_name": "Rusk Veteran",
+      "atlas_slot": 93,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 6,
+        "right": 5,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_123",
+      "display_name": "Fira",
+      "atlas_slot": 94,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 4,
+        "right": 5,
+        "bottom": 2,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_124",
+      "display_name": "Mei",
+      "atlas_slot": 95,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 4,
+        "right": 8,
+        "bottom": 2,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_125",
+      "display_name": "Kellen",
+      "atlas_slot": 96,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 5,
+        "left": 2
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_126",
+      "display_name": "Tali",
+      "atlas_slot": 97,
+      "level": 3,
+      "points": 5,
       "ranks": {
         "top": 1,
         "right": 2,
-        "bottom": 1,
+        "bottom": 5,
         "left": 6
       },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
     },
     {
-      "card_id": "mugshot_174",
-      "display_name": "Portrait 175",
-      "atlas_slot": 145,
+      "card_id": "mugshot_127",
+      "display_name": "Rena",
+      "atlas_slot": 98,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 6,
+        "bottom": 8,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_128",
+      "display_name": "Suri",
+      "atlas_slot": 99,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 1,
+        "right": 7,
+        "bottom": 5,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_129",
+      "display_name": "Niko",
+      "atlas_slot": 100,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 1,
+        "right": 7,
+        "bottom": 4,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_130",
+      "display_name": "Jori",
+      "atlas_slot": 101,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 1,
+        "left": 8
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_131",
+      "display_name": "Pina",
+      "atlas_slot": 102,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 3,
+        "left": 9
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_132",
+      "display_name": "Tobin",
+      "atlas_slot": 103,
       "level": 5,
       "points": 6,
       "ranks": {
         "top": 1,
         "right": 4,
         "bottom": 5,
-        "left": 4
+        "left": 5
       },
-      "group": "",
-      "tags": [],
-      "rarity": "gold",
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
     },
     {
-      "card_id": "mugshot_175",
-      "display_name": "Portrait 176",
-      "atlas_slot": 146,
+      "card_id": "mugshot_133",
+      "display_name": "Ren",
+      "atlas_slot": 104,
       "level": 6,
       "points": 7,
       "ranks": {
-        "top": 1,
+        "top": 5,
         "right": 6,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_176",
-      "display_name": "Portrait 177",
-      "atlas_slot": 147,
-      "level": 7,
-      "points": 5,
-      "ranks": {
-        "top": 1,
-        "right": 2,
         "bottom": 5,
         "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_134",
+      "display_name": "Luma",
+      "atlas_slot": 105,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 5,
+        "right": 3,
+        "bottom": 5,
+        "left": 2
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_135",
+      "display_name": "Vasko",
+      "atlas_slot": 106,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 2,
+        "bottom": 5,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_136",
+      "display_name": "Miri",
+      "atlas_slot": 107,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 5,
+        "bottom": 3,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_137",
+      "display_name": "Ena",
+      "atlas_slot": 108,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 6,
+        "right": 7,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_138",
+      "display_name": "Ena Dockside",
+      "atlas_slot": 109,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 4,
+        "right": 2,
+        "bottom": 3,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_139",
+      "display_name": "Lio",
+      "atlas_slot": 110,
+      "level": 5,
+      "points": 6,
+      "ranks": {
+        "top": 7,
+        "right": 3,
+        "bottom": 5,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_140",
+      "display_name": "Lio Quick",
+      "atlas_slot": 111,
+      "level": 5,
+      "points": 7,
+      "ranks": {
+        "top": 3,
+        "right": 4,
+        "bottom": 5,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_141",
+      "display_name": "Fenric",
+      "atlas_slot": 112,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 6,
+        "bottom": 5,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_142",
+      "display_name": "Milo",
+      "atlas_slot": 113,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 2,
+        "right": 5,
+        "bottom": 4,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_143",
+      "display_name": "Brother Odo",
+      "atlas_slot": 114,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 4,
+        "right": 2,
+        "bottom": 6,
+        "left": 5
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_144",
+      "display_name": "Kassim",
+      "atlas_slot": 115,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 4,
+        "right": 5,
+        "bottom": 4,
+        "left": 7
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_145",
+      "display_name": "Scalepriest",
+      "atlas_slot": 116,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 3,
+        "right": 5,
+        "bottom": 3,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_146",
+      "display_name": "Bronn",
+      "atlas_slot": 117,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 5,
+        "right": 8,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_147",
+      "display_name": "Hark",
+      "atlas_slot": 118,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 3,
+        "right": 2,
+        "bottom": 3,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_148",
+      "display_name": "Ogrin",
+      "atlas_slot": 119,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 5,
+        "right": 7,
+        "bottom": 2,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_149",
+      "display_name": "Featherbeak",
+      "atlas_slot": 120,
+      "level": 6,
+      "points": 7,
+      "ranks": {
+        "top": 3,
+        "right": 9,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_150",
+      "display_name": "Glass-Eye",
+      "atlas_slot": 121,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 1,
+        "right": 7,
+        "bottom": 6,
+        "left": 3
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_151",
+      "display_name": "Masked Warden",
+      "atlas_slot": 122,
+      "level": 5,
+      "points": 7,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 4,
+        "left": 7
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "silver",
+        "influence"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 2,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_152",
+      "display_name": "Corin",
+      "atlas_slot": 123,
+      "level": 4,
+      "points": 5,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 4,
+        "left": 6
+      },
+      "group": "traveler",
+      "tags": [
+        "traveler",
+        "silver"
+      ],
+      "rarity": "silver",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A seasoned face from the roads, ports, and market towns."
+    },
+    {
+      "card_id": "mugshot_153",
+      "display_name": "Embermane",
+      "atlas_slot": 124,
+      "level": 3,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 5,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "influence",
+        "starter"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            0,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_154",
+      "display_name": "Cindermane",
+      "atlas_slot": 125,
+      "level": 1,
+      "points": 4,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_155",
+      "display_name": "Rustmane",
+      "atlas_slot": 126,
+      "level": 1,
+      "points": 4,
+      "ranks": {
+        "top": 1,
+        "right": 3,
+        "bottom": 1,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_156",
+      "display_name": "Ashmane",
+      "atlas_slot": 127,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 6,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_157",
+      "display_name": "Flamemane",
+      "atlas_slot": 128,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 5,
+        "right": 4,
+        "bottom": 1,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_158",
+      "display_name": "Cliff Ape",
+      "atlas_slot": 129,
+      "level": 2,
+      "points": 5,
+      "ranks": {
+        "top": 3,
+        "right": 4,
+        "bottom": 2,
+        "left": 1
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "influence",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_159",
+      "display_name": "Cliff Alpha",
+      "atlas_slot": 130,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 4,
+        "right": 2,
+        "bottom": 1,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_160",
+      "display_name": "Mud Ox",
+      "atlas_slot": 131,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 5,
+        "right": 2,
+        "bottom": 3,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_161",
+      "display_name": "Cave Bear",
+      "atlas_slot": 132,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 4,
+        "right": 3,
+        "bottom": 2,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_162",
+      "display_name": "Dune Horse",
+      "atlas_slot": 133,
+      "level": 3,
+      "points": 6,
+      "ranks": {
+        "top": 4,
+        "right": 5,
+        "bottom": 3,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "influence",
+        "starter"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win",
+        "starter"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_163",
+      "display_name": "Ramhorn",
+      "atlas_slot": 134,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 3,
+        "right": 4,
+        "bottom": 1,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_164",
+      "display_name": "Glow Ram",
+      "atlas_slot": 135,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 4,
+        "right": 2,
+        "bottom": 1,
+        "left": 5
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_165",
+      "display_name": "Ember Hound",
+      "atlas_slot": 136,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 4,
+        "right": 5,
+        "bottom": 2,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_166",
+      "display_name": "Sand Hound",
+      "atlas_slot": 137,
+      "level": 1,
+      "points": 4,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_167",
+      "display_name": "Pale Hound",
+      "atlas_slot": 138,
+      "level": 3,
+      "points": 5,
+      "ranks": {
+        "top": 2,
+        "right": 5,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_168",
+      "display_name": "Stray Cat",
+      "atlas_slot": 139,
+      "level": 2,
+      "points": 5,
+      "ranks": {
+        "top": 2,
+        "right": 2,
+        "bottom": 4,
+        "left": 2
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "influence"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_169",
+      "display_name": "Moon Cat",
+      "atlas_slot": 140,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 2,
+        "right": 3,
+        "bottom": 3,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_170",
+      "display_name": "Harbor Cat",
+      "atlas_slot": 141,
+      "level": 1,
+      "points": 4,
+      "ranks": {
+        "top": 2,
+        "right": 2,
+        "bottom": 2,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_171",
+      "display_name": "Alley Cat",
+      "atlas_slot": 142,
+      "level": 1,
+      "points": 4,
+      "ranks": {
+        "top": 1,
+        "right": 5,
+        "bottom": 1,
+        "left": 3
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_172",
+      "display_name": "Suncrest Hen",
+      "atlas_slot": 143,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 2,
+        "right": 4,
+        "bottom": 2,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads."
+    },
+    {
+      "card_id": "mugshot_173",
+      "display_name": "Sky Talon",
+      "atlas_slot": 144,
+      "level": 10,
+      "points": 10,
+      "ranks": {
+        "top": 4,
+        "right": 9,
+        "bottom": 3,
+        "left": 9
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 6,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 2,
+        "offsets": [
+          [
+            0,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_174",
+      "display_name": "Solin",
+      "atlas_slot": 145,
+      "level": 10,
+      "points": 10,
+      "ranks": {
+        "top": 2,
+        "right": 8,
+        "bottom": 9,
+        "left": 8
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "gold",
+        "influence"
+      ],
+      "rarity": "gold",
+      "required_player_rank": 6,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_175",
+      "display_name": "Foxkin",
+      "atlas_slot": 146,
+      "level": 4,
+      "points": 6,
+      "ranks": {
+        "top": 2,
+        "right": 4,
+        "bottom": 4,
+        "left": 4
+      },
+      "group": "beast",
+      "tags": [
+        "beast",
+        "bronze",
+        "influence"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "A wild creature known for surviving beyond the safe roads.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "card_id": "mugshot_176",
+      "display_name": "Tin Walker",
+      "atlas_slot": 147,
+      "level": 1,
+      "points": 4,
+      "ranks": {
+        "top": 1,
+        "right": 2,
+        "bottom": 4,
+        "left": 3
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_177",
-      "display_name": "Portrait 178",
+      "display_name": "Steel Walker",
       "atlas_slot": 148,
-      "level": 8,
+      "level": 1,
       "points": 4,
       "ranks": {
         "top": 1,
@@ -3272,251 +4029,302 @@
         "bottom": 5,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "construct",
+      "tags": [
+        "construct",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_178",
-      "display_name": "Portrait 179",
+      "display_name": "Brass Walker",
       "atlas_slot": 149,
-      "level": 9,
-      "points": 6,
+      "level": 2,
+      "points": 4,
       "ranks": {
-        "top": 1,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
-      },
-      "group": "",
-      "tags": [],
-      "rarity": "bronze",
-      "required_player_rank": 1,
-      "acquisition_tags": [
-        "starter",
-        "opponent_win"
-      ]
-    },
-    {
-      "card_id": "mugshot_179",
-      "display_name": "Portrait 180",
-      "atlas_slot": 150,
-      "level": 10,
-      "points": 6,
-      "ranks": {
-        "top": 1,
-        "right": 6,
+        "top": 2,
+        "right": 3,
         "bottom": 3,
         "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "construct",
+      "tags": [
+        "construct",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
+    },
+    {
+      "card_id": "mugshot_179",
+      "display_name": "Iron Walker",
+      "atlas_slot": 150,
+      "level": 2,
+      "points": 4,
+      "ranks": {
+        "top": 1,
+        "right": 5,
+        "bottom": 3,
+        "left": 3
+      },
+      "group": "construct",
+      "tags": [
+        "construct",
+        "bronze"
+      ],
+      "rarity": "bronze",
+      "required_player_rank": 1,
+      "acquisition_tags": [
+        "opponent_win"
+      ],
+      "flavor_text": "An old machine that still follows a purpose of its own."
     },
     {
       "card_id": "mugshot_180",
-      "display_name": "Portrait 181",
+      "display_name": "Dock Guard",
       "atlas_slot": 151,
-      "level": 1,
-      "points": 6,
+      "level": 2,
+      "points": 5,
       "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 1,
-        "left": 4
+        "top": 3,
+        "right": 3,
+        "bottom": 2,
+        "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze",
+        "influence"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_181",
-      "display_name": "Portrait 182",
+      "display_name": "Harbor Guard",
       "atlas_slot": 152,
       "level": 2,
       "points": 4,
       "ranks": {
-        "top": 5,
-        "right": 2,
+        "top": 6,
+        "right": 3,
         "bottom": 1,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_182",
-      "display_name": "Portrait 183",
+      "display_name": "Wharf Guard",
       "atlas_slot": 153,
-      "level": 3,
-      "points": 8,
+      "level": 2,
+      "points": 4,
       "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
+        "top": 3,
+        "right": 2,
+        "bottom": 3,
+        "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_183",
-      "display_name": "Portrait 184",
+      "display_name": "Gate Guard",
       "atlas_slot": 154,
-      "level": 4,
-      "points": 8,
+      "level": 3,
+      "points": 5,
       "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 5,
-        "left": 4
+        "top": 4,
+        "right": 4,
+        "bottom": 3,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_184",
-      "display_name": "Portrait 185",
+      "display_name": "Tide Guard",
       "atlas_slot": 155,
-      "level": 5,
-      "points": 7,
+      "level": 3,
+      "points": 5,
       "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 5,
+        "top": 4,
+        "right": 4,
+        "bottom": 4,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_185",
-      "display_name": "Portrait 186",
+      "display_name": "Coast Guard",
       "atlas_slot": 156,
-      "level": 6,
-      "points": 7,
+      "level": 1,
+      "points": 4,
       "ranks": {
-        "top": 5,
-        "right": 2,
-        "bottom": 5,
-        "left": 6
+        "top": 3,
+        "right": 1,
+        "bottom": 3,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_186",
-      "display_name": "Portrait 187",
+      "display_name": "Lantern Guard",
       "atlas_slot": 157,
-      "level": 7,
-      "points": 6,
+      "level": 1,
+      "points": 4,
       "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 3,
-        "left": 4
+        "top": 3,
+        "right": 3,
+        "bottom": 2,
+        "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_187",
-      "display_name": "Portrait 188",
+      "display_name": "Chain Guard",
       "atlas_slot": 158,
-      "level": 8,
-      "points": 7,
+      "level": 3,
+      "points": 5,
       "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 3,
-        "left": 6
+        "top": 2,
+        "right": 5,
+        "bottom": 2,
+        "left": 5
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_188",
-      "display_name": "Portrait 189",
+      "display_name": "Blue Guard",
       "atlas_slot": 159,
-      "level": 9,
-      "points": 6,
+      "level": 3,
+      "points": 5,
       "ranks": {
         "top": 3,
-        "right": 6,
+        "right": 5,
         "bottom": 3,
-        "left": 4
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_189",
-      "display_name": "Portrait 190",
+      "display_name": "Red Guard",
       "atlas_slot": 160,
-      "level": 10,
+      "level": 1,
       "points": 4,
       "ranks": {
         "top": 3,
@@ -3524,312 +4332,395 @@
         "bottom": 3,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_190",
-      "display_name": "Portrait 191",
+      "display_name": "Old Guard",
       "atlas_slot": 161,
       "level": 1,
-      "points": 6,
+      "points": 4,
       "ranks": {
-        "top": 3,
+        "top": 2,
         "right": 2,
-        "bottom": 5,
-        "left": 4
+        "bottom": 3,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_191",
-      "display_name": "Portrait 192",
+      "display_name": "Veteran Guard",
       "atlas_slot": 162,
       "level": 2,
-      "points": 6,
+      "points": 4,
       "ranks": {
         "top": 3,
-        "right": 4,
-        "bottom": 5,
+        "right": 3,
+        "bottom": 4,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "soldier",
+      "tags": [
+        "soldier",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A disciplined fighter trained to hold ground under pressure."
     },
     {
       "card_id": "mugshot_192",
-      "display_name": "Portrait 193",
+      "display_name": "Pip",
       "atlas_slot": 163,
       "level": 3,
-      "points": 7,
+      "points": 5,
       "ranks": {
-        "top": 3,
-        "right": 6,
-        "bottom": 5,
-        "left": 4
+        "top": 2,
+        "right": 4,
+        "bottom": 3,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze",
+        "influence"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_196",
-      "display_name": "Portrait 197",
+      "display_name": "Nemi",
       "atlas_slot": 164,
-      "level": 7,
+      "level": 3,
       "points": 5,
       "ranks": {
         "top": 1,
-        "right": 6,
-        "bottom": 3,
+        "right": 7,
+        "bottom": 4,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_200",
-      "display_name": "Portrait 201",
+      "display_name": "Miko",
       "atlas_slot": 165,
       "level": 1,
-      "points": 5,
+      "points": 4,
       "ranks": {
         "top": 1,
-        "right": 6,
-        "bottom": 3,
+        "right": 5,
+        "bottom": 2,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_204",
-      "display_name": "Portrait 205",
+      "display_name": "Tavi",
       "atlas_slot": 166,
-      "level": 5,
-      "points": 8,
+      "level": 3,
+      "points": 5,
       "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 3,
-        "left": 6
+        "top": 4,
+        "right": 4,
+        "bottom": 2,
+        "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_208",
-      "display_name": "Portrait 209",
+      "display_name": "Lani",
       "atlas_slot": 167,
-      "level": 9,
-      "points": 6,
+      "level": 1,
+      "points": 4,
       "ranks": {
-        "top": 5,
-        "right": 6,
-        "bottom": 1,
-        "left": 2
+        "top": 3,
+        "right": 4,
+        "bottom": 2,
+        "left": 1
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_212",
-      "display_name": "Portrait 213",
+      "display_name": "Puck",
       "atlas_slot": 168,
       "level": 3,
-      "points": 4,
+      "points": 5,
       "ranks": {
-        "top": 3,
-        "right": 4,
-        "bottom": 1,
-        "left": 2
+        "top": 4,
+        "right": 5,
+        "bottom": 2,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_216",
-      "display_name": "Portrait 217",
+      "display_name": "Sela",
       "atlas_slot": 169,
-      "level": 7,
-      "points": 6,
+      "level": 3,
+      "points": 5,
       "ranks": {
         "top": 3,
         "right": 4,
         "bottom": 1,
         "left": 6
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_220",
-      "display_name": "Portrait 221",
+      "display_name": "Rori",
       "atlas_slot": 170,
-      "level": 1,
+      "level": 3,
       "points": 5,
       "ranks": {
         "top": 1,
-        "right": 4,
+        "right": 5,
         "bottom": 1,
-        "left": 6
+        "left": 7
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_224",
-      "display_name": "Portrait 225",
+      "display_name": "Kiko",
       "atlas_slot": 171,
-      "level": 5,
+      "level": 2,
       "points": 5,
       "ranks": {
         "top": 1,
-        "right": 4,
-        "bottom": 5,
+        "right": 3,
+        "bottom": 4,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze",
+        "influence"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns.",
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_228",
-      "display_name": "Portrait 229",
+      "display_name": "Noma",
       "atlas_slot": 172,
-      "level": 9,
-      "points": 8,
+      "level": 3,
+      "points": 5,
       "ranks": {
-        "top": 5,
-        "right": 4,
-        "bottom": 5,
-        "left": 6
+        "top": 4,
+        "right": 3,
+        "bottom": 3,
+        "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_232",
-      "display_name": "Portrait 233",
+      "display_name": "Vivi",
       "atlas_slot": 173,
-      "level": 3,
-      "points": 6,
+      "level": 2,
+      "points": 4,
       "ranks": {
-        "top": 3,
+        "top": 2,
         "right": 2,
-        "bottom": 5,
-        "left": 6
+        "bottom": 4,
+        "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_236",
-      "display_name": "Portrait 237",
+      "display_name": "Lilo",
       "atlas_slot": 174,
-      "level": 7,
-      "points": 4,
+      "level": 3,
+      "points": 5,
       "ranks": {
-        "top": 3,
-        "right": 2,
-        "bottom": 3,
-        "left": 2
+        "top": 4,
+        "right": 3,
+        "bottom": 4,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_240",
-      "display_name": "Portrait 241",
+      "display_name": "Timi",
       "atlas_slot": 175,
       "level": 1,
       "points": 4,
@@ -3839,91 +4730,89 @@
         "bottom": 5,
         "left": 2
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_244",
-      "display_name": "Portrait 245",
+      "display_name": "Mela",
       "atlas_slot": 176,
-      "level": 5,
+      "level": 3,
       "points": 5,
       "ranks": {
         "top": 1,
         "right": 2,
-        "bottom": 3,
-        "left": 6
+        "bottom": 4,
+        "left": 7
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_248",
-      "display_name": "Portrait 249",
+      "display_name": "Yori",
       "atlas_slot": 177,
-      "level": 9,
-      "points": 2,
+      "level": 1,
+      "points": 4,
       "ranks": {
-        "top": 1,
-        "right": 2,
-        "bottom": 1,
-        "left": 2
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
       ],
-      "influence": {
-        "mode": "pressure",
-        "strength": 1,
-        "offsets": [
-          [
-            0,
-            -1
-          ],
-          [
-            -1,
-            0
-          ]
-        ]
-      }
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     },
     {
       "card_id": "mugshot_252",
-      "display_name": "Portrait 253",
+      "display_name": "Bibi",
       "atlas_slot": 178,
       "level": 3,
-      "points": 6,
+      "points": 5,
       "ranks": {
         "top": 5,
         "right": 2,
         "bottom": 3,
         "left": 4
       },
-      "group": "",
-      "tags": [],
+      "group": "townsfolk",
+      "tags": [
+        "townsfolk",
+        "bronze"
+      ],
       "rarity": "bronze",
       "required_player_rank": 1,
       "acquisition_tags": [
-        "starter",
         "opponent_win"
-      ]
+      ],
+      "flavor_text": "A familiar face from the busy streets of the coastal towns."
     }
   ]
 }

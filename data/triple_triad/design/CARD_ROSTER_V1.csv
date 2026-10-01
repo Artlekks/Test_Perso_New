@@ -1,0 +1,180 @@
+slot,card_id,name,rarity,group,level,cost,required_rank,top,right,bottom,left,rank_total,influence_strength,influence_offsets,starter
+0,mugshot_000,Ryn,gold,legend,8,8,3,8,3,7,6,24,0,[],False
+1,mugshot_001,Ashmaw,gold,beast,7,8,3,7,6,4,3,20,1,"[[-1,-1],[1,-1]]",False
+2,mugshot_002,Teo,gold,legend,7,8,3,6,5,4,7,22,0,[],False
+3,mugshot_003,Elira,gold,legend,5,6,2,3,7,3,5,18,0,[],False
+4,mugshot_013,Merek,gold,legend,9,9,4,5,8,5,8,26,0,[],False
+5,mugshot_016,Brass Watcher,gold,construct,10,10,6,4,8,4,8,24,2,"[[0,-1]]",False
+6,mugshot_017,Iron Watcher,gold,construct,9,9,4,4,9,4,9,26,0,[],False
+7,mugshot_019,Serah,gold,legend,9,9,5,6,7,6,7,26,0,[],False
+8,mugshot_023,Veyra,gold,legend,8,8,3,9,8,3,4,24,0,[],False
+9,mugshot_025,Korr,gold,legend,8,8,3,8,4,8,4,24,0,[],False
+10,mugshot_027,Thornclaw,gold,beast,9,9,4,5,6,7,6,24,1,"[[0,-1],[1,0],[0,1]]",False
+11,mugshot_029,Moonmane,gold,beast,7,8,3,4,3,7,8,22,0,[],False
+12,mugshot_030,Grin-Eye,gold,beast,10,10,6,9,5,3,9,26,2,"[[1,0]]",False
+13,mugshot_033,Nyla,gold,legend,9,9,5,3,5,9,9,26,0,[],False
+14,mugshot_034,Cael,gold,legend,7,8,3,2,4,9,7,22,0,[],False
+15,mugshot_037,Riven,gold,legend,9,9,5,4,7,9,6,26,0,[],False
+16,mugshot_038,Cael Vanguard,gold,legend,5,6,2,2,3,4,9,18,0,[],False
+17,mugshot_039,Elder Lys,gold,legend,9,9,5,3,8,7,8,26,0,[],False
+18,mugshot_040,Marsh Drake,gold,beast,6,7,2,1,4,6,7,18,1,"[[-1,0],[0,-1]]",False
+19,mugshot_041,Stonecrest,gold,beast,5,6,2,5,6,5,2,18,0,[],False
+20,mugshot_042,Varen,gold,legend,9,9,4,7,3,7,9,26,0,[],False
+21,mugshot_043,Brassmask,gold,beast,9,9,5,7,5,7,5,24,1,"[[-1,-1],[1,-1],[0,1]]",False
+22,mugshot_044,Ironjaw,gold,beast,5,6,2,6,5,4,3,18,0,[],False
+23,mugshot_045,Nilo,gold,legend,7,8,3,5,7,3,7,22,0,[],False
+24,mugshot_047,Mina,silver,traveler,4,6,1,6,5,3,2,16,0,[],False
+25,mugshot_049,Cask,silver,traveler,4,5,1,4,7,1,3,15,0,[],False
+26,mugshot_050,Old Fen,silver,traveler,5,6,1,4,3,6,5,18,0,[],False
+27,mugshot_051,Asha,silver,traveler,4,5,1,5,3,4,3,15,0,[],False
+28,mugshot_053,Saltbeard,silver,traveler,4,5,1,3,5,3,4,15,0,[],False
+29,mugshot_054,Gimbal,silver,traveler,4,6,1,3,2,3,6,14,1,"[[-1,0],[1,0]]",False
+30,mugshot_056,Boru,silver,traveler,5,6,1,5,7,2,4,18,0,[],False
+31,mugshot_057,Boru Breaker,silver,traveler,4,6,1,1,7,1,7,16,0,[],False
+32,mugshot_058,Boru Brawler,silver,traveler,5,6,1,3,4,3,8,18,0,[],False
+33,mugshot_059,Crag,silver,traveler,4,6,1,3,6,3,5,17,0,[],False
+34,mugshot_061,Iven,silver,traveler,6,7,2,2,5,4,8,19,0,[],False
+35,mugshot_062,Jax,silver,traveler,6,7,2,2,8,4,6,20,0,[],False
+36,mugshot_063,Mira,gold,legend,7,8,3,4,7,4,7,22,0,[],False
+37,mugshot_064,Pip and Pug,silver,traveler,6,7,2,6,5,1,7,19,0,[],False
+38,mugshot_065,Toma and Pug,silver,traveler,5,6,1,6,5,2,5,18,0,[],False
+39,mugshot_066,Neri and Pug,silver,traveler,4,6,1,5,5,1,5,16,0,[],False
+40,mugshot_067,Sandbeak,silver,beast,5,6,1,7,3,2,6,18,0,[],False
+41,mugshot_068,Undertow,silver,beast,6,8,3,5,4,5,2,16,2,"[[0,1]]",False
+42,mugshot_069,Pale Sentinel,silver,construct,3,5,1,4,3,3,4,14,0,[],False
+43,mugshot_070,Gearwheel,silver,construct,4,6,1,6,7,1,2,16,0,[],False
+44,mugshot_071,Swiftfin,silver,beast,4,5,1,4,3,1,7,15,0,[],False
+45,mugshot_072,Bonejaw,silver,beast,7,8,3,7,5,2,5,19,1,"[[0,-1],[-1,0]]",False
+46,mugshot_073,Mire Turtle,silver,beast,6,7,2,4,5,2,8,19,0,[],False
+47,mugshot_074,Gloom Toad,silver,beast,6,7,2,4,8,2,6,20,0,[],False
+48,mugshot_075,Wharf Cat,silver,beast,7,8,3,5,3,8,3,19,1,"[[0,-1],[1,0]]",False
+49,mugshot_076,Reed Frog,silver,beast,4,6,1,3,3,5,6,17,0,[],False
+50,mugshot_077,Moss Frog,silver,beast,5,6,1,3,5,6,4,18,0,[],False
+51,mugshot_078,Night Frog,silver,beast,6,7,2,4,7,6,2,19,0,[],False
+52,mugshot_079,Duskhopper,silver,beast,5,6,1,4,3,6,5,18,0,[],False
+53,mugshot_080,Red-Eye Toad,silver,beast,4,5,1,2,3,2,8,15,0,[],False
+54,mugshot_081,Thorn Toad,silver,beast,4,6,1,2,6,2,6,16,0,[],False
+55,mugshot_082,Pondling,silver,beast,3,5,1,1,6,5,2,14,0,[],False
+56,mugshot_083,Mireling,silver,beast,6,7,2,2,6,5,6,19,0,[],False
+57,mugshot_084,Razorbeak,silver,beast,6,7,2,2,4,9,4,19,0,[],False
+58,mugshot_085,Brass Beetle,silver,construct,7,8,3,1,5,6,7,19,1,"[[-1,-1],[1,-1]]",False
+59,mugshot_086,Scrap Beetle,silver,construct,5,6,1,2,5,6,5,18,0,[],False
+60,mugshot_087,River Drake,silver,beast,5,7,2,2,8,4,3,17,1,"[[0,-1],[0,1]]",False
+61,mugshot_088,Ash Drake,silver,beast,4,5,1,5,2,3,5,15,0,[],False
+62,mugshot_089,Thorn Drake,silver,beast,4,6,1,5,4,3,4,16,0,[],False
+63,mugshot_090,Ridge Hound,silver,beast,6,7,2,5,5,5,4,19,0,[],False
+64,mugshot_091,Harbor Hound,silver,beast,6,7,2,6,7,5,2,20,0,[],False
+65,mugshot_092,Dune Hound,silver,beast,3,5,1,4,2,4,4,14,0,[],False
+66,mugshot_093,Red Hound,silver,beast,6,7,2,6,3,6,5,20,0,[],False
+67,mugshot_094,Mudbelly,silver,beast,7,8,3,7,5,4,3,19,1,"[[-1,0],[0,1]]",False
+68,mugshot_095,Lysa,silver,traveler,4,6,1,3,6,3,5,17,0,[],False
+69,mugshot_096,Old Nemm,silver,traveler,6,7,2,5,3,5,6,19,0,[],False
+70,mugshot_097,Nemm Stoic,silver,traveler,4,5,1,3,3,3,6,15,0,[],False
+71,mugshot_098,Nemm Elder,silver,traveler,4,6,1,3,5,3,5,16,0,[],False
+72,mugshot_099,Taren,silver,traveler,5,6,1,4,7,1,3,15,1,"[[-1,-1],[0,-1],[1,-1]]",False
+73,mugshot_100,Sil,silver,traveler,4,5,1,3,5,4,3,15,0,[],False
+74,mugshot_101,Daro,silver,traveler,4,5,1,5,3,4,3,15,0,[],False
+75,mugshot_102,Mogg,silver,traveler,5,6,1,2,6,4,6,18,0,[],False
+76,mugshot_103,Brek,silver,traveler,6,7,2,2,9,5,3,19,0,[],False
+77,mugshot_104,Nia,silver,traveler,5,7,2,2,6,3,6,17,1,"[[-1,0],[1,0]]",False
+78,mugshot_105,Grandma Osa,silver,traveler,6,7,2,2,4,6,7,19,0,[],False
+79,mugshot_106,Master Pell,silver,traveler,5,6,1,3,8,3,4,18,0,[],False
+80,mugshot_107,Sage Venn,silver,traveler,5,6,1,2,7,2,7,18,0,[],False
+81,mugshot_108,Koro,silver,traveler,4,6,1,2,8,2,5,17,0,[],False
+82,mugshot_109,Hamir,silver,traveler,4,6,1,2,3,2,9,16,0,[],False
+83,mugshot_110,Hamir Bold,silver,traveler,6,7,2,8,3,5,3,19,0,[],False
+84,mugshot_111,Cira,silver,traveler,7,8,3,5,4,4,6,19,1,"[[0,-1],[-1,0],[0,1]]",False
+85,mugshot_112,Dalen,silver,traveler,6,7,2,6,7,3,4,20,0,[],False
+86,mugshot_113,Baro,silver,traveler,6,7,2,9,4,3,4,20,0,[],False
+87,mugshot_114,Elder Kesh,silver,traveler,4,6,1,6,3,2,5,16,0,[],False
+88,mugshot_117,Torren,silver,traveler,3,5,1,4,2,4,4,14,0,[],False
+89,mugshot_118,Pello,silver,traveler,5,6,1,5,3,7,3,18,0,[],False
+90,mugshot_119,Gearface,silver,construct,7,8,3,3,4,5,6,18,2,"[[-1,0]]",False
+91,mugshot_120,Captain Rusk,silver,traveler,4,6,1,3,6,2,6,17,0,[],False
+92,mugshot_121,Rusk Stern,silver,traveler,4,6,1,3,7,1,5,16,0,[],False
+93,mugshot_122,Rusk Veteran,silver,traveler,5,6,1,6,5,3,4,18,0,[],False
+94,mugshot_123,Fira,silver,traveler,5,6,1,4,5,2,7,18,0,[],False
+95,mugshot_124,Mei,silver,traveler,6,7,2,4,8,2,5,19,0,[],False
+96,mugshot_125,Kellen,silver,traveler,5,6,1,3,5,5,2,15,1,"[[0,-1],[1,0],[0,1]]",False
+97,mugshot_126,Tali,silver,traveler,3,5,1,1,2,5,6,14,0,[],False
+98,mugshot_127,Rena,silver,traveler,6,7,2,2,6,8,4,20,0,[],False
+99,mugshot_128,Suri,silver,traveler,6,7,2,1,7,5,7,20,0,[],False
+100,mugshot_129,Niko,silver,traveler,4,6,1,1,7,4,5,17,0,[],False
+101,mugshot_130,Jori,silver,traveler,3,5,1,2,3,1,8,14,0,[],False
+102,mugshot_131,Pina,silver,traveler,6,7,2,3,5,3,9,20,0,[],False
+103,mugshot_132,Tobin,silver,traveler,5,6,1,1,4,5,5,15,1,"[[-1,-1],[1,1]]",False
+104,mugshot_133,Ren,silver,traveler,6,7,2,5,6,5,4,20,0,[],False
+105,mugshot_134,Luma,silver,traveler,4,5,1,5,3,5,2,15,0,[],False
+106,mugshot_135,Vasko,silver,traveler,6,7,2,6,2,5,7,20,0,[],False
+107,mugshot_136,Miri,silver,traveler,6,7,2,6,5,3,5,19,0,[],False
+108,mugshot_137,Ena,silver,traveler,6,7,2,6,7,4,3,20,0,[],False
+109,mugshot_138,Ena Dockside,silver,traveler,3,5,1,4,2,3,5,14,0,[],False
+110,mugshot_139,Lio,silver,traveler,5,6,1,7,3,5,3,18,0,[],False
+111,mugshot_140,Lio Quick,silver,traveler,5,7,2,3,4,5,4,16,1,"[[-1,0],[0,-1],[1,0]]",False
+112,mugshot_141,Fenric,silver,traveler,4,6,1,3,6,5,3,17,0,[],False
+113,mugshot_142,Milo,silver,traveler,4,5,1,2,5,4,4,15,0,[],False
+114,mugshot_143,Brother Odo,silver,traveler,4,6,1,4,2,6,5,17,0,[],False
+115,mugshot_144,Kassim,silver,traveler,6,7,2,4,5,4,7,20,0,[],False
+116,mugshot_145,Scalepriest,silver,beast,4,6,1,3,5,3,3,14,1,"[[0,-1],[1,-1]]",False
+117,mugshot_146,Bronn,silver,traveler,6,7,2,5,8,4,3,20,0,[],False
+118,mugshot_147,Hark,silver,traveler,3,5,1,3,2,3,6,14,0,[],False
+119,mugshot_148,Ogrin,silver,traveler,6,7,2,5,7,2,6,20,0,[],False
+120,mugshot_149,Featherbeak,silver,traveler,6,7,2,3,9,3,4,19,0,[],False
+121,mugshot_150,Glass-Eye,silver,traveler,4,6,1,1,7,6,3,17,0,[],False
+122,mugshot_151,Masked Warden,silver,construct,5,7,2,2,3,4,7,16,1,"[[-1,1],[1,1]]",False
+123,mugshot_152,Corin,silver,traveler,4,5,1,2,3,4,6,15,0,[],False
+124,mugshot_153,Embermane,bronze,beast,3,6,1,2,5,4,3,14,1,"[[-1,0],[0,-1]]",True
+125,mugshot_154,Cindermane,bronze,beast,1,4,1,2,3,2,3,10,0,[],True
+126,mugshot_155,Rustmane,bronze,beast,1,4,1,1,3,1,5,10,0,[],True
+127,mugshot_156,Ashmane,bronze,beast,3,5,1,6,3,2,3,14,0,[],True
+128,mugshot_157,Flamemane,bronze,beast,3,5,1,5,4,1,4,14,0,[],True
+129,mugshot_158,Cliff Ape,bronze,beast,2,5,1,3,4,2,1,10,1,"[[0,-1],[1,0]]",True
+130,mugshot_159,Cliff Alpha,bronze,beast,2,4,1,4,2,1,5,12,0,[],True
+131,mugshot_160,Mud Ox,bronze,beast,2,4,1,5,2,3,2,12,0,[],True
+132,mugshot_161,Cave Bear,bronze,beast,3,5,1,4,3,2,5,14,0,[],True
+133,mugshot_162,Dune Horse,bronze,beast,3,6,1,4,5,3,2,14,1,"[[-1,-1],[1,-1]]",True
+134,mugshot_163,Ramhorn,bronze,beast,2,4,1,3,4,1,4,12,0,[],False
+135,mugshot_164,Glow Ram,bronze,beast,2,4,1,4,2,1,5,12,0,[],False
+136,mugshot_165,Ember Hound,bronze,beast,3,5,1,4,5,2,3,14,0,[],False
+137,mugshot_166,Sand Hound,bronze,beast,1,4,1,2,3,2,3,10,0,[],False
+138,mugshot_167,Pale Hound,bronze,beast,3,5,1,2,5,4,3,14,0,[],False
+139,mugshot_168,Stray Cat,bronze,beast,2,5,1,2,2,4,2,10,1,"[[-1,0],[1,0]]",False
+140,mugshot_169,Moon Cat,bronze,beast,2,4,1,2,3,3,4,12,0,[],False
+141,mugshot_170,Harbor Cat,bronze,beast,1,4,1,2,2,2,4,10,0,[],False
+142,mugshot_171,Alley Cat,bronze,beast,1,4,1,1,5,1,3,10,0,[],False
+143,mugshot_172,Suncrest Hen,bronze,beast,2,4,1,2,4,2,4,12,0,[],False
+144,mugshot_173,Sky Talon,gold,beast,10,10,6,4,9,3,9,25,2,"[[0,-1]]",False
+145,mugshot_174,Solin,gold,beast,10,10,6,2,8,9,8,27,1,"[[-1,0],[1,0],[0,-1]]",False
+146,mugshot_175,Foxkin,bronze,beast,4,6,1,2,4,4,4,14,1,"[[0,-1],[0,1]]",False
+147,mugshot_176,Tin Walker,bronze,construct,1,4,1,1,2,4,3,10,0,[],False
+148,mugshot_177,Steel Walker,bronze,construct,1,4,1,1,2,5,2,10,0,[],False
+149,mugshot_178,Brass Walker,bronze,construct,2,4,1,2,3,3,4,12,0,[],False
+150,mugshot_179,Iron Walker,bronze,construct,2,4,1,1,5,3,3,12,0,[],False
+151,mugshot_180,Dock Guard,bronze,soldier,2,5,1,3,3,2,2,10,1,"[[-1,0],[0,1]]",False
+152,mugshot_181,Harbor Guard,bronze,soldier,2,4,1,6,3,1,2,12,0,[],False
+153,mugshot_182,Wharf Guard,bronze,soldier,2,4,1,3,2,3,4,12,0,[],False
+154,mugshot_183,Gate Guard,bronze,soldier,3,5,1,4,4,3,3,14,0,[],False
+155,mugshot_184,Tide Guard,bronze,soldier,3,5,1,4,4,4,2,14,0,[],False
+156,mugshot_185,Coast Guard,bronze,soldier,1,4,1,3,1,3,3,10,0,[],False
+157,mugshot_186,Lantern Guard,bronze,soldier,1,4,1,3,3,2,2,10,0,[],False
+158,mugshot_187,Chain Guard,bronze,soldier,3,5,1,2,5,2,5,14,0,[],False
+159,mugshot_188,Blue Guard,bronze,soldier,3,5,1,3,5,3,3,14,0,[],False
+160,mugshot_189,Red Guard,bronze,soldier,1,4,1,3,2,3,2,10,0,[],False
+161,mugshot_190,Old Guard,bronze,soldier,1,4,1,2,2,3,3,10,0,[],False
+162,mugshot_191,Veteran Guard,bronze,soldier,2,4,1,3,3,4,2,12,0,[],False
+163,mugshot_192,Pip,bronze,townsfolk,3,5,1,2,4,3,3,12,1,"[[-1,-1],[0,-1],[1,-1]]",False
+164,mugshot_196,Nemi,bronze,townsfolk,3,5,1,1,7,4,2,14,0,[],False
+165,mugshot_200,Miko,bronze,townsfolk,1,4,1,1,5,2,2,10,0,[],False
+166,mugshot_204,Tavi,bronze,townsfolk,3,5,1,4,4,2,4,14,0,[],False
+167,mugshot_208,Lani,bronze,townsfolk,1,4,1,3,4,2,1,10,0,[],False
+168,mugshot_212,Puck,bronze,townsfolk,3,5,1,4,5,2,3,14,0,[],False
+169,mugshot_216,Sela,bronze,townsfolk,3,5,1,3,4,1,6,14,0,[],False
+170,mugshot_220,Rori,bronze,townsfolk,3,5,1,1,5,1,7,14,0,[],False
+171,mugshot_224,Kiko,bronze,townsfolk,2,5,1,1,3,4,2,10,1,"[[0,-1],[1,0],[0,1]]",False
+172,mugshot_228,Noma,bronze,townsfolk,3,5,1,4,3,3,4,14,0,[],False
+173,mugshot_232,Vivi,bronze,townsfolk,2,4,1,2,2,4,4,12,0,[],False
+174,mugshot_236,Lilo,bronze,townsfolk,3,5,1,4,3,4,3,14,0,[],False
+175,mugshot_240,Timi,bronze,townsfolk,1,4,1,1,2,5,2,10,0,[],False
+176,mugshot_244,Mela,bronze,townsfolk,3,5,1,1,2,4,7,14,0,[],False
+177,mugshot_248,Yori,bronze,townsfolk,1,4,1,2,3,2,3,10,0,[],False
+178,mugshot_252,Bibi,bronze,townsfolk,3,5,1,5,2,3,4,14,0,[],False

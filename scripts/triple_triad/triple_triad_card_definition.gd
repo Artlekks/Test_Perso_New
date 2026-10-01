@@ -2,6 +2,7 @@ extends Resource
 
 @export var card_id: StringName = &""
 @export var display_name: String = "Card"
+@export_multiline var flavor_text: String = ""
 @export_range(1, 10, 1) var level: int = 1
 @export_range(1, 10, 1) var deck_cost: int = 1
 @export_range(1, 10, 1) var top_rank: int = 1

@@ -371,6 +371,7 @@ func _card_snapshot(card, quantity: int, player_rank: int) -> Dictionary:
 	return {
 		"card_id": String(card_id),
 		"display_name": str(card.display_name),
+		"flavor_text": str(card.get("flavor_text")),
 		"portrait": card.portrait,
 		"quantity": maxi(0, quantity),
 		"owned": quantity > 0,

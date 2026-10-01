@@ -402,6 +402,9 @@ func _detail_description(card) -> String:
 	if card == null:
 		return ""
 	var lines: Array[String] = []
+	var flavor_text: String = str(card.get("flavor_text")).strip_edges()
+	if not flavor_text.is_empty():
+		lines.append(flavor_text)
 	lines.append("Cost %d" % int(card.deck_cost))
 	if _show_extended_details:
 		lines.append(

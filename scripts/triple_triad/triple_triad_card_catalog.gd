@@ -119,6 +119,7 @@ func _apply_authored_stats(card) -> bool:
 	var authored_name: String = str(entry.get("display_name", card.display_name)).strip_edges()
 	if not authored_name.is_empty():
 		card.display_name = authored_name
+	card.flavor_text = str(entry.get("flavor_text", "")).strip_edges()
 	card.level = clampi(int(entry.get("level", card.level)), 1, 10)
 	card.deck_cost = clampi(int(entry.get("points", card.deck_cost)), 1, 10)
 	card.group_id = StringName(str(entry.get("group", "")).strip_edges())
