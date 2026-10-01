@@ -126,22 +126,24 @@ func _seed_new_collection() -> void:
 	if _catalog == null:
 		return
 
-	if (
-		_acquisition_policy != null
-		and _acquisition_policy.has_method("build_starting_collection")
-	):
-		var starter_cards: Array = _acquisition_policy.call(
-			"build_starting_collection",
-			_catalog
-		)
-		for card in starter_cards:
-			if card != null:
-				_quantities[StringName(card.card_id)] = 1
-		if not _quantities.is_empty():
-			return
+	if _acquisition_policy != null:
+		var auto_seed_value = _acquisition_policy.get("auto_seed_new_collection")
+		var auto_seed: bool = bool(auto_seed_value) if auto_seed_value != null else true
+		if (
+			auto_seed
+			and _acquisition_policy.has_method("build_starting_collection")
+		):
+			var starter_cards: Array = _acquisition_policy.call(
+				"build_starting_collection",
+				_catalog
+			)
+			for card in starter_cards:
+				if card != null:
+					_quantities[StringName(card.card_id)] = 1
+		return
 
-	# Compatibility fallback for projects that intentionally omit an acquisition
-	# policy. The actual TripleTriadGame now always supplies the default policy.
+	# Compatibility fallback only for projects that intentionally omit an
+	# acquisition policy entirely. TripleTriadGame supplies one by default.
 	if not _catalog.has_method("get_total_source_count"):
 		return
 	for source_index in range(int(_catalog.call("get_total_source_count"))):

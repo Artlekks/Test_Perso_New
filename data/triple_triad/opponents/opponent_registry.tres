@@ -1,13 +1,18 @@
-[gd_resource type="Resource" load_steps=8 format=3]
+[gd_resource type="Resource" load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_registry.gd" id="1_registry"]
 [ext_resource type="Resource" path="res://data/triple_triad/opponents/beach_trader.tres" id="2_beach"]
-[ext_resource type="Resource" path="res://data/triple_triad/opponents/dock_bruiser.tres" id="3_dock"]
-[ext_resource type="Resource" path="res://data/triple_triad/opponents/highland_keeper.tres" id="4_highland"]
-[ext_resource type="Resource" path="res://data/triple_triad/opponents/tide_oracle.tres" id="5_tide"]
-[ext_resource type="Resource" path="res://data/triple_triad/opponents/storm_captain.tres" id="6_storm"]
-[ext_resource type="Resource" path="res://data/triple_triad/opponents/ash_champion.tres" id="7_ash"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/pier_apprentice.tres" id="3_pier"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/dock_bruiser.tres" id="4_dock"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/gearwright.tres" id="5_gear"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/highland_keeper.tres" id="6_highland"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/marsh_keeper.tres" id="7_marsh"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/tide_oracle.tres" id="8_tide"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/lantern_gambler.tres" id="9_gambler"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/storm_captain.tres" id="10_storm"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/wandering_sage.tres" id="11_sage"]
+[ext_resource type="Resource" path="res://data/triple_triad/opponents/ash_champion.tres" id="12_ash"]
 
 [resource]
 script = ExtResource("1_registry")
-opponents = Array[ExtResource("2_beach")]([ExtResource("2_beach"), ExtResource("3_dock"), ExtResource("4_highland"), ExtResource("5_tide"), ExtResource("6_storm"), ExtResource("7_ash")])
+opponents = Array[ExtResource("2_beach")]([ExtResource("2_beach"), ExtResource("3_pier"), ExtResource("4_dock"), ExtResource("5_gear"), ExtResource("6_highland"), ExtResource("7_marsh"), ExtResource("8_tide"), ExtResource("9_gambler"), ExtResource("10_storm"), ExtResource("11_sage"), ExtResource("12_ash")])

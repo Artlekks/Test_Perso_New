@@ -471,7 +471,9 @@ func _find_legal_deck_suffix(
 	var memo_key: String = "%d:%d:%d" % [index, cards_needed, budget_left]
 	if memo.has(memo_key):
 		var cached = memo[memo_key]
-		return cached.duplicate() if cached is Array else null
+		if cached is Array:
+			return cached.duplicate()
+		return null
 
 	var card = cards[index]
 	if card != null:
@@ -497,7 +499,10 @@ func _find_legal_deck_suffix(
 		budget_left,
 		memo
 	)
-	memo[memo_key] = without_card.duplicate() if without_card is Array else null
+	if without_card is Array:
+		memo[memo_key] = without_card.duplicate()
+	else:
+		memo[memo_key] = null
 	return without_card
 
 

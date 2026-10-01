@@ -1032,19 +1032,83 @@ func _load_last_profile_index() -> int:
 
 
 func _build_default_deck() -> Array:
-	var sorted_cards: Array = _cards.duplicate()
-	sorted_cards.sort_custom(func(card_a, card_b):
-		if int(card_a.deck_cost) == int(card_b.deck_cost):
-			if int(card_a.rank_total()) == int(card_b.rank_total()):
+	var candidates: Array = []
+	for card in _cards:
+		if card != null and _can_use_card(card):
+			candidates.append(card)
+	if candidates.size() < HAND_SIZE:
+		return []
+
+	# A fresh save used to auto-build Deck #1 from the cheapest, weakest cards.
+	# Keep the automatic deck legal, but choose a useful five-card starter deck
+	# instead. Cap the search set so this stays cheap even if a missing profile is
+	# rebuilt after the collection has grown far beyond the original ten cards.
+	candidates.sort_custom(func(card_a, card_b):
+		var total_a: int = int(card_a.rank_total())
+		var total_b: int = int(card_b.rank_total())
+		if total_a == total_b:
+			if int(card_a.deck_cost) == int(card_b.deck_cost):
 				return int(card_a.source_index) < int(card_b.source_index)
-			return int(card_a.rank_total()) < int(card_b.rank_total())
-		return int(card_a.deck_cost) < int(card_b.deck_cost)
+			return int(card_a.deck_cost) < int(card_b.deck_cost)
+		return total_a > total_b
 	)
+	if candidates.size() > 14:
+		candidates.resize(14)
+
+	var best: Array = []
+	var best_rank_total: int = -1
+	var best_influence_count: int = -1
+	var best_cost: int = 999999
+	var count: int = candidates.size()
+
+	for a in range(0, count - 4):
+		for b in range(a + 1, count - 3):
+			for c in range(b + 1, count - 2):
+				for d in range(c + 1, count - 1):
+					for e in range(d + 1, count):
+						var candidate_deck: Array = [
+							candidates[a],
+							candidates[b],
+							candidates[c],
+							candidates[d],
+							candidates[e],
+						]
+						var candidate_cost: int = 0
+						var candidate_rank_total: int = 0
+						var candidate_influence_count: int = 0
+						for candidate_card in candidate_deck:
+							candidate_cost += int(candidate_card.deck_cost)
+							candidate_rank_total += int(candidate_card.rank_total())
+							if int(candidate_card.get("influence_strength")) > 0:
+								candidate_influence_count += 1
+						if candidate_cost > _budget_limit:
+							continue
+
+						if (
+							candidate_rank_total > best_rank_total
+							or (
+								candidate_rank_total == best_rank_total
+								and candidate_influence_count > best_influence_count
+							)
+							or (
+								candidate_rank_total == best_rank_total
+								and candidate_influence_count == best_influence_count
+								and candidate_cost < best_cost
+							)
+						):
+							best = candidate_deck.duplicate()
+							best_rank_total = candidate_rank_total
+							best_influence_count = candidate_influence_count
+							best_cost = candidate_cost
+
+	if best.size() == HAND_SIZE:
+		return best
+
+	# Defensive fallback; normally unreachable because the starter collection is
+	# statically validated to contain a legal five-card deck.
 	var result: Array = []
 	var running_cost: int = 0
-	for card in sorted_cards:
-		if not _can_use_card(card):
-			continue
+	for card in candidates:
 		var card_cost: int = int(card.deck_cost)
 		if running_cost + card_cost > _budget_limit:
 			continue

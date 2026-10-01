@@ -6,6 +6,9 @@ class_name TripleTriadAcquisitionPolicy
 @export_range(5, 100, 1) var starter_collection_size: int = 10
 @export var starter_required_tag: StringName = &"starter"
 @export_range(1, 10, 1) var starter_player_rank: int = 1
+## When false, a brand-new save begins with zero cards. The starter bundle can
+## still use build_starting_collection() for validation/simulation.
+@export var auto_seed_new_collection: bool = false
 
 @export_category("Ownership")
 @export var allow_duplicate_ownership: bool = true

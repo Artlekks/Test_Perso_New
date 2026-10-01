@@ -4,19 +4,21 @@ class_name TripleTriadBalanceSimulator
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
 const NEUTRAL_RULES = preload("res://data/triple_triad/basic_rules.tres")
+const DEFAULT_ACQUISITION_POLICY = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
+const BALANCED_AI_PROFILE = preload("res://data/triple_triad/ai/balanced.tres")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
 const OWNER_OPPONENT := 2
 const REPORT_PATH := "user://triple_triad_balance_report.json"
-const BALANCE_VERSION := "6"
+const BALANCE_VERSION := "7"
 
 
 func run_registry_suite(
 	card_catalog: Resource,
 	opponent_registry: Resource,
 	games_per_matchup: int = 40,
-	seed: int = 1337,
+	simulation_seed: int = 1337,
 	save_report: bool = true
 ) -> Dictionary:
 	var errors: Array[String] = []
@@ -27,9 +29,14 @@ func run_registry_suite(
 	if not errors.is_empty():
 		return _failed_report(errors)
 
-	var profiles: Array = opponent_registry.call("get_all_opponents")
+	var ecosystem_profiles: Array = opponent_registry.call("get_all_opponents")
+	var profiles: Array = ecosystem_profiles
+	if opponent_registry.has_method("get_progression_spine"):
+		var spine_profiles: Array = opponent_registry.call("get_progression_spine")
+		if spine_profiles.size() >= 2:
+			profiles = spine_profiles
 	if profiles.size() < 2:
-		errors.append("Balance simulation requires at least two opponents.")
+		errors.append("Balance simulation requires at least two progression-spine opponents.")
 		return _failed_report(errors)
 
 	var authored_decks: Dictionary = {}
@@ -106,7 +113,7 @@ func run_registry_suite(
 				var first_owner: int = OWNER_PLAYER
 				if game_index % 2 == 1:
 					first_owner = OWNER_OPPONENT
-				var game_seed: int = seed + matchup_index * 100003 + game_index * 97
+				var game_seed: int = simulation_seed + matchup_index * 100003 + game_index * 97
 				var result: Dictionary = _simulate_game(
 					challenger_deck,
 					host_deck,
@@ -148,16 +155,25 @@ func run_registry_suite(
 		profiles,
 		authored_decks,
 		clean_games,
-		seed
+		simulation_seed
+	)
+	var starter_benchmark: Dictionary = _build_starter_benchmark(
+		card_catalog,
+		profiles,
+		authored_decks,
+		clean_games,
+		simulation_seed
 	)
 	var report: Dictionary = {
 		"valid": simulation_errors.is_empty(),
 		"balance_version": BALANCE_VERSION,
 		"errors": simulation_errors,
-		"seed": seed,
+		"seed": simulation_seed,
 		"games_per_matchup": clean_games,
 		"neutral_games_per_direction": clean_games,
 		"ordered_matchup_count": matchup_reports.size(),
+		"ecosystem_opponent_count": ecosystem_profiles.size(),
+		"simulated_spine_opponent_count": profiles.size(),
 		"global": _finalize_global(global_metrics),
 		"turn_order_by_host": _finalize_host_turn_metrics(host_turn_metrics),
 		"opponents": finalized_profiles,
@@ -165,6 +181,7 @@ func run_registry_suite(
 		"ladder_checks": neutral_ladder_checks,
 		"neutral_ladder_checks": neutral_ladder_checks,
 		"authored_home_ladder_checks": authored_home_ladder_checks,
+		"starter_benchmark": starter_benchmark,
 		"matchups": matchup_reports,
 		"cards": _finalize_cards(card_metrics),
 		"report_path": REPORT_PATH,
@@ -183,7 +200,7 @@ func _simulate_game(
 	rules: Resource,
 	region: Resource,
 	first_owner: int,
-	seed: int
+	game_seed: int
 ) -> Dictionary:
 	var match_state = MatchScript.new()
 	match_state.reset_match(
@@ -195,7 +212,7 @@ func _simulate_game(
 	)
 	var ai = AIScript.new()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	rng.seed = game_seed
 	var events: Array = []
 	var safety: int = 0
 	var valid: bool = true
@@ -400,7 +417,9 @@ func _accumulate_initiative_candidate(
 		if adjusted_player > adjusted_opponent
 		else OWNER_OPPONENT
 	)
-	var suffix: String = "first_wins" if adjusted_winner == starting_owner else "second_wins"
+	var suffix: String = "second_wins"
+	if adjusted_winner == starting_owner:
+		suffix = "first_wins"
 	var key: String = "%s_%s" % [prefix, suffix]
 	metric[key] = int(metric.get(key, 0)) + 1
 
@@ -616,11 +635,205 @@ func _finalize_host_turn_metrics(metrics: Dictionary) -> Array:
 	return result
 
 
+func _build_starter_benchmark(
+	card_catalog: Resource,
+	profiles: Array,
+	authored_decks: Dictionary,
+	games_per_direction: int,
+	simulation_seed: int
+) -> Dictionary:
+	var beach_profile: Resource = null
+	for profile in profiles:
+		if profile != null and String(profile.get("opponent_id")) == "beach_trader":
+			beach_profile = profile
+			break
+	if beach_profile == null:
+		return {"valid": false, "reason": "Beach Trader profile is missing."}
+
+	var starter_collection: Array = DEFAULT_ACQUISITION_POLICY.call(
+		"build_starting_collection",
+		card_catalog
+	)
+	var starter_deck: Array = _best_starter_deck(starter_collection, 30)
+	if starter_deck.size() != 5:
+		return {"valid": false, "reason": "Could not build the five-card starter benchmark deck."}
+
+	var beach_deck: Array = authored_decks.get("beach_trader", [])
+	if beach_deck.size() != 5:
+		return {"valid": false, "reason": "Beach Trader authored deck is incomplete."}
+
+	var clean_games: int = maxi(1, games_per_direction)
+	var beach_wins: int = 0
+	var starter_wins: int = 0
+	var draws: int = 0
+	var invalid_games: int = 0
+	var beach_starts: int = 0
+	var beach_seconds: int = 0
+	var beach_wins_starting: int = 0
+	var beach_wins_second: int = 0
+
+	for direction in range(2):
+		var player_deck: Array = starter_deck
+		var opponent_deck: Array = beach_deck
+		var player_ai: Resource = BALANCED_AI_PROFILE
+		var opponent_ai: Resource = beach_profile.get("ai_profile")
+		var beach_owner: int = OWNER_OPPONENT
+		if direction == 1:
+			player_deck = beach_deck
+			opponent_deck = starter_deck
+			player_ai = beach_profile.get("ai_profile")
+			opponent_ai = BALANCED_AI_PROFILE
+			beach_owner = OWNER_PLAYER
+
+		for game_index in range(clean_games):
+			var first_owner: int = OWNER_PLAYER
+			if game_index % 2 == 1:
+				first_owner = OWNER_OPPONENT
+			var game_seed: int = simulation_seed + 7000003 + direction * 50021 + game_index * 137
+			var game: Dictionary = _simulate_game(
+				player_deck,
+				opponent_deck,
+				player_ai,
+				opponent_ai,
+				NEUTRAL_RULES,
+				null,
+				first_owner,
+				game_seed
+			)
+			if not bool(game.get("valid", false)):
+				invalid_games += 1
+				continue
+
+			if first_owner == beach_owner:
+				beach_starts += 1
+			else:
+				beach_seconds += 1
+
+			var winner: int = int(game.get("winner", OWNER_NONE))
+			if winner == OWNER_NONE:
+				draws += 1
+			elif winner == beach_owner:
+				beach_wins += 1
+				if first_owner == beach_owner:
+					beach_wins_starting += 1
+				else:
+					beach_wins_second += 1
+			else:
+				starter_wins += 1
+
+	var valid_games: int = clean_games * 2 - invalid_games
+	var decisive: int = maxi(1, beach_wins + starter_wins)
+	var beach_rate: float = float(beach_wins) / float(decisive)
+	var status: String = "on_target"
+	if beach_rate < 0.50:
+		status = "too_easy"
+	elif beach_rate > 0.72:
+		status = "too_hard"
+
+	var starter_ids := PackedStringArray()
+	for card in starter_deck:
+		starter_ids.append(String(card.card_id))
+
+	return {
+		"valid": invalid_games == 0,
+		"method": "best_fresh_save_starter_deck_vs_beach_neutral",
+		"games": valid_games,
+		"invalid_games": invalid_games,
+		"draws": draws,
+		"draw_rate": float(draws) / float(maxi(1, valid_games)),
+		"starter_wins": starter_wins,
+		"beach_wins": beach_wins,
+		"beach_decisive_win_rate": beach_rate,
+		"beach_win_rate_when_starting": (
+			float(beach_wins_starting) / float(maxi(1, beach_starts))
+		),
+		"beach_win_rate_when_second": (
+			float(beach_wins_second) / float(maxi(1, beach_seconds))
+		),
+		"target_min": 0.50,
+		"target_max": 0.72,
+		"status": status,
+		"starter_deck_ids": starter_ids,
+		"starter_deck_cost": _deck_cost(starter_deck),
+		"starter_deck_rank_total": _deck_rank_total(starter_deck),
+		"beach_deck_cost": _deck_cost(beach_deck),
+		"beach_deck_rank_total": _deck_rank_total(beach_deck),
+	}
+
+
+func _best_starter_deck(cards: Array, budget: int) -> Array:
+	var candidates: Array = []
+	for card in cards:
+		if card != null:
+			candidates.append(card)
+	if candidates.size() < 5:
+		return []
+
+	candidates.sort_custom(func(a, b):
+		var rank_a: int = int(a.rank_total())
+		var rank_b: int = int(b.rank_total())
+		if rank_a == rank_b:
+			return int(a.deck_cost) < int(b.deck_cost)
+		return rank_a > rank_b
+	)
+
+	var best: Array = []
+	var best_rank_total: int = -1
+	var best_influence_count: int = -1
+	var best_cost: int = 999999
+	var count: int = candidates.size()
+	for a in range(0, count - 4):
+		for b in range(a + 1, count - 3):
+			for c in range(b + 1, count - 2):
+				for d in range(c + 1, count - 1):
+					for e in range(d + 1, count):
+						var deck: Array = [
+							candidates[a],
+							candidates[b],
+							candidates[c],
+							candidates[d],
+							candidates[e],
+						]
+						var cost: int = _deck_cost(deck)
+						if cost > budget:
+							continue
+						var rank_total: int = _deck_rank_total(deck)
+						var influence_count: int = 0
+						for card in deck:
+							if int(card.get("influence_strength")) > 0:
+								influence_count += 1
+						if (
+							rank_total > best_rank_total
+							or (
+								rank_total == best_rank_total
+								and influence_count > best_influence_count
+							)
+							or (
+								rank_total == best_rank_total
+								and influence_count == best_influence_count
+								and cost < best_cost
+							)
+						):
+							best = deck.duplicate()
+							best_rank_total = rank_total
+							best_influence_count = influence_count
+							best_cost = cost
+	return best
+
+
+func _deck_rank_total(deck: Array) -> int:
+	var total: int = 0
+	for card in deck:
+		if card != null:
+			total += int(card.rank_total())
+	return total
+
+
 func _build_neutral_ladder_checks(
 	profiles: Array,
 	authored_decks: Dictionary,
 	games_per_direction: int,
-	seed: int
+	simulation_seed: int
 ) -> Array:
 	var sorted_profiles: Array = profiles.duplicate()
 	sorted_profiles.sort_custom(func(a, b):
@@ -667,7 +880,7 @@ func _build_neutral_ladder_checks(
 				if game_index % 2 == 1:
 					first_owner = OWNER_OPPONENT
 				var benchmark_seed: int = (
-					seed
+					simulation_seed
 					+ index * 1000003
 					+ direction * 50021
 					+ game_index * 131

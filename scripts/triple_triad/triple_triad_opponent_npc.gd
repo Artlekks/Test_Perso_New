@@ -1,6 +1,7 @@
 extends Node3D
 
 @export var interaction_prompt: String = "K : Cards"
+@export var locked_prompt: String = "Cards : Locked"
 ## Stable registry key. New NPC instances should use this.
 @export var opponent_id: StringName = &""
 ## Legacy/fallback direct profile reference for older scenes.
@@ -30,6 +31,15 @@ func _input(event: InputEvent) -> void:
 		return
 	var game: Node = _find_game()
 	if game != null:
+		if opponent_id != &"" and game.has_method("get_opponent_availability"):
+			var availability: Dictionary = game.call(
+				"get_opponent_availability",
+				opponent_id
+			)
+			if not bool(availability.get("available", false)):
+				_refresh_prompt_text()
+				get_viewport().set_input_as_handled()
+				return
 		if (
 			opponent_id != &""
 			and game.has_method("open_game_by_id")
@@ -54,6 +64,7 @@ func _on_body_entered(body: Node) -> void:
 	if not _is_player_body(body):
 		return
 	_player_in_range = true
+	_refresh_prompt_text()
 	prompt_label.visible = true
 
 
@@ -62,6 +73,21 @@ func _on_body_exited(body: Node) -> void:
 		return
 	_player_in_range = false
 	prompt_label.visible = false
+
+
+func _refresh_prompt_text() -> void:
+	prompt_label.text = interaction_prompt
+	if opponent_id == &"":
+		return
+	var game: Node = _find_game()
+	if game == null or not game.has_method("get_opponent_availability"):
+		return
+	var availability: Dictionary = game.call(
+		"get_opponent_availability",
+		opponent_id
+	)
+	if not bool(availability.get("available", false)):
+		prompt_label.text = locked_prompt
 
 
 func _is_player_body(body: Node) -> bool:

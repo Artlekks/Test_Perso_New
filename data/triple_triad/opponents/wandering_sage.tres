@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/trickster.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_highlands.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/rules/same_combo.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"wandering_sage"
+display_name = "Wandering Sage"
+archetype_id = &"same_combo_side_player"
+strategy_summary = "An experienced traveler whose compact deck is built around deliberate Same and Combo lines."
+content_revision = 1
+duel_rank = 5
+required_player_rank = 4
+enabled_by_default = true
+progression_spine = false
+encounter_tags = PackedStringArray("highlands", "traveler", "advanced", "same", "combo")
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+rule_set_override = ExtResource("4_rules")
+min_card_level = 4
+max_card_level = 8
+deck_budget_override = 33
+native_card_ids = PackedStringArray("mugshot_003", "mugshot_038", "mugshot_074", "mugshot_122", "mugshot_002", "mugshot_107", "mugshot_106", "mugshot_096", "mugshot_103", "mugshot_118", "mugshot_139", "mugshot_150")
+preferred_deck_ids = PackedStringArray("mugshot_003", "mugshot_038", "mugshot_074", "mugshot_122", "mugshot_002")
+reward_card_ids = PackedStringArray("mugshot_003", "mugshot_038", "mugshot_002")
+initial_collection_size = 12
+progression_points_on_win = 8
+first_win_progression_only = true
+rematch_progression_points_on_win = 0

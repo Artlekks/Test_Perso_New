@@ -72,7 +72,8 @@ func configure_progression_catalog(
 func record_result(
 	winner: int,
 	player_owner: int,
-	opponent_profile: Resource = null
+	opponent_profile: Resource = null,
+	progression_reward_override: int = -1
 ) -> Dictionary:
 	var before_points: int = _points
 	var before_rank: int = get_rank_number()
@@ -81,7 +82,10 @@ func record_result(
 	_matches += 1
 	if winner == player_owner:
 		_wins += 1
-		earned = _win_reward(opponent_profile)
+		if progression_reward_override >= 0:
+			earned = progression_reward_override
+		else:
+			earned = _win_reward(opponent_profile)
 	elif winner == 0:
 		_draws += 1
 	else:

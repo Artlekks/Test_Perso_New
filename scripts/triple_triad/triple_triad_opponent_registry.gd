@@ -27,7 +27,8 @@ func get_availability(
 	opponent_id: StringName,
 	player_rank: int,
 	region_id: StringName = &"",
-	required_tag: StringName = &""
+	required_tag: StringName = &"",
+	context: Dictionary = {}
 ) -> Dictionary:
 	var profile: TripleTriadOpponentProfile = get_opponent(opponent_id)
 	if profile == null:
@@ -44,12 +45,43 @@ func get_availability(
 			"reason": "Opponent disabled.",
 			"required_player_rank": profile.required_player_rank,
 		}
+	if profile.requires_card_game_unlocked and not bool(context.get("card_game_unlocked", true)):
+		return {
+			"available": false,
+			"reason": "Find a card collection first.",
+			"required_player_rank": profile.required_player_rank,
+		}
 	if clean_rank < profile.required_player_rank:
 		return {
 			"available": false,
 			"reason": "Requires Duel Rank %d." % profile.required_player_rank,
 			"required_player_rank": profile.required_player_rank,
 		}
+	var total_wins: int = maxi(0, int(context.get("total_player_wins", 0)))
+	if total_wins < profile.required_total_player_wins:
+		return {
+			"available": false,
+			"reason": "Requires %d card-duel wins." % profile.required_total_player_wins,
+			"required_player_rank": profile.required_player_rank,
+		}
+
+	var beaten_ids: Dictionary = {}
+	var raw_beaten = context.get("beaten_opponent_ids", PackedStringArray())
+	if raw_beaten is PackedStringArray or raw_beaten is Array:
+		for raw_id in raw_beaten:
+			beaten_ids[str(raw_id)] = true
+	for raw_required_id in profile.unlock_after_opponent_ids:
+		var required_id: String = str(raw_required_id)
+		if not beaten_ids.has(required_id):
+			var prerequisite: TripleTriadOpponentProfile = get_opponent(StringName(required_id))
+			var prerequisite_name: String = required_id
+			if prerequisite != null:
+				prerequisite_name = prerequisite.display_name
+			return {
+				"available": false,
+				"reason": "Defeat %s first." % prerequisite_name,
+				"required_player_rank": profile.required_player_rank,
+			}
 	if region_id != &"" and profile.get_region_id() != region_id:
 		return {
 			"available": false,
@@ -72,7 +104,8 @@ func get_availability(
 func get_available_opponents(
 	player_rank: int,
 	region_id: StringName = &"",
-	required_tag: StringName = &""
+	required_tag: StringName = &"",
+	context: Dictionary = {}
 ) -> Array[TripleTriadOpponentProfile]:
 	var result: Array[TripleTriadOpponentProfile] = []
 	var clean_rank: int = maxi(1, player_rank)
@@ -84,11 +117,25 @@ func get_available_opponents(
 			profile.opponent_id,
 			clean_rank,
 			region_id,
-			required_tag
+			required_tag,
+			context
 		)
 		if bool(availability.get("available", false)):
 			result.append(profile)
 
+	result.sort_custom(func(a, b):
+		if a.duel_rank == b.duel_rank:
+			return String(a.opponent_id) < String(b.opponent_id)
+		return a.duel_rank < b.duel_rank
+	)
+	return result
+
+
+func get_progression_spine() -> Array[TripleTriadOpponentProfile]:
+	var result: Array[TripleTriadOpponentProfile] = []
+	for profile in opponents:
+		if profile != null and profile.progression_spine:
+			result.append(profile)
 	result.sort_custom(func(a, b):
 		if a.duel_rank == b.duel_rank:
 			return String(a.opponent_id) < String(b.opponent_id)
@@ -124,6 +171,21 @@ func validate_registry(card_catalog: Resource = null) -> Dictionary:
 			errors.append("%s: %s" % [opponent_key, str(error)])
 		for warning in audit.get("warnings", []):
 			warnings.append("%s: %s" % [opponent_key, str(warning)])
+
+	for profile in opponents:
+		if profile == null:
+			continue
+		for raw_required_id in profile.unlock_after_opponent_ids:
+			var required_id: String = str(raw_required_id).strip_edges()
+			if required_id.is_empty():
+				errors.append("%s: empty unlock prerequisite" % String(profile.opponent_id))
+			elif required_id == String(profile.opponent_id):
+				errors.append("%s: opponent cannot require itself" % required_id)
+			elif not ids.has(required_id):
+				errors.append(
+					"%s: unknown unlock prerequisite %s"
+					% [String(profile.opponent_id), required_id]
+				)
 
 	return {
 		"valid": errors.is_empty(),

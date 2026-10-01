@@ -6,6 +6,8 @@ signal match_finished(result: Dictionary)
 signal card_reward_selected(card_definition)
 signal backend_state_changed(reason: String)
 signal runtime_state_changed(snapshot: Dictionary)
+signal acquisition_completed(result: Dictionary)
+signal card_game_unlock_changed(unlocked: bool)
 
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
@@ -17,6 +19,8 @@ const ProgressionScript = preload("res://scripts/triple_triad/triple_triad_progr
 const SaveIntegrityScript = preload("res://scripts/triple_triad/triple_triad_save_integrity.gd")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const AcquisitionTrackerScript = preload("res://scripts/triple_triad/triple_triad_acquisition_tracker.gd")
+const AcquisitionServiceScript = preload("res://scripts/triple_triad/triple_triad_acquisition_service.gd")
+const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
 const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
 const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
@@ -24,7 +28,7 @@ const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake
 const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
 const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 
-const BACKEND_VERSION := "1.4.0"
+const BACKEND_VERSION := "1.5.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -75,6 +79,7 @@ const CARD_VISUAL_SCALE := Vector2(
 @export var ai_profile: Resource
 @export var opponent_registry: Resource = DefaultOpponentRegistry
 @export var acquisition_policy: Resource = DefaultAcquisitionPolicy
+@export var acquisition_registry: Resource = DefaultAcquisitionRegistry
 @export_range(5, 50, 1) var deck_budget: int = 30
 @export_range(5, 50, 1) var player_deck_budget: int = 30
 @export_range(1, 10, 1) var player_card_rank: int = 6
@@ -146,6 +151,7 @@ var _card_economy = null
 var _progression = null
 var _save_integrity = null
 var _acquisition_tracker = null
+var _acquisition_service = null
 var _encounter_records = null
 var _state_api = null
 var _stake_policy = StakePolicyScript.new()
@@ -181,7 +187,6 @@ func _ready() -> void:
 	ai_timer.timeout.connect(_on_ai_timer_timeout)
 	reward_view.reward_selected.connect(_on_reward_selected)
 	reward_view.completed.connect(_on_reward_completed)
-	reward_view.leave_requested.connect(_on_reward_leave_requested)
 	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
 	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
 	deck_setup.cancelled.connect(_on_deck_cancelled)
@@ -208,6 +213,16 @@ func _ready() -> void:
 
 	_acquisition_tracker = AcquisitionTrackerScript.new()
 	_acquisition_tracker.initialize(card_catalog)
+
+	_acquisition_service = AcquisitionServiceScript.new()
+	_acquisition_service.initialize(
+		card_catalog,
+		_collection_backend,
+		_acquisition_tracker,
+		acquisition_registry
+	)
+	_acquisition_service.bundle_claimed.connect(_on_acquisition_bundle_claimed)
+	_acquisition_service.unlock_changed.connect(_on_card_game_unlock_changed)
 
 	_progression = ProgressionScript.new()
 	_progression.initialize()
@@ -242,6 +257,7 @@ func _ready() -> void:
 		opponent_registry,
 		_encounter_records,
 		_acquisition_tracker,
+		_acquisition_service,
 		acquisition_policy,
 		player_deck_budget
 	)
@@ -307,7 +323,10 @@ func _build_result_overlay() -> void:
 
 func _set_match_skin_visible(enabled: bool) -> void:
 	if backdrop != null:
-		backdrop.texture = CARD_GAME_BACKGROUND if enabled else _default_backdrop_texture
+		if enabled:
+			backdrop.texture = CARD_GAME_BACKGROUND
+		else:
+			backdrop.texture = _default_backdrop_texture
 	if _match_hud != null:
 		_match_hud.visible = enabled
 	if not enabled and _result_dim != null:
@@ -330,7 +349,7 @@ func run_backend_qa() -> Dictionary:
 
 func run_balance_simulation(
 	games_per_matchup: int = 40,
-	seed: int = 1337
+	simulation_seed: int = 1337
 ) -> Dictionary:
 	if card_catalog == null or opponent_registry == null:
 		return {
@@ -342,7 +361,7 @@ func run_balance_simulation(
 		card_catalog,
 		opponent_registry,
 		maxi(1, games_per_matchup),
-		seed,
+		simulation_seed,
 		true
 	)
 	if bool(report.get("valid", false)):
@@ -521,6 +540,21 @@ func _validate_static_backend() -> bool:
 						_backend_errors.append(
 							"Starter collection cannot form a legal deck under the base player budget."
 						)
+
+	if acquisition_registry == null:
+		_backend_errors.append("Acquisition registry is missing.")
+	elif acquisition_registry.has_method("validate_registry"):
+		var acquisition_audit: Dictionary = acquisition_registry.call(
+			"validate_registry",
+			card_catalog
+		)
+		if not bool(acquisition_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid acquisition registry: %s"
+				% str(acquisition_audit.get("errors", []))
+			)
+		for warning in acquisition_audit.get("warnings", []):
+			push_warning("TripleTriadGame acquisition: %s" % str(warning))
 
 	var progression_probe = ProgressionScript.new()
 	if (
@@ -732,6 +766,120 @@ func is_open() -> bool:
 	return _phase != PHASE_CLOSED
 
 
+func is_card_game_unlocked() -> bool:
+	if _acquisition_service == null:
+		return false
+	return bool(_acquisition_service.call("is_card_game_unlocked"))
+
+
+func get_acquisition_snapshot() -> Dictionary:
+	if _acquisition_service == null:
+		return {
+			"card_game_unlocked": false,
+			"claimed_bundle_ids": PackedStringArray(),
+			"available_bundle_ids": PackedStringArray(),
+		}
+	return _acquisition_service.call("get_snapshot")
+
+
+func claim_acquisition_bundle(
+	bundle_id: StringName,
+	source_context: StringName = &""
+) -> Dictionary:
+	if not _backend_ready or _acquisition_service == null:
+		return {
+			"success": false,
+			"reason": "backend_unavailable",
+			"bundle_id": String(bundle_id),
+		}
+	var result: Dictionary = _acquisition_service.call(
+		"claim_bundle",
+		bundle_id,
+		source_context
+	)
+	if bool(result.get("success", false)):
+		_checkpoint_save_integrity("acquisition_bundle")
+		_publish_backend_state_change("acquisition_bundle")
+	return result
+
+
+## Stable bridge for the fishing/exploration layer. The fishing game only needs
+## to call this when its salvage/object event resolves; Triple Triad owns the
+## contents, one-shot persistence, collection write, and unlock state.
+func claim_salvaged_card_case() -> Dictionary:
+	return claim_acquisition_bundle(&"salvaged_card_case", &"sea_salvage")
+
+
+func get_opponent_availability(opponent_id: StringName) -> Dictionary:
+	if opponent_registry == null or not opponent_registry.has_method("get_availability"):
+		return {
+			"available": false,
+			"reason": "Opponent registry unavailable.",
+			"required_player_rank": 1,
+		}
+	var player_rank: int = (
+		_progression.get_rank_number()
+		if _progression != null
+		else maxi(1, player_card_rank)
+	)
+	return opponent_registry.call(
+		"get_availability",
+		opponent_id,
+		player_rank,
+		&"",
+		&"",
+		_opponent_availability_context()
+	)
+
+
+func get_available_card_player_ids(
+	region_id: StringName = &"",
+	required_tag: StringName = &""
+) -> PackedStringArray:
+	var result := PackedStringArray()
+	if opponent_registry == null or not opponent_registry.has_method("get_available_opponents"):
+		return result
+	var player_rank: int = (
+		_progression.get_rank_number()
+		if _progression != null
+		else maxi(1, player_card_rank)
+	)
+	var profiles: Array = opponent_registry.call(
+		"get_available_opponents",
+		player_rank,
+		region_id,
+		required_tag,
+		_opponent_availability_context()
+	)
+	for profile in profiles:
+		if profile != null:
+			result.append(String(profile.get("opponent_id")))
+	return result
+
+
+func _opponent_availability_context() -> Dictionary:
+	var beaten_ids := PackedStringArray()
+	var total_wins: int = 0
+	if _encounter_records != null:
+		if _encounter_records.has_method("get_beaten_opponent_ids"):
+			beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
+		if _encounter_records.has_method("get_total_player_wins"):
+			total_wins = int(_encounter_records.call("get_total_player_wins"))
+	return {
+		"card_game_unlocked": is_card_game_unlocked(),
+		"beaten_opponent_ids": beaten_ids,
+		"total_player_wins": total_wins,
+	}
+
+
+func _on_acquisition_bundle_claimed(result: Dictionary) -> void:
+	acquisition_completed.emit(result.duplicate(true))
+
+
+func _on_card_game_unlock_changed(unlocked: bool) -> void:
+	card_game_unlock_changed.emit(unlocked)
+
+
 func open_game_by_id(opponent_id: StringName) -> bool:
 	if not _backend_ready:
 		push_warning("TripleTriadGame: backend is not ready; match open rejected.")
@@ -757,7 +905,10 @@ func open_game_by_id(opponent_id: StringName) -> bool:
 		var availability: Dictionary = opponent_registry.call(
 			"get_availability",
 			opponent_id,
-			player_rank
+			player_rank,
+			&"",
+			&"",
+			_opponent_availability_context()
 		)
 		if not bool(availability.get("available", false)):
 			push_warning(
@@ -773,6 +924,24 @@ func open_game_by_id(opponent_id: StringName) -> bool:
 func open_game(opponent_profile_override: Resource = null) -> void:
 	if not _backend_ready or is_open() or card_catalog == null:
 		return
+	if _qa_profile_override == null and not is_card_game_unlocked():
+		push_warning("TripleTriadGame: card game is locked until the first card bundle is acquired.")
+		return
+	if _qa_profile_override == null and opponent_profile_override != null:
+		var raw_opponent_id = opponent_profile_override.get("opponent_id")
+		if raw_opponent_id != null and String(raw_opponent_id) != "":
+			var direct_availability: Dictionary = get_opponent_availability(
+				StringName(str(raw_opponent_id))
+			)
+			if not bool(direct_availability.get("available", false)):
+				push_warning(
+					"TripleTriadGame: opponent '%s' is locked: %s"
+					% [
+						str(raw_opponent_id),
+						str(direct_availability.get("reason", "Unavailable.")),
+					]
+				)
+				return
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.paused:
 		return
@@ -1150,13 +1319,33 @@ func _finish_match(
 	_result_reason = reason
 
 	var progression_change: Dictionary = {}
-	# QA/debug matches must never mutate permanent progression. Surrender uses the
-	# exact same result accounting and stake flow as any other opponent victory.
+	# QA/debug matches must never mutate permanent progression. Campaign points
+	# are first-clear rewards by default; rematches still count in match records
+	# and can award a separately-authored rematch value if desired.
 	if _progression != null and _qa_profile_override == null:
+		var already_beaten: bool = false
+		if _encounter_records != null:
+			var previous_record: Dictionary = _encounter_records.get_snapshot(
+				_active_opponent_id()
+			)
+			already_beaten = bool(previous_record.get("beaten_before", false))
+		var progression_override: int = -1
+		if _result_winner == OWNER_PLAYER and _active_opponent_profile != null:
+			var first_win_only_value = _active_opponent_profile.get(
+				"first_win_progression_only"
+			)
+			if bool(first_win_only_value) and already_beaten:
+				progression_override = maxi(
+					0,
+					int(_active_opponent_profile.get(
+						"rematch_progression_points_on_win"
+					))
+				)
 		progression_change = _progression.record_result(
 			_result_winner,
 			OWNER_PLAYER,
-			_active_opponent_profile
+			_active_opponent_profile,
+			progression_override
 		)
 		if _encounter_records != null:
 			_encounter_records.record_result(
@@ -1779,11 +1968,6 @@ func _on_reward_completed() -> void:
 	reward_view.close_reward()
 	close_game()
 
-
-func _on_reward_leave_requested() -> void:
-	# Kept for scene/signal compatibility. Reward selection is mandatory and the
-	# current RewardView never emits a leave request while a stake is unresolved.
-	return
 
 
 func _on_deck_confirmed(cards: Array) -> void:

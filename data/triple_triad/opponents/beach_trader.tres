@@ -15,6 +15,7 @@ content_revision = 5
 duel_rank = 1
 required_player_rank = 1
 enabled_by_default = true
+progression_spine = true
 encounter_tags = PackedStringArray("coast", "merchant", "beginner", "balanced")
 ai_profile = ExtResource("2_ai")
 region_profile = ExtResource("3_region")

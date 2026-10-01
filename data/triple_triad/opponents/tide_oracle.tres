@@ -15,6 +15,7 @@ content_revision = 5
 duel_rank = 4
 required_player_rank = 3
 enabled_by_default = true
+progression_spine = true
 encounter_tags = PackedStringArray("coast", "oracle", "control", "influence")
 ai_profile = ExtResource("2_ai")
 region_profile = ExtResource("3_region")

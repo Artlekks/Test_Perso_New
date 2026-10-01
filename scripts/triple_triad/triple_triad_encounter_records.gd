@@ -161,6 +161,24 @@ func get_all_recorded_ids() -> PackedStringArray:
 	return result
 
 
+func get_beaten_opponent_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	for raw_id in _records.keys():
+		var record: Dictionary = _records[raw_id]
+		if maxi(0, int(record.get("wins", 0))) > 0:
+			result.append(str(raw_id))
+	result.sort()
+	return result
+
+
+func get_total_player_wins() -> int:
+	var total: int = 0
+	for record in _records.values():
+		if record is Dictionary:
+			total += maxi(0, int(record.get("wins", 0)))
+	return total
+
+
 func save_state() -> Error:
 	return _save()
 

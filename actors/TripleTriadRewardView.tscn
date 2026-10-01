@@ -53,18 +53,34 @@ text = "Choose your reward"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="OpponentRowRoot" type="Control" parent="."]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 101.0
+offset_right = 80.0
+offset_bottom = 101.0
+mouse_filter = 2
+
+[node name="PlayerRowRoot" type="Control" parent="."]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 235.0
+offset_right = 80.0
+offset_bottom = 235.0
+mouse_filter = 2
+
 [node name="SelectionArrow" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(0, 0, 0, 12, 10, 6)
 color = Color(1, 0.88, 0.3, 1)
-position = Vector2(42, 128)
+position = Vector2(67, 143)
 z_index = 80
 
 [node name="InfoPanel" type="Control" parent="."]
 layout_mode = 0
 offset_left = 112.0
-offset_top = 402.0
+offset_top = 397.0
 offset_right = 528.0
-offset_bottom = 424.0
+offset_bottom = 421.0
 mouse_filter = 2
 z_index = 120
 
@@ -84,18 +100,92 @@ text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HelpLabel" type="Label" parent="."]
+[node name="FooterHints" type="Control" parent="."]
 layout_mode = 0
-offset_left = 22.0
-offset_top = 449.0
-offset_right = 618.0
-offset_bottom = 473.0
+offset_left = 0.0
+offset_top = 438.0
+offset_right = 640.0
+offset_bottom = 478.0
+mouse_filter = 2
+
+[node name="SelectIconAnchor" type="Control" parent="FooterHints"]
+layout_mode = 0
+offset_left = 124.0
+offset_top = 8.0
+offset_right = 146.0
+offset_bottom = 30.0
+mouse_filter = 2
+
+[node name="SelectKeys" type="Label" parent="FooterHints"]
+layout_mode = 0
+offset_left = 146.0
+offset_top = 8.0
+offset_right = 218.0
+offset_bottom = 31.0
 theme_override_colors/font_color = Color(0.95, 0.92, 0.83, 1)
 theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
 theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 11
-text = "A/D: Choose   K: Confirm"
+text = "W A S D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SelectAction" type="Label" parent="FooterHints"]
+layout_mode = 0
+offset_left = 218.0
+offset_top = 8.0
+offset_right = 278.0
+offset_bottom = 31.0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.83, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "Select"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContinueKey" type="Label" parent="FooterHints"]
+layout_mode = 0
+offset_left = 356.0
+offset_top = 8.0
+offset_right = 380.0
+offset_bottom = 31.0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.83, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "K"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContinueAction" type="Label" parent="FooterHints"]
+layout_mode = 0
+offset_left = 380.0
+offset_top = 8.0
+offset_right = 456.0
+offset_bottom = 31.0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.83, 1)
+theme_override_colors/font_outline_color = Color(0.10, 0.06, 0.02, 1)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "Continue"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HelpLabel" type="Label" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 22.0
+offset_top = 449.0
+offset_right = 618.0
+offset_bottom = 473.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 

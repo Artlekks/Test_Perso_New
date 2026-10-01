@@ -14,7 +14,16 @@ class_name TripleTriadOpponentProfile
 ## Minimum player Duel Rank required for registry availability queries.
 @export_range(1, 10, 1) var required_player_rank: int = 1
 @export var enabled_by_default: bool = true
+## The six authored backbone opponents are the progression spine used by the
+## balance simulator. Side/world card players leave this false.
+@export var progression_spine: bool = false
 @export var encounter_tags: PackedStringArray = PackedStringArray()
+
+@export_category("Availability")
+@export var requires_card_game_unlocked: bool = true
+## All listed opponents must have been beaten at least once.
+@export var unlock_after_opponent_ids: PackedStringArray = PackedStringArray()
+@export_range(0, 999, 1) var required_total_player_wins: int = 0
 
 @export_category("Behavior")
 @export var ai_profile: Resource
@@ -38,6 +47,9 @@ class_name TripleTriadOpponentProfile
 @export_category("Progression")
 ## Duel progression awarded when the player defeats this opponent.
 @export_range(0, 100, 1) var progression_points_on_win: int = 3
+## The normal campaign awards the large progression reward once per opponent.
+@export var first_win_progression_only: bool = true
+@export_range(0, 100, 1) var rematch_progression_points_on_win: int = 0
 
 
 func validate_profile(card_catalog: Resource = null) -> Dictionary:
@@ -54,6 +66,8 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 		errors.append("duel_rank must be at least 1")
 	if required_player_rank < 1:
 		errors.append("required_player_rank must be at least 1")
+	if required_total_player_wins < 0:
+		errors.append("required_total_player_wins cannot be negative")
 	if min_card_level < 1 or max_card_level < min_card_level:
 		errors.append("card level range is invalid")
 	if initial_collection_size < 5:

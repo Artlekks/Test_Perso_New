@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TripleTriadStateAPI
 
-const API_SCHEMA_VERSION := 4
+const API_SCHEMA_VERSION := 5
 
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const OPPONENT_COLLECTIONS_PATH := "user://triple_triad_opponents.cfg"
@@ -14,6 +14,7 @@ var _progression = null
 var _opponent_registry: Resource = null
 var _encounter_records = null
 var _acquisition_tracker = null
+var _acquisition_service = null
 var _acquisition_policy: Resource = null
 var _base_player_budget: int = 30
 
@@ -40,6 +41,7 @@ func initialize(
 	opponent_registry: Resource,
 	encounter_records,
 	acquisition_tracker,
+	acquisition_service,
 	acquisition_policy: Resource,
 	base_player_budget: int = 30
 ) -> void:
@@ -49,6 +51,7 @@ func initialize(
 	_opponent_registry = opponent_registry
 	_encounter_records = encounter_records
 	_acquisition_tracker = acquisition_tracker
+	_acquisition_service = acquisition_service
 	_acquisition_policy = acquisition_policy
 	_base_player_budget = maxi(5, base_player_budget)
 	invalidate("initialize")
@@ -79,6 +82,18 @@ func get_player_snapshot() -> Dictionary:
 		_player_cache = _build_player_snapshot()
 		_player_cache_valid = true
 	return _player_cache.duplicate(true)
+
+
+func get_acquisition_snapshot() -> Dictionary:
+	return _acquisition_snapshot().duplicate(true)
+
+
+func get_available_opponents_snapshot() -> Array:
+	var result: Array = []
+	for snapshot in get_all_opponents_snapshot():
+		if snapshot is Dictionary and bool(snapshot.get("available", false)):
+			result.append(snapshot)
+	return result
 
 
 func get_collection_snapshot() -> Array:
@@ -146,6 +161,34 @@ func get_global_snapshot() -> Dictionary:
 		"collection": get_collection_snapshot(),
 		"decks": get_deck_profiles(),
 		"opponents": get_all_opponents_snapshot(),
+		"acquisition": _acquisition_snapshot(),
+	}
+
+
+func _acquisition_snapshot() -> Dictionary:
+	if _acquisition_service == null or not _acquisition_service.has_method("get_snapshot"):
+		return {
+			"card_game_unlocked": false,
+			"claimed_bundle_ids": PackedStringArray(),
+			"available_bundle_ids": PackedStringArray(),
+		}
+	return _acquisition_service.call("get_snapshot")
+
+
+func _availability_context() -> Dictionary:
+	var beaten_ids := PackedStringArray()
+	var total_wins: int = 0
+	if _encounter_records != null:
+		if _encounter_records.has_method("get_beaten_opponent_ids"):
+			beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
+		if _encounter_records.has_method("get_total_player_wins"):
+			total_wins = int(_encounter_records.call("get_total_player_wins"))
+	return {
+		"card_game_unlocked": bool(
+			_acquisition_snapshot().get("card_game_unlocked", false)
+		),
+		"beaten_opponent_ids": beaten_ids,
+		"total_player_wins": total_wins,
 	}
 
 
@@ -196,6 +239,13 @@ func _build_player_snapshot() -> Dictionary:
 			if _acquisition_tracker != null
 			and _acquisition_tracker.has_method("get_event_count")
 			else 0
+		),
+		"card_game_unlocked": bool(
+			_acquisition_snapshot().get("card_game_unlocked", false)
+		),
+		"claimed_acquisition_bundles": _acquisition_snapshot().get(
+			"claimed_bundle_ids",
+			PackedStringArray()
 		),
 	}
 
@@ -299,7 +349,10 @@ func _build_opponent_snapshot(opponent_id: StringName) -> Dictionary:
 		availability = _opponent_registry.call(
 			"get_availability",
 			opponent_id,
-			_player_rank()
+			_player_rank(),
+			&"",
+			&"",
+			_availability_context()
 		)
 
 	var record: Dictionary = (
@@ -338,6 +391,11 @@ func _build_opponent_snapshot(opponent_id: StringName) -> Dictionary:
 		),
 		"deck_budget_override": int(profile.get("deck_budget_override")),
 		"progression_points_on_win": int(profile.get("progression_points_on_win")),
+		"first_win_progression_only": bool(profile.get("first_win_progression_only")),
+		"rematch_progression_points_on_win": int(profile.get("rematch_progression_points_on_win")),
+		"progression_spine": bool(profile.get("progression_spine")),
+		"unlock_after_opponent_ids": profile.get("unlock_after_opponent_ids"),
+		"required_total_player_wins": int(profile.get("required_total_player_wins")),
 		"archetype_id": String(profile.get("archetype_id")),
 		"strategy_summary": str(profile.get("strategy_summary")),
 		"content_revision": int(profile.get("content_revision")),

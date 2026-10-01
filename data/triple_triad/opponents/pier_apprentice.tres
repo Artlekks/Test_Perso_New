@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/balanced.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"pier_apprentice"
+display_name = "Pier Apprentice"
+archetype_id = &"beginner_side_player"
+strategy_summary = "A casual pier regular with a small mixed deck and no advanced rules."
+content_revision = 1
+duel_rank = 1
+required_player_rank = 1
+enabled_by_default = true
+progression_spine = false
+encounter_tags = PackedStringArray("coast", "pier", "casual", "beginner")
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+rule_set_override = ExtResource("4_rules")
+min_card_level = 1
+max_card_level = 3
+deck_budget_override = 23
+native_card_ids = PackedStringArray("mugshot_192", "mugshot_181", "mugshot_200", "mugshot_212", "mugshot_167", "mugshot_232", "mugshot_208", "mugshot_185", "mugshot_186", "mugshot_224")
+preferred_deck_ids = PackedStringArray("mugshot_192", "mugshot_181", "mugshot_200", "mugshot_212", "mugshot_167")
+reward_card_ids = PackedStringArray("mugshot_192", "mugshot_212", "mugshot_167")
+initial_collection_size = 10
+progression_points_on_win = 1
+first_win_progression_only = true
+rematch_progression_points_on_win = 0

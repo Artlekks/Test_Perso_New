@@ -2,7 +2,6 @@ extends Control
 
 signal reward_selected(card_definition)
 signal completed
-signal leave_requested
 
 const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
 
@@ -16,9 +15,8 @@ const STATE_ENTERING := 4
 const STATE_FOCUS_HOLD := 5
 
 const ROW_SCALE := Vector2(0.82, 0.82)
-const ROW_STEP_X := 104.0
-const TOP_ROW_ORIGIN := Vector2(56.0, 89.0)
-const BOTTOM_ROW_ORIGIN := Vector2(56.0, 210.0)
+const ROW_STEP_X := 96.0
+const ROW_LOCAL_ORIGIN := Vector2.ZERO
 
 # FFVIII-style result-screen entrance: opponent row comes in from the left,
 # player row from the right, with a readable but tightening stagger.
@@ -34,6 +32,8 @@ const EXIT_SECONDS := 0.34
 const FOCUS_SCALE := Vector2(1.42, 1.42)
 
 @onready var prompt_label: Label = $PromptPanel/PromptLabel
+@onready var opponent_row_root: Control = $OpponentRowRoot
+@onready var player_row_root: Control = $PlayerRowRoot
 @onready var info_label: Label = $InfoPanel/InfoLabel
 @onready var selection_arrow: Polygon2D = $SelectionArrow
 @onready var confirm_overlay: ColorRect = $ConfirmOverlay
@@ -209,17 +209,17 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_card_rows() -> void:
 	for index in range(5):
 		var opponent_view: Control = CardViewScene.instantiate() as Control
-		add_child(opponent_view)
+		opponent_row_root.add_child(opponent_view)
 		opponent_view.scale = ROW_SCALE
-		opponent_view.position = TOP_ROW_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
+		opponent_view.position = _row_final_position(index)
 		opponent_view.z_index = 10 + index
 		_opponent_views.append(opponent_view)
 
 	for index in range(5):
 		var player_view: Control = CardViewScene.instantiate() as Control
-		add_child(player_view)
+		player_row_root.add_child(player_view)
 		player_view.scale = ROW_SCALE
-		player_view.position = BOTTOM_ROW_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
+		player_view.position = _row_final_position(index)
 		player_view.z_index = 10 + index
 		_player_views.append(player_view)
 
@@ -228,7 +228,7 @@ func _refresh_rows() -> void:
 	for index in range(_opponent_views.size()):
 		var opponent_view: Control = _opponent_views[index]
 		opponent_view.modulate = Color.WHITE
-		opponent_view.position = TOP_ROW_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
+		opponent_view.position = _row_final_position(index)
 		if index < _opponent_cards.size():
 			opponent_view.visible = true
 			opponent_view.configure(_opponent_cards[index], OWNER_OPPONENT, false)
@@ -240,7 +240,7 @@ func _refresh_rows() -> void:
 	for index in range(_player_views.size()):
 		var player_view: Control = _player_views[index]
 		player_view.modulate = Color.WHITE
-		player_view.position = BOTTOM_ROW_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
+		player_view.position = _row_final_position(index)
 		if index < _player_cards.size():
 			player_view.visible = true
 			player_view.configure(_player_cards[index], OWNER_PLAYER, false)
@@ -255,14 +255,14 @@ func _prepare_row_entrance() -> void:
 		var view: Control = _opponent_views[index]
 		if not view.visible:
 			continue
-		view.position = _row_final_position(TOP_ROW_ORIGIN, index) + Vector2(-ROW_ENTRY_DISTANCE, 0.0)
+		view.position = _row_final_position(index) + Vector2(-ROW_ENTRY_DISTANCE, 0.0)
 		view.modulate = Color(1, 1, 1, 0)
 
 	for index in range(_player_views.size()):
 		var view: Control = _player_views[index]
 		if not view.visible:
 			continue
-		view.position = _row_final_position(BOTTOM_ROW_ORIGIN, index) + Vector2(ROW_ENTRY_DISTANCE, 0.0)
+		view.position = _row_final_position(index) + Vector2(ROW_ENTRY_DISTANCE, 0.0)
 		view.modulate = Color(1, 1, 1, 0)
 
 
@@ -272,9 +272,9 @@ func _run_row_entrance(sequence_id: int) -> void:
 		if not _entry_sequence_is_current(sequence_id):
 			return
 		if index < _opponent_views.size() and index < _opponent_cards.size():
-			_start_row_card_entry(_opponent_views[index], _row_final_position(TOP_ROW_ORIGIN, index))
+			_start_row_card_entry(_opponent_views[index], _row_final_position(index))
 		if index < _player_views.size() and index < _player_cards.size():
-			_start_row_card_entry(_player_views[index], _row_final_position(BOTTOM_ROW_ORIGIN, index))
+			_start_row_card_entry(_player_views[index], _row_final_position(index))
 		if index < count - 1:
 			var progress: float = 0.0 if count <= 2 else float(index) / float(count - 2)
 			var stagger: float = lerpf(ROW_ENTRY_STAGGER_START, ROW_ENTRY_STAGGER_END, progress)
@@ -305,8 +305,8 @@ func _start_row_card_entry(view: Control, final_position: Vector2) -> void:
 	tween.parallel().tween_property(view, "modulate", Color.WHITE, ROW_ENTRY_SECONDS * 0.72)
 
 
-func _row_final_position(row_origin: Vector2, index: int) -> Vector2:
-	return row_origin + Vector2(float(index) * ROW_STEP_X, 0.0)
+func _row_final_position(index: int) -> Vector2:
+	return ROW_LOCAL_ORIGIN + Vector2(float(index) * ROW_STEP_X, 0.0)
 
 
 func _opponent_index_is_eligible(index: int) -> bool:
@@ -345,7 +345,7 @@ func _refresh_selection() -> void:
 		info_label.text = ""
 		return
 	selection_arrow.visible = true
-	selection_arrow.position = _arrow_position(TOP_ROW_ORIGIN, _selected_index)
+	selection_arrow.position = _arrow_position(opponent_row_root, _selected_index)
 	var card = _opponent_cards[_selected_index]
 	info_label.text = str(card.display_name)
 	prompt_label.text = "Choose your reward"
@@ -402,7 +402,7 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 
 	_selected_index = clampi(_forced_opponent_take_index, 0, _player_cards.size() - 1)
 	selection_arrow.visible = true
-	selection_arrow.position = _arrow_position(BOTTOM_ROW_ORIGIN, _selected_index)
+	selection_arrow.position = _arrow_position(player_row_root, _selected_index)
 	var card = _player_cards[_selected_index]
 	info_label.text = str(card.display_name)
 	await get_tree().create_timer(OPPONENT_PICK_HOLD_SECONDS, true).timeout
@@ -445,17 +445,21 @@ func _animate_card_transfer(
 	_focus_card.pivot_offset = _focus_card.size * 0.5
 	_focus_card.scale = ROW_SCALE
 	_focus_card.z_index = 800
-	_focus_card.position = source_view.position
+	_focus_card.global_position = source_view.global_position
 	source_view.visible = false
 
-	# Center the reward card in the actual gap between the two card rows, not in
-	# the whole 640x480 viewport. Because both row cards use the same scale and
-	# pivot, the visual midpoint of that gap is the midpoint of their row origins.
-	# This keeps the enlarged card equidistant from the bottom of the top row and
-	# the top of the bottom row.
+	# Center the focused reward card in the actual authored gap between the two
+	# row roots. The roots live in the .tscn so the whole rows can be nudged by
+	# hand without rewriting gameplay code.
+	var row_visual_height: float = source_view.size.y * ROW_SCALE.y
+	var gap_center_y: float = (
+		opponent_row_root.position.y
+		+ row_visual_height
+		+ player_row_root.position.y
+	) * 0.5
 	var center_position := Vector2(
 		(size.x - _focus_card.size.x) * 0.5,
-		(TOP_ROW_ORIGIN.y + BOTTOM_ROW_ORIGIN.y) * 0.5
+		gap_center_y - _focus_card.size.y * 0.5
 	)
 	focus_dim.visible = true
 	focus_dim.modulate = Color(1, 1, 1, 0)
@@ -503,8 +507,8 @@ func _run_focus_exit(exit_down: bool, sequence_id: int) -> void:
 	completed.emit()
 
 
-func _arrow_position(row_origin: Vector2, index: int) -> Vector2:
-	return row_origin + Vector2(float(index) * ROW_STEP_X - 15.0, 42.0)
+func _arrow_position(row_root: Control, index: int) -> Vector2:
+	return row_root.position + Vector2(float(index) * ROW_STEP_X - 13.0, 42.0)
 
 
 func _refresh_confirm_choices() -> void:

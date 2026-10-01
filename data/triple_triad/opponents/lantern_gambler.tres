@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://data/triple_triad/ai/trickster.tres" id="2_ai"]
+[ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_docks.tres" id="3_region"]
+[ext_resource type="Resource" path="res://data/triple_triad/rules/plus_influence.tres" id="4_rules"]
+
+[resource]
+script = ExtResource("1_profile")
+opponent_id = &"lantern_gambler"
+display_name = "Lantern Gambler"
+archetype_id = &"plus_trickster"
+strategy_summary = "A night-market gambler who hunts Plus setups and unusual Influence angles."
+content_revision = 1
+duel_rank = 4
+required_player_rank = 3
+enabled_by_default = true
+progression_spine = false
+encounter_tags = PackedStringArray("dock", "night", "gambler", "plus", "influence")
+ai_profile = ExtResource("2_ai")
+region_profile = ExtResource("3_region")
+rule_set_override = ExtResource("4_rules")
+min_card_level = 3
+max_card_level = 8
+deck_budget_override = 38
+native_card_ids = PackedStringArray("mugshot_085", "mugshot_119", "mugshot_111", "mugshot_104", "mugshot_151", "mugshot_068", "mugshot_075", "mugshot_087", "mugshot_145", "mugshot_054", "mugshot_094", "mugshot_140")
+preferred_deck_ids = PackedStringArray("mugshot_085", "mugshot_119", "mugshot_111", "mugshot_104", "mugshot_151")
+reward_card_ids = PackedStringArray("mugshot_085", "mugshot_119", "mugshot_111")
+initial_collection_size = 12
+progression_points_on_win = 6
+first_win_progression_only = true
+rematch_progression_points_on_win = 0

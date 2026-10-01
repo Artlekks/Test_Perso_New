@@ -17,6 +17,7 @@ const RuleSetScript = preload(
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 const DefaultCardCatalog = preload("res://data/triple_triad/card_catalog.tres")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
+const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -162,6 +163,7 @@ func run_all() -> Dictionary:
 	_run("Preview exposes Influence deltas", _test_preview_influence_deltas)
 	_run("Unsupported rules are rejected", _test_unsupported_rule_guard)
 	_run("Authored opponent ladder is legal", _test_authored_opponent_ladder)
+	_run("Acquisition registry is legal", _test_acquisition_registry)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -236,6 +238,23 @@ func _filler_hand(prefix: StringName) -> Array:
 			)
 		)
 	return result
+
+
+func _test_acquisition_registry() -> Dictionary:
+	var audit: Dictionary = DefaultAcquisitionRegistry.validate_registry(DefaultCardCatalog)
+	if not bool(audit.get("valid", false)):
+		return _ok(
+			false,
+			"Acquisition registry failed validation: %s"
+			% str(audit.get("errors", []))
+		)
+	var starter = DefaultAcquisitionRegistry.get_bundle(&"salvaged_card_case")
+	return _ok(
+		starter != null
+		and bool(starter.unlocks_card_game)
+		and starter.card_ids.size() == 10,
+		"Expected a ten-card one-shot salvage bundle that unlocks Triple Triad."
+	)
 
 
 func _slot(card, owner: int, rotation: int = 0) -> Dictionary:
@@ -828,9 +847,12 @@ func _test_authored_opponent_ladder() -> Dictionary:
 			% str(registry_audit.get("errors", []))
 		)
 
-	var profiles: Array = DefaultOpponentRegistry.get_all_opponents()
+	var all_profiles: Array = DefaultOpponentRegistry.get_all_opponents()
+	if all_profiles.size() < 11:
+		return _ok(false, "Expected the authored card-player ecosystem to contain at least eleven opponents.")
+	var profiles: Array = DefaultOpponentRegistry.get_progression_spine()
 	if profiles.size() != 6:
-		return _ok(false, "Expected exactly six authored opponent archetypes.")
+		return _ok(false, "Expected exactly six progression-spine opponents.")
 
 	var previous_duel_rank: int = 0
 	var expected_duel_rank: int = 1

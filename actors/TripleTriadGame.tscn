@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" path="res://actors/TripleTriadRewardView.tscn" id="5_reward"]
 [ext_resource type="Script" uid="uid://bpix55ufnymse" path="res://scripts/triple_triad/triple_triad_animation_director.gd" id="6_animation"]
 [ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="7_region"]
-[ext_resource type="Resource" path="res://data/triple_triad/ai/balanced.tres" id="8_ai"]
+[ext_resource type="Resource" uid="uid://davpdabdae32q" path="res://data/triple_triad/ai/balanced.tres" id="8_ai"]
 [ext_resource type="PackedScene" path="res://actors/TripleTriadDebugMenu.tscn" id="9_debug"]
 [ext_resource type="Texture2D" uid="uid://cdn7bk8rfiynx" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="10_menu_bg"]
 [ext_resource type="Texture2D" uid="uid://di1q1piieg3ye" path="res://assets/ui/triple_triad_info_panel.png" id="11_info_panel"]
@@ -24,7 +24,6 @@ card_catalog = ExtResource("2_catalog")
 rule_set = ExtResource("3_rules")
 region_profile = ExtResource("7_region")
 ai_profile = ExtResource("8_ai")
-run_balance_simulation_on_startup = true
 
 [node name="Root" type="Control" parent="." unique_id=541975065]
 visible = false
