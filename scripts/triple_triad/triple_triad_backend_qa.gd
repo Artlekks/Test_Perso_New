@@ -164,6 +164,7 @@ func run_all() -> Dictionary:
 	_run("Unsupported rules are rejected", _test_unsupported_rule_guard)
 	_run("Authored opponent ladder is legal", _test_authored_opponent_ladder)
 	_run("Acquisition registry is legal", _test_acquisition_registry)
+	_run("Card-game discovery gates opponents", _test_card_game_discovery_gate)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -254,6 +255,40 @@ func _test_acquisition_registry() -> Dictionary:
 		and bool(starter.unlocks_card_game)
 		and starter.card_ids.size() == 10,
 		"Expected a ten-card one-shot salvage bundle that unlocks Triple Triad."
+	)
+
+
+func _test_card_game_discovery_gate() -> Dictionary:
+	var locked_context := {
+		"card_game_unlocked": false,
+		"beaten_opponent_ids": PackedStringArray(),
+		"total_player_wins": 0,
+	}
+	var unlocked_context := {
+		"card_game_unlocked": true,
+		"beaten_opponent_ids": PackedStringArray(),
+		"total_player_wins": 0,
+	}
+
+	var locked: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"beach_trader",
+		1,
+		&"",
+		&"",
+		locked_context
+	)
+	var unlocked: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"beach_trader",
+		1,
+		&"",
+		&"",
+		unlocked_context
+	)
+
+	return _ok(
+		not bool(locked.get("available", true))
+		and bool(unlocked.get("available", false)),
+		"Beach Trader must stay locked before discovery and unlock after the starter case."
 	)
 
 

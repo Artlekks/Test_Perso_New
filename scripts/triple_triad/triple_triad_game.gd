@@ -27,8 +27,9 @@ const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_ap
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
 const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
+const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
 
-const BACKEND_VERSION := "1.5.0"
+const BACKEND_VERSION := "1.6.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -167,6 +168,7 @@ var _match_hud: Control = null
 var _default_backdrop_texture: Texture2D = null
 var _result_dim: ColorRect = null
 var _round_number: int = 1
+var _fishing_salvage_bridge: Node = null
 
 
 func _ready() -> void:
@@ -263,6 +265,7 @@ func _ready() -> void:
 	)
 
 	_backend_ready = true
+	_install_fishing_salvage_bridge()
 	if OS.is_debug_build() and run_backend_qa_on_startup:
 		_run_backend_qa()
 	if OS.is_debug_build() and run_balance_simulation_on_startup:
@@ -806,8 +809,73 @@ func claim_acquisition_bundle(
 ## Stable bridge for the fishing/exploration layer. The fishing game only needs
 ## to call this when its salvage/object event resolves; Triple Triad owns the
 ## contents, one-shot persistence, collection write, and unlock state.
-func claim_salvaged_card_case() -> Dictionary:
-	return claim_acquisition_bundle(&"salvaged_card_case", &"sea_salvage")
+func claim_salvaged_card_case(
+	source_context: StringName = &"sea_salvage"
+) -> Dictionary:
+	return claim_acquisition_bundle(
+		&"salvaged_card_case",
+		source_context
+	)
+
+
+func get_onboarding_snapshot() -> Dictionary:
+	var acquisition: Dictionary = get_acquisition_snapshot()
+	var collection_unique_count: int = 0
+	if (
+		_collection_backend != null
+		and _collection_backend.has_method("unique_owned_count")
+	):
+		collection_unique_count = int(
+			_collection_backend.call("unique_owned_count")
+		)
+
+	var starter_case_claimed: bool = false
+	var raw_claimed_ids = acquisition.get(
+		"claimed_bundle_ids",
+		PackedStringArray()
+	)
+	if raw_claimed_ids is PackedStringArray or raw_claimed_ids is Array:
+		for raw_id in raw_claimed_ids:
+			if str(raw_id) == "salvaged_card_case":
+				starter_case_claimed = true
+				break
+
+	var bridge_snapshot: Dictionary = {}
+	if (
+		is_instance_valid(_fishing_salvage_bridge)
+		and _fishing_salvage_bridge.has_method("get_debug_snapshot")
+	):
+		bridge_snapshot = _fishing_salvage_bridge.call(
+			"get_debug_snapshot"
+		)
+
+	return {
+		"card_game_unlocked": bool(
+			acquisition.get("card_game_unlocked", false)
+		),
+		"starter_case_claimed": starter_case_claimed,
+		"collection_unique_count": collection_unique_count,
+		"available_card_player_ids": get_available_card_player_ids(),
+		"fishing_salvage_bridge": bridge_snapshot,
+	}
+
+
+func _install_fishing_salvage_bridge() -> void:
+	if is_instance_valid(_fishing_salvage_bridge):
+		return
+
+	var bridge = FishingSalvageBridgeScript.new()
+	bridge.name = "TripleTriadFishingSalvageBridge"
+	add_child(bridge)
+	_fishing_salvage_bridge = bridge
+
+	if bridge.has_method("configure"):
+		bridge.call(
+			"configure",
+			self,
+			PackedStringArray(["ocean_2"]),
+			true
+		)
 
 
 func get_opponent_availability(opponent_id: StringName) -> Dictionary:

@@ -12,6 +12,7 @@ extends Node3D
 
 var _player_in_range: bool = false
 var _cached_game: Node = null
+var _signal_bound_game: Node = null
 
 
 func _ready() -> void:
@@ -52,12 +53,63 @@ func _input(event: InputEvent) -> void:
 
 func _find_game() -> Node:
 	if is_instance_valid(_cached_game):
+		_bind_game_signals(_cached_game)
 		return _cached_game
 	var scene: Node = get_tree().current_scene
 	if scene == null:
 		return null
 	_cached_game = scene.find_child("TripleTriadGame", true, false)
+	_bind_game_signals(_cached_game)
 	return _cached_game
+
+
+func _bind_game_signals(game: Node) -> void:
+	if game == null or _signal_bound_game == game:
+		return
+
+	_signal_bound_game = game
+
+	var unlock_callback := Callable(
+		self,
+		"_on_card_game_unlock_changed"
+	)
+	if (
+		game.has_signal("card_game_unlock_changed")
+		and not game.is_connected(
+			"card_game_unlock_changed",
+			unlock_callback
+		)
+	):
+		game.connect(
+			"card_game_unlock_changed",
+			unlock_callback
+		)
+
+	var closed_callback := Callable(
+		self,
+		"_on_card_game_closed"
+	)
+	if (
+		game.has_signal("closed")
+		and not game.is_connected(
+			"closed",
+			closed_callback
+		)
+	):
+		game.connect(
+			"closed",
+			closed_callback
+		)
+
+
+func _on_card_game_unlock_changed(_unlocked: bool) -> void:
+	if _player_in_range:
+		_refresh_prompt_text()
+
+
+func _on_card_game_closed() -> void:
+	if _player_in_range:
+		_refresh_prompt_text()
 
 
 func _on_body_entered(body: Node) -> void:
