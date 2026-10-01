@@ -256,6 +256,7 @@ func _apply_card_game_visual_layout() -> void:
 	opponent_score_label.get_parent().visible = false
 	player_score_label.get_parent().visible = false
 	message_label.visible = false
+	help_label.visible = false
 
 	backdrop.z_index = -100
 
@@ -1422,13 +1423,13 @@ func _refresh_phase_ui() -> void:
 		PHASE_DEALING:
 			help_label.text = ""
 		PHASE_SELECT_CARD:
-			help_label.text = _player_help_text(false)
+			help_label.text = ""
 			_update_player_selection_markers()
 		PHASE_SELECT_CELL:
-			help_label.text = _player_help_text(true)
+			help_label.text = ""
 			_update_player_selection_markers()
 		PHASE_AI:
-			help_label.text = "I: Surrender"
+			help_label.text = ""
 			_turn_arrow_for_owner(OWNER_OPPONENT)
 		PHASE_ANIMATING:
 			help_label.text = ""
@@ -1455,9 +1456,12 @@ func _refresh_match_hud() -> void:
 		PHASE_RESULT:
 			turn_text = "Result"
 	_match_hud.call("set_turn_text", turn_text)
-	_match_hud.call("set_region_text", _region_trait_text())
-
+	var top_info_text: String = message_label.text.strip_edges()
+	if top_info_text.is_empty():
+		top_info_text = _region_trait_text()
+	_match_hud.call("set_top_info_text", top_info_text)
 	_match_hud.call("set_round_number", _round_number)
+	_match_hud.call("set_help_entries", _current_help_entries())
 
 	if (
 		_match != null
@@ -1806,6 +1810,30 @@ func _player_help_text(board_selection: bool) -> String:
 	if board_selection:
 		return "W/A/S/D: Move   K: Place%s   I: Back" % rotate_text
 	return "W/S: Card   K: Select%s   I: Surrender" % rotate_text
+
+
+func _current_help_entries() -> Array:
+	var entries: Array = []
+	match _phase:
+		PHASE_SELECT_CARD:
+			entries.append({"key": "W/S", "action": "Card"})
+			entries.append({"key": "K", "action": "Select"})
+			if _match != null and _match.can_rotate(OWNER_PLAYER):
+				entries.append({"key": "R", "action": "Rotate"})
+			entries.append({"key": "I", "action": "Surrender"})
+		PHASE_SELECT_CELL:
+			entries.append({"key": "WASD", "action": "Move"})
+			entries.append({"key": "K", "action": "Place"})
+			if _match != null and _match.can_rotate(OWNER_PLAYER):
+				entries.append({"key": "R", "action": "Rotate"})
+			entries.append({"key": "I", "action": "Back"})
+		PHASE_AI:
+			entries.append({"key": "I", "action": "Surrender"})
+		PHASE_RESULT:
+			entries.append({"key": "K", "action": "Continue"})
+		PHASE_REWARD:
+			entries.append({"key": "K", "action": "Continue"})
+	return entries
 
 
 func _region_trait_text() -> String:

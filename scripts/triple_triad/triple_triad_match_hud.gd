@@ -8,12 +8,14 @@ const BOF_FONT = preload("res://assets/fonts/BOF_Font_Refined.fnt")
 
 const OWNER_PLAYER := 1
 
+const ROUND_TEXT_RECT := Rect2(269.0, 2.0, 102.0, 16.0)
 const TURN_MASK_RECT := Rect2(248.0, 25.0, 144.0, 34.0)
 const TURN_TEXT_RECT := Rect2(238.0, 24.0, 164.0, 36.0)
-const REGION_TEXT_RECT := Rect2(139.0, 65.0, 362.0, 22.0)
-const OPPONENT_SCORE_CENTER := Vector2(101.0, 47.0)
-const PLAYER_SCORE_CENTER := Vector2(539.0, 47.0)
-const ROUND_TEXT_RECT := Rect2(270.0, 1.0, 100.0, 18.0)
+const TOP_INFO_RECT := Rect2(139.0, 66.0, 362.0, 22.0)
+const OPPONENT_NAME_RECT := Rect2(47.0, 7.0, 104.0, 18.0)
+const PLAYER_NAME_RECT := Rect2(489.0, 7.0, 104.0, 18.0)
+const OPPONENT_SCORE_CENTER := Vector2(47.0, 46.0)
+const PLAYER_SCORE_CENTER := Vector2(593.0, 46.0)
 
 const INFO_CARD_POSITION := Vector2(177.0, 384.0)
 const INFO_CARD_SCALE := Vector2(0.45, 0.45)
@@ -22,6 +24,21 @@ const INFO_DESC_RECT := Rect2(235.0, 409.0, 146.0, 34.0)
 const PATTERN_ORIGIN := Vector2(406.0, 391.0)
 const PATTERN_CELL_SIZE := 13.0
 const PATTERN_CELL_GAP := 2.0
+
+const HELP_KEY_RECTS := [
+	Rect2(132.0, 464.0, 22.0, 12.0),
+	Rect2(264.0, 464.0, 22.0, 12.0),
+	Rect2(357.0, 464.0, 22.0, 12.0),
+	Rect2(453.0, 464.0, 22.0, 12.0),
+	Rect2(545.0, 464.0, 22.0, 12.0),
+]
+const HELP_ACTION_RECTS := [
+	Rect2(100.0, 447.0, 88.0, 14.0),
+	Rect2(231.0, 447.0, 88.0, 14.0),
+	Rect2(324.0, 447.0, 88.0, 14.0),
+	Rect2(418.0, 447.0, 88.0, 14.0),
+	Rect2(512.0, 447.0, 88.0, 14.0),
+]
 
 const COLOR_TEXT := Color(0.90, 0.85, 0.69, 1.0)
 const COLOR_TURN_MASK := Color(0.016, 0.17, 0.38, 1.0)
@@ -34,12 +51,16 @@ var _opponent_score = null
 var _player_score = null
 var _turn_mask: ColorRect = null
 var _turn_label: Label = null
-var _region_label: Label = null
+var _top_info_label: Label = null
 var _round_label: Label = null
+var _opponent_name_label: Label = null
+var _player_name_label: Label = null
 var _card_name_label: Label = null
 var _card_description_label: Label = null
 var _info_card: Control = null
 var _pattern_cells: Array[Panel] = []
+var _help_key_labels: Array[Label] = []
+var _help_action_labels: Array[Label] = []
 
 
 func _ready() -> void:
@@ -48,8 +69,11 @@ func _ready() -> void:
 	_build_scores()
 	_build_round_status()
 	_build_turn_status()
-	_build_region_status()
+	_build_nameplates()
+	_build_top_info()
 	_build_card_info()
+	_build_help_prompts()
+	clear_help_entries()
 	clear_card_info()
 
 
@@ -64,16 +88,43 @@ func set_turn_text(value: String) -> void:
 	_turn_label.text = value
 
 
-func set_region_text(value: String) -> void:
-	if _region_label == null:
+func set_top_info_text(value: String) -> void:
+	if _top_info_label == null:
 		return
-	_region_label.text = value
+	_top_info_label.text = value
 
 
 func set_round_number(value: int) -> void:
 	if _round_label == null:
 		return
 	_round_label.text = "Round %d" % maxi(1, value)
+
+
+func set_help_entries(entries: Array) -> void:
+	for index in range(_help_key_labels.size()):
+		var key_label: Label = _help_key_labels[index]
+		var action_label: Label = _help_action_labels[index]
+		if index < entries.size():
+			var entry: Dictionary = entries[index]
+			var key_text: String = str(entry.get("key", ""))
+			var action_text: String = str(entry.get("action", ""))
+			key_label.visible = not key_text.is_empty()
+			action_label.visible = not action_text.is_empty()
+			key_label.text = key_text
+			action_label.text = action_text
+			key_label.add_theme_font_size_override(
+				"font_size",
+				6 if key_text.length() >= 4 else 7
+			)
+		else:
+			key_label.visible = false
+			action_label.visible = false
+			key_label.text = ""
+			action_label.text = ""
+
+
+func clear_help_entries() -> void:
+	set_help_entries([])
 
 
 func clear_card_info() -> void:
@@ -137,7 +188,7 @@ func _build_scores() -> void:
 
 
 func _build_round_status() -> void:
-	_round_label = _make_label("RoundStatus", 8, COLOR_TEXT)
+	_round_label = _make_label("RoundStatus", 7, COLOR_TEXT)
 	_round_label.position = ROUND_TEXT_RECT.position
 	_round_label.size = ROUND_TEXT_RECT.size
 	_round_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -147,9 +198,6 @@ func _build_round_status() -> void:
 
 
 func _build_turn_status() -> void:
-	# The supplied background includes a baked placeholder title. This compact
-	# mask covers only the text area, preserving the authored gold frame/arrows,
-	# so runtime turn ownership can remain correct.
 	_turn_mask = ColorRect.new()
 	_turn_mask.name = "TurnTextMask"
 	_turn_mask.position = TURN_MASK_RECT.position
@@ -166,14 +214,32 @@ func _build_turn_status() -> void:
 	add_child(_turn_label)
 
 
-func _build_region_status() -> void:
-	_region_label = _make_label("RegionStatus", 8, COLOR_TEXT)
-	_region_label.position = REGION_TEXT_RECT.position
-	_region_label.size = REGION_TEXT_RECT.size
-	_region_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_region_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_region_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	add_child(_region_label)
+func _build_nameplates() -> void:
+	_opponent_name_label = _make_label("OpponentName", 8, COLOR_TEXT)
+	_opponent_name_label.position = OPPONENT_NAME_RECT.position
+	_opponent_name_label.size = OPPONENT_NAME_RECT.size
+	_opponent_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_opponent_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_opponent_name_label.text = "Opponent"
+	add_child(_opponent_name_label)
+
+	_player_name_label = _make_label("PlayerName", 8, COLOR_TEXT)
+	_player_name_label.position = PLAYER_NAME_RECT.position
+	_player_name_label.size = PLAYER_NAME_RECT.size
+	_player_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_player_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_player_name_label.text = "Player"
+	add_child(_player_name_label)
+
+
+func _build_top_info() -> void:
+	_top_info_label = _make_label("TopInfo", 8, COLOR_TEXT)
+	_top_info_label.position = TOP_INFO_RECT.position
+	_top_info_label.size = TOP_INFO_RECT.size
+	_top_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_top_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_top_info_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	add_child(_top_info_label)
 
 
 func _build_card_info() -> void:
@@ -220,11 +286,32 @@ func _build_card_info() -> void:
 	_set_pattern([])
 
 
+func _build_help_prompts() -> void:
+	_help_key_labels.clear()
+	_help_action_labels.clear()
+	for index in range(HELP_KEY_RECTS.size()):
+		var key_label := _make_label("HelpKey%d" % index, 7, COLOR_TEXT)
+		key_label.position = HELP_KEY_RECTS[index].position
+		key_label.size = HELP_KEY_RECTS[index].size
+		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(key_label)
+		_help_key_labels.append(key_label)
+
+		var action_label := _make_label("HelpAction%d" % index, 7, COLOR_TEXT)
+		action_label.position = HELP_ACTION_RECTS[index].position
+		action_label.size = HELP_ACTION_RECTS[index].size
+		action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(action_label)
+		_help_action_labels.append(action_label)
+
+
 func _set_score(target, value: int, center: Vector2) -> void:
 	if target == null:
 		return
 	var score_text := str(maxi(value, 0))
-	var scale_value: float = 2.64 if score_text.length() <= 1 else 2.10
+	var scale_value: float = 2.40 if score_text.length() <= 1 else 1.95
 	target.scale = Vector2(scale_value, scale_value)
 	target.call("set_text", score_text)
 	var scaled_size := Vector2(
@@ -242,21 +329,15 @@ func _set_pattern(offsets: Array) -> void:
 		var fill: Color = COLOR_PATTERN_EMPTY
 		if relative == Vector2i.ZERO:
 			fill = COLOR_PATTERN_CENTER
-		elif _offsets_have(offsets, relative):
-			fill = COLOR_PATTERN_PRESSURE
+		else:
+			for raw_offset in offsets:
+				if raw_offset is Vector2i and raw_offset == relative:
+					fill = COLOR_PATTERN_PRESSURE
+					break
 		_pattern_cells[index].add_theme_stylebox_override(
 			"panel",
 			_pattern_style(fill)
 		)
-
-
-func _offsets_have(offsets: Array, wanted: Vector2i) -> bool:
-	for raw_offset in offsets:
-		if raw_offset is Vector2i and raw_offset == wanted:
-			return true
-		if raw_offset is Vector2 and Vector2i(raw_offset) == wanted:
-			return true
-	return false
 
 
 func _pattern_style(fill: Color) -> StyleBoxFlat:
