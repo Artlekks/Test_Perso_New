@@ -24,6 +24,9 @@ const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_tria
 const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
 const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/triple_triad_world_progression_director.gd")
 const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad_opponent_evolution.gd")
+const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad_gameplay_event_feed.gd")
+const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
+const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -181,6 +184,11 @@ func run_all() -> Dictionary:
 	_run("World progression enters collection cleanup after Card Master", _test_world_progression_collection_cleanup)
 	_run("Opponent rematch evolution advances at authored wins", _test_opponent_rematch_evolution)
 	_run("Opponent adapted AI preserves signature personality", _test_opponent_adapted_ai)
+	_run("Tournament deck remains locked across rounds", _test_competition_locked_deck)
+	_run("Gameplay event feed preserves bounded FIFO order", _test_gameplay_event_feed)
+	_run("Competition completion reward remains pending until acknowledged", _test_competition_pending_reward)
+	_run("Match-resolution journal survives interrupted reward choice", _test_match_resolution_journal)
+	_run("World reward delivery journal prevents duplicate one-shot rewards", _test_world_reward_delivery_journal)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -470,6 +478,14 @@ func _test_competitive_progression_flow() -> Dictionary:
 			if not bool(result.get("completed", false)):
 				return _ok(false, "Regional Championship did not complete.")
 
+	var regional_pending: Dictionary = service.get_pending_reward()
+	if regional_pending.is_empty():
+		return _ok(false, "Regional Championship reward was not persisted as pending.")
+	if not service.acknowledge_pending_reward(
+		StringName(str(regional_pending.get("reward_event_id", "")))
+	):
+		return _ok(false, "Regional pending reward could not be acknowledged.")
+
 	var masters: Dictionary = service.get_competition_snapshot(
 		&"masters_cup",
 		5,
@@ -719,6 +735,297 @@ func _test_opponent_adapted_ai() -> Dictionary:
 		).is_empty()
 		and float(adapted.get("signature_early_play_penalty")) > 0.0,
 		"Aggressive rematch AI must learn while preserving deliberate signature-card timing."
+	)
+
+
+func _test_competition_locked_deck() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	if not bool(audit.get("valid", false)):
+		return _ok(false, "Competition catalog invalid in deck-lock test.")
+
+	var service = CompetitionServiceScript.new()
+	service.initialize(competition_catalog, false)
+	var beaten := PackedStringArray([
+		"pier_apprentice",
+		"beach_trader",
+		"dock_bruiser",
+		"gearwright",
+		"marsh_keeper",
+		"highland_keeper",
+		"lantern_gambler",
+		"tide_oracle",
+	])
+	var started: Dictionary = service.start_competition(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if not bool(started.get("success", false)):
+		return _ok(false, "Regional Championship did not start.")
+
+	var locked := PackedStringArray([
+		"mugshot_153",
+		"mugshot_156",
+		"mugshot_157",
+		"mugshot_161",
+		"mugshot_162",
+	])
+	if not service.set_locked_deck_ids(locked):
+		return _ok(false, "Tournament deck could not be locked.")
+
+	var round_result: Dictionary = service.record_match_result(
+		&"gearwright",
+		OWNER_PLAYER,
+		OWNER_PLAYER
+	)
+	if not bool(round_result.get("round_won", false)):
+		return _ok(false, "Tournament did not advance after round win.")
+	if service.get_locked_deck_ids() != locked:
+		return _ok(false, "Locked deck changed while tournament advanced.")
+
+	service.record_match_result(
+		&"marsh_keeper",
+		OWNER_OPPONENT,
+		OWNER_PLAYER
+	)
+	return _ok(
+		not service.has_locked_deck()
+		and not bool(service.get_active_snapshot().get("active", false)),
+		"A tournament loss must clear the active attempt and its locked deck."
+	)
+
+
+func _test_gameplay_event_feed() -> Dictionary:
+	var feed = GameplayEventFeedScript.new()
+	feed.initialize(3)
+	for index in range(5):
+		feed.push_event(
+			StringName("event_%d" % index),
+			"Event %d" % index
+		)
+
+	var pending: Array = feed.get_pending_events()
+	if pending.size() != 3:
+		return _ok(false, "Event feed did not enforce its capacity.")
+	if (
+		int(pending[0].get("sequence", -1)) != 3
+		or int(pending[2].get("sequence", -1)) != 5
+	):
+		return _ok(false, "Event feed did not retain FIFO order.")
+
+	var popped: Dictionary = feed.pop_next_event()
+	return _ok(
+		str(popped.get("type", "")) == "event_2"
+		and feed.size() == 2,
+		"Event feed pop must return the oldest retained event."
+	)
+
+
+func _test_competition_pending_reward() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	if not bool(audit.get("valid", false)):
+		return _ok(false, "Competition catalog invalid in pending reward test.")
+
+	var service = CompetitionServiceScript.new()
+	service.initialize(competition_catalog, false)
+	var beaten := PackedStringArray([
+		"pier_apprentice",
+		"beach_trader",
+		"dock_bruiser",
+		"gearwright",
+		"marsh_keeper",
+		"highland_keeper",
+		"lantern_gambler",
+		"tide_oracle",
+	])
+	var started: Dictionary = service.start_competition(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if not bool(started.get("success", false)):
+		return _ok(false, "Regional Championship did not start.")
+
+	for opponent_id in [
+		&"gearwright",
+		&"marsh_keeper",
+		&"tide_oracle",
+	]:
+		service.record_match_result(
+			opponent_id,
+			OWNER_PLAYER,
+			OWNER_PLAYER
+		)
+
+	var pending: Dictionary = service.get_pending_reward()
+	if pending.is_empty():
+		return _ok(
+			false,
+			"Completed tournament must keep its card reward pending until delivery is acknowledged."
+		)
+
+	var blocked: Dictionary = service.start_competition(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if str(blocked.get("reason", "")) != "pending_competition_reward":
+		return _ok(
+			false,
+			"A new tournament must not start while a completion reward is unresolved."
+		)
+
+	var event_id := StringName(str(pending.get("reward_event_id", "")))
+	return _ok(
+		service.acknowledge_pending_reward(event_id)
+		and service.get_pending_reward().is_empty(),
+		"Acknowledging the tournament reward must release the competition service."
+	)
+
+
+func _test_match_resolution_journal() -> Dictionary:
+	var qa_path := "user://triple_triad_match_resolution_qa.cfg"
+	var journal = MatchResolutionJournalScript.new()
+	journal.initialize(qa_path)
+	journal.clear()
+
+	var started: bool = journal.begin_resolution({
+		"opponent_id": "beach_trader",
+		"winner": OWNER_PLAYER,
+		"result_reason": "qa",
+		"surrendered": false,
+		"player_card_ids": PackedStringArray([
+			"mugshot_153",
+			"mugshot_156",
+			"mugshot_157",
+			"mugshot_161",
+			"mugshot_162",
+		]),
+		"opponent_card_ids": PackedStringArray([
+			"mugshot_047",
+			"mugshot_053",
+			"mugshot_071",
+			"mugshot_054",
+			"mugshot_181",
+		]),
+		"eligible_reward_ids": PackedStringArray([
+			"mugshot_047",
+			"mugshot_053",
+		]),
+		"forced_loss_card_id": "",
+		"competition_change": {},
+	})
+	if not started or not journal.has_pending():
+		journal.clear()
+		return _ok(false, "Match-resolution journal could not start.")
+
+	var transfer_state := {
+		"card_id": "mugshot_047",
+		"winner": OWNER_PLAYER,
+		"opponent_id": "beach_trader",
+		"desired_player": 1,
+		"desired_opponent": 0,
+	}
+	if not journal.record_selection(
+		&"mugshot_047",
+		transfer_state
+	):
+		journal.clear()
+		return _ok(false, "Match-resolution journal could not persist the chosen card.")
+
+	var snapshot: Dictionary = journal.get_snapshot()
+	var valid: bool = (
+		str(snapshot.get("selected_card_id", "")) == "mugshot_047"
+		and not bool(snapshot.get("transfer_committed", true))
+		and (
+			snapshot.get("transfer_state", {})
+			as Dictionary
+		).get("desired_player", -1) == 1
+	)
+	valid = (
+		valid
+		and journal.mark_transfer_committed()
+		and journal.mark_metadata_committed()
+	)
+	var committed: Dictionary = journal.get_snapshot()
+	valid = (
+		valid
+		and bool(committed.get("transfer_committed", false))
+		and bool(committed.get("metadata_committed", false))
+	)
+	journal.clear()
+	return _ok(
+		valid and not journal.has_pending(),
+		"Match-resolution journal must round-trip selection and commit state without leaving stale data."
+	)
+
+
+func _test_world_reward_delivery_journal() -> Dictionary:
+	var qa_path := "user://triple_triad_world_delivery_qa.cfg"
+	var ledger = WorldRewardLedgerScript.new()
+	ledger.initialize(qa_path)
+
+	var event_id := StringName("qa_one_shot_reward")
+	ledger.reset_event(event_id)
+	var chosen_id := StringName("mugshot_153")
+	if not ledger.begin_delivery(
+		event_id,
+		&"treasure_cache",
+		&"harbor_lockbox",
+		chosen_id,
+		&"qa",
+		0
+	):
+		return _ok(
+			false,
+			"World reward ledger could not begin a one-shot delivery."
+		)
+
+	var pending: Dictionary = ledger.get_pending_delivery(event_id)
+	if str(pending.get("card_id", "")) != String(chosen_id):
+		ledger.clear_pending_delivery(event_id)
+		return _ok(
+			false,
+			"World reward ledger did not preserve the chosen card."
+		)
+
+	var reloaded = WorldRewardLedgerScript.new()
+	reloaded.initialize(qa_path)
+	var recovered: Dictionary = reloaded.get_pending_delivery(event_id)
+	var valid: bool = (
+		str(recovered.get("card_id", "")) == String(chosen_id)
+		and not reloaded.has_claimed(event_id)
+		and reloaded.complete_delivery(event_id)
+		and reloaded.has_claimed(event_id)
+		and reloaded.get_pending_delivery(event_id).is_empty()
+	)
+	# Reinitialize the QA file to a harmless empty state.
+	var cleanup = WorldRewardLedgerScript.new()
+	cleanup.initialize(qa_path)
+	cleanup.reset_event(event_id)
+	return _ok(
+		valid,
+		"One-shot reward delivery must survive reload with the same chosen card and complete exactly once."
 	)
 
 

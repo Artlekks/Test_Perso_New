@@ -1,6 +1,6 @@
 extends RefCounted
 
-const SAVE_SCHEMA_VERSION := 1
+const SAVE_SCHEMA_VERSION := 2
 const MANIFEST_PATH := "user://triple_triad_save_manifest.cfg"
 
 const PLAYER_COLLECTION_PATH := "user://triple_triad_collection.cfg"
@@ -8,6 +8,7 @@ const OPPONENTS_PATH := "user://triple_triad_opponents.cfg"
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const PROGRESSION_PATH := "user://triple_triad_progression.cfg"
 const TRANSFER_JOURNAL_PATH := "user://triple_triad_transfer_journal.cfg"
+const MATCH_RESOLUTION_JOURNAL_PATH := "user://triple_triad_match_resolution.cfg"
 const ACQUISITION_HISTORY_PATH := "user://triple_triad_acquisition_history.cfg"
 const ACQUISITION_STATE_PATH := "user://triple_triad_acquisition_state.cfg"
 const ENCOUNTER_RECORDS_PATH := "user://triple_triad_encounter_records.cfg"
@@ -79,6 +80,7 @@ func audit_and_checkpoint(
 		"opponents": {},
 		"backups_refreshed": false,
 		"transfer_pending": _transfer_journal_pending(),
+		"resolution_pending": _match_resolution_pending(),
 	}
 
 	if catalog == null:
@@ -133,7 +135,11 @@ func audit_and_checkpoint(
 
 	# Never overwrite healthy backups while a transfer journal is unresolved.
 	# The journal is the source of truth until CardEconomy repairs both owners.
-	if bool(report["valid"]) and not bool(report["transfer_pending"]):
+	if (
+		bool(report["valid"])
+		and not bool(report["transfer_pending"])
+		and not bool(report["resolution_pending"])
+	):
 		report["backups_refreshed"] = _refresh_backups()
 		if not bool(report["backups_refreshed"]):
 			report["valid"] = false
@@ -591,6 +597,23 @@ func _refresh_backups() -> bool:
 	return success
 
 
+func _match_resolution_pending() -> bool:
+	var config := ConfigFile.new()
+	if config.load(MATCH_RESOLUTION_JOURNAL_PATH) != OK:
+		return false
+	if not config.has_section("resolution"):
+		return false
+	return bool(
+		config.get_value(
+			"resolution",
+			"pending",
+			false
+		)
+	)
+
+
+
+
 func _protected_paths() -> Array[String]:
 	return [
 		PLAYER_COLLECTION_PATH,
@@ -633,6 +656,11 @@ func _write_manifest(report: Dictionary) -> void:
 		"health",
 		"transfer_pending",
 		bool(report.get("transfer_pending", false))
+	)
+	config.set_value(
+		"health",
+		"resolution_pending",
+		bool(report.get("resolution_pending", false))
 	)
 	config.set_value(
 		"health",

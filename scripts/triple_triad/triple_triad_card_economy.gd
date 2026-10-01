@@ -54,6 +54,69 @@ func recover_pending(catalog: Resource, player_collection) -> bool:
 	return _clear_journal()
 
 
+func reconcile_quantities(
+	catalog: Resource,
+	card_id: StringName,
+	opponent_id: StringName,
+	desired_player: int,
+	desired_opponent: int,
+	player_collection,
+	promote_for_rematch: bool
+) -> bool:
+	if (
+		catalog == null
+		or String(card_id).is_empty()
+		or String(opponent_id).is_empty()
+		or player_collection == null
+	):
+		return false
+	if has_pending_transfer():
+		return false
+	if (
+		not catalog.has_method("get_card_by_id")
+		or catalog.call("get_card_by_id", card_id) == null
+	):
+		return false
+
+	var opponent_collection = OpponentCollectionScript.new()
+	opponent_collection.initialize(
+		catalog,
+		opponent_id,
+		1,
+		10,
+		50,
+		null
+	)
+
+	if not _write_journal(
+		card_id,
+		opponent_id,
+		maxi(0, desired_player),
+		maxi(0, desired_opponent),
+		promote_for_rematch
+	):
+		return false
+
+	player_collection.set_quantity_by_id(
+		card_id,
+		maxi(0, desired_player),
+		false
+	)
+	opponent_collection.set_quantity_by_id(
+		card_id,
+		maxi(0, desired_opponent),
+		false
+	)
+	if promote_for_rematch and desired_opponent > 0:
+		opponent_collection.promote_card(card_id, false)
+
+	var player_error: Error = player_collection.save_state()
+	var opponent_error: Error = opponent_collection.save_state()
+	if player_error != OK or opponent_error != OK:
+		return false
+	return _clear_journal()
+
+
 func transfer_player_to_opponent(card, player_collection, opponent_collection) -> bool:
 	if has_pending_transfer():
 		push_warning("TripleTriadCardEconomy: refusing a second transfer while recovery is pending.")

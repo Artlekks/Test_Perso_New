@@ -60,6 +60,53 @@ func record_loss(
 	)
 
 
+func reconcile_card_history(
+	card_id: StringName,
+	desired_acquired: int,
+	desired_lost: int,
+	source: StringName,
+	opponent_id: StringName = &""
+) -> bool:
+	var key: String = String(card_id).strip_edges()
+	if key.is_empty():
+		return false
+	if (
+		_catalog != null
+		and _catalog.has_method("get_card_by_id")
+		and _catalog.call("get_card_by_id", card_id) == null
+	):
+		return false
+
+	var entry: Dictionary = _history.get(key, {
+		"acquired": 0,
+		"lost": 0,
+		"first_source": "",
+		"last_source": "",
+		"last_opponent_id": "",
+		"last_event_unix": 0,
+	}).duplicate(true)
+
+	var clean_acquired: int = maxi(0, desired_acquired)
+	var clean_lost: int = maxi(0, desired_lost)
+	var changed: bool = (
+		int(entry.get("acquired", 0)) != clean_acquired
+		or int(entry.get("lost", 0)) != clean_lost
+	)
+	if not changed:
+		return true
+
+	entry["acquired"] = clean_acquired
+	entry["lost"] = clean_lost
+	if str(entry.get("first_source", "")).is_empty():
+		entry["first_source"] = String(source)
+	entry["last_source"] = String(source)
+	entry["last_opponent_id"] = String(opponent_id)
+	entry["last_event_unix"] = int(Time.get_unix_time_from_system())
+	_history[key] = entry
+	_event_count += 1
+	return _save() == OK
+
+
 func get_card_history(card_id: StringName) -> Dictionary:
 	var key: String = String(card_id)
 	if not _history.has(key):

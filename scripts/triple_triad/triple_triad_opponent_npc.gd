@@ -2,6 +2,8 @@ extends Node3D
 
 @export var interaction_prompt: String = "K : Cards"
 @export var locked_prompt: String = "Cards : Locked"
+@export var rematch_prompt: String = "K : Rematch"
+@export var veteran_rematch_prompt: String = "K : Veteran Rematch"
 ## Stable registry key. New NPC instances should use this.
 @export var opponent_id: StringName = &""
 ## Legacy/fallback direct profile reference for older scenes.
@@ -85,6 +87,22 @@ func _bind_game_signals(game: Node) -> void:
 			unlock_callback
 		)
 
+	var state_callback := Callable(
+		self,
+		"_on_backend_state_changed"
+	)
+	if (
+		game.has_signal("backend_state_changed")
+		and not game.is_connected(
+			"backend_state_changed",
+			state_callback
+		)
+	):
+		game.connect(
+			"backend_state_changed",
+			state_callback
+		)
+
 	var closed_callback := Callable(
 		self,
 		"_on_card_game_closed"
@@ -108,6 +126,11 @@ func _on_card_game_unlock_changed(_unlocked: bool) -> void:
 
 
 func _on_card_game_closed() -> void:
+	if _player_in_range:
+		_refresh_prompt_text()
+
+
+func _on_backend_state_changed(_reason: String) -> void:
 	if _player_in_range:
 		_refresh_prompt_text()
 
@@ -140,6 +163,18 @@ func _refresh_prompt_text() -> void:
 	)
 	if not bool(availability.get("available", false)):
 		prompt_label.text = locked_prompt
+		return
+
+	if game.has_method("get_opponent_evolution_snapshot"):
+		var evolution: Dictionary = game.call(
+			"get_opponent_evolution_snapshot",
+			opponent_id
+		)
+		var stage: int = int(evolution.get("stage", 0))
+		if stage >= 3:
+			prompt_label.text = veteran_rematch_prompt
+		elif stage > 0:
+			prompt_label.text = rematch_prompt
 
 
 func _is_player_body(body: Node) -> bool:

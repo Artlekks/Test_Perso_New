@@ -121,6 +121,57 @@ func record_card_recovered(
 	return get_snapshot(StringName(opponent_key))
 
 
+func reconcile_card_transfer(
+	opponent_id: StringName,
+	card_id: StringName,
+	desired_cards_won: int,
+	desired_cards_lost: int,
+	desired_stolen_recovered: int,
+	desired_stolen_quantity: int
+) -> bool:
+	var opponent_key: String = _clean_key(opponent_id)
+	var card_key: String = _clean_key(card_id)
+	if opponent_key.is_empty() or card_key.is_empty():
+		return false
+
+	var record: Dictionary = _records.get(
+		opponent_key,
+		_new_record()
+	).duplicate(true)
+	record["cards_won_from_opponent"] = maxi(
+		0,
+		desired_cards_won
+	)
+	record["cards_lost_to_opponent"] = maxi(
+		0,
+		desired_cards_lost
+	)
+	record["stolen_cards_recovered"] = maxi(
+		0,
+		desired_stolen_recovered
+	)
+	_records[opponent_key] = record
+
+	var stolen_for_opponent: Dictionary = _stolen.get(
+		opponent_key,
+		{}
+	).duplicate(true)
+	var clean_stolen: int = maxi(
+		0,
+		desired_stolen_quantity
+	)
+	if clean_stolen <= 0:
+		stolen_for_opponent.erase(card_key)
+	else:
+		stolen_for_opponent[card_key] = clean_stolen
+	if stolen_for_opponent.is_empty():
+		_stolen.erase(opponent_key)
+	else:
+		_stolen[opponent_key] = stolen_for_opponent
+
+	return _save() == OK
+
+
 func get_snapshot(opponent_id: StringName) -> Dictionary:
 	var key: String = _clean_key(opponent_id)
 	if key.is_empty():

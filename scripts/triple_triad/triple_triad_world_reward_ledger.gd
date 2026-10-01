@@ -1,17 +1,20 @@
 extends RefCounted
 class_name TripleTriadWorldRewardLedger
 
-const SAVE_PATH := "user://triple_triad_world_delivery.cfg"
+const DEFAULT_SAVE_PATH := "user://triple_triad_world_delivery.cfg"
 const SECTION_META := "meta"
 const SECTION_COUNTERS := "counters"
 const SECTION_CLAIMS := "claims"
-const SCHEMA_VERSION := 1
+const SCHEMA_VERSION := 2
 
 var _counters: Dictionary = {}
 var _claimed_events: Dictionary = {}
+var _pending_deliveries: Dictionary = {}
+var _save_path: String = DEFAULT_SAVE_PATH
 
 
-func initialize() -> void:
+func initialize(save_path: String = DEFAULT_SAVE_PATH) -> void:
+	_save_path = save_path
 	_load_state()
 
 
@@ -49,7 +52,104 @@ func mark_claimed(event_id: StringName) -> void:
 	if key.is_empty():
 		return
 	_claimed_events[key] = true
+	_pending_deliveries.erase(key)
 	_save_state()
+
+
+func begin_delivery(
+	event_id: StringName,
+	source_type: StringName,
+	source_id: StringName,
+	card_id: StringName,
+	source_context: StringName,
+	owned_quantity_before: int
+) -> bool:
+	var key: String = String(event_id).strip_edges()
+	if key.is_empty() or has_claimed(event_id):
+		return false
+	if _pending_deliveries.has(key):
+		var existing: Dictionary = _pending_deliveries[key]
+		return (
+			str(existing.get("card_id", ""))
+			== String(card_id)
+		)
+
+	_pending_deliveries[key] = {
+		"event_id": key,
+		"source_type": String(source_type),
+		"source_id": String(source_id),
+		"card_id": String(card_id),
+		"source_context": String(source_context),
+		"owned_quantity_before": maxi(
+			0,
+			owned_quantity_before
+		),
+		"created_unix": int(Time.get_unix_time_from_system()),
+	}
+	if not _save_state():
+		_pending_deliveries.erase(key)
+		return false
+	return true
+
+
+func get_pending_delivery(
+	event_id: StringName
+) -> Dictionary:
+	var key: String = String(event_id).strip_edges()
+	if key.is_empty() or not _pending_deliveries.has(key):
+		return {}
+	return (
+		_pending_deliveries[key] as Dictionary
+	).duplicate(true)
+
+
+func get_pending_deliveries() -> Array:
+	var result: Array = []
+	for raw_event_id in _pending_deliveries.keys():
+		var delivery = _pending_deliveries[raw_event_id]
+		if delivery is Dictionary:
+			result.append(
+				(delivery as Dictionary).duplicate(true)
+			)
+	result.sort_custom(func(a, b):
+		return str(a.get("event_id", "")) < str(
+			b.get("event_id", "")
+		)
+	)
+	return result
+
+
+func complete_delivery(event_id: StringName) -> bool:
+	var key: String = String(event_id).strip_edges()
+	if key.is_empty():
+		return false
+	_claimed_events[key] = true
+	_pending_deliveries.erase(key)
+	return _save_state()
+
+
+func clear_pending_delivery(event_id: StringName) -> bool:
+	var key: String = String(event_id).strip_edges()
+	if key.is_empty():
+		return false
+	var changed: bool = _pending_deliveries.erase(key)
+	if changed:
+		return _save_state()
+	return false
+
+
+func reset_event(event_id: StringName) -> bool:
+	var key: String = String(event_id).strip_edges()
+	if key.is_empty():
+		return false
+	var changed: bool = false
+	if _pending_deliveries.erase(key):
+		changed = true
+	if _claimed_events.erase(key):
+		changed = true
+	if not changed:
+		return true
+	return _save_state()
 
 
 func get_snapshot() -> Dictionary:
@@ -63,19 +163,28 @@ func get_snapshot() -> Dictionary:
 		"schema_version": SCHEMA_VERSION,
 		"counters": _counters.duplicate(true),
 		"claimed_event_ids": claimed_ids,
+		"pending_deliveries": get_pending_deliveries(),
 	}
 
 
 func _load_state() -> void:
 	_counters.clear()
 	_claimed_events.clear()
+	_pending_deliveries.clear()
 
 	var config := ConfigFile.new()
-	var error_code: Error = config.load(SAVE_PATH)
+	var error_code: Error = config.load(_save_path)
 	if error_code != OK:
 		return
 
-	if int(config.get_value(SECTION_META, "schema_version", 0)) != SCHEMA_VERSION:
+	var loaded_version: int = int(
+		config.get_value(
+			SECTION_META,
+			"schema_version",
+			1
+		)
+	)
+	if loaded_version not in [1, SCHEMA_VERSION]:
 		return
 
 	var raw_counters = config.get_value(SECTION_COUNTERS, "values", {})
@@ -98,7 +207,42 @@ func _load_state() -> void:
 				)
 
 
-func _save_state() -> void:
+	if loaded_version >= 2:
+		var raw_pending = config.get_value(
+			"pending_deliveries",
+			"values",
+			{}
+		)
+		if raw_pending is Dictionary:
+			for raw_key in (raw_pending as Dictionary).keys():
+				var key: String = str(raw_key).strip_edges()
+				var raw_delivery = (
+					raw_pending as Dictionary
+				).get(raw_key, {})
+				if key.is_empty() or not (raw_delivery is Dictionary):
+					continue
+				var delivery: Dictionary = (
+					raw_delivery as Dictionary
+				).duplicate(true)
+				var card_id: String = str(
+					delivery.get("card_id", "")
+				).strip_edges()
+				if card_id.is_empty():
+					continue
+				delivery["event_id"] = key
+				delivery["owned_quantity_before"] = maxi(
+					0,
+					int(
+						delivery.get(
+							"owned_quantity_before",
+							0
+						)
+					)
+				)
+				_pending_deliveries[key] = delivery
+
+
+func _save_state() -> bool:
 	var config := ConfigFile.new()
 	config.set_value(SECTION_META, "schema_version", SCHEMA_VERSION)
 	config.set_value(
@@ -111,9 +255,16 @@ func _save_state() -> void:
 		"values",
 		_claimed_events.duplicate(true)
 	)
-	var error_code: Error = config.save(SAVE_PATH)
+	config.set_value(
+		"pending_deliveries",
+		"values",
+		_pending_deliveries.duplicate(true)
+	)
+	var error_code: Error = config.save(_save_path)
 	if error_code != OK:
 		push_warning(
 			"TripleTriadWorldRewardLedger: could not save %s (error %d)."
-			% [SAVE_PATH, int(error_code)]
+			% [_save_path, int(error_code)]
 		)
+		return false
+	return true

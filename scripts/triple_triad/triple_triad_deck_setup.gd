@@ -31,6 +31,13 @@ const STATE_BROWSE := 0
 const STATE_REPLACE := 1
 const STATE_ANIMATING := 2
 
+# Keyboard/controller-style browse zones. Mouse remains supported, but every
+# deck-building action must be reachable with WASD + K.
+const NAV_COLLECTION := 0
+const NAV_PROFILES := 1
+const NAV_DECK := 2
+const NAV_SORT := 3
+
 const COLLECTION_FOCUS_SCALE := COLLECTION_SCALE
 const COLLECTION_FOCUS_Y := 0.0
 const COLLECTION_CARD_OFFSET := Vector2.ZERO
@@ -88,6 +95,10 @@ var _replace_source_index: int = -1
 var _replace_slot_index: int = 0
 var _sort_mode: int = SORT_RANK_ASCENDING
 var _show_extended_details: bool = false
+var _nav_zone: int = NAV_COLLECTION
+var _profile_nav_index: int = 0
+var _deck_cursor_index: int = 0
+var _sort_cursor_index: int = 0
 
 
 func _ready() -> void:
@@ -146,6 +157,10 @@ func open_setup(
 	_replace_source_index = -1
 	_replace_slot_index = 0
 	_show_extended_details = false
+	_nav_zone = NAV_COLLECTION
+	_profile_nav_index = _profile_index
+	_deck_cursor_index = clampi(_deck_cursor_index, 0, HAND_SIZE - 1)
+	_sort_cursor_index = _sort_button_index_from_mode()
 	visible = true
 	_refresh_all()
 
@@ -195,7 +210,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	var profile_number: int = _profile_number(event)
 	if profile_number >= 0:
+		_nav_zone = NAV_PROFILES
+		_profile_nav_index = profile_number
 		_switch_profile(profile_number)
+		_refresh_all()
 		_accept_input()
 		return
 
@@ -209,24 +227,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if _is_left(event):
-		_move_cursor(-1, 0)
+		_navigate(-1, 0)
 		_accept_input()
 		return
 	if _is_right(event):
-		_move_cursor(1, 0)
+		_navigate(1, 0)
 		_accept_input()
 		return
 	if _is_up(event):
-		_move_cursor(0, -1)
+		_navigate(0, -1)
 		_accept_input()
 		return
 	if _is_down(event):
-		_move_cursor(0, 1)
+		_navigate(0, 1)
 		_accept_input()
 		return
 
 	if _is_confirm(event):
-		_select_cursor_card()
+		_activate_navigation_target()
 		_accept_input()
 		return
 
@@ -315,7 +333,11 @@ func _refresh_collection() -> void:
 				view.modulate = LOCKED_CARD_MODULATE
 			else:
 				view.modulate = USED_CARD_MODULATE if is_in_deck else Color.WHITE
-			var is_cursor: bool = card_index == _cursor_index
+			var is_cursor: bool = (
+				_state == STATE_BROWSE
+				and _nav_zone == NAV_COLLECTION
+				and card_index == _cursor_index
+			)
 			var is_replace_source: bool = _state == STATE_REPLACE and card_index == _replace_source_index
 			view.scale = COLLECTION_FOCUS_SCALE if is_replace_source else COLLECTION_SCALE
 			var base_position := COLLECTION_CARD_OFFSET + Vector2(
@@ -337,11 +359,22 @@ func _refresh_collection() -> void:
 			view.visible = false
 
 func _refresh_deck() -> void:
-	deck_arrow.visible = _state == STATE_REPLACE
+	deck_arrow.visible = (
+		_state == STATE_REPLACE
+		or (
+			_state == STATE_BROWSE
+			and _nav_zone == NAV_DECK
+		)
+	)
 	for index in range(_deck_views.size()):
 		var view: Control = _deck_views[index]
 		view.pivot_offset = Vector2.ZERO
 		var is_replace_target: bool = _state == STATE_REPLACE and index == _replace_slot_index
+		var is_browse_target: bool = (
+			_state == STATE_BROWSE
+			and _nav_zone == NAV_DECK
+			and index == _deck_cursor_index
+		)
 		view.position = DECK_CARD_OFFSET + Vector2(
 			float(index) * DECK_STEP_X + (DECK_SELECTED_X_OFFSET if is_replace_target else 0.0),
 			0.0
@@ -350,7 +383,7 @@ func _refresh_deck() -> void:
 			view.visible = true
 			view.configure(_deck[index], OWNER_PLAYER, false)
 			view.scale = DECK_SCALE
-			view.set_selected(is_replace_target)
+			view.set_selected(is_replace_target or is_browse_target)
 		else:
 			view.visible = false
 
@@ -358,6 +391,11 @@ func _refresh_deck() -> void:
 	if _state == STATE_REPLACE:
 		deck_arrow.position = deck_root.position + DECK_CARD_OFFSET + Vector2(
 			float(_replace_slot_index) * DECK_STEP_X - 14.0,
+			(DECK_SLOT_SIZE.y * 0.5) - 6.0
+		)
+	elif _state == STATE_BROWSE and _nav_zone == NAV_DECK:
+		deck_arrow.position = deck_root.position + DECK_CARD_OFFSET + Vector2(
+			float(_deck_cursor_index) * DECK_STEP_X - 14.0,
 			(DECK_SLOT_SIZE.y * 0.5) - 6.0
 		)
 
@@ -376,10 +414,17 @@ func _refresh_labels() -> void:
 		_profile_name_labels[index].text = "Deck #%d" % (index + 1)
 		var count: int = _deck.size() if index == _profile_index else _saved_profile_count(index)
 		_profile_count_labels[index].text = "%d / %d" % [count, HAND_SIZE]
-	profile_selection_arrow.position = Vector2(19.0, 84.0 + float(_profile_index) * 25.0)
+	var profile_arrow_index: int = _profile_index
+	if _state == STATE_BROWSE and _nav_zone == NAV_PROFILES:
+		profile_arrow_index = _profile_nav_index
+	profile_selection_arrow.position = Vector2(
+		19.0,
+		84.0 + float(profile_arrow_index) * 25.0
+	)
 
-	if _cursor_index >= 0 and _cursor_index < _cards.size():
-		var card = _cards[_cursor_index]
+	var detail_focus_card = _focused_detail_card()
+	if detail_focus_card != null:
+		var card = detail_focus_card
 		detail_card.visible = true
 		detail_card.configure(card, OWNER_PLAYER, false)
 		detail_card.pivot_offset = Vector2.ZERO
@@ -445,6 +490,190 @@ func _saved_profile_count(profile_index: int) -> int:
 		var raw_indices = config.get_value("decks", legacy_key, PackedInt32Array())
 		return mini(HAND_SIZE, raw_indices.size()) if raw_indices is PackedInt32Array or raw_indices is Array else 0
 	return 0
+
+
+func _navigate(dx: int, dy: int) -> void:
+	match _nav_zone:
+		NAV_PROFILES:
+			_navigate_profiles(dx, dy)
+		NAV_DECK:
+			_navigate_deck(dx, dy)
+		NAV_SORT:
+			_navigate_sort(dx, dy)
+		_:
+			_navigate_collection(dx, dy)
+	_refresh_all()
+
+
+func _navigate_profiles(dx: int, dy: int) -> void:
+	if dy != 0:
+		_profile_nav_index = clampi(
+			_profile_nav_index + dy,
+			0,
+			VISIBLE_PROFILE_COUNT
+		)
+		_status_text = (
+			"New deck"
+			if _profile_nav_index == VISIBLE_PROFILE_COUNT
+			else "Deck #%d" % (_profile_nav_index + 1)
+		)
+		return
+
+	if dx > 0:
+		_nav_zone = NAV_DECK
+		_deck_cursor_index = clampi(_deck_cursor_index, 0, HAND_SIZE - 1)
+		_status_text = ""
+	elif dx < 0:
+		_status_text = ""
+
+
+func _navigate_deck(dx: int, dy: int) -> void:
+	if dx < 0:
+		if _deck_cursor_index > 0:
+			_deck_cursor_index -= 1
+		else:
+			_nav_zone = NAV_PROFILES
+			_profile_nav_index = _profile_index
+		_status_text = ""
+		return
+
+	if dx > 0:
+		_deck_cursor_index = mini(
+			_deck_cursor_index + 1,
+			HAND_SIZE - 1
+		)
+
+	if dy > 0:
+		_nav_zone = NAV_SORT
+		_sort_cursor_index = _sort_button_index_from_mode()
+	elif dy < 0:
+		_nav_zone = NAV_PROFILES
+		_profile_nav_index = _profile_index
+
+	_status_text = ""
+
+
+func _navigate_sort(dx: int, dy: int) -> void:
+	if dx != 0:
+		_sort_cursor_index = clampi(
+			_sort_cursor_index + dx,
+			0,
+			2
+		)
+		_status_text = "Sort: %s" % _sort_cursor_label()
+		return
+
+	if dy < 0:
+		_nav_zone = NAV_DECK
+		_deck_cursor_index = clampi(_deck_cursor_index, 0, HAND_SIZE - 1)
+	elif dy > 0:
+		_nav_zone = NAV_COLLECTION
+		_status_text = ""
+
+
+func _navigate_collection(dx: int, dy: int) -> void:
+	if _cards.is_empty():
+		if dy < 0:
+			_nav_zone = NAV_SORT
+		return
+
+	var page_start: int = _page_index * PAGE_SIZE
+	var page_count: int = mini(PAGE_SIZE, _cards.size() - page_start)
+	if page_count <= 0:
+		return
+
+	var local_index: int = clampi(
+		_cursor_index - page_start,
+		0,
+		page_count - 1
+	)
+	var column: int = local_index % COLLECTION_COLUMNS
+	var row: int = floori(
+		float(local_index) / float(COLLECTION_COLUMNS)
+	)
+
+	if dx < 0 and column == 0:
+		_nav_zone = NAV_PROFILES
+		_profile_nav_index = _profile_index
+		_status_text = ""
+		return
+
+	if dy < 0 and row == 0:
+		_nav_zone = NAV_SORT
+		_sort_cursor_index = _sort_button_index_from_mode()
+		_status_text = ""
+		return
+
+	_move_cursor(dx, dy)
+
+
+func _activate_navigation_target() -> void:
+	match _nav_zone:
+		NAV_PROFILES:
+			if _profile_nav_index == VISIBLE_PROFILE_COUNT:
+				_on_new_deck_pressed()
+			else:
+				_switch_profile(_profile_nav_index)
+				_status_text = "Deck #%d selected." % (_profile_index + 1)
+				_refresh_all()
+		NAV_DECK:
+			_remove_selected_deck_card()
+		NAV_SORT:
+			match _sort_cursor_index:
+				0:
+					_on_rank_sort_pressed()
+				1:
+					_on_sort_mode_pressed(SORT_NUMBER)
+				2:
+					_on_sort_mode_pressed(SORT_NAME)
+		_:
+			_select_cursor_card()
+
+
+func _remove_selected_deck_card() -> void:
+	if _deck_cursor_index < 0 or _deck_cursor_index >= _deck.size():
+		_status_text = "Empty deck slot."
+		_refresh_labels()
+		return
+
+	var removed = _deck[_deck_cursor_index]
+	_deck.remove_at(_deck_cursor_index)
+	_save_current_profile()
+	_status_text = "Removed %s." % str(removed.display_name)
+	_refresh_all()
+
+
+func _focused_detail_card():
+	if (
+		_state == STATE_BROWSE
+		and _nav_zone == NAV_DECK
+		and _deck_cursor_index >= 0
+		and _deck_cursor_index < _deck.size()
+	):
+		return _deck[_deck_cursor_index]
+	if _cursor_index >= 0 and _cursor_index < _cards.size():
+		return _cards[_cursor_index]
+	return null
+
+
+func _sort_button_index_from_mode() -> int:
+	match _sort_mode:
+		SORT_NUMBER:
+			return 1
+		SORT_NAME:
+			return 2
+		_:
+			return 0
+
+
+func _sort_cursor_label() -> String:
+	match _sort_cursor_index:
+		1:
+			return "Number"
+		2:
+			return "Name"
+		_:
+			return "Rank"
 
 
 func _move_cursor(dx: int, dy: int) -> void:
@@ -643,6 +872,8 @@ func _try_confirm_deck() -> void:
 
 
 func _on_rank_sort_pressed() -> void:
+	_nav_zone = NAV_SORT
+	_sort_cursor_index = 0
 	if _sort_mode == SORT_RANK_ASCENDING:
 		_apply_sort_mode(SORT_RANK_DESCENDING)
 	else:
@@ -650,6 +881,8 @@ func _on_rank_sort_pressed() -> void:
 
 
 func _on_sort_mode_pressed(mode: int) -> void:
+	_nav_zone = NAV_SORT
+	_sort_cursor_index = 1 if mode == SORT_NUMBER else 2
 	_apply_sort_mode(clampi(mode, SORT_RANK_ASCENDING, SORT_NAME))
 
 
@@ -686,13 +919,20 @@ func _delete_current_deck() -> void:
 
 
 func _on_profile_row_pressed(profile_index: int) -> void:
+	_nav_zone = NAV_PROFILES
+	_profile_nav_index = clampi(profile_index, 0, VISIBLE_PROFILE_COUNT - 1)
 	_switch_profile(profile_index)
+	_refresh_all()
 
 
 func _on_new_deck_pressed() -> void:
+	_nav_zone = NAV_PROFILES
+	_profile_nav_index = VISIBLE_PROFILE_COUNT
 	for profile_index in range(VISIBLE_PROFILE_COUNT):
 		if _saved_profile_count(profile_index) == 0:
 			_switch_profile(profile_index)
+			_nav_zone = NAV_PROFILES
+			_profile_nav_index = profile_index
 			_status_text = "New deck slot selected."
 			_refresh_all()
 			return
@@ -774,6 +1014,7 @@ func _switch_profile(new_profile_index: int) -> void:
 		return
 	_save_current_profile()
 	_profile_index = new_profile_index
+	_profile_nav_index = _profile_index
 	_load_profile(_profile_index)
 	_status_text = ""
 	_refresh_all()

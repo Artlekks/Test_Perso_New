@@ -3,12 +3,14 @@ extends RefCounted
 signal changed(snapshot: Dictionary)
 
 const SAVE_PATH := "user://triple_triad_competitions.cfg"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 3
 
 var _catalog = null
 var _persistence_enabled: bool = true
 var _active_competition_id: StringName = &""
 var _active_round_index: int = 0
+var _locked_deck_ids := PackedStringArray()
+var _pending_reward: Dictionary = {}
 var _attempts: Dictionary = {}
 var _clears: Dictionary = {}
 var _failures: Dictionary = {}
@@ -23,6 +25,8 @@ func initialize(
 	_persistence_enabled = persistence_enabled
 	_active_competition_id = &""
 	_active_round_index = 0
+	_locked_deck_ids = PackedStringArray()
+	_pending_reward.clear()
 	_attempts.clear()
 	_clears.clear()
 	_failures.clear()
@@ -74,6 +78,7 @@ func get_snapshot(
 		"circuits": circuits,
 		"competitions": competitions,
 		"active": get_active_snapshot(),
+		"pending_reward": get_pending_reward(),
 		"earned_titles": get_earned_titles(),
 		"regional_champion": get_clear_count(
 			&"regional_championship"
@@ -243,6 +248,13 @@ func start_competition(
 			"reason": "competition_catalog_unavailable",
 		}
 
+	if not _pending_reward.is_empty():
+		return {
+			"success": false,
+			"reason": "pending_competition_reward",
+			"pending_reward": _pending_reward.duplicate(true),
+		}
+
 	if _active_competition_id != &"":
 		if _active_competition_id == competition_id:
 			return {
@@ -292,6 +304,7 @@ func start_competition(
 
 	_active_competition_id = competition_id
 	_active_round_index = 0
+	_locked_deck_ids = PackedStringArray()
 	_attempts[String(competition_id)] = (
 		get_attempt_count(competition_id) + 1
 	)
@@ -417,6 +430,14 @@ func record_match_result(
 		% [String(competition_id), clear_number]
 	)
 
+	_pending_reward = {
+		"competition_id": String(competition_id),
+		"clear_number": clear_number,
+		"reward_source_id": reward_source_id,
+		"reward_event_id": reward_event_id,
+		"title_awarded": title_awarded,
+		"card_game_completed": endgame_clear,
+	}
 	_clear_active()
 	_save()
 
@@ -430,6 +451,31 @@ func record_match_result(
 		"title_awarded": title_awarded,
 		"card_game_completed": endgame_clear,
 	}
+
+
+func get_pending_reward() -> Dictionary:
+	return _pending_reward.duplicate(true)
+
+
+func has_pending_reward() -> bool:
+	return not _pending_reward.is_empty()
+
+
+func acknowledge_pending_reward(
+	reward_event_id: StringName
+) -> bool:
+	if _pending_reward.is_empty():
+		return true
+	var pending_id: String = str(
+		_pending_reward.get("reward_event_id", "")
+	)
+	if (
+		not pending_id.is_empty()
+		and pending_id != String(reward_event_id)
+	):
+		return false
+	_pending_reward.clear()
+	return _save() == OK
 
 
 func abandon_active_competition() -> Dictionary:
@@ -482,7 +528,41 @@ func get_active_snapshot() -> Dictionary:
 		"next_opponent_id": String(
 			get_active_opponent_id()
 		),
+		"deck_locked": _locked_deck_ids.size() == 5,
+		"locked_deck_ids": _locked_deck_ids.duplicate(),
 	}
+
+
+func set_locked_deck_ids(card_ids) -> bool:
+	if _active_competition_id == &"":
+		return false
+	if not (card_ids is PackedStringArray or card_ids is Array):
+		return false
+
+	var clean := PackedStringArray()
+	for raw_id in card_ids:
+		var card_id: String = str(raw_id).strip_edges()
+		if card_id.is_empty() or clean.has(card_id):
+			return false
+		clean.append(card_id)
+
+	if clean.size() != 5:
+		return false
+
+	_locked_deck_ids = clean
+	_save()
+	return true
+
+
+func get_locked_deck_ids() -> PackedStringArray:
+	return _locked_deck_ids.duplicate()
+
+
+func has_locked_deck() -> bool:
+	return (
+		_active_competition_id != &""
+		and _locked_deck_ids.size() == 5
+	)
 
 
 func get_active_competition_id() -> StringName:
@@ -600,6 +680,11 @@ func _competition_availability(
 	var competition_id := StringName(
 		str(competition.get("competition_id", ""))
 	)
+	if not _pending_reward.is_empty():
+		return {
+			"available": false,
+			"reason": "Collect the previous tournament reward first.",
+		}
 	var required_rank: int = maxi(
 		1,
 		int(
@@ -713,6 +798,7 @@ func _id_set(values) -> Dictionary:
 func _clear_active() -> void:
 	_active_competition_id = &""
 	_active_round_index = 0
+	_locked_deck_ids = PackedStringArray()
 
 
 func _load() -> void:
@@ -775,6 +861,52 @@ func _load() -> void:
 				)
 			)
 
+	var pending_event_id: String = str(
+		config.get_value("pending_reward", "reward_event_id", "")
+	).strip_edges()
+	if not pending_event_id.is_empty():
+		_pending_reward = {
+			"competition_id": str(
+				config.get_value(
+					"pending_reward",
+					"competition_id",
+					""
+				)
+			),
+			"clear_number": maxi(
+				0,
+				int(
+					config.get_value(
+						"pending_reward",
+						"clear_number",
+						0
+					)
+				)
+			),
+			"reward_source_id": str(
+				config.get_value(
+					"pending_reward",
+					"reward_source_id",
+					""
+				)
+			),
+			"reward_event_id": pending_event_id,
+			"title_awarded": str(
+				config.get_value(
+					"pending_reward",
+					"title_awarded",
+					""
+				)
+			),
+			"card_game_completed": bool(
+				config.get_value(
+					"pending_reward",
+					"card_game_completed",
+					false
+				)
+			),
+		}
+
 	var raw_active: String = str(
 		config.get_value(
 			"active",
@@ -802,6 +934,23 @@ func _load() -> void:
 		)
 		if get_active_opponent_id() == &"":
 			_clear_active()
+		else:
+			var raw_locked = config.get_value(
+				"active",
+				"locked_deck_ids",
+				PackedStringArray()
+			)
+			var clean_locked := PackedStringArray()
+			if raw_locked is PackedStringArray or raw_locked is Array:
+				for raw_card_id in raw_locked:
+					var card_id: String = str(raw_card_id).strip_edges()
+					if (
+						not card_id.is_empty()
+						and not clean_locked.has(card_id)
+					):
+						clean_locked.append(card_id)
+			if clean_locked.size() == 5:
+				_locked_deck_ids = clean_locked
 
 
 func _save() -> Error:
@@ -854,6 +1003,37 @@ func _save() -> Error:
 			)
 
 	config.set_value(
+		"pending_reward",
+		"competition_id",
+		str(_pending_reward.get("competition_id", ""))
+	)
+	config.set_value(
+		"pending_reward",
+		"clear_number",
+		maxi(0, int(_pending_reward.get("clear_number", 0)))
+	)
+	config.set_value(
+		"pending_reward",
+		"reward_source_id",
+		str(_pending_reward.get("reward_source_id", ""))
+	)
+	config.set_value(
+		"pending_reward",
+		"reward_event_id",
+		str(_pending_reward.get("reward_event_id", ""))
+	)
+	config.set_value(
+		"pending_reward",
+		"title_awarded",
+		str(_pending_reward.get("title_awarded", ""))
+	)
+	config.set_value(
+		"pending_reward",
+		"card_game_completed",
+		bool(_pending_reward.get("card_game_completed", false))
+	)
+
+	config.set_value(
 		"active",
 		"competition_id",
 		String(_active_competition_id)
@@ -862,6 +1042,11 @@ func _save() -> Error:
 		"active",
 		"round_index",
 		_active_round_index
+	)
+	config.set_value(
+		"active",
+		"locked_deck_ids",
+		_locked_deck_ids
 	)
 
 	var save_error: Error = config.save(SAVE_PATH)
