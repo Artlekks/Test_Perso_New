@@ -11,6 +11,8 @@ const TRANSFER_JOURNAL_PATH := "user://triple_triad_transfer_journal.cfg"
 const ACQUISITION_HISTORY_PATH := "user://triple_triad_acquisition_history.cfg"
 const ACQUISITION_STATE_PATH := "user://triple_triad_acquisition_state.cfg"
 const ENCOUNTER_RECORDS_PATH := "user://triple_triad_encounter_records.cfg"
+const WORLD_REWARD_LEDGER_PATH := "user://triple_triad_world_delivery.cfg"
+const COMPETITIONS_PATH := "user://triple_triad_competitions.cfg"
 
 const PROFILE_COUNT := 6
 const HAND_SIZE := 5
@@ -597,6 +599,8 @@ func _protected_paths() -> Array[String]:
 		ACQUISITION_HISTORY_PATH,
 		ACQUISITION_STATE_PATH,
 		ENCOUNTER_RECORDS_PATH,
+		WORLD_REWARD_LEDGER_PATH,
+		COMPETITIONS_PATH,
 	]
 
 

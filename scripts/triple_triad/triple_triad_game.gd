@@ -8,6 +8,7 @@ signal backend_state_changed(reason: String)
 signal runtime_state_changed(snapshot: Dictionary)
 signal acquisition_completed(result: Dictionary)
 signal card_game_unlock_changed(unlocked: bool)
+signal competition_state_changed(snapshot: Dictionary)
 
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
@@ -31,8 +32,10 @@ const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_tr
 const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
 const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
 const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
+const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
+const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 
-const BACKEND_VERSION := "1.9.0"
+const BACKEND_VERSION := "2.0.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -174,6 +177,9 @@ var _round_number: int = 1
 var _fishing_salvage_bridge: Node = null
 var _world_acquisition_catalog = null
 var _world_reward_ledger = null
+var _competition_catalog = null
+var _competition_service = null
+var _competition_match_active: bool = false
 
 
 func _ready() -> void:
@@ -203,6 +209,12 @@ func _ready() -> void:
 		card_catalog,
 		opponent_registry,
 		acquisition_registry
+	)
+
+	_competition_catalog = CompetitionCatalogScript.new()
+	_competition_catalog.initialize(
+		opponent_registry,
+		_world_acquisition_catalog
 	)
 
 	# Validate authored/static data before any subsystem is allowed to mutate a
@@ -246,6 +258,9 @@ func _ready() -> void:
 
 	_encounter_records = EncounterRecordsScript.new()
 	_encounter_records.initialize()
+
+	_competition_service = CompetitionServiceScript.new()
+	_competition_service.initialize(_competition_catalog)
 
 	# Transfer journal recovery happens before the global save audit. If recovery
 	# is still pending after the attempt, opening a new match would risk stacking
@@ -575,6 +590,22 @@ func _validate_static_backend() -> bool:
 		for warning in acquisition_audit.get("warnings", []):
 			push_warning("TripleTriadGame acquisition: %s" % str(warning))
 
+
+	if _competition_catalog == null:
+		_backend_errors.append("Competition catalog is missing.")
+	elif _competition_catalog.has_method("validate_catalog"):
+		var competition_audit: Dictionary = _competition_catalog.call(
+			"validate_catalog"
+		)
+		if not bool(competition_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid competition catalog: %s"
+				% str(competition_audit.get("errors", []))
+			)
+		for warning in competition_audit.get("warnings", []):
+			push_warning(
+				"TripleTriadGame competition: %s" % str(warning)
+			)
 
 	if _world_acquisition_catalog == null:
 		_backend_errors.append("World acquisition catalog is missing.")
@@ -1210,6 +1241,122 @@ func _install_fishing_salvage_bridge() -> void:
 		)
 
 
+func get_competitive_snapshot() -> Dictionary:
+	if _competition_service == null:
+		return {}
+	var player_rank: int = (
+		_progression.get_rank_number()
+		if _progression != null
+		else maxi(1, player_card_rank)
+	)
+	var beaten_ids := PackedStringArray()
+	if _encounter_records != null:
+		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
+	return _competition_service.call("get_snapshot", player_rank, beaten_ids)
+
+
+func get_circuit_snapshot(circuit_id: StringName) -> Dictionary:
+	if _competition_service == null:
+		return {}
+	var player_rank: int = (
+		_progression.get_rank_number()
+		if _progression != null
+		else maxi(1, player_card_rank)
+	)
+	var beaten_ids := PackedStringArray()
+	if _encounter_records != null:
+		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
+	return _competition_service.call(
+		"get_circuit_snapshot",
+		circuit_id,
+		player_rank,
+		beaten_ids
+	)
+
+
+func get_competition_snapshot(competition_id: StringName) -> Dictionary:
+	if _competition_service == null:
+		return {}
+	var player_rank: int = (
+		_progression.get_rank_number()
+		if _progression != null
+		else maxi(1, player_card_rank)
+	)
+	var beaten_ids := PackedStringArray()
+	if _encounter_records != null:
+		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
+	return _competition_service.call(
+		"get_competition_snapshot",
+		competition_id,
+		player_rank,
+		beaten_ids
+	)
+
+
+func start_competition(competition_id: StringName) -> Dictionary:
+	if not _backend_ready:
+		return {"success": false, "reason": "backend_not_ready"}
+	if not is_card_game_unlocked():
+		return {"success": false, "reason": "card_game_locked"}
+	if _competition_service == null:
+		return {"success": false, "reason": "competition_service_unavailable"}
+
+	var player_rank: int = (
+		_progression.get_rank_number()
+		if _progression != null
+		else maxi(1, player_card_rank)
+	)
+	var beaten_ids := PackedStringArray()
+	if _encounter_records != null:
+		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
+
+	var result: Dictionary = _competition_service.call(
+		"start_competition",
+		competition_id,
+		player_rank,
+		beaten_ids
+	)
+	if bool(result.get("success", false)):
+		var snapshot: Dictionary = get_competitive_snapshot()
+		competition_state_changed.emit(snapshot.duplicate(true))
+		_publish_backend_state_change("competition_started")
+	return result
+
+
+func start_competition_and_open(competition_id: StringName) -> bool:
+	var result: Dictionary = start_competition(competition_id)
+	if not bool(result.get("success", false)):
+		return false
+	return open_active_competition_match()
+
+
+func open_active_competition_match() -> bool:
+	if _competition_service == null or is_open():
+		return false
+	var opponent_id: StringName = _competition_service.call(
+		"get_active_opponent_id"
+	)
+	if opponent_id == &"":
+		return false
+	var opened_ok: bool = open_game_by_id(opponent_id)
+	if opened_ok:
+		_competition_match_active = true
+	return opened_ok
+
+
+func abandon_active_competition() -> Dictionary:
+	if _competition_service == null:
+		return {"success": false, "reason": "competition_service_unavailable"}
+	var result: Dictionary = _competition_service.call(
+		"abandon_active_competition"
+	)
+	if bool(result.get("success", false)):
+		_competition_match_active = false
+		competition_state_changed.emit(get_competitive_snapshot())
+		_publish_backend_state_change("competition_abandoned")
+	return result
+
+
 func get_opponent_availability(opponent_id: StringName) -> Dictionary:
 	if opponent_registry == null or not opponent_registry.has_method("get_availability"):
 		return {
@@ -1718,6 +1865,7 @@ func _finish_match(
 	)
 	_result_reason = reason
 
+	var competition_change: Dictionary = {}
 	var progression_change: Dictionary = {}
 	# QA/debug matches must never mutate permanent progression. Campaign points
 	# are first-clear rewards by default; rematches still count in match records
@@ -1755,6 +1903,41 @@ func _finish_match(
 				OWNER_OPPONENT
 			)
 
+	if (
+		_competition_match_active
+		and _qa_profile_override == null
+		and _competition_service != null
+	):
+		competition_change = _competition_service.call(
+			"record_match_result",
+			_active_opponent_id(),
+			_result_winner,
+			OWNER_PLAYER
+		)
+		if _result_winner != OWNER_NONE:
+			_competition_match_active = false
+
+		if bool(competition_change.get("completed", false)):
+			var reward_source_id: String = str(
+				competition_change.get("reward_source_id", "")
+			)
+			var reward_event_id: String = str(
+				competition_change.get("reward_event_id", "")
+			)
+			if not reward_source_id.is_empty() and not reward_event_id.is_empty():
+				var tournament_reward: Dictionary = claim_tournament_card_reward(
+					StringName(reward_source_id),
+					StringName(reward_event_id),
+					StringName(
+						"competition:%s"
+						% str(competition_change.get("competition_id", ""))
+					),
+					true
+				)
+				competition_change["tournament_reward"] = tournament_reward
+
+		competition_state_changed.emit(get_competitive_snapshot())
+
 	match _result_winner:
 		OWNER_PLAYER:
 			result_label.text = "YOU WIN!"
@@ -1773,6 +1956,7 @@ func _finish_match(
 		"winner": _result_winner,
 		"score": score,
 		"progression": progression_change,
+		"competition": competition_change,
 		"reason": String(_result_reason),
 		"surrendered": _surrendered,
 	})

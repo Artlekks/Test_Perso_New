@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "circuits": [
+    {
+      "circuit_id": "harbor_circuit",
+      "display_name": "Harbor Circuit",
+      "description": "Defeat the established card players around the harbor and docks.",
+      "required_duel_rank": 1,
+      "opponent_ids": [
+        "pier_apprentice",
+        "beach_trader",
+        "dock_bruiser",
+        "gearwright"
+      ]
+    },
+    {
+      "circuit_id": "highland_circuit",
+      "display_name": "Highland Circuit",
+      "description": "Prove yourself against the highland and marsh card players.",
+      "required_duel_rank": 2,
+      "opponent_ids": [
+        "marsh_keeper",
+        "highland_keeper"
+      ]
+    },
+    {
+      "circuit_id": "mystic_circuit",
+      "display_name": "Mystic Circuit",
+      "description": "Defeat the advanced control players who specialize in Plus and Influence.",
+      "required_duel_rank": 3,
+      "opponent_ids": [
+        "lantern_gambler",
+        "tide_oracle"
+      ]
+    }
+  ],
+  "competitions": [
+    {
+      "competition_id": "regional_championship",
+      "display_name": "Regional Card Championship",
+      "description": "A three-round championship for players who have cleared every regional circuit.",
+      "required_duel_rank": 3,
+      "required_circuit_ids": [
+        "harbor_circuit",
+        "highland_circuit",
+        "mystic_circuit"
+      ],
+      "required_competition_clears": {},
+      "opponent_ids": [
+        "gearwright",
+        "marsh_keeper",
+        "tide_oracle"
+      ],
+      "reward_source_id": "regional_circuit",
+      "title_on_first_clear": "Regional Champion",
+      "repeatable": true,
+      "is_endgame": false
+    },
+    {
+      "competition_id": "masters_cup",
+      "display_name": "Masters' Cup",
+      "description": "The four-round endgame championship. Its first clear earns the Card Master title.",
+      "required_duel_rank": 5,
+      "required_circuit_ids": [],
+      "required_competition_clears": {
+        "regional_championship": 1
+      },
+      "opponent_ids": [
+        "lantern_gambler",
+        "wandering_sage",
+        "storm_captain",
+        "ash_champion"
+      ],
+      "reward_source_id": "masters_cup",
+      "title_on_first_clear": "Card Master",
+      "repeatable": true,
+      "is_endgame": true
+    }
+  ]
+}

@@ -19,6 +19,8 @@ const DefaultCardCatalog = preload("res://data/triple_triad/card_catalog.tres")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
 const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
+const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
+const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -169,6 +171,8 @@ func run_all() -> Dictionary:
 	_run("Card-game discovery gates opponents", _test_card_game_discovery_gate)
 	_run("World acquisition map covers all cards", _test_world_acquisition_map)
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
+	_run("Competition catalog is legal", _test_competition_catalog)
+	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -371,6 +375,131 @@ func _slot(card, owner: int, rotation: int = 0) -> Dictionary:
 		"owner": owner,
 		"rotation": rotation,
 	}
+
+
+func _test_competition_catalog() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	return _ok(
+		bool(audit.get("valid", false))
+		and int(audit.get("circuit_count", 0)) == 3
+		and int(audit.get("competition_count", 0)) == 2,
+		"Competition catalog must contain three valid circuits and two tournaments."
+	)
+
+
+func _test_competitive_progression_flow() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var catalog_audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	if not bool(catalog_audit.get("valid", false)):
+		return _ok(false, "Competition catalog failed before progression flow test.")
+
+	var service = CompetitionServiceScript.new()
+	service.initialize(competition_catalog, false)
+	var beaten := PackedStringArray([
+		"pier_apprentice",
+		"beach_trader",
+		"dock_bruiser",
+		"gearwright",
+		"marsh_keeper",
+		"highland_keeper",
+		"lantern_gambler",
+		"tide_oracle",
+	])
+
+	var regional: Dictionary = service.get_competition_snapshot(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if not bool(regional.get("available", false)):
+		return _ok(false, "Regional Championship should unlock after all circuits.")
+
+	var regional_start: Dictionary = service.start_competition(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if (
+		not bool(regional_start.get("success", false))
+		or String(regional_start.get("next_opponent_id", "")) != "gearwright"
+	):
+		return _ok(false, "Regional Championship did not start on Gearwright.")
+
+	var regional_rounds = [
+		&"gearwright",
+		&"marsh_keeper",
+		&"tide_oracle",
+	]
+	for index in range(regional_rounds.size()):
+		var result: Dictionary = service.record_match_result(
+			regional_rounds[index],
+			OWNER_PLAYER,
+			OWNER_PLAYER
+		)
+		if index < regional_rounds.size() - 1:
+			if not bool(result.get("round_won", false)):
+				return _ok(false, "Regional Championship failed to advance.")
+		else:
+			if not bool(result.get("completed", false)):
+				return _ok(false, "Regional Championship did not complete.")
+
+	var masters: Dictionary = service.get_competition_snapshot(
+		&"masters_cup",
+		5,
+		beaten
+	)
+	if not bool(masters.get("available", false)):
+		return _ok(false, "Masters' Cup should unlock after a Regional clear at Rank 5.")
+
+	var masters_start: Dictionary = service.start_competition(
+		&"masters_cup",
+		5,
+		beaten
+	)
+	if not bool(masters_start.get("success", false)):
+		return _ok(false, "Masters' Cup did not start.")
+
+	var final_result: Dictionary = {}
+	for opponent_id in [
+		&"lantern_gambler",
+		&"wandering_sage",
+		&"storm_captain",
+		&"ash_champion",
+	]:
+		final_result = service.record_match_result(
+			opponent_id,
+			OWNER_PLAYER,
+			OWNER_PLAYER
+		)
+
+	var snapshot: Dictionary = service.get_snapshot(5, beaten)
+	return _ok(
+		bool(final_result.get("completed", false))
+		and bool(final_result.get("card_game_completed", false))
+		and String(final_result.get("title_awarded", "")) == "Card Master"
+		and bool(snapshot.get("card_master", false))
+		and bool(snapshot.get("card_game_completed", false)),
+		"First Masters' Cup clear must award Card Master and complete the card-game campaign."
+	)
 
 
 func _test_basic_capture() -> Dictionary:
