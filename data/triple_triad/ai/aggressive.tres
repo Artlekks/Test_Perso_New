@@ -8,6 +8,7 @@ profile_id = &"aggressive"
 display_name = "Aggressive"
 capture_weight = 145.0
 same_trigger_weight = 50.0
+influence_weight = 5.0
 positional_weight = 0.55
 card_strength_weight = 0.16
 conserve_cost_weight = 0.0

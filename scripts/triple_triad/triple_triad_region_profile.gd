@@ -33,6 +33,10 @@ func validate_profile() -> Dictionary:
 		errors.append("cell_rank_bonuses must contain exactly 9 values")
 	if deck_budget < 5:
 		errors.append("deck_budget is too low")
+	if rule_set != null and rule_set.has_method("validate_runtime_support"):
+		var rule_audit: Dictionary = rule_set.call("validate_runtime_support")
+		for error_text in rule_audit.get("errors", []):
+			errors.append("rule_set: %s" % str(error_text))
 	return {
 		"valid": errors.is_empty(),
 		"errors": errors,

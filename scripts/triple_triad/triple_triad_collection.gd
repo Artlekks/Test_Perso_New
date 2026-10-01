@@ -70,6 +70,8 @@ func acquire_card(card, amount: int = 1, save_now: bool = true) -> int:
 		return 0
 	var card_id := StringName(card.card_id)
 	var new_quantity: int = get_quantity_by_id(card_id) + amount
+	if not _duplicates_allowed():
+		new_quantity = mini(new_quantity, 1)
 	_quantities[card_id] = new_quantity
 	if save_now:
 		_save()
@@ -93,6 +95,8 @@ func remove_card(card, amount: int = 1, save_now: bool = true) -> int:
 
 func set_quantity_by_id(card_id: StringName, quantity: int, save_now: bool = true) -> int:
 	var clean_quantity: int = maxi(0, quantity)
+	if not _duplicates_allowed():
+		clean_quantity = mini(clean_quantity, 1)
 	if clean_quantity <= 0:
 		_quantities.erase(card_id)
 	else:
@@ -154,8 +158,21 @@ func _sanitize_against_catalog() -> void:
 		var card_id := StringName(raw_id)
 		if _catalog.call("get_card_by_id", card_id) == null:
 			invalid_ids.append(card_id)
+		elif not _duplicates_allowed() and int(_quantities[raw_id]) > 1:
+			_quantities[raw_id] = 1
 	for card_id in invalid_ids:
 		_quantities.erase(card_id)
+
+
+func get_quantities_snapshot() -> Dictionary:
+	return _quantities.duplicate(true)
+
+
+func _duplicates_allowed() -> bool:
+	if _acquisition_policy == null:
+		return true
+	var value = _acquisition_policy.get("allow_duplicate_ownership")
+	return true if value == null else bool(value)
 
 
 func _save() -> Error:

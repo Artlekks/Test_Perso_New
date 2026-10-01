@@ -8,23 +8,24 @@ const RESULT_WIN := "win"
 const RESULT_LOSS := "loss"
 const RESULT_DRAW := "draw"
 
+var _records: Dictionary = {}
+var _stolen: Dictionary = {}
+
 
 func initialize() -> void:
+	_records.clear()
+	_stolen.clear()
 	var config := ConfigFile.new()
 	var load_error: Error = config.load(SAVE_PATH)
-	if load_error != OK:
-		config.set_value("meta", "version", SAVE_VERSION)
-		config.save(SAVE_PATH)
-		return
-
-	_sanitize(config)
-	config.set_value("meta", "version", SAVE_VERSION)
-	var save_error: Error = config.save(SAVE_PATH)
-	if save_error != OK:
+	if load_error == OK:
+		_load_from_config(config)
+		_sanitize_memory()
+	elif load_error != ERR_FILE_NOT_FOUND:
 		push_warning(
-			"TripleTriadEncounterRecords: could not save repaired records (%s)."
-			% error_string(save_error)
+			"TripleTriadEncounterRecords: records save could not be loaded (%s)."
+			% error_string(load_error)
 		)
+	_save()
 
 
 func record_result(
@@ -33,43 +34,30 @@ func record_result(
 	player_owner: int,
 	opponent_owner: int
 ) -> Dictionary:
-	var clean_id: StringName = _clean_id(opponent_id)
-	if clean_id == &"":
+	var key: String = _clean_key(opponent_id)
+	if key.is_empty():
 		return {}
 
-	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
-	var section: String = _record_section(clean_id)
-
-	var matches: int = maxi(0, int(config.get_value(section, "matches", 0))) + 1
-	var wins: int = maxi(0, int(config.get_value(section, "wins", 0)))
-	var losses: int = maxi(0, int(config.get_value(section, "losses", 0)))
-	var draws: int = maxi(0, int(config.get_value(section, "draws", 0)))
+	var record: Dictionary = _records.get(key, _new_record()).duplicate(true)
+	record["matches"] = maxi(0, int(record.get("matches", 0))) + 1
 	var result: String = RESULT_DRAW
-
 	if winner == player_owner:
-		wins += 1
+		record["wins"] = maxi(0, int(record.get("wins", 0))) + 1
 		result = RESULT_WIN
 	elif winner == opponent_owner:
-		losses += 1
+		record["losses"] = maxi(0, int(record.get("losses", 0))) + 1
 		result = RESULT_LOSS
 	else:
-		draws += 1
+		record["draws"] = maxi(0, int(record.get("draws", 0))) + 1
 
 	var now: int = int(Time.get_unix_time_from_system())
-	config.set_value(section, "matches", matches)
-	config.set_value(section, "wins", wins)
-	config.set_value(section, "losses", losses)
-	config.set_value(section, "draws", draws)
-	config.set_value(section, "last_result", result)
-	config.set_value(section, "last_played_unix", now)
-
-	if result == RESULT_WIN and int(config.get_value(section, "first_win_unix", 0)) <= 0:
-		config.set_value(section, "first_win_unix", now)
-
-	config.set_value("meta", "version", SAVE_VERSION)
-	_save_config(config)
-	return get_snapshot(clean_id)
+	record["last_result"] = result
+	record["last_played_unix"] = now
+	if result == RESULT_WIN and int(record.get("first_win_unix", 0)) <= 0:
+		record["first_win_unix"] = now
+	_records[key] = record
+	_save()
+	return get_snapshot(StringName(key))
 
 
 func record_card_stolen(
@@ -77,30 +65,23 @@ func record_card_stolen(
 	card_id: StringName,
 	amount: int = 1
 ) -> Dictionary:
-	var clean_opponent: StringName = _clean_id(opponent_id)
-	var clean_card: StringName = _clean_id(card_id)
-	if clean_opponent == &"" or clean_card == &"" or amount <= 0:
+	var opponent_key: String = _clean_key(opponent_id)
+	var card_key: String = _clean_key(card_id)
+	if opponent_key.is_empty() or card_key.is_empty() or amount <= 0:
 		return {}
 
-	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
-	var record_section: String = _record_section(clean_opponent)
-	var stolen_section: String = _stolen_section(clean_opponent)
 	var add_amount: int = maxi(1, amount)
+	var record: Dictionary = _records.get(opponent_key, _new_record()).duplicate(true)
+	record["cards_lost_to_opponent"] = (
+		maxi(0, int(record.get("cards_lost_to_opponent", 0))) + add_amount
+	)
+	_records[opponent_key] = record
 
-	var current: int = maxi(
-		0,
-		int(config.get_value(stolen_section, String(clean_card), 0))
-	)
-	config.set_value(stolen_section, String(clean_card), current + add_amount)
-	config.set_value(
-		record_section,
-		"cards_lost_to_opponent",
-		maxi(0, int(config.get_value(record_section, "cards_lost_to_opponent", 0))) + add_amount
-	)
-	config.set_value("meta", "version", SAVE_VERSION)
-	_save_config(config)
-	return get_snapshot(clean_opponent)
+	var stolen_for_opponent: Dictionary = _stolen.get(opponent_key, {}).duplicate(true)
+	stolen_for_opponent[card_key] = maxi(0, int(stolen_for_opponent.get(card_key, 0))) + add_amount
+	_stolen[opponent_key] = stolen_for_opponent
+	_save()
+	return get_snapshot(StringName(opponent_key))
 
 
 func record_card_recovered(
@@ -108,82 +89,62 @@ func record_card_recovered(
 	card_id: StringName,
 	amount: int = 1
 ) -> Dictionary:
-	var clean_opponent: StringName = _clean_id(opponent_id)
-	var clean_card: StringName = _clean_id(card_id)
-	if clean_opponent == &"" or clean_card == &"" or amount <= 0:
+	var opponent_key: String = _clean_key(opponent_id)
+	var card_key: String = _clean_key(card_id)
+	if opponent_key.is_empty() or card_key.is_empty() or amount <= 0:
 		return {}
 
-	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
-	var record_section: String = _record_section(clean_opponent)
-	var stolen_section: String = _stolen_section(clean_opponent)
 	var won_amount: int = maxi(1, amount)
-
-	var current: int = maxi(
-		0,
-		int(config.get_value(stolen_section, String(clean_card), 0))
-	)
+	var stolen_for_opponent: Dictionary = _stolen.get(opponent_key, {}).duplicate(true)
+	var current: int = maxi(0, int(stolen_for_opponent.get(card_key, 0)))
 	var recovered_stolen: int = mini(current, won_amount)
 	var remaining: int = maxi(0, current - recovered_stolen)
-
 	if remaining <= 0:
-		config.erase_section_key(stolen_section, String(clean_card))
+		stolen_for_opponent.erase(card_key)
 	else:
-		config.set_value(stolen_section, String(clean_card), remaining)
+		stolen_for_opponent[card_key] = remaining
+	if stolen_for_opponent.is_empty():
+		_stolen.erase(opponent_key)
+	else:
+		_stolen[opponent_key] = stolen_for_opponent
 
-	config.set_value(
-		record_section,
-		"cards_won_from_opponent",
-		maxi(0, int(config.get_value(record_section, "cards_won_from_opponent", 0))) + won_amount
+	var record: Dictionary = _records.get(opponent_key, _new_record()).duplicate(true)
+	record["cards_won_from_opponent"] = (
+		maxi(0, int(record.get("cards_won_from_opponent", 0))) + won_amount
 	)
 	if recovered_stolen > 0:
-		config.set_value(
-			record_section,
-			"stolen_cards_recovered",
-			maxi(0, int(config.get_value(record_section, "stolen_cards_recovered", 0))) + recovered_stolen
+		record["stolen_cards_recovered"] = (
+			maxi(0, int(record.get("stolen_cards_recovered", 0))) + recovered_stolen
 		)
-
-	config.set_value("meta", "version", SAVE_VERSION)
-	_save_config(config)
-	return get_snapshot(clean_opponent)
+	_records[opponent_key] = record
+	_save()
+	return get_snapshot(StringName(opponent_key))
 
 
 func get_snapshot(opponent_id: StringName) -> Dictionary:
-	var clean_id: StringName = _clean_id(opponent_id)
-	if clean_id == &"":
+	var key: String = _clean_key(opponent_id)
+	if key.is_empty():
 		return _empty_snapshot(&"")
 
-	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
-		return _empty_snapshot(clean_id)
-
-	var section: String = _record_section(clean_id)
-	var wins: int = maxi(0, int(config.get_value(section, "wins", 0)))
-	var losses: int = maxi(0, int(config.get_value(section, "losses", 0)))
-	var draws: int = maxi(0, int(config.get_value(section, "draws", 0)))
-	var matches: int = maxi(
-		maxi(0, int(config.get_value(section, "matches", 0))),
-		wins + losses + draws
-	)
-
-	var stolen_quantities: Dictionary = _read_stolen_quantities(config, clean_id)
+	var record: Dictionary = _records.get(key, _new_record()).duplicate(true)
+	var stolen_quantities: Dictionary = _stolen.get(key, {}).duplicate(true)
 	var stolen_total: int = 0
 	for raw_quantity in stolen_quantities.values():
 		stolen_total += maxi(0, int(raw_quantity))
 
 	return {
-		"opponent_id": String(clean_id),
-		"matches": matches,
-		"wins": wins,
-		"losses": losses,
-		"draws": draws,
-		"beaten_before": wins > 0,
-		"first_win_unix": maxi(0, int(config.get_value(section, "first_win_unix", 0))),
-		"last_result": str(config.get_value(section, "last_result", RESULT_NONE)),
-		"last_played_unix": maxi(0, int(config.get_value(section, "last_played_unix", 0))),
-		"cards_won_from_opponent": maxi(0, int(config.get_value(section, "cards_won_from_opponent", 0))),
-		"cards_lost_to_opponent": maxi(0, int(config.get_value(section, "cards_lost_to_opponent", 0))),
-		"stolen_cards_recovered": maxi(0, int(config.get_value(section, "stolen_cards_recovered", 0))),
+		"opponent_id": key,
+		"matches": maxi(0, int(record.get("matches", 0))),
+		"wins": maxi(0, int(record.get("wins", 0))),
+		"losses": maxi(0, int(record.get("losses", 0))),
+		"draws": maxi(0, int(record.get("draws", 0))),
+		"beaten_before": int(record.get("wins", 0)) > 0,
+		"first_win_unix": maxi(0, int(record.get("first_win_unix", 0))),
+		"last_result": str(record.get("last_result", RESULT_NONE)),
+		"last_played_unix": maxi(0, int(record.get("last_played_unix", 0))),
+		"cards_won_from_opponent": maxi(0, int(record.get("cards_won_from_opponent", 0))),
+		"cards_lost_to_opponent": maxi(0, int(record.get("cards_lost_to_opponent", 0))),
+		"stolen_cards_recovered": maxi(0, int(record.get("stolen_cards_recovered", 0))),
 		"stolen_quantities": stolen_quantities,
 		"stolen_total": stolen_total,
 	}
@@ -191,100 +152,137 @@ func get_snapshot(opponent_id: StringName) -> Dictionary:
 
 func get_all_recorded_ids() -> PackedStringArray:
 	var result := PackedStringArray()
-	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
-		return result
-
-	for raw_section in config.get_sections():
-		var section: String = str(raw_section)
-		if section.begins_with("opponent_") and section.ends_with("_record"):
-			var opponent_id: String = section.trim_prefix("opponent_").trim_suffix("_record")
-			if not opponent_id.is_empty():
-				result.append(opponent_id)
+	for raw_id in _records.keys():
+		result.append(str(raw_id))
+	for raw_id in _stolen.keys():
+		if not result.has(str(raw_id)):
+			result.append(str(raw_id))
+	result.sort()
 	return result
 
 
 func save_state() -> Error:
-	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
-		config.set_value("meta", "version", SAVE_VERSION)
-	return _save_config(config)
+	return _save()
 
 
-func _empty_snapshot(opponent_id: StringName) -> Dictionary:
+func _load_from_config(config: ConfigFile) -> void:
+	for raw_section in config.get_sections():
+		var section: String = str(raw_section)
+		if section.begins_with("opponent_") and section.ends_with("_record"):
+			var key: String = section.trim_prefix("opponent_").trim_suffix("_record")
+			if key.is_empty():
+				continue
+			_records[key] = {
+				"matches": maxi(0, int(config.get_value(section, "matches", 0))),
+				"wins": maxi(0, int(config.get_value(section, "wins", 0))),
+				"losses": maxi(0, int(config.get_value(section, "losses", 0))),
+				"draws": maxi(0, int(config.get_value(section, "draws", 0))),
+				"first_win_unix": maxi(0, int(config.get_value(section, "first_win_unix", 0))),
+				"last_result": str(config.get_value(section, "last_result", RESULT_NONE)),
+				"last_played_unix": maxi(0, int(config.get_value(section, "last_played_unix", 0))),
+				"cards_won_from_opponent": maxi(0, int(config.get_value(section, "cards_won_from_opponent", 0))),
+				"cards_lost_to_opponent": maxi(0, int(config.get_value(section, "cards_lost_to_opponent", 0))),
+				"stolen_cards_recovered": maxi(0, int(config.get_value(section, "stolen_cards_recovered", 0))),
+			}
+		elif section.begins_with("opponent_") and section.ends_with("_stolen"):
+			var key: String = section.trim_prefix("opponent_").trim_suffix("_stolen")
+			if key.is_empty():
+				continue
+			var entries: Dictionary = {}
+			for raw_card_id in config.get_section_keys(section):
+				var quantity: int = maxi(0, int(config.get_value(section, raw_card_id, 0)))
+				if quantity > 0:
+					entries[str(raw_card_id)] = quantity
+			if not entries.is_empty():
+				_stolen[key] = entries
+
+
+func _sanitize_memory() -> void:
+	for raw_id in _records.keys():
+		var key: String = str(raw_id)
+		var record: Dictionary = _records[raw_id]
+		var wins: int = maxi(0, int(record.get("wins", 0)))
+		var losses: int = maxi(0, int(record.get("losses", 0)))
+		var draws: int = maxi(0, int(record.get("draws", 0)))
+		record["wins"] = wins
+		record["losses"] = losses
+		record["draws"] = draws
+		record["matches"] = maxi(maxi(0, int(record.get("matches", 0))), wins + losses + draws)
+		record["first_win_unix"] = maxi(0, int(record.get("first_win_unix", 0)))
+		record["last_played_unix"] = maxi(0, int(record.get("last_played_unix", 0)))
+		record["cards_won_from_opponent"] = maxi(0, int(record.get("cards_won_from_opponent", 0)))
+		record["cards_lost_to_opponent"] = maxi(0, int(record.get("cards_lost_to_opponent", 0)))
+		record["stolen_cards_recovered"] = maxi(0, int(record.get("stolen_cards_recovered", 0)))
+		_records[key] = record
+
+	for raw_id in _stolen.keys():
+		var key: String = str(raw_id)
+		var entries: Dictionary = _stolen[raw_id]
+		var clean: Dictionary = {}
+		for raw_card_id in entries.keys():
+			var quantity: int = maxi(0, int(entries[raw_card_id]))
+			if quantity > 0:
+				clean[str(raw_card_id)] = quantity
+		if clean.is_empty():
+			_stolen.erase(raw_id)
+		else:
+			_stolen[key] = clean
+
+
+func _new_record() -> Dictionary:
 	return {
-		"opponent_id": String(opponent_id),
 		"matches": 0,
 		"wins": 0,
 		"losses": 0,
 		"draws": 0,
-		"beaten_before": false,
 		"first_win_unix": 0,
 		"last_result": RESULT_NONE,
 		"last_played_unix": 0,
 		"cards_won_from_opponent": 0,
 		"cards_lost_to_opponent": 0,
 		"stolen_cards_recovered": 0,
-		"stolen_quantities": {},
-		"stolen_total": 0,
 	}
 
 
-func _read_stolen_quantities(
-	config: ConfigFile,
-	opponent_id: StringName
-) -> Dictionary:
-	var result: Dictionary = {}
-	var section: String = _stolen_section(opponent_id)
-	if not config.has_section(section):
-		return result
-
-	for raw_key in config.get_section_keys(section):
-		var quantity: int = maxi(0, int(config.get_value(section, raw_key, 0)))
-		if quantity > 0:
-			result[str(raw_key)] = quantity
+func _empty_snapshot(opponent_id: StringName) -> Dictionary:
+	var result: Dictionary = _new_record()
+	result["opponent_id"] = String(opponent_id)
+	result["beaten_before"] = false
+	result["stolen_quantities"] = {}
+	result["stolen_total"] = 0
 	return result
 
 
-func _sanitize(config: ConfigFile) -> void:
-	for raw_section in config.get_sections():
-		var section: String = str(raw_section)
-		if section.ends_with("_record"):
-			for key in [
-				"matches",
-				"wins",
-				"losses",
-				"draws",
-				"first_win_unix",
-				"last_played_unix",
-				"cards_won_from_opponent",
-				"cards_lost_to_opponent",
-				"stolen_cards_recovered",
-			]:
-				config.set_value(
-					section,
-					key,
-					maxi(0, int(config.get_value(section, key, 0)))
-				)
+func _save() -> Error:
+	var config := ConfigFile.new()
+	config.set_value("meta", "version", SAVE_VERSION)
+	for raw_id in _records.keys():
+		var key: String = str(raw_id)
+		var section: String = _record_section(StringName(key))
+		var record: Dictionary = _records[raw_id]
+		for field in [
+			"matches", "wins", "losses", "draws", "first_win_unix",
+			"last_result", "last_played_unix", "cards_won_from_opponent",
+			"cards_lost_to_opponent", "stolen_cards_recovered",
+		]:
+			config.set_value(section, field, record.get(field, 0 if field != "last_result" else RESULT_NONE))
 
-			var resolved: int = (
-				int(config.get_value(section, "wins", 0))
-				+ int(config.get_value(section, "losses", 0))
-				+ int(config.get_value(section, "draws", 0))
-			)
-			if int(config.get_value(section, "matches", 0)) < resolved:
-				config.set_value(section, "matches", resolved)
+	for raw_id in _stolen.keys():
+		var key: String = str(raw_id)
+		var section: String = _stolen_section(StringName(key))
+		var entries: Dictionary = _stolen[raw_id]
+		for raw_card_id in entries.keys():
+			var quantity: int = maxi(0, int(entries[raw_card_id]))
+			if quantity > 0:
+				config.set_value(section, str(raw_card_id), quantity)
 
-		elif section.ends_with("_stolen"):
-			for raw_key in config.get_section_keys(section):
-				var quantity: int = maxi(
-					0,
-					int(config.get_value(section, raw_key, 0))
-				)
-				if quantity <= 0:
-					config.erase_section_key(section, str(raw_key))
-				else:
-					config.set_value(section, str(raw_key), quantity)
+	var save_error: Error = config.save(SAVE_PATH)
+	if save_error != OK:
+		push_warning(
+			"TripleTriadEncounterRecords: save failed (%s)."
+			% error_string(save_error)
+		)
+	return save_error
 
 
 func _record_section(opponent_id: StringName) -> String:
@@ -295,16 +293,5 @@ func _stolen_section(opponent_id: StringName) -> String:
 	return "opponent_%s_stolen" % String(opponent_id)
 
 
-func _clean_id(value: StringName) -> StringName:
-	var clean: String = String(value).strip_edges()
-	return &"" if clean.is_empty() else StringName(clean)
-
-
-func _save_config(config: ConfigFile) -> Error:
-	var save_error: Error = config.save(SAVE_PATH)
-	if save_error != OK:
-		push_warning(
-			"TripleTriadEncounterRecords: save failed (%s)."
-			% error_string(save_error)
-		)
-	return save_error
+func _clean_key(value: StringName) -> String:
+	return String(value).strip_edges()

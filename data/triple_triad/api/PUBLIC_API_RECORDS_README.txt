@@ -1,31 +1,11 @@
-TRIPLE TRIAD PUBLIC API + OPPONENT RECORDS PASS
+TRIPLE TRIAD PUBLIC API + OPPONENT RECORDS — BACKEND v1.1.0
 
-This is the final planned feature/backend layer before the full backend audit.
+The public state API is the supported read boundary for the redesigned UI.
+Presentation code should consume snapshots/signals instead of reading save files
+or reaching into collection/progression/opponent internals directly.
 
-Persistent opponent records
-===========================
-New save:
-    user://triple_triad_encounter_records.cfg
-
-Per opponent:
-- matches / player wins / player losses / draws
-- beaten_before
-- first win timestamp
-- last result / last played timestamp
-- cards won from that NPC
-- cards lost to that NPC
-- stolen cards recovered
-- exact cards/quantities currently stolen from the player
-
-Records update only after real match/ownership actions succeed.
-QA/debug-profile matches do not change encounter records.
-
-Public state API
-================
-New:
-    res://scripts/triple_triad/triple_triad_state_api.gd
-
-TripleTriadGame now exposes:
+Public TripleTriadGame queries
+==============================
     get_state_api()
     get_player_snapshot()
     get_collection_snapshot()
@@ -33,23 +13,27 @@ TripleTriadGame now exposes:
     get_opponent_snapshot(opponent_id)
     get_opponents_snapshot()
     get_global_triple_triad_snapshot()
+    get_backend_health()
 
-Future UI should consume these snapshots instead of reaching into backend
-objects or reading save files itself.
+The state API exposes API_SCHEMA_VERSION = 2. TripleTriadGame exposes backend
+version 1.1.0.
 
-The snapshots expose:
-- player Duel Rank / points / progress / deck budget / W-L-D
-- collection quantities + card stats + future rarity/rank fields
-- all six deck profiles, legality and invalid reasons
-- opponent availability, Duel Rank, native/preferred cards
-- persistent NPC current collection/deck/priorities
-- per-NPC records and stolen-player cards
-- acquisition history
-- runtime active-opponent/phase information
+Card snapshots now include an `influence` Dictionary:
+    mode      "none" or prototype "pressure"
+    strength  current prototype uses 1
+    offsets   authored [x, y] cells relative to the unrotated card
+
+The future UI can render the mini Influence diagram from this payload without
+knowing how Influence is resolved in a match.
+
+Persistent opponent records
+===========================
+user://triple_triad_encounter_records.cfg stores per-opponent matches, W/L/D,
+first win, last result/time, cards won/lost, exact stolen-card quantities and
+stolen cards recovered.
 
 State-change signal
 ===================
-TripleTriadGame emits:
     backend_state_changed(reason)
 
 Current reasons:
@@ -57,11 +41,8 @@ Current reasons:
     card_transfer
     deck_selected
 
-Save integrity
-==============
-Encounter records are now part of the protected semantic backup set.
+The v1 backend freeze audit remains in:
+    res://data/triple_triad/audit/BACKEND_FREEZE_AUDIT.md
 
-NEXT
-====
-Run the requested FULL BACKEND AUDIT and fix all findings in one backend-freeze
-patch. After the audit/freeze, move to the redesigned visual/UI integration.
+The post-freeze Influence prototype contract is documented in:
+    res://data/triple_triad/design/INFLUENCE_PROTOTYPE_V1.md

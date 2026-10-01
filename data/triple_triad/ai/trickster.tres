@@ -8,6 +8,7 @@ profile_id = &"trickster"
 display_name = "Trickster"
 capture_weight = 88.0
 same_trigger_weight = 130.0
+influence_weight = 16.0
 positional_weight = 0.8
 card_strength_weight = 0.04
 conserve_cost_weight = 0.15

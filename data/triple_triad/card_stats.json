@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "notes": "Authoritative Triple Triad card data. Existing ranks/points are unchanged. rarity, required_player_rank, and acquisition_tags are now authored backend fields for acquisition/progression. All current cards remain Rank 1 / standard until the deliberate content-balancing pass.",
+  "schema_version": 3,
+  "notes": "Authored Triple Triad card data. Influence entries are prototype pressure patterns for spatial-control playtesting; final content assignment is intentionally deferred.",
   "cards": [
     {
       "card_id": "mugshot_000",
@@ -21,7 +21,21 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_001",
@@ -42,7 +56,21 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_002",
@@ -63,7 +91,21 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_003",
@@ -84,7 +126,25 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_013",
@@ -105,7 +165,17 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_016",
@@ -126,7 +196,17 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_017",
@@ -189,7 +269,25 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_025",
@@ -273,7 +371,25 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            -1
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            -1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_033",
@@ -714,7 +830,17 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            -1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_061",
@@ -777,7 +903,17 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            1
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_064",
@@ -3024,7 +3160,21 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_173",
@@ -3738,7 +3888,21 @@
       "acquisition_tags": [
         "starter",
         "opponent_win"
-      ]
+      ],
+      "influence": {
+        "mode": "pressure",
+        "strength": 1,
+        "offsets": [
+          [
+            0,
+            -1
+          ],
+          [
+            -1,
+            0
+          ]
+        ]
+      }
     },
     {
       "card_id": "mugshot_252",

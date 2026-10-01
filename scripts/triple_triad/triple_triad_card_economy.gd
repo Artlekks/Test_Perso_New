@@ -5,6 +5,15 @@ const JOURNAL_VERSION := 1
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
 
 
+func has_pending_transfer() -> bool:
+	var config := ConfigFile.new()
+	if config.load(JOURNAL_PATH) != OK or not config.has_section("transaction"):
+		return false
+	var card_id: String = str(config.get_value("transaction", "card_id", "")).strip_edges()
+	var opponent_id: String = str(config.get_value("transaction", "opponent_id", "")).strip_edges()
+	return not card_id.is_empty() and not opponent_id.is_empty()
+
+
 func recover_pending(catalog: Resource, player_collection) -> bool:
 	var config := ConfigFile.new()
 	if config.load(JOURNAL_PATH) != OK or not config.has_section("transaction"):
@@ -42,11 +51,13 @@ func recover_pending(catalog: Resource, player_collection) -> bool:
 	if player_error != OK or opponent_error != OK:
 		push_warning("TripleTriadCardEconomy: pending transfer recovery could not be fully saved.")
 		return false
-	_clear_journal()
-	return true
+	return _clear_journal()
 
 
 func transfer_player_to_opponent(card, player_collection, opponent_collection) -> bool:
+	if has_pending_transfer():
+		push_warning("TripleTriadCardEconomy: refusing a second transfer while recovery is pending.")
+		return false
 	if card == null or player_collection == null or opponent_collection == null:
 		return false
 	var card_id := StringName(card.card_id)
@@ -65,6 +76,9 @@ func transfer_player_to_opponent(card, player_collection, opponent_collection) -
 
 
 func transfer_opponent_to_player(card, player_collection, opponent_collection) -> bool:
+	if has_pending_transfer():
+		push_warning("TripleTriadCardEconomy: refusing a second transfer while recovery is pending.")
+		return false
 	if card == null or player_collection == null or opponent_collection == null:
 		return false
 	var card_id := StringName(card.card_id)
@@ -105,7 +119,10 @@ func _commit_transfer(
 		# Keep the journal. recover_pending() will force both sides to the exact
 		# intended quantities on the next session, so cards cannot duplicate/vanish.
 		return false
-	_clear_journal()
+	if not _clear_journal():
+		# Ownership is already in the intended state. Keeping the journal makes the
+		# recovery idempotent on next boot and prevents another transfer this session.
+		return false
 	return true
 
 
@@ -130,9 +147,11 @@ func _write_journal(
 	return true
 
 
-func _clear_journal() -> void:
+func _clear_journal() -> bool:
 	var config := ConfigFile.new()
 	# Saving an empty ConfigFile is portable and keeps recovery logic simple.
 	var save_error: Error = config.save(JOURNAL_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadCardEconomy: could not clear transfer journal (%s)." % error_string(save_error))
+		return false
+	return true

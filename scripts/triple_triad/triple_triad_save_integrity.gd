@@ -13,6 +13,7 @@ const ENCOUNTER_RECORDS_PATH := "user://triple_triad_encounter_records.cfg"
 
 const PROFILE_COUNT := 6
 const HAND_SIZE := 5
+const DECK_SAVE_VERSION := 1
 
 var _last_report: Dictionary = {}
 
@@ -22,17 +23,18 @@ func preflight_restore_backups() -> Dictionary:
 	var failed: Array[String] = []
 
 	for path in _protected_paths():
-		if not FileAccess.file_exists(path):
-			continue
-
-		var primary := ConfigFile.new()
-		var primary_error: Error = primary.load(path)
-		if primary_error == OK:
-			continue
+		var primary_exists: bool = FileAccess.file_exists(path)
+		if primary_exists:
+			var primary := ConfigFile.new()
+			if primary.load(path) == OK:
+				continue
 
 		var backup_path: String = _backup_path(path)
 		if not FileAccess.file_exists(backup_path):
-			failed.append(path)
+			# Missing primary + missing backup is a normal first-run state. A corrupt
+			# primary without a backup is the only unrecoverable preflight case.
+			if primary_exists:
+				failed.append(path)
 			continue
 
 		var backup := ConfigFile.new()
@@ -58,7 +60,8 @@ func audit_and_checkpoint(
 	player_collection,
 	progression,
 	base_player_budget: int,
-	reason: String = "checkpoint"
+	reason: String = "checkpoint",
+	acquisition_policy: Resource = null
 ) -> Dictionary:
 	var report := {
 		"schema_version": SAVE_SCHEMA_VERSION,
@@ -80,6 +83,16 @@ func audit_and_checkpoint(
 		_last_report = report
 		return report
 
+	if catalog.has_method("validate_catalog"):
+		var catalog_audit: Dictionary = catalog.call("validate_catalog")
+		if not bool(catalog_audit.get("valid", false)):
+			report["valid"] = false
+			report["warnings"].append(
+				"Save audit aborted because the card catalog is invalid."
+			)
+			_last_report = report
+			return report
+
 	report["player_collection"] = _audit_player_collection(
 		catalog,
 		player_collection
@@ -93,10 +106,16 @@ func audit_and_checkpoint(
 			maxi(5, base_player_budget)
 		))
 
+	var active_player_rank: int = 1
+	if progression != null and progression.has_method("get_rank_number"):
+		active_player_rank = maxi(1, int(progression.call("get_rank_number")))
+
 	report["decks"] = _audit_player_decks(
 		catalog,
 		player_collection,
-		active_budget
+		active_budget,
+		active_player_rank,
+		acquisition_policy
 	)
 	report["opponents"] = _audit_all_opponents(catalog)
 
@@ -218,7 +237,9 @@ func _audit_progression(progression) -> Dictionary:
 func _audit_player_decks(
 	catalog: Resource,
 	player_collection,
-	budget_limit: int
+	budget_limit: int,
+	player_rank: int,
+	acquisition_policy: Resource = null
 ) -> Dictionary:
 	var report := {
 		"valid": true,
@@ -296,6 +317,10 @@ func _audit_player_decks(
 				report["repairs"] += 1
 				continue
 
+			if not _card_usable_at_rank(card, player_rank, acquisition_policy):
+				report["repairs"] += 1
+				continue
+
 			if clean_ids.size() >= HAND_SIZE:
 				report["repairs"] += 1
 				continue
@@ -336,6 +361,7 @@ func _audit_player_decks(
 		report["repairs"] += 1
 		changed = true
 	config.set_value("meta", "last_profile", last_profile)
+	config.set_value("meta", "version", DECK_SAVE_VERSION)
 	config.set_value("meta", "integrity_version", SAVE_SCHEMA_VERSION)
 
 	if changed:
@@ -487,6 +513,27 @@ func _clean_opponent_id_list(
 			break
 
 	return result
+
+
+func _card_usable_at_rank(
+	card,
+	player_rank: int,
+	acquisition_policy: Resource
+) -> bool:
+	if card == null:
+		return false
+	if (
+		acquisition_policy != null
+		and acquisition_policy.has_method("can_use_card")
+	):
+		return bool(acquisition_policy.call(
+			"can_use_card",
+			card,
+			player_rank
+		))
+	if card.has_method("is_usable_at_player_rank"):
+		return bool(card.call("is_usable_at_player_rank", player_rank))
+	return true
 
 
 func _player_owns_id(player_collection, card_id: StringName) -> bool:

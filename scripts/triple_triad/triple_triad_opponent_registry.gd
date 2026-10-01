@@ -23,6 +23,52 @@ func get_all_opponents() -> Array[TripleTriadOpponentProfile]:
 	return result
 
 
+func get_availability(
+	opponent_id: StringName,
+	player_rank: int,
+	region_id: StringName = &"",
+	required_tag: StringName = &""
+) -> Dictionary:
+	var profile: TripleTriadOpponentProfile = get_opponent(opponent_id)
+	if profile == null:
+		return {
+			"available": false,
+			"reason": "Unknown opponent.",
+			"required_player_rank": 1,
+		}
+
+	var clean_rank: int = maxi(1, player_rank)
+	if not profile.enabled_by_default:
+		return {
+			"available": false,
+			"reason": "Opponent disabled.",
+			"required_player_rank": profile.required_player_rank,
+		}
+	if clean_rank < profile.required_player_rank:
+		return {
+			"available": false,
+			"reason": "Requires Duel Rank %d." % profile.required_player_rank,
+			"required_player_rank": profile.required_player_rank,
+		}
+	if region_id != &"" and profile.get_region_id() != region_id:
+		return {
+			"available": false,
+			"reason": "Opponent is not available in this region.",
+			"required_player_rank": profile.required_player_rank,
+		}
+	if required_tag != &"" and not profile.has_tag(required_tag):
+		return {
+			"available": false,
+			"reason": "Opponent does not match the required encounter type.",
+			"required_player_rank": profile.required_player_rank,
+		}
+	return {
+		"available": true,
+		"reason": "",
+		"required_player_rank": profile.required_player_rank,
+	}
+
+
 func get_available_opponents(
 	player_rank: int,
 	region_id: StringName = &"",
@@ -32,15 +78,16 @@ func get_available_opponents(
 	var clean_rank: int = maxi(1, player_rank)
 
 	for profile in opponents:
-		if profile == null or not profile.enabled_by_default:
+		if profile == null:
 			continue
-		if clean_rank < profile.required_player_rank:
-			continue
-		if region_id != &"" and profile.get_region_id() != region_id:
-			continue
-		if required_tag != &"" and not profile.has_tag(required_tag):
-			continue
-		result.append(profile)
+		var availability: Dictionary = get_availability(
+			profile.opponent_id,
+			clean_rank,
+			region_id,
+			required_tag
+		)
+		if bool(availability.get("available", false)):
+			result.append(profile)
 
 	result.sort_custom(func(a, b):
 		if a.duel_rank == b.duel_rank:

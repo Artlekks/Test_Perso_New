@@ -82,8 +82,12 @@ func get_opponent_id() -> StringName:
 func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 	_budget = maxi(5, budget)
 	var target_size: int = maxi(1, hand_size)
+	_trim_priority_ids()
+
 	var ordered_ids: Array = []
-	# Cards won from the player are first so a rematch actually offers them back.
+	# Cards won from the player are ordered first. They are hard constraints for
+	# the next rematch (up to the hand size), so a player never loses access to a
+	# stolen card merely because an NPC's normal budget is temporarily too low.
 	_append_unique_ids(ordered_ids, _priority_ids)
 	_append_unique_ids(ordered_ids, _preferred_deck_ids)
 	_append_unique_ids(ordered_ids, _deck_ids)
@@ -114,13 +118,71 @@ func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 			continue
 		ordered_cards.append(card)
 
-	var result: Array = _find_legal_deck(ordered_cards, target_size, _budget, 0, [], 0)
-	if result.size() != target_size:
-		push_warning(
-			"TripleTriadOpponentCollection: %s has no legal %d-card deck under budget %d."
-			% [String(_opponent_id), target_size, _budget]
+	var forced_cards: Array = []
+	for raw_id in _priority_ids:
+		if forced_cards.size() >= target_size:
+			break
+		var priority_card = _card_for_id(StringName(raw_id))
+		if priority_card == null or not owns_card(priority_card):
+			continue
+		if not _contains_card_id(forced_cards, StringName(priority_card.card_id)):
+			forced_cards.append(priority_card)
+
+	var remaining_cards: Array = []
+	for card in ordered_cards:
+		if card != null and not _contains_card_id(
+			forced_cards,
+			StringName(card.card_id)
+		):
+			remaining_cards.append(card)
+
+	var forced_cost: int = 0
+	for card in forced_cards:
+		forced_cost += maxi(0, int(card.deck_cost))
+
+	var cards_needed: int = target_size - forced_cards.size()
+	var effective_budget: int = _budget
+	if cards_needed > 0:
+		var cheapest_costs: Array[int] = []
+		for card in remaining_cards:
+			if card != null:
+				cheapest_costs.append(maxi(0, int(card.deck_cost)))
+		cheapest_costs.sort()
+		if cheapest_costs.size() < cards_needed:
+			push_warning(
+				"TripleTriadOpponentCollection: %s does not own enough unique cards for a %d-card deck."
+				% [String(_opponent_id), target_size]
+			)
+			return []
+		var minimum_required_budget: int = forced_cost
+		for index in range(cards_needed):
+			minimum_required_budget += cheapest_costs[index]
+		effective_budget = maxi(_budget, minimum_required_budget)
+	else:
+		effective_budget = maxi(_budget, forced_cost)
+
+	var result: Array = forced_cards.duplicate()
+	if cards_needed > 0:
+		var filler: Array = _find_legal_deck(
+			remaining_cards,
+			cards_needed,
+			maxi(0, effective_budget - forced_cost)
 		)
+		if filler.size() != cards_needed:
+			push_warning(
+				"TripleTriadOpponentCollection: %s has no legal %d-card deck under effective budget %d."
+				% [String(_opponent_id), target_size, effective_budget]
+			)
+			return []
+		result.append_array(filler)
+
+	if result.size() != target_size:
 		return []
+	if effective_budget > _budget and not forced_cards.is_empty():
+		push_warning(
+			"TripleTriadOpponentCollection: %s temporarily raises deck budget %d -> %d so stolen cards remain recoverable."
+			% [String(_opponent_id), _budget, effective_budget]
+		)
 
 	_deck_ids.clear()
 	for card in result:
@@ -128,7 +190,6 @@ func build_match_deck(hand_size: int = HAND_SIZE, budget: int = 30) -> Array:
 	_trim_priority_ids()
 	_save()
 	return result
-
 
 func acquire_card(card, make_priority: bool = true, save_now: bool = true) -> int:
 	if card == null:
@@ -202,6 +263,30 @@ func get_owned_cards() -> Array:
 		if card != null and owns_card(card):
 			result.append(card)
 	return result
+
+
+func get_deck_ids() -> PackedStringArray:
+	return _to_packed_string_array(_deck_ids)
+
+
+func get_priority_ids() -> PackedStringArray:
+	return _to_packed_string_array(_priority_ids)
+
+
+func get_quantities_snapshot() -> Dictionary:
+	return _quantities.duplicate(true)
+
+
+func get_runtime_snapshot() -> Dictionary:
+	return {
+		"opponent_id": String(_opponent_id),
+		"deck_ids": get_deck_ids(),
+		"priority_ids": get_priority_ids(),
+		"quantities": get_quantities_snapshot(),
+		"budget": _budget,
+		"min_level": _min_level,
+		"max_level": _max_level,
+	}
 
 
 func _read_profile_data() -> void:
@@ -302,28 +387,64 @@ func _trim_priority_ids() -> void:
 func _find_legal_deck(
 	cards: Array,
 	target_size: int,
-	budget: int,
-	index: int,
-	chosen: Array,
-	running_cost: int
+	budget: int
 ) -> Array:
-	if chosen.size() == target_size:
-		return chosen.duplicate()
+	var memo: Dictionary = {}
+	var result = _find_legal_deck_suffix(
+		cards,
+		0,
+		maxi(0, target_size),
+		maxi(0, budget),
+		memo
+	)
+	return result if result is Array else []
+
+
+func _find_legal_deck_suffix(
+	cards: Array,
+	index: int,
+	cards_needed: int,
+	budget_left: int,
+	memo: Dictionary
+):
+	if cards_needed <= 0:
+		return []
 	if index >= cards.size():
-		return []
-	if chosen.size() + (cards.size() - index) < target_size:
-		return []
+		return null
+	if cards.size() - index < cards_needed:
+		return null
+
+	var memo_key: String = "%d:%d:%d" % [index, cards_needed, budget_left]
+	if memo.has(memo_key):
+		var cached = memo[memo_key]
+		return cached.duplicate() if cached is Array else null
 
 	var card = cards[index]
 	if card != null:
-		var next_cost: int = running_cost + int(card.deck_cost)
-		if next_cost <= budget:
-			chosen.append(card)
-			var with_card: Array = _find_legal_deck(cards, target_size, budget, index + 1, chosen, next_cost)
-			chosen.pop_back()
-			if with_card.size() == target_size:
+		var card_cost: int = maxi(0, int(card.deck_cost))
+		if card_cost <= budget_left:
+			var suffix = _find_legal_deck_suffix(
+				cards,
+				index + 1,
+				cards_needed - 1,
+				budget_left - card_cost,
+				memo
+			)
+			if suffix is Array:
+				var with_card: Array = [card]
+				with_card.append_array(suffix)
+				memo[memo_key] = with_card.duplicate()
 				return with_card
-	return _find_legal_deck(cards, target_size, budget, index + 1, chosen, running_cost)
+
+	var without_card = _find_legal_deck_suffix(
+		cards,
+		index + 1,
+		cards_needed,
+		budget_left,
+		memo
+	)
+	memo[memo_key] = without_card.duplicate() if without_card is Array else null
+	return without_card
 
 
 func _append_unique_ids(target: Array, source: Array) -> void:

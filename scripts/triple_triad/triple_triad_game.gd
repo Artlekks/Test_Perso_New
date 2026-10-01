@@ -17,9 +17,11 @@ const SaveIntegrityScript = preload("res://scripts/triple_triad/triple_triad_sav
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const AcquisitionTrackerScript = preload("res://scripts/triple_triad/triple_triad_acquisition_tracker.gd")
 const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
-const BackendQAScript = preload("res://scripts/triple_triad/triple_triad_backend_qa.gd")
 const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
+const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
+
+const BACKEND_VERSION := "1.1.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -40,6 +42,9 @@ const HAND_SELECTED_X_OFFSET := -10.0
 const CAPTURE_SETTLE_SECONDS := 0.24
 const RESULT_FADE_IN_SECONDS := 0.24
 const RESULT_FADE_OUT_SECONDS := 0.30
+const PREVIEW_GHOST_ALPHA := 0.72
+const PREVIEW_INFLUENCE_COLOR := Color(1.0, 0.76, 0.18, 0.28)
+const PREVIEW_PRESSURE_COLOR := Color(1.0, 0.24, 0.20, 0.34)
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
@@ -49,7 +54,7 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 @export var acquisition_policy: Resource = DefaultAcquisitionPolicy
 @export_range(5, 50, 1) var deck_budget: int = 30
 @export_range(5, 50, 1) var player_deck_budget: int = 30
-@export_range(1, 6, 1) var player_card_rank: int = 6
+@export_range(1, 10, 1) var player_card_rank: int = 6
 @export_range(1, 10, 1) var prototype_min_level: int = 1
 @export_range(1, 10, 1) var prototype_max_level: int = 3
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.75
@@ -111,6 +116,14 @@ var _save_integrity = null
 var _acquisition_tracker = null
 var _encounter_records = null
 var _state_api = null
+var _stake_policy = StakePolicyScript.new()
+var _backend_ready: bool = false
+var _backend_errors: PackedStringArray = PackedStringArray()
+var _match_started: bool = false
+var _surrendered: bool = false
+var _result_reason: StringName = &""
+var _preview_ghost: Control = null
+var _influence_preview_overlays: Array[ColorRect] = []
 
 
 func _ready() -> void:
@@ -120,15 +133,33 @@ func _ready() -> void:
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_match = MatchScript.new()
 	_ai = AIScript.new()
+	_rng.randomize()
 
-	# Restore a known-good semantic backup before any backend gets a chance to
-	# seed/overwrite a config that merely failed to parse.
+	_build_views()
+	ai_timer.timeout.connect(_on_ai_timer_timeout)
+	reward_view.reward_selected.connect(_on_reward_selected)
+	reward_view.completed.connect(_on_reward_completed)
+	reward_view.leave_requested.connect(_on_reward_leave_requested)
+	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
+	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
+	deck_setup.cancelled.connect(_on_deck_cancelled)
+
+	# Validate authored/static data before any subsystem is allowed to mutate a
+	# persistent save. A broken catalog must never be able to sanitize good saves.
+	if not _validate_static_backend():
+		return
+
 	_save_integrity = SaveIntegrityScript.new()
 	var preflight_report: Dictionary = _save_integrity.preflight_restore_backups()
 	if not bool(preflight_report.get("valid", true)):
-		push_warning(
-			"TripleTriadGame: one or more corrupted saves had no valid backup."
+		_backend_errors.append(
+			"One or more Triple Triad saves are corrupt and have no valid backup: %s"
+			% str(preflight_report.get("failed", []))
 		)
+		push_error(
+			"TripleTriadGame: save preflight failed; backend disabled to avoid overwriting recoverable data."
+		)
+		return
 
 	_collection_backend = CollectionScript.new()
 	_collection_backend.initialize(card_catalog, acquisition_policy)
@@ -142,6 +173,25 @@ func _ready() -> void:
 	_encounter_records = EncounterRecordsScript.new()
 	_encounter_records.initialize()
 
+	# Transfer journal recovery happens before the global save audit. If recovery
+	# is still pending after the attempt, opening a new match would risk stacking
+	# a second transaction on top of an unresolved one, so backend startup stops.
+	_card_economy = CardEconomyScript.new()
+	var recovery_ok: bool = _card_economy.recover_pending(
+		card_catalog,
+		_collection_backend
+	)
+	if (
+		not recovery_ok
+		and _card_economy.has_method("has_pending_transfer")
+		and bool(_card_economy.call("has_pending_transfer"))
+	):
+		_backend_errors.append("A card-transfer recovery is still pending.")
+		push_error("TripleTriadGame: unresolved card-transfer recovery; backend disabled for this session.")
+		return
+
+	_checkpoint_save_integrity("boot")
+
 	_state_api = StateAPIScript.new()
 	_state_api.initialize(
 		card_catalog,
@@ -154,39 +204,7 @@ func _ready() -> void:
 		player_deck_budget
 	)
 
-	# Transfer journal recovery must happen before the global audit because an
-	# interrupted card trade is more authoritative than either owner file.
-	_card_economy = CardEconomyScript.new()
-	_card_economy.recover_pending(card_catalog, _collection_backend)
-
-	_checkpoint_save_integrity("boot")
-	_rng.randomize()
-	_build_views()
-	ai_timer.timeout.connect(_on_ai_timer_timeout)
-	reward_view.reward_selected.connect(_on_reward_selected)
-	reward_view.completed.connect(_on_reward_completed)
-	reward_view.leave_requested.connect(_on_reward_leave_requested)
-	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
-	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
-	deck_setup.cancelled.connect(_on_deck_cancelled)
-	if card_catalog != null and card_catalog.has_method("validate_catalog"):
-		var audit: Dictionary = card_catalog.validate_catalog()
-		if not bool(audit.get("valid", false)):
-			push_error("TripleTriadGame: invalid card catalog: %s" % str(audit.get("errors", [])))
-
-	if opponent_registry != null and opponent_registry.has_method("validate_registry"):
-		var registry_audit: Dictionary = opponent_registry.call(
-			"validate_registry",
-			card_catalog
-		)
-		if not bool(registry_audit.get("valid", false)):
-			push_error(
-				"TripleTriadGame: invalid opponent registry: %s"
-				% str(registry_audit.get("errors", []))
-			)
-		for warning in registry_audit.get("warnings", []):
-			push_warning("TripleTriadGame: %s" % str(warning))
-
+	_backend_ready = true
 	if OS.is_debug_build() and run_backend_qa_on_startup:
 		_run_backend_qa()
 
@@ -196,9 +214,22 @@ func run_backend_qa() -> Dictionary:
 
 
 func _run_backend_qa() -> Dictionary:
-	var qa_runner = BackendQAScript.new()
-	var report: Dictionary = qa_runner.run_all()
+	# QA is deliberately loaded only when invoked. Shipping/runtime gameplay does
+	# not have a hard preload dependency on the regression harness.
+	var qa_script = load("res://scripts/triple_triad/triple_triad_backend_qa.gd")
+	if qa_script == null:
+		var missing_report := {
+			"passed": false,
+			"test_count": 0,
+			"passed_count": 0,
+			"failed_count": 1,
+			"failures": ["QA harness missing"],
+		}
+		push_error("TripleTriadGame: backend QA harness could not be loaded.")
+		return missing_report
 
+	var qa_runner = qa_script.new()
+	var report: Dictionary = qa_runner.run_all()
 	if bool(report.get("passed", false)):
 		print(
 			"TripleTriad QA: %d/%d backend tests passed."
@@ -226,6 +257,118 @@ func _run_backend_qa() -> Dictionary:
 					]
 				)
 	return report
+
+
+func is_backend_ready() -> bool:
+	return _backend_ready
+
+
+func get_backend_health() -> Dictionary:
+	return {
+		"backend_version": BACKEND_VERSION,
+		"ready": _backend_ready,
+		"errors": _backend_errors.duplicate(),
+		"save_integrity": (
+			_save_integrity.get_last_report()
+			if _save_integrity != null
+			and _save_integrity.has_method("get_last_report")
+			else {}
+		),
+	}
+
+
+func _validate_static_backend() -> bool:
+	_backend_ready = false
+	_backend_errors.clear()
+
+	if card_catalog == null:
+		_backend_errors.append("Card catalog is missing.")
+	elif card_catalog.has_method("validate_catalog"):
+		var catalog_audit: Dictionary = card_catalog.call("validate_catalog")
+		if not bool(catalog_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid card catalog: %s" % str(catalog_audit.get("errors", []))
+			)
+
+	if region_profile != null and region_profile.has_method("validate_profile"):
+		var default_region_audit: Dictionary = region_profile.call("validate_profile")
+		if not bool(default_region_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid default region profile: %s"
+				% str(default_region_audit.get("errors", []))
+			)
+	if rule_set != null and rule_set.has_method("validate_runtime_support"):
+		var default_rule_audit: Dictionary = rule_set.call("validate_runtime_support")
+		if not bool(default_rule_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid default rule set: %s"
+				% str(default_rule_audit.get("errors", []))
+			)
+
+	if opponent_registry == null:
+		_backend_errors.append("Opponent registry is missing.")
+	elif opponent_registry.has_method("validate_registry"):
+		var registry_audit: Dictionary = opponent_registry.call(
+			"validate_registry",
+			card_catalog
+		)
+		if not bool(registry_audit.get("valid", false)):
+			_backend_errors.append(
+				"Invalid opponent registry: %s"
+				% str(registry_audit.get("errors", []))
+			)
+		for warning in registry_audit.get("warnings", []):
+			push_warning("TripleTriadGame: %s" % str(warning))
+
+	if acquisition_policy == null:
+		_backend_errors.append("Acquisition policy is missing.")
+	else:
+		for required_method in [
+			"can_use_card",
+			"build_starting_collection",
+			"get_card_lock_reason",
+		]:
+			if not acquisition_policy.has_method(required_method):
+				_backend_errors.append(
+					"Acquisition policy does not expose %s()." % required_method
+				)
+
+		if acquisition_policy.has_method("build_starting_collection") and card_catalog != null:
+			var starter_cards: Array = acquisition_policy.call(
+				"build_starting_collection",
+				card_catalog
+			)
+			if starter_cards.size() < 5:
+				_backend_errors.append(
+					"Acquisition policy cannot build a five-card starter collection."
+				)
+			else:
+				var starter_costs: Array[int] = []
+				for card in starter_cards:
+					if card != null:
+						starter_costs.append(maxi(0, int(card.deck_cost)))
+				starter_costs.sort()
+				if starter_costs.size() < 5:
+					_backend_errors.append("Starter collection contains invalid cards.")
+				else:
+					var cheapest_starter_deck: int = 0
+					for index in range(5):
+						cheapest_starter_deck += starter_costs[index]
+					if cheapest_starter_deck > player_deck_budget:
+						_backend_errors.append(
+							"Starter collection cannot form a legal deck under the base player budget."
+						)
+
+	var progression_probe = ProgressionScript.new()
+	if (
+		progression_probe.progression_catalog == null
+		or not progression_probe.progression_catalog.is_valid_catalog()
+	):
+		_backend_errors.append("Progression catalog is invalid.")
+
+	for error_text in _backend_errors:
+		push_error("TripleTriadGame backend: %s" % error_text)
+	return _backend_errors.is_empty()
 
 
 func get_state_api():
@@ -259,6 +402,7 @@ func get_global_triple_triad_snapshot() -> Dictionary:
 		else {}
 	)
 	snapshot["runtime"] = {
+		"backend_version": BACKEND_VERSION,
 		"is_open": is_open(),
 		"phase": _phase,
 		"active_opponent_id": String(_active_opponent_id()) if is_open() else "",
@@ -266,11 +410,24 @@ func get_global_triple_triad_snapshot() -> Dictionary:
 	return snapshot
 
 
+func _invalidate_state_api(reason: String = "") -> void:
+	if _state_api != null and _state_api.has_method("invalidate"):
+		_state_api.call("invalidate", reason)
+
+
+func _publish_backend_state_change(reason: String) -> void:
+	_invalidate_state_api(reason)
+	backend_state_changed.emit(reason)
+
+
 func is_open() -> bool:
 	return _phase != PHASE_CLOSED
 
 
 func open_game_by_id(opponent_id: StringName) -> bool:
+	if not _backend_ready:
+		push_warning("TripleTriadGame: backend is not ready; match open rejected.")
+		return false
 	if opponent_registry == null or not opponent_registry.has_method("get_opponent"):
 		push_error("TripleTriadGame: opponent registry is unavailable.")
 		return false
@@ -283,12 +440,30 @@ func open_game_by_id(opponent_id: StringName) -> bool:
 		)
 		return false
 
+	if opponent_registry.has_method("get_availability"):
+		var player_rank: int = (
+			_progression.get_rank_number()
+			if _progression != null
+			else maxi(1, player_card_rank)
+		)
+		var availability: Dictionary = opponent_registry.call(
+			"get_availability",
+			opponent_id,
+			player_rank
+		)
+		if not bool(availability.get("available", false)):
+			push_warning(
+				"TripleTriadGame: opponent '%s' is locked: %s"
+				% [String(opponent_id), str(availability.get("reason", "Unavailable."))]
+			)
+			return false
+
 	open_game(profile)
 	return is_open()
 
 
 func open_game(opponent_profile_override: Resource = null) -> void:
-	if is_open() or card_catalog == null:
+	if not _backend_ready or is_open() or card_catalog == null:
 		return
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.paused:
@@ -304,6 +479,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		_active_deck_budget,
 		_active_opponent_profile
 	)
+	_invalidate_state_api("opponent_loaded")
 	root.visible = true
 	_phase = PHASE_DECK_SETUP
 	deck_setup.open_setup(
@@ -326,9 +502,14 @@ func close_game() -> void:
 	deck_setup.close_setup()
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
+	_hide_preview_visuals()
+	_match_started = false
+	_surrendered = false
+	_result_reason = &""
 	_phase = PHASE_CLOSED
 	root.visible = false
 	_checkpoint_save_integrity("close_game")
+	_invalidate_state_api("close_game")
 	_opponent_collection_backend = null
 	var tree: SceneTree = get_tree()
 	if tree != null:
@@ -365,23 +546,35 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _phase == PHASE_DECK_SETUP:
 		return
 
-	# The reward view owns input while it is active.
+	# The reward view owns input while it is active and enforces mandatory stake
+	# resolution. It cannot be bypassed with Back/Escape.
 	if _phase == PHASE_REWARD:
 		return
 
 	if _phase == PHASE_RESULT:
-		if _is_confirm(event):
+		if _is_confirm(event) or _is_back(event):
 			_begin_result_transition()
 			_accept_input()
-			return
+		return
+
+	# Before the deal is complete the player can still leave freely. Once the
+	# live match begins, leaving from a stable gameplay phase is a surrender.
+	if _phase == PHASE_DEALING:
 		if _is_back(event):
 			close_game()
 			_accept_input()
 		return
 
-	if _phase in [PHASE_DEALING, PHASE_ANIMATING, PHASE_AI]:
+	# Placement/capture animation is transactional. Ignore leave input until a
+	# stable phase instead of interrupting a move half-way through.
+	if _phase == PHASE_ANIMATING:
 		if _is_back(event):
-			close_game()
+			_accept_input()
+		return
+
+	if _phase == PHASE_AI:
+		if _is_back(event):
+			_request_surrender()
 			_accept_input()
 		return
 
@@ -407,7 +600,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_accept_input()
 			return
 		if _is_back(event):
-			close_game()
+			_request_surrender()
 			_accept_input()
 			return
 
@@ -438,6 +631,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_accept_input()
 			return
 		if _is_back(event):
+			# First Back cancels the board preview and returns to the hand. A second
+			# Back from card selection is the deliberate surrender action.
 			_phase = PHASE_SELECT_CARD
 			_refresh_views()
 			_accept_input()
@@ -450,6 +645,9 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_result_winner = OWNER_NONE
+	_result_reason = &""
+	_surrendered = false
+	_match_started = false
 	message_label.text = ""
 	_last_info_name = ""
 
@@ -493,6 +691,7 @@ func _run_deal_sequence(starting_owner: int) -> void:
 	await animation_director.deal_hands(_player_views, _opponent_views, HAND_STEP_Y)
 	if not is_open() or _phase != PHASE_DEALING:
 		return
+	_match_started = true
 	_phase = PHASE_SELECT_CARD if starting_owner == OWNER_PLAYER else PHASE_AI
 	message_label.text = ""
 	_refresh_views()
@@ -522,7 +721,8 @@ func _try_player_move() -> void:
 	_phase = PHASE_ANIMATING
 	_last_info_name = str(played_card.display_name)
 	_refresh_phase_ui()
-	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_PLAYER, played_rotation, target_rank_bonus)
+	var placement_rank_modifier: int = int(result.get("placed_total_modifier", target_rank_bonus))
+	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_PLAYER, played_rotation, placement_rank_modifier)
 	if not is_open():
 		return
 
@@ -576,7 +776,8 @@ func _run_ai_turn() -> void:
 	_phase = PHASE_ANIMATING
 	_last_info_name = str(played_card.display_name)
 	_refresh_phase_ui()
-	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_OPPONENT, played_rotation, target_rank_bonus)
+	var placement_rank_modifier: int = int(result.get("placed_total_modifier", target_rank_bonus))
+	await animation_director.animate_placement(root, source_view, target_view, played_card, OWNER_OPPONENT, played_rotation, placement_rank_modifier)
 	if not is_open():
 		return
 
@@ -597,14 +798,37 @@ func _run_ai_turn() -> void:
 		_refresh_views()
 
 
-func _finish_match() -> void:
+func _request_surrender() -> void:
+	if not _match_started:
+		close_game()
+		return
+	if _phase not in [PHASE_SELECT_CARD, PHASE_AI]:
+		return
+	_surrendered = true
+	message_label.text = "SURRENDER"
+	_finish_match(OWNER_OPPONENT, &"surrender")
+
+
+func _finish_match(
+	forced_winner: int = OWNER_NONE,
+	reason: StringName = &"board_complete"
+) -> void:
+	ai_timer.stop()
+	_match_started = false
 	_phase = PHASE_RESULT
+	_hide_preview_visuals()
 	_refresh_views()
 	var score: Dictionary = _match.get_score()
-	_result_winner = _match.get_winner()
+	_result_winner = (
+		forced_winner
+		if forced_winner in [OWNER_PLAYER, OWNER_OPPONENT]
+		else _match.get_winner()
+	)
+	_result_reason = reason
 
 	var progression_change: Dictionary = {}
-	# QA/debug matches must never mutate permanent progression.
+	# QA/debug matches must never mutate permanent progression. Surrender uses the
+	# exact same result accounting and stake flow as any other opponent victory.
 	if _progression != null and _qa_profile_override == null:
 		progression_change = _progression.record_result(
 			_result_winner,
@@ -623,7 +847,7 @@ func _finish_match() -> void:
 		OWNER_PLAYER:
 			result_label.text = "YOU WIN!"
 		OWNER_OPPONENT:
-			result_label.text = "YOU LOSE..."
+			result_label.text = "YOU SURRENDER..." if _surrendered else "YOU LOSE..."
 		_:
 			result_label.text = "DRAW"
 	result_label.visible = true
@@ -635,8 +859,10 @@ func _finish_match() -> void:
 		"winner": _result_winner,
 		"score": score,
 		"progression": progression_change,
+		"reason": String(_result_reason),
+		"surrendered": _surrendered,
 	})
-	backend_state_changed.emit("match_result")
+	_publish_backend_state_change("match_result")
 
 
 func _begin_result_transition() -> void:
@@ -676,11 +902,15 @@ func _run_result_transition(winner: int) -> void:
 		return
 
 	_phase = PHASE_REWARD
+	var opponent_take_index: int = -1
+	if winner == OWNER_OPPONENT:
+		opponent_take_index = _stake_policy.choose_lost_card_index(_starting_player_cards)
 	reward_view.open_reward(
 		_starting_opponent_cards,
 		_starting_player_cards,
 		winner,
-		true
+		true,
+		opponent_take_index
 	)
 	_refresh_phase_ui()
 
@@ -719,12 +949,105 @@ func _build_views() -> void:
 		player_view.scale = Vector2(1.05, 1.05)
 		player_view.z_index = index
 		_player_views.append(player_view)
+	_build_preview_visuals()
+
+
+func _build_preview_visuals() -> void:
+	_preview_ghost = CardViewScene.instantiate() as Control
+	root.add_child(_preview_ghost)
+	_preview_ghost.visible = false
+	_preview_ghost.modulate = Color(1, 1, 1, PREVIEW_GHOST_ALPHA)
+	_preview_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_ghost.z_index = 620
+
+	_influence_preview_overlays.clear()
+	for _cell_index in range(9):
+		var overlay := ColorRect.new()
+		overlay.visible = false
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		overlay.z_index = 610
+		root.add_child(overlay)
+		_influence_preview_overlays.append(overlay)
+
+
+func _hide_preview_visuals() -> void:
+	if is_instance_valid(_preview_ghost):
+		_preview_ghost.visible = false
+	for overlay in _influence_preview_overlays:
+		if is_instance_valid(overlay):
+			overlay.visible = false
+
+
+func _preview_for_current_selection() -> Dictionary:
+	if (
+		_phase != PHASE_SELECT_CELL
+		or _match == null
+		or _selected_hand_index < 0
+		or _selected_hand_index >= _match.player_hand.size()
+		or _selected_cell_index < 0
+		or _selected_cell_index >= 9
+		or _match.board[_selected_cell_index] != null
+	):
+		return {}
+	var card = _match.player_hand[_selected_hand_index]
+	var rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
+	return _match.preview_move(card, OWNER_PLAYER, _selected_cell_index, rotation)
+
+
+func _refresh_preview_visuals(preview: Dictionary) -> void:
+	_hide_preview_visuals()
+	if preview.is_empty() or not bool(preview.get("valid", false)):
+		return
+	if _selected_hand_index < 0 or _selected_hand_index >= _match.player_hand.size():
+		return
+
+	var card = _match.player_hand[_selected_hand_index]
+	var rotation: int = _match.get_hand_rotation(OWNER_PLAYER, _selected_hand_index)
+	var target_view: Control = _board_views[_selected_cell_index]
+	_preview_ghost.visible = true
+	_preview_ghost.modulate = Color(1, 1, 1, PREVIEW_GHOST_ALPHA)
+	_preview_ghost.position = board_container.position + target_view.position
+	_preview_ghost.size = target_view.size
+	_preview_ghost.configure(
+		card,
+		OWNER_PLAYER,
+		false,
+		false,
+		rotation,
+		int(preview.get("placed_total_modifier", 0))
+	)
+	_preview_ghost.set_selected(false)
+
+	for raw_cell in preview.get("influence_cells", []):
+		var cell_index: int = int(raw_cell)
+		if cell_index < 0 or cell_index >= _influence_preview_overlays.size():
+			continue
+		var overlay: ColorRect = _influence_preview_overlays[cell_index]
+		var board_view: Control = _board_views[cell_index]
+		overlay.position = board_container.position + board_view.position
+		overlay.size = board_view.size
+		var slot_variant = _match.board[cell_index]
+		var pressures_enemy: bool = false
+		if slot_variant != null:
+			var preview_slot: Dictionary = slot_variant
+			pressures_enemy = int(preview_slot.get("owner", OWNER_NONE)) == OWNER_OPPONENT
+		overlay.color = PREVIEW_PRESSURE_COLOR if pressures_enemy else PREVIEW_INFLUENCE_COLOR
+		overlay.visible = true
 
 
 func _refresh_views(captured_cells: Array = []) -> void:
 	if _match == null:
 		return
 	var show_opponent_cards: bool = _active_rule_set == null or bool(_active_rule_set.open_rule)
+	var active_preview: Dictionary = _preview_for_current_selection()
+	var preview_modifiers: Dictionary = active_preview.get("influence_modifiers", {})
+	# Build current board pressure once per UI refresh. Input-driven refreshes are
+	# cheap and deterministic; we never rebuild influence state per frame.
+	var current_influence_modifiers: Dictionary = (
+		{}
+		if not active_preview.is_empty()
+		else _match.get_current_influence_modifiers()
+	)
 
 	for index in range(_opponent_views.size()):
 		var view: Control = _opponent_views[index]
@@ -768,16 +1091,23 @@ func _refresh_views(captured_cells: Array = []) -> void:
 			board_view.configure(null, OWNER_NONE, false)
 		else:
 			var slot: Dictionary = slot_variant
+			var slot_owner: int = int(slot["owner"])
+			var influence_modifier: int = (
+				int(preview_modifiers.get(cell_index, 0))
+				if not active_preview.is_empty()
+				else int(current_influence_modifiers.get(cell_index, 0))
+			)
 			board_view.configure(
 				slot["card"],
-				int(slot["owner"]),
+				slot_owner,
 				false,
 				captured_cells.has(cell_index),
 				int(slot.get("rotation", 0)),
-				_match.get_cell_rank_bonus(cell_index)
+				_match.get_cell_rank_bonus(cell_index) + influence_modifier
 			)
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
+	_refresh_preview_visuals(active_preview)
 	var score: Dictionary = _match.get_score()
 	_set_score_digits(opponent_score_label, int(score["opponent"]))
 	_set_score_digits(player_score_label, int(score["player"]))
@@ -824,7 +1154,7 @@ func _refresh_phase_ui() -> void:
 			_update_selected_card_info()
 		PHASE_AI:
 			turn_label.text = "Opponent's turn"
-			help_label.text = "I: Leave"
+			help_label.text = "I: Surrender"
 			_turn_arrow_for_owner(OWNER_OPPONENT)
 			info_label.text = _region_trait_text()
 		PHASE_ANIMATING:
@@ -882,22 +1212,24 @@ func _capture_message(result: Dictionary) -> String:
 
 
 func _on_reward_selected(card_definition) -> void:
+	var transfer_success: bool = false
 	if card_definition == null:
+		reward_view.resolve_transfer_request(false)
 		return
 
 	_last_info_name = str(card_definition.display_name)
 	if _card_economy == null or _opponent_collection_backend == null:
 		push_error("TripleTriadGame: card economy is unavailable during reward transfer.")
+		reward_view.resolve_transfer_request(false)
 		return
 
 	if _result_winner == OWNER_PLAYER:
-		# One journaled transaction moves the exact quantity from this NPC to the
-		# player. If saving is interrupted, the journal repairs both sides next run.
-		if _card_economy.transfer_opponent_to_player(
+		transfer_success = _card_economy.transfer_opponent_to_player(
 			card_definition,
 			_collection_backend,
 			_opponent_collection_backend
-		):
+		)
+		if transfer_success:
 			if _acquisition_tracker != null:
 				_acquisition_tracker.record_acquisition(
 					card_definition,
@@ -911,44 +1243,41 @@ func _on_reward_selected(card_definition) -> void:
 				)
 			card_reward_selected.emit(card_definition)
 		else:
-			push_error("TripleTriadGame: failed to transfer reward card to player.")
-		return
+			push_error("TripleTriadGame: failed to transfer mandatory reward card to player.")
 
-	if _result_winner == OWNER_OPPONENT:
-		# The same atomic/journaled path transfers a lost player card to the exact
-		# NPC. promote_for_rematch keeps that stolen card at the front of its deck.
-		if not _card_economy.transfer_player_to_opponent(
+	elif _result_winner == OWNER_OPPONENT:
+		transfer_success = _card_economy.transfer_player_to_opponent(
 			card_definition,
 			_collection_backend,
 			_opponent_collection_backend
-		):
-			push_error("TripleTriadGame: failed to transfer lost card to opponent.")
-			return
+		)
+		if transfer_success:
+			if _acquisition_tracker != null:
+				_acquisition_tracker.record_loss(
+					card_definition,
+					&"opponent_loss",
+					_active_opponent_id()
+				)
+			if _encounter_records != null:
+				_encounter_records.record_card_stolen(
+					_active_opponent_id(),
+					StringName(card_definition.card_id)
+				)
 
-		if _acquisition_tracker != null:
-			_acquisition_tracker.record_loss(
-				card_definition,
-				&"opponent_loss",
-				_active_opponent_id()
-			)
-		if _encounter_records != null:
-			_encounter_records.record_card_stolen(
-				_active_opponent_id(),
-				StringName(card_definition.card_id)
-			)
+			if not _collection_backend.owns_card(card_definition):
+				deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))
+				var filtered_active_deck: Array = []
+				for card in _active_player_deck:
+					if card != null and String(card.card_id) != String(card_definition.card_id):
+						filtered_active_deck.append(card)
+				_active_player_deck = filtered_active_deck
+		else:
+			push_error("TripleTriadGame: failed to transfer mandatory lost card to opponent.")
 
-		if not _collection_backend.owns_card(card_definition):
-			deck_setup.remove_card_from_all_profiles(StringName(card_definition.card_id))
-			var filtered_active_deck: Array = []
-			for card in _active_player_deck:
-				if card != null and String(card.card_id) != String(card_definition.card_id):
-					filtered_active_deck.append(card)
-			_active_player_deck = filtered_active_deck
-
-	# The transfer journal is clear at this point. Refresh the save backup now so
-	# a card won/lost in this result screen is part of the latest healthy snapshot.
-	_checkpoint_save_integrity("reward_transfer")
-	backend_state_changed.emit("card_transfer")
+	if transfer_success:
+		_checkpoint_save_integrity("reward_transfer")
+		_publish_backend_state_change("card_transfer")
+	reward_view.resolve_transfer_request(transfer_success)
 
 
 func _checkpoint_save_integrity(reason: String) -> void:
@@ -962,13 +1291,15 @@ func _checkpoint_save_integrity(reason: String) -> void:
 		_collection_backend,
 		_progression,
 		player_deck_budget,
-		reason
+		reason,
+		acquisition_policy
 	)
 	if not bool(report.get("valid", true)):
 		push_warning(
 			"TripleTriadGame: save integrity checkpoint '%s' reported: %s"
 			% [reason, str(report.get("warnings", []))]
 		)
+	_invalidate_state_api("integrity_checkpoint")
 
 
 
@@ -978,7 +1309,9 @@ func _on_reward_completed() -> void:
 
 
 func _on_reward_leave_requested() -> void:
-	close_game()
+	# Kept for scene/signal compatibility. Reward selection is mandatory and the
+	# current RewardView never emits a leave request while a stake is unresolved.
+	return
 
 
 func _on_deck_confirmed(cards: Array) -> void:
@@ -986,7 +1319,7 @@ func _on_deck_confirmed(cards: Array) -> void:
 		return
 	_active_player_deck = cards.duplicate()
 	deck_setup.close_setup()
-	backend_state_changed.emit("deck_selected")
+	_publish_backend_state_change("deck_selected")
 	_start_new_match(_active_player_deck)
 
 
@@ -1126,6 +1459,8 @@ func _rules_summary(active_rules: Resource, active_region: Resource) -> String:
 			labels.append("Plus")
 		if bool(active_rules.get("combo_rule")):
 			labels.append("Combo")
+		if bool(active_rules.get("influence_rule")):
+			labels.append("Influence")
 	if active_region != null and bool(active_region.get("allow_rotate")):
 		labels.append("Rotate x1")
 	if labels.is_empty():
@@ -1162,7 +1497,7 @@ func _player_help_text(board_selection: bool) -> String:
 	var rotate_text: String = "   R: Rotate" if _match != null and _match.can_rotate(OWNER_PLAYER) else ""
 	if board_selection:
 		return "W/A/S/D: Move   K: Place%s   I: Back" % rotate_text
-	return "W/S: Card   K: Select%s   I: Leave" % rotate_text
+	return "W/S: Card   K: Select%s   I: Surrender" % rotate_text
 
 
 func _region_trait_text() -> String:

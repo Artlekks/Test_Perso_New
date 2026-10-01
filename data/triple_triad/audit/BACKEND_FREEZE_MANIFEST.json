@@ -1,0 +1,512 @@
+{
+  "backend_version": "1.0.0",
+  "public_api_schema_version": 1,
+  "source_project": "fishing_game_clean_candidate_FRESH (8).zip",
+  "source_project_sha256": "d4ffd7f4e39b6c8dc65aa8c6ab48774db155bd9db0b7f75c3c10f9d21c1e809b",
+  "target_godot_project_feature": "4.7",
+  "runtime_tested_in_godot": false,
+  "static_audit_passed": true,
+  "backend_qa_test_count": 16,
+  "included_file_count": 85,
+  "changed_from_uploaded_source": [
+    {
+      "path": "data/triple_triad/api/PUBLIC_API_RECORDS_README.txt",
+      "status": "modified"
+    },
+    {
+      "path": "data/triple_triad/audit/BACKEND_FREEZE_AUDIT.md",
+      "status": "new"
+    },
+    {
+      "path": "data/triple_triad/qa/BACKEND_QA_README.txt",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_acquisition_tracker.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_backend_qa.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_catalog.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_economy.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_collection.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_deck_setup.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_encounter_records.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_game.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_collection.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_profile.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_registry.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_region_profile.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_rule_set.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_save_integrity.gd",
+      "status": "modified"
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_state_api.gd",
+      "status": "modified"
+    }
+  ],
+  "files": [
+    {
+      "path": "data/triple_triad/CARD_STATS_README.txt",
+      "sha256": "1ebd3f731a424a7c66dfc64d661db5002e1104332baabba47ed2656ccdc8c7f0",
+      "size": 772
+    },
+    {
+      "path": "data/triple_triad/PROGRESSION_PLUS_README.txt",
+      "sha256": "156c90170f3874c390a1cc3d1f2a7bbe8aec2eab6f84bc742817c5c561bc9fdc",
+      "size": 979
+    },
+    {
+      "path": "data/triple_triad/acquisition/ACQUISITION_POLICY_README.txt",
+      "sha256": "ee905cc372f4125d21c2be90af7adb2c3181b9fdfa7b6ce21240347ba96ff2b8",
+      "size": 2384
+    },
+    {
+      "path": "data/triple_triad/acquisition/default_acquisition_policy.tres",
+      "sha256": "a1012388dde6e6df4992b0d5e1d93b957fc70be5706710013792cdf8c75c2c21",
+      "size": 352
+    },
+    {
+      "path": "data/triple_triad/ai/aggressive.tres",
+      "sha256": "7e8b4543d7d3e4e5a35cf1e6d4b9b88c4130ca2a960bb7656a19d657c2c38107",
+      "size": 424
+    },
+    {
+      "path": "data/triple_triad/ai/balanced.tres",
+      "sha256": "546a41cb57d37a7e52ed7792f4a14c4f6982ca4346f9134b90b9aca870e32c95",
+      "size": 419
+    },
+    {
+      "path": "data/triple_triad/ai/defensive.tres",
+      "sha256": "3465f9fc8c7e318bacb6b99e6871f4eeabf4552228f40e3ffd4bd63e95c6b1ad",
+      "size": 421
+    },
+    {
+      "path": "data/triple_triad/ai/trickster.tres",
+      "sha256": "6e4dee6086af7d827990dc791694ec4f8a5b4d6977f647fac2953c27d28b02dc",
+      "size": 421
+    },
+    {
+      "path": "data/triple_triad/api/PUBLIC_API_RECORDS_README.txt",
+      "sha256": "b1486815e21da7fde522eb25a9c8d35460bc9baba9ccd4334ad8caaa706c6064",
+      "size": 1205
+    },
+    {
+      "path": "data/triple_triad/audit/BACKEND_FREEZE_AUDIT.md",
+      "sha256": "7105951fed4c23063075f7d2c14370440e01176ac747f31694c5e58884492ccd",
+      "size": 9653
+    },
+    {
+      "path": "data/triple_triad/basic_rules.tres",
+      "sha256": "001a8f5a0c7c3f38109f184a55175adbe7745b982803cfece6e7a062d5375f4d",
+      "size": 289
+    },
+    {
+      "path": "data/triple_triad/card_catalog.tres",
+      "sha256": "1d6f4818593dcec0202055edaceae32ceba72498034c9bb17186d8a43b3479f2",
+      "size": 2479
+    },
+    {
+      "path": "data/triple_triad/card_stats.json",
+      "sha256": "2229c1535e01004ee9c933a752d1dc2844791279f4609c14ffd28adf467f1588",
+      "size": 76136
+    },
+    {
+      "path": "data/triple_triad/opponents/OPPONENT_REGISTRY_README.txt",
+      "sha256": "8727ca5ad4fa3c5f5d345eebe4d2e45dc03e320620aef058c86c39de81e193eb",
+      "size": 1531
+    },
+    {
+      "path": "data/triple_triad/opponents/beach_trader.tres",
+      "sha256": "19b3669445cde20a0bebcd70a180d0d943016f3996fc6a0cc2f9e984a3002eff",
+      "size": 874
+    },
+    {
+      "path": "data/triple_triad/opponents/opponent_registry.tres",
+      "sha256": "f8049eff55cab084bae7275b4545cb4215fdfe8ce5b3842f95c7bd6ff16376ed",
+      "size": 384
+    },
+    {
+      "path": "data/triple_triad/plus_rules.tres",
+      "sha256": "43b69a58ba65534c08cc3f22e3b44ff57ee9c710bd56f5b037dedebfa9993900",
+      "size": 237
+    },
+    {
+      "path": "data/triple_triad/progression/RANK_BACKEND_README.txt",
+      "sha256": "cac2c27326634ffe3c25a534b59e5004516f139a74555d47b0663114d6f91d4b",
+      "size": 1419
+    },
+    {
+      "path": "data/triple_triad/progression/all_progression.tres",
+      "sha256": "d8ed365283f44a039ef0fe325b3a40c3e97452b720e2911d40c4d5715690227d",
+      "size": 1511
+    },
+    {
+      "path": "data/triple_triad/qa/BACKEND_QA_README.txt",
+      "sha256": "ed0bb09da2961c265b6e6c18384b1ebf8609c13936243b7cef45e2c9279add95",
+      "size": 1302
+    },
+    {
+      "path": "data/triple_triad/regions/prototype_coast.tres",
+      "sha256": "7cac5ecc35f35254dc6303a06aceada3c83e6ff1ef6dbda46fdebfa21bc5e147",
+      "size": 619
+    },
+    {
+      "path": "data/triple_triad/regions/prototype_highlands.tres",
+      "sha256": "b7622b0c8209716d7e7df39bf93e8b2988e5b69243bcb65a4d36179720fb44cb",
+      "size": 622
+    },
+    {
+      "path": "data/triple_triad/regions/prototype_volcanic.tres",
+      "sha256": "96302dd56478a1384be029da753ab59433de3bfe37d236a1cf45a5611d4d1afd",
+      "size": 619
+    },
+    {
+      "path": "data/triple_triad/save/SAVE_INTEGRITY_README.txt",
+      "sha256": "4b2ef30c724b6696780ecedaa574efd73da62fd093ea1bd678d143a51fb50cb1",
+      "size": 2148
+    },
+    {
+      "path": "scripts/fishing_menu.gd",
+      "sha256": "93962b22c1af7ec61b0465e7f43b34441f64bed5d7e02489cd19a97adb700836",
+      "size": 51750
+    },
+    {
+      "path": "scripts/fishing_menu.gd.uid",
+      "sha256": "b2c330dbc9df3492ba5be191e1f68579cbb5237b262141f3fa7821f27ec61bd4",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_acquisition_policy.gd",
+      "sha256": "1d52d7efdf797220a071961f51fe2528bff019ef6e6d7614fc9290f994f1fecb",
+      "size": 2364
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_acquisition_policy.gd.uid",
+      "sha256": "797b474d92a3302583c29b691d55d3e383faf0a58c864d2e68cc9c6c74897ff9",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_acquisition_tracker.gd",
+      "sha256": "6475799f9490c02d9d73dbe69ef0c97fcc497aad9ca04896ba2ee00a5028f1f6",
+      "size": 4683
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_acquisition_tracker.gd.uid",
+      "sha256": "bb52a0ec7eb8b1dd23c4133392e588f5efdd1296c3a1a23df4782746c88b5445",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_ai.gd",
+      "sha256": "a4d039e5f0ae36c5f3e46e25a7e9b235a6519adc40e7e378a88e5ff1ab778cdf",
+      "size": 3789
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_ai.gd.uid",
+      "sha256": "837b62341ac77a211d3e3419f7aeb82dbf28112715794b545bc6f07a5027d186",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_ai_profile.gd",
+      "sha256": "805f407600314dc5b852ee3fcd4c833e18e5545faf3d26c17290a7f26808b189",
+      "size": 647
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_ai_profile.gd.uid",
+      "sha256": "be2b15fca17544fcf75c6c49bcf1e2ba0924e0893f937ca471ba7240eb4a1bec",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_animation_director.gd",
+      "sha256": "8f8bb5ddc009202215fcbad86d2d8020d1fabc3a66c009245f8bdeca5d16cde9",
+      "size": 4130
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_animation_director.gd.uid",
+      "sha256": "37b8c2e0628565f3bb5d22baabced257cb72f7bc21d2ef592ae543ce31f4b431",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_backend_qa.gd",
+      "sha256": "c34b9587dc52add8b458e690fa6685628e93269065190af63c4738017f8a40f6",
+      "size": 14730
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_backend_qa.gd.uid",
+      "sha256": "f639fa485273a06749d3fa0d87ab97bcfc3f424a2f5163fbc070148ededc83c1",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_catalog.gd",
+      "sha256": "25efb1f4e4e12ef3fd5a246ee4451dcca61f3e66f1ed9b4384f70ce313852175",
+      "size": 17694
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_catalog.gd.uid",
+      "sha256": "fb2d32f31ad4ca2c0070616149102772973a2cd3d3aa82d02edba8cb08a12a14",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_definition.gd",
+      "sha256": "c9f72dbf4fc8a9e2fe73e2a639da79bbfb8aac9e0652b62675b717fcc68ee7af",
+      "size": 2488
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_definition.gd.uid",
+      "sha256": "835d943582d4242250af34147b2e696b90da63cac93945d657f5e357b0e2ecff",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_economy.gd",
+      "sha256": "77e31fc37c960f74bb60d07ad20dc7cc5bbc64c203fb27aa925ac89c957c0564",
+      "size": 6205
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_economy.gd.uid",
+      "sha256": "a8c824e6c3b7a670eb6f3692fb3ab4efdc707089f18f268462ab8dd2b6725247",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_view.gd",
+      "sha256": "65e9dcc1286ffb823133a4215ac7a7c5c714479cb2e8056abd69a557cabffdf3",
+      "size": 7791
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_card_view.gd.uid",
+      "sha256": "31da6c8726c88222570e14297fd73a010c79ac08541a18d94256f707ba3cc44e",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_collection.gd",
+      "sha256": "52c67c78de3874682ab62194d63f2b242710b6a3b6e7b4ebb021cb02c569ea65",
+      "size": 5156
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_collection.gd.uid",
+      "sha256": "0e6837a3321764e9daebdee3bc7783219e9c9b645db148618979bad7a1496dcb",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_debug_menu.gd",
+      "sha256": "ee8fdef5bc214681785755d6e34a5ab37cfa5cae01eea942dcdd1a7aeb0ecfe5",
+      "size": 7330
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_debug_menu.gd.uid",
+      "sha256": "67fa35cf9a45cc9426d1642445a76e60f6ee6f32b12ba1cb280703ebd437bcc5",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_deck_setup.gd",
+      "sha256": "265cdcd516fe19b5d9a30a45fa613c6ff3644f16d31941c76dbcbfc23dc58a2c",
+      "size": 30101
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_deck_setup.gd.uid",
+      "sha256": "0ed99eaddbf02287138825d242359af7bd03635891c84ea05b7d9a750c01551e",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_encounter_records.gd",
+      "sha256": "a642be71fc624b912a38dfe22dfac0c70d41ba4d197395544b4c614802788284",
+      "size": 10164
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_encounter_records.gd.uid",
+      "sha256": "df2ac4d27c56e72825ab9fc585439fbfb88fb52d63f2ee1451f2668268a461f7",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_game.gd",
+      "sha256": "fcea478a1dae34f6034a97f4e25b390160673b8eb193a9002e3370537bf8934d",
+      "size": 45505
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_game.gd.uid",
+      "sha256": "5f2fac983ad54d3034306e068dcc9df62af63ad3ab01d059e5558f1067dd7513",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_match.gd",
+      "sha256": "4fa6ba2ada270741ad2c67d10fb29f2290187cd1ceb9a303aa927a7d71cac2e7",
+      "size": 16576
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_match.gd.uid",
+      "sha256": "c90776aaa090399e21bcf074971e5c513e3308f062d89b5706d719eb2f1de15d",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_collection.gd",
+      "sha256": "5d0767c3595a0fff9bf5bb3d779c1e21362b24e99216e9741515eb2083e9a067",
+      "size": 15252
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_collection.gd.uid",
+      "sha256": "6a6b18ddb142c801836a4b30d4dacf2a6cf04727706feac470864dddc944431d",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "sha256": "934d0c76e41c4677d1ecc3bfd6fc253abbef6a2cc359ab75412dec6173fd934e",
+      "size": 2154
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_npc.gd.uid",
+      "sha256": "9faec6a1c3042ee78ddb1477c8eac0034191a963e242ca8831b3fa316d16be65",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_profile.gd",
+      "sha256": "4e10f87b9f2b53ff9ba00691f1031723198eb69ca07a839b3041a39c881f9ef6",
+      "size": 4758
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_profile.gd.uid",
+      "sha256": "73cd247857de1d4cecb6bebcc444b7fcd01dbb402f1ba26e79955126c2ebef4b",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_registry.gd",
+      "sha256": "f6fc0efff0cee6ea5c35adc39387cb0ced20a1a365f1cc79e5dc6ca299cad8a3",
+      "size": 4100
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_opponent_registry.gd.uid",
+      "sha256": "0be81bf3c13b5ba0aa6e367d411e95cc899bef09b4e51848d74e37f0479100b1",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_progression.gd",
+      "sha256": "6ff561f9a28b0f4213bcf82dd888f24dcde44be97fcee8f5683f7b6b371665f7",
+      "size": 6345
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_progression.gd.uid",
+      "sha256": "c988a1412bb949381ccba8d3c279315d0c4374b365b55390bcee980033aafa3a",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_progression_catalog.gd",
+      "sha256": "4e83144142b9ad01ed82b5644f03230a24ef49fb27a6e779848cf892dfeb2668",
+      "size": 5079
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_progression_catalog.gd.uid",
+      "sha256": "039be1c13ec36de838b50137392ddf4d4fe411f7d86b6c714e0c08a64143cc35",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_qa_profile.gd",
+      "sha256": "5d7e18673395193668b4ce5518ef576c4297cee69e1979e07b7b2309e9350f72",
+      "size": 890
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_qa_profile.gd.uid",
+      "sha256": "4eed946a432681eb14c7f67fbc51e5535be0be8439ef5cadc5c6cb3dc9acf440",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_rank_definition.gd",
+      "sha256": "38cc54d8a0d728f55058b9c0b99feb803172f6a1c0f5d5f8092416361c2a6cc5",
+      "size": 614
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_rank_definition.gd.uid",
+      "sha256": "6f6fc5fc69d0df7f067be1b927ca47d2725516ed2b97af557258c424c17b20a6",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_region_profile.gd",
+      "sha256": "db7957f43b611262ad829b3672ddacda20f13a60e53b49201ac99323ae2c116d",
+      "size": 1426
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_region_profile.gd.uid",
+      "sha256": "deccf81d263e3497b6eebe0f3c092790bba108e1c2a56fca6dc8c80081ac7117",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_reward_view.gd",
+      "sha256": "30281c5345d3a351e0aaabdfa69960d45e80b946bdfbab880b82860dba5e5c04",
+      "size": 16305
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_reward_view.gd.uid",
+      "sha256": "40c595242856e5752227ccfd42eb0996f0cfe586f02667ce3fd03b3770bbb33b",
+      "size": 19
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_rule_set.gd",
+      "sha256": "14703f996bbe3a4f0d3a4cbd6af179bc390f026f78e9f84011e0938816e2a857",
+      "size": 872
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_rule_set.gd.uid",
+      "sha256": "fa52e140e62bd40227dbce78e4a5a3030c5f6c01e48fc315dd1eaec03f578d27",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_save_integrity.gd",
+      "sha256": "7a068103ddc281e17640adbe3af69a717098dd024a1606942f6cfb4334a41f0e",
+      "size": 17549
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_save_integrity.gd.uid",
+      "sha256": "33c34f32d8cc5d83126bc885c09fa29c81b01efa01a25e14de49919d7880605a",
+      "size": 20
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_state_api.gd",
+      "sha256": "4c9c932606ae8c4355da63fd29c98d29f3c969ec1236750e9ee4c6ab19fb861e",
+      "size": 15689
+    },
+    {
+      "path": "scripts/triple_triad/triple_triad_state_api.gd.uid",
+      "sha256": "08629a8e138a670895577e57f944f39bb50a356150368e8d1a91d5ea47efe9fe",
+      "size": 20
+    }
+  ],
+  "notes": [
+    "Backend freeze overlay for the uploaded FRESH (8) project.",
+    "No card visual scene is included; TripleTriadCardView.tscn remains untouched.",
+    "Apply at project root. No prior incremental Triple Triad patches are required."
+  ]
+}

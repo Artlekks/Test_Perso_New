@@ -11,6 +11,10 @@ const OpponentProfileScript = preload(
 const OpponentRegistryScript = preload(
 	"res://scripts/triple_triad/triple_triad_opponent_registry.gd"
 )
+const RuleSetScript = preload(
+	"res://scripts/triple_triad/triple_triad_rule_set.gd"
+)
+const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -28,6 +32,9 @@ class MockCard:
 	var bottom_rank: int = 1
 	var left_rank: int = 1
 	var required_player_rank: int = 1
+	var influence_mode: StringName = &"none"
+	var influence_strength: int = 0
+	var influence_offsets: Array[Vector2i] = []
 
 	func _init(
 		id_value: StringName,
@@ -64,6 +71,23 @@ class MockCard:
 		)
 		return rank_for_side(source_side)
 
+	func has_influence() -> bool:
+		return (
+			String(influence_mode) == "pressure"
+			and influence_strength > 0
+			and not influence_offsets.is_empty()
+		)
+
+	func get_influence_offsets_rotated(quarter_turns_clockwise: int) -> Array[Vector2i]:
+		var result: Array[Vector2i] = []
+		var turns: int = posmod(quarter_turns_clockwise, 4)
+		for authored_offset in influence_offsets:
+			var offset: Vector2i = authored_offset
+			for _turn in range(turns):
+				offset = Vector2i(-offset.y, offset.x)
+			result.append(offset)
+		return result
+
 	func rank_total() -> int:
 		return top_rank + right_rank + bottom_rank + left_rank
 
@@ -78,6 +102,7 @@ class MockRuleSet:
 	var same_rule: bool = false
 	var plus_rule: bool = false
 	var combo_rule: bool = false
+	var influence_rule: bool = false
 
 
 class MockRegion:
@@ -97,6 +122,7 @@ class MockAIProfile:
 	var capture_weight: float = 1000.0
 	var same_trigger_weight: float = 100.0
 	var plus_trigger_weight: float = 100.0
+	var influence_weight: float = 0.0
 	var positional_weight: float = 0.0
 	var card_strength_weight: float = 0.0
 	var conserve_cost_weight: float = 0.0
@@ -120,6 +146,17 @@ func run_all() -> Dictionary:
 	_run("AI prefers available capture", _test_ai_prefers_capture)
 	_run("Card Duel Rank gate", _test_card_rank_gate)
 	_run("Opponent registry duplicate guard", _test_registry_duplicate_id)
+	_run("Board rows do not wrap", _test_row_boundary_no_wrap)
+	_run("Preview is immutable", _test_preview_is_immutable)
+	_run("Plus -> Combo chain", _test_plus_combo_chain)
+	_run("Region can disable Rotate", _test_region_disables_rotate)
+	_run("Opponent Duel Rank availability", _test_registry_rank_availability)
+	_run("Influence can manufacture Same", _test_influence_enables_same)
+	_run("Influence pattern rotates with card", _test_influence_pattern_rotation)
+	_run("Influence snapshot stays stable during Combo", _test_influence_snapshot_stable)
+	_run("Captured Influence changes allegiance next action", _test_influence_changes_allegiance)
+	_run("Stake policy takes strongest card", _test_stake_policy_strongest)
+	_run("Unsupported rules are rejected", _test_unsupported_rule_guard)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -430,4 +467,287 @@ func _test_registry_duplicate_id() -> Dictionary:
 	return _ok(
 		not bool(audit.get("valid", true)),
 		"Registry should reject duplicate opponent IDs."
+	)
+
+
+func _test_row_boundary_no_wrap() -> Dictionary:
+	var state = _new_match()
+	# Cells 2 and 3 are adjacent in the flat array but sit on different rows.
+	# A right-facing value from cell 2 must never capture cell 3.
+	state.board[3] = _slot(
+		MockCard.new(&"wrap_target", 1, 1, 1, 1),
+		OWNER_OPPONENT
+	)
+	var placed = MockCard.new(&"wrap_source", 1, 9, 1, 1)
+	var preview: Dictionary = state.preview_move(
+		placed,
+		OWNER_PLAYER,
+		2
+	)
+	return _ok(
+		int(preview.get("capture_count", 0)) == 0,
+		"Board-neighbor logic wrapped from cell 2 into cell 3."
+	)
+
+
+func _test_preview_is_immutable() -> Dictionary:
+	var state = _new_match()
+	state.board[3] = _slot(
+		MockCard.new(&"preview_target", 1, 2, 1, 1),
+		OWNER_OPPONENT
+	)
+	var placed = MockCard.new(&"preview_source", 1, 1, 1, 5)
+	var player_hand_before: int = state.player_hand.size()
+	var opponent_hand_before: int = state.opponent_hand.size()
+	var current_owner_before: int = state.current_owner
+	var turn_before: int = state.turn_number
+
+	var preview: Dictionary = state.preview_move(
+		placed,
+		OWNER_PLAYER,
+		4
+	)
+	var target: Dictionary = state.board[3]
+	return _ok(
+		int(preview.get("capture_count", 0)) == 1
+		and state.board[4] == null
+		and int(target.get("owner", OWNER_NONE)) == OWNER_OPPONENT
+		and state.player_hand.size() == player_hand_before
+		and state.opponent_hand.size() == opponent_hand_before
+		and state.current_owner == current_owner_before
+		and state.turn_number == turn_before,
+		"preview_move() mutated live match state."
+	)
+
+
+func _test_plus_combo_chain() -> Dictionary:
+	var rules := MockRuleSet.new()
+	rules.plus_rule = true
+	rules.combo_rule = true
+	var state = _new_match(rules)
+
+	# Center top 3 + top-neighbor bottom 2 = 5.
+	# Center left 4 + left-neighbor right 1 = 5, triggering Plus.
+	# The top Plus seed then beats cell 0 to prove Plus can seed Combo.
+	state.board[1] = _slot(
+		MockCard.new(&"plus_combo_seed", 1, 1, 2, 6),
+		OWNER_OPPONENT
+	)
+	state.board[3] = _slot(
+		MockCard.new(&"plus_combo_second", 1, 1, 1, 1),
+		OWNER_OPPONENT
+	)
+	state.board[0] = _slot(
+		MockCard.new(&"plus_combo_target", 1, 2, 1, 1),
+		OWNER_OPPONENT
+	)
+
+	var placed = MockCard.new(&"plus_combo_placed", 3, 1, 1, 4)
+	var preview: Dictionary = state.preview_move(
+		placed,
+		OWNER_PLAYER,
+		4
+	)
+	var combo: Array = preview.get("combo_captured", [])
+	return _ok(
+		bool(preview.get("plus_triggered", false))
+		and combo.has(0),
+		"Expected a Plus capture to seed Combo into cell 0."
+	)
+
+
+func _test_region_disables_rotate() -> Dictionary:
+	var region := MockRegion.new()
+	region.allow_rotate = false
+	var state = _new_match(null, region)
+	return _ok(
+		not state.can_rotate(OWNER_PLAYER, 0)
+		and not state.rotate_hand_card(OWNER_PLAYER, 0)
+		and not state.player_rotate_used,
+		"Region allow_rotate=false did not disable Rotate."
+	)
+
+
+func _test_registry_rank_availability() -> Dictionary:
+	var profile = OpponentProfileScript.new()
+	profile.opponent_id = &"qa_rank_gate"
+	profile.display_name = "QA Rank Gate"
+	profile.required_player_rank = 3
+
+	var registry = OpponentRegistryScript.new()
+	registry.opponents.append(profile)
+	var locked: Dictionary = registry.get_availability(
+		&"qa_rank_gate",
+		2
+	)
+	var open: Dictionary = registry.get_availability(
+		&"qa_rank_gate",
+		3
+	)
+	return _ok(
+		not bool(locked.get("available", true))
+		and bool(open.get("available", false)),
+		"Opponent availability did not unlock exactly at required Duel Rank."
+	)
+
+
+func _test_influence_enables_same() -> Dictionary:
+	var rules := MockRuleSet.new()
+	rules.same_rule = true
+	rules.combo_rule = true
+	rules.influence_rule = true
+	var state = _new_match(rules)
+
+	# The top enemy would normally be 6 vs the placed card's 5. The placed
+	# card projects -1 pressure upward, turning that comparison into 5 == 5.
+	# The left comparison is already 4 == 4, so Influence manufactures Same.
+	state.board[1] = _slot(
+		MockCard.new(&"influence_top", 1, 1, 6, 1),
+		OWNER_OPPONENT
+	)
+	state.board[3] = _slot(
+		MockCard.new(&"influence_left", 1, 4, 1, 1),
+		OWNER_OPPONENT
+	)
+	var placed = MockCard.new(&"influence_placed", 5, 1, 1, 4)
+	placed.influence_mode = &"pressure"
+	placed.influence_strength = 1
+	placed.influence_offsets.append(Vector2i(0, -1))
+
+	var preview: Dictionary = state.preview_move(
+		placed,
+		OWNER_PLAYER,
+		4
+	)
+	var same_captured: Array = preview.get("same_captured", [])
+	return _ok(
+		bool(preview.get("same_triggered", false))
+		and same_captured.has(1)
+		and same_captured.has(3)
+		and int(preview.get("influence_modifiers", {}).get(1, 0)) == -1,
+		"Influence failed to lower the top enemy and manufacture Same."
+	)
+
+
+func _test_influence_pattern_rotation() -> Dictionary:
+	var rules := MockRuleSet.new()
+	rules.influence_rule = true
+	var state = _new_match(rules)
+	var placed = MockCard.new(&"rotate_influence", 1, 1, 1, 1)
+	placed.influence_mode = &"pressure"
+	placed.influence_strength = 1
+	placed.influence_offsets.append(Vector2i(0, -1))
+
+	var preview: Dictionary = state.preview_move(
+		placed,
+		OWNER_PLAYER,
+		4,
+		1
+	)
+	var cells: Array = preview.get("influence_cells", [])
+	return _ok(
+		cells.size() == 1 and cells.has(5) and not cells.has(1),
+		"Clockwise rotation did not rotate upward Influence to the right."
+	)
+
+
+func _test_influence_snapshot_stable() -> Dictionary:
+	var rules := MockRuleSet.new()
+	rules.same_rule = true
+	rules.combo_rule = true
+	rules.influence_rule = true
+	var state = _new_match(rules)
+
+	# Player pressure lowers the top enemy from 6 to 5 and manufactures Same.
+	# Once that enemy flips, its left side must stay at the pre-capture effective
+	# value 5 for this entire resolution. If pressure were recomputed immediately
+	# from its new owner, it would jump back to 6 and incorrectly Combo-capture
+	# cell 0. Influence allegiance changes only for the next action.
+	state.board[1] = _slot(
+		MockCard.new(&"snapshot_top", 1, 1, 6, 6),
+		OWNER_OPPONENT
+	)
+	state.board[3] = _slot(
+		MockCard.new(&"snapshot_left", 1, 4, 1, 1),
+		OWNER_OPPONENT
+	)
+	state.board[0] = _slot(
+		MockCard.new(&"snapshot_combo_target", 9, 5, 9, 9),
+		OWNER_OPPONENT
+	)
+
+	var placed = MockCard.new(&"snapshot_placed", 5, 1, 1, 4)
+	placed.influence_mode = &"pressure"
+	placed.influence_strength = 1
+	placed.influence_offsets.append(Vector2i(0, -1))
+
+	var preview: Dictionary = state.preview_move(
+		placed,
+		OWNER_PLAYER,
+		4
+	)
+	var combo: Array = preview.get("combo_captured", [])
+	return _ok(
+		bool(preview.get("same_triggered", false))
+		and not combo.has(0),
+		"A Same-flipped card changed its Influence modifier during the same resolution."
+	)
+
+
+func _test_influence_changes_allegiance() -> Dictionary:
+	var rules := MockRuleSet.new()
+	rules.influence_rule = true
+	var state = _new_match(rules)
+
+	# Keep the overall card-count invariant valid while pre-populating the board.
+	state.opponent_hand.pop_back()
+	state.opponent_hand_rotations.pop_back()
+
+	var source = MockCard.new(&"allegiance_source", 1, 1, 1, 1)
+	source.influence_mode = &"pressure"
+	source.influence_strength = 1
+	source.influence_offsets.append(Vector2i(0, 1))
+	state.board[1] = _slot(source, OWNER_OPPONENT)
+
+	var capturing = MockCard.new(&"allegiance_capture", 1, 1, 1, 5)
+	state.player_hand[0] = capturing
+	var result: Dictionary = state.place_card(OWNER_PLAYER, 0, 2)
+	if not bool(result.get("success", false)):
+		return _ok(false, "Could not execute the allegiance-change setup move.")
+
+	var captured_slot: Dictionary = state.board[1]
+	return _ok(
+		int(captured_slot.get("owner", OWNER_NONE)) == OWNER_PLAYER
+		and state.get_cell_influence_modifier(4, OWNER_PLAYER) == 0
+		and state.get_cell_influence_modifier(4, OWNER_OPPONENT) == -1,
+		"Captured Influence did not change allegiance for the next action."
+	)
+
+
+func _test_stake_policy_strongest() -> Dictionary:
+	var cheap_high_ranks = MockCard.new(&"z_card", 9, 9, 9, 9, 5)
+	var expensive_low_ranks = MockCard.new(&"b_card", 1, 1, 1, 1, 6)
+	var expensive_tie_high = MockCard.new(&"a_card", 2, 2, 2, 2, 6)
+	var expensive_tie_high_later_id = MockCard.new(&"c_card", 2, 2, 2, 2, 6)
+	var cards: Array = [
+		cheap_high_ranks,
+		expensive_low_ranks,
+		expensive_tie_high_later_id,
+		expensive_tie_high,
+	]
+	var policy = StakePolicyScript.new()
+	return _ok(
+		policy.choose_lost_card_index(cards) == 3,
+		"Stake policy must prefer points, then rank total, then stable card_id."
+	)
+
+
+func _test_unsupported_rule_guard() -> Dictionary:
+	var rules = RuleSetScript.new()
+	rules.same_wall_rule = true
+	var audit: Dictionary = rules.validate_runtime_support()
+	return _ok(
+		not bool(audit.get("valid", true))
+		and not audit.get("errors", []).is_empty(),
+		"Unimplemented rule toggles must fail validation instead of silently running."
 	)

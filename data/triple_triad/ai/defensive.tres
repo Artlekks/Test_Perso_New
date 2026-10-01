@@ -8,6 +8,7 @@ profile_id = &"defensive"
 display_name = "Defensive"
 capture_weight = 76.0
 same_trigger_weight = 72.0
+influence_weight = 10.0
 positional_weight = 2.1
 card_strength_weight = 0.02
 conserve_cost_weight = 0.75

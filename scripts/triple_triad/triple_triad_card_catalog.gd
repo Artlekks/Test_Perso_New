@@ -23,6 +23,8 @@ const CardDefinitionScript = preload("res://scripts/triple_triad/triple_triad_ca
 @export var include_fish_cards: bool = false
 
 var _cache: Dictionary = {}
+var _id_cache: Dictionary = {}
+var _id_cache_complete: bool = false
 var _card_stats_loaded: bool = false
 var _card_stats_by_id: Dictionary = {}
 var _card_stats_errors: PackedStringArray = PackedStringArray()
@@ -41,6 +43,8 @@ func reload_authored_stats() -> void:
 	_card_stats_by_id.clear()
 	_card_stats_errors.clear()
 	_cache.clear()
+	_id_cache.clear()
+	_id_cache_complete = false
 	_ensure_card_stats_loaded()
 
 
@@ -77,7 +81,7 @@ func _ensure_card_stats_loaded() -> void:
 		return
 	var root: Dictionary = parsed
 	var schema_version: int = int(root.get("schema_version", 0))
-	if schema_version not in [1, 2]:
+	if schema_version not in [1, 2, 3]:
 		_card_stats_errors.append("unsupported card stats schema_version")
 	var raw_cards = root.get("cards", [])
 	if typeof(raw_cards) != TYPE_ARRAY:
@@ -138,6 +142,25 @@ func _apply_authored_stats(card) -> bool:
 				parsed_acquisition_tags.append(acquisition_tag)
 	card.acquisition_tags = parsed_acquisition_tags
 
+	card.influence_mode = &"none"
+	card.influence_strength = 0
+	card.influence_offsets.clear()
+	var raw_influence = entry.get("influence", {})
+	if typeof(raw_influence) == TYPE_DICTIONARY:
+		var influence: Dictionary = raw_influence
+		var mode: String = str(influence.get("mode", "none")).strip_edges().to_lower()
+		if mode == "pressure":
+			card.influence_mode = &"pressure"
+			card.influence_strength = clampi(int(influence.get("strength", 1)), 1, 2)
+			var raw_offsets = influence.get("offsets", [])
+			if typeof(raw_offsets) == TYPE_ARRAY:
+				for raw_offset in raw_offsets:
+					if typeof(raw_offset) != TYPE_ARRAY or raw_offset.size() != 2:
+						continue
+					var offset := Vector2i(int(raw_offset[0]), int(raw_offset[1]))
+					if offset != Vector2i.ZERO and not card.influence_offsets.has(offset):
+						card.influence_offsets.append(offset)
+
 	var raw_tags = entry.get("tags", [])
 	var parsed_tags := PackedStringArray()
 	if typeof(raw_tags) == TYPE_ARRAY:
@@ -173,6 +196,35 @@ func _validate_authored_entry(card_id: String, entry: Dictionary, errors: Packed
 		)
 	if rarity.is_empty():
 		errors.append("%s has an empty rarity" % card_id)
+	var raw_influence = entry.get("influence", {})
+	if typeof(raw_influence) == TYPE_DICTIONARY and not raw_influence.is_empty():
+		var influence: Dictionary = raw_influence
+		var influence_mode: String = str(influence.get("mode", "none")).strip_edges().to_lower()
+		if influence_mode not in ["none", "pressure"]:
+			errors.append("%s has unsupported influence mode %s" % [card_id, influence_mode])
+		if influence_mode == "pressure":
+			var strength: int = int(influence.get("strength", 0))
+			if strength < 1 or strength > 2:
+				errors.append("%s has invalid influence strength %d" % [card_id, strength])
+			var offsets = influence.get("offsets", [])
+			if typeof(offsets) != TYPE_ARRAY or offsets.is_empty():
+				errors.append("%s pressure influence has no offsets" % card_id)
+			else:
+				var seen_offsets: Dictionary = {}
+				for raw_offset in offsets:
+					if typeof(raw_offset) != TYPE_ARRAY or raw_offset.size() != 2:
+						errors.append("%s has malformed influence offset" % card_id)
+						continue
+					var x: int = int(raw_offset[0])
+					var y: int = int(raw_offset[1])
+					if x == 0 and y == 0:
+						errors.append("%s influence cannot target its own cell" % card_id)
+					if absi(x) > 2 or absi(y) > 2:
+						errors.append("%s influence offset is outside prototype bounds" % card_id)
+					var key: String = "%d,%d" % [x, y]
+					if seen_offsets.has(key):
+						errors.append("%s has duplicate influence offset %s" % [card_id, key])
+					seen_offsets[key] = true
 	var raw_ranks = entry.get("ranks", {})
 	if typeof(raw_ranks) != TYPE_DICTIONARY:
 		errors.append("%s is missing ranks" % card_id)
@@ -188,9 +240,12 @@ func get_card(index: int):
 	if index < 0 or index >= get_total_source_count():
 		return null
 	if _cache.has(index):
-		return _cache[index]
+		var cached = _cache[index]
+		_register_card_id(cached)
+		return cached
 	var card = _build_card(index)
 	_cache[index] = card
+	_register_card_id(card)
 	return card
 
 
@@ -198,11 +253,26 @@ func get_card_by_id(card_id: StringName):
 	var wanted: String = String(card_id)
 	if wanted.is_empty():
 		return null
+	if _id_cache.has(wanted):
+		return _id_cache[wanted]
+	_ensure_id_cache()
+	return _id_cache.get(wanted, null)
+
+
+func _register_card_id(card) -> void:
+	if card == null:
+		return
+	var key: String = String(card.card_id)
+	if not key.is_empty():
+		_id_cache[key] = card
+
+
+func _ensure_id_cache() -> void:
+	if _id_cache_complete:
+		return
 	for source_index in range(get_total_source_count()):
-		var card = get_card(source_index)
-		if card != null and String(card.card_id) == wanted:
-			return card
-	return null
+		get_card(source_index)
+	_id_cache_complete = true
 
 
 func get_card_by_legacy_source_index(legacy_index: int):
@@ -276,8 +346,10 @@ func build_budgeted_hand(
 	deck_budget: int = 30
 ) -> Array:
 	var pool: Array = get_cards_for_level_range(min_level, max_level)
-	if pool.size() <= hand_size:
-		return pool.duplicate()
+	if pool.size() < hand_size:
+		return []
+	if pool.size() == hand_size:
+		return pool.duplicate() if get_hand_cost(pool) <= deck_budget else []
 
 	var best_hand: Array = []
 	var best_cost: int = -1
@@ -309,6 +381,8 @@ func build_budgeted_hand(
 	var fallback: Array = []
 	for index in range(mini(hand_size, cheapest.size())):
 		fallback.append(cheapest[index])
+	if fallback.size() != hand_size or get_hand_cost(fallback) > deck_budget:
+		return []
 	return fallback
 
 

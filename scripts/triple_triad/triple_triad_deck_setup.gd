@@ -18,6 +18,7 @@ const DECK_SCALE := Vector2(0.71, 0.71)
 const DECK_STEP_Y := 0.0
 const DECK_STEP_X := 91.2
 const SAVE_PATH := "user://triple_triad_decks.cfg"
+const SAVE_VERSION := 1
 
 const STATE_BROWSE := 0
 const STATE_REPLACE := 1
@@ -580,6 +581,10 @@ func _sort_cards() -> void:
 	)
 
 
+func _stamp_config(config: ConfigFile) -> void:
+	config.set_value("meta", "version", SAVE_VERSION)
+
+
 func _load_sort_descending() -> bool:
 	var config := ConfigFile.new()
 	if config.load(SAVE_PATH) != OK:
@@ -591,6 +596,7 @@ func _save_sort_preference() -> void:
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
 	config.set_value("meta", "sort_descending", _sort_descending)
+	_stamp_config(config)
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not save sort preference (%s)." % error_string(save_error))
@@ -654,6 +660,7 @@ func _sanitize_all_saved_profiles() -> void:
 			changed = true
 
 	if changed:
+		_stamp_config(config)
 		var save_error: Error = config.save(SAVE_PATH)
 		if save_error != OK:
 			push_warning("TripleTriadDeckSetup: could not sanitize deck profiles (%s)." % error_string(save_error))
@@ -753,6 +760,7 @@ func _save_current_profile() -> void:
 	config.set_value("decks", "deck_ids_%d" % (_profile_index + 1), ids)
 	config.set_value("meta", "last_profile", _profile_index)
 
+	_stamp_config(config)
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not save deck profiles (%s)." % error_string(save_error))
@@ -800,6 +808,7 @@ func remove_card_from_all_profiles(card_id: StringName) -> void:
 			filtered_deck.append(card)
 	_deck = filtered_deck
 
+	_stamp_config(config)
 	var save_error: Error = config.save(SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not prune deck profiles (%s)." % error_string(save_error))

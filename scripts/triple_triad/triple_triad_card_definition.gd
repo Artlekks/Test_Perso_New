@@ -16,6 +16,39 @@ extends Resource
 @export var rarity_id: StringName = &"standard"
 @export_range(1, 10, 1) var required_player_rank: int = 1
 @export var acquisition_tags: PackedStringArray = PackedStringArray()
+@export var influence_mode: StringName = &"none"
+@export_range(0, 2, 1) var influence_strength: int = 0
+@export var influence_offsets: Array[Vector2i] = []
+
+
+func has_influence() -> bool:
+	return (
+		String(influence_mode) == "pressure"
+		and influence_strength > 0
+		and not influence_offsets.is_empty()
+	)
+
+
+func get_influence_offsets_rotated(quarter_turns_clockwise: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var turns: int = posmod(quarter_turns_clockwise, 4)
+	for authored_offset in influence_offsets:
+		var offset: Vector2i = authored_offset
+		for _turn in range(turns):
+			offset = Vector2i(-offset.y, offset.x)
+		result.append(offset)
+	return result
+
+
+func get_influence_snapshot() -> Dictionary:
+	var serialized_offsets: Array = []
+	for offset in influence_offsets:
+		serialized_offsets.append([offset.x, offset.y])
+	return {
+		"mode": String(influence_mode),
+		"strength": influence_strength,
+		"offsets": serialized_offsets,
+	}
 
 
 func strength_points() -> int:
@@ -83,5 +116,8 @@ func is_valid_definition() -> bool:
 		and required_player_rank >= 1
 		and required_player_rank <= 10
 		and not String(rarity_id).strip_edges().is_empty()
+		and influence_mode in [&"none", &"pressure"]
+		and influence_strength >= 0
+		and influence_strength <= 2
 		and portrait != null
 	)

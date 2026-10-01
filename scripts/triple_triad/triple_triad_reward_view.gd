@@ -56,6 +56,9 @@ var _sequence_id: int = 0
 var _entrance_started: bool = false
 var _focus_exit_down: bool = true
 var _focus_sequence_id: int = -1
+var _transfer_result_received: bool = false
+var _transfer_result_ok: bool = false
+var _forced_opponent_take_index: int = -1
 
 
 func _ready() -> void:
@@ -68,10 +71,14 @@ func open_reward(
 	opponent_cards: Array,
 	player_cards: Array,
 	winner: int = OWNER_PLAYER,
-	defer_entrance: bool = false
+	defer_entrance: bool = false,
+	opponent_take_index: int = -1
 ) -> void:
 	_sequence_id += 1
 	_winner = winner
+	_forced_opponent_take_index = opponent_take_index
+	_transfer_result_received = false
+	_transfer_result_ok = false
 	_opponent_cards = opponent_cards.duplicate()
 	_player_cards = player_cards.duplicate()
 	_selected_index = 0
@@ -110,6 +117,9 @@ func close_reward() -> void:
 	_entrance_started = false
 	_focus_exit_down = true
 	_focus_sequence_id = -1
+	_forced_opponent_take_index = -1
+	_transfer_result_received = false
+	_transfer_result_ok = false
 	visible = false
 	confirm_overlay.visible = false
 	selection_arrow.visible = false
@@ -118,6 +128,13 @@ func close_reward() -> void:
 
 func is_active() -> bool:
 	return _state != STATE_CLOSED
+
+
+func resolve_transfer_request(success: bool) -> void:
+	# reward_selected is emitted synchronously; TripleTriadGame reports whether the
+	# ownership transaction committed before this view is allowed to continue.
+	_transfer_result_received = true
+	_transfer_result_ok = success
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -144,7 +161,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_accept_input()
 				return
 			if _is_back(event):
-				leave_requested.emit()
+				# Winning a match requires taking a reward card. Back is consumed here
+				# instead of allowing the stake transaction to be bypassed.
+				prompt_label.text = "Choose 1 card to continue"
 				_accept_input()
 				return
 
@@ -295,7 +314,7 @@ func _refresh_selection() -> void:
 	info_label.text = str(card.display_name)
 	prompt_label.text = "Select 1 card you want"
 	_set_help_large(false)
-	help_label.text = "A/D: Choose   K: Select   I: Leave"
+	help_label.text = "A/D: Choose   K: Select"
 
 
 func _enter_confirm() -> void:
@@ -322,7 +341,14 @@ func _begin_player_reward_sequence() -> void:
 	var sequence_id := _sequence_id
 	var card = _opponent_cards[_selected_index]
 	var source_view = _opponent_views[_selected_index]
+	_transfer_result_received = false
+	_transfer_result_ok = false
 	reward_selected.emit(card)
+	if not _transfer_result_received or not _transfer_result_ok:
+		_state = STATE_SELECT
+		_refresh_selection()
+		prompt_label.text = "Transfer failed. Choose again."
+		return
 	prompt_label.text = "%s acquired!" % str(card.display_name)
 	info_label.text = str(card.display_name)
 	_animate_card_transfer(card, source_view, OWNER_PLAYER, true, sequence_id)
@@ -336,7 +362,7 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 	if not _sequence_is_current(sequence_id):
 		return
 
-	_selected_index = _choose_opponent_take_index()
+	_selected_index = clampi(_forced_opponent_take_index, 0, _player_cards.size() - 1)
 	selection_arrow.visible = true
 	selection_arrow.position = _arrow_position(BOTTOM_ROW_ORIGIN, _selected_index)
 	var card = _player_cards[_selected_index]
@@ -347,7 +373,12 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 
 	selection_arrow.visible = false
 	prompt_label.text = "Opponent takes %s" % str(card.display_name)
+	_transfer_result_received = false
+	_transfer_result_ok = false
 	reward_selected.emit(card)
+	if not _transfer_result_received or not _transfer_result_ok:
+		prompt_label.text = "Card transfer failed. Match result is locked."
+		return
 	var source_view = _player_views[_selected_index]
 	_animate_card_transfer(card, source_view, OWNER_OPPONENT, false, sequence_id)
 
@@ -432,18 +463,6 @@ func _run_focus_exit(exit_down: bool, sequence_id: int) -> void:
 	focus_dim.visible = false
 	_clear_focus_card()
 	completed.emit()
-
-
-func _choose_opponent_take_index() -> int:
-	var best_index: int = 0
-	var best_total: int = -1
-	for index in range(_player_cards.size()):
-		var card = _player_cards[index]
-		var total: int = int(card.top_rank) + int(card.right_rank) + int(card.bottom_rank) + int(card.left_rank)
-		if total > best_total:
-			best_total = total
-			best_index = index
-	return best_index
 
 
 func _arrow_position(row_origin: Vector2, index: int) -> Vector2:

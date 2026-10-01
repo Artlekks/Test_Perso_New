@@ -8,6 +8,7 @@ profile_id = &"balanced"
 display_name = "Balanced"
 capture_weight = 100.0
 same_trigger_weight = 65.0
+influence_weight = 8.0
 positional_weight = 1.0
 card_strength_weight = 0.08
 conserve_cost_weight = 0.3

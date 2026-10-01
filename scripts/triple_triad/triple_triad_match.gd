@@ -1,5 +1,7 @@
 extends RefCounted
 
+const InfluenceResolverScript = preload("res://scripts/triple_triad/triple_triad_influence_resolver.gd")
+
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
 const OWNER_OPPONENT := 2
@@ -29,6 +31,9 @@ var game_over: bool = false
 var turn_number: int = 0
 var rule_set: Resource = null
 var region_profile: Resource = null
+var _influence_resolver = InfluenceResolverScript.new()
+var _resolution_influence_state: Dictionary = {}
+var _resolution_influence_modifiers: Dictionary = {}
 
 
 func reset_match(
@@ -58,6 +63,8 @@ func reset_match(
 	turn_number = 0
 	rule_set = rules
 	region_profile = region
+	_resolution_influence_state.clear()
+	_resolution_influence_modifiers.clear()
 
 
 func can_place(card_owner: int, hand_index: int, cell_index: int) -> bool:
@@ -124,7 +131,18 @@ func place_card(card_owner: int, hand_index: int, cell_index: int) -> Dictionary
 		"rotation": card_rotation,
 	}
 
-	var capture_result: Dictionary = _resolve_captures(cell_index, card_owner)
+	var influence_state: Dictionary = _build_influence_state()
+	var projected_influence: Array[int] = get_influence_cells_for_card(
+		card,
+		cell_index,
+		card_rotation
+	)
+	var influence_modifiers: Dictionary = _occupied_influence_modifiers(influence_state)
+	var capture_result: Dictionary = _resolve_captures(
+		cell_index,
+		card_owner,
+		influence_state
+	)
 	turn_number += 1
 	game_over = _occupied_count() >= 9
 	if not game_over:
@@ -144,6 +162,16 @@ func place_card(card_owner: int, hand_index: int, cell_index: int) -> Dictionary
 		"plus_match_count": capture_result["plus_match_count"],
 		"same_triggered": capture_result["same_triggered"],
 		"plus_triggered": capture_result["plus_triggered"],
+		"influence_cells": projected_influence,
+		"influence_modifiers": influence_modifiers,
+		"placed_total_modifier": (
+			get_cell_rank_bonus(cell_index)
+			+ _influence_resolver.modifier_for_cell(
+				influence_state,
+				cell_index,
+				card_owner
+			)
+		),
 		"game_over": game_over,
 		"score": get_score(),
 		"winner": get_winner(),
@@ -160,17 +188,42 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 			"plus_triggered": false,
 			"same_match_count": 0,
 			"plus_match_count": 0,
+			"influence_cells": [],
+			"influence_modifiers": {},
+			"placed_total_modifier": 0,
 		}
 
 	var original_board: Array = board
 	board = board.duplicate(true)
+	var clean_rotation: int = posmod(rotation_quarters, 4)
 	board[cell_index] = {
 		"card": card,
 		"owner": card_owner,
-		"rotation": posmod(rotation_quarters, 4),
+		"rotation": clean_rotation,
 	}
-	var capture_result: Dictionary = _resolve_captures(cell_index, card_owner)
+	var influence_state: Dictionary = _build_influence_state()
+	var projected_influence: Array[int] = get_influence_cells_for_card(
+		card,
+		cell_index,
+		clean_rotation
+	)
+	var influence_modifiers: Dictionary = _occupied_influence_modifiers(influence_state)
+	var placed_total_modifier: int = (
+		get_cell_rank_bonus(cell_index)
+		+ _influence_resolver.modifier_for_cell(
+			influence_state,
+			cell_index,
+			card_owner
+		)
+	)
+	var capture_result: Dictionary = _resolve_captures(
+		cell_index,
+		card_owner,
+		influence_state
+	)
 	board = original_board
+	_resolution_influence_state.clear()
+	_resolution_influence_modifiers.clear()
 	return {
 		"valid": true,
 		"captured": capture_result["captured"],
@@ -183,6 +236,14 @@ func preview_move(card, card_owner: int, cell_index: int, rotation_quarters: int
 		"plus_triggered": capture_result["plus_triggered"],
 		"same_match_count": capture_result["same_match_count"],
 		"plus_match_count": capture_result["plus_match_count"],
+		"influence_cells": projected_influence,
+		"influence_modifiers": influence_modifiers,
+		"influence_enemy_count": _count_influenced_enemies(
+			projected_influence,
+			card_owner
+		),
+		"influence_empty_count": _count_influenced_empty_cells(projected_influence),
+		"placed_total_modifier": placed_total_modifier,
 	}
 
 
@@ -191,7 +252,13 @@ func preview_capture_count(card, card_owner: int, cell_index: int, rotation_quar
 	return int(preview.get("capture_count", -1))
 
 
-func effective_rank_for_card(card, side: int, rotation_quarters: int = 0, cell_index: int = -1) -> int:
+func effective_rank_for_card(
+	card,
+	side: int,
+	rotation_quarters: int = 0,
+	cell_index: int = -1,
+	card_owner: int = OWNER_NONE
+) -> int:
 	if card == null:
 		return 0
 	var base_rank: int
@@ -199,7 +266,10 @@ func effective_rank_for_card(card, side: int, rotation_quarters: int = 0, cell_i
 		base_rank = int(card.rank_for_side_rotated(side, rotation_quarters))
 	else:
 		base_rank = int(card.rank_for_side(side))
-	return clampi(base_rank + get_cell_rank_bonus(cell_index), 1, 10)
+	var modifier: int = get_cell_rank_bonus(cell_index)
+	if card_owner in [OWNER_PLAYER, OWNER_OPPONENT]:
+		modifier += get_cell_influence_modifier(cell_index, card_owner)
+	return clampi(base_rank + modifier, 1, 10)
 
 
 func get_cell_rank_bonus(cell_index: int) -> int:
@@ -208,6 +278,40 @@ func get_cell_rank_bonus(cell_index: int) -> int:
 	if region_profile.has_method("rank_bonus_for_cell"):
 		return int(region_profile.call("rank_bonus_for_cell", cell_index))
 	return 0
+
+
+func get_cell_influence_modifier(cell_index: int, card_owner: int) -> int:
+	if not _influence_enabled() or cell_index < 0 or cell_index >= board.size():
+		return 0
+
+	# During one placement, both source influence and the modifiers already applied
+	# to occupied cards are frozen before any capture changes ownership. This keeps
+	# Same/Plus/Basic/Combo deterministic and prevents a card from gaining or losing
+	# pressure halfway through the same resolution just because it flipped sides.
+	if not _resolution_influence_state.is_empty():
+		return int(_resolution_influence_modifiers.get(cell_index, 0))
+
+	var state: Dictionary = _build_influence_state()
+	return _influence_resolver.modifier_for_cell(state, cell_index, card_owner)
+
+
+func get_influence_cells_for_card(
+	card,
+	source_cell: int,
+	rotation_quarters: int = 0
+) -> Array[int]:
+	if not _influence_enabled():
+		return []
+	return _influence_resolver.projected_cells(
+		card,
+		source_cell,
+		rotation_quarters,
+		board.size()
+	)
+
+
+func get_current_influence_modifiers() -> Dictionary:
+	return _occupied_influence_modifiers(_build_influence_state())
 
 
 func get_empty_cells() -> Array[int]:
@@ -272,7 +376,19 @@ func validate_state() -> bool:
 	return true
 
 
-func _resolve_captures(cell_index: int, card_owner: int) -> Dictionary:
+func _resolve_captures(
+	cell_index: int,
+	card_owner: int,
+	influence_state: Dictionary = {}
+) -> Dictionary:
+	_resolution_influence_state = (
+		influence_state
+		if not influence_state.is_empty()
+		else _build_influence_state()
+	)
+	_resolution_influence_modifiers = _occupied_influence_modifiers(
+		_resolution_influence_state
+	)
 	var same_result: Dictionary = _resolve_same_captures(cell_index, card_owner)
 	var plus_result: Dictionary = _resolve_plus_captures(cell_index, card_owner)
 
@@ -298,6 +414,8 @@ func _resolve_captures(cell_index: int, card_owner: int) -> Dictionary:
 	_append_unique_cells(captured, plus_captured)
 	_append_unique_cells(captured, basic_captured)
 	_append_unique_cells(captured, combo_captured)
+	_resolution_influence_state.clear()
+	_resolution_influence_modifiers.clear()
 	return {
 		"captured": captured,
 		"basic_captured": basic_captured,
@@ -461,7 +579,57 @@ func _resolve_combo_captures(seed_cells: Array[int], card_owner: int) -> Array[i
 func _slot_rank(slot: Dictionary, side: int, cell_index: int) -> int:
 	var card = slot["card"]
 	var rotation: int = int(slot.get("rotation", 0))
-	return effective_rank_for_card(card, side, rotation, cell_index)
+	return effective_rank_for_card(card, side, rotation, cell_index, int(slot.get("owner", OWNER_NONE)))
+
+
+func _influence_enabled() -> bool:
+	return _rule_enabled("influence_rule")
+
+
+func _build_influence_state() -> Dictionary:
+	return _influence_resolver.build_state(board, _influence_enabled())
+
+
+func _occupied_influence_modifiers(state: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	if not _influence_enabled():
+		return result
+	for cell_index in range(board.size()):
+		var slot_variant = board[cell_index]
+		if slot_variant == null:
+			continue
+		var slot: Dictionary = slot_variant
+		var owner: int = int(slot.get("owner", OWNER_NONE))
+		var modifier: int = _influence_resolver.modifier_for_cell(
+			state,
+			cell_index,
+			owner
+		)
+		if modifier != 0:
+			result[cell_index] = modifier
+	return result
+
+
+func _count_influenced_enemies(cells: Array[int], source_owner: int) -> int:
+	var count: int = 0
+	for cell_index in cells:
+		if cell_index < 0 or cell_index >= board.size():
+			continue
+		var slot_variant = board[cell_index]
+		if slot_variant == null:
+			continue
+		var slot: Dictionary = slot_variant
+		if int(slot.get("owner", OWNER_NONE)) == _other_owner(source_owner):
+			count += 1
+	return count
+
+
+func _count_influenced_empty_cells(cells: Array[int]) -> int:
+	var count: int = 0
+	for cell_index in cells:
+		if cell_index >= 0 and cell_index < board.size() and board[cell_index] == null:
+			count += 1
+	return count
 
 
 func _rule_enabled(property_name: StringName) -> bool:

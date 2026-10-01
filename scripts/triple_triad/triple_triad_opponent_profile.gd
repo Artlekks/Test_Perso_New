@@ -51,6 +51,15 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 	if preferred_deck_ids.size() > 5:
 		errors.append("preferred_deck_ids cannot contain more than 5 cards")
 
+	if region_profile != null and region_profile.has_method("validate_profile"):
+		var region_audit: Dictionary = region_profile.call("validate_profile")
+		for error_text in region_audit.get("errors", []):
+			errors.append("region_profile: %s" % str(error_text))
+	if rule_set_override != null and rule_set_override.has_method("validate_runtime_support"):
+		var rule_audit: Dictionary = rule_set_override.call("validate_runtime_support")
+		for error_text in rule_audit.get("errors", []):
+			errors.append("rule_set_override: %s" % str(error_text))
+
 	var native_seen: Dictionary = {}
 	for raw_id in native_card_ids:
 		var card_id: String = str(raw_id).strip_edges()
@@ -86,11 +95,6 @@ func validate_profile(card_catalog: Resource = null) -> Dictionary:
 
 	if deck_budget_override > 0 and deck_budget_override < 5:
 		errors.append("deck_budget_override is below a legal five-card budget")
-
-	if native_card_ids.is_empty():
-		warnings.append(
-			"native_card_ids is empty; deterministic prototype collection seeding is active"
-		)
 
 	return {
 		"valid": errors.is_empty(),
