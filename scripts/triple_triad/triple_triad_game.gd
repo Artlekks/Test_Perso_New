@@ -21,8 +21,9 @@ const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/de
 const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
+const MatchHUDScript = preload("res://scripts/triple_triad/triple_triad_match_hud.gd")
 
-const BACKEND_VERSION := "1.2.0"
+const BACKEND_VERSION := "1.2.2"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -46,14 +47,11 @@ const RESULT_FADE_OUT_SECONDS := 0.30
 const PREVIEW_GHOST_ALPHA := 0.72
 const PREVIEW_INFLUENCE_COLOR := Color(1.0, 0.76, 0.18, 0.28)
 const PREVIEW_PRESSURE_COLOR := Color(1.0, 0.24, 0.20, 0.34)
+const RESULT_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.56)
 
 const CARD_GAME_BACKGROUND = preload(
 	"res://assets/ui/triple_triad/card_game/CardGame_Background.png"
 )
-const CARD_GAME_SLOT_GUIDES = preload(
-	"res://assets/ui/triple_triad/card_game/CardGame_Slot_Guides.png"
-)
-
 # The new UI artwork is authored at the project's native 640x480 canvas.
 # CardView's sacred internal layout stays 116x132; the presentation layer scales
 # complete views to the new 74x88 card footprint instead of rewriting rank layout.
@@ -64,8 +62,8 @@ const CARD_VISUAL_SCALE := Vector2(
 	CARD_VISUAL_SIZE.y / CARD_BASE_SIZE.y
 )
 const BOARD_ORIGIN := Vector2(210.0, 107.0)
-const OPPONENT_HAND_ORIGIN := Vector2(42.0, 95.0)
-const PLAYER_HAND_ORIGIN := Vector2(526.0, 95.0)
+const OPPONENT_HAND_ORIGIN := Vector2(41.0, 95.0)
+const PLAYER_HAND_ORIGIN := Vector2(525.0, 95.0)
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
@@ -147,14 +145,18 @@ var _surrendered: bool = false
 var _result_reason: StringName = &""
 var _preview_ghost: Control = null
 var _influence_preview_overlays: Array[ColorRect] = []
-var _slot_guides: TextureRect = null
+var _match_hud: Control = null
 var _default_backdrop_texture: Texture2D = null
+var _result_dim: ColorRect = null
+var _round_number: int = 1
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_default_backdrop_texture = backdrop.texture
 	_apply_card_game_visual_layout()
+	_build_match_hud()
+	_build_result_overlay()
 	_set_match_skin_visible(false)
 	root.visible = false
 	transition_fade.visible = false
@@ -238,34 +240,61 @@ func _ready() -> void:
 
 
 func _apply_card_game_visual_layout() -> void:
-	# Keep scene ownership/layout modular: the art skin is applied at runtime so
-	# TripleTriadCardView.tscn and its manually tuned number positions stay intact.
+	# The supplied card-game background now contains the hand slots, board backs,
+	# frame, and lower information shell as one authored texture. Runtime UI only
+	# adds live cards/text on top; no second slot-guide texture is composited.
 	grid_artwork.visible = false
 	board_container.position = BOARD_ORIGIN
 	board_container.scale = CARD_VISUAL_SCALE
 	opponent_hand_container.position = OPPONENT_HAND_ORIGIN
 	player_hand_container.position = PLAYER_HAND_ORIGIN
 
+	# Retire the old prototype HUD pieces. The dedicated match HUD owns scores,
+	# turn status, region trait, and selected-card information.
+	info_panel.visible = false
+	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	opponent_score_label.get_parent().visible = false
+	player_score_label.get_parent().visible = false
+	message_label.visible = false
+
 	backdrop.z_index = -100
-	if _slot_guides == null:
-		_slot_guides = TextureRect.new()
-		_slot_guides.name = "CardGameSlotGuides"
-		_slot_guides.texture = CARD_GAME_SLOT_GUIDES
-		_slot_guides.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_slot_guides.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_slot_guides.stretch_mode = TextureRect.STRETCH_SCALE
-		_slot_guides.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_slot_guides.position = Vector2.ZERO
-		_slot_guides.size = Vector2(640.0, 480.0)
-		_slot_guides.z_index = -50
-		root.add_child(_slot_guides)
+
+
+func _build_match_hud() -> void:
+	if _match_hud != null:
+		return
+	_match_hud = MatchHUDScript.new()
+	_match_hud.name = "TripleTriadMatchHUD"
+	_match_hud.z_index = 580
+	root.add_child(_match_hud)
+	_match_hud.visible = false
+
+
+func _build_result_overlay() -> void:
+	if _result_dim != null:
+		return
+	_result_dim = ColorRect.new()
+	_result_dim.name = "ResultDim"
+	_result_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_result_dim.color = RESULT_DIM_COLOR
+	_result_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_result_dim.z_index = 790
+	_result_dim.visible = false
+	root.add_child(_result_dim)
+
+	# Keep the authored result label in the center, but make it read more strongly
+	# against the dimmed board.
+	result_label.add_theme_font_size_override("font_size", 40)
+	result_label.add_theme_constant_override("outline_size", 7)
 
 
 func _set_match_skin_visible(enabled: bool) -> void:
 	if backdrop != null:
 		backdrop.texture = CARD_GAME_BACKGROUND if enabled else _default_backdrop_texture
-	if _slot_guides != null:
-		_slot_guides.visible = enabled
+	if _match_hud != null:
+		_match_hud.visible = enabled
+	if not enabled and _result_dim != null:
+		_result_dim.visible = false
 
 
 func _board_cell_visual_rect(cell_index: int) -> Rect2:
@@ -522,11 +551,12 @@ func get_runtime_ui_snapshot() -> Dictionary:
 				opponent_hand_snapshot.append({"hidden": true})
 
 	return {
-		"schema_version": 1,
+		"schema_version": 2,
 		"backend_version": BACKEND_VERSION,
 		"is_open": is_open(),
 		"phase": _phase,
 		"phase_name": _phase_name(_phase),
+		"round_number": _round_number,
 		"match_started": _match_started,
 		"current_owner": (
 			int(_match.current_owner)
@@ -682,6 +712,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	if tree == null or tree.paused:
 		return
 	_previous_pause = tree.paused
+	_round_number = 1
 	_resolve_active_configuration(opponent_profile_override)
 	_opponent_collection_backend = OpponentCollectionScript.new()
 	_opponent_collection_backend.initialize(
@@ -716,6 +747,8 @@ func close_game() -> void:
 	deck_setup.close_setup()
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
+	if _result_dim != null:
+		_result_dim.visible = false
 	_hide_preview_visuals()
 	_match_started = false
 	_surrendered = false
@@ -858,6 +891,8 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 	_set_match_skin_visible(true)
 	reward_view.close_reward()
 	result_label.visible = false
+	if _result_dim != null:
+		_result_dim.visible = false
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	_result_winner = OWNER_NONE
@@ -934,6 +969,14 @@ func _try_player_move() -> void:
 		message_label.text = "Invalid move."
 		return
 
+	# place_card() removes the played card from the hand. Clamp immediately so the
+	# lower information panel advances straight to the next remaining card instead
+	# of flashing empty during the placement animation/opponent turn.
+	_selected_hand_index = clampi(
+		_selected_hand_index,
+		0,
+		maxi(_match.player_hand.size() - 1, 0)
+	)
 	_phase = PHASE_ANIMATING
 	_last_info_name = str(played_card.display_name)
 	_refresh_phase_ui()
@@ -942,7 +985,6 @@ func _try_player_move() -> void:
 	if not is_open():
 		return
 
-	_selected_hand_index = clampi(_selected_hand_index, 0, maxi(_match.player_hand.size() - 1, 0))
 	message_label.text = _capture_message(result)
 	var captured_cells: Array = result.get("captured", [])
 	_refresh_views(captured_cells)
@@ -1066,6 +1108,8 @@ func _finish_match(
 			result_label.text = "YOU SURRENDER..." if _surrendered else "YOU LOSE..."
 		_:
 			result_label.text = "DRAW"
+	if _result_dim != null:
+		_result_dim.visible = true
 	result_label.visible = true
 	turn_label.text = ""
 	help_label.text = "K: Continue"
@@ -1101,9 +1145,12 @@ func _run_result_transition(winner: int) -> void:
 		return
 
 	result_label.visible = false
+	if _result_dim != null:
+		_result_dim.visible = false
 	if winner not in [OWNER_PLAYER, OWNER_OPPONENT]:
 		# A draw is a replay, not an exit. Re-deal behind the black result fade,
 		# then reveal the fresh match using the same active QA/opponent profile.
+		_round_number += 1
 		_start_new_match(_active_player_deck)
 		transition_fade.visible = true
 		transition_fade.modulate = Color.WHITE
@@ -1150,6 +1197,10 @@ func _build_views() -> void:
 	for index in range(5):
 		var opponent_view: Control = CardViewScene.instantiate() as Control
 		opponent_hand_container.add_child(opponent_view)
+		# CardView centers its pivot for flip animations. Hand cards are scaled, so
+		# reset the pivot here to keep their visible top-left aligned to the baked
+		# card backs instead of shrinking inward by ~20 px.
+		opponent_view.pivot_offset = Vector2.ZERO
 		opponent_view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
 		opponent_view.scale = CARD_VISUAL_SCALE
 		opponent_view.z_index = index
@@ -1161,6 +1212,7 @@ func _build_views() -> void:
 	for index in range(5):
 		var player_view: Control = CardViewScene.instantiate() as Control
 		player_hand_container.add_child(player_view)
+		player_view.pivot_offset = Vector2.ZERO
 		player_view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
 		player_view.scale = CARD_VISUAL_SCALE
 		player_view.z_index = index
@@ -1172,6 +1224,7 @@ func _build_preview_visuals() -> void:
 	_preview_ghost = CardViewScene.instantiate() as Control
 	root.add_child(_preview_ghost)
 	_preview_ghost.visible = false
+	_preview_ghost.pivot_offset = Vector2.ZERO
 	_preview_ghost.modulate = Color(1, 1, 1, PREVIEW_GHOST_ALPHA)
 	_preview_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_preview_ghost.z_index = 620
@@ -1234,6 +1287,7 @@ func _refresh_preview_visuals(preview: Dictionary) -> void:
 		rotation,
 		int(preview.get("placed_total_modifier", 0))
 	)
+	_preview_ghost.set_owner_outline_visible(false)
 	_preview_ghost.set_selected(false)
 
 	for raw_cell in preview.get("influence_cells", []):
@@ -1275,6 +1329,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 		if index < _match.opponent_hand.size():
 			view.visible = true
 			view.configure(_match.opponent_hand[index], OWNER_OPPONENT, not show_opponent_cards, false, _match.get_hand_rotation(OWNER_OPPONENT, index), 0)
+			view.set_owner_outline_visible(false)
 			view.set_selected(false)
 			view.position = Vector2(0.0, float(index) * HAND_STEP_Y)
 			view.z_index = index
@@ -1288,6 +1343,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 		if index < _match.player_hand.size():
 			view.visible = true
 			view.configure(_match.player_hand[index], OWNER_PLAYER, false, false, _match.get_hand_rotation(OWNER_PLAYER, index), 0)
+			view.set_owner_outline_visible(false)
 			var is_selected: bool = (
 				_phase in [PHASE_SELECT_CARD, PHASE_SELECT_CELL]
 				and index == _selected_hand_index
@@ -1324,12 +1380,13 @@ func _refresh_views(captured_cells: Array = []) -> void:
 				int(slot.get("rotation", 0)),
 				_match.get_cell_rank_bonus(cell_index) + influence_modifier
 			)
+		board_view.set_owner_outline_visible(false)
 		board_view.set_selected(_phase == PHASE_SELECT_CELL and cell_index == _selected_cell_index)
 
 	_refresh_preview_visuals(active_preview)
 	var score: Dictionary = _match.get_score()
-	_set_score_digits(opponent_score_label, int(score["opponent"]))
-	_set_score_digits(player_score_label, int(score["player"]))
+	if _match_hud != null:
+		_match_hud.call("set_scores", int(score["opponent"]), int(score["player"]))
 	_refresh_phase_ui()
 	runtime_state_changed.emit(get_runtime_ui_snapshot())
 
@@ -1355,39 +1412,71 @@ func _set_score_digits(target: Control, value: int) -> void:
 func _refresh_phase_ui() -> void:
 	selection_arrow.visible = false
 	turn_arrow.visible = false
-	info_panel.visible = _phase not in [PHASE_CLOSED, PHASE_REWARD]
+	# The old beige prototype InfoPanel is retired. Keep its labels empty so no
+	# legacy text can leak over the authored background.
+	info_panel.visible = false
+	turn_label.text = ""
+	info_label.text = ""
 
 	match _phase:
 		PHASE_DEALING:
-			turn_label.text = ""
 			help_label.text = ""
-			info_label.text = _region_trait_text()
 		PHASE_SELECT_CARD:
-			turn_label.text = "Your turn"
 			help_label.text = _player_help_text(false)
 			_update_player_selection_markers()
-			_update_selected_card_info()
 		PHASE_SELECT_CELL:
-			turn_label.text = "Choose a board space"
 			help_label.text = _player_help_text(true)
 			_update_player_selection_markers()
-			_update_selected_card_info()
 		PHASE_AI:
-			turn_label.text = "Opponent's turn"
 			help_label.text = "I: Surrender"
 			_turn_arrow_for_owner(OWNER_OPPONENT)
-			info_label.text = _region_trait_text()
 		PHASE_ANIMATING:
-			turn_label.text = ""
 			help_label.text = ""
-			info_label.text = _region_trait_text()
 		PHASE_RESULT:
-			turn_label.text = ""
 			help_label.text = ""
 		PHASE_REWARD:
-			turn_label.text = ""
 			help_label.text = ""
-			info_panel.visible = false
+
+	_refresh_match_hud()
+
+
+func _refresh_match_hud() -> void:
+	if _match_hud == null:
+		return
+
+	var turn_text: String = ""
+	match _phase:
+		PHASE_SELECT_CARD, PHASE_SELECT_CELL:
+			turn_text = "Your Turn"
+		PHASE_AI:
+			turn_text = "Opponent Turn"
+		PHASE_DEALING:
+			turn_text = "Dealing"
+		PHASE_RESULT:
+			turn_text = "Result"
+	_match_hud.call("set_turn_text", turn_text)
+	_match_hud.call("set_region_text", _region_trait_text())
+
+	_match_hud.call("set_round_number", _round_number)
+
+	if (
+		_match != null
+		and _phase not in [PHASE_RESULT, PHASE_REWARD, PHASE_CLOSED]
+		and not _match.player_hand.is_empty()
+	):
+		_selected_hand_index = clampi(
+			_selected_hand_index,
+			0,
+			_match.player_hand.size() - 1
+		)
+		var selected_card = _match.player_hand[_selected_hand_index]
+		var selected_rotation: int = _match.get_hand_rotation(
+			OWNER_PLAYER,
+			_selected_hand_index
+		)
+		_match_hud.call("set_card_info", selected_card, selected_rotation)
+	else:
+		_match_hud.call("clear_card_info")
 
 
 func _update_player_selection_markers() -> void:
@@ -1407,9 +1496,8 @@ func _turn_arrow_for_owner(turn_owner: int) -> void:
 
 
 func _update_selected_card_info() -> void:
-	# Keep the match header clean for now. Card name/cost can return later once
-	# the permanent information hierarchy is decided.
-	info_label.text = _region_trait_text()
+	_refresh_match_hud()
+
 
 func _capture_message(result: Dictionary) -> String:
 	var combo_captured: Array = result.get("combo_captured", [])

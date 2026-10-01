@@ -1,0 +1,8 @@
+Atlas_Colors authored rarity mapping
+===================================
+Gold: 27
+Silver: 99
+Bronze: 53
+
+The mapping is derived from the supplied per-portrait tint groups while preserving
+the existing compact atlas_slot/card_id mapping. No card IDs were renumbered.
