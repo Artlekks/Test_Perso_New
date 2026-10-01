@@ -1,15 +1,70 @@
 extends RefCounted
 
 
-func choose_lost_card_index(cards: Array) -> int:
+func choose_lost_card_index(
+	cards: Array,
+	playable_owned_cards: Array = [],
+	owned_quantities: Dictionary = {},
+	minimum_playable_unique_cards: int = 0
+) -> int:
 	if cards.is_empty():
 		return -1
 
-	var best_index: int = 0
-	for index in range(1, cards.size()):
-		if _is_stronger(cards[index], cards[best_index]):
-			best_index = index
+	var safe_candidates: Array[int] = []
+	for index in range(cards.size()):
+		var card = cards[index]
+		if _is_safe_to_lose(
+			card,
+			playable_owned_cards,
+			owned_quantities,
+			minimum_playable_unique_cards
+		):
+			safe_candidates.append(index)
+
+	if safe_candidates.is_empty():
+		return -1
+
+	var best_index: int = safe_candidates[0]
+	for candidate_index in safe_candidates.slice(1):
+		if _is_stronger(cards[candidate_index], cards[best_index]):
+			best_index = candidate_index
 	return best_index
+
+
+func _is_safe_to_lose(
+	card,
+	playable_owned_cards: Array,
+	owned_quantities: Dictionary,
+	minimum_playable_unique_cards: int
+) -> bool:
+	# Compatibility mode for callers/tests that only want "strongest card".
+	if minimum_playable_unique_cards <= 0 or playable_owned_cards.is_empty():
+		return true
+	if card == null:
+		return false
+
+	var card_id: String = String(card.get("card_id"))
+	var quantity: int = maxi(0, int(owned_quantities.get(card_id, 1)))
+
+	# Losing one duplicate copy does not reduce the set of playable unique cards.
+	if quantity > 1:
+		return true
+
+	var playable_ids: Dictionary = {}
+	for playable_card in playable_owned_cards:
+		if playable_card == null:
+			continue
+		playable_ids[String(playable_card.get("card_id"))] = true
+
+	var playable_unique_count: int = playable_ids.size()
+	if not playable_ids.has(card_id):
+		# A non-playable card can never invalidate the player's current legal deck.
+		return true
+
+	return (
+		playable_unique_count - 1
+		>= maxi(1, minimum_playable_unique_cards)
+	)
 
 
 func _is_stronger(candidate, incumbent) -> bool:

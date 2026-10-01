@@ -30,8 +30,9 @@ const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
 const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
 const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
+const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
 
-const BACKEND_VERSION := "1.8.0"
+const BACKEND_VERSION := "1.9.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -1820,7 +1821,7 @@ func _run_result_transition(winner: int) -> void:
 	_phase = PHASE_REWARD
 	var opponent_take_index: int = -1
 	if winner == OWNER_OPPONENT:
-		opponent_take_index = _stake_policy.choose_lost_card_index(_starting_player_cards)
+		opponent_take_index = _choose_safe_player_stake_index()
 	var eligible_reward_ids := PackedStringArray()
 	if winner == OWNER_PLAYER:
 		eligible_reward_ids = _player_reward_candidate_ids()
@@ -1844,6 +1845,145 @@ func _run_result_transition(winner: int) -> void:
 	if not is_open():
 		return
 	transition_fade.visible = false
+
+
+func _choose_safe_player_stake_index() -> int:
+	var minimum_unique: int = 5
+	var protect_collection: bool = true
+	if DefaultEconomyPolicy != null:
+		minimum_unique = maxi(
+			5,
+			int(DefaultEconomyPolicy.minimum_playable_unique_cards)
+		)
+		protect_collection = bool(
+			DefaultEconomyPolicy.protect_minimum_playable_collection
+		)
+
+	if not protect_collection:
+		return _stake_policy.choose_lost_card_index(
+			_starting_player_cards
+		)
+
+	var playable_cards: Array = _get_playable_owned_cards()
+	var quantities: Dictionary = {}
+	if (
+		_collection_backend != null
+		and _collection_backend.has_method("get_quantities_snapshot")
+	):
+		quantities = _collection_backend.call(
+			"get_quantities_snapshot"
+		)
+
+	return _stake_policy.choose_lost_card_index(
+		_starting_player_cards,
+		playable_cards,
+		quantities,
+		minimum_unique
+	)
+
+
+func _get_playable_owned_cards() -> Array:
+	var result: Array = []
+	if _collection_backend == null:
+		return result
+	if not _collection_backend.has_method("get_owned_cards"):
+		return result
+
+	var player_rank: int = 1
+	if _progression != null and _progression.has_method("get_rank_number"):
+		player_rank = maxi(
+			1,
+			int(_progression.call("get_rank_number"))
+		)
+
+	for card in _collection_backend.call("get_owned_cards"):
+		if card == null:
+			continue
+		var usable: bool = true
+		if (
+			DefaultAcquisitionPolicy != null
+			and DefaultAcquisitionPolicy.has_method("can_use_card")
+		):
+			usable = bool(
+				DefaultAcquisitionPolicy.call(
+					"can_use_card",
+					card,
+					player_rank
+				)
+			)
+		if usable:
+			result.append(card)
+	return result
+
+
+func get_card_economy_snapshot() -> Dictionary:
+	var minimum_unique: int = 5
+	var protect_collection: bool = true
+	var stolen_recoverable: bool = true
+	if DefaultEconomyPolicy != null:
+		minimum_unique = maxi(
+			5,
+			int(DefaultEconomyPolicy.minimum_playable_unique_cards)
+		)
+		protect_collection = bool(
+			DefaultEconomyPolicy.protect_minimum_playable_collection
+		)
+		stolen_recoverable = bool(
+			DefaultEconomyPolicy.stolen_cards_recoverable
+		)
+
+	var unique_owned: int = 0
+	var total_owned: int = 0
+	if _collection_backend != null:
+		if _collection_backend.has_method("unique_owned_count"):
+			unique_owned = int(
+				_collection_backend.call("unique_owned_count")
+			)
+		if _collection_backend.has_method("total_owned_count"):
+			total_owned = int(
+				_collection_backend.call("total_owned_count")
+			)
+
+	var playable_unique: int = _get_playable_owned_cards().size()
+	var stolen_total: int = 0
+	var stolen_by_opponent: Array = []
+	if _encounter_records != null:
+		for raw_id in _encounter_records.get_all_recorded_ids():
+			var opponent_id := StringName(str(raw_id))
+			var encounter: Dictionary = _encounter_records.get_snapshot(
+				opponent_id
+			)
+			var opponent_stolen: int = int(
+				encounter.get("stolen_total", 0)
+			)
+			if opponent_stolen <= 0:
+				continue
+			stolen_total += opponent_stolen
+			stolen_by_opponent.append({
+				"opponent_id": String(opponent_id),
+				"stolen_total": opponent_stolen,
+				"stolen_quantities": (
+					encounter.get(
+						"stolen_quantities",
+						{}
+					) as Dictionary
+				).duplicate(true),
+			})
+
+	return {
+		"minimum_playable_unique_cards": minimum_unique,
+		"protect_minimum_playable_collection": protect_collection,
+		"stolen_cards_recoverable": stolen_recoverable,
+		"unique_owned_count": unique_owned,
+		"total_owned_count": total_owned,
+		"playable_unique_count": playable_unique,
+		"minimum_deck_protection_active": (
+			protect_collection
+			and playable_unique <= minimum_unique
+		),
+		"stolen_total": stolen_total,
+		"stolen_by_opponent": stolen_by_opponent,
+	}
 
 
 func _player_reward_candidate_ids() -> PackedStringArray:

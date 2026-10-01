@@ -160,6 +160,7 @@ func run_all() -> Dictionary:
 	_run("Influence snapshot stays stable during Combo", _test_influence_snapshot_stable)
 	_run("Captured Influence changes allegiance next action", _test_influence_changes_allegiance)
 	_run("Stake policy takes strongest card", _test_stake_policy_strongest)
+	_run("Stake policy protects last playable deck", _test_stake_policy_minimum_deck)
 	_run("Influence snapshot attributes its source", _test_influence_source_attribution)
 	_run("Preview exposes Influence deltas", _test_preview_influence_deltas)
 	_run("Unsupported rules are rejected", _test_unsupported_rule_guard)
@@ -870,6 +871,45 @@ func _test_stake_policy_strongest() -> Dictionary:
 	return _ok(
 		policy.choose_lost_card_index(cards) == 3,
 		"Stake policy must prefer points, then rank total, then stable card_id."
+	)
+
+
+func _test_stake_policy_minimum_deck() -> Dictionary:
+	var cards: Array = [
+		MockCard.new(&"stake_a", 2, 2, 2, 2, 2),
+		MockCard.new(&"stake_b", 3, 3, 3, 3, 3),
+		MockCard.new(&"stake_c", 4, 4, 4, 4, 4),
+		MockCard.new(&"stake_d", 5, 5, 5, 5, 5),
+		MockCard.new(&"stake_e", 6, 6, 6, 6, 6),
+	]
+	var quantities: Dictionary = {}
+	for card in cards:
+		quantities[String(card.card_id)] = 1
+
+	var policy = StakePolicyScript.new()
+	var protected_index: int = policy.choose_lost_card_index(
+		cards,
+		cards,
+		quantities,
+		5
+	)
+	if protected_index != -1:
+		return _ok(
+			false,
+			"Exactly five playable unique cards must be protected from stake loss."
+		)
+
+	# A duplicate copy is safe to stake because one copy remains in the collection.
+	quantities["stake_e"] = 2
+	var duplicate_safe_index: int = policy.choose_lost_card_index(
+		cards,
+		cards,
+		quantities,
+		5
+	)
+	return _ok(
+		duplicate_safe_index == 4,
+		"A duplicate of the strongest card should remain a legal stake at the minimum deck size."
 	)
 
 

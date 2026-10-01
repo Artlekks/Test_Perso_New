@@ -1,0 +1,9 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_economy_policy.gd" id="1_policy"]
+
+[resource]
+script = ExtResource("1_policy")
+minimum_playable_unique_cards = 5
+protect_minimum_playable_collection = true
+stolen_cards_recoverable = true

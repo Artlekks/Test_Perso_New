@@ -400,6 +400,21 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 	if not _sequence_is_current(sequence_id):
 		return
 
+	# The economy policy protects the final legal five-card collection. A -1
+	# stake index means this loss has no ownership transfer, but the result screen
+	# still waits for the player to acknowledge it with K.
+	if _forced_opponent_take_index < 0:
+		selection_arrow.visible = false
+		prompt_label.text = "No card lost — your last playable deck is protected."
+		info_label.text = ""
+		_set_help_large(true)
+		help_label.text = "K: Continue"
+		_focus_card = null
+		_focus_sequence_id = sequence_id
+		_focus_exit_down = false
+		_state = STATE_FOCUS_HOLD
+		return
+
 	_selected_index = clampi(_forced_opponent_take_index, 0, _player_cards.size() - 1)
 	selection_arrow.visible = true
 	selection_arrow.position = _arrow_position(player_row_root, _selected_index)
