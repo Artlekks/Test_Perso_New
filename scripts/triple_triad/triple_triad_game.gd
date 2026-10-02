@@ -60,8 +60,11 @@ const InputControllerScript = preload(
 const UIFlowControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_ui_flow_controller.gd"
 )
+const WorldGatewayScript = preload(
+	"res://scripts/triple_triad/triple_triad_world_gateway.gd"
+)
 
-const BACKEND_VERSION := "2.8.0"
+const BACKEND_VERSION := "2.9.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -137,6 +140,7 @@ var _match_flow = MatchFlowControllerScript.new()
 var _presentation = PresentationControllerScript.new()
 var _input_controller = InputControllerScript.new()
 var _ui_flow = UIFlowControllerScript.new()
+var _world_gateway = WorldGatewayScript.new()
 var _selected_hand_index: int = 0
 var _selected_cell_index: int = 4
 var _starting_player_cards: Array = []
@@ -274,9 +278,6 @@ func _ready() -> void:
 		_acquisition_tracker,
 		acquisition_registry
 	)
-	_acquisition_service.bundle_claimed.connect(_on_acquisition_bundle_claimed)
-	_acquisition_service.unlock_changed.connect(_on_card_game_unlock_changed)
-
 	_progression = ProgressionScript.new()
 	_progression.initialize()
 
@@ -285,6 +286,34 @@ func _ready() -> void:
 
 	_encounter_records = EncounterRecordsScript.new()
 	_encounter_records.initialize()
+
+	_world_gateway.initialize(
+		card_catalog,
+		_acquisition_service,
+		_world_acquisition_catalog,
+		_world_reward_ledger,
+		_collection_backend,
+		_progression,
+		_encounter_records,
+		opponent_registry,
+		_rng,
+		player_card_rank
+	)
+	_world_gateway.acquisition_completed.connect(
+		_on_acquisition_bundle_claimed
+	)
+	_world_gateway.card_game_unlock_changed.connect(
+		_on_card_game_unlock_changed
+	)
+	_world_gateway.gameplay_event_requested.connect(
+		_queue_gameplay_event
+	)
+	_world_gateway.save_checkpoint_requested.connect(
+		_checkpoint_save_integrity
+	)
+	_world_gateway.backend_state_change_requested.connect(
+		_publish_backend_state_change
+	)
 
 	_competition_service = CompetitionServiceScript.new()
 	_competition_service.initialize(_competition_catalog)
@@ -356,6 +385,7 @@ func _ready() -> void:
 	)
 
 	_backend_ready = true
+	_world_gateway.set_backend_ready(true)
 	_install_fishing_salvage_bridge()
 	_last_runtime_recovery = reconcile_runtime_state()
 	if OS.is_debug_build():
@@ -924,28 +954,21 @@ func get_collection_snapshot() -> Array:
 
 
 func get_card_acquisition_sources(card_id: StringName) -> Array:
-	if _world_acquisition_catalog == null:
-		return []
-	return _world_acquisition_catalog.call("get_sources_for_card", card_id)
+	return _world_gateway.get_card_acquisition_sources(card_id)
 
 
 func get_acquisition_source_snapshot(
 	source_type: StringName,
 	source_id: StringName
 ) -> Dictionary:
-	if _world_acquisition_catalog == null:
-		return {}
-	return _world_acquisition_catalog.call(
-		"get_source_snapshot",
+	return _world_gateway.get_acquisition_source_snapshot(
 		source_type,
 		source_id
 	)
 
 
 func get_world_acquisition_sources() -> Array:
-	if _world_acquisition_catalog == null:
-		return []
-	return _world_acquisition_catalog.call("get_all_source_snapshots")
+	return _world_gateway.get_world_acquisition_sources()
 
 
 func claim_world_source_card(
@@ -954,47 +977,12 @@ func claim_world_source_card(
 	card_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
-	if not _backend_ready:
-		return {"success": false, "reason": "backend_not_ready"}
-	if _world_acquisition_catalog == null or _acquisition_service == null:
-		return {"success": false, "reason": "acquisition_backend_unavailable"}
-	var player_rank: int = 1
-	if _progression != null and _progression.has_method("get_rank_number"):
-		player_rank = int(_progression.call("get_rank_number"))
-	var validation: Dictionary = _world_acquisition_catalog.call(
-		"validate_claim",
+	return _world_gateway.claim_world_source_card(
 		source_type,
 		source_id,
 		card_id,
-		player_rank
+		source_context
 	)
-	if not bool(validation.get("valid", false)):
-		return {
-			"success": false,
-			"reason": str(validation.get("reason", "invalid_source_claim")),
-			"required_duel_rank": int(validation.get("required_duel_rank", 1)),
-		}
-	var context_text: String = String(source_context)
-	if context_text.is_empty():
-		context_text = "%s:%s" % [String(source_type), String(source_id)]
-	var result: Dictionary = _acquisition_service.call(
-		"grant_card",
-		card_id,
-		source_type,
-		StringName(context_text),
-		1
-	)
-	if bool(result.get("success", false)):
-		_checkpoint_save_integrity("world_card_acquired")
-		acquisition_completed.emit(result.duplicate(true))
-		_queue_gameplay_event(
-			&"card_acquired",
-			str(result.get("display_name", String(card_id))),
-			"New card acquired.",
-			result
-		)
-		_publish_backend_state_change("world_card_acquired")
-	return result
 
 
 func claim_world_source_reward(
@@ -1004,258 +992,20 @@ func claim_world_source_reward(
 	event_id: StringName = &"",
 	one_shot: bool = false
 ) -> Dictionary:
-	if not _backend_ready:
-		return {
-			"success": false,
-			"reason": "backend_not_ready",
-		}
-	if _world_acquisition_catalog == null:
-		return {
-			"success": false,
-			"reason": "acquisition_catalog_unavailable",
-		}
-	if not bool(
-		_world_acquisition_catalog.call(
-			"can_direct_claim_source",
-			source_type
-		)
-	):
-		return {
-			"success": false,
-			"reason": "source_owned_by_other_system",
-		}
-
-	var event_key: String = String(event_id).strip_edges()
-	if (
-		one_shot
-		and not event_key.is_empty()
-		and has_world_reward_event_claimed(event_id)
-	):
-		return {
-			"success": false,
-			"reason": "event_already_claimed",
-			"event_id": event_key,
-		}
-
-	var source: Dictionary = get_acquisition_source_snapshot(
-		source_type,
-		source_id
-	)
-	if source.is_empty():
-		return {
-			"success": false,
-			"reason": "unknown_source",
-		}
-
-	var player_rank: int = 1
-	if _progression != null and _progression.has_method("get_rank_number"):
-		player_rank = int(_progression.call("get_rank_number"))
-	var required_rank: int = maxi(
-		1,
-		int(source.get("min_duel_rank", 1))
-	)
-	if player_rank < required_rank:
-		return {
-			"success": false,
-			"reason": "duel_rank_too_low",
-			"required_duel_rank": required_rank,
-		}
-
-	var source_cards: Array = _world_acquisition_catalog.call(
-		"get_cards_for_source",
+	return _world_gateway.claim_world_source_reward(
 		source_type,
 		source_id,
-		player_rank
-	)
-	if source_cards.is_empty():
-		return {
-			"success": false,
-			"reason": "source_has_no_eligible_cards",
-		}
-
-	var resolved_context: StringName = source_context
-	if String(resolved_context).is_empty():
-		resolved_context = StringName(
-			"%s:%s"
-			% [
-				String(source_type),
-				String(source_id),
-			]
-		)
-
-	var chosen_card = null
-	var chosen_id: StringName = &""
-	var owned_before: int = 0
-	var pending_delivery: Dictionary = {}
-	if (
+		source_context,
+		event_id,
 		one_shot
-		and not event_key.is_empty()
-		and _world_reward_ledger != null
-	):
-		pending_delivery = _world_reward_ledger.call(
-			"get_pending_delivery",
-			event_id
-		)
-
-	if not pending_delivery.is_empty():
-		if (
-			str(pending_delivery.get("source_type", ""))
-			!= String(source_type)
-			or str(pending_delivery.get("source_id", ""))
-			!= String(source_id)
-		):
-			return {
-				"success": false,
-				"reason": "pending_delivery_source_mismatch",
-				"event_id": event_key,
-			}
-		chosen_id = StringName(
-			str(pending_delivery.get("card_id", ""))
-		)
-		chosen_card = card_catalog.get_card_by_id(chosen_id)
-		owned_before = maxi(
-			0,
-			int(
-				pending_delivery.get(
-					"owned_quantity_before",
-					0
-				)
-			)
-		)
-		if chosen_card == null:
-			return {
-				"success": false,
-				"reason": "pending_delivery_card_missing",
-				"event_id": event_key,
-			}
-
-		var current_quantity: int = (
-			_collection_backend.get_quantity_by_id(chosen_id)
-			if _collection_backend != null
-			else 0
-		)
-		if current_quantity > owned_before:
-			_world_reward_ledger.call(
-				"complete_delivery",
-				event_id
-			)
-			return {
-				"success": true,
-				"reason": "pending_delivery_recovered",
-				"card_id": String(chosen_id),
-				"display_name": str(chosen_card.display_name),
-				"source_id": String(source_id),
-				"source_display_name": str(
-					source.get("display_name", "")
-				),
-				"event_id": event_key,
-				"recovered": true,
-			}
-	else:
-		var unowned_cards: Array = []
-		for card in source_cards:
-			if card == null:
-				continue
-			var card_id := StringName(str(card.get("card_id")))
-			var quantity: int = (
-				_collection_backend.get_quantity_by_id(card_id)
-				if _collection_backend != null
-				else 0
-			)
-			if quantity <= 0:
-				unowned_cards.append(card)
-
-		if unowned_cards.is_empty():
-			return {
-				"success": false,
-				"reason": "source_complete",
-				"source_type": String(source_type),
-				"source_id": String(source_id),
-				"source_display_name": str(
-					source.get("display_name", "")
-				),
-			}
-
-		var chosen_index: int = _rng.randi_range(
-			0,
-			unowned_cards.size() - 1
-		)
-		chosen_card = unowned_cards[chosen_index]
-		chosen_id = StringName(
-			str(chosen_card.get("card_id"))
-		)
-		owned_before = (
-			_collection_backend.get_quantity_by_id(chosen_id)
-			if _collection_backend != null
-			else 0
-		)
-
-		if (
-			one_shot
-			and not event_key.is_empty()
-			and _world_reward_ledger != null
-		):
-			if not bool(
-				_world_reward_ledger.call(
-					"begin_delivery",
-					event_id,
-					source_type,
-					source_id,
-					chosen_id,
-					resolved_context,
-					owned_before
-				)
-			):
-				return {
-					"success": false,
-					"reason": "could_not_journal_world_reward",
-					"event_id": event_key,
-				}
-
-	var result: Dictionary = claim_world_source_card(
-		source_type,
-		source_id,
-		chosen_id,
-		resolved_context
 	)
-	result["source_id"] = String(source_id)
-	result["source_display_name"] = str(
-		source.get("display_name", "")
-	)
-	result["event_id"] = event_key
-
-	if bool(result.get("success", false)):
-		if (
-			one_shot
-			and not event_key.is_empty()
-			and _world_reward_ledger != null
-		):
-			_world_reward_ledger.call(
-				"complete_delivery",
-				event_id
-			)
-	else:
-		result["delivery_pending"] = (
-			one_shot
-			and not event_key.is_empty()
-			and _world_reward_ledger != null
-			and not (
-				_world_reward_ledger.call(
-					"get_pending_delivery",
-					event_id
-				) as Dictionary
-			).is_empty()
-		)
-
-	return result
 
 
 func claim_fishing_salvage_reward(
 	source_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
-	return claim_world_source_reward(
-		&"fishing_salvage",
+	return _world_gateway.claim_fishing_salvage_reward(
 		source_id,
 		source_context
 	)
@@ -1266,12 +1016,10 @@ func claim_treasure_cache_reward(
 	cache_event_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
-	return claim_world_source_reward(
-		&"treasure_cache",
+	return _world_gateway.claim_treasure_cache_reward(
 		source_id,
-		source_context,
 		cache_event_id,
-		true
+		source_context
 	)
 
 
@@ -1280,12 +1028,10 @@ func claim_quest_card_reward(
 	quest_event_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
-	return claim_world_source_reward(
-		&"quest_reward",
+	return _world_gateway.claim_quest_card_reward(
 		source_id,
-		source_context,
 		quest_event_id,
-		true
+		source_context
 	)
 
 
@@ -1295,41 +1041,24 @@ func claim_tournament_card_reward(
 	source_context: StringName = &"",
 	one_shot: bool = true
 ) -> Dictionary:
-	return claim_world_source_reward(
-		&"tournament_reward",
+	return _world_gateway.claim_tournament_card_reward(
 		source_id,
-		source_context,
 		tournament_event_id,
+		source_context,
 		one_shot
 	)
 
 
 func advance_world_reward_counter(counter_id: StringName) -> int:
-	if _world_reward_ledger == null:
-		return 0
-	return int(
-		_world_reward_ledger.call(
-			"increment_counter",
-			counter_id
-		)
-	)
+	return _world_gateway.advance_world_reward_counter(counter_id)
 
 
 func get_world_reward_delivery_snapshot() -> Dictionary:
-	if _world_reward_ledger == null:
-		return {}
-	return _world_reward_ledger.call("get_snapshot")
+	return _world_gateway.get_world_reward_delivery_snapshot()
 
 
 func has_world_reward_event_claimed(event_id: StringName) -> bool:
-	if _world_reward_ledger == null:
-		return false
-	return bool(
-		_world_reward_ledger.call(
-			"has_claimed",
-			event_id
-		)
-	)
+	return _world_gateway.has_world_reward_event_claimed(event_id)
 
 
 func get_deck_profiles_snapshot() -> Array:
@@ -1563,108 +1292,33 @@ func is_open() -> bool:
 
 
 func is_card_game_unlocked() -> bool:
-	if _acquisition_service == null:
-		return false
-	return bool(_acquisition_service.call("is_card_game_unlocked"))
+	return _world_gateway.is_card_game_unlocked()
 
 
 func get_acquisition_snapshot() -> Dictionary:
-	if _acquisition_service == null:
-		return {
-			"card_game_unlocked": false,
-			"claimed_bundle_ids": PackedStringArray(),
-			"available_bundle_ids": PackedStringArray(),
-		}
-	return _acquisition_service.call("get_snapshot")
+	return _world_gateway.get_acquisition_snapshot()
 
 
 func claim_acquisition_bundle(
 	bundle_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
-	if not _backend_ready or _acquisition_service == null:
-		return {
-			"success": false,
-			"reason": "backend_unavailable",
-			"bundle_id": String(bundle_id),
-		}
-	var result: Dictionary = _acquisition_service.call(
-		"claim_bundle",
+	return _world_gateway.claim_acquisition_bundle(
 		bundle_id,
 		source_context
 	)
-	if bool(result.get("success", false)):
-		_checkpoint_save_integrity("acquisition_bundle")
-		_queue_gameplay_event(
-			&"bundle_acquired",
-			str(result.get("display_name", "Card Bundle")),
-			"%d cards acquired." % int(result.get("granted_cards", 0)),
-			result
-		)
-		if bool(result.get("unlocked_card_game", false)):
-			_queue_gameplay_event(
-				&"card_game_unlocked",
-				"Card Duels Unlocked",
-				"Card players can now be challenged.",
-				result,
-				2
-			)
-		_publish_backend_state_change("acquisition_bundle")
-	return result
 
 
-## Stable bridge for the fishing/exploration layer. The fishing game only needs
-## to call this when its salvage/object event resolves; Triple Triad owns the
-## contents, one-shot persistence, collection write, and unlock state.
+## Stable bridge for the fishing/exploration layer. Triple Triad owns bundle
+## contents, one-shot persistence, collection writes, and unlock state.
 func claim_salvaged_card_case(
 	source_context: StringName = &"sea_salvage"
 ) -> Dictionary:
-	return claim_acquisition_bundle(
-		&"salvaged_card_case",
-		source_context
-	)
+	return _world_gateway.claim_salvaged_card_case(source_context)
 
 
 func get_onboarding_snapshot() -> Dictionary:
-	var acquisition: Dictionary = get_acquisition_snapshot()
-	var collection_unique_count: int = 0
-	if (
-		_collection_backend != null
-		and _collection_backend.has_method("unique_owned_count")
-	):
-		collection_unique_count = int(
-			_collection_backend.call("unique_owned_count")
-		)
-
-	var starter_case_claimed: bool = false
-	var raw_claimed_ids = acquisition.get(
-		"claimed_bundle_ids",
-		PackedStringArray()
-	)
-	if raw_claimed_ids is PackedStringArray or raw_claimed_ids is Array:
-		for raw_id in raw_claimed_ids:
-			if str(raw_id) == "salvaged_card_case":
-				starter_case_claimed = true
-				break
-
-	var bridge_snapshot: Dictionary = {}
-	if (
-		is_instance_valid(_fishing_salvage_bridge)
-		and _fishing_salvage_bridge.has_method("get_debug_snapshot")
-	):
-		bridge_snapshot = _fishing_salvage_bridge.call(
-			"get_debug_snapshot"
-		)
-
-	return {
-		"card_game_unlocked": bool(
-			acquisition.get("card_game_unlocked", false)
-		),
-		"starter_case_claimed": starter_case_claimed,
-		"collection_unique_count": collection_unique_count,
-		"available_card_player_ids": get_available_card_player_ids(),
-		"fishing_salvage_bridge": bridge_snapshot,
-	}
+	return _world_gateway.get_onboarding_snapshot()
 
 
 func _install_fishing_salvage_bridge() -> void:
@@ -1675,6 +1329,7 @@ func _install_fishing_salvage_bridge() -> void:
 	bridge.name = "TripleTriadFishingSalvageBridge"
 	add_child(bridge)
 	_fishing_salvage_bridge = bridge
+	_world_gateway.set_fishing_salvage_bridge(bridge)
 
 	if bridge.has_method("configure"):
 		bridge.call(
@@ -1898,65 +1553,17 @@ func get_active_opponent_evolution_snapshot() -> Dictionary:
 
 
 func get_opponent_availability(opponent_id: StringName) -> Dictionary:
-	if opponent_registry == null or not opponent_registry.has_method("get_availability"):
-		return {
-			"available": false,
-			"reason": "Opponent registry unavailable.",
-			"required_player_rank": 1,
-		}
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	return opponent_registry.call(
-		"get_availability",
-		opponent_id,
-		player_rank,
-		&"",
-		&"",
-		_opponent_availability_context()
-	)
+	return _world_gateway.get_opponent_availability(opponent_id)
 
 
 func get_available_card_player_ids(
 	region_id: StringName = &"",
 	required_tag: StringName = &""
 ) -> PackedStringArray:
-	var result := PackedStringArray()
-	if opponent_registry == null or not opponent_registry.has_method("get_available_opponents"):
-		return result
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	var profiles: Array = opponent_registry.call(
-		"get_available_opponents",
-		player_rank,
+	return _world_gateway.get_available_card_player_ids(
 		region_id,
-		required_tag,
-		_opponent_availability_context()
+		required_tag
 	)
-	for profile in profiles:
-		if profile != null:
-			result.append(String(profile.get("opponent_id")))
-	return result
-
-
-func _opponent_availability_context() -> Dictionary:
-	var beaten_ids := PackedStringArray()
-	var total_wins: int = 0
-	if _encounter_records != null:
-		if _encounter_records.has_method("get_beaten_opponent_ids"):
-			beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
-		if _encounter_records.has_method("get_total_player_wins"):
-			total_wins = int(_encounter_records.call("get_total_player_wins"))
-	return {
-		"card_game_unlocked": is_card_game_unlocked(),
-		"beaten_opponent_ids": beaten_ids,
-		"total_player_wins": total_wins,
-	}
 
 
 func _on_acquisition_bundle_claimed(result: Dictionary) -> void:
@@ -2006,26 +1613,16 @@ func open_game_by_id(opponent_id: StringName) -> bool:
 		)
 		return false
 
-	if opponent_registry.has_method("get_availability"):
-		var player_rank: int = (
-			_progression.get_rank_number()
-			if _progression != null
-			else maxi(1, player_card_rank)
+	var availability: Dictionary = get_opponent_availability(opponent_id)
+	if not bool(availability.get("available", false)):
+		push_warning(
+			"TripleTriadGame: opponent '%s' is locked: %s"
+			% [
+				String(opponent_id),
+				str(availability.get("reason", "Unavailable.")),
+			]
 		)
-		var availability: Dictionary = opponent_registry.call(
-			"get_availability",
-			opponent_id,
-			player_rank,
-			&"",
-			&"",
-			_opponent_availability_context()
-		)
-		if not bool(availability.get("available", false)):
-			push_warning(
-				"TripleTriadGame: opponent '%s' is locked: %s"
-				% [String(opponent_id), str(availability.get("reason", "Unavailable."))]
-			)
-			return false
+		return false
 
 	open_game(profile)
 	return is_open()

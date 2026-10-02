@@ -41,6 +41,9 @@ const InputControllerScript = preload(
 const UIFlowControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_ui_flow_controller.gd"
 )
+const WorldGatewayScript = preload(
+	"res://scripts/triple_triad/triple_triad_world_gateway.gd"
+)
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -167,6 +170,250 @@ class MockQuantityStore:
 	func get_quantity_by_id(card_id: StringName) -> int:
 		return maxi(0, int(quantities.get(String(card_id), 0)))
 
+	func unique_owned_count() -> int:
+		var total: int = 0
+		for raw_value in quantities.values():
+			if int(raw_value) > 0:
+				total += 1
+		return total
+
+
+class MockGatewayCardCatalog:
+	extends RefCounted
+
+	var cards: Dictionary = {}
+
+	func _init(initial_cards: Array = []) -> void:
+		for card in initial_cards:
+			if card != null:
+				cards[String(card.get("card_id"))] = card
+
+	func get_card_by_id(card_id: StringName):
+		return cards.get(String(card_id), null)
+
+
+class MockGatewayAcquisitionService:
+	extends RefCounted
+
+	signal bundle_claimed(result: Dictionary)
+	signal unlock_changed(unlocked: bool)
+
+	var unlocked: bool = false
+	var collection = null
+
+	func _init(collection_backend = null) -> void:
+		collection = collection_backend
+
+	func is_card_game_unlocked() -> bool:
+		return unlocked
+
+	func get_snapshot() -> Dictionary:
+		return {
+			"card_game_unlocked": unlocked,
+			"claimed_bundle_ids": (
+				PackedStringArray(["salvaged_card_case"])
+				if unlocked
+				else PackedStringArray()
+			),
+			"available_bundle_ids": PackedStringArray(),
+		}
+
+	func claim_bundle(
+		bundle_id: StringName,
+		source_context: StringName = &""
+	) -> Dictionary:
+		var newly_unlocked: bool = not unlocked
+		unlocked = true
+		var result := {
+			"success": true,
+			"reason": "ok",
+			"bundle_id": String(bundle_id),
+			"display_name": "QA Bundle",
+			"source_context": String(source_context),
+			"granted_cards": 2,
+			"unlocked_card_game": newly_unlocked,
+		}
+		bundle_claimed.emit(result.duplicate(true))
+		if newly_unlocked:
+			unlock_changed.emit(true)
+		return result
+
+	func grant_card(
+		card_id: StringName,
+		source_type: StringName,
+		source_context: StringName = &"",
+		amount: int = 1
+	) -> Dictionary:
+		var before: int = 0
+		if collection != null:
+			before = collection.get_quantity_by_id(card_id)
+			collection.quantities[String(card_id)] = (
+				before + maxi(1, amount)
+			)
+		var after: int = (
+			collection.get_quantity_by_id(card_id)
+			if collection != null
+			else before
+		)
+		return {
+			"success": after > before,
+			"reason": "ok" if after > before else "not_granted",
+			"card_id": String(card_id),
+			"display_name": String(card_id),
+			"source_type": String(source_type),
+			"source_context": String(source_context),
+			"quantity_before": before,
+			"quantity_after": after,
+			"granted": maxi(0, after - before),
+		}
+
+
+class MockGatewayWorldCatalog:
+	extends RefCounted
+
+	var source_cards: Array = []
+
+	func _init(cards: Array = []) -> void:
+		source_cards = cards.duplicate()
+
+	func get_sources_for_card(card_id: StringName) -> Array:
+		return [{
+			"source_type": "quest_reward",
+			"source_id": "qa_source",
+			"card_id": String(card_id),
+		}]
+
+	func get_source_snapshot(
+		source_type: StringName,
+		source_id: StringName
+	) -> Dictionary:
+		if source_type == &"" or source_id == &"":
+			return {}
+		return {
+			"source_type": String(source_type),
+			"source_id": String(source_id),
+			"display_name": "QA Source",
+			"min_duel_rank": 1,
+		}
+
+	func get_all_source_snapshots() -> Array:
+		return [get_source_snapshot(&"quest_reward", &"qa_source")]
+
+	func validate_claim(
+		source_type: StringName,
+		source_id: StringName,
+		card_id: StringName,
+		player_rank: int
+	) -> Dictionary:
+		return {
+			"valid": (
+				not String(source_type).is_empty()
+				and not String(source_id).is_empty()
+				and not String(card_id).is_empty()
+				and player_rank >= 1
+			),
+			"reason": "ok",
+			"required_duel_rank": 1,
+		}
+
+	func can_direct_claim_source(source_type: StringName) -> bool:
+		return source_type in [
+			&"quest_reward",
+			&"treasure_cache",
+			&"tournament_reward",
+			&"fishing_salvage",
+		]
+
+	func get_cards_for_source(
+		source_type: StringName,
+		source_id: StringName,
+		player_rank: int
+	) -> Array:
+		if (
+			String(source_type).is_empty()
+			or String(source_id).is_empty()
+			or player_rank < 1
+		):
+			return []
+		return source_cards.duplicate()
+
+
+class MockGatewayProgression:
+	extends RefCounted
+
+	var rank_number: int = 1
+
+	func _init(value: int = 1) -> void:
+		rank_number = maxi(1, value)
+
+	func get_rank_number() -> int:
+		return rank_number
+
+
+class MockGatewayEncounterRecords:
+	extends RefCounted
+
+	var beaten_ids := PackedStringArray(["rookie"])
+	var total_wins: int = 3
+
+	func get_beaten_opponent_ids() -> PackedStringArray:
+		return beaten_ids.duplicate()
+
+	func get_total_player_wins() -> int:
+		return total_wins
+
+
+class MockGatewayOpponentProfile:
+	extends RefCounted
+
+	var opponent_id: StringName = &"qa_opponent"
+
+	func _init(value: StringName = &"qa_opponent") -> void:
+		opponent_id = value
+
+
+class MockGatewayOpponentRegistry:
+	extends RefCounted
+
+	var last_rank: int = 0
+	var last_context: Dictionary = {}
+
+	func get_availability(
+		opponent_id: StringName,
+		player_rank: int,
+		region_id: StringName = &"",
+		required_tag: StringName = &"",
+		context: Dictionary = {}
+	) -> Dictionary:
+		last_rank = player_rank
+		last_context = context.duplicate(true)
+		return {
+			"available": (
+				opponent_id == &"qa_opponent"
+				and player_rank >= 4
+				and bool(context.get("card_game_unlocked", false))
+				and int(context.get("total_player_wins", 0)) == 3
+			),
+			"reason": "",
+			"required_player_rank": 4,
+		}
+
+	func get_available_opponents(
+		player_rank: int,
+		region_id: StringName = &"",
+		required_tag: StringName = &"",
+		context: Dictionary = {}
+	) -> Array:
+		last_rank = player_rank
+		last_context = context.duplicate(true)
+		if (
+			player_rank >= 4
+			and bool(context.get("card_game_unlocked", false))
+			and int(context.get("total_player_wins", 0)) == 3
+		):
+			return [MockGatewayOpponentProfile.new(&"qa_opponent")]
+		return []
+
 
 var _results: Array[Dictionary] = []
 
@@ -233,6 +480,9 @@ func run_all() -> Dictionary:
 	_run("UI flow owns result copy", _test_ui_flow_result_copy)
 	_run("UI flow maps phases to HUD turn state", _test_ui_flow_turn_text)
 	_run("UI flow limits player selection markers to player phases", _test_ui_flow_selection_phase)
+	_run("World gateway rejects writes before backend readiness", _test_world_gateway_backend_guard)
+	_run("World gateway preserves one-shot reward delivery", _test_world_gateway_one_shot_reward)
+	_run("World gateway owns opponent discovery context", _test_world_gateway_opponent_context)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -2246,3 +2496,155 @@ func _test_ui_flow_selection_phase() -> Dictionary:
 		"Player selection markers must remain scoped to hand/cell selection phases."
 	)
 
+
+
+func _test_world_gateway_backend_guard() -> Dictionary:
+	var gateway = WorldGatewayScript.new()
+	gateway.initialize(
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		RandomNumberGenerator.new(),
+		1
+	)
+	var bundle_result: Dictionary = gateway.claim_acquisition_bundle(
+		&"qa_bundle",
+		&"qa"
+	)
+	var card_result: Dictionary = gateway.claim_world_source_card(
+		&"quest_reward",
+		&"qa_source",
+		&"qa_card",
+		&"qa"
+	)
+	return _ok(
+		not bool(bundle_result.get("success", true))
+		and str(bundle_result.get("reason", "")) == "backend_unavailable"
+		and not bool(card_result.get("success", true))
+		and str(card_result.get("reason", "")) == "backend_not_ready",
+		"World-facing writes must stay closed until the Triple Triad backend is fully ready."
+	)
+
+
+func _test_world_gateway_one_shot_reward() -> Dictionary:
+	var owned_card = MockCard.new(&"world_owned", 2, 2, 2, 2)
+	owned_card.display_name = "Owned"
+	var new_card = MockCard.new(&"world_new", 3, 3, 3, 3)
+	new_card.display_name = "New"
+	var catalog = MockGatewayCardCatalog.new([
+		owned_card,
+		new_card,
+	])
+	var collection = MockQuantityStore.new({
+		"world_owned": 1,
+		"world_new": 0,
+	})
+	var acquisition = MockGatewayAcquisitionService.new(collection)
+	acquisition.unlocked = true
+	var world_catalog = MockGatewayWorldCatalog.new([
+		owned_card,
+		new_card,
+	])
+	var ledger = WorldRewardLedgerScript.new()
+	var ledger_path := "user://triple_triad_world_gateway_qa.cfg"
+	ledger.initialize(ledger_path)
+	ledger.reset_event(&"qa_world_event")
+
+	var gateway = WorldGatewayScript.new()
+	gateway.initialize(
+		catalog,
+		acquisition,
+		world_catalog,
+		ledger,
+		collection,
+		MockGatewayProgression.new(4),
+		MockGatewayEncounterRecords.new(),
+		MockGatewayOpponentRegistry.new(),
+		RandomNumberGenerator.new(),
+		1
+	)
+	gateway.set_backend_ready(true)
+	var first: Dictionary = gateway.claim_world_source_reward(
+		&"quest_reward",
+		&"qa_source",
+		&"qa_context",
+		&"qa_world_event",
+		true
+	)
+	var second: Dictionary = gateway.claim_world_source_reward(
+		&"quest_reward",
+		&"qa_source",
+		&"qa_context",
+		&"qa_world_event",
+		true
+	)
+	var valid: bool = (
+		bool(first.get("success", false))
+		and str(first.get("card_id", "")) == "world_new"
+		and collection.get_quantity_by_id(&"world_new") == 1
+		and ledger.has_claimed(&"qa_world_event")
+		and not bool(second.get("success", true))
+		and str(second.get("reason", "")) == "event_already_claimed"
+	)
+	ledger.reset_event(&"qa_world_event")
+	return _ok(
+		valid,
+		"One-shot world rewards must choose an unowned card, journal it, and reject duplicate delivery."
+	)
+
+
+func _test_world_gateway_opponent_context() -> Dictionary:
+	var acquisition = MockGatewayAcquisitionService.new()
+	acquisition.unlocked = true
+	var encounters = MockGatewayEncounterRecords.new()
+	var registry = MockGatewayOpponentRegistry.new()
+	var gateway = WorldGatewayScript.new()
+	gateway.initialize(
+		null,
+		acquisition,
+		null,
+		null,
+		null,
+		MockGatewayProgression.new(4),
+		encounters,
+		registry,
+		RandomNumberGenerator.new(),
+		1
+	)
+	gateway.set_backend_ready(true)
+	var availability: Dictionary = gateway.get_opponent_availability(
+		&"qa_opponent"
+	)
+	var available_ids: PackedStringArray = (
+		gateway.get_available_card_player_ids()
+	)
+	var beaten = registry.last_context.get(
+		"beaten_opponent_ids",
+		PackedStringArray()
+	)
+	return _ok(
+		bool(availability.get("available", false))
+		and registry.last_rank == 4
+		and bool(
+			registry.last_context.get(
+				"card_game_unlocked",
+				false
+			)
+		)
+		and int(
+			registry.last_context.get(
+				"total_player_wins",
+				0
+			)
+		) == 3
+		and beaten is PackedStringArray
+		and beaten.has("rookie")
+		and available_ids.size() == 1
+		and available_ids[0] == "qa_opponent",
+		"World gateway must provide one consistent unlock/rank/encounter context to card-player discovery."
+	)
