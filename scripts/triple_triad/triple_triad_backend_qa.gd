@@ -44,6 +44,22 @@ const UIFlowControllerScript = preload(
 const WorldGatewayScript = preload(
 	"res://scripts/triple_triad/triple_triad_world_gateway.gd"
 )
+const CompetitionControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_competition_controller.gd"
+)
+const RuntimeRecoveryControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_runtime_recovery_controller.gd"
+)
+const BackendValidatorScript = preload(
+	"res://scripts/triple_triad/triple_triad_backend_validator.gd"
+)
+const DefaultAcquisitionPolicy = preload(
+	"res://data/triple_triad/acquisition/default_acquisition_policy.tres"
+)
+const DefaultRuleSet = preload("res://data/triple_triad/basic_rules.tres")
+const DefaultRegionProfile = preload(
+	"res://data/triple_triad/regions/prototype_coast.tres"
+)
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -381,8 +397,8 @@ class MockGatewayOpponentRegistry:
 	func get_availability(
 		opponent_id: StringName,
 		player_rank: int,
-		region_id: StringName = &"",
-		required_tag: StringName = &"",
+		_region_id: StringName = &"",
+		_required_tag: StringName = &"",
 		context: Dictionary = {}
 	) -> Dictionary:
 		last_rank = player_rank
@@ -400,8 +416,8 @@ class MockGatewayOpponentRegistry:
 
 	func get_available_opponents(
 		player_rank: int,
-		region_id: StringName = &"",
-		required_tag: StringName = &"",
+		_region_id: StringName = &"",
+		_required_tag: StringName = &"",
 		context: Dictionary = {}
 	) -> Array:
 		last_rank = player_rank
@@ -483,6 +499,12 @@ func run_all() -> Dictionary:
 	_run("World gateway rejects writes before backend readiness", _test_world_gateway_backend_guard)
 	_run("World gateway preserves one-shot reward delivery", _test_world_gateway_one_shot_reward)
 	_run("World gateway owns opponent discovery context", _test_world_gateway_opponent_context)
+	_run("Competition controller owns tournament deck locking", _test_competition_controller_deck_lock)
+	_run("Competition controller owns post-match round state", _test_competition_controller_resolution_state)
+	_run("Runtime recovery abandons stale tournament decks", _test_runtime_recovery_stale_tournament)
+	_run("Backend validator accepts authored defaults", _test_backend_validator_defaults)
+	_run("Backend validator rejects missing catalog", _test_backend_validator_missing_catalog)
+	_run("Backend validator enforces starter deck budget", _test_backend_validator_starter_budget)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -2647,4 +2669,265 @@ func _test_world_gateway_opponent_context() -> Dictionary:
 		and available_ids.size() == 1
 		and available_ids[0] == "qa_opponent",
 		"World gateway must provide one consistent unlock/rank/encounter context to card-player discovery."
+	)
+
+
+func _test_competition_controller_deck_lock() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	if not bool(audit.get("valid", false)):
+		return _ok(false, "Competition catalog invalid in controller deck-lock test.")
+
+	var service = CompetitionServiceScript.new()
+	service.initialize(competition_catalog, false)
+	var beaten := PackedStringArray([
+		"pier_apprentice",
+		"beach_trader",
+		"dock_bruiser",
+		"gearwright",
+		"marsh_keeper",
+		"highland_keeper",
+		"lantern_gambler",
+		"tide_oracle",
+	])
+	var started: Dictionary = service.start_competition(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if not bool(started.get("success", false)):
+		return _ok(false, "Regional Championship did not start for controller test.")
+
+	var locked_ids := PackedStringArray([
+		"mugshot_153",
+		"mugshot_156",
+		"mugshot_157",
+		"mugshot_161",
+		"mugshot_162",
+	])
+	var cards: Array = []
+	var quantities: Dictionary = {}
+	for raw_id in locked_ids:
+		var card = DefaultCardCatalog.get_card_by_id(StringName(raw_id))
+		if card == null:
+			return _ok(false, "Controller deck-lock QA card is missing from the authored catalog.")
+		cards.append(card)
+		quantities[String(raw_id)] = 1
+
+	var controller = CompetitionControllerScript.new()
+	controller.initialize(
+		service,
+		DefaultCardCatalog,
+		MockQuantityStore.new(quantities),
+		MockGatewayProgression.new(3),
+		MockGatewayEncounterRecords.new(),
+		null,
+		null,
+		null,
+		DefaultOpponentRegistry,
+		3
+	)
+	return _ok(
+		controller.lock_active_deck(cards)
+		and controller.get_locked_deck_cards().size() == 5
+		and service.get_locked_deck_ids() == locked_ids,
+		"Competition controller must own the tournament deck lock and resolve it back to five legal owned cards."
+	)
+
+
+func _test_competition_controller_resolution_state() -> Dictionary:
+	var controller = CompetitionControllerScript.new()
+	controller.initialize(
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		1
+	)
+	controller.set_match_active(true)
+	var change: Dictionary = controller.apply_match_resolution({
+		"competition": {
+			"round_won": true,
+			"next_opponent_id": "qa_next",
+		},
+		"competition_match_active": false,
+		"competition_state_changed": false,
+	})
+	return _ok(
+		bool(change.get("round_won", false))
+		and controller.should_continue_after_reward()
+		and not controller.is_match_active()
+		and str(controller.get_pending_change().get("next_opponent_id", "")) == "qa_next",
+		"Competition controller must retain the post-match round handoff while ending ownership of the completed match."
+	)
+
+
+func _test_runtime_recovery_stale_tournament() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	var audit: Dictionary = competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	if not bool(audit.get("valid", false)):
+		return _ok(false, "Competition catalog invalid in runtime-recovery test.")
+
+	var service = CompetitionServiceScript.new()
+	service.initialize(competition_catalog, false)
+	var beaten := PackedStringArray([
+		"pier_apprentice",
+		"beach_trader",
+		"dock_bruiser",
+		"gearwright",
+		"marsh_keeper",
+		"highland_keeper",
+		"lantern_gambler",
+		"tide_oracle",
+	])
+	var started: Dictionary = service.start_competition(
+		&"regional_championship",
+		3,
+		beaten
+	)
+	if not bool(started.get("success", false)):
+		return _ok(false, "Regional Championship did not start for runtime-recovery test.")
+
+	var locked_ids := PackedStringArray([
+		"mugshot_153",
+		"mugshot_156",
+		"mugshot_157",
+		"mugshot_161",
+		"mugshot_162",
+	])
+	if not service.set_locked_deck_ids(locked_ids):
+		return _ok(false, "Runtime-recovery test could not persist its locked deck.")
+
+	# Deliberately omit one locked card from the owned collection. The recovery
+	# controller must treat the persisted tournament as stale and abandon it.
+	var quantities := {
+		"mugshot_153": 1,
+		"mugshot_156": 1,
+		"mugshot_157": 1,
+		"mugshot_161": 1,
+		"mugshot_162": 0,
+	}
+	var competition = CompetitionControllerScript.new()
+	competition.initialize(
+		service,
+		DefaultCardCatalog,
+		MockQuantityStore.new(quantities),
+		MockGatewayProgression.new(3),
+		MockGatewayEncounterRecords.new(),
+		null,
+		null,
+		null,
+		DefaultOpponentRegistry,
+		3
+	)
+	var recovery = RuntimeRecoveryControllerScript.new()
+	recovery.initialize(
+		competition,
+		DefaultCardCatalog,
+		null,
+		null,
+		null,
+		null,
+		null,
+		DefaultOpponentRegistry
+	)
+	var report: Dictionary = recovery.reconcile_runtime_state()
+	return _ok(
+		bool(report.get("repaired", false))
+		and bool(report.get("stale_tournament_abandoned", false))
+		and not bool(service.get_active_snapshot().get("active", false)),
+		"Runtime recovery must abandon an active tournament when its persisted locked deck is no longer legal."
+	)
+
+
+func _make_backend_validation_context(player_budget: int = 30) -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var competition_catalog = CompetitionCatalogScript.new()
+	competition_catalog.initialize(
+		DefaultOpponentRegistry,
+		world_catalog
+	)
+	return {
+		"card_catalog": DefaultCardCatalog,
+		"region_profile": DefaultRegionProfile,
+		"rule_set": DefaultRuleSet,
+		"opponent_registry": DefaultOpponentRegistry,
+		"acquisition_policy": DefaultAcquisitionPolicy,
+		"acquisition_registry": DefaultAcquisitionRegistry,
+		"competition_catalog": competition_catalog,
+		"world_acquisition_catalog": world_catalog,
+		"player_deck_budget": player_budget,
+	}
+
+
+func _test_backend_validator_defaults() -> Dictionary:
+	var validator = BackendValidatorScript.new()
+	var report: Dictionary = validator.validate(
+		_make_backend_validation_context(30)
+	)
+	return _ok(
+		bool(report.get("valid", false))
+		and report.get("errors", []).is_empty(),
+		"Backend validator must accept the authored default catalogs and policies before persistent services boot."
+	)
+
+
+func _test_backend_validator_missing_catalog() -> Dictionary:
+	var context: Dictionary = _make_backend_validation_context(30)
+	context["card_catalog"] = null
+	var validator = BackendValidatorScript.new()
+	var report: Dictionary = validator.validate(context)
+	var errors = report.get("errors", PackedStringArray())
+	var found_missing_catalog: bool = false
+	for raw_error in errors:
+		if str(raw_error) == "Card catalog is missing.":
+			found_missing_catalog = true
+			break
+	return _ok(
+		not bool(report.get("valid", true)) and found_missing_catalog,
+		"Backend validator must stop bootstrap when the canonical card catalog is absent."
+	)
+
+
+func _test_backend_validator_starter_budget() -> Dictionary:
+	var validator = BackendValidatorScript.new()
+	var report: Dictionary = validator.validate(
+		_make_backend_validation_context(1)
+	)
+	var found_budget_error: bool = false
+	for raw_error in report.get("errors", []):
+		if "Starter collection cannot form a legal deck" in str(raw_error):
+			found_budget_error = true
+			break
+	return _ok(
+		not bool(report.get("valid", true)) and found_budget_error,
+		"Backend validator must reject a player deck budget that cannot field the five-card starter collection."
 	)

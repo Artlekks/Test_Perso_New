@@ -334,7 +334,10 @@ func _save() -> Error:
 			"last_result", "last_played_unix", "cards_won_from_opponent",
 			"cards_lost_to_opponent", "stolen_cards_recovered",
 		]:
-			config.set_value(section, field, record.get(field, 0 if field != "last_result" else RESULT_NONE))
+			var default_value: Variant = 0
+			if field == "last_result":
+				default_value = RESULT_NONE
+			config.set_value(section, field, record.get(field, default_value))
 
 	for raw_id in _stolen.keys():
 		var key: String = str(raw_id)

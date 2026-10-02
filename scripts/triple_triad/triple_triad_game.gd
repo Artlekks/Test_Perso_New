@@ -14,34 +14,16 @@ signal gameplay_event_queued(event: Dictionary)
 
 const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
 const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
-const CollectionScript = preload("res://scripts/triple_triad/triple_triad_collection.gd")
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
-const CardEconomyScript = preload("res://scripts/triple_triad/triple_triad_card_economy.gd")
-const ProgressionScript = preload("res://scripts/triple_triad/triple_triad_progression.gd")
-const SaveIntegrityScript = preload("res://scripts/triple_triad/triple_triad_save_integrity.gd")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
-const AcquisitionTrackerScript = preload("res://scripts/triple_triad/triple_triad_acquisition_tracker.gd")
-const AcquisitionServiceScript = preload("res://scripts/triple_triad/triple_triad_acquisition_service.gd")
 const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
 const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
-const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
-const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
-const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
-const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
-const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
 const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
-const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
-const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
-const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
-const WorldProgressionDirectorScript = preload("res://scripts/triple_triad/triple_triad_world_progression_director.gd")
 const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad_opponent_evolution.gd")
 const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad_gameplay_event_feed.gd")
 const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
-const CampaignQAHarnessScript = preload("res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd")
-const CampaignQAMenuScene = preload("res://actors/TripleTriadCampaignQAMenu.tscn")
-const PlaytestRecorderScript = preload("res://scripts/triple_triad/triple_triad_playtest_recorder.gd")
 const SessionControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_session_controller.gd"
 )
@@ -63,8 +45,20 @@ const UIFlowControllerScript = preload(
 const WorldGatewayScript = preload(
 	"res://scripts/triple_triad/triple_triad_world_gateway.gd"
 )
+const CompetitionControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_competition_controller.gd"
+)
+const RuntimeRecoveryControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_runtime_recovery_controller.gd"
+)
+const BackendBootstrapScript = preload(
+	"res://scripts/triple_triad/triple_triad_backend_bootstrap.gd"
+)
+const DeveloperToolsControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_developer_tools_controller.gd"
+)
 
-const BACKEND_VERSION := "2.9.0"
+const BACKEND_VERSION := "2.11.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -141,6 +135,8 @@ var _presentation = PresentationControllerScript.new()
 var _input_controller = InputControllerScript.new()
 var _ui_flow = UIFlowControllerScript.new()
 var _world_gateway = WorldGatewayScript.new()
+var _competition = CompetitionControllerScript.new()
+var _runtime_recovery = RuntimeRecoveryControllerScript.new()
 var _selected_hand_index: int = 0
 var _selected_cell_index: int = 4
 var _starting_player_cards: Array = []
@@ -175,7 +171,6 @@ var _world_acquisition_catalog = null
 var _world_reward_ledger = null
 var _competition_catalog = null
 var _competition_service = null
-var _competition_match_active: bool = false
 var _completion_tracker = null
 var _world_progression_director = null
 var _opponent_evolution = OpponentEvolutionScript.new()
@@ -183,16 +178,31 @@ var _active_opponent_evolution: Dictionary = {}
 var _gameplay_event_feed = GameplayEventFeedScript.new()
 var _match_resolution_journal = MatchResolutionJournalScript.new()
 var _match_resolution = MatchResolutionControllerScript.new()
-var _last_runtime_recovery: Dictionary = {}
-var _pending_competition_change: Dictionary = {}
-var _campaign_qa_harness = CampaignQAHarnessScript.new()
-var _campaign_qa_menu: CanvasLayer = null
-var _qa_playtest_recorder = PlaytestRecorderScript.new()
+var _backend_bootstrap = BackendBootstrapScript.new()
+var _developer_tools = DeveloperToolsControllerScript.new()
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_build_campaign_qa_menu()
+	_developer_tools.initialize(
+		self,
+		card_catalog,
+		opponent_registry,
+		BACKEND_VERSION,
+		{
+			&"is_backend_ready": Callable(self, "is_backend_ready"),
+			&"is_card_game_unlocked": Callable(self, "is_card_game_unlocked"),
+			&"get_player_snapshot": Callable(self, "get_player_snapshot"),
+			&"get_acquisition_snapshot": Callable(self, "get_acquisition_snapshot"),
+			&"get_collection_completion_snapshot": Callable(self, "get_collection_completion_snapshot"),
+			&"get_runtime_recovery_snapshot": Callable(self, "get_runtime_recovery_snapshot"),
+			&"get_backend_health": Callable(self, "get_backend_health"),
+			&"get_global_triple_triad_snapshot": Callable(self, "get_global_triple_triad_snapshot"),
+			&"get_pending_gameplay_events": Callable(self, "get_pending_gameplay_events"),
+			&"open_active_competition_match": Callable(self, "open_active_competition_match"),
+			&"reconcile_runtime_state": Callable(self, "reconcile_runtime_state"),
+		}
+	)
 	_ui_flow.initialize({
 		"root": root,
 		"backdrop": backdrop,
@@ -235,57 +245,41 @@ func _ready() -> void:
 	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
 	deck_setup.cancelled.connect(_on_deck_cancelled)
 
-	_world_acquisition_catalog = WorldAcquisitionCatalogScript.new()
-	_world_acquisition_catalog.initialize(
-		card_catalog,
-		opponent_registry,
-		acquisition_registry
-	)
+	var bootstrap_result: Dictionary = _backend_bootstrap.bootstrap({
+		"card_catalog": card_catalog,
+		"rule_set": rule_set,
+		"region_profile": region_profile,
+		"opponent_registry": opponent_registry,
+		"acquisition_policy": acquisition_policy,
+		"acquisition_registry": acquisition_registry,
+		"player_deck_budget": player_deck_budget,
+	})
+	var services: Dictionary = bootstrap_result.get("services", {})
+	_world_acquisition_catalog = services.get("world_acquisition_catalog")
+	_competition_catalog = services.get("competition_catalog")
+	_save_integrity = services.get("save_integrity")
+	_collection_backend = services.get("collection_backend")
+	_acquisition_tracker = services.get("acquisition_tracker")
+	_acquisition_service = services.get("acquisition_service")
+	_progression = services.get("progression")
+	_world_reward_ledger = services.get("world_reward_ledger")
+	_encounter_records = services.get("encounter_records")
+	_competition_service = services.get("competition_service")
+	_completion_tracker = services.get("completion_tracker")
+	_world_progression_director = services.get("world_progression_director")
+	_card_economy = services.get("card_economy")
+	_state_api = services.get("state_api")
 
-	_competition_catalog = CompetitionCatalogScript.new()
-	_competition_catalog.initialize(
-		opponent_registry,
-		_world_acquisition_catalog
-	)
-
-	# Validate authored/static data before any subsystem is allowed to mutate a
-	# persistent save. A broken catalog must never be able to sanitize good saves.
-	if not _validate_static_backend():
+	_backend_errors.clear()
+	for raw_error in bootstrap_result.get("errors", []):
+		_backend_errors.append(str(raw_error))
+	for raw_warning in bootstrap_result.get("warnings", []):
+		push_warning("TripleTriadGame backend: %s" % str(raw_warning))
+	if not bool(bootstrap_result.get("success", false)):
+		for error_text in _backend_errors:
+			push_error("TripleTriadGame backend: %s" % error_text)
+		push_error("TripleTriadGame: backend bootstrap failed; backend disabled for this session.")
 		return
-
-	_save_integrity = SaveIntegrityScript.new()
-	var preflight_report: Dictionary = _save_integrity.preflight_restore_backups()
-	if not bool(preflight_report.get("valid", true)):
-		_backend_errors.append(
-			"One or more Triple Triad saves are corrupt and have no valid backup: %s"
-			% str(preflight_report.get("failed", []))
-		)
-		push_error(
-			"TripleTriadGame: save preflight failed; backend disabled to avoid overwriting recoverable data."
-		)
-		return
-
-	_collection_backend = CollectionScript.new()
-	_collection_backend.initialize(card_catalog, acquisition_policy)
-
-	_acquisition_tracker = AcquisitionTrackerScript.new()
-	_acquisition_tracker.initialize(card_catalog)
-
-	_acquisition_service = AcquisitionServiceScript.new()
-	_acquisition_service.initialize(
-		card_catalog,
-		_collection_backend,
-		_acquisition_tracker,
-		acquisition_registry
-	)
-	_progression = ProgressionScript.new()
-	_progression.initialize()
-
-	_world_reward_ledger = WorldRewardLedgerScript.new()
-	_world_reward_ledger.initialize()
-
-	_encounter_records = EncounterRecordsScript.new()
-	_encounter_records.initialize()
 
 	_world_gateway.initialize(
 		card_catalog,
@@ -299,60 +293,14 @@ func _ready() -> void:
 		_rng,
 		player_card_rank
 	)
-	_world_gateway.acquisition_completed.connect(
-		_on_acquisition_bundle_claimed
-	)
-	_world_gateway.card_game_unlock_changed.connect(
-		_on_card_game_unlock_changed
-	)
-	_world_gateway.gameplay_event_requested.connect(
-		_queue_gameplay_event
-	)
-	_world_gateway.save_checkpoint_requested.connect(
-		_checkpoint_save_integrity
-	)
-	_world_gateway.backend_state_change_requested.connect(
-		_publish_backend_state_change
-	)
+	_world_gateway.acquisition_completed.connect(_on_acquisition_bundle_claimed)
+	_world_gateway.card_game_unlock_changed.connect(_on_card_game_unlock_changed)
+	_world_gateway.gameplay_event_requested.connect(_queue_gameplay_event)
+	_world_gateway.save_checkpoint_requested.connect(_checkpoint_save_integrity)
+	_world_gateway.backend_state_change_requested.connect(_publish_backend_state_change)
 
-	_competition_service = CompetitionServiceScript.new()
-	_competition_service.initialize(_competition_catalog)
-
-	_completion_tracker = CompletionTrackerScript.new()
-	_completion_tracker.initialize(
-		card_catalog,
-		_collection_backend,
-		_world_acquisition_catalog,
-		_encounter_records,
-		_progression,
-		_competition_service,
-		opponent_registry
-	)
-	_completion_tracker.milestone_reached.connect(
-		_on_collection_milestone_reached
-	)
-	_completion_tracker.collection_completed.connect(
-		_on_collection_completed
-	)
-
-	_world_progression_director = WorldProgressionDirectorScript.new()
-
-	# Transfer journal recovery happens before the global save audit. If recovery
-	# is still pending after the attempt, opening a new match would risk stacking
-	# a second transaction on top of an unresolved one, so backend startup stops.
-	_card_economy = CardEconomyScript.new()
-	var recovery_ok: bool = _card_economy.recover_pending(
-		card_catalog,
-		_collection_backend
-	)
-	if (
-		not recovery_ok
-		and _card_economy.has_method("has_pending_transfer")
-		and bool(_card_economy.call("has_pending_transfer"))
-	):
-		_backend_errors.append("A card-transfer recovery is still pending.")
-		push_error("TripleTriadGame: unresolved card-transfer recovery; backend disabled for this session.")
-		return
+	_completion_tracker.milestone_reached.connect(_on_collection_milestone_reached)
+	_completion_tracker.collection_completed.connect(_on_collection_completed)
 
 	_match_resolution.initialize(
 		card_catalog,
@@ -368,38 +316,48 @@ func _ready() -> void:
 		DefaultAcquisitionPolicy
 	)
 
-	_checkpoint_save_integrity("boot")
-
-	_state_api = StateAPIScript.new()
-	_state_api.initialize(
+	_competition.initialize(
+		_competition_service,
 		card_catalog,
 		_collection_backend,
 		_progression,
-		opponent_registry,
 		_encounter_records,
-		_acquisition_tracker,
-		_acquisition_service,
 		acquisition_policy,
-		_world_acquisition_catalog,
-		player_deck_budget
+		_world_gateway,
+		_world_reward_ledger,
+		opponent_registry,
+		player_card_rank
 	)
+	_competition.competition_state_changed.connect(_on_competition_controller_state_changed)
+	_competition.gameplay_event_requested.connect(_queue_gameplay_event)
+	_competition.backend_state_change_requested.connect(_publish_backend_state_change)
+
+	_runtime_recovery.initialize(
+		_competition,
+		card_catalog,
+		_world_gateway,
+		_world_reward_ledger,
+		_match_resolution,
+		_match_resolution_journal,
+		deck_setup,
+		opponent_registry
+	)
+	_runtime_recovery.gameplay_event_requested.connect(_queue_gameplay_event)
+	_runtime_recovery.checkpoint_requested.connect(_checkpoint_save_integrity)
+	_runtime_recovery.backend_state_change_requested.connect(_publish_backend_state_change)
+
+	_checkpoint_save_integrity("boot")
 
 	_backend_ready = true
 	_world_gateway.set_backend_ready(true)
 	_install_fishing_salvage_bridge()
-	_last_runtime_recovery = reconcile_runtime_state()
-	if OS.is_debug_build():
-		_qa_playtest_recorder.append(
-			&"session_start",
-			{
-				"backend_version": BACKEND_VERSION,
-				"recovery": _last_runtime_recovery.duplicate(true),
-			}
-		)
-	if bool(_last_runtime_recovery.get("requires_reward_ui", false)):
+	_developer_tools.bind_runtime(_world_reward_ledger)
+	var runtime_recovery: Dictionary = reconcile_runtime_state()
+	_developer_tools.record_session_start(runtime_recovery)
+	if bool(runtime_recovery.get("requires_reward_ui", false)):
 		call_deferred("_resume_pending_match_resolution")
 	if OS.is_debug_build() and run_backend_qa_on_startup:
-		_run_backend_qa()
+		run_backend_qa()
 	if OS.is_debug_build() and run_balance_simulation_on_startup:
 		call_deferred(
 			"run_balance_simulation",
@@ -407,344 +365,18 @@ func _ready() -> void:
 			balance_simulation_seed
 		)
 
-
-func _build_campaign_qa_menu() -> void:
-	if not OS.is_debug_build() or _campaign_qa_menu != null:
-		return
-	_campaign_qa_menu = CampaignQAMenuScene.instantiate() as CanvasLayer
-	add_child(_campaign_qa_menu)
-	if _campaign_qa_menu.has_method("configure"):
-		_campaign_qa_menu.call(
-			"configure",
-			_campaign_qa_harness
-		)
-	_campaign_qa_menu.connect(
-		"scenario_requested",
-		Callable(self, "_on_campaign_qa_scenario_requested")
-	)
-	_campaign_qa_menu.connect(
-		"action_requested",
-		Callable(self, "_on_campaign_qa_action_requested")
-	)
-
-
-func _campaign_qa_snapshot() -> Dictionary:
-	return {
-		"player": get_player_snapshot() if _backend_ready else {},
-		"acquisition": get_acquisition_snapshot() if _backend_ready else {},
-		"completion": (
-			get_collection_completion_snapshot()
-			if _backend_ready
-			else {}
-		),
-		"recovery": _last_runtime_recovery.duplicate(true),
-		"qa_snapshot": _campaign_qa_harness.get_qa_snapshot_info(),
-		"playtest_log": _qa_playtest_recorder.get_info(),
-	}
-
-
-func _toggle_campaign_qa_menu() -> void:
-	if _campaign_qa_menu == null:
-		return
-	if bool(_campaign_qa_menu.call("is_open")):
-		_campaign_qa_menu.call("close_menu")
-	else:
-		_campaign_qa_menu.call(
-			"open_menu",
-			_campaign_qa_snapshot()
-		)
-
-
-func _on_campaign_qa_scenario_requested(
-	scenario_id: StringName
-) -> void:
-	if not OS.is_debug_build():
-		return
-	var result: Dictionary = _campaign_qa_harness.apply_scenario(
-		scenario_id,
-		card_catalog
-	)
-	if not bool(result.get("success", false)):
-		if _campaign_qa_menu != null:
-			_campaign_qa_menu.call(
-				"set_status",
-				"FAILED: %s"
-				% str(result.get("reason", "unknown"))
-			)
-		return
-	_qa_playtest_recorder.append(
-		&"qa_scenario_applied",
-		result
-	)
-	_reload_scene_after_campaign_qa()
-
-
-func _on_campaign_qa_action_requested(
-	action_id: StringName
-) -> void:
-	if not OS.is_debug_build():
-		return
-	match action_id:
-		&"arm_next_coast_salvage":
-			if not _backend_ready or _world_reward_ledger == null:
-				_campaign_qa_status("Backend unavailable.")
-				return
-			if not is_card_game_unlocked():
-				_campaign_qa_status(
-					"Card game is locked. Use Fresh / Undiscovered and catch the starter case first."
-				)
-				return
-			var counter_id := StringName(
-				"fishing_salvage:coast_shallows"
-			)
-			_world_reward_ledger.call(
-				"reset_counter",
-				counter_id
-			)
-			for _index in range(3):
-				_world_reward_ledger.call(
-					"increment_counter",
-					counter_id
-				)
-			_campaign_qa_status(
-				"Armed: next eligible Ocean 2 catch grants Coast Shallows salvage."
-			)
-		&"resume_active_tournament":
-			if open_active_competition_match():
-				_campaign_qa_menu.call("close_menu")
-			else:
-				_campaign_qa_status(
-					"No resumable tournament round is active."
-				)
-		&"save_qa_snapshot":
-			var save_result: Dictionary = (
-				_campaign_qa_harness.save_qa_snapshot()
-			)
-			_campaign_qa_status(
-				"QA Snapshot A saved (%d files)."
-				% int(save_result.get("file_count", 0))
-				if bool(save_result.get("success", false))
-				else "QA Snapshot save FAILED."
-			)
-		&"restore_qa_snapshot":
-			var restore_result: Dictionary = (
-				_campaign_qa_harness.restore_qa_snapshot()
-			)
-			if bool(restore_result.get("success", false)):
-				_qa_playtest_recorder.append(
-					&"qa_snapshot_restored",
-					restore_result
-				)
-				_reload_scene_after_campaign_qa()
-			else:
-				_campaign_qa_status(
-					"Restore FAILED: %s"
-					% str(restore_result.get("reason", "unknown"))
-				)
-		&"delete_qa_snapshot":
-			var delete_result: Dictionary = (
-				_campaign_qa_harness.delete_qa_snapshot()
-			)
-			_campaign_qa_status(
-				"QA Snapshot A deleted."
-				if bool(delete_result.get("success", false))
-				else "QA Snapshot delete FAILED."
-			)
-		&"reset_decks":
-			var result: Dictionary = (
-				_campaign_qa_harness.reset_decks_only()
-			)
-			if bool(result.get("success", false)):
-				_reload_scene_after_campaign_qa()
-			else:
-				_campaign_qa_status("Could not reset decks.")
-		&"reconcile":
-			var recovery: Dictionary = reconcile_runtime_state()
-			_campaign_qa_status(
-				"Reconcile: %s"
-				% (
-					"clean"
-					if bool(recovery.get("valid", true))
-					else "attention required"
-				)
-			)
-		&"capture_qa_report":
-			var report_result: Dictionary = _capture_campaign_qa_report()
-			_campaign_qa_status(
-				"Diagnostic report captured."
-				if bool(report_result.get("success", false))
-				else "Diagnostic report FAILED."
-			)
-		&"clear_playtest_log":
-			_campaign_qa_status(
-				"Playtest log cleared."
-				if _qa_playtest_recorder.clear()
-				else "Could not clear playtest log."
-			)
-		&"run_backend_qa":
-			var report: Dictionary = run_backend_qa()
-			_campaign_qa_status(
-				"Backend QA: %d / %d passed"
-				% [
-					int(report.get("passed_count", 0)),
-					int(report.get("test_count", 0)),
-				]
-			)
-
-
-func _capture_campaign_qa_report() -> Dictionary:
-	const REPORT_PATH := "user://triple_triad_qa_report.json"
-	var tree: SceneTree = get_tree()
-	var report := {
-		"generated_time": Time.get_datetime_string_from_system(),
-		"generated_unix": int(Time.get_unix_time_from_system()),
-		"backend_version": BACKEND_VERSION,
-		"engine": Engine.get_version_info(),
-		"scene": (
-			str(tree.current_scene.scene_file_path)
-			if tree != null and tree.current_scene != null
-			else ""
-		),
-		"tree_paused": tree.paused if tree != null else false,
-		"backend_health": get_backend_health(),
-		"global": (
-			get_global_triple_triad_snapshot()
-			if _backend_ready
-			else {}
-		),
-		"recovery": get_runtime_recovery_snapshot(),
-		"pending_gameplay_events": get_pending_gameplay_events(),
-		"campaign_qa": _campaign_qa_snapshot(),
-		"qa_snapshot": _campaign_qa_harness.get_qa_snapshot_info(),
-		"playtest_log": _qa_playtest_recorder.get_info(),
-	}
-	var file := FileAccess.open(REPORT_PATH, FileAccess.WRITE)
-	if file == null:
-		return {
-			"success": false,
-			"reason": "report_open_failed",
-		}
-	file.store_string(JSON.stringify(report, "\t"))
-	file.close()
-	_qa_playtest_recorder.append(
-		&"diagnostic_report_captured",
-		{"path": REPORT_PATH}
-	)
-	return {
-		"success": true,
-		"path": REPORT_PATH,
-	}
-
-
-func _campaign_qa_status(text: String) -> void:
-	if _campaign_qa_menu != null:
-		_campaign_qa_menu.call("set_status", text)
-
-
-func _reload_scene_after_campaign_qa() -> void:
-	var tree: SceneTree = get_tree()
-	if tree == null:
-		return
-	tree.paused = false
-	tree.reload_current_scene()
-
-
 func run_backend_qa() -> Dictionary:
-	return _run_backend_qa()
+	return _developer_tools.run_backend_qa()
 
 
 func run_balance_simulation(
 	games_per_matchup: int = 40,
 	simulation_seed: int = 1337
 ) -> Dictionary:
-	if card_catalog == null or opponent_registry == null:
-		return {
-			"valid": false,
-			"errors": ["Card catalog or opponent registry is unavailable."],
-		}
-	var simulator = BalanceSimulatorScript.new()
-	var report: Dictionary = simulator.run_registry_suite(
-		card_catalog,
-		opponent_registry,
-		maxi(1, games_per_matchup),
-		simulation_seed,
-		true
+	return _developer_tools.run_balance_simulation(
+		games_per_matchup,
+		simulation_seed
 	)
-	if bool(report.get("valid", false)):
-		var global: Dictionary = report.get("global", {})
-		print(
-			"TripleTriad Balance: %d games, first-player %.1f%% / second-player %.1f%% of decisive games, draw %.1f%%. Report: %s"
-			% [
-				int(global.get("games", 0)),
-				float(global.get("first_player_win_rate", 0.0)) * 100.0,
-				float(global.get("second_player_win_rate", 0.0)) * 100.0,
-				float(global.get("draw_rate", 0.0)) * 100.0,
-				str(report.get("report_path", "")),
-			]
-		)
-		for raw_check in report.get("ladder_checks", []):
-			var check: Dictionary = raw_check
-			print(
-				"  Ladder %s -> %s: %.1f%% decisive wins (%s)"
-				% [
-					str(check.get("lower_name", "?")),
-					str(check.get("higher_name", "?")),
-					float(check.get("higher_decisive_win_rate", 0.0)) * 100.0,
-					str(check.get("status", "")),
-				]
-			)
-	else:
-		push_error(
-			"TripleTriad Balance simulation failed: %s"
-			% str(report.get("errors", []))
-		)
-	return report
-
-
-func _run_backend_qa() -> Dictionary:
-	# QA is deliberately loaded only when invoked. Shipping/runtime gameplay does
-	# not have a hard preload dependency on the regression harness.
-	var qa_script = load("res://scripts/triple_triad/triple_triad_backend_qa.gd")
-	if qa_script == null:
-		var missing_report := {
-			"passed": false,
-			"test_count": 0,
-			"passed_count": 0,
-			"failed_count": 1,
-			"failures": ["QA harness missing"],
-		}
-		push_error("TripleTriadGame: backend QA harness could not be loaded.")
-		return missing_report
-
-	var qa_runner = qa_script.new()
-	var report: Dictionary = qa_runner.run_all()
-	if bool(report.get("passed", false)):
-		print(
-			"TripleTriad QA: %d/%d backend tests passed."
-			% [
-				int(report.get("passed_count", 0)),
-				int(report.get("test_count", 0)),
-			]
-		)
-	else:
-		push_error(
-			"TripleTriad QA: %d/%d tests failed: %s"
-			% [
-				int(report.get("failed_count", 0)),
-				int(report.get("test_count", 0)),
-				str(report.get("failures", [])),
-			]
-		)
-		for result in report.get("results", []):
-			if not bool(result.get("passed", false)):
-				push_error(
-					"  QA FAIL — %s: %s"
-					% [
-						str(result.get("name", "unknown")),
-						str(result.get("error", "")),
-					]
-				)
-	return report
 
 
 func is_backend_ready() -> bool:
@@ -763,146 +395,6 @@ func get_backend_health() -> Dictionary:
 			else {}
 		),
 	}
-
-
-func _validate_static_backend() -> bool:
-	_backend_ready = false
-	_backend_errors.clear()
-
-	if card_catalog == null:
-		_backend_errors.append("Card catalog is missing.")
-	elif card_catalog.has_method("validate_catalog"):
-		var catalog_audit: Dictionary = card_catalog.call("validate_catalog")
-		if not bool(catalog_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid card catalog: %s" % str(catalog_audit.get("errors", []))
-			)
-
-	if region_profile != null and region_profile.has_method("validate_profile"):
-		var default_region_audit: Dictionary = region_profile.call("validate_profile")
-		if not bool(default_region_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid default region profile: %s"
-				% str(default_region_audit.get("errors", []))
-			)
-	if rule_set != null and rule_set.has_method("validate_runtime_support"):
-		var default_rule_audit: Dictionary = rule_set.call("validate_runtime_support")
-		if not bool(default_rule_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid default rule set: %s"
-				% str(default_rule_audit.get("errors", []))
-			)
-
-	if opponent_registry == null:
-		_backend_errors.append("Opponent registry is missing.")
-	elif opponent_registry.has_method("validate_registry"):
-		var registry_audit: Dictionary = opponent_registry.call(
-			"validate_registry",
-			card_catalog
-		)
-		if not bool(registry_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid opponent registry: %s"
-				% str(registry_audit.get("errors", []))
-			)
-		for warning in registry_audit.get("warnings", []):
-			push_warning("TripleTriadGame: %s" % str(warning))
-
-	if acquisition_policy == null:
-		_backend_errors.append("Acquisition policy is missing.")
-	else:
-		for required_method in [
-			"can_use_card",
-			"build_starting_collection",
-			"get_card_lock_reason",
-		]:
-			if not acquisition_policy.has_method(required_method):
-				_backend_errors.append(
-					"Acquisition policy does not expose %s()." % required_method
-				)
-
-		if acquisition_policy.has_method("build_starting_collection") and card_catalog != null:
-			var starter_cards: Array = acquisition_policy.call(
-				"build_starting_collection",
-				card_catalog
-			)
-			if starter_cards.size() < 5:
-				_backend_errors.append(
-					"Acquisition policy cannot build a five-card starter collection."
-				)
-			else:
-				var starter_costs: Array[int] = []
-				for card in starter_cards:
-					if card != null:
-						starter_costs.append(maxi(0, int(card.deck_cost)))
-				starter_costs.sort()
-				if starter_costs.size() < 5:
-					_backend_errors.append("Starter collection contains invalid cards.")
-				else:
-					var cheapest_starter_deck: int = 0
-					for index in range(5):
-						cheapest_starter_deck += starter_costs[index]
-					if cheapest_starter_deck > player_deck_budget:
-						_backend_errors.append(
-							"Starter collection cannot form a legal deck under the base player budget."
-						)
-
-	if acquisition_registry == null:
-		_backend_errors.append("Acquisition registry is missing.")
-	elif acquisition_registry.has_method("validate_registry"):
-		var acquisition_audit: Dictionary = acquisition_registry.call(
-			"validate_registry",
-			card_catalog
-		)
-		if not bool(acquisition_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid acquisition registry: %s"
-				% str(acquisition_audit.get("errors", []))
-			)
-		for warning in acquisition_audit.get("warnings", []):
-			push_warning("TripleTriadGame acquisition: %s" % str(warning))
-
-
-	if _competition_catalog == null:
-		_backend_errors.append("Competition catalog is missing.")
-	elif _competition_catalog.has_method("validate_catalog"):
-		var competition_audit: Dictionary = _competition_catalog.call(
-			"validate_catalog"
-		)
-		if not bool(competition_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid competition catalog: %s"
-				% str(competition_audit.get("errors", []))
-			)
-		for warning in competition_audit.get("warnings", []):
-			push_warning(
-				"TripleTriadGame competition: %s" % str(warning)
-			)
-
-	if _world_acquisition_catalog == null:
-		_backend_errors.append("World acquisition catalog is missing.")
-	elif _world_acquisition_catalog.has_method("validate_map"):
-		var world_acquisition_audit: Dictionary = _world_acquisition_catalog.call(
-			"validate_map"
-		)
-		if not bool(world_acquisition_audit.get("valid", false)):
-			_backend_errors.append(
-				"Invalid world acquisition map: %s"
-				% str(world_acquisition_audit.get("errors", []))
-			)
-		for warning in world_acquisition_audit.get("warnings", []):
-			push_warning("TripleTriadGame acquisition map: %s" % str(warning))
-
-	var progression_probe = ProgressionScript.new()
-	if (
-		progression_probe.progression_catalog == null
-		or not progression_probe.progression_catalog.is_valid_catalog()
-	):
-		_backend_errors.append("Progression catalog is invalid.")
-
-	for error_text in _backend_errors:
-		push_error("TripleTriadGame backend: %s" % error_text)
-	return _backend_errors.is_empty()
 
 
 func get_pending_gameplay_events() -> Array:
@@ -932,11 +424,10 @@ func _queue_gameplay_event(
 		priority
 	)
 	gameplay_event_queued.emit(event.duplicate(true))
-	if OS.is_debug_build():
-		_qa_playtest_recorder.append(
-			&"gameplay_event",
-			event
-		)
+	_developer_tools.append_playtest_event(
+		&"gameplay_event",
+		event
+	)
 	return event
 
 
@@ -945,11 +436,15 @@ func get_state_api():
 
 
 func get_player_snapshot() -> Dictionary:
-	return _state_api.get_player_snapshot() if _state_api != null else {}
+	if _state_api == null:
+		return {}
+	return _state_api.get_player_snapshot()
 
 
 func get_collection_snapshot() -> Array:
-	return _state_api.get_collection_snapshot() if _state_api != null else []
+	if _state_api == null:
+		return []
+	return _state_api.get_collection_snapshot()
 
 
 
@@ -1062,15 +557,21 @@ func has_world_reward_event_claimed(event_id: StringName) -> bool:
 
 
 func get_deck_profiles_snapshot() -> Array:
-	return _state_api.get_deck_profiles() if _state_api != null else []
+	if _state_api == null:
+		return []
+	return _state_api.get_deck_profiles()
 
 
 func get_opponent_snapshot(opponent_id: StringName) -> Dictionary:
-	return _state_api.get_opponent_snapshot(opponent_id) if _state_api != null else {}
+	if _state_api == null:
+		return {}
+	return _state_api.get_opponent_snapshot(opponent_id)
 
 
 func get_opponents_snapshot() -> Array:
-	return _state_api.get_all_opponents_snapshot() if _state_api != null else []
+	if _state_api == null:
+		return []
+	return _state_api.get_all_opponents_snapshot()
 
 
 func get_collection_completion_snapshot() -> Dictionary:
@@ -1341,55 +842,15 @@ func _install_fishing_salvage_bridge() -> void:
 
 
 func get_competitive_snapshot() -> Dictionary:
-	if _competition_service == null:
-		return {}
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	var beaten_ids := PackedStringArray()
-	if _encounter_records != null:
-		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
-	return _competition_service.call("get_snapshot", player_rank, beaten_ids)
+	return _competition.get_competitive_snapshot()
 
 
 func get_circuit_snapshot(circuit_id: StringName) -> Dictionary:
-	if _competition_service == null:
-		return {}
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	var beaten_ids := PackedStringArray()
-	if _encounter_records != null:
-		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
-	return _competition_service.call(
-		"get_circuit_snapshot",
-		circuit_id,
-		player_rank,
-		beaten_ids
-	)
+	return _competition.get_circuit_snapshot(circuit_id)
 
 
 func get_competition_snapshot(competition_id: StringName) -> Dictionary:
-	if _competition_service == null:
-		return {}
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	var beaten_ids := PackedStringArray()
-	if _encounter_records != null:
-		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
-	return _competition_service.call(
-		"get_competition_snapshot",
-		competition_id,
-		player_rank,
-		beaten_ids
-	)
+	return _competition.get_competition_snapshot(competition_id)
 
 
 func start_competition(competition_id: StringName) -> Dictionary:
@@ -1397,29 +858,7 @@ func start_competition(competition_id: StringName) -> Dictionary:
 		return {"success": false, "reason": "backend_not_ready"}
 	if not is_card_game_unlocked():
 		return {"success": false, "reason": "card_game_locked"}
-	if _competition_service == null:
-		return {"success": false, "reason": "competition_service_unavailable"}
-
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	var beaten_ids := PackedStringArray()
-	if _encounter_records != null:
-		beaten_ids = _encounter_records.call("get_beaten_opponent_ids")
-
-	var result: Dictionary = _competition_service.call(
-		"start_competition",
-		competition_id,
-		player_rank,
-		beaten_ids
-	)
-	if bool(result.get("success", false)):
-		var snapshot: Dictionary = get_competitive_snapshot()
-		competition_state_changed.emit(snapshot.duplicate(true))
-		_publish_backend_state_change("competition_started")
-	return result
+	return _competition.start_competition(competition_id)
 
 
 func start_competition_and_open(competition_id: StringName) -> bool:
@@ -1430,20 +869,18 @@ func start_competition_and_open(competition_id: StringName) -> bool:
 
 
 func open_active_competition_match() -> bool:
-	if _competition_service == null or is_open():
+	if is_open():
 		return false
-	var opponent_id: StringName = _competition_service.call(
-		"get_active_opponent_id"
-	)
-	if opponent_id == &"":
+	var open_request: Dictionary = _competition.prepare_active_match_open()
+	if not bool(open_request.get("success", false)):
 		return false
 
-	var locked_cards: Array = _get_competition_locked_deck_cards()
-	var opened_ok: bool = open_game_by_id(opponent_id)
-	if not opened_ok:
+	var opponent_id := StringName(str(open_request.get("opponent_id", "")))
+	var locked_cards: Array = open_request.get("locked_cards", [])
+	if not open_game_by_id(opponent_id):
 		return false
 
-	_competition_match_active = true
+	_competition.set_match_active(true)
 	if locked_cards.size() == 5:
 		_active_player_deck = locked_cards.duplicate()
 		_ui_flow.close_deck_setup()
@@ -1452,80 +889,7 @@ func open_active_competition_match() -> bool:
 
 
 func abandon_active_competition() -> Dictionary:
-	if _competition_service == null:
-		return {"success": false, "reason": "competition_service_unavailable"}
-	var result: Dictionary = _competition_service.call(
-		"abandon_active_competition"
-	)
-	if bool(result.get("success", false)):
-		_competition_match_active = false
-		competition_state_changed.emit(get_competitive_snapshot())
-		_publish_backend_state_change("competition_abandoned")
-	return result
-
-
-func _get_competition_locked_deck_cards() -> Array:
-	var result: Array = []
-	if _competition_service == null:
-		return result
-	var raw_ids = _competition_service.call("get_locked_deck_ids")
-	if not (raw_ids is PackedStringArray or raw_ids is Array):
-		return result
-	if raw_ids.size() != 5:
-		return result
-
-	var player_rank: int = (
-		_progression.get_rank_number()
-		if _progression != null
-		else maxi(1, player_card_rank)
-	)
-	for raw_id in raw_ids:
-		var card_id := StringName(str(raw_id))
-		var card = null
-		if card_catalog != null:
-			card = card_catalog.get_card_by_id(card_id)
-		if card == null:
-			return []
-		if (
-			_collection_backend == null
-			or _collection_backend.get_quantity_by_id(card_id) <= 0
-		):
-			return []
-		if (
-			acquisition_policy != null
-			and acquisition_policy.has_method("can_use_card")
-			and not bool(
-				acquisition_policy.call(
-					"can_use_card",
-					card,
-					player_rank
-				)
-			)
-		):
-			return []
-		result.append(card)
-	return result
-
-
-func _lock_active_competition_deck(cards: Array) -> bool:
-	if _competition_service == null or cards.size() != 5:
-		return false
-	if bool(_competition_service.call("has_locked_deck")):
-		return true
-	var ids := PackedStringArray()
-	for card in cards:
-		if card == null:
-			return false
-		var card_id: String = str(card.get("card_id"))
-		if card_id.is_empty() or ids.has(card_id):
-			return false
-		ids.append(card_id)
-	return bool(
-		_competition_service.call(
-			"set_locked_deck_ids",
-			ids
-		)
-	)
+	return _competition.abandon_active_competition()
 
 
 func get_opponent_evolution_snapshot(
@@ -1574,6 +938,10 @@ func _on_card_game_unlock_changed(unlocked: bool) -> void:
 	card_game_unlock_changed.emit(unlocked)
 
 
+func _on_competition_controller_state_changed(snapshot: Dictionary) -> void:
+	competition_state_changed.emit(snapshot.duplicate(true))
+
+
 func open_game_by_id(opponent_id: StringName) -> bool:
 	if not _backend_ready:
 		push_warning("TripleTriadGame: backend is not ready; match open rejected.")
@@ -1591,19 +959,16 @@ func open_game_by_id(opponent_id: StringName) -> bool:
 		push_error("TripleTriadGame: opponent registry is unavailable.")
 		return false
 
-	if _competition_service != null:
-		var active_competition: Dictionary = _competition_service.call(
-			"get_active_snapshot"
+	var active_competition: Dictionary = _competition.get_active_snapshot()
+	if bool(active_competition.get("active", false)):
+		var expected_id := StringName(
+			str(active_competition.get("next_opponent_id", ""))
 		)
-		if bool(active_competition.get("active", false)):
-			var expected_id := StringName(
-				str(active_competition.get("next_opponent_id", ""))
+		if expected_id != &"" and opponent_id != expected_id:
+			push_warning(
+				"TripleTriadGame: finish or abandon the active tournament before challenging another opponent."
 			)
-			if expected_id != &"" and opponent_id != expected_id:
-				push_warning(
-					"TripleTriadGame: finish or abandon the active tournament before challenging another opponent."
-				)
-				return false
+			return false
 
 	var profile = opponent_registry.call("get_opponent", opponent_id)
 	if profile == null:
@@ -1670,10 +1035,15 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		_active_opponent_profile
 	)
 	_invalidate_state_api("opponent_loaded")
+	var active_player_budget: int = player_deck_budget
+	var active_player_rank: int = player_card_rank
+	if _progression != null:
+		active_player_budget = int(_progression.get_deck_budget(player_deck_budget))
+		active_player_rank = int(_progression.get_rank_number())
 	_ui_flow.open_deck_setup(
 		card_catalog,
-		_progression.get_deck_budget(player_deck_budget) if _progression != null else player_deck_budget,
-		_progression.get_rank_number() if _progression != null else player_card_rank,
+		active_player_budget,
+		active_player_rank,
 		_collection_backend,
 		acquisition_policy
 	)
@@ -1701,23 +1071,13 @@ func close_game() -> void:
 func _input(event: InputEvent) -> void:
 	var action: StringName = _input_controller.action_for_event(event, OS.is_debug_build())
 	if action == InputControllerScript.ACTION_CAMPAIGN_QA:
-		_toggle_campaign_qa_menu()
+		_developer_tools.toggle_campaign_qa_menu()
 		_accept_input()
 		return
 
-	if (
-		_campaign_qa_menu != null
-		and bool(_campaign_qa_menu.call("is_open"))
-	):
+	if _developer_tools.is_campaign_qa_menu_open():
 		if action != InputControllerScript.ACTION_NONE:
-			var close_requested: bool = bool(
-				_campaign_qa_menu.call(
-					"handle_input",
-					event
-				)
-			)
-			if close_requested:
-				_campaign_qa_menu.call("close_menu")
+			_developer_tools.handle_campaign_qa_input(event)
 			_accept_input()
 		return
 
@@ -1850,7 +1210,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
 	_ui_flow.prepare_new_match()
-	_pending_competition_change.clear()
+	_competition.clear_pending_change()
 	_last_info_name = ""
 
 	if _qa_hand_seed > 0:
@@ -2054,7 +1414,7 @@ func _finish_match(
 		_active_opponent_profile,
 		_active_opponent_id(),
 		_qa_profile_override != null,
-		_competition_match_active,
+		_competition.is_match_active(),
 		_starting_player_cards,
 		_starting_opponent_cards,
 		_opponent_collection_backend
@@ -2063,46 +1423,8 @@ func _finish_match(
 		resolution.get("progression", {}) as Dictionary
 	).duplicate(true)
 	var competition_change: Dictionary = (
-		resolution.get("competition", {}) as Dictionary
-	).duplicate(true)
-	_competition_match_active = bool(
-		resolution.get(
-			"competition_match_active",
-			_competition_match_active
-		)
+		_competition.apply_match_resolution(resolution)
 	)
-	if bool(resolution.get("competition_state_changed", false)):
-		competition_state_changed.emit(get_competitive_snapshot())
-
-	if bool(competition_change.get("completed", false)):
-		competition_change["tournament_reward"] = (
-			_resolve_pending_competition_reward()
-		)
-
-	_pending_competition_change = competition_change.duplicate(true)
-	if bool(competition_change.get("round_won", false)):
-		_queue_gameplay_event(
-			&"tournament_round_won",
-			"Round Won",
-			"Next opponent: %s"
-			% str(competition_change.get("next_opponent_id", "")),
-			competition_change
-		)
-	elif bool(competition_change.get("failed", false)):
-		_queue_gameplay_event(
-			&"tournament_failed",
-			"Tournament Attempt Ended",
-			"Return when you are ready to try again.",
-			competition_change
-		)
-	elif bool(competition_change.get("completed", false)):
-		_queue_gameplay_event(
-			&"tournament_cleared",
-			"Tournament Cleared",
-			str(competition_change.get("title_awarded", "")),
-			competition_change,
-			2
-		)
 
 	if bool(progression_change.get("rank_up", false)):
 		_queue_gameplay_event(
@@ -2196,406 +1518,38 @@ func _run_result_transition(winner: int) -> void:
 	if not is_open():
 		return
 
-func _cards_from_ids(card_ids) -> Array:
-	var result: Array = []
-	if card_catalog == null:
-		return result
-	if not (card_ids is PackedStringArray or card_ids is Array):
-		return result
-	for raw_id in card_ids:
-		var card = card_catalog.get_card_by_id(
-			StringName(str(raw_id))
-		)
-		if card == null:
-			return []
-		result.append(card)
-	return result
-
-
-func _reconcile_pending_world_reward_deliveries() -> Dictionary:
-	var report := {
-		"pending_before": 0,
-		"resolved": 0,
-		"failed": 0,
-	}
-	if _world_reward_ledger == null:
-		return report
-	var deliveries: Array = _world_reward_ledger.call(
-		"get_pending_deliveries"
-	)
-	report["pending_before"] = deliveries.size()
-	for raw_delivery in deliveries:
-		if not (raw_delivery is Dictionary):
-			report["failed"] = int(report["failed"]) + 1
-			continue
-		var delivery: Dictionary = raw_delivery
-		var event_id := StringName(
-			str(delivery.get("event_id", ""))
-		)
-		var source_type := StringName(
-			str(delivery.get("source_type", ""))
-		)
-		var source_id := StringName(
-			str(delivery.get("source_id", ""))
-		)
-		var source_context := StringName(
-			str(delivery.get("source_context", ""))
-		)
-		if (
-			String(event_id).is_empty()
-			or String(source_type).is_empty()
-			or String(source_id).is_empty()
-		):
-			report["failed"] = int(report["failed"]) + 1
-			continue
-
-		var result: Dictionary = claim_world_source_reward(
-			source_type,
-			source_id,
-			source_context,
-			event_id,
-			true
-		)
-		if (
-			bool(result.get("success", false))
-			or str(result.get("reason", ""))
-			== "event_already_claimed"
-		):
-			report["resolved"] = int(report["resolved"]) + 1
-		else:
-			report["failed"] = int(report["failed"]) + 1
-	return report
-
-
-func _resolve_pending_competition_reward() -> Dictionary:
-	if _competition_service == null:
-		return {}
-	var pending: Dictionary = _competition_service.call(
-		"get_pending_reward"
-	)
-	if pending.is_empty():
-		return {}
-
-	var event_id := StringName(
-		str(pending.get("reward_event_id", ""))
-	)
-	var source_id := StringName(
-		str(pending.get("reward_source_id", ""))
-	)
-	if String(event_id).is_empty():
-		return {
-			"success": false,
-			"reason": "pending_reward_missing_event_id",
-		}
-
-	if has_world_reward_event_claimed(event_id):
-		_competition_service.call(
-			"acknowledge_pending_reward",
-			event_id
-		)
-		return {
-			"success": true,
-			"reason": "event_already_claimed",
-			"event_id": String(event_id),
-		}
-
-	if String(source_id).is_empty():
-		_competition_service.call(
-			"acknowledge_pending_reward",
-			event_id
-		)
-		return {
-			"success": true,
-			"reason": "competition_has_no_reward_source",
-			"event_id": String(event_id),
-		}
-
-	var result: Dictionary = claim_tournament_card_reward(
-		source_id,
-		event_id,
-		StringName(
-			"competition:%s"
-			% str(pending.get("competition_id", ""))
-		),
-		true
-	)
-	var reason: String = str(result.get("reason", ""))
-	var resolved: bool = (
-		bool(result.get("success", false))
-		or reason == "event_already_claimed"
-		or reason == "source_complete"
-	)
-	if resolved:
-		if (
-			reason == "source_complete"
-			and _world_reward_ledger != null
-		):
-			_world_reward_ledger.call(
-				"mark_claimed",
-				event_id
-			)
-		_competition_service.call(
-			"acknowledge_pending_reward",
-			event_id
-		)
-		competition_state_changed.emit(
-			get_competitive_snapshot()
-		)
-	return result
-
-
 func get_runtime_recovery_snapshot() -> Dictionary:
-	var pending_resolution: Dictionary = {}
-	if _match_resolution_journal != null:
-		pending_resolution = (
-			_match_resolution_journal.get_snapshot()
-		)
-	var pending_competition_reward: Dictionary = {}
-	if _competition_service != null:
-		pending_competition_reward = (
-			_competition_service.call(
-				"get_pending_reward"
-			)
-		)
-	var pending_world_deliveries: Array = []
-	if _world_reward_ledger != null:
-		pending_world_deliveries = _world_reward_ledger.call(
-			"get_pending_deliveries"
-		)
-	return {
-		"last_recovery": _last_runtime_recovery.duplicate(true),
-		"pending_match_resolution": pending_resolution,
-		"pending_competition_reward": pending_competition_reward,
-		"pending_world_deliveries": pending_world_deliveries,
-	}
+	return _runtime_recovery.get_runtime_snapshot()
 
 
 func reconcile_runtime_state() -> Dictionary:
-	var report := {
-		"repaired": false,
-		"requires_reward_ui": false,
-		"resolution_repaired": false,
-		"world_rewards_repaired": 0,
-		"competition_reward_repaired": false,
-		"stale_tournament_abandoned": false,
-		"warnings": [],
-	}
-
-	var delivery_report: Dictionary = (
-		_reconcile_pending_world_reward_deliveries()
-	)
-	var delivery_resolved: int = int(
-		delivery_report.get("resolved", 0)
-	)
-	if delivery_resolved > 0:
-		report["repaired"] = true
-		report["world_rewards_repaired"] = delivery_resolved
-	if int(delivery_report.get("failed", 0)) > 0:
-		report["warnings"].append(
-			"One or more pending world card rewards could not be reconciled."
-		)
-
-	var pending_reward_before: Dictionary = {}
-	if _competition_service != null:
-		pending_reward_before = _competition_service.call(
-			"get_pending_reward"
-		)
-	if not pending_reward_before.is_empty():
-		var reward_result: Dictionary = (
-			_resolve_pending_competition_reward()
-		)
-		var reward_reason: String = str(
-			reward_result.get("reason", "")
-		)
-		if (
-			bool(reward_result.get("success", false))
-			or reward_reason in [
-				"event_already_claimed",
-				"source_complete",
-				"competition_has_no_reward_source",
-			]
-		):
-			report["repaired"] = true
-			report["competition_reward_repaired"] = true
-		else:
-			report["warnings"].append(
-				"Pending tournament reward could not be reconciled."
-			)
-
-	var pending: Dictionary = {}
-	if _match_resolution_journal != null:
-		pending = _match_resolution_journal.get_snapshot()
-	if bool(pending.get("pending", false)):
-		var selected_id: String = str(
-			pending.get("selected_card_id", "")
-		)
-		var winner: int = int(
-			pending.get("winner", OWNER_NONE)
-		)
-		var forced_loss_id: String = str(
-			pending.get("forced_loss_card_id", "")
-		)
-
-		if not selected_id.is_empty():
-			var reconcile_result: Dictionary = (
-				_match_resolution.reconcile_selected_pending_resolution(
-					pending
-				)
-			)
-			if bool(reconcile_result.get("success", false)):
-				if bool(reconcile_result.get("remove_from_decks", false)):
-					deck_setup.remove_card_from_all_profiles(
-						StringName(str(reconcile_result.get("card_id", "")))
-					)
-				_match_resolution_journal.clear()
-				report["repaired"] = true
-				report["resolution_repaired"] = true
-				_queue_gameplay_event(
-					&"match_resolution_recovered",
-					"Card Result Recovered",
-					"An interrupted card transfer was completed safely.",
-					pending,
-					2
-				)
-			else:
-				report["warnings"].append(
-					"Selected card resolution could not be reconciled."
-				)
-		elif (
-			winner == OWNER_OPPONENT
-			and forced_loss_id.is_empty()
-		):
-			# Minimum-deck protection meant this result required no ownership
-			# transfer. There is nothing unsafe to resume after a reload.
-			_match_resolution_journal.clear()
-			report["repaired"] = true
-			report["resolution_repaired"] = true
-		else:
-			report["requires_reward_ui"] = true
-
-	if _competition_service != null:
-		var active: Dictionary = _competition_service.call(
-			"get_active_snapshot"
-		)
-		if (
-			bool(active.get("active", false))
-			and bool(active.get("deck_locked", false))
-			and _get_competition_locked_deck_cards().size() != 5
-		):
-			_competition_service.call(
-				"abandon_active_competition"
-			)
-			report["repaired"] = true
-			report["stale_tournament_abandoned"] = true
-			report["warnings"].append(
-				"An invalid persisted tournament deck was abandoned safely."
-			)
-			_queue_gameplay_event(
-				&"tournament_recovered",
-				"Tournament Reset",
-				"The saved tournament deck was no longer legal.",
-				active,
-				2
-			)
-
-	if bool(report["repaired"]):
-		_checkpoint_save_integrity(
-			"runtime_reconcile"
-		)
-		_publish_backend_state_change(
-			"runtime_reconcile"
-		)
-	_last_runtime_recovery = report.duplicate(true)
-	return report
+	return _runtime_recovery.reconcile_runtime_state()
 
 
 func _resume_pending_match_resolution() -> void:
-	if (
-		not _backend_ready
-		or is_open()
-		or _match_resolution_journal == null
-	):
+	if not _backend_ready or is_open():
 		return
-	var pending: Dictionary = (
-		_match_resolution_journal.get_snapshot()
+	var payload: Dictionary = (
+		_runtime_recovery.build_pending_resolution_resume_payload()
 	)
-	if not bool(pending.get("pending", false)):
-		return
-	if not str(
-		pending.get("selected_card_id", "")
-	).is_empty():
+	if not bool(payload.get("success", false)):
 		return
 
-	var opponent_id := StringName(
-		str(pending.get("opponent_id", ""))
-	)
-	var winner: int = int(
-		pending.get("winner", OWNER_NONE)
-	)
-	if (
-		String(opponent_id).is_empty()
-		or winner not in [OWNER_PLAYER, OWNER_OPPONENT]
-	):
-		_match_resolution_journal.clear()
-		return
-
-	var profile = null
-	if opponent_registry != null:
-		profile = opponent_registry.call(
-			"get_opponent",
-			opponent_id
-		)
-	var player_cards: Array = _cards_from_ids(
-		pending.get(
-			"player_card_ids",
-			PackedStringArray()
-		)
-	)
-	var opponent_cards: Array = _cards_from_ids(
-		pending.get(
-			"opponent_card_ids",
-			PackedStringArray()
-		)
-	)
-	if (
-		profile == null
-		or player_cards.size() != 5
-		or opponent_cards.size() != 5
-	):
-		_match_resolution_journal.clear()
-		if _competition_service != null:
-			var active: Dictionary = (
-				_competition_service.call(
-					"get_active_snapshot"
-				)
-			)
-			if bool(active.get("active", false)):
-				_competition_service.call(
-					"abandon_active_competition"
-				)
-		_queue_gameplay_event(
-			&"recovery_warning",
-			"Card Result Reset",
-			"An invalid interrupted result was cleared safely.",
-			pending,
-			3
-		)
-		return
+	var pending: Dictionary = payload.get("pending", {})
+	var opponent_id := StringName(str(payload.get("opponent_id", "")))
+	var winner: int = int(payload.get("winner", OWNER_NONE))
+	var profile = payload.get("profile", null)
+	var player_cards: Array = payload.get("player_cards", [])
+	var opponent_cards: Array = payload.get("opponent_cards", [])
 
 	var tree: SceneTree = get_tree()
 	if tree == null:
 		return
-	var recovered_reason := StringName(
-		str(pending.get("result_reason", "recovered"))
-	)
-	var recovered_surrendered: bool = bool(
-		pending.get("surrendered", false)
-	)
 	_session.recover_reward_session(
 		tree.paused,
 		winner,
-		recovered_reason,
-		recovered_surrendered
+		StringName(str(payload.get("result_reason", "recovered"))),
+		bool(payload.get("surrendered", false))
 	)
 	_resolve_active_configuration(profile)
 	_opponent_collection_backend = OpponentCollectionScript.new()
@@ -2611,38 +1565,15 @@ func _resume_pending_match_resolution() -> void:
 	_starting_player_cards = player_cards.duplicate()
 	_starting_opponent_cards = opponent_cards.duplicate()
 	_active_player_deck = player_cards.duplicate()
-	_pending_competition_change = (
-		(pending.get("competition_change", {}) as Dictionary)
-		.duplicate(true)
-	)
-
-	var opponent_take_index: int = -1
-	var forced_loss_id: String = str(
-		pending.get("forced_loss_card_id", "")
-	)
-	if winner == OWNER_OPPONENT and not forced_loss_id.is_empty():
-		for index in range(player_cards.size()):
-			var card = player_cards[index]
-			if card != null and String(card.card_id) == forced_loss_id:
-				opponent_take_index = index
-				break
 
 	_ui_flow.show_recovery_surface()
-	var eligible_reward_ids := PackedStringArray()
-	var raw_eligible = pending.get(
-		"eligible_reward_ids",
-		PackedStringArray()
-	)
-	if raw_eligible is PackedStringArray or raw_eligible is Array:
-		for raw_id in raw_eligible:
-			eligible_reward_ids.append(str(raw_id))
 	_ui_flow.open_reward(
 		opponent_cards,
 		player_cards,
 		winner,
 		false,
-		opponent_take_index,
-		eligible_reward_ids,
+		int(payload.get("opponent_take_index", -1)),
+		payload.get("eligible_reward_ids", PackedStringArray()),
 		false
 	)
 	_refresh_ui_flow()
@@ -2898,46 +1829,32 @@ func _on_reward_completed() -> void:
 		_match_resolution_journal.clear()
 	_checkpoint_save_integrity("reward_resolution_complete")
 	if (
-		bool(_pending_competition_change.get("round_won", false))
+		_competition.should_continue_after_reward()
 		and _continue_active_competition_round()
 	):
 		return
-	_pending_competition_change.clear()
+	_competition.clear_pending_change()
 	close_game()
 
 
 
 func _continue_active_competition_round() -> bool:
-	if _competition_service == null:
-		return false
-	var next_opponent_id: StringName = _competition_service.call(
-		"get_active_opponent_id"
-	)
-	if next_opponent_id == &"":
-		return false
-
-	var locked_cards: Array = _get_competition_locked_deck_cards()
-	if locked_cards.size() != 5:
-		push_warning(
-			"TripleTriadGame: tournament deck lock is no longer legal; ending the attempt."
-		)
-		abandon_active_competition()
+	var round_request: Dictionary = _competition.prepare_next_round()
+	if not bool(round_request.get("success", false)):
+		var reason: String = str(round_request.get("reason", ""))
+		if reason == "invalid_locked_deck":
+			push_warning(
+				"TripleTriadGame: tournament deck lock is no longer legal; ending the attempt."
+			)
+		elif reason == "missing_opponent":
+			push_error(
+				"TripleTriadGame: tournament next opponent '%s' is missing."
+				% str(round_request.get("opponent_id", ""))
+			)
 		return false
 
-	var profile = null
-	if opponent_registry != null:
-		profile = opponent_registry.call(
-			"get_opponent",
-			next_opponent_id
-		)
-	if profile == null:
-		push_error(
-			"TripleTriadGame: tournament next opponent '%s' is missing."
-			% String(next_opponent_id)
-		)
-		abandon_active_competition()
-		return false
-
+	var profile = round_request.get("profile", null)
+	var locked_cards: Array = round_request.get("locked_cards", [])
 	_session.reset_round()
 	_resolve_active_configuration(profile)
 	_opponent_collection_backend = OpponentCollectionScript.new()
@@ -2950,18 +1867,6 @@ func _continue_active_competition_round() -> bool:
 		_active_opponent_profile
 	)
 	_active_player_deck = locked_cards.duplicate()
-	_competition_match_active = true
-	_pending_competition_change.clear()
-	_queue_gameplay_event(
-		&"tournament_next_round",
-		"Next Round",
-		str(profile.get("display_name")),
-		{
-			"opponent_id": String(next_opponent_id),
-			"competition": get_competitive_snapshot(),
-		}
-	)
-	_publish_backend_state_change("competition_next_round")
 	_start_new_match(_active_player_deck)
 	return true
 
@@ -2997,8 +1902,8 @@ func _on_deck_confirmed(cards: Array) -> void:
 	if _session.phase != PHASE_DECK_SETUP or cards.size() != 5:
 		return
 	_active_player_deck = cards.duplicate()
-	if _competition_match_active:
-		if not _lock_active_competition_deck(_active_player_deck):
+	if _competition.is_match_active():
+		if not _competition.lock_active_deck(_active_player_deck):
 			push_error(
 				"TripleTriadGame: could not lock the tournament deck."
 			)
@@ -3013,7 +1918,7 @@ func _on_deck_confirmed(cards: Array) -> void:
 func _on_deck_cancelled() -> void:
 	if _session.phase != PHASE_DECK_SETUP:
 		return
-	if _competition_match_active and _competition_service != null:
+	if _competition.is_match_active():
 		abandon_active_competition()
 	close_game()
 
