@@ -78,9 +78,6 @@ const BeachCraftingQAScript = preload(
 const BeachGatheringFeedbackScene = preload(
 	"res://actors/BeachGatheringFeedbackView.tscn"
 )
-const BeachCraftingWorldScene = preload(
-	"res://actors/BeachCraftingVerticalSliceWorld.tscn"
-)
 const BeachCraftingFeelQAHUDScene = preload(
 	"res://actors/BeachCraftingFeelQAHUD.tscn"
 )
@@ -464,7 +461,6 @@ func bind_loadout(loadout) -> Dictionary:
 			"set_loadout",
 			loadout
 		)
-	call_deferred("_ensure_beach_vertical_slice_world_content")
 	loadout.configure_persistence(
 		inventory,
 		FishingTackleCatalogResource
@@ -594,30 +590,6 @@ func _ensure_beach_crafting_feel_qa_hud() -> void:
 			beach_crafting_service,
 			active_loadout
 		)
-
-
-func _ensure_beach_vertical_slice_world_content() -> void:
-	var tree := get_tree()
-	if tree == null:
-		return
-	var scene := tree.current_scene
-	if scene == null:
-		return
-
-	var world := scene.get_node_or_null("World")
-	if world == null:
-		return
-	# Only inject into the current Ocean-2 beach prototype. This avoids
-	# touching authored scene coordinates while still making the vertical
-	# slice immediately playable.
-	if scene.get_node_or_null("World/beach") == null:
-		return
-	if world.get_node_or_null("BeachCraftingVerticalSliceWorld") != null:
-		return
-
-	var instance = BeachCraftingWorldScene.instantiate()
-	if instance is Node3D:
-		world.add_child(instance)
 
 
 func get_active_loadout():

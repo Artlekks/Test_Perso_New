@@ -30,7 +30,7 @@ func _input(event: InputEvent) -> void:
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.paused:
 		return
-	if not _is_confirm(event):
+	if not _is_card_action(event):
 		return
 	var game: Node = _find_game()
 	if game != null:
@@ -140,7 +140,7 @@ func _on_body_entered(body: Node) -> void:
 		return
 	_player_in_range = true
 	_refresh_prompt_text()
-	prompt_label.visible = true
+	prompt_label.visible = false
 
 
 func _on_body_exited(body: Node) -> void:
@@ -181,7 +181,7 @@ func _is_player_body(body: Node) -> bool:
 	return body != null and body is CharacterBody3D and body.name == "CharacterBody3D"
 
 
-func _is_confirm(event: InputEvent) -> bool:
+func _is_card_action(event: InputEvent) -> bool:
 	if not (event is InputEventKey):
 		return false
 	var key_event := event as InputEventKey
@@ -189,9 +189,7 @@ func _is_confirm(event: InputEvent) -> bool:
 		key_event.pressed
 		and not key_event.echo
 		and (
-			key_event.keycode == KEY_K
-			or key_event.physical_keycode == KEY_K
-			or key_event.keycode == KEY_ENTER
-			or key_event.physical_keycode == KEY_ENTER
+			key_event.keycode == KEY_C
+			or key_event.physical_keycode == KEY_C
 		)
 	)

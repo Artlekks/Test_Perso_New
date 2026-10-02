@@ -4,6 +4,8 @@ extends Node3D
 @export var talk_animation: StringName = &"Stand_Interest"
 @export var interaction_prompt: String = "K : Trade"
 @export var greeting_text: String = "Take a look."
+@export var card_opponent_id: StringName = &""
+@export var card_opponent_profile: Resource
 
 @onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
@@ -11,6 +13,7 @@ extends Node3D
 
 var _player_in_range: bool = false
 var _cached_menu: Node = null
+var _cached_card_game: Node = null
 
 
 func _ready() -> void:
@@ -26,6 +29,12 @@ func _input(event: InputEvent) -> void:
 		return
 	if get_tree() == null or get_tree().paused:
 		return
+
+	if _is_card_action(event):
+		if _start_card_interaction():
+			get_viewport().set_input_as_handled()
+		return
+
 	if not _is_confirm(event):
 		return
 	_start_interaction()
@@ -36,10 +45,7 @@ func _start_interaction() -> void:
 	_play_talk()
 	var target_menu: Node = _find_economy_menu()
 	if target_menu != null and target_menu.has_method("open_menu"):
-		prompt_label.text = greeting_text
 		target_menu.call("open_menu")
-	else:
-		prompt_label.text = interaction_prompt
 
 
 func _play_idle() -> void:
@@ -73,8 +79,7 @@ func _on_body_entered(body: Node) -> void:
 	if not _is_player_body(body):
 		return
 	_player_in_range = true
-	prompt_label.text = interaction_prompt
-	prompt_label.visible = true
+	prompt_label.visible = false
 
 
 func _on_body_exited(body: Node) -> void:
@@ -82,12 +87,66 @@ func _on_body_exited(body: Node) -> void:
 		return
 	_player_in_range = false
 	prompt_label.visible = false
-	prompt_label.text = interaction_prompt
 	_play_idle()
 
 
 func _is_player_body(body: Node) -> bool:
 	return body != null and body is CharacterBody3D and body.name == "CharacterBody3D"
+
+
+func _start_card_interaction() -> bool:
+	if (
+		card_opponent_id == &""
+		and card_opponent_profile == null
+	):
+		return false
+
+	var game: Node = _find_card_game()
+	if game == null:
+		return false
+
+	if (
+		card_opponent_id != &""
+		and game.has_method("open_game_by_id")
+	):
+		game.call("open_game_by_id", card_opponent_id)
+		return true
+
+	if game.has_method("open_game"):
+		game.call("open_game", card_opponent_profile)
+		return true
+
+	return false
+
+
+func _find_card_game() -> Node:
+	if is_instance_valid(_cached_card_game):
+		return _cached_card_game
+
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return null
+
+	_cached_card_game = scene.find_child(
+		"TripleTriadGame",
+		true,
+		false
+	)
+	return _cached_card_game
+
+
+func _is_card_action(event: InputEvent) -> bool:
+	if not (event is InputEventKey):
+		return false
+	var key_event := event as InputEventKey
+	return (
+		key_event.pressed
+		and not key_event.echo
+		and (
+			key_event.keycode == KEY_C
+			or key_event.physical_keycode == KEY_C
+		)
+	)
 
 
 func _is_confirm(event: InputEvent) -> bool:

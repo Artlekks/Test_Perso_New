@@ -71,7 +71,9 @@
 [ext_resource type="Script" uid="uid://dmr43e6bpymb0" path="res://scripts/fishing_shore_boundary.gd" id="71_shore_boundary"]
 [ext_resource type="PackedScene" uid="uid://dhj5u200srrux" path="res://actors/BeachMerchantNPC.tscn" id="72_merchant_npc"]
 [ext_resource type="PackedScene" path="res://actors/TripleTriadOpponentNPC.tscn" id="73_triad_npc"]
-[ext_resource type="PackedScene" uid="uid://kp64wcreffsh" path="res://actors/TripleTriadGame.tscn" id="74_triad_game"]
+[ext_resource type="PackedScene" path="res://actors/TripleTriadGame.tscn" id="74_triad_game"]
+[ext_resource type="PackedScene" path="res://actors/BeachCrafterNPC.tscn" id="75_crafter_npc"]
+[ext_resource type="PackedScene" path="res://actors/BeachGatheringCircuit.tscn" id="76_gathering_circuit"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -245,6 +247,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.326166, 0.06284177, 0.42)
 
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
+
+[node name="BeachCrafterNPC" parent="World" instance=ExtResource("75_crafter_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.07, 0.42)
+
+[node name="BeachGatheringCircuit" parent="World" instance=ExtResource("76_gathering_circuit")]
 
 [node name="Player" type="Node" parent="." unique_id=1284942496]
 

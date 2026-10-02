@@ -108,6 +108,7 @@ func get_sell_entries() -> Array[Dictionary]:
 		var unit_value: int = economy_service.get_fish_sell_value(StringName(species_id))
 		result.append({
 			"kind": "sell",
+			"category": "FISH",
 			"id": species_id,
 			"display_name": fish.fish_name,
 			"owned_count": count,
@@ -148,8 +149,13 @@ func get_buy_entries() -> Array[Dictionary]:
 				owned_count = inventory.get_lure_count(offer.item_id)
 			else:
 				owned_count = inventory.get_rod_count(offer.item_id)
+		var presentation_category: String = "LURES"
+		if offer.item_type == ShopOfferScript.ItemType.ROD:
+			presentation_category = "RODS"
 		result.append({
 			"kind": "buy",
+			"category": presentation_category,
+			"item_type": offer.item_type,
 			"id": str(offer.offer_id),
 			"shop_id": str(offer.shop_id),
 			"shop_name": offer.shop_name,

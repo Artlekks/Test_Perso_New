@@ -66,6 +66,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.32, 0)
 shape = SubResource("SphereShape3D_interaction")
 
 [node name="PromptLabel3D" type="Label3D" parent="."]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
 billboard = 1
 modulate = Color(0.78, 0.91, 1, 1)

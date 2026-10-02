@@ -92,15 +92,9 @@ func _refresh_presentation() -> void:
 	if placeholder_mesh != null:
 		placeholder_mesh.visible = not _depleted
 
-	if _depleted:
-		prompt_label.text = depleted_prompt
-	elif _player_in_range:
-		prompt_label.text = "%s : %s" % [
-			interaction_prompt,
-			display_name,
-		]
-	else:
-		prompt_label.text = interaction_prompt
+	# Old-school interaction: the resource itself is the affordance.
+	# Never display a floating "Press K / Gather" prompt.
+	prompt_label.visible = false
 
 
 func configure_circuit(
@@ -201,7 +195,7 @@ func _on_body_entered(body: Node) -> void:
 		return
 	_player_in_range = true
 	_refresh_presentation()
-	prompt_label.visible = true
+	prompt_label.visible = false
 
 
 func _on_body_exited(body: Node) -> void:
