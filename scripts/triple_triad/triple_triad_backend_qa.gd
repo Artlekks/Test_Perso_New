@@ -27,6 +27,8 @@ const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad
 const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad_gameplay_event_feed.gd")
 const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
 const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
+const SessionControllerScript = preload("res://scripts/triple_triad/triple_triad_session_controller.gd")
+const MatchFlowControllerScript = preload("res://scripts/triple_triad/triple_triad_match_flow_controller.gd")
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -189,6 +191,12 @@ func run_all() -> Dictionary:
 	_run("Competition completion reward remains pending until acknowledged", _test_competition_pending_reward)
 	_run("Match-resolution journal survives interrupted reward choice", _test_match_resolution_journal)
 	_run("World reward delivery journal prevents duplicate one-shot rewards", _test_world_reward_delivery_journal)
+	_run("Session lifecycle transitions are explicit", _test_session_lifecycle_controller)
+	_run("Session surrender resumes the interrupted turn", _test_session_surrender_resume)
+	_run("Session result and recovery state remain deterministic", _test_session_result_recovery)
+	_run("Match flow owns setup and deal handoff", _test_match_flow_setup_and_deal)
+	_run("Match flow owns player-to-AI turn handoff", _test_match_flow_turn_handoff)
+	_run("Match flow owns surrender and result destinations", _test_match_flow_surrender_and_result)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -1712,3 +1720,263 @@ func _test_authored_opponent_ladder() -> Dictionary:
 				)
 
 	return _ok(true)
+
+
+func _test_session_lifecycle_controller() -> Dictionary:
+	var session = SessionControllerScript.new()
+	if session.is_open():
+		return _ok(false, "A new session must start closed.")
+	session.open_deck_setup(false)
+	if session.phase != SessionControllerScript.PHASE_DECK_SETUP:
+		return _ok(false, "Opening must enter deck setup.")
+	session.prepare_new_match()
+	session.begin_dealing()
+	session.complete_deal(OWNER_PLAYER)
+	if (
+		not session.match_started
+		or session.phase != SessionControllerScript.PHASE_SELECT_CARD
+	):
+		return _ok(false, "Player-start deal must enter card selection.")
+	if not session.begin_player_cell_selection():
+		return _ok(false, "Card selection must be allowed to enter cell selection.")
+	if not session.cancel_player_cell_selection():
+		return _ok(false, "Cell selection must return to card selection.")
+	session.close_session()
+	return _ok(
+		not session.is_open()
+		and not session.match_started
+		and session.phase == SessionControllerScript.PHASE_CLOSED,
+		"Closing must leave no live match phase."
+	)
+
+
+func _test_session_surrender_resume() -> Dictionary:
+	var session = SessionControllerScript.new()
+	session.open_deck_setup(false)
+	session.prepare_new_match()
+	session.begin_dealing()
+	session.complete_deal(OWNER_OPPONENT)
+	if not session.request_surrender():
+		return _ok(false, "AI turn should allow a surrender request.")
+	if session.phase != SessionControllerScript.PHASE_SURRENDER_CONFIRM:
+		return _ok(false, "Surrender request must enter confirmation.")
+	var resume_phase: int = session.cancel_surrender()
+	if (
+		resume_phase != SessionControllerScript.PHASE_AI
+		or session.phase != SessionControllerScript.PHASE_AI
+	):
+		return _ok(false, "Cancelled surrender must resume the interrupted AI turn.")
+	if not session.request_surrender():
+		return _ok(false, "Resumed AI turn should still allow surrender.")
+	session.confirm_surrender()
+	return _ok(
+		session.surrendered
+		and session.surrender_resume_phase == SessionControllerScript.PHASE_CLOSED,
+		"Confirmed surrender must clear its resume phase and mark the result."
+	)
+
+
+func _test_session_result_recovery() -> Dictionary:
+	var session = SessionControllerScript.new()
+	session.open_deck_setup(false)
+	session.prepare_new_match()
+	session.begin_dealing()
+	session.complete_deal(OWNER_PLAYER)
+	session.finish_match(OWNER_PLAYER, &"board_complete")
+	if (
+		session.phase != SessionControllerScript.PHASE_RESULT
+		or session.result_winner != OWNER_PLAYER
+		or session.result_reason != &"board_complete"
+	):
+		return _ok(false, "Finished match state was not captured deterministically.")
+	if not session.begin_result_transition():
+		return _ok(false, "Result phase must be allowed to begin its transition.")
+	session.begin_reward()
+	if session.phase != SessionControllerScript.PHASE_REWARD:
+		return _ok(false, "Resolved result must enter reward phase.")
+	session.recover_reward_session(true, OWNER_OPPONENT, &"recovered", true)
+	return _ok(
+		session.previous_pause
+		and session.phase == SessionControllerScript.PHASE_REWARD
+		and session.result_winner == OWNER_OPPONENT
+		and session.result_reason == &"recovered"
+		and session.surrendered
+		and not session.match_started,
+		"Recovered reward state must be complete and self-consistent."
+	)
+
+func _test_match_flow_setup_and_deal() -> Dictionary:
+	var match_state = MatchScript.new()
+	var ai = AIScript.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 101
+	var session = SessionControllerScript.new()
+	var flow = MatchFlowControllerScript.new()
+	flow.initialize(match_state, ai, rng, session)
+	session.open_deck_setup(false)
+
+	var player_cards: Array = []
+	var opponent_cards: Array = []
+	for index in range(5):
+		player_cards.append(
+			MockCard.new(StringName("flow_p_%d" % index), 3, 3, 3, 3)
+		)
+		opponent_cards.append(
+			MockCard.new(StringName("flow_o_%d" % index), 2, 2, 2, 2)
+		)
+
+	var prepared: Dictionary = flow.prepare_match(
+		player_cards,
+		opponent_cards,
+		OWNER_PLAYER,
+		MockRuleSet.new(),
+		MockRegion.new()
+	)
+	if (
+		not bool(prepared.get("success", false))
+		or session.phase != SessionControllerScript.PHASE_DEALING
+		or match_state.player_hand.size() != 5
+		or match_state.opponent_hand.size() != 5
+		or int(prepared.get("selected_hand_index", -1)) != 0
+		or int(prepared.get("selected_cell_index", -1)) != 4
+	):
+		return _ok(false, "Flow setup did not establish the canonical fresh-match state.")
+
+	var completed: Dictionary = flow.complete_deal(OWNER_PLAYER)
+	return _ok(
+		bool(completed.get("success", false))
+		and not bool(completed.get("schedule_ai", true))
+		and session.match_started
+		and session.phase == SessionControllerScript.PHASE_SELECT_CARD,
+		"Player-start deal must hand control to player card selection."
+	)
+
+
+func _test_match_flow_turn_handoff() -> Dictionary:
+	var match_state = MatchScript.new()
+	var ai = AIScript.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 202
+	var session = SessionControllerScript.new()
+	var flow = MatchFlowControllerScript.new()
+	flow.initialize(match_state, ai, rng, session)
+	session.open_deck_setup(false)
+
+	var player_cards: Array = []
+	var opponent_cards: Array = []
+	for index in range(5):
+		player_cards.append(
+			MockCard.new(StringName("turn_p_%d" % index), 5, 5, 5, 5)
+		)
+		opponent_cards.append(
+			MockCard.new(StringName("turn_o_%d" % index), 2, 2, 2, 2)
+		)
+	flow.prepare_match(
+		player_cards,
+		opponent_cards,
+		OWNER_PLAYER,
+		MockRuleSet.new(),
+		MockRegion.new()
+	)
+	flow.complete_deal(OWNER_PLAYER)
+
+	var player_move: Dictionary = flow.commit_player_move(0, 4)
+	if (
+		not bool(player_move.get("success", false))
+		or session.phase != SessionControllerScript.PHASE_ANIMATING
+	):
+		return _ok(false, "Player move was not committed through the flow controller.")
+	var player_result: Dictionary = player_move.get("result", {})
+	if flow.complete_player_move(player_result) != &"schedule_ai":
+		return _ok(false, "Completed player move did not hand control to AI.")
+	if session.phase != SessionControllerScript.PHASE_AI:
+		return _ok(false, "Player-to-AI handoff did not enter AI phase.")
+
+	var ai_move: Dictionary = flow.commit_ai_move(null)
+	if not bool(ai_move.get("success", false)):
+		return _ok(false, "AI flow could not produce a legal reply move.")
+	var ai_result: Dictionary = ai_move.get("result", {})
+	var handoff: Dictionary = flow.complete_ai_move(ai_result, 0, 4)
+	return _ok(
+		StringName(handoff.get("action", &"")) == &"player_turn"
+		and session.phase == SessionControllerScript.PHASE_SELECT_CARD
+		and match_state.turn_number == 2,
+		"AI completion must return cleanly to the next player turn."
+	)
+
+
+func _test_match_flow_surrender_and_result() -> Dictionary:
+	var match_state = MatchScript.new()
+	var ai = AIScript.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 303
+	var session = SessionControllerScript.new()
+	var flow = MatchFlowControllerScript.new()
+	flow.initialize(match_state, ai, rng, session)
+	session.open_deck_setup(false)
+
+	var player_cards: Array = []
+	var opponent_cards: Array = []
+	for index in range(5):
+		player_cards.append(
+			MockCard.new(StringName("result_p_%d" % index), 4, 4, 4, 4)
+		)
+		opponent_cards.append(
+			MockCard.new(StringName("result_o_%d" % index), 4, 4, 4, 4)
+		)
+	flow.prepare_match(
+		player_cards,
+		opponent_cards,
+		OWNER_PLAYER,
+		MockRuleSet.new(),
+		MockRegion.new()
+	)
+	flow.complete_deal(OWNER_PLAYER)
+
+	if flow.request_surrender() != &"confirm":
+		return _ok(false, "Live player turn should enter surrender confirmation.")
+	var cancelled: Dictionary = flow.cancel_surrender()
+	if (
+		int(cancelled.get("resume_phase", -1))
+		!= SessionControllerScript.PHASE_SELECT_CARD
+		or session.phase != SessionControllerScript.PHASE_SELECT_CARD
+	):
+		return _ok(false, "Cancelled surrender did not restore player turn.")
+	if flow.request_surrender() != &"confirm":
+		return _ok(false, "Surrender could not be requested after cancellation.")
+	flow.confirm_surrender()
+	if not session.surrendered:
+		return _ok(false, "Confirmed surrender was not recorded by session state.")
+
+	flow.finish_match(OWNER_OPPONENT, &"surrender")
+	var decisive: Dictionary = flow.begin_result_transition()
+	if (
+		not bool(decisive.get("accepted", false))
+		or int(decisive.get("winner", OWNER_NONE)) != OWNER_OPPONENT
+		or flow.prepare_result_destination(OWNER_OPPONENT) != &"reward"
+		or session.phase != SessionControllerScript.PHASE_REWARD
+	):
+		return _ok(false, "Decisive result did not route to reward resolution.")
+
+	var draw_match = MatchScript.new()
+	var draw_session = SessionControllerScript.new()
+	var draw_flow = MatchFlowControllerScript.new()
+	draw_flow.initialize(draw_match, ai, rng, draw_session)
+	draw_session.open_deck_setup(false)
+	draw_flow.prepare_match(
+		player_cards,
+		opponent_cards,
+		OWNER_PLAYER,
+		MockRuleSet.new(),
+		MockRegion.new()
+	)
+	draw_flow.complete_deal(OWNER_PLAYER)
+	draw_flow.finish_match(OWNER_NONE, &"board_complete")
+	if not bool(draw_flow.begin_result_transition().get("accepted", false)):
+		return _ok(false, "Draw result transition was rejected.")
+	return _ok(
+		draw_flow.prepare_result_destination(OWNER_NONE) == &"replay"
+		and draw_session.round_number == 2,
+		"Draw result must increment the round and route to replay."
+	)
+
