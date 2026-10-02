@@ -45,37 +45,60 @@ func _input(event: InputEvent) -> void:
 
 
 func gather() -> Dictionary:
-	var inventory := _find_inventory()
-	if inventory == null:
-		return {
-			"success": false,
-			"reason": "gathering_inventory_unavailable",
+	var gathered_amount: int = maxi(1, amount)
+	var result: Dictionary = {}
+
+	var services := _find_session_services()
+	if (
+		services != null
+		and services.has_method("grant_beach_material")
+	):
+		result = services.call(
+			"grant_beach_material",
+			material_id,
+			gathered_amount
+		)
+	else:
+		# Compatibility fallback for isolated/debug scenes that do not run the
+		# full FishingSessionServices item backbone.
+		var inventory := _find_inventory()
+		if inventory == null:
+			return {
+				"success": false,
+				"reason": "gathering_inventory_unavailable",
+			}
+		var fallback_count: int = inventory.grant(
+			material_id,
+			gathered_amount,
+			true
+		)
+		result = {
+			"success": true,
+			"material_id": String(material_id),
+			"amount": gathered_amount,
+			"new_count": fallback_count,
 		}
 
-	var next_count: int = inventory.grant(
-		material_id,
-		maxi(1, amount),
-		true
+	if not bool(result.get("success", false)):
+		return result
+
+	var next_count: int = int(
+		result.get("new_count", 0)
 	)
 	if one_shot_per_scene:
 		_depleted = true
 
 	gathered.emit(
 		material_id,
-		maxi(1, amount),
+		gathered_amount,
 		next_count
 	)
 	_notify_gathering_feedback(
-		maxi(1, amount),
+		gathered_amount,
 		next_count
 	)
 	_refresh_presentation()
-	return {
-		"success": true,
-		"material_id": String(material_id),
-		"amount": maxi(1, amount),
-		"new_count": next_count,
-	}
+	return result
 
 
 func _refresh_presentation() -> void:

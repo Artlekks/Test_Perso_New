@@ -16,6 +16,7 @@ const BUY_CATEGORIES = [
 const SELL_CATEGORIES = [
 	"ALL",
 	"FISH",
+	"MATERIALS",
 ]
 
 const ROW_START_Y := 160.0
@@ -346,8 +347,13 @@ func _execute_confirmed_transaction() -> void:
 			StringName(str(entry.get("id", "")))
 		)
 	else:
+		var sell_id: String = str(
+			entry.get("unified_item_id", "")
+		)
+		if sell_id.is_empty():
+			sell_id = str(entry.get("id", ""))
 		result = _access.sell_one(
-			StringName(str(entry.get("id", "")))
+			StringName(sell_id)
 		)
 
 	var success: bool = bool(result.get("success", false))
@@ -593,6 +599,8 @@ func _friendly_reason(reason: String) -> String:
 			return "Not available yet."
 		"not_enough_fish":
 			return "You no longer own that fish."
+		"not_enough_items":
+			return "You no longer own that item."
 		"not_sellable":
 			return "That item cannot be sold."
 		"shop_not_available":

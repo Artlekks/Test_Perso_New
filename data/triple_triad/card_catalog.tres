@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3 uid="uid://birtee8vg3o5r"]
 
 [ext_resource type="Script" uid="uid://p84g6d7m3ia8" path="res://scripts/triple_triad/triple_triad_card_catalog.gd" id="1_catalog"]
-[ext_resource type="Texture2D" uid="uid://cls5qqqomc7hi" path="res://assets/triple_triad/mugshots_atlas.png" id="2_atlas"]
+[ext_resource type="Texture2D" uid="uid://cls5qqqomc7hi" path="res://assets/ui/triple_triad/card_game/mugshots_atlas.png" id="2_atlas"]
 [ext_resource type="Resource" path="res://data/bof4/catalogs/all_content.tres" id="3_content"]
 
 [resource]

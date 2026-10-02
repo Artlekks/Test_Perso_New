@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://d15mvk8kx347x" path="res://scripts/beach_merchant_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/Shadow.png" id="3_shadow"]
+[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
 transparency = 1

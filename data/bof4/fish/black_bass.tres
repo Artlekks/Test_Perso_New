@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bfofo6blwl0r8" path="res://scripts/fish_data.gd" id="1_fish"]
 [ext_resource type="Resource" uid="uid://bodpugkdg6ca7" path="res://data/bof4/fish_behaviors/black_bass_behavior.tres" id="2_behavior"]
-[ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/Atlas_Fishes.png" id="3_atlas"]
+[ext_resource type="Texture2D" uid="uid://3iqyvi72swnm" path="res://assets/sprites/fish/Atlas_Fishes.png" id="3_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_black_bass"]
 atlas = ExtResource("3_atlas")

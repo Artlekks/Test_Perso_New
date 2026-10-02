@@ -20,6 +20,19 @@ var _runtime_lures: Dictionary = {}
 var _next_instance_number: int = 1
 var _configured: bool = false
 var _active_loadout = null
+var _item_catalog: GameItemCatalogService = null
+var _player_item_inventory: PlayerItemInventory = null
+var _item_transaction_service: GameItemTransactionService = null
+
+
+func configure_item_backbone(
+	item_catalog: GameItemCatalogService,
+	player_item_inventory: PlayerItemInventory,
+	transaction_service: GameItemTransactionService
+) -> void:
+	_item_catalog = item_catalog
+	_player_item_inventory = player_item_inventory
+	_item_transaction_service = transaction_service
 
 
 func configure(
@@ -172,10 +185,14 @@ func get_lure_craft_scores(lure: BaitData) -> Dictionary:
 func get_qa_feel_suite_snapshot() -> Dictionary:
 	var role_to_id: Dictionary = {}
 	for record in _records:
-		var role: String = str(record.get("qa_feel_role", ""))
-		if role.is_empty():
+		var existing_role: String = str(
+			record.get("qa_feel_role", "")
+		)
+		if existing_role.is_empty():
 			continue
-		role_to_id[role] = str(record.get("lure_id", ""))
+		role_to_id[existing_role] = str(
+			record.get("lure_id", "")
+		)
 
 	var pairs := {
 		"buoyancy": {
@@ -272,14 +289,16 @@ func grant_qa_feel_suite() -> Dictionary:
 
 	var existing_roles: Dictionary = {}
 	for record in _records:
-		var role: String = str(record.get("qa_feel_role", ""))
-		if not role.is_empty():
-			existing_roles[role] = true
+		var existing_role: String = str(
+			record.get("qa_feel_role", "")
+		)
+		if not existing_role.is_empty():
+			existing_roles[existing_role] = true
 
 	var created_ids := PackedStringArray()
 	for spec in specs:
-		var role: String = str(spec.get("role", ""))
-		if bool(existing_roles.get(role, false)):
+		var requested_role: String = str(spec.get("role", ""))
+		if bool(existing_roles.get(requested_role, false)):
 			continue
 
 		var body_id := StringName(str(spec.get("body", "")))
@@ -295,7 +314,7 @@ func grant_qa_feel_suite() -> Dictionary:
 			return {
 				"success": false,
 				"reason": "qa_preview_failed",
-				"role": role,
+				"role": requested_role,
 			}
 
 		var costs = preview.get("costs", {})
@@ -318,7 +337,7 @@ func grant_qa_feel_suite() -> Dictionary:
 			return {
 				"success": false,
 				"reason": "qa_craft_failed",
-				"role": role,
+				"role": requested_role,
 				"detail": result,
 			}
 
@@ -327,7 +346,7 @@ func grant_qa_feel_suite() -> Dictionary:
 			lure_id,
 			{
 				"display_name_override": str(spec.get("name", "")),
-				"qa_feel_role": role,
+				"qa_feel_role": requested_role,
 			}
 		)
 		created_ids.append(String(lure_id))
@@ -367,7 +386,9 @@ func toggle_qa_feel_pair(pair_id: StringName) -> Dictionary:
 	var a_id := StringName(str(pair.get("a_id", "")))
 	var b_id := StringName(str(pair.get("b_id", "")))
 	var current: BaitData = get_equipped_lure()
-	var current_id: StringName = current.lure_id if current != null else &""
+	var current_id: StringName = &""
+	if current != null:
+		current_id = current.lure_id
 
 	var next_id: StringName = (
 		b_id
@@ -536,10 +557,7 @@ func preview_craft(
 		"core_id": String(core_id),
 		"accent_id": String(accent_id),
 		"costs": costs,
-		"can_afford": (
-			_material_inventory != null
-			and _material_inventory.can_afford(costs)
-		),
+		"can_afford": _can_afford_material_costs(costs),
 		"buoyancy": int(scores["buoyancy"]),
 		"handling": int(scores["handling"]),
 		"attraction": int(scores["attraction"]),
@@ -578,12 +596,38 @@ func craft(
 		preview["success"] = false
 		preview["reason"] = "missing_materials"
 		return preview
-	if _material_inventory == null or _fishing_inventory == null:
-		return _failure("inventory_unavailable")
+	if (
+		_player_item_inventory == null
+		or _item_transaction_service == null
+		or _fishing_inventory == null
+	):
+		return _failure("item_backend_unavailable")
 
-	var consume_result: Dictionary = _material_inventory.consume_costs(
-		preview.get("costs", {}),
-		false
+	var canonical_costs: Dictionary = _canonical_material_costs(
+		preview.get("costs", {})
+	)
+	if canonical_costs.is_empty():
+		return _failure("material_cost_mapping_failed")
+
+	var player_snapshot: Dictionary = (
+		_player_item_inventory.create_transaction_snapshot()
+	)
+	var fishing_snapshot: Dictionary = (
+		_fishing_inventory.create_transaction_snapshot()
+	)
+	var records_snapshot: Array[Dictionary] = []
+	for existing_record in _records:
+		records_snapshot.append(
+			existing_record.duplicate(true)
+		)
+	var next_instance_snapshot: int = _next_instance_number
+
+	var consume_result: Dictionary = (
+		_item_transaction_service.consume_player_items(
+			canonical_costs,
+			false,
+			&"beach_crafting"
+		)
 	)
 	if not bool(consume_result.get("success", false)):
 		return {
@@ -614,32 +658,151 @@ func craft(
 
 	var lure: BaitData = _build_runtime_lure(record)
 	if lure == null:
-		# Roll the material spend back if the runtime lure could not be built.
-		for raw_id in preview.get("costs", {}).keys():
-			_material_inventory.grant(
-				StringName(str(raw_id)),
-				int(preview["costs"][raw_id]),
-				false
-			)
-		_records.pop_back()
-		_next_instance_number = maxi(1, _next_instance_number - 1)
+		_restore_craft_transaction(
+			player_snapshot,
+			fishing_snapshot,
+			records_snapshot,
+			next_instance_snapshot,
+			false
+		)
 		return _failure("runtime_lure_build_failed")
 
-	_register_runtime_lure(lure)
-	if not save_to_disk():
-		push_warning("BeachCraftingService: crafted lure record could not be saved.")
+	var lure_count_after: int = _fishing_inventory.grant_lure(
+		lure,
+		1,
+		false
+	)
+	if lure_count_after <= 0:
+		_restore_craft_transaction(
+			player_snapshot,
+			fishing_snapshot,
+			records_snapshot,
+			next_instance_snapshot,
+			false
+		)
+		return _failure("lure_grant_failed")
 
-	_material_inventory.save_to_disk()
-	_fishing_inventory.grant_lure(lure, 1, true)
+	if not save_to_disk():
+		_restore_craft_transaction(
+			player_snapshot,
+			fishing_snapshot,
+			records_snapshot,
+			next_instance_snapshot,
+			false
+		)
+		return _failure("crafted_record_save_failed")
+
+	if not _player_item_inventory.commit_changes():
+		_restore_craft_transaction(
+			player_snapshot,
+			fishing_snapshot,
+			records_snapshot,
+			next_instance_snapshot,
+			true
+		)
+		return _failure("material_save_failed")
+
+	if not _fishing_inventory.commit_changes():
+		_restore_craft_transaction(
+			player_snapshot,
+			fishing_snapshot,
+			records_snapshot,
+			next_instance_snapshot,
+			true
+		)
+		return _failure("fishing_inventory_save_failed")
+
+	# Register presentation/runtime data only after all persistent stores agree.
+	_register_runtime_lure(lure)
 
 	var result: Dictionary = preview.duplicate(true)
 	result["success"] = true
-	result["reason"] = ""
+	result["reason"] = "completed"
 	result["lure_id"] = String(lure_id)
 	result["display_name"] = lure.display_name
 	result["record"] = record.duplicate(true)
-	crafted_lure_created.emit(lure, record.duplicate(true))
+	result["lure_count_after"] = lure_count_after
+	crafted_lure_created.emit(
+		lure,
+		record.duplicate(true)
+	)
 	return result
+
+
+
+
+func _canonical_material_costs(costs: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	if _item_catalog == null:
+		return result
+
+	for raw_id in costs.keys():
+		var definition: GameItemDefinition = _item_catalog.get_by_domain(
+			GameItemCatalogService.STORAGE_PLAYER,
+			StringName(str(raw_id))
+		)
+		if (
+			definition == null
+			or definition.category
+			!= GameItemCatalogService.CATEGORY_MATERIALS
+		):
+			return {}
+		result[String(definition.item_id)] = maxi(
+			0,
+			int(costs[raw_id])
+		)
+	return result
+
+
+func _can_afford_material_costs(costs: Dictionary) -> bool:
+	if (
+		_item_transaction_service != null
+		and _player_item_inventory != null
+	):
+		var canonical: Dictionary = _canonical_material_costs(costs)
+		if canonical.is_empty() and not costs.is_empty():
+			return false
+		var evaluation: Dictionary = (
+			_item_transaction_service.evaluate_player_costs(
+				canonical
+			)
+		)
+		return bool(evaluation.get("can_afford", false))
+
+	if _material_inventory == null:
+		return false
+	return _material_inventory.can_afford(costs)
+
+
+func _restore_craft_transaction(
+	player_snapshot: Dictionary,
+	fishing_snapshot: Dictionary,
+	records_snapshot: Array[Dictionary],
+	next_instance_snapshot: int,
+	rewrite_disk: bool
+) -> void:
+	_records.clear()
+	for old_record in records_snapshot:
+		_records.append(old_record.duplicate(true))
+	_next_instance_number = maxi(
+		1,
+		next_instance_snapshot
+	)
+
+	_player_item_inventory.restore_transaction_snapshot(
+		player_snapshot,
+		false
+	)
+	_fishing_inventory.restore_transaction_snapshot(
+		fishing_snapshot
+	)
+
+	if rewrite_disk:
+		# One of the stores may already have committed before a later store
+		# failed. Rewrite all restored snapshots so disk converges too.
+		save_to_disk()
+		_player_item_inventory.save_to_disk()
+		_fishing_inventory.save_to_disk()
 
 
 func grant_qa_material_bundle(amount: int = 10) -> Dictionary:
@@ -754,6 +917,8 @@ func _register_runtime_lure(lure: BaitData) -> void:
 		return
 
 	_runtime_lures[String(lure.lure_id)] = lure
+	if _item_catalog != null:
+		_item_catalog.register_dynamic_lure(lure)
 
 	for existing in _tackle_catalog.lure_catalog.lures:
 		if existing != null and existing.lure_id == lure.lure_id:

@@ -63,6 +63,21 @@ const FishingEnvironmentIntegrityScript = preload(
 const FishingEnvironmentCatalogScript = preload(
 	"res://scripts/fishing_environment_catalog.gd"
 )
+const GameItemCatalogServiceScript = preload(
+	"res://scripts/items/game_item_catalog_service.gd"
+)
+const PlayerItemInventoryScript = preload(
+	"res://scripts/items/player_item_inventory.gd"
+)
+const GameInventoryFacadeScript = preload(
+	"res://scripts/items/game_inventory_facade.gd"
+)
+const GameItemTransactionServiceScript = preload(
+	"res://scripts/items/game_item_transaction_service.gd"
+)
+const GameItemBackendQAScript = preload(
+	"res://scripts/items/game_item_backend_qa.gd"
+)
 const BeachGatheringInventoryScript = preload(
 	"res://scripts/beach_gathering_inventory.gd"
 )
@@ -135,6 +150,12 @@ var beach_crafting_integrity_report: Dictionary = {}
 var beach_crafting_qa_report: Dictionary = {}
 var save_integrity_report: Dictionary = {}
 
+var item_catalog: GameItemCatalogService = null
+var player_item_inventory: PlayerItemInventory = null
+var item_inventory_facade: GameInventoryFacade = null
+var item_transaction_service: GameItemTransactionService = null
+var item_backend_qa_report: Dictionary = {}
+
 var beach_gathering_inventory: BeachGatheringInventory = null
 var beach_crafting_service: BeachCraftingService = null
 var beach_gathering_feedback_view: CanvasLayer = null
@@ -177,12 +198,54 @@ func initialize() -> void:
 		false
 	)
 
+	item_catalog = GameItemCatalogServiceScript.new() as GameItemCatalogService
+	item_catalog.name = "GameItemCatalog"
+	add_child(item_catalog)
+	item_catalog.configure(
+		BeachCraftingCatalogResource,
+		FishingContentCatalogResource,
+		FishingTackleCatalogResource,
+		FishingShopCatalogResource
+	)
+
+	player_item_inventory = PlayerItemInventoryScript.new() as PlayerItemInventory
+	player_item_inventory.name = "PlayerItemInventory"
+	add_child(player_item_inventory)
+	player_item_inventory.initialize()
+
+	item_inventory_facade = GameInventoryFacadeScript.new() as GameInventoryFacade
+	item_inventory_facade.name = "GameInventoryFacade"
+	add_child(item_inventory_facade)
+	item_inventory_facade.configure(
+		item_catalog,
+		player_item_inventory,
+		inventory
+	)
+
+	item_transaction_service = (
+		GameItemTransactionServiceScript.new()
+		as GameItemTransactionService
+	)
+	item_transaction_service.name = "GameItemTransactionService"
+	add_child(item_transaction_service)
+	item_transaction_service.configure(
+		item_catalog,
+		player_item_inventory,
+		item_inventory_facade,
+		inventory
+	)
+
 	beach_gathering_inventory = (
 		BeachGatheringInventoryScript.new()
 		as BeachGatheringInventory
 	)
 	beach_gathering_inventory.name = "BeachGatheringInventory"
 	add_child(beach_gathering_inventory)
+	beach_gathering_inventory.configure_backbone(
+		player_item_inventory,
+		item_catalog,
+		item_transaction_service
+	)
 	beach_gathering_inventory.initialize()
 
 	beach_crafting_service = (
@@ -191,6 +254,11 @@ func initialize() -> void:
 	)
 	beach_crafting_service.name = "BeachCraftingService"
 	add_child(beach_crafting_service)
+	beach_crafting_service.configure_item_backbone(
+		item_catalog,
+		player_item_inventory,
+		item_transaction_service
+	)
 	beach_crafting_service.configure(
 		beach_gathering_inventory,
 		inventory,
@@ -221,6 +289,20 @@ func initialize() -> void:
 		)
 
 	if OS.is_debug_build():
+		item_backend_qa_report = GameItemBackendQAScript.run(item_catalog)
+		print(
+			"Item Backend QA: %d/%d tests passed."
+			% [
+				int(item_backend_qa_report.get("passed_count", 0)),
+				int(item_backend_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in item_backend_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Item Backend QA: %s" % str(failure))
+
 		beach_crafting_qa_report = BeachCraftingQAScript.run(
 			BeachCraftingCatalogResource,
 			beach_crafting_service,
@@ -313,6 +395,11 @@ func initialize() -> void:
 		FishingContentCatalogResource,
 		FishingShopCatalogResource,
 		FishingTradeCatalogResource
+	)
+	economy_access.configure_item_backbone(
+		item_catalog,
+		item_inventory_facade,
+		item_transaction_service
 	)
 	# Until world NPC/shop entry points are authored, expose the complete catalog
 	# through the basic vertical-slice economy menu. The access façade already
@@ -436,6 +523,78 @@ func run_beach_crafting_qa() -> Dictionary:
 		FishingTackleCatalogResource
 	)
 	return beach_crafting_qa_report.duplicate(true)
+
+
+func grant_beach_material(
+	material_id: StringName,
+	amount: int = 1
+) -> Dictionary:
+	var clean_amount: int = maxi(1, amount)
+	if (
+		item_catalog == null
+		or player_item_inventory == null
+		or item_transaction_service == null
+	):
+		return {
+			"success": false,
+			"reason": "item_backend_unavailable",
+		}
+
+	var definition: GameItemDefinition = item_catalog.get_by_domain(
+		GameItemCatalogService.STORAGE_PLAYER,
+		material_id
+	)
+	if (
+		definition == null
+		or definition.category
+		!= GameItemCatalogService.CATEGORY_MATERIALS
+	):
+		return {
+			"success": false,
+			"reason": "unknown_material",
+			"material_id": String(material_id),
+		}
+
+	var result: Dictionary = (
+		item_transaction_service.grant_player_items(
+			{
+				String(definition.item_id): clean_amount,
+			},
+			true,
+			&"beach_gathering"
+		)
+	)
+	result["material_id"] = String(material_id)
+	result["amount"] = clean_amount
+	result["new_count"] = player_item_inventory.get_count(
+		definition.item_id
+	)
+	return result
+
+
+func get_item_catalog() -> GameItemCatalogService:
+	return item_catalog
+
+
+func get_player_item_inventory() -> PlayerItemInventory:
+	return player_item_inventory
+
+
+func get_item_inventory_facade() -> GameInventoryFacade:
+	return item_inventory_facade
+
+
+func get_item_transaction_service() -> GameItemTransactionService:
+	return item_transaction_service
+
+
+func get_item_backend_qa_report() -> Dictionary:
+	return item_backend_qa_report.duplicate(true)
+
+
+func run_item_backend_qa() -> Dictionary:
+	item_backend_qa_report = GameItemBackendQAScript.run(item_catalog)
+	return item_backend_qa_report.duplicate(true)
 
 
 func get_beach_gathering_inventory() -> BeachGatheringInventory:
@@ -599,7 +758,14 @@ func get_active_loadout():
 func save_all_fishing_state() -> Dictionary:
 	if save_integrity_service == null:
 		return {"durable": false, "reason": "integrity_service_unavailable"}
-	return save_integrity_service.save_all()
+	var result: Dictionary = save_integrity_service.save_all()
+	var item_saved: bool = (
+		player_item_inventory != null
+		and player_item_inventory.commit_changes()
+	)
+	result["player_items"] = item_saved
+	result["durable"] = bool(result.get("durable", false)) and item_saved
+	return result
 
 
 func is_ready() -> bool:
@@ -615,6 +781,10 @@ func is_ready() -> bool:
 		and session_modifier_service != null
 		and environment_service != null
 		and fish_consumable_service != null
+		and item_catalog != null
+		and player_item_inventory != null
+		and item_inventory_facade != null
+		and item_transaction_service != null
 		and beach_gathering_inventory != null
 		and beach_crafting_service != null
 		and manillo_ledger != null

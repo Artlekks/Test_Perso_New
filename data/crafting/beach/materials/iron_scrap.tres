@@ -1,13 +1,13 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BeachMaterialDefinition" format=3 uid="uid://ba6g04ypkuf3u"]
 
-[ext_resource type="Script" path="res://scripts/beach_material_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://uexiqy3jjgxr" path="res://scripts/beach_material_definition.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")
 material_id = &"iron_scrap"
 display_name = "Iron Scrap"
 description = "Washed-up metal. Heavy and useful when you want a lure to dive."
+sell_price_zenny = 3
 buoyancy_delta = -2
 handling_delta = -1
-attraction_delta = 0
 visual_tint = Color(0.42, 0.44, 0.48, 1)

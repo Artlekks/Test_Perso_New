@@ -1,13 +1,13 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BeachMaterialDefinition" format=3 uid="uid://xc5d282871hx"]
 
-[ext_resource type="Script" path="res://scripts/beach_material_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://uexiqy3jjgxr" path="res://scripts/beach_material_definition.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")
 material_id = &"shell"
 display_name = "Shell"
 description = "A rigid shell fragment. Balanced and naturally eye-catching."
-buoyancy_delta = 0
+sell_price_zenny = 2
 handling_delta = 1
 attraction_delta = 1
 visual_tint = Color(0.92, 0.82, 0.66, 1)

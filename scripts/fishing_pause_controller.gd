@@ -13,7 +13,7 @@ class_name FishingPauseController
 signal pause_changed(paused: bool)
 
 const PauseTexture = preload(
-	"res://assets/ui/Button_Pause.png"
+	"res://assets/ui/fishing_hud/Button_Pause.png"
 )
 
 const PAUSE_IMAGE_SCALE: float = 3.0

@@ -1,0 +1,278 @@
+{
+  "generated_for": "fishing_game_AUDITED_CLEAN_2026-10-02",
+  "engine_runtime_execution_performed": false,
+  "static_validation": {
+    "missing_literal_res_paths": [],
+    "missing_import_sources": [],
+    "duplicate_class_names": {},
+    "duplicate_function_declarations": [],
+    "preload_cycles": [],
+    "duplicate_source_uids": {},
+    "duplicate_runtime_png_groups": [],
+    "unexpected_zero_reference_data_resources": [],
+    "expected_dynamic_debug_resources": [
+      "data/debug/triple_triad_profiles/rotate_lab.tres",
+      "data/debug/triple_triad_profiles/highlands_defensive.tres",
+      "data/debug/triple_triad_profiles/coast_trickster.tres",
+      "data/debug/triple_triad_profiles/same_combo_lab.tres",
+      "data/debug/triple_triad_profiles/volcanic_aggressive.tres",
+      "data/debug/triple_triad_profiles/budget_20.tres",
+      "data/debug/qa_profiles/break_test.tres",
+      "data/debug/qa_profiles/deep_water.tres",
+      "data/debug/qa_profiles/jelly_shadow.tres",
+      "data/debug/qa_profiles/fight_aggressive.tres",
+      "data/debug/qa_profiles/erratic_fight_acheron.tres",
+      "data/debug/qa_profiles/five_shadows.tres",
+      "data/debug/qa_profiles/pre_bite_shadow.tres",
+      "data/debug/qa_profiles/fight_steady.tres",
+      "data/debug/qa_profiles/fight_darting.tres",
+      "data/debug/qa_profiles/fight_erratic.tres",
+      "data/debug/qa_profiles/heavy_fight_whale.tres",
+      "data/debug/qa_profiles/baseline_ocean_2.tres",
+      "data/debug/qa_profiles/fight_heavy.tres",
+      "data/debug/qa_profiles/catch_landing.tres"
+    ],
+    "main_scene_uid_matches": true,
+    "main_scene_uid": "uid://dqj6ysvar4jsa",
+    "script_logic_differences_after_path_normalization": []
+  },
+  "content_invariants": {
+    "fish": 30,
+    "spots": 11,
+    "lures": 20,
+    "rods": 6,
+    "triple_triad_cards": 179,
+    "beach_materials": 5,
+    "material_sell_values_zenny": {
+      "driftwood": 1,
+      "iron_scrap": 3,
+      "sea_glass": 4,
+      "seaweed_fibre": 2,
+      "shell": 2
+    }
+  },
+  "file_stats": {
+    "original_source_excluding_git_and_godot_cache": {
+      "file_count": 1431,
+      "bytes": 24633054,
+      "by_extension": {
+        ".ase": 31,
+        ".aseprite": 9,
+        ".csv": 15,
+        ".fnt": 2,
+        ".gd": 197,
+        ".gdshader": 3,
+        ".glb": 2,
+        ".godot": 1,
+        ".import": 226,
+        ".json": 35,
+        ".md": 43,
+        ".png": 206,
+        ".svg": 1,
+        ".translation": 102,
+        ".tres": 302,
+        ".tscn": 44,
+        ".txt": 9,
+        ".uid": 200,
+        "<none>": 3
+      }
+    },
+    "clean_project_all_files": {
+      "file_count": 1180,
+      "bytes": 16692440,
+      "by_extension": {
+        ".ase": 31,
+        ".aseprite": 9,
+        ".csv": 15,
+        ".fnt": 2,
+        ".gd": 197,
+        ".gdshader": 3,
+        ".glb": 2,
+        ".godot": 1,
+        ".import": 144,
+        ".json": 36,
+        ".md": 45,
+        ".png": 144,
+        ".svg": 1,
+        ".tres": 292,
+        ".tscn": 44,
+        ".txt": 9,
+        ".uid": 200,
+        "<none>": 5
+      }
+    },
+    "clean_runtime_tree_excluding_docs_and_source_art": {
+      "file_count": 1032,
+      "bytes": 7202281,
+      "by_extension": {
+        ".fnt": 2,
+        ".gd": 197,
+        ".gdshader": 3,
+        ".glb": 1,
+        ".godot": 1,
+        ".import": 144,
+        ".json": 3,
+        ".md": 1,
+        ".png": 140,
+        ".svg": 1,
+        ".tres": 292,
+        ".tscn": 44,
+        ".uid": 200,
+        "<none>": 3
+      }
+    }
+  },
+  "script_metrics_top_25": [
+    {
+      "script": "scripts/triple_triad/triple_triad_game.gd",
+      "lines": 4720,
+      "functions": 159,
+      "preloads": 34
+    },
+    {
+      "script": "scripts/fishing_regression_harness.gd",
+      "lines": 2976,
+      "functions": 42,
+      "preloads": 42
+    },
+    {
+      "script": "scripts/fishing.gd",
+      "lines": 1962,
+      "functions": 69,
+      "preloads": 12
+    },
+    {
+      "script": "scripts/fishing_menu.gd",
+      "lines": 1800,
+      "functions": 103,
+      "preloads": 33
+    },
+    {
+      "script": "scripts/bait_V2.gd",
+      "lines": 1737,
+      "functions": 71,
+      "preloads": 1
+    },
+    {
+      "script": "scripts/triple_triad/triple_triad_deck_setup.gd",
+      "lines": 1717,
+      "functions": 86,
+      "preloads": 1
+    },
+    {
+      "script": "scripts/triple_triad/triple_triad_backend_qa.gd",
+      "lines": 1715,
+      "functions": 55,
+      "preloads": 19
+    },
+    {
+      "script": "scripts/encounter.gd",
+      "lines": 1662,
+      "functions": 67,
+      "preloads": 3
+    },
+    {
+      "script": "scripts/beach_crafting_service.gd",
+      "lines": 1410,
+      "functions": 49,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/fishing_progress.gd",
+      "lines": 1403,
+      "functions": 50,
+      "preloads": 4
+    },
+    {
+      "script": "scripts/fish_shadow_actor.gd",
+      "lines": 1252,
+      "functions": 52,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/fishing_inventory.gd",
+      "lines": 1228,
+      "functions": 71,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/triple_triad/triple_triad_balance_simulator.gd",
+      "lines": 1207,
+      "functions": 29,
+      "preloads": 5
+    },
+    {
+      "script": "scripts/camera_rig.gd",
+      "lines": 1180,
+      "functions": 32,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/triple_triad/triple_triad_competition_service.gd",
+      "lines": 1060,
+      "functions": 27,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/fishing_journal_service.gd",
+      "lines": 947,
+      "functions": 39,
+      "preloads": 2
+    },
+    {
+      "script": "scripts/fishing_debug_menu.gd",
+      "lines": 925,
+      "functions": 40,
+      "preloads": 4
+    },
+    {
+      "script": "scripts/fishing_reward_service.gd",
+      "lines": 834,
+      "functions": 27,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/beach_crafting_menu.gd",
+      "lines": 833,
+      "functions": 41,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/triple_triad/triple_triad_match.gd",
+      "lines": 832,
+      "functions": 40,
+      "preloads": 1
+    },
+    {
+      "script": "scripts/fishing_session_services.gd",
+      "lines": 808,
+      "functions": 33,
+      "preloads": 40
+    },
+    {
+      "script": "scripts/fish_shadow_presence.gd",
+      "lines": 749,
+      "functions": 38,
+      "preloads": 6
+    },
+    {
+      "script": "scripts/fish_behavior.gd",
+      "lines": 738,
+      "functions": 16,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/fishing_economy_menu.gd",
+      "lines": 724,
+      "functions": 47,
+      "preloads": 0
+    },
+    {
+      "script": "scripts/triple_triad/triple_triad_save_integrity.gd",
+      "lines": 682,
+      "functions": 17,
+      "preloads": 0
+    }
+  ],
+  "class_name_count": 110
+}

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cocpfht6p4ai3"]
 
-[ext_resource type="Texture2D" uid="uid://ckeh0me0ykn06" path="res://assets/sprites/Power Bar-powerbar.png" id="2_6t0vv"]
-[ext_resource type="Texture2D" uid="uid://dw03tio5j4wnt" path="res://assets/sprites/bar-bar.png" id="3_4riml"]
+[ext_resource type="Texture2D" uid="uid://ckeh0me0ykn06" path="res://assets/ui/fishing_hud/Power Bar-powerbar.png" id="2_6t0vv"]
+[ext_resource type="Texture2D" uid="uid://dw03tio5j4wnt" path="res://assets/ui/fishing_hud/bar-bar.png" id="3_4riml"]
 
 [node name="PowerMeter" type="CanvasLayer" unique_id=86211707]
 

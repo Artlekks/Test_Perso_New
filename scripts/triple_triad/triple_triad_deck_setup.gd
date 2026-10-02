@@ -1078,26 +1078,22 @@ func _on_new_deck_pressed() -> void:
 		_refresh_labels()
 		return
 
+	# New Deck creates the next persistent slot, but does NOT enter it.
+	# This lets the player create several decks in a row, then choose which
+	# one to edit afterward.
 	_save_current_profile()
 	var new_profile_index: int = _total_profiles
 	_total_profiles += 1
 	_save_profile_count()
 
-	_profile_index = new_profile_index
+	# Jump the deck list to the page containing the new slot so its creation is
+	# immediately visible. Keep New Deck selected at the top of the page.
 	_deck_page_index = floori(
 		float(new_profile_index) / float(VISIBLE_PROFILE_COUNT)
 	)
-	_profile_nav_index = new_profile_index
-	_deck.clear()
-	_save_current_profile()
-
-	_nav_zone = NAV_COLLECTION
-	_cursor_index = clampi(
-		_page_index * PAGE_SIZE,
-		0,
-		maxi(_cards.size() - 1, 0)
-	)
-	_status_text = "Build Deck #%d." % (new_profile_index + 1)
+	_nav_zone = NAV_PROFILES
+	_profile_nav_index = -1
+	_status_text = "Created Deck #%d." % (new_profile_index + 1)
 	_refresh_all()
 
 

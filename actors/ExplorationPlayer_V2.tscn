@@ -4,7 +4,7 @@
 [ext_resource type="SpriteFrames" uid="uid://dsfp4gvdeeesr" path="res://assets/animations/player_frames.tres" id="2_g2awu"]
 [ext_resource type="Script" uid="uid://qeewigw0xrig" path="res://scripts/sprite_director.gd" id="29_5cnmj"]
 [ext_resource type="Script" uid="uid://c1nagc5sqiw7x" path="res://scripts/screen_space_marker.gd" id="30_wma1f"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/Shadow.png" id="32_ny21r"]
+[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="32_ny21r"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jpo3w"]
 radius = 0.0972981

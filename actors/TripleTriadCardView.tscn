@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://bhp3cnwfo4hvn" path="res://scripts/triple_triad/triple_triad_card_view.gd" id="1_script"]
 [ext_resource type="FontFile" uid="uid://dnl6klv4lvu30" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
-[ext_resource type="Texture2D" uid="uid://bw8285b10qp56" path="res://assets/sprites/Menu_Background_Solo.png" id="3_back"]
+[ext_resource type="Texture2D" uid="uid://bw8285b10qp56" path="res://assets/ui/triple_triad/card_game/Menu_Background_Solo.png" id="3_back"]
 [ext_resource type="Script" uid="uid://hcvmop3q460c" path="res://scripts/bitmap_text.gd" id="4_bitmap"]
-[ext_resource type="Texture2D" uid="uid://bsukwqrtcgkxc" path="res://assets/sprites/DistanceNumbers.png" id="5_numbers"]
+[ext_resource type="Texture2D" uid="uid://bsukwqrtcgkxc" path="res://assets/ui/shared/DistanceNumbers.png" id="5_numbers"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 

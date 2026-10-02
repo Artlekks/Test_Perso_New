@@ -20,6 +20,9 @@ var modifier_service = null
 var content_catalog = null
 var shop_catalog = null
 var trade_catalog = null
+var item_catalog: GameItemCatalogService = null
+var item_inventory_facade: GameInventoryFacade = null
+var item_transaction_service: GameItemTransactionService = null
 
 var _availability: Dictionary = {}
 var _allowed_shop_ids: PackedStringArray = PackedStringArray()
@@ -55,6 +58,20 @@ func configure(
 		var modifier_callback = Callable(self, "_on_source_changed_with_payload")
 		if not modifier_service.is_connected("modifiers_changed", modifier_callback):
 			modifier_service.connect("modifiers_changed", modifier_callback)
+
+
+func configure_item_backbone(
+	new_item_catalog: GameItemCatalogService,
+	new_inventory_facade: GameInventoryFacade,
+	new_transaction_service: GameItemTransactionService
+) -> void:
+	item_catalog = new_item_catalog
+	item_inventory_facade = new_inventory_facade
+	item_transaction_service = new_transaction_service
+	if item_inventory_facade != null and item_inventory_facade.has_signal("changed"):
+		var callback := Callable(self, "_on_source_changed")
+		if not item_inventory_facade.is_connected("changed", callback):
+			item_inventory_facade.connect("changed", callback)
 
 
 func set_access_context(
@@ -95,42 +112,178 @@ func get_wallet_snapshot() -> Dictionary:
 
 func get_sell_entries() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	if inventory == null or content_catalog == null or economy_service == null:
-		return result
 
-	for fish in content_catalog.fish:
-		if fish == null:
-			continue
-		var species_id: String = fish.get_stable_species_id()
-		var count: int = inventory.get_fish_count(species_id)
-		if count <= 0:
-			continue
-		var unit_value: int = economy_service.get_fish_sell_value(StringName(species_id))
-		result.append({
-			"kind": "sell",
-			"category": "FISH",
-			"id": species_id,
-			"display_name": fish.fish_name,
-			"owned_count": count,
-			"unit_value_zenny": unit_value,
-			"total_value_zenny": unit_value * count,
-			"can_execute": unit_value > 0,
-			"detail": "%dz each | owned %d" % [unit_value, count],
-		})
+	# Specialized fish specimens stay in FishingInventory.
+	if (
+		inventory != null
+		and content_catalog != null
+		and economy_service != null
+	):
+		for fish in content_catalog.fish:
+			if fish == null:
+				continue
+			var species_id: String = fish.get_stable_species_id()
+			var count: int = inventory.get_fish_count(species_id)
+			if count <= 0:
+				continue
+			var unit_value: int = (
+				economy_service.get_fish_sell_value(
+					StringName(species_id)
+				)
+			)
+			var unified_item_id: String = ""
+			var presentation_name: String = fish.fish_name
+			var presentation_category: String = "FISH"
+			if item_catalog != null:
+				var definition: GameItemDefinition = (
+					item_catalog.get_by_domain(
+						GameItemCatalogService.STORAGE_FISH,
+						StringName(species_id)
+					)
+				)
+				if definition != null:
+					unified_item_id = String(
+						definition.item_id
+					)
+					presentation_name = (
+						definition.display_name
+					)
+					presentation_category = String(
+						definition.category
+					)
+					if item_inventory_facade != null:
+						count = item_inventory_facade.get_count(
+							definition.item_id
+						)
+			result.append({
+				"kind": "sell",
+				"category": presentation_category,
+				"unified_item_id": unified_item_id,
+				"id": species_id,
+				"display_name": presentation_name,
+				"owned_count": count,
+				"unit_value_zenny": unit_value,
+				"total_value_zenny": unit_value * count,
+				"can_execute": unit_value > 0,
+				"detail": "%dz each | owned %d" % [
+					unit_value,
+					count,
+				],
+			})
 
-	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return str(a.get("display_name", "")).naturalnocasecmp_to(str(b.get("display_name", ""))) < 0
+	# Stackable crafting materials use the unified item transaction path.
+	if item_catalog != null and item_inventory_facade != null:
+		for definition in item_catalog.get_definitions_in_category(
+			GameItemCatalogService.CATEGORY_MATERIALS
+		):
+			if (
+				definition.storage_kind
+				!= GameItemCatalogService.STORAGE_PLAYER
+			):
+				continue
+			var material_count: int = item_inventory_facade.get_count(
+				definition.item_id
+			)
+			if material_count <= 0:
+				continue
+			var material_unit_value: int = maxi(
+				0,
+				definition.sell_price_zenny
+			)
+			result.append({
+				"kind": "sell",
+				"category": String(definition.category),
+				"unified_item_id": String(definition.item_id),
+				"id": String(definition.domain_id),
+				"display_name": definition.display_name,
+				"owned_count": material_count,
+				"unit_value_zenny": material_unit_value,
+				"total_value_zenny": material_unit_value * material_count,
+				"can_execute": material_unit_value > 0,
+				"reason": _sellability_reason(material_unit_value),
+				"detail": "%dz each | owned %d" % [
+					material_unit_value,
+					material_count,
+				],
+			})
+
+	result.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			var category_compare: int = str(
+				a.get("category", "")
+			).naturalnocasecmp_to(
+				str(b.get("category", ""))
+			)
+			if category_compare != 0:
+				return category_compare < 0
+			return str(
+				a.get("display_name", "")
+			).naturalnocasecmp_to(
+				str(b.get("display_name", ""))
+			) < 0
 	)
 	return result
 
 
-func sell_one(species_id: StringName) -> Dictionary:
+func sell_one(item_or_species_id: StringName) -> Dictionary:
+	if item_catalog != null:
+		var definition: GameItemDefinition = (
+			item_catalog.get_definition(item_or_species_id)
+		)
+		if definition != null:
+			if (
+				definition.storage_kind
+				== GameItemCatalogService.STORAGE_PLAYER
+			):
+				return _sell_player_item(definition)
+			if (
+				definition.storage_kind
+				== GameItemCatalogService.STORAGE_FISH
+			):
+				return _sell_fish(definition.domain_id)
+
+	# Compatibility: older UI passes a fish domain id instead of canonical id.
+	return _sell_fish(item_or_species_id)
+
+
+func _sell_fish(species_id: StringName) -> Dictionary:
 	if economy_service == null:
 		return _failure("economy_unavailable")
-	var result: Dictionary = economy_service.sell_fish(species_id, 1)
+	var result: Dictionary = economy_service.sell_fish(
+		species_id,
+		1
+	)
 	transaction_completed.emit(result.duplicate(true))
 	changed.emit()
 	return result
+
+
+func _sell_player_item(
+	definition: GameItemDefinition
+) -> Dictionary:
+	if item_transaction_service == null:
+		return _failure("item_backend_unavailable")
+	if definition == null:
+		return _failure("unknown_item")
+
+	var result: Dictionary = (
+		item_transaction_service.sell_player_item_for_zenny(
+			definition.item_id,
+			1,
+			definition.sell_price_zenny,
+			true,
+			&"merchant_sell_material"
+		)
+	)
+	transaction_completed.emit(result.duplicate(true))
+	changed.emit()
+	return result
+
+
+func _sellability_reason(unit_value_zenny: int) -> String:
+	if unit_value_zenny > 0:
+		return ""
+	return "not_sellable"
 
 
 func get_buy_entries() -> Array[Dictionary]:
@@ -150,16 +303,32 @@ func get_buy_entries() -> Array[Dictionary]:
 			else:
 				owned_count = inventory.get_rod_count(offer.item_id)
 		var presentation_category: String = "LURES"
+		var storage_kind: StringName = GameItemCatalogService.STORAGE_LURE
 		if offer.item_type == ShopOfferScript.ItemType.ROD:
 			presentation_category = "RODS"
+			storage_kind = GameItemCatalogService.STORAGE_ROD
+		var unified_item_id: String = ""
+		var presentation_name: String = offer.item_name
+		if item_catalog != null:
+			var definition: GameItemDefinition = item_catalog.get_by_domain(
+				storage_kind,
+				offer.item_id
+			)
+			if definition != null:
+				unified_item_id = String(definition.item_id)
+				presentation_name = definition.display_name
+				presentation_category = String(definition.category)
+				if item_inventory_facade != null:
+					owned_count = item_inventory_facade.get_count(definition.item_id)
 		result.append({
 			"kind": "buy",
 			"category": presentation_category,
+			"unified_item_id": unified_item_id,
 			"item_type": offer.item_type,
 			"id": str(offer.offer_id),
 			"shop_id": str(offer.shop_id),
 			"shop_name": offer.shop_name,
-			"display_name": offer.item_name,
+			"display_name": presentation_name,
 			"price_zenny": offer.price_zenny,
 			"quantity": offer.quantity,
 			"owned_count": owned_count,

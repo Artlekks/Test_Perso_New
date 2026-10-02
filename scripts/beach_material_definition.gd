@@ -11,6 +11,10 @@ class_name BeachMaterialDefinition
 @export_range(-4, 4, 1) var handling_delta: int = 0
 @export_range(-4, 4, 1) var attraction_delta: int = 0
 
+
+@export_category("Economy")
+@export_range(0, 9999, 1) var sell_price_zenny: int = 0
+
 @export_category("Presentation")
 @export var visual_tint: Color = Color.WHITE
 
@@ -23,4 +27,6 @@ func get_trait_summary() -> String:
 		pieces.append("Handling %+d" % handling_delta)
 	if attraction_delta != 0:
 		pieces.append("Attraction %+d" % attraction_delta)
-	return " / ".join(pieces) if not pieces.is_empty() else "Neutral"
+	if pieces.is_empty():
+		return "Neutral"
+	return " / ".join(pieces)

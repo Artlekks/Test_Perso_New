@@ -1,13 +1,12 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BeachMaterialDefinition" format=3 uid="uid://bmtf04fw3p72w"]
 
-[ext_resource type="Script" path="res://scripts/beach_material_definition.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://uexiqy3jjgxr" path="res://scripts/beach_material_definition.gd" id="1_script"]
 
 [resource]
 script = ExtResource("1_script")
 material_id = &"sea_glass"
 display_name = "Sea Glass"
 description = "Polished glass that catches light underwater."
-buoyancy_delta = 0
-handling_delta = 0
+sell_price_zenny = 4
 attraction_delta = 2
 visual_tint = Color(0.35, 0.82, 0.82, 1)

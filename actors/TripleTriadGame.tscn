@@ -10,9 +10,9 @@
 [ext_resource type="Resource" uid="uid://davpdabdae32q" path="res://data/triple_triad/ai/balanced.tres" id="8_ai"]
 [ext_resource type="PackedScene" path="res://actors/TripleTriadDebugMenu.tscn" id="9_debug"]
 [ext_resource type="Texture2D" uid="uid://cdn7bk8rfiynx" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="10_menu_bg"]
-[ext_resource type="Texture2D" uid="uid://di1q1piieg3ye" path="res://assets/ui/triple_triad_info_panel.png" id="11_info_panel"]
+[ext_resource type="Texture2D" uid="uid://di1q1piieg3ye" path="res://assets/ui/triple_triad/triple_triad_info_panel.png" id="11_info_panel"]
 [ext_resource type="Script" uid="uid://hcvmop3q460c" path="res://scripts/bitmap_text.gd" id="12_bitmap"]
-[ext_resource type="Texture2D" uid="uid://bsukwqrtcgkxc" path="res://assets/sprites/DistanceNumbers.png" id="13_numbers"]
+[ext_resource type="Texture2D" uid="uid://bsukwqrtcgkxc" path="res://assets/ui/shared/DistanceNumbers.png" id="13_numbers"]
 [ext_resource type="Texture2D" uid="uid://sbelybgpfd67" path="res://assets/ui/triple_triad/CardGrid.png" id="14_grid"]
 [ext_resource type="PackedScene" path="res://actors/TripleTriadDeckSetup.tscn" id="15_deck_setup"]
 
