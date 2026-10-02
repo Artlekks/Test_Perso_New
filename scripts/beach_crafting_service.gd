@@ -19,6 +19,7 @@ var _records: Array[Dictionary] = []
 var _runtime_lures: Dictionary = {}
 var _next_instance_number: int = 1
 var _configured: bool = false
+var _active_loadout = null
 
 
 func configure(
@@ -35,6 +36,411 @@ func configure(
 
 	load_from_disk()
 	_register_all_saved_lures()
+
+
+func bind_loadout(loadout) -> void:
+	_active_loadout = loadout
+
+
+func get_active_loadout():
+	return _active_loadout
+
+
+func get_equipped_lure() -> BaitData:
+	if _active_loadout == null:
+		return null
+	if not _active_loadout.has_method("get_selected_lure"):
+		return null
+	return _active_loadout.get_selected_lure() as BaitData
+
+
+func get_property_labels(
+	buoyancy: int,
+	handling: int,
+	attraction: int
+) -> Dictionary:
+	return {
+		"buoyancy": _buoyancy_label(buoyancy),
+		"handling": _handling_label(handling),
+		"attraction": _attraction_label(attraction),
+	}
+
+
+func grant_qa_ab_pair() -> Dictionary:
+	if not OS.is_debug_build():
+		return _failure("debug_build_required")
+	if _material_inventory == null:
+		return _failure("inventory_unavailable")
+
+	# A: float/control. B: deep/flash. Grant only what the pair consumes.
+	var required := {
+		"driftwood": 1,
+		"shell": 2,
+		"seaweed_fibre": 1,
+		"iron_scrap": 1,
+		"sea_glass": 1,
+	}
+	for raw_id in required.keys():
+		_material_inventory.grant(
+			StringName(str(raw_id)),
+			int(required[raw_id]),
+			false
+		)
+	_material_inventory.save_to_disk()
+
+	var a: Dictionary = craft(
+		&"beach_minnow",
+		&"driftwood",
+		&"shell",
+		&"seaweed_fibre"
+	)
+	if not bool(a.get("success", false)):
+		return {
+			"success": false,
+			"reason": "qa_a_failed",
+			"detail": a,
+		}
+
+	var b: Dictionary = craft(
+		&"beach_minnow",
+		&"shell",
+		&"iron_scrap",
+		&"sea_glass"
+	)
+	if not bool(b.get("success", false)):
+		return {
+			"success": false,
+			"reason": "qa_b_failed",
+			"detail": b,
+		}
+
+	var a_id := StringName(str(a.get("lure_id", "")))
+	var b_id := StringName(str(b.get("lure_id", "")))
+	_set_display_name_override(
+		a_id,
+		"[QA A] Float / Control Minnow"
+	)
+	_set_display_name_override(
+		b_id,
+		"[QA B] Deep / Flash Minnow"
+	)
+
+	var a_lure: BaitData = get_runtime_lure(a_id)
+	if (
+		a_lure != null
+		and _active_loadout != null
+		and _active_loadout.has_method("equip_lure")
+	):
+		_active_loadout.call("equip_lure", a_lure)
+
+	return {
+		"success": true,
+		"a_lure_id": String(a_id),
+		"b_lure_id": String(b_id),
+		"a_name": (
+			a_lure.display_name
+			if a_lure != null
+			else "[QA A] Float / Control Minnow"
+		),
+		"b_name": (
+			get_runtime_lure(b_id).display_name
+			if get_runtime_lure(b_id) != null
+			else "[QA B] Deep / Flash Minnow"
+		),
+		"a_equipped": a_lure != null and _active_loadout != null,
+	}
+
+
+func get_lure_attraction_reference(lure: BaitData) -> float:
+	return _lure_attraction_reference(lure)
+
+
+func get_lure_craft_scores(lure: BaitData) -> Dictionary:
+	if lure == null or not lure.has_meta("craft_record"):
+		return {}
+	var raw_record = lure.get_meta("craft_record")
+	if not (raw_record is Dictionary):
+		return {}
+	var record: Dictionary = raw_record
+	return {
+		"buoyancy": int(record.get("buoyancy", 0)),
+		"handling": int(record.get("handling", 0)),
+		"attraction": int(record.get("attraction", 0)),
+	}
+
+
+func get_qa_feel_suite_snapshot() -> Dictionary:
+	var role_to_id: Dictionary = {}
+	for record in _records:
+		var role: String = str(record.get("qa_feel_role", ""))
+		if role.is_empty():
+			continue
+		role_to_id[role] = str(record.get("lure_id", ""))
+
+	var pairs := {
+		"buoyancy": {
+			"label": "FLOAT / SINK",
+			"a_id": str(role_to_id.get("buoyancy_a", "")),
+			"b_id": str(role_to_id.get("buoyancy_b", "")),
+		},
+		"handling": {
+			"label": "HEAVY / RESPONSIVE",
+			"a_id": str(role_to_id.get("handling_a", "")),
+			"b_id": str(role_to_id.get("handling_b", "")),
+		},
+		"attraction": {
+			"label": "SUBTLE / FLASH",
+			"a_id": str(role_to_id.get("attraction_a", "")),
+			"b_id": str(role_to_id.get("attraction_b", "")),
+		},
+	}
+
+	var complete: bool = true
+	for pair_id in pairs.keys():
+		var pair: Dictionary = pairs[pair_id]
+		complete = (
+			complete
+			and not str(pair.get("a_id", "")).is_empty()
+			and not str(pair.get("b_id", "")).is_empty()
+		)
+
+	return {
+		"complete": complete,
+		"pairs": pairs,
+	}
+
+
+func grant_qa_feel_suite() -> Dictionary:
+	if not OS.is_debug_build():
+		return _failure("debug_build_required")
+	if _material_inventory == null or _fishing_inventory == null:
+		return _failure("inventory_unavailable")
+
+	var existing: Dictionary = get_qa_feel_suite_snapshot()
+	if bool(existing.get("complete", false)):
+		_ensure_qa_suite_owned(existing)
+		return {
+			"success": true,
+			"created": false,
+			"suite": existing,
+		}
+
+	var specs: Array[Dictionary] = [
+		{
+			"role": "buoyancy_a",
+			"name": "[QA BUOY+] Float Minnow",
+			"body": &"driftwood",
+			"core": &"shell",
+			"accent": &"",
+		},
+		{
+			"role": "buoyancy_b",
+			"name": "[QA BUOY-] Sink Minnow",
+			"body": &"shell",
+			"core": &"iron_scrap",
+			"accent": &"seaweed_fibre",
+		},
+		{
+			"role": "handling_a",
+			"name": "[QA HANDLE-] Heavy Minnow",
+			"body": &"driftwood",
+			"core": &"iron_scrap",
+			"accent": &"",
+		},
+		{
+			"role": "handling_b",
+			"name": "[QA HANDLE+] Responsive Minnow",
+			"body": &"driftwood",
+			"core": &"iron_scrap",
+			"accent": &"seaweed_fibre",
+		},
+		{
+			"role": "attraction_a",
+			"name": "[QA ATTR-] Subtle Minnow",
+			"body": &"driftwood",
+			"core": &"iron_scrap",
+			"accent": &"",
+		},
+		{
+			"role": "attraction_b",
+			"name": "[QA ATTR+] Flash Minnow",
+			"body": &"driftwood",
+			"core": &"iron_scrap",
+			"accent": &"sea_glass",
+		},
+	]
+
+	var existing_roles: Dictionary = {}
+	for record in _records:
+		var role: String = str(record.get("qa_feel_role", ""))
+		if not role.is_empty():
+			existing_roles[role] = true
+
+	var created_ids := PackedStringArray()
+	for spec in specs:
+		var role: String = str(spec.get("role", ""))
+		if bool(existing_roles.get(role, false)):
+			continue
+
+		var body_id := StringName(str(spec.get("body", "")))
+		var core_id := StringName(str(spec.get("core", "")))
+		var accent_id := StringName(str(spec.get("accent", "")))
+		var preview: Dictionary = preview_craft(
+			&"beach_minnow",
+			body_id,
+			core_id,
+			accent_id
+		)
+		if not bool(preview.get("success", false)):
+			return {
+				"success": false,
+				"reason": "qa_preview_failed",
+				"role": role,
+			}
+
+		var costs = preview.get("costs", {})
+		if costs is Dictionary:
+			for raw_id in costs.keys():
+				_material_inventory.grant(
+					StringName(str(raw_id)),
+					int(costs[raw_id]),
+					false
+				)
+		_material_inventory.save_to_disk()
+
+		var result: Dictionary = craft(
+			&"beach_minnow",
+			body_id,
+			core_id,
+			accent_id
+		)
+		if not bool(result.get("success", false)):
+			return {
+				"success": false,
+				"reason": "qa_craft_failed",
+				"role": role,
+				"detail": result,
+			}
+
+		var lure_id := StringName(str(result.get("lure_id", "")))
+		_set_record_fields(
+			lure_id,
+			{
+				"display_name_override": str(spec.get("name", "")),
+				"qa_feel_role": role,
+			}
+		)
+		created_ids.append(String(lure_id))
+
+	save_to_disk()
+	var suite: Dictionary = get_qa_feel_suite_snapshot()
+	_ensure_qa_suite_owned(suite)
+
+	return {
+		"success": bool(suite.get("complete", false)),
+		"created": true,
+		"created_ids": created_ids,
+		"suite": suite,
+	}
+
+
+func toggle_qa_feel_pair(pair_id: StringName) -> Dictionary:
+	if not OS.is_debug_build():
+		return _failure("debug_build_required")
+	if _active_loadout == null:
+		return _failure("loadout_unavailable")
+
+	var grant_result: Dictionary = grant_qa_feel_suite()
+	if not bool(grant_result.get("success", false)):
+		return grant_result
+
+	var suite: Dictionary = get_qa_feel_suite_snapshot()
+	var pairs = suite.get("pairs", {})
+	if not (pairs is Dictionary):
+		return _failure("qa_suite_invalid")
+
+	var pair_key: String = String(pair_id)
+	if not pairs.has(pair_key):
+		return _failure("unknown_qa_pair")
+	var pair: Dictionary = pairs[pair_key]
+
+	var a_id := StringName(str(pair.get("a_id", "")))
+	var b_id := StringName(str(pair.get("b_id", "")))
+	var current: BaitData = get_equipped_lure()
+	var current_id: StringName = current.lure_id if current != null else &""
+
+	var next_id: StringName = (
+		b_id
+		if current_id == a_id
+		else a_id
+	)
+	var lure: BaitData = get_runtime_lure(next_id)
+	if lure == null:
+		return _failure("qa_lure_missing")
+
+	_active_loadout.call("equip_lure", lure)
+	return {
+		"success": true,
+		"pair_id": pair_key,
+		"pair_label": str(pair.get("label", pair_key)),
+		"lure_id": String(next_id),
+		"display_name": lure.display_name,
+		"recast_required": true,
+	}
+
+
+func qa_roundtrip_preview(
+	recipe_id: StringName,
+	body_id: StringName,
+	core_id: StringName,
+	accent_id: StringName = &""
+) -> Dictionary:
+	if not OS.is_debug_build():
+		return _failure("debug_build_required")
+
+	var preview: Dictionary = preview_craft(
+		recipe_id,
+		body_id,
+		core_id,
+		accent_id
+	)
+	if not bool(preview.get("success", false)):
+		return preview
+
+	var record := {
+		"lure_id": "qa_roundtrip_temp",
+		"instance_number": 999999,
+		"recipe_id": String(recipe_id),
+		"body_id": String(body_id),
+		"core_id": String(core_id),
+		"accent_id": String(accent_id),
+		"buoyancy": int(preview.get("buoyancy", 0)),
+		"handling": int(preview.get("handling", 0)),
+		"attraction": int(preview.get("attraction", 0)),
+		"created_unix": 0,
+	}
+
+	var parsed = JSON.parse_string(JSON.stringify(record))
+	if not (parsed is Dictionary):
+		return _failure("qa_roundtrip_json_failed")
+
+	var lure: BaitData = _build_runtime_lure(parsed as Dictionary)
+	if lure == null:
+		return _failure("qa_roundtrip_rebuild_failed")
+
+	return {
+		"success": true,
+		"sink_depth": lure.sink_depth,
+		"reel_steer_strength": lure.reel_steer_strength,
+		"attraction_reference": _lure_attraction_reference(lure),
+		"preview_sink_depth": float(preview.get("sink_depth", 0.0)),
+		"preview_reel_steer_strength": float(
+			preview.get("reel_steer_strength", 0.0)
+		),
+		"preview_attraction_reference": float(
+			preview.get("attraction_reference", 0.0)
+		),
+	}
 
 
 func get_catalog() -> BeachCraftingCatalog:
@@ -112,6 +518,16 @@ func preview_craft(
 		scores
 	)
 
+	var labels: Dictionary = get_property_labels(
+		int(scores["buoyancy"]),
+		int(scores["handling"]),
+		int(scores["attraction"])
+	)
+	var actual_attraction: float = _preview_actual_attraction(
+		recipe,
+		physical
+	)
+
 	return {
 		"success": true,
 		"recipe_id": String(recipe_id),
@@ -127,12 +543,20 @@ func preview_craft(
 		"buoyancy": int(scores["buoyancy"]),
 		"handling": int(scores["handling"]),
 		"attraction": int(scores["attraction"]),
+		"buoyancy_label": str(labels.get("buoyancy", "")),
+		"handling_label": str(labels.get("handling", "")),
+		"attraction_label": str(labels.get("attraction", "")),
 		"sink_depth": float(physical["sink_depth"]),
 		"sink_speed": float(physical["sink_speed"]),
 		"reel_steer_strength": float(physical["reel_steer_strength"]),
 		"reel_speed": float(physical["reel_speed"]),
 		"attraction_multiplier": float(physical["attraction_multiplier"]),
+		"attraction_reference": actual_attraction,
 		"property_text": _property_text(scores),
+		"equipped_comparison": _equipped_comparison(
+			physical,
+			actual_attraction
+		),
 	}
 
 
@@ -388,10 +812,15 @@ func _build_runtime_lure(record: Dictionary) -> BaitData:
 	)
 
 	lure.lure_id = lure_id
-	lure.display_name = "%s #%03d" % [
-		recipe.display_name,
-		int(record.get("instance_number", 1)),
-	]
+	var display_override: String = str(
+		record.get("display_name_override", "")
+	)
+	if not display_override.is_empty():
+		lure.display_name = display_override
+	else:
+		# Instance numbering belongs in the internal lure_id only.
+		# The player-facing lure name stays clean even when several copies exist.
+		lure.display_name = recipe.display_name
 	lure.level = 1
 	lure.description = _crafted_description(
 		recipe,
@@ -631,6 +1060,181 @@ func _score_text(value: int) -> String:
 	if value > 0:
 		return "+%d" % value
 	return str(value)
+
+
+func _set_record_fields(
+	lure_id: StringName,
+	fields: Dictionary
+) -> void:
+	var clean_id: String = String(lure_id)
+	if clean_id.is_empty():
+		return
+
+	var updated_record: Dictionary = {}
+	for index in range(_records.size()):
+		if str(_records[index].get("lure_id", "")) != clean_id:
+			continue
+		for raw_key in fields.keys():
+			_records[index][str(raw_key)] = fields[raw_key]
+		updated_record = _records[index].duplicate(true)
+		break
+
+	var lure: BaitData = get_runtime_lure(lure_id)
+	if lure != null:
+		if fields.has("display_name_override"):
+			lure.display_name = str(fields["display_name_override"])
+		if not updated_record.is_empty():
+			lure.set_meta(
+				"craft_record",
+				updated_record.duplicate(true)
+			)
+
+
+func _ensure_qa_suite_owned(suite: Dictionary) -> void:
+	if _fishing_inventory == null:
+		return
+	var raw_pairs = suite.get("pairs", {})
+	if not (raw_pairs is Dictionary):
+		return
+
+	for raw_pair in raw_pairs.values():
+		if not (raw_pair is Dictionary):
+			continue
+		var pair: Dictionary = raw_pair
+		for key in ["a_id", "b_id"]:
+			var lure_id := StringName(str(pair.get(key, "")))
+			if lure_id == &"":
+				continue
+			var lure: BaitData = get_runtime_lure(lure_id)
+			if lure == null:
+				continue
+			if not _fishing_inventory.owns_lure(lure):
+				_fishing_inventory.grant_lure(
+					lure,
+					1,
+					true
+				)
+
+
+func _set_display_name_override(
+	lure_id: StringName,
+	display_name: String
+) -> void:
+	var clean_id: String = String(lure_id)
+	if clean_id.is_empty():
+		return
+	for index in range(_records.size()):
+		if str(_records[index].get("lure_id", "")) != clean_id:
+			continue
+		_records[index]["display_name_override"] = display_name
+		break
+	var lure: BaitData = get_runtime_lure(lure_id)
+	if lure != null:
+		lure.display_name = display_name
+	save_to_disk()
+
+
+func _equipped_comparison(
+	physical: Dictionary,
+	actual_attraction: float
+) -> Dictionary:
+	var lure: BaitData = get_equipped_lure()
+	if lure == null:
+		return {
+			"available": false,
+		}
+
+	var current_attraction: float = _lure_attraction_reference(lure)
+	return {
+		"available": true,
+		"lure_id": String(lure.lure_id),
+		"display_name": lure.display_name,
+		"current_depth": lure.sink_depth,
+		"preview_depth": float(physical.get("sink_depth", lure.sink_depth)),
+		"depth_delta": (
+			float(physical.get("sink_depth", lure.sink_depth))
+			- lure.sink_depth
+		),
+		"current_steer": lure.reel_steer_strength,
+		"preview_steer": float(
+			physical.get(
+				"reel_steer_strength",
+				lure.reel_steer_strength
+			)
+		),
+		"steer_delta": (
+			float(
+				physical.get(
+					"reel_steer_strength",
+					lure.reel_steer_strength
+				)
+			)
+			- lure.reel_steer_strength
+		),
+		"current_attraction": current_attraction,
+		"preview_attraction": actual_attraction,
+		"attraction_delta": actual_attraction - current_attraction,
+	}
+
+
+func _preview_actual_attraction(
+	recipe: BeachCraftingRecipe,
+	physical: Dictionary
+) -> float:
+	if _tackle_catalog == null:
+		return float(physical.get("attraction_multiplier", 1.0))
+	var template: BaitData = _tackle_catalog.get_lure_by_id(
+		recipe.template_lure_id
+	)
+	if template == null:
+		return float(physical.get("attraction_multiplier", 1.0))
+	return (
+		_lure_attraction_reference(template)
+		* float(physical.get("attraction_multiplier", 1.0))
+	)
+
+
+func _lure_attraction_reference(lure: BaitData) -> float:
+	if lure == null or lure.action_profile == null:
+		return 1.0
+	return (
+		lure.action_profile.idle_attraction_multiplier
+		+ lure.action_profile.reel_attraction_multiplier
+	) * 0.5
+
+
+func _buoyancy_label(value: int) -> String:
+	if value <= -3:
+		return "Deep sink"
+	if value <= -1:
+		return "Sinking"
+	if value == 0:
+		return "Neutral"
+	if value <= 2:
+		return "Buoyant"
+	return "High float"
+
+
+func _handling_label(value: int) -> String:
+	if value <= -3:
+		return "Heavy"
+	if value <= -1:
+		return "Slower control"
+	if value == 0:
+		return "Balanced"
+	if value <= 2:
+		return "Responsive"
+	return "Very responsive"
+
+
+func _attraction_label(value: int) -> String:
+	if value <= -2:
+		return "Subtle"
+	if value <= 0:
+		return "Normal"
+	if value <= 2:
+		return "Noticeable"
+	return "High visibility"
 
 
 func _failure(reason: String) -> Dictionary:

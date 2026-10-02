@@ -1,0 +1,99 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/beach_crafting_feel_qa_hud.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_feel_qa"]
+bg_color = Color(0.02, 0.025, 0.035, 0.93)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.60, 0.22, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="BeachCraftingFeelQAHUD" type="CanvasLayer"]
+process_mode = 3
+layer = 118
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -516.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = 164.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_feel_qa")
+
+[node name="TitleLabel" type="Label" parent="Root/Panel"]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 486.0
+offset_bottom = 29.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "BEACH CRAFTING FEEL QA"
+
+[node name="LureLabel" type="Label" parent="Root/Panel"]
+offset_left = 12.0
+offset_top = 32.0
+offset_right = 486.0
+offset_bottom = 51.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "LURE   --"
+
+[node name="PropertiesLabel" type="Label" parent="Root/Panel"]
+offset_left = 12.0
+offset_top = 53.0
+offset_right = 486.0
+offset_bottom = 72.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "CRAFT   --"
+
+[node name="WaterLabel" type="Label" parent="Root/Panel"]
+offset_left = 12.0
+offset_top = 74.0
+offset_right = 486.0
+offset_bottom = 93.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "WATER   --"
+
+[node name="FishLabel" type="Label" parent="Root/Panel"]
+offset_left = 12.0
+offset_top = 95.0
+offset_right = 486.0
+offset_bottom = 114.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "FISH    --"
+
+[node name="StatusLabel" type="Label" parent="Root/Panel"]
+offset_left = 12.0
+offset_top = 118.0
+offset_right = 486.0
+offset_bottom = 140.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "1 FLOAT/SINK   2 HEAVY/RESP   3 SUBTLE/FLASH   F8 CLOSE"
+horizontal_alignment = 1

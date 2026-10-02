@@ -20,6 +20,10 @@ var _mode: int = 0
 var _entries: Array[Dictionary] = []
 var _selection: int = 0
 
+# Temporary UI-art integration state. Until the UX pass, only opening and
+# closing are active; invisible legacy controls cannot mutate game state.
+@export var presentation_only_background: bool = true
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -81,6 +85,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if _is_back(event):
 		close_menu()
+		get_viewport().set_input_as_handled()
+		return
+
+	if presentation_only_background:
 		get_viewport().set_input_as_handled()
 		return
 

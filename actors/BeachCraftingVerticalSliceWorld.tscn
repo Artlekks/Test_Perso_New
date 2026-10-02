@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://actors/BeachGatheringCircuit.tscn" id="1_circuit"]
+[ext_resource type="PackedScene" path="res://actors/BeachCrafterNPC.tscn" id="2_crafter"]
+
+[node name="BeachCraftingVerticalSliceWorld" type="Node3D"]
+
+[node name="BeachGatheringCircuit" parent="." instance=ExtResource("1_circuit")]
+
+[node name="BeachCrafterNPC" parent="." instance=ExtResource("2_crafter")]
+position = Vector3(0, 0.06, 1.95)

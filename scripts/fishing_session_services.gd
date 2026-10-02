@@ -72,6 +72,18 @@ const BeachCraftingServiceScript = preload(
 const BeachCraftingIntegrityScript = preload(
 	"res://scripts/beach_crafting_integrity.gd"
 )
+const BeachCraftingQAScript = preload(
+	"res://scripts/beach_crafting_qa.gd"
+)
+const BeachGatheringFeedbackScene = preload(
+	"res://actors/BeachGatheringFeedbackView.tscn"
+)
+const BeachCraftingWorldScene = preload(
+	"res://actors/BeachCraftingVerticalSliceWorld.tscn"
+)
+const BeachCraftingFeelQAHUDScene = preload(
+	"res://actors/BeachCraftingFeelQAHUD.tscn"
+)
 
 const FishingTackleCatalogResource = preload(
 	"res://data/bof4/tackle/all_tackle.tres"
@@ -123,10 +135,15 @@ var economy_integrity_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
 var beach_crafting_integrity_report: Dictionary = {}
+var beach_crafting_qa_report: Dictionary = {}
 var save_integrity_report: Dictionary = {}
 
 var beach_gathering_inventory: BeachGatheringInventory = null
 var beach_crafting_service: BeachCraftingService = null
+var beach_gathering_feedback_view: CanvasLayer = null
+var beach_crafting_feel_qa_hud: CanvasLayer = null
+var active_loadout = null
+var _beach_circuit_progress: Dictionary = {}
 
 var _initialized: bool = false
 
@@ -183,6 +200,7 @@ func initialize() -> void:
 		FishingTackleCatalogResource,
 		BeachCraftingCatalogResource
 	)
+	_ensure_beach_gathering_feedback_view()
 
 	beach_crafting_integrity_report = (
 		BeachCraftingIntegrityScript.audit(
@@ -204,6 +222,26 @@ func initialize() -> void:
 		push_error(
 			"Beach crafting audit: %s" % str(error)
 		)
+
+	if OS.is_debug_build():
+		beach_crafting_qa_report = BeachCraftingQAScript.run(
+			BeachCraftingCatalogResource,
+			beach_crafting_service,
+			FishingTackleCatalogResource
+		)
+		print(
+			"Beach Crafting QA: %d/%d tests passed (%d recipe combinations)."
+			% [
+				int(beach_crafting_qa_report.get("passed_count", 0)),
+				int(beach_crafting_qa_report.get("test_count", 0)),
+				int(beach_crafting_qa_report.get("matrix_combination_count", 0)),
+			]
+		)
+		for failure in beach_crafting_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Beach Crafting QA: %s" % str(failure))
 
 	catch_repository = FishingCatchRepositoryScript.new()
 	catch_repository.name = "FishingCatchRepository"
@@ -390,6 +428,19 @@ func get_beach_crafting_integrity_report() -> Dictionary:
 	return beach_crafting_integrity_report.duplicate(true)
 
 
+func get_beach_crafting_qa_report() -> Dictionary:
+	return beach_crafting_qa_report.duplicate(true)
+
+
+func run_beach_crafting_qa() -> Dictionary:
+	beach_crafting_qa_report = BeachCraftingQAScript.run(
+		BeachCraftingCatalogResource,
+		beach_crafting_service,
+		FishingTackleCatalogResource
+	)
+	return beach_crafting_qa_report.duplicate(true)
+
+
 func get_beach_gathering_inventory() -> BeachGatheringInventory:
 	return beach_gathering_inventory
 
@@ -401,6 +452,19 @@ func get_beach_crafting_service() -> BeachCraftingService:
 func bind_loadout(loadout) -> Dictionary:
 	if loadout == null:
 		return {}
+	active_loadout = loadout
+	if beach_crafting_service != null:
+		beach_crafting_service.bind_loadout(loadout)
+	_ensure_beach_crafting_feel_qa_hud()
+	if (
+		beach_crafting_feel_qa_hud != null
+		and beach_crafting_feel_qa_hud.has_method("set_loadout")
+	):
+		beach_crafting_feel_qa_hud.call(
+			"set_loadout",
+			loadout
+		)
+	call_deferred("_ensure_beach_vertical_slice_world_content")
 	loadout.configure_persistence(
 		inventory,
 		FishingTackleCatalogResource
@@ -409,6 +473,155 @@ func bind_loadout(loadout) -> Dictionary:
 		return {}
 	save_integrity_report = save_integrity_service.bind_loadout(loadout)
 	return save_integrity_report.duplicate(true)
+
+
+func register_beach_gathering_circuit(
+	circuit_id: StringName,
+	node_count: int
+) -> void:
+	var clean_id: String = String(circuit_id)
+	if clean_id.is_empty():
+		return
+	# A circuit's _ready() means a new scene visit. Nodes replenish on scene
+	# reload/re-entry in this vertical slice, so progress intentionally resets.
+	_beach_circuit_progress[clean_id] = {
+		"node_count": maxi(0, node_count),
+		"gathered_keys": {},
+	}
+
+
+func reset_beach_gathering_circuit_progress(
+	circuit_id: StringName
+) -> void:
+	var clean_id: String = String(circuit_id)
+	if not _beach_circuit_progress.has(clean_id):
+		return
+	var state: Dictionary = _beach_circuit_progress[clean_id]
+	state["gathered_keys"] = {}
+	_beach_circuit_progress[clean_id] = state
+
+
+func notify_beach_material_gathered(
+	material_id: StringName,
+	amount: int,
+	total_owned: int,
+	circuit_id: StringName = &"",
+	node_key: StringName = &""
+) -> void:
+	var gathered_count: int = 0
+	var circuit_total: int = 0
+	var clean_circuit: String = String(circuit_id)
+
+	if (
+		not clean_circuit.is_empty()
+		and _beach_circuit_progress.has(clean_circuit)
+	):
+		var state: Dictionary = _beach_circuit_progress[clean_circuit]
+		var gathered_keys = state.get("gathered_keys", {})
+		if gathered_keys is Dictionary:
+			var key: String = String(node_key)
+			if not key.is_empty():
+				gathered_keys[key] = true
+			state["gathered_keys"] = gathered_keys
+			gathered_count = gathered_keys.size()
+		circuit_total = int(state.get("node_count", 0))
+		_beach_circuit_progress[clean_circuit] = state
+
+	var display_name: String = String(material_id)
+	if beach_crafting_service != null:
+		var definition: BeachMaterialDefinition = (
+			beach_crafting_service.get_material_definition(
+				material_id
+			)
+		)
+		if definition != null:
+			display_name = definition.display_name
+
+	_ensure_beach_gathering_feedback_view()
+	if (
+		beach_gathering_feedback_view != null
+		and beach_gathering_feedback_view.has_method("enqueue_gathered")
+	):
+		beach_gathering_feedback_view.call(
+			"enqueue_gathered",
+			display_name,
+			amount,
+			total_owned,
+			gathered_count,
+			circuit_total
+		)
+
+
+func get_beach_gathering_visit_snapshot() -> Dictionary:
+	var result: Dictionary = {}
+	for raw_id in _beach_circuit_progress.keys():
+		var state: Dictionary = _beach_circuit_progress[raw_id]
+		var gathered_keys = state.get("gathered_keys", {})
+		var gathered_count: int = 0
+		if gathered_keys is Dictionary:
+			gathered_count = gathered_keys.size()
+		result[str(raw_id)] = {
+			"node_count": int(state.get("node_count", 0)),
+			"gathered_count": gathered_count,
+		}
+	return result
+
+
+func _ensure_beach_gathering_feedback_view() -> void:
+	if is_instance_valid(beach_gathering_feedback_view):
+		return
+	var instance = BeachGatheringFeedbackScene.instantiate()
+	if instance is CanvasLayer:
+		beach_gathering_feedback_view = instance as CanvasLayer
+		add_child(beach_gathering_feedback_view)
+
+
+func _ensure_beach_crafting_feel_qa_hud() -> void:
+	if not OS.is_debug_build():
+		return
+	if is_instance_valid(beach_crafting_feel_qa_hud):
+		return
+
+	var instance = BeachCraftingFeelQAHUDScene.instantiate()
+	if not (instance is CanvasLayer):
+		return
+
+	beach_crafting_feel_qa_hud = instance as CanvasLayer
+	add_child(beach_crafting_feel_qa_hud)
+	if beach_crafting_feel_qa_hud.has_method("configure"):
+		beach_crafting_feel_qa_hud.call(
+			"configure",
+			beach_crafting_service,
+			active_loadout
+		)
+
+
+func _ensure_beach_vertical_slice_world_content() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	var scene := tree.current_scene
+	if scene == null:
+		return
+
+	var world := scene.get_node_or_null("World")
+	if world == null:
+		return
+	# Only inject into the current Ocean-2 beach prototype. This avoids
+	# touching authored scene coordinates while still making the vertical
+	# slice immediately playable.
+	if scene.get_node_or_null("World/beach") == null:
+		return
+	if world.get_node_or_null("BeachCraftingVerticalSliceWorld") != null:
+		return
+
+	var instance = BeachCraftingWorldScene.instantiate()
+	if instance is Node3D:
+		world.add_child(instance)
+
+
+func get_active_loadout():
+	return active_loadout
 
 
 func save_all_fishing_state() -> Dictionary:

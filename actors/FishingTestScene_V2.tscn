@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://d21evn65menlm" path="res://assets/models/fbx/beach.glb" id="9_m5b5u"]
 [ext_resource type="PackedScene" uid="uid://cocpfht6p4ai3" path="res://actors/PowerMeter_V2.tscn" id="10_r25je"]
 [ext_resource type="Script" uid="uid://c8vuaolv25gid" path="res://scripts/power_meter_view.gd" id="11_r25je"]
-[ext_resource type="PackedScene" path="res://actors/BeachCrafterNPC.tscn" id="12_1ywtt"]
 [ext_resource type="Script" uid="uid://cb6v6f0ntyhvg" path="res://scripts/depth_meter_view.gd" id="12_7s285"]
 [ext_resource type="Script" uid="uid://bkfjklhkvyb14" path="res://scripts/aim.gd" id="13_k4i7q"]
 [ext_resource type="Script" uid="uid://c1nagc5sqiw7x" path="res://scripts/screen_space_marker.gd" id="14_0pfgo"]
@@ -246,9 +245,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.326166, 0.06284177, 0.42)
 
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
-
-[node name="BeachCrafterNPC" parent="World" unique_id=1186091229 instance=ExtResource("12_1ywtt")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1127677, 0.088228285, 0.747668)
 
 [node name="Player" type="Node" parent="." unique_id=1284942496]
 

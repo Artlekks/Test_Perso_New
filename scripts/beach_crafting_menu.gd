@@ -5,6 +5,8 @@ class_name BeachCraftingMenu
 @onready var recipe_label: Label = $Root/Panel/RecipeLabel
 @onready var slots_label: Label = $Root/Panel/SlotsLabel
 @onready var preview_label: Label = $Root/Panel/PreviewLabel
+@onready var comparison_label: Label = $Root/Panel/ComparisonLabel
+@onready var cost_label: Label = $Root/Panel/CostLabel
 @onready var inventory_label: Label = $Root/Panel/InventoryLabel
 @onready var status_label: Label = $Root/Panel/StatusLabel
 @onready var help_label: Label = $Root/Panel/HelpLabel
@@ -19,6 +21,10 @@ var _accent_index: int = 0
 var _previous_tree_paused: bool = false
 var _ignore_until_frame: int = 0
 var _status: String = ""
+
+# Temporary UI-art integration state. Until the UX pass, the exact supplied
+# screen is presentation-only and legacy hidden controls cannot craft items.
+@export var presentation_only_background: bool = true
 
 
 func _ready() -> void:
@@ -76,6 +82,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	if presentation_only_background:
+		get_viewport().set_input_as_handled()
+		return
+
 	if _is_up(event):
 		_move_recipe(-1)
 	elif _is_down(event):
@@ -96,6 +106,16 @@ func _input(event: InputEvent) -> void:
 			"QA: +10 of every beach material."
 			if bool(result.get("success", false))
 			else "QA material grant failed."
+		)
+		_refresh()
+	elif OS.is_debug_build() and _is_key(event, KEY_T):
+		var suite: Dictionary = _service.grant_qa_feel_suite()
+		_status = (
+			"QA feel suite ready. F8 opens live telemetry; 1/2/3 swap isolated pairs."
+			if bool(suite.get("success", false))
+			else "QA feel suite failed: %s" % str(
+				suite.get("reason", "unknown")
+			)
 		)
 		_refresh()
 	else:
@@ -180,11 +200,15 @@ func _refresh() -> void:
 
 	slots_label.text = "%s BODY     %s\n%s CORE     %s\n%s ACCENT   %s" % [
 		">" if _slot_index == 0 else " ",
-		_material_display(body_id),
+		_material_display_with_owned(body_id),
 		">" if _slot_index == 1 else " ",
-		_material_display(core_id),
+		_material_display_with_owned(core_id),
 		">" if _slot_index == 2 else " ",
-		"None" if accent_id == &"" else _material_display(accent_id),
+		(
+			"None"
+			if accent_id == &""
+			else _material_display_with_owned(accent_id)
+		),
 	]
 
 	var preview: Dictionary = _service.preview_craft(
@@ -195,23 +219,116 @@ func _refresh() -> void:
 	)
 	if bool(preview.get("success", false)):
 		preview_label.text = (
-			"%s\nDepth %.2f   Steer %.2f   Attraction x%.2f"
-			% [
-				str(preview.get("property_text", "")),
-				float(preview.get("sink_depth", 0.0)),
-				float(preview.get("reel_steer_strength", 0.0)),
-				float(preview.get("attraction_multiplier", 1.0)),
-			]
+			"RESULT\n"
+			+ "Buoyancy %s  —  %s\n"
+			+ "Handling %s  —  %s\n"
+			+ "Attraction %s  —  %s"
+		) % [
+			_score_text(int(preview.get("buoyancy", 0))),
+			str(preview.get("buoyancy_label", "")),
+			_score_text(int(preview.get("handling", 0))),
+			str(preview.get("handling_label", "")),
+			_score_text(int(preview.get("attraction", 0))),
+			str(preview.get("attraction_label", "")),
+		]
+		cost_label.text = _cost_text(preview)
+		comparison_label.text = _comparison_text(
+			preview.get("equipped_comparison", {})
 		)
 	else:
 		preview_label.text = "Invalid material combination."
+		cost_label.text = ""
+		comparison_label.text = ""
 
 	inventory_label.text = _inventory_text()
 	status_label.text = _status
 	help_label.text = (
 		"W/S Recipe   A/D Material   J Slot   K Craft   I Back"
-		+ ("\nDEBUG: R = +10 all materials" if OS.is_debug_build() else "")
+		+ (
+			"\nDEBUG: R = +10 mats   T = create Feel QA suite   F8 = telemetry"
+			if OS.is_debug_build()
+			else ""
+		)
 	)
+
+
+func _material_display_with_owned(
+	material_id: StringName
+) -> String:
+	var owned: int = (
+		_inventory.get_count(material_id)
+		if _inventory != null
+		else 0
+	)
+	return "%s [%d]" % [
+		_material_display(material_id),
+		owned,
+	]
+
+
+func _cost_text(preview: Dictionary) -> String:
+	var costs = preview.get("costs", {})
+	if not (costs is Dictionary):
+		return ""
+	var pieces := PackedStringArray()
+	for raw_id in costs.keys():
+		var material_id := StringName(str(raw_id))
+		var required: int = int(costs[raw_id])
+		var owned: int = (
+			_inventory.get_count(material_id)
+			if _inventory != null
+			else 0
+		)
+		pieces.append(
+			"%s %d/%d"
+			% [
+				_material_display(material_id),
+				owned,
+				required,
+			]
+		)
+	return "%s   %s" % [
+		"CAN CRAFT" if bool(preview.get("can_afford", false)) else "MISSING",
+		"   ".join(pieces),
+	]
+
+
+func _comparison_text(raw_comparison) -> String:
+	if not (raw_comparison is Dictionary):
+		return "VS EQUIPPED: unavailable"
+	var comparison: Dictionary = raw_comparison
+	if not bool(comparison.get("available", false)):
+		return "VS EQUIPPED: no lure selected"
+
+	return (
+		"VS EQUIPPED  %s\n"
+		+ "Depth %.2f -> %.2f  (%s)\n"
+		+ "Steer %.2f -> %.2f  (%s)\n"
+		+ "Attract %.2f -> %.2f  (%s)"
+	) % [
+		str(comparison.get("display_name", "Lure")),
+		float(comparison.get("current_depth", 0.0)),
+		float(comparison.get("preview_depth", 0.0)),
+		_signed_float_text(float(comparison.get("depth_delta", 0.0))),
+		float(comparison.get("current_steer", 0.0)),
+		float(comparison.get("preview_steer", 0.0)),
+		_signed_float_text(float(comparison.get("steer_delta", 0.0))),
+		float(comparison.get("current_attraction", 1.0)),
+		float(comparison.get("preview_attraction", 1.0)),
+		_signed_float_text(float(comparison.get("attraction_delta", 0.0))),
+	]
+
+
+func _signed_float_text(value: float) -> String:
+	if value > 0.0005:
+		return "+%.2f" % value
+	return "%.2f" % value
+
+
+func _score_text(value: int) -> String:
+	if value > 0:
+		return "+%d" % value
+	return str(value)
 
 
 func _inventory_text() -> String:

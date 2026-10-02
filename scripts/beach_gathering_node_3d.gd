@@ -12,6 +12,8 @@ signal gathered(
 @export var one_shot_per_scene: bool = true
 @export var interaction_prompt: String = "K : Gather"
 @export var depleted_prompt: String = "Gathered"
+@export var circuit_id: StringName = &""
+@export var circuit_node_key: StringName = &""
 
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
@@ -63,6 +65,10 @@ func gather() -> Dictionary:
 		maxi(1, amount),
 		next_count
 	)
+	_notify_gathering_feedback(
+		maxi(1, amount),
+		next_count
+	)
 	_refresh_presentation()
 	return {
 		"success": true,
@@ -83,6 +89,9 @@ func _refresh_presentation() -> void:
 			display_name = material.display_name
 			_apply_placeholder_tint(material.visual_tint)
 
+	if placeholder_mesh != null:
+		placeholder_mesh.visible = not _depleted
+
 	if _depleted:
 		prompt_label.text = depleted_prompt
 	elif _player_in_range:
@@ -92,6 +101,42 @@ func _refresh_presentation() -> void:
 		]
 	else:
 		prompt_label.text = interaction_prompt
+
+
+func configure_circuit(
+	new_circuit_id: StringName,
+	new_node_key: StringName
+) -> void:
+	circuit_id = new_circuit_id
+	circuit_node_key = new_node_key
+
+
+func reset_gather_node() -> void:
+	_depleted = false
+	_refresh_presentation()
+
+
+func is_depleted() -> bool:
+	return _depleted
+
+
+func _notify_gathering_feedback(
+	gathered_amount: int,
+	new_count: int
+) -> void:
+	var services := _find_session_services()
+	if services == null:
+		return
+	if not services.has_method("notify_beach_material_gathered"):
+		return
+	services.call(
+		"notify_beach_material_gathered",
+		material_id,
+		gathered_amount,
+		new_count,
+		circuit_id,
+		circuit_node_key
+	)
 
 
 func _apply_placeholder_tint(color: Color) -> void:
