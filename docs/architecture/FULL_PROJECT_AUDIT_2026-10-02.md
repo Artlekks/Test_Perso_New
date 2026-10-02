@@ -151,15 +151,11 @@ The cleaned material sell values resolve the concrete QA failure visible in the 
 
 The expected first-run checks are listed at the end of this document.
 
-### P1 — transaction event atomicity in the new item backbone
+### RESOLVED — transaction event atomicity in the new item backbone
 
-This is the most important architectural issue discovered in the new shared-item work.
+The shared item transaction path now defers inventory notifications while a transaction is in flight. `PlayerItemInventory` and `FishingInventory` buffer their typed change signals, coalesce count/currency notifications to final values, and release them only after the transaction succeeds. Rollback restores the snapshots while the notification batch is still active and then discards the batch, so observers never see the transient state.
 
-`PlayerItemInventory` can emit `item_count_changed` during mutations that are still inside a broader multi-store transaction. If a later participant fails to persist and the transaction rolls back from snapshots, observers may already have seen a transient item change that never committed. The broad rollback/change notification does not guarantee an exact compensating item-count event for every observer.
-
-Today this may only affect UI refresh behavior. Later, quests, achievements, tutorials, notifications, analytics, or world triggers could react to a state that was rolled back.
-
-Before the shared item backbone becomes the basis for more currencies and progression, add transaction batching: suppress/defer item-level events until commit succeeds, then emit the final diff. An alternative is compensating events on rollback, but commit-time event release is cleaner.
+`GameItemTransactionService` applies this boundary to consume, grant, exchange, and cross-store material-sale transactions. Item Backend QA now also checks cross-store observer coherence and verifies that a forced persistence failure restores state without publishing item or completed-transaction events.
 
 ### P1 — multi-store transactions are rollback-safe, not crash-atomic
 

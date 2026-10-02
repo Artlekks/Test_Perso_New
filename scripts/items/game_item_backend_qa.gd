@@ -11,6 +11,13 @@ const QA_ITEM_SAVE := "user://player_item_inventory_qa.json"
 const QA_LEGACY_SAVE := "user://beach_gathering_inventory_qa.json"
 
 
+class FailingPlayerInventory:
+	extends PlayerItemInventory
+
+	func commit_changes() -> bool:
+		return false
+
+
 static func run(catalog: GameItemCatalogService) -> Dictionary:
 	var report := {
 		"test_count": 0,
@@ -26,6 +33,8 @@ static func run(catalog: GameItemCatalogService) -> Dictionary:
 	_test_material_sell_values(report, catalog)
 	_test_shared_event_stream(report, catalog)
 	_test_material_sale_transaction(report, catalog)
+	_test_cross_store_notifications_are_atomic(report, catalog)
+	_test_failed_save_emits_no_item_events(report, catalog)
 	_test_native_adapter_coherence(report, catalog)
 	_cleanup()
 	report["valid"] = int(report["passed_count"]) == int(report["test_count"])
@@ -249,6 +258,117 @@ static func _test_material_sale_transaction(
 	facade.queue_free()
 	wallet.queue_free()
 	inventory.queue_free()
+
+
+static func _test_cross_store_notifications_are_atomic(
+	report: Dictionary,
+	catalog: GameItemCatalogService
+) -> void:
+	var inventory := _new_inventory()
+	var wallet := FishingInventoryScript.new() as FishingInventory
+	var facade := InventoryFacadeScript.new() as GameInventoryFacade
+	facade.configure(catalog, inventory, wallet)
+	var transaction := TransactionServiceScript.new() as GameItemTransactionService
+	transaction.configure(
+		catalog,
+		inventory,
+		facade,
+		wallet
+	)
+	var driftwood := catalog.make_item_id(
+		&"player",
+		&"driftwood"
+	)
+	inventory.grant(driftwood, 1, false)
+	wallet.set_zenny(10, false)
+
+	var zenny_seen_by_item_listener: Array[int] = []
+	var item_count_seen_by_wallet_listener: Array[int] = []
+	inventory.item_count_changed.connect(
+		func(changed_id: StringName, _count: int) -> void:
+			if changed_id == driftwood:
+				zenny_seen_by_item_listener.append(wallet.get_zenny())
+	)
+	wallet.zenny_changed.connect(
+		func(_balance: int) -> void:
+			item_count_seen_by_wallet_listener.append(
+				inventory.get_count(driftwood)
+			)
+	)
+
+	var result: Dictionary = transaction.sell_player_item_for_zenny(
+		driftwood,
+		1,
+		3,
+		false,
+		&"qa_atomic_notifications"
+	)
+	var valid: bool = (
+		bool(result.get("success", false))
+		and zenny_seen_by_item_listener.size() == 1
+		and zenny_seen_by_item_listener[0] == 13
+		and item_count_seen_by_wallet_listener.size() == 1
+		and item_count_seen_by_wallet_listener[0] == 0
+	)
+	_record(
+		report,
+		"Cross-store listeners only observe the final committed state",
+		valid,
+		"Item and wallet notifications must be deferred until both stores have been mutated successfully."
+	)
+	transaction.queue_free()
+	facade.queue_free()
+	wallet.queue_free()
+	inventory.queue_free()
+
+
+static func _test_failed_save_emits_no_item_events(
+	report: Dictionary,
+	catalog: GameItemCatalogService
+) -> void:
+	var inventory := FailingPlayerInventory.new()
+	inventory.configure(QA_ITEM_SAVE)
+	inventory.initialize()
+	inventory.reset_all(false, false)
+	var transaction := _new_transaction(catalog, inventory)
+	var driftwood := catalog.make_item_id(
+		&"player",
+		&"driftwood"
+	)
+	inventory.grant(driftwood, 1, false)
+
+	var count_events: Array[int] = []
+	var completed_events: Array[Dictionary] = []
+	inventory.item_count_changed.connect(
+		func(changed_id: StringName, count: int) -> void:
+			if changed_id == driftwood:
+				count_events.append(count)
+	)
+	transaction.transaction_completed.connect(
+		func(result: Dictionary) -> void:
+			completed_events.append(result.duplicate(true))
+	)
+
+	var result: Dictionary = transaction.consume_player_items(
+		{String(driftwood): 1},
+		true,
+		&"qa_forced_save_failure"
+	)
+	var valid: bool = (
+		not bool(result.get("success", false))
+		and str(result.get("reason", "")) == "save_failed"
+		and inventory.get_count(driftwood) == 1
+		and count_events.is_empty()
+		and completed_events.is_empty()
+	)
+	_record(
+		report,
+		"Rolled-back item transactions publish no item events",
+		valid,
+		"A failed durable commit must restore state silently and emit no completed transaction."
+	)
+	inventory.queue_free()
+	transaction.queue_free()
 
 
 static func _test_native_adapter_coherence(

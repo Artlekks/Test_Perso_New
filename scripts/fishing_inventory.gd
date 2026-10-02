@@ -43,6 +43,7 @@ var _progress_migrated: bool = false
 var _bound_progress: FishingProgress = null
 var _dirty: bool = false
 var _next_specimen_id: int = 1
+var _notification_frames: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -56,6 +57,32 @@ func initialize() -> void:
 	_initialized = true
 	load_from_disk()
 	_seed_starter_tackle()
+
+
+func begin_notification_batch() -> void:
+	_notification_frames.append(_new_notification_frame())
+
+
+func commit_notification_batch() -> void:
+	if _notification_frames.is_empty():
+		return
+	var frame: Dictionary = _notification_frames.pop_back()
+	if not _notification_frames.is_empty():
+		var parent: Dictionary = _notification_frames[-1]
+		_merge_notification_frame(parent, frame)
+		_notification_frames[-1] = parent
+		return
+	_flush_notification_frame(frame)
+
+
+func cancel_notification_batch() -> void:
+	if _notification_frames.is_empty():
+		return
+	_notification_frames.pop_back()
+
+
+func is_notification_batch_active() -> bool:
+	return not _notification_frames.is_empty()
 
 
 func bind_progress(
@@ -219,9 +246,9 @@ func emit_specimen_commit(
 		return
 
 	var key: String = _normalize_id(species_id)
-	fish_specimen_added.emit(key, specimen.duplicate_specimen())
-	fish_count_changed.emit(key, get_fish_count(key))
-	changed.emit()
+	_queue_fish_specimen_added(key, specimen)
+	_queue_fish_count_changed(key, get_fish_count(key))
+	_queue_changed()
 
 
 # Compatibility / debug helper. New real catches should use add_fish_specimen().
@@ -257,9 +284,9 @@ func remove_fish_specimen(
 		specimens.remove_at(index)
 		_store_or_erase_specimen_array(key, specimens)
 		_dirty = true
-		fish_specimen_removed.emit(key, removed)
-		fish_count_changed.emit(key, specimens.size())
-		changed.emit()
+		_queue_fish_specimen_removed(key, removed)
+		_queue_fish_count_changed(key, specimens.size())
+		_queue_changed()
 
 		if persist:
 			commit_changes()
@@ -428,8 +455,8 @@ func grant_lure(lure_or_id, amount: int = 1, persist: bool = true) -> int:
 	var next_count := get_lure_count(lure_id) + amount
 	lure_counts[key] = next_count
 	_dirty = true
-	lure_count_changed.emit(lure_id, next_count)
-	changed.emit()
+	_queue_lure_count_changed(lure_id, next_count)
+	_queue_changed()
 
 	if persist:
 		commit_changes()
@@ -454,8 +481,8 @@ func remove_lure(lure_or_id, amount: int = 1, persist: bool = true) -> bool:
 		lure_counts[key] = next_count
 
 	_dirty = true
-	lure_count_changed.emit(lure_id, next_count)
-	changed.emit()
+	_queue_lure_count_changed(lure_id, next_count)
+	_queue_changed()
 
 	if persist:
 		commit_changes()
@@ -480,8 +507,8 @@ func grant_rod(rod_or_id, amount: int = 1, persist: bool = true) -> int:
 	var next_count := get_rod_count(rod_id) + amount
 	rod_counts[key] = next_count
 	_dirty = true
-	rod_count_changed.emit(rod_id, next_count)
-	changed.emit()
+	_queue_rod_count_changed(rod_id, next_count)
+	_queue_changed()
 
 	if persist:
 		commit_changes()
@@ -506,8 +533,8 @@ func remove_rod(rod_or_id, amount: int = 1, persist: bool = true) -> bool:
 		rod_counts[key] = next_count
 
 	_dirty = true
-	rod_count_changed.emit(rod_id, next_count)
-	changed.emit()
+	_queue_rod_count_changed(rod_id, next_count)
+	_queue_changed()
 
 	if persist:
 		commit_changes()
@@ -546,8 +573,8 @@ func add_zenny(amount: int, persist: bool = true) -> int:
 		return get_zenny()
 	zenny_balance = maxi(zenny_balance + amount, 0)
 	_dirty = true
-	zenny_changed.emit(zenny_balance)
-	changed.emit()
+	_queue_zenny_changed(zenny_balance)
+	_queue_changed()
 	if persist:
 		commit_changes()
 	return zenny_balance
@@ -560,8 +587,8 @@ func spend_zenny(amount: int, persist: bool = true) -> bool:
 		return false
 	zenny_balance -= amount
 	_dirty = true
-	zenny_changed.emit(zenny_balance)
-	changed.emit()
+	_queue_zenny_changed(zenny_balance)
+	_queue_changed()
 	if persist:
 		commit_changes()
 	return true
@@ -570,8 +597,8 @@ func spend_zenny(amount: int, persist: bool = true) -> bool:
 func set_zenny(amount: int, persist: bool = true) -> void:
 	zenny_balance = maxi(amount, 0)
 	_dirty = true
-	zenny_changed.emit(zenny_balance)
-	changed.emit()
+	_queue_zenny_changed(zenny_balance)
+	_queue_changed()
 	if persist:
 		commit_changes()
 
@@ -606,7 +633,7 @@ func add_manillo_point_units(
 
 	_dirty = true
 	_emit_manillo_balance_changed()
-	changed.emit()
+	_queue_changed()
 
 	if persist:
 		commit_changes()
@@ -635,7 +662,7 @@ func set_manillo_balance(
 
 	_dirty = true
 	_emit_manillo_balance_changed()
-	changed.emit()
+	_queue_changed()
 
 	if persist:
 		commit_changes()
@@ -724,17 +751,230 @@ func restore_transaction_snapshot(
 		)
 	)
 
-	zenny_changed.emit(get_zenny())
+	_queue_zenny_changed(get_zenny())
 	_emit_manillo_balance_changed()
-	changed.emit()
+	_queue_changed()
 
 
 func _emit_manillo_balance_changed() -> void:
-	manillo_balance_changed.emit(
+	_queue_manillo_balance_changed(
 		get_manillo_point_units(),
 		get_manillo_stamps(),
 		get_manillo_stamp_cards()
 	)
+
+
+func _new_notification_frame() -> Dictionary:
+	return {
+		"fish_added": [],
+		"fish_removed": [],
+		"fish_counts": {},
+		"lure_counts": {},
+		"rod_counts": {},
+		"zenny_changed": false,
+		"zenny_balance": 0,
+		"manillo_changed": false,
+		"manillo_point_units": 0,
+		"manillo_stamps": 0,
+		"manillo_stamp_cards": 0,
+		"changed": false,
+	}
+
+
+func _queue_fish_specimen_added(
+	species_id: String,
+	specimen: FishingFishSpecimen
+) -> void:
+	if specimen == null:
+		return
+	var copy := specimen.duplicate_specimen()
+	if _notification_frames.is_empty():
+		fish_specimen_added.emit(species_id, copy)
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	var events: Array = frame.get("fish_added", [])
+	events.append({"species_id": species_id, "specimen": copy})
+	frame["fish_added"] = events
+	_notification_frames[-1] = frame
+
+
+func _queue_fish_specimen_removed(
+	species_id: String,
+	specimen: FishingFishSpecimen
+) -> void:
+	if specimen == null:
+		return
+	var copy := specimen.duplicate_specimen()
+	if _notification_frames.is_empty():
+		fish_specimen_removed.emit(species_id, copy)
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	var events: Array = frame.get("fish_removed", [])
+	events.append({"species_id": species_id, "specimen": copy})
+	frame["fish_removed"] = events
+	_notification_frames[-1] = frame
+
+
+func _queue_fish_count_changed(species_id: String, count: int) -> void:
+	if _notification_frames.is_empty():
+		fish_count_changed.emit(species_id, maxi(0, count))
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	var counts: Dictionary = frame.get("fish_counts", {})
+	counts[species_id] = maxi(0, count)
+	frame["fish_counts"] = counts
+	_notification_frames[-1] = frame
+
+
+func _queue_lure_count_changed(lure_id: StringName, count: int) -> void:
+	if _notification_frames.is_empty():
+		lure_count_changed.emit(lure_id, maxi(0, count))
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	var counts: Dictionary = frame.get("lure_counts", {})
+	counts[String(lure_id)] = maxi(0, count)
+	frame["lure_counts"] = counts
+	_notification_frames[-1] = frame
+
+
+func _queue_rod_count_changed(rod_id: StringName, count: int) -> void:
+	if _notification_frames.is_empty():
+		rod_count_changed.emit(rod_id, maxi(0, count))
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	var counts: Dictionary = frame.get("rod_counts", {})
+	counts[String(rod_id)] = maxi(0, count)
+	frame["rod_counts"] = counts
+	_notification_frames[-1] = frame
+
+
+func _queue_zenny_changed(balance: int) -> void:
+	if _notification_frames.is_empty():
+		zenny_changed.emit(maxi(0, balance))
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	frame["zenny_changed"] = true
+	frame["zenny_balance"] = maxi(0, balance)
+	_notification_frames[-1] = frame
+
+
+func _queue_manillo_balance_changed(
+	point_units: int,
+	stamps: int,
+	stamp_cards: int
+) -> void:
+	if _notification_frames.is_empty():
+		manillo_balance_changed.emit(
+			maxi(0, point_units),
+			maxi(0, stamps),
+			maxi(0, stamp_cards)
+		)
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	frame["manillo_changed"] = true
+	frame["manillo_point_units"] = maxi(0, point_units)
+	frame["manillo_stamps"] = maxi(0, stamps)
+	frame["manillo_stamp_cards"] = maxi(0, stamp_cards)
+	_notification_frames[-1] = frame
+
+
+func _queue_changed() -> void:
+	if _notification_frames.is_empty():
+		changed.emit()
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	frame["changed"] = true
+	_notification_frames[-1] = frame
+
+
+func _merge_notification_frame(
+	parent: Dictionary,
+	child: Dictionary
+) -> void:
+	for key in ["fish_added", "fish_removed"]:
+		var parent_events: Array = parent.get(key, [])
+		var child_events: Array = child.get(key, [])
+		parent_events.append_array(child_events)
+		parent[key] = parent_events
+	for key in ["fish_counts", "lure_counts", "rod_counts"]:
+		var parent_counts: Dictionary = parent.get(key, {})
+		var child_counts: Dictionary = child.get(key, {})
+		for raw_id in child_counts.keys():
+			parent_counts[raw_id] = int(child_counts[raw_id])
+		parent[key] = parent_counts
+	if bool(child.get("zenny_changed", false)):
+		parent["zenny_changed"] = true
+		parent["zenny_balance"] = int(child.get("zenny_balance", 0))
+	if bool(child.get("manillo_changed", false)):
+		parent["manillo_changed"] = true
+		parent["manillo_point_units"] = int(child.get("manillo_point_units", 0))
+		parent["manillo_stamps"] = int(child.get("manillo_stamps", 0))
+		parent["manillo_stamp_cards"] = int(child.get("manillo_stamp_cards", 0))
+	parent["changed"] = (
+		bool(parent.get("changed", false))
+		or bool(child.get("changed", false))
+	)
+
+
+func _flush_notification_frame(frame: Dictionary) -> void:
+	for event in frame.get("fish_added", []):
+		if event is Dictionary:
+			var specimen = event.get("specimen", null)
+			if specimen is FishingFishSpecimen:
+				fish_specimen_added.emit(
+					str(event.get("species_id", "")),
+					(specimen as FishingFishSpecimen).duplicate_specimen()
+				)
+	for event in frame.get("fish_removed", []):
+		if event is Dictionary:
+			var specimen = event.get("specimen", null)
+			if specimen is FishingFishSpecimen:
+				fish_specimen_removed.emit(
+					str(event.get("species_id", "")),
+					(specimen as FishingFishSpecimen).duplicate_specimen()
+				)
+	_emit_sorted_count_events(
+		frame.get("fish_counts", {}),
+		&"fish"
+	)
+	_emit_sorted_count_events(
+		frame.get("lure_counts", {}),
+		&"lure"
+	)
+	_emit_sorted_count_events(
+		frame.get("rod_counts", {}),
+		&"rod"
+	)
+	if bool(frame.get("zenny_changed", false)):
+		zenny_changed.emit(maxi(0, int(frame.get("zenny_balance", 0))))
+	if bool(frame.get("manillo_changed", false)):
+		manillo_balance_changed.emit(
+			maxi(0, int(frame.get("manillo_point_units", 0))),
+			maxi(0, int(frame.get("manillo_stamps", 0))),
+			maxi(0, int(frame.get("manillo_stamp_cards", 0)))
+		)
+	if bool(frame.get("changed", false)):
+		changed.emit()
+
+
+func _emit_sorted_count_events(
+	counts_value,
+	kind: StringName
+) -> void:
+	if not (counts_value is Dictionary):
+		return
+	var counts: Dictionary = counts_value
+	var ids: Array = counts.keys()
+	ids.sort()
+	for raw_id in ids:
+		var count: int = maxi(0, int(counts[raw_id]))
+		match kind:
+			&"fish":
+				fish_count_changed.emit(str(raw_id), count)
+			&"lure":
+				lure_count_changed.emit(StringName(str(raw_id)), count)
+			&"rod":
+				rod_count_changed.emit(StringName(str(raw_id)), count)
 
 
 # -----------------------------------------------------------------------------
@@ -763,7 +1003,7 @@ func repair_specimen_ids(persist: bool = true) -> int:
 
 	if repaired > 0:
 		_dirty = true
-		changed.emit()
+		_queue_changed()
 		if persist:
 			commit_changes()
 
@@ -859,7 +1099,7 @@ func load_from_disk() -> bool:
 				_add_legacy_placeholder(key, "")
 		_dirty = true
 
-	changed.emit()
+	_queue_changed()
 	return true
 
 
@@ -878,7 +1118,7 @@ func reset_inventory(delete_save: bool = true) -> void:
 
 	_dirty = true
 	commit_changes()
-	changed.emit()
+	_queue_changed()
 
 
 func _on_progress_catch_specimen_recorded(
@@ -1103,7 +1343,7 @@ func _remove_specimen_ids_transactional(selected_by_species: Dictionary) -> Dict
 			var specimen := value as FishingFishSpecimen
 			if specimen != null and ids.has(specimen.specimen_id):
 				removed.append(specimen.to_dictionary())
-				fish_specimen_removed.emit(key, specimen.duplicate_specimen())
+				_queue_fish_specimen_removed(key, specimen)
 			else:
 				kept.append(value)
 
@@ -1116,16 +1356,16 @@ func _remove_specimen_ids_transactional(selected_by_species: Dictionary) -> Dict
 
 	_dirty = true
 	for key in changed_species.keys():
-		fish_count_changed.emit(str(key), int(changed_species[key]))
-	changed.emit()
+		_queue_fish_count_changed(str(key), int(changed_species[key]))
+	_queue_changed()
 	return removed_by_species
 
 
 func _emit_species_count_changed(species_id: String) -> void:
 	var key := _normalize_id(species_id)
 	_dirty = true
-	fish_count_changed.emit(key, get_fish_count(key))
-	changed.emit()
+	_queue_fish_count_changed(key, get_fish_count(key))
+	_queue_changed()
 
 
 func _serialize_specimen_dictionary() -> Dictionary:

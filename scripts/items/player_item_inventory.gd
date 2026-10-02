@@ -12,6 +12,7 @@ var _metadata: Dictionary = {}
 var _save_path: String = DEFAULT_SAVE_PATH
 var _initialized: bool = false
 var _dirty: bool = false
+var _notification_frames: Array[Dictionary] = []
 
 
 func configure(save_path: String = "") -> void:
@@ -24,6 +25,43 @@ func initialize() -> void:
 		return
 	_initialized = true
 	load_from_disk()
+
+
+func begin_notification_batch() -> void:
+	_notification_frames.append({
+		"item_counts": {},
+		"changed": false,
+	})
+
+
+func commit_notification_batch() -> void:
+	if _notification_frames.is_empty():
+		return
+	var frame: Dictionary = _notification_frames.pop_back()
+	if not _notification_frames.is_empty():
+		var parent: Dictionary = _notification_frames[-1]
+		var parent_counts: Dictionary = parent.get("item_counts", {})
+		var frame_counts: Dictionary = frame.get("item_counts", {})
+		for raw_id in frame_counts.keys():
+			parent_counts[str(raw_id)] = int(frame_counts[raw_id])
+		parent["item_counts"] = parent_counts
+		parent["changed"] = (
+			bool(parent.get("changed", false))
+			or bool(frame.get("changed", false))
+		)
+		_notification_frames[-1] = parent
+		return
+	_flush_notification_frame(frame)
+
+
+func cancel_notification_batch() -> void:
+	if _notification_frames.is_empty():
+		return
+	_notification_frames.pop_back()
+
+
+func is_notification_batch_active() -> bool:
+	return not _notification_frames.is_empty()
 
 
 func get_save_path() -> String:
@@ -189,7 +227,7 @@ func restore_transaction_snapshot(
 		else {}
 	)
 	_dirty = bool(snapshot.get("dirty", true))
-	changed.emit(get_snapshot())
+	_queue_changed()
 	if persist:
 		commit_changes()
 
@@ -204,8 +242,8 @@ func reset_all(
 		_metadata.clear()
 	_dirty = true
 	for raw_id in old_ids:
-		item_count_changed.emit(StringName(str(raw_id)), 0)
-	changed.emit(get_snapshot())
+		_queue_item_count_changed(StringName(str(raw_id)), 0)
+	_queue_changed()
 	if persist:
 		commit_changes()
 
@@ -273,5 +311,41 @@ func _set_count_internal(
 	else:
 		_counts[clean_id] = clean_count
 	_dirty = true
-	item_count_changed.emit(StringName(clean_id), clean_count)
-	changed.emit(get_snapshot())
+	_queue_item_count_changed(StringName(clean_id), clean_count)
+	_queue_changed()
+
+
+func _queue_item_count_changed(
+	item_id: StringName,
+	count: int
+) -> void:
+	if _notification_frames.is_empty():
+		item_count_changed.emit(item_id, maxi(0, count))
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	var counts: Dictionary = frame.get("item_counts", {})
+	counts[String(item_id)] = maxi(0, count)
+	frame["item_counts"] = counts
+	_notification_frames[-1] = frame
+
+
+func _queue_changed() -> void:
+	if _notification_frames.is_empty():
+		changed.emit(get_snapshot())
+		return
+	var frame: Dictionary = _notification_frames[-1]
+	frame["changed"] = true
+	_notification_frames[-1] = frame
+
+
+func _flush_notification_frame(frame: Dictionary) -> void:
+	var counts: Dictionary = frame.get("item_counts", {})
+	var ids: Array = counts.keys()
+	ids.sort()
+	for raw_id in ids:
+		item_count_changed.emit(
+			StringName(str(raw_id)),
+			maxi(0, int(counts[raw_id]))
+		)
+	if bool(frame.get("changed", false)):
+		changed.emit(get_snapshot())

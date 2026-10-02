@@ -53,5 +53,4 @@ prototype gathering circuit.
 
 ## Runtime QA target
 
-Item Backend QA is expanded from **6** checks to **10**. Existing Beach
-Crafting QA should remain **14/14**.
+Item Backend QA now contains **12** checks. The two transaction-integrity checks verify that cross-store observers only see final committed state and that failed durable commits publish no item events. Existing Beach Crafting QA should remain **14/14**.

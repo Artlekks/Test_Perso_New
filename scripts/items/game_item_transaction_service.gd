@@ -80,6 +80,7 @@ func consume_player_items(
 	var snapshot: Dictionary = (
 		player_inventory.create_transaction_snapshot()
 	)
+	player_inventory.begin_notification_batch()
 	var result: Dictionary = player_inventory.consume_costs(
 		evaluation.get("normalized_costs", {}),
 		false
@@ -89,6 +90,7 @@ func consume_player_items(
 			snapshot,
 			false
 		)
+		player_inventory.cancel_notification_batch()
 		result["reason"] = "consume_failed"
 		return result
 
@@ -97,12 +99,14 @@ func consume_player_items(
 			snapshot,
 			false
 		)
+		player_inventory.cancel_notification_batch()
 		result["success"] = false
 		result["reason"] = "save_failed"
 		return result
 
 	result["reason"] = "completed"
 	result["context"] = String(context)
+	player_inventory.commit_notification_batch()
 	_emit_completed(result)
 	return result
 
@@ -147,6 +151,7 @@ func grant_player_items(
 	var snapshot: Dictionary = (
 		player_inventory.create_transaction_snapshot()
 	)
+	player_inventory.begin_notification_batch()
 	for raw_id in normalized.keys():
 		var grant_item_id := StringName(str(raw_id))
 		var grant_amount: int = int(normalized[raw_id])
@@ -158,11 +163,13 @@ func grant_player_items(
 			snapshot,
 			false
 		)
+		player_inventory.cancel_notification_batch()
 		result["reason"] = "save_failed"
 		return result
 
 	result["success"] = true
 	result["reason"] = "completed"
+	player_inventory.commit_notification_batch()
 	_emit_completed(result)
 	return result
 
@@ -211,6 +218,7 @@ func exchange_player_items(
 	var snapshot: Dictionary = (
 		player_inventory.create_transaction_snapshot()
 	)
+	player_inventory.begin_notification_batch()
 	var consume_result: Dictionary = player_inventory.consume_costs(
 		evaluation.get("normalized_costs", {}),
 		false
@@ -220,6 +228,7 @@ func exchange_player_items(
 			snapshot,
 			false
 		)
+		player_inventory.cancel_notification_batch()
 		return {
 			"success": false,
 			"reason": "consume_failed",
@@ -237,6 +246,7 @@ func exchange_player_items(
 			snapshot,
 			false
 		)
+		player_inventory.cancel_notification_batch()
 		return {
 			"success": false,
 			"reason": "save_failed",
@@ -252,6 +262,7 @@ func exchange_player_items(
 		"granted": granted.duplicate(true),
 		"context": String(context),
 	}
+	player_inventory.commit_notification_batch()
 	_emit_completed(result)
 	return result
 
@@ -312,6 +323,7 @@ func sell_player_item_for_zenny(
 		fishing_inventory.create_transaction_snapshot()
 	)
 	result["zenny_before"] = fishing_inventory.get_zenny()
+	_begin_cross_inventory_notifications()
 
 	var consumed: Dictionary = player_inventory.consume_costs(
 		{String(item_id): amount},
@@ -322,6 +334,7 @@ func sell_player_item_for_zenny(
 			player_snapshot,
 			false
 		)
+		_cancel_cross_inventory_notifications()
 		result["reason"] = "inventory_changed"
 		return result
 
@@ -331,14 +344,14 @@ func sell_player_item_for_zenny(
 
 	if persist:
 		if not player_inventory.commit_changes():
-			_restore_cross_inventory_sale(
+			_rollback_cross_inventory_sale(
 				player_snapshot,
 				fishing_snapshot
 			)
 			result["reason"] = "item_save_failed"
 			return result
 		if not fishing_inventory.commit_changes():
-			_restore_cross_inventory_sale(
+			_rollback_cross_inventory_sale(
 				player_snapshot,
 				fishing_snapshot
 			)
@@ -350,11 +363,27 @@ func sell_player_item_for_zenny(
 	result["remaining_count"] = player_inventory.get_count(item_id)
 	result["zenny_after"] = fishing_inventory.get_zenny()
 	result["consumed"] = consumed.get("consumed", {}).duplicate(true)
+	_commit_cross_inventory_notifications()
 	_emit_completed(result)
 	return result
 
 
-func _restore_cross_inventory_sale(
+func _begin_cross_inventory_notifications() -> void:
+	player_inventory.begin_notification_batch()
+	fishing_inventory.begin_notification_batch()
+
+
+func _commit_cross_inventory_notifications() -> void:
+	player_inventory.commit_notification_batch()
+	fishing_inventory.commit_notification_batch()
+
+
+func _cancel_cross_inventory_notifications() -> void:
+	player_inventory.cancel_notification_batch()
+	fishing_inventory.cancel_notification_batch()
+
+
+func _rollback_cross_inventory_sale(
 	player_snapshot: Dictionary,
 	fishing_snapshot: Dictionary
 ) -> void:
@@ -369,6 +398,7 @@ func _restore_cross_inventory_sale(
 	# disk, so rewrite both restored snapshots rather than relying on dirty flags.
 	player_inventory.save_to_disk()
 	fishing_inventory.save_to_disk()
+	_cancel_cross_inventory_notifications()
 
 
 func _emit_completed(result: Dictionary) -> void:
