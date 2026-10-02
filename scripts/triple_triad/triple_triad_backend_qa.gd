@@ -29,6 +29,15 @@ const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_
 const WorldRewardLedgerScript = preload("res://scripts/triple_triad/triple_triad_world_reward_ledger.gd")
 const SessionControllerScript = preload("res://scripts/triple_triad/triple_triad_session_controller.gd")
 const MatchFlowControllerScript = preload("res://scripts/triple_triad/triple_triad_match_flow_controller.gd")
+const MatchResolutionControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_match_resolution_controller.gd"
+)
+const PresentationControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_presentation_controller.gd"
+)
+const InputControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_input_controller.gd"
+)
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -144,6 +153,18 @@ class MockAIProfile:
 	var randomness: float = 0.0
 
 
+class MockQuantityStore:
+	extends RefCounted
+
+	var quantities: Dictionary = {}
+
+	func _init(initial_quantities: Dictionary = {}) -> void:
+		quantities = initial_quantities.duplicate(true)
+
+	func get_quantity_by_id(card_id: StringName) -> int:
+		return maxi(0, int(quantities.get(String(card_id), 0)))
+
+
 var _results: Array[Dictionary] = []
 
 
@@ -197,6 +218,15 @@ func run_all() -> Dictionary:
 	_run("Match flow owns setup and deal handoff", _test_match_flow_setup_and_deal)
 	_run("Match flow owns player-to-AI turn handoff", _test_match_flow_turn_handoff)
 	_run("Match flow owns surrender and result destinations", _test_match_flow_surrender_and_result)
+	_run("Match resolution filters reward candidates", _test_match_resolution_reward_candidates)
+	_run("Match resolution reuses persisted reward choice", _test_match_resolution_reward_presentation)
+	_run("Match resolution builds deterministic transfer state", _test_match_resolution_transfer_state)
+	_run("Presentation marks player cards as blue-owned", _test_presentation_player_outline)
+	_run("Presentation marks opponent cards as red-owned", _test_presentation_opponent_outline)
+	_run("Presentation leaves empty slots without ownership", _test_presentation_empty_outline)
+	_run("Input controller maps gameplay keys", _test_input_controller_key_mapping)
+	_run("Input controller isolates Shift+F10 campaign QA", _test_input_controller_campaign_qa)
+	_run("Input controller clamps board navigation", _test_input_controller_board_navigation)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -1978,5 +2008,202 @@ func _test_match_flow_surrender_and_result() -> Dictionary:
 		draw_flow.prepare_result_destination(OWNER_NONE) == &"replay"
 		and draw_session.round_number == 2,
 		"Draw result must increment the round and route to replay."
+	)
+
+
+
+func _test_match_resolution_reward_candidates() -> Dictionary:
+	var resolver = MatchResolutionControllerScript.new()
+	var profile = OpponentProfileScript.new()
+	profile.reward_card_ids = PackedStringArray([
+		"reward_b",
+		"reward_missing",
+	])
+	var opponent_cards: Array = [
+		MockCard.new(&"reward_a", 2, 2, 2, 2),
+		MockCard.new(&"reward_b", 3, 3, 3, 3),
+		MockCard.new(&"reward_c", 4, 4, 4, 4),
+		MockCard.new(&"reward_d", 5, 5, 5, 5),
+		MockCard.new(&"reward_e", 6, 6, 6, 6),
+	]
+	var candidate_ids: PackedStringArray = resolver.player_reward_candidate_ids(
+		profile,
+		null,
+		opponent_cards
+	)
+	return _ok(
+		candidate_ids.size() == 1
+		and candidate_ids[0] == "reward_b",
+		"Reward candidates must stay limited to authored cards actually present in the opponent hand."
+	)
+
+
+func _test_match_resolution_reward_presentation() -> Dictionary:
+	var qa_path := "user://triple_triad_match_resolution_controller_qa.cfg"
+	var journal = MatchResolutionJournalScript.new()
+	journal.initialize(qa_path)
+	journal.clear()
+
+	var player_cards: Array = []
+	var opponent_cards: Array = []
+	var player_ids := PackedStringArray()
+	var opponent_ids := PackedStringArray()
+	for index in range(5):
+		var player_id := StringName("stake_%d" % index)
+		var opponent_id := StringName("reward_%d" % index)
+		player_cards.append(MockCard.new(player_id, 3, 3, 3, 3))
+		opponent_cards.append(MockCard.new(opponent_id, 3, 3, 3, 3))
+		player_ids.append(String(player_id))
+		opponent_ids.append(String(opponent_id))
+
+	var started: bool = journal.begin_resolution({
+		"opponent_id": "beach_trader",
+		"winner": OWNER_OPPONENT,
+		"result_reason": "qa",
+		"surrendered": false,
+		"player_card_ids": player_ids,
+		"opponent_card_ids": opponent_ids,
+		"eligible_reward_ids": PackedStringArray(),
+		"forced_loss_card_id": "stake_2",
+		"competition_change": {},
+	})
+	if not started:
+		journal.clear()
+		return _ok(false, "Resolution controller QA journal could not start.")
+
+	var resolver = MatchResolutionControllerScript.new()
+	resolver.initialize(
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		journal,
+		StakePolicyScript.new(),
+		null,
+		null
+	)
+	var presentation: Dictionary = resolver.prepare_reward_presentation(
+		OWNER_OPPONENT,
+		null,
+		&"beach_trader",
+		player_cards,
+		opponent_cards,
+		null
+	)
+	var valid: bool = (
+		bool(presentation.get("used_journal", false))
+		and int(presentation.get("opponent_take_index", -1)) == 2
+	)
+	journal.clear()
+	return _ok(
+		valid,
+		"Persisted mandatory loss selection must survive into reward presentation."
+	)
+
+
+func _test_match_resolution_transfer_state() -> Dictionary:
+	var player_store = MockQuantityStore.new({"transfer_card": 2})
+	var opponent_store = MockQuantityStore.new({"transfer_card": 1})
+	var resolver = MatchResolutionControllerScript.new()
+	resolver.initialize(
+		null,
+		player_store,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		StakePolicyScript.new(),
+		null,
+		null
+	)
+	var card = MockCard.new(&"transfer_card", 5, 5, 5, 5)
+	var state: Dictionary = resolver.prepare_reward_transfer_state(
+		card,
+		OWNER_PLAYER,
+		&"qa_opponent",
+		opponent_store
+	)
+	return _ok(
+		str(state.get("card_id", "")) == "transfer_card"
+		and int(state.get("player_before", -1)) == 2
+		and int(state.get("opponent_before", -1)) == 1
+		and int(state.get("desired_player", -1)) == 3
+		and int(state.get("desired_opponent", -1)) == 0
+		and int(state.get("desired_acquired", -1)) == 1
+		and int(state.get("desired_cards_won", -1)) == 1,
+		"Reward transfer state must describe the exact post-win ownership target before mutation."
+	)
+
+func _test_presentation_player_outline() -> Dictionary:
+	var presenter = PresentationControllerScript.new()
+	return _ok(
+		presenter.owner_outline_visible_for(OWNER_PLAYER, true)
+		and presenter.owner_outline_kind(OWNER_PLAYER, true) == &"player",
+		"Player-owned cards must expose the player ownership outline."
+	)
+
+
+func _test_presentation_opponent_outline() -> Dictionary:
+	var presenter = PresentationControllerScript.new()
+	return _ok(
+		presenter.owner_outline_visible_for(OWNER_OPPONENT, true)
+		and presenter.owner_outline_kind(OWNER_OPPONENT, true) == &"opponent",
+		"Opponent-owned cards must expose the opponent ownership outline."
+	)
+
+
+func _test_presentation_empty_outline() -> Dictionary:
+	var presenter = PresentationControllerScript.new()
+	return _ok(
+		not presenter.owner_outline_visible_for(OWNER_NONE, false)
+		and presenter.owner_outline_kind(OWNER_NONE, false) == &"none",
+		"Empty board slots must not display an ownership outline."
+	)
+
+func _qa_key(key: Key, shift_pressed: bool = false) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.pressed = true
+	event.keycode = key
+	event.physical_keycode = key
+	event.shift_pressed = shift_pressed
+	return event
+
+
+func _test_input_controller_key_mapping() -> Dictionary:
+	var controller = InputControllerScript.new()
+	return _ok(
+		controller.action_for_event(_qa_key(KEY_K), true) == InputControllerScript.ACTION_CONFIRM
+		and controller.action_for_event(_qa_key(KEY_I), true) == InputControllerScript.ACTION_BACK
+		and controller.action_for_event(_qa_key(KEY_R), true) == InputControllerScript.ACTION_ROTATE
+		and controller.hand_step(InputControllerScript.ACTION_UP) == -1
+		and controller.hand_step(InputControllerScript.ACTION_DOWN) == 1,
+		"Input controller must preserve the authored confirm/back/rotate and hand-navigation bindings."
+	)
+
+
+func _test_input_controller_campaign_qa() -> Dictionary:
+	var controller = InputControllerScript.new()
+	var shifted_f10 := _qa_key(KEY_F10, true)
+	return _ok(
+		controller.action_for_event(shifted_f10, true) == InputControllerScript.ACTION_CAMPAIGN_QA
+		and controller.action_for_event(shifted_f10, false) == InputControllerScript.ACTION_DEBUG,
+		"Shift+F10 must route to campaign QA only in debug-capable builds without stealing normal F10 elsewhere."
+	)
+
+
+func _test_input_controller_board_navigation() -> Dictionary:
+	var controller = InputControllerScript.new()
+	return _ok(
+		controller.move_board_cursor(0, InputControllerScript.ACTION_LEFT) == 0
+		and controller.move_board_cursor(0, InputControllerScript.ACTION_UP) == 0
+		and controller.move_board_cursor(4, InputControllerScript.ACTION_RIGHT) == 5
+		and controller.move_board_cursor(4, InputControllerScript.ACTION_DOWN) == 7
+		and controller.move_board_cursor(8, InputControllerScript.ACTION_RIGHT) == 8,
+		"Board navigation must stay inside the 3x3 grid while preserving directional movement."
 	)
 

@@ -234,6 +234,7 @@ func _refresh_rows() -> void:
 			opponent_view.visible = true
 			opponent_view.configure(_opponent_cards[index], OWNER_OPPONENT, false)
 			opponent_view.scale = ROW_SCALE
+			opponent_view.set_owner_outline_visible(true)
 			opponent_view.set_selected(false)
 		else:
 			opponent_view.visible = false
@@ -246,6 +247,7 @@ func _refresh_rows() -> void:
 			player_view.visible = true
 			player_view.configure(_player_cards[index], OWNER_PLAYER, false)
 			player_view.scale = ROW_SCALE
+			player_view.set_owner_outline_visible(true)
 			player_view.set_selected(false)
 		else:
 			player_view.visible = false
@@ -457,6 +459,7 @@ func _animate_card_transfer(
 	_focus_card = CardViewScene.instantiate() as Control
 	add_child(_focus_card)
 	_focus_card.configure(card, new_owner, false)
+	_focus_card.set_owner_outline_visible(true)
 	_focus_card.set_selected(false)
 	_focus_card.pivot_offset = _focus_card.size * 0.5
 	_focus_card.scale = ROW_SCALE

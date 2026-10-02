@@ -127,3 +127,51 @@ func _start_deal_card(view: Control, index: int, hand_step_y: float) -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(view, "position", target_position, deal_travel_seconds)
 	tween.parallel().tween_property(view, "modulate", Color.WHITE, deal_travel_seconds * 0.92)
+
+
+func reset_transition_fade(fade: ColorRect) -> void:
+	if fade == null:
+		return
+	fade.visible = false
+	fade.modulate = Color(1, 1, 1, 0)
+
+
+func fade_to_cover(fade: ColorRect, duration_seconds: float) -> void:
+	if fade == null:
+		return
+	fade.visible = true
+	fade.modulate = Color(1, 1, 1, 0)
+	var tween: Tween = fade.create_tween()
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(
+		fade,
+		"modulate",
+		Color.WHITE,
+		maxf(duration_seconds, 0.0)
+	)
+	await tween.finished
+
+
+func fade_from_cover(fade: ColorRect, duration_seconds: float) -> void:
+	if fade == null:
+		return
+	fade.visible = true
+	fade.modulate = Color.WHITE
+	var tween: Tween = fade.create_tween()
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(
+		fade,
+		"modulate",
+		Color(1, 1, 1, 0),
+		maxf(duration_seconds, 0.0)
+	)
+	await tween.finished
+	fade.visible = false
+
+
+func wait_for_settle(duration_seconds: float) -> void:
+	if duration_seconds <= 0.0:
+		return
+	await get_tree().create_timer(duration_seconds, true).timeout

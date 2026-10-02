@@ -239,7 +239,11 @@ func _refresh_style() -> void:
 		return
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0)
-	var border_width: int = 3 if owner_outline_visible or selected else 0
+	var border_width: int = 0
+	if owner_outline_visible:
+		border_width = 4
+	elif selected:
+		border_width = 3
 	style.border_width_left = border_width
 	style.border_width_top = border_width
 	style.border_width_right = border_width
