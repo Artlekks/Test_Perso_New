@@ -199,9 +199,11 @@ func _fish_line() -> String:
 		if not (raw_node is FishShadowActor):
 			continue
 		var fish := raw_node as FishShadowActor
-		var offset: Vector3 = fish.global_position - bait.global_position
-		offset.y = 0.0
-		var distance: float = offset.length()
+		var fish_delta: Vector3 = (
+			fish.global_position - bait.global_position
+		)
+		fish_delta.y = 0.0
+		var distance: float = fish_delta.length()
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearest = fish
@@ -209,16 +211,13 @@ func _fish_line() -> String:
 	if nearest == null:
 		return "FISH    no visible shadow"
 
-	var state: String = (
-		nearest.get_pre_bite_state_name()
-		if nearest.has_method("get_pre_bite_state_name")
-		else "?"
-	)
-	var interested: bool = (
-		nearest.is_interested_in_bait()
-		if nearest.has_method("is_interested_in_bait")
-		else false
-	)
+	var state: String = "?"
+	if nearest.has_method("get_pre_bite_state_name"):
+		state = nearest.get_pre_bite_state_name()
+
+	var interested: bool = false
+	if nearest.has_method("is_interested_in_bait"):
+		interested = nearest.is_interested_in_bait()
 	return "FISH    nearest %.2fm    %s    INTEREST %s" % [
 		nearest_distance,
 		state,
@@ -252,11 +251,15 @@ func _get_active_bait() -> Node3D:
 		return null
 
 	var candidate = caster.get("active_bait")
-	return candidate as Node3D if candidate is Node3D else null
+	if candidate is Node3D:
+		return candidate as Node3D
+	return null
 
 
 func _signed(value: int) -> String:
-	return "+%d" % value if value > 0 else str(value)
+	if value > 0:
+		return "+%d" % value
+	return str(value)
 
 
 func _is_key_press(event: InputEvent) -> bool:

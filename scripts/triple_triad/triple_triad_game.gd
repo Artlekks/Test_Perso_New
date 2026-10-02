@@ -44,6 +44,7 @@ const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_
 const CampaignQAHarnessScript = preload("res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd")
 const CampaignQAMenuScene = preload("res://actors/TripleTriadCampaignQAMenu.tscn")
 const PlaytestRecorderScript = preload("res://scripts/triple_triad/triple_triad_playtest_recorder.gd")
+const SurrenderConfirmScene = preload("res://actors/TripleTriadSurrenderConfirm.tscn")
 
 const BACKEND_VERSION := "2.7.0"
 
@@ -60,6 +61,7 @@ const PHASE_AI := 5
 const PHASE_RESULT := 6
 const PHASE_REWARD := 7
 const PHASE_DECK_SETUP := 8
+const PHASE_SURRENDER_CONFIRM := 9
 
 const HAND_STEP_Y := 47.0
 const HAND_SELECTED_X_OFFSET := -8.0
@@ -201,6 +203,8 @@ var _pending_competition_change: Dictionary = {}
 var _campaign_qa_harness = CampaignQAHarnessScript.new()
 var _campaign_qa_menu: CanvasLayer = null
 var _qa_playtest_recorder = PlaytestRecorderScript.new()
+var _surrender_confirm: Control = null
+var _surrender_resume_phase: int = PHASE_CLOSED
 
 
 func _ready() -> void:
@@ -210,6 +214,7 @@ func _ready() -> void:
 	_apply_card_game_visual_layout()
 	_build_match_hud()
 	_build_result_overlay()
+	_build_surrender_confirm()
 	_set_match_skin_visible(false)
 	root.visible = false
 	transition_fade.visible = false
@@ -615,6 +620,18 @@ func _is_campaign_qa_toggle(event: InputEvent) -> bool:
 			or key_event.physical_keycode == KEY_F10
 		)
 	)
+
+
+func _build_surrender_confirm() -> void:
+	if _surrender_confirm != null:
+		return
+	var instance = SurrenderConfirmScene.instantiate()
+	if not (instance is Control):
+		return
+	_surrender_confirm = instance as Control
+	_surrender_confirm.z_index = 4000
+	root.add_child(_surrender_confirm)
+	_surrender_confirm.call("close_confirm")
 
 
 func _apply_card_game_visual_layout() -> void:
@@ -1889,7 +1906,9 @@ func _get_competition_locked_deck_cards() -> Array:
 	)
 	for raw_id in raw_ids:
 		var card_id := StringName(str(raw_id))
-		var card = card_catalog.get_card_by_id(card_id) if card_catalog != null else null
+		var card = null
+		if card_catalog != null:
+			card = card_catalog.get_card_by_id(card_id)
 		if card == null:
 			return []
 		if (
@@ -2156,6 +2175,9 @@ func close_game() -> void:
 	reward_view.close_reward()
 	debug_menu.close_menu()
 	deck_setup.close_setup()
+	if _surrender_confirm != null:
+		_surrender_confirm.call("close_confirm")
+	_surrender_resume_phase = PHASE_CLOSED
 	transition_fade.visible = false
 	transition_fade.modulate = Color(1, 1, 1, 0)
 	if _result_dim != null:
@@ -2202,6 +2224,11 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if _phase == PHASE_DECK_SETUP:
+		return
+
+	if _phase == PHASE_SURRENDER_CONFIRM:
+		_handle_surrender_confirm_input(event)
+		_accept_input()
 		return
 
 	# F10 belongs to the card-game QA overlay while Triple Triad is open. The
@@ -2320,6 +2347,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
+	if _surrender_confirm != null:
+		_surrender_confirm.call("close_confirm")
+	_surrender_resume_phase = PHASE_CLOSED
 	_set_match_skin_visible(true)
 	reward_view.close_reward()
 	result_label.visible = false
@@ -2499,9 +2529,54 @@ func _request_surrender() -> void:
 		return
 	if _phase not in [PHASE_SELECT_CARD, PHASE_AI]:
 		return
+
+	_surrender_resume_phase = _phase
+	ai_timer.stop()
+	_phase = PHASE_SURRENDER_CONFIRM
+	if _surrender_confirm != null:
+		_surrender_confirm.call("open_confirm")
+
+
+func _handle_surrender_confirm_input(event: InputEvent) -> void:
+	if _surrender_confirm == null:
+		_cancel_surrender_confirmation()
+		return
+
+	if _is_left(event) or _is_right(event) or _is_up(event) or _is_down(event):
+		_surrender_confirm.call("move_selection", 1)
+		return
+
+	if _is_back(event):
+		_cancel_surrender_confirmation()
+		return
+
+	if _is_confirm(event):
+		if bool(_surrender_confirm.call("is_yes_selected")):
+			_confirm_surrender()
+		else:
+			_cancel_surrender_confirmation()
+
+
+func _confirm_surrender() -> void:
+	if _surrender_confirm != null:
+		_surrender_confirm.call("close_confirm")
+	_surrender_resume_phase = PHASE_CLOSED
 	_surrendered = true
 	message_label.text = "SURRENDER"
 	_finish_match(OWNER_OPPONENT, &"surrender")
+
+
+func _cancel_surrender_confirmation() -> void:
+	if _surrender_confirm != null:
+		_surrender_confirm.call("close_confirm")
+	var resume_phase: int = _surrender_resume_phase
+	_surrender_resume_phase = PHASE_CLOSED
+	if resume_phase not in [PHASE_SELECT_CARD, PHASE_AI]:
+		resume_phase = PHASE_SELECT_CARD
+	_phase = resume_phase
+	_refresh_views()
+	if resume_phase == PHASE_AI:
+		_schedule_ai()
 
 
 func _finish_match(
@@ -3396,10 +3471,12 @@ func _resume_pending_match_resolution() -> void:
 		_match_resolution_journal.clear()
 		return
 
-	var profile = opponent_registry.call(
-		"get_opponent",
-		opponent_id
-	) if opponent_registry != null else null
+	var profile = null
+	if opponent_registry != null:
+		profile = opponent_registry.call(
+			"get_opponent",
+			opponent_id
+		)
 	var player_cards: Array = _cards_from_ids(
 		pending.get(
 			"player_card_ids",
@@ -4242,10 +4319,12 @@ func _continue_active_competition_round() -> bool:
 		abandon_active_competition()
 		return false
 
-	var profile = opponent_registry.call(
-		"get_opponent",
-		next_opponent_id
-	) if opponent_registry != null else null
+	var profile = null
+	if opponent_registry != null:
+		profile = opponent_registry.call(
+			"get_opponent",
+			next_opponent_id
+		)
 	if profile == null:
 		push_error(
 			"TripleTriadGame: tournament next opponent '%s' is missing."
