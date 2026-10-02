@@ -27,7 +27,6 @@ const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/de
 const EncounterRecordsScript = preload("res://scripts/triple_triad/triple_triad_encounter_records.gd")
 const StateAPIScript = preload("res://scripts/triple_triad/triple_triad_state_api.gd")
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
-const MatchHUDScene = preload("res://actors/TripleTriadMatchHUD.tscn")
 const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
 const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
@@ -43,7 +42,6 @@ const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_
 const CampaignQAHarnessScript = preload("res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd")
 const CampaignQAMenuScene = preload("res://actors/TripleTriadCampaignQAMenu.tscn")
 const PlaytestRecorderScript = preload("res://scripts/triple_triad/triple_triad_playtest_recorder.gd")
-const SurrenderConfirmScene = preload("res://actors/TripleTriadSurrenderConfirm.tscn")
 const SessionControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_session_controller.gd"
 )
@@ -58,6 +56,9 @@ const PresentationControllerScript = preload(
 )
 const InputControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_input_controller.gd"
+)
+const UIFlowControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_ui_flow_controller.gd"
 )
 
 const BACKEND_VERSION := "2.8.0"
@@ -81,11 +82,7 @@ const HAND_STEP_Y := 47.0
 const CAPTURE_SETTLE_SECONDS := 0.24
 const RESULT_FADE_IN_SECONDS := 0.24
 const RESULT_FADE_OUT_SECONDS := 0.30
-const RESULT_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.56)
 
-const CARD_GAME_BACKGROUND = preload(
-	"res://assets/ui/triple_triad/card_game/CardGame_Background.png"
-)
 @export var card_catalog: Resource
 @export var rule_set: Resource
 @export var region_profile: Resource
@@ -139,6 +136,7 @@ var _session = SessionControllerScript.new()
 var _match_flow = MatchFlowControllerScript.new()
 var _presentation = PresentationControllerScript.new()
 var _input_controller = InputControllerScript.new()
+var _ui_flow = UIFlowControllerScript.new()
 var _selected_hand_index: int = 0
 var _selected_cell_index: int = 4
 var _starting_player_cards: Array = []
@@ -168,9 +166,6 @@ var _state_api = null
 var _stake_policy = StakePolicyScript.new()
 var _backend_ready: bool = false
 var _backend_errors: PackedStringArray = PackedStringArray()
-var _match_hud: Control = null
-var _default_backdrop_texture: Texture2D = null
-var _result_dim: ColorRect = null
 var _fishing_salvage_bridge: Node = null
 var _world_acquisition_catalog = null
 var _world_reward_ledger = null
@@ -189,20 +184,33 @@ var _pending_competition_change: Dictionary = {}
 var _campaign_qa_harness = CampaignQAHarnessScript.new()
 var _campaign_qa_menu: CanvasLayer = null
 var _qa_playtest_recorder = PlaytestRecorderScript.new()
-var _surrender_confirm: Control = null
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_campaign_qa_menu()
-	_default_backdrop_texture = backdrop.texture
-	_apply_card_game_visual_layout()
-	_build_match_hud()
-	_build_result_overlay()
-	_build_surrender_confirm()
-	_set_match_skin_visible(false)
-	root.visible = false
-	animation_director.reset_transition_fade(transition_fade)
+	_ui_flow.initialize({
+		"root": root,
+		"backdrop": backdrop,
+		"grid_artwork": grid_artwork,
+		"opponent_score_digits": opponent_score_label,
+		"player_score_digits": player_score_label,
+		"turn_label": turn_label,
+		"message_label": message_label,
+		"help_label": help_label,
+		"info_panel": info_panel,
+		"info_label": info_label,
+		"selection_arrow": selection_arrow,
+		"turn_arrow": turn_arrow,
+		"result_label": result_label,
+		"reward_view": reward_view,
+		"transition_fade": transition_fade,
+		"animation_director": animation_director,
+		"debug_menu": debug_menu,
+		"deck_setup": deck_setup,
+		"player_hand_container": player_hand_container,
+	})
+	_ui_flow.prepare_closed_state()
 	_match = MatchScript.new()
 	_ai = AIScript.new()
 	_rng.randomize()
@@ -609,78 +617,6 @@ func _reload_scene_after_campaign_qa() -> void:
 		return
 	tree.paused = false
 	tree.reload_current_scene()
-
-
-func _build_surrender_confirm() -> void:
-	if _surrender_confirm != null:
-		return
-	var instance = SurrenderConfirmScene.instantiate()
-	if not (instance is Control):
-		return
-	_surrender_confirm = instance as Control
-	_surrender_confirm.z_index = 4000
-	root.add_child(_surrender_confirm)
-	_surrender_confirm.call("close_confirm")
-
-
-func _apply_card_game_visual_layout() -> void:
-	# The supplied card-game background now contains the hand slots, board backs,
-	# frame, and lower information shell as one authored texture. Runtime UI only
-	# adds live cards/text on top; no second slot-guide texture is composited.
-	grid_artwork.visible = false
-	# Board/OpponentHand/PlayerHand layout now lives in TripleTriadGame.tscn.
-	# Move those nodes directly in the 2D editor; runtime no longer overwrites
-	# their positions/board scale here.
-
-	# Retire the old prototype HUD pieces. The dedicated match HUD owns scores,
-	# turn status, region trait, and selected-card information.
-	info_panel.visible = false
-	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	opponent_score_label.get_parent().visible = false
-	player_score_label.get_parent().visible = false
-	message_label.visible = false
-	help_label.visible = false
-
-	backdrop.z_index = -100
-
-
-func _build_match_hud() -> void:
-	if _match_hud != null:
-		return
-	_match_hud = MatchHUDScene.instantiate() as Control
-	_match_hud.z_index = 580
-	root.add_child(_match_hud)
-	_match_hud.visible = false
-
-
-func _build_result_overlay() -> void:
-	if _result_dim != null:
-		return
-	_result_dim = ColorRect.new()
-	_result_dim.name = "ResultDim"
-	_result_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_result_dim.color = RESULT_DIM_COLOR
-	_result_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_result_dim.z_index = 790
-	_result_dim.visible = false
-	root.add_child(_result_dim)
-
-	# Keep the authored result label in the center, but make it read more strongly
-	# against the dimmed board.
-	result_label.add_theme_font_size_override("font_size", 40)
-	result_label.add_theme_constant_override("outline_size", 7)
-
-
-func _set_match_skin_visible(enabled: bool) -> void:
-	if backdrop != null:
-		if enabled:
-			backdrop.texture = CARD_GAME_BACKGROUND
-		else:
-			backdrop.texture = _default_backdrop_texture
-	if _match_hud != null:
-		_match_hud.visible = enabled
-	if not enabled and _result_dim != null:
-		_result_dim.visible = false
 
 
 func run_backend_qa() -> Dictionary:
@@ -1855,7 +1791,7 @@ func open_active_competition_match() -> bool:
 	_competition_match_active = true
 	if locked_cards.size() == 5:
 		_active_player_deck = locked_cards.duplicate()
-		deck_setup.close_setup()
+		_ui_flow.close_deck_setup()
 		_start_new_match(_active_player_deck)
 	return true
 
@@ -2137,9 +2073,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		_active_opponent_profile
 	)
 	_invalidate_state_api("opponent_loaded")
-	root.visible = true
-	_set_match_skin_visible(false)
-	deck_setup.open_setup(
+	_ui_flow.open_deck_setup(
 		card_catalog,
 		_progression.get_deck_budget(player_deck_budget) if _progression != null else player_deck_budget,
 		_progression.get_rank_number() if _progression != null else player_card_rank,
@@ -2155,18 +2089,9 @@ func close_game() -> void:
 		return
 	var restore_pause: bool = _session.previous_pause
 	ai_timer.stop()
-	reward_view.close_reward()
-	debug_menu.close_menu()
-	deck_setup.close_setup()
-	if _surrender_confirm != null:
-		_surrender_confirm.call("close_confirm")
-	animation_director.reset_transition_fade(transition_fade)
-	if _result_dim != null:
-		_result_dim.visible = false
+	_ui_flow.close_session_surfaces()
 	_presentation.hide_preview_visuals()
 	_session.close_session()
-	_set_match_skin_visible(false)
-	root.visible = false
 	_checkpoint_save_integrity("close_game")
 	_invalidate_state_api("close_game")
 	_opponent_collection_backend = null
@@ -2327,16 +2252,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
-	if _surrender_confirm != null:
-		_surrender_confirm.call("close_confirm")
-	_set_match_skin_visible(true)
-	reward_view.close_reward()
-	result_label.visible = false
-	if _result_dim != null:
-		_result_dim.visible = false
-	animation_director.reset_transition_fade(transition_fade)
+	_ui_flow.prepare_new_match()
 	_pending_competition_change.clear()
-	message_label.text = ""
 	_last_info_name = ""
 
 	if _qa_hand_seed > 0:
@@ -2415,7 +2332,7 @@ func _try_player_move() -> void:
 	var result: Dictionary = flow.get("result", {})
 	_selected_hand_index = int(flow.get("next_hand_index", _selected_hand_index))
 	_last_info_name = str(played_card.display_name)
-	_refresh_phase_ui()
+	_refresh_ui_flow()
 	await animation_director.animate_placement(
 		root, _presentation.get_player_view(hand_index), _presentation.get_board_view(cell_index), played_card,
 		OWNER_PLAYER, int(flow.get("played_rotation", 0)), int(flow.get("placement_rank_modifier", 0))
@@ -2455,7 +2372,7 @@ func _run_ai_turn() -> void:
 	var played_card = flow.get("played_card")
 	var result: Dictionary = flow.get("result", {})
 	_last_info_name = str(played_card.display_name)
-	_refresh_phase_ui()
+	_refresh_ui_flow()
 	await animation_director.animate_placement(
 		root, _presentation.get_opponent_view(hand_index), _presentation.get_board_view(cell_index), played_card,
 		OWNER_OPPONENT, int(flow.get("played_rotation", 0)), int(flow.get("placement_rank_modifier", 0))
@@ -2487,16 +2404,16 @@ func _request_surrender() -> void:
 			close_game()
 		&"confirm":
 			ai_timer.stop()
-			if _surrender_confirm != null:
-				_surrender_confirm.call("open_confirm")
+			if not _ui_flow.open_surrender_confirm():
+				_cancel_surrender_confirmation()
 
 func _handle_surrender_confirm_input(action: StringName) -> void:
-	if _surrender_confirm == null:
+	if not _ui_flow.has_surrender_confirm():
 		_cancel_surrender_confirmation()
 		return
 
 	if _input_controller.is_direction(action):
-		_surrender_confirm.call("move_selection", 1)
+		_ui_flow.move_surrender_selection()
 		return
 
 	if action == InputControllerScript.ACTION_BACK:
@@ -2504,22 +2421,20 @@ func _handle_surrender_confirm_input(action: StringName) -> void:
 		return
 
 	if action == InputControllerScript.ACTION_CONFIRM:
-		if bool(_surrender_confirm.call("is_yes_selected")):
+		if _ui_flow.is_surrender_yes_selected():
 			_confirm_surrender()
 		else:
 			_cancel_surrender_confirmation()
 
 
 func _confirm_surrender() -> void:
-	if _surrender_confirm != null:
-		_surrender_confirm.call("close_confirm")
+	_ui_flow.close_surrender_confirm()
 	_match_flow.confirm_surrender()
 	message_label.text = "SURRENDER"
 	_finish_match(OWNER_OPPONENT, &"surrender")
 
 func _cancel_surrender_confirmation() -> void:
-	if _surrender_confirm != null:
-		_surrender_confirm.call("close_confirm")
+	_ui_flow.close_surrender_confirm()
 	var flow_result: Dictionary = _match_flow.cancel_surrender()
 	_refresh_views()
 	if bool(flow_result.get("schedule_ai", false)):
@@ -2601,20 +2516,7 @@ func _finish_match(
 			2
 		)
 
-	match _session.result_winner:
-		OWNER_PLAYER:
-			result_label.text = "YOU WIN!"
-		OWNER_OPPONENT:
-			result_label.text = "YOU SURRENDER..." if _session.surrendered else "YOU LOSE..."
-		_:
-			result_label.text = "DRAW"
-	if _result_dim != null:
-		_result_dim.visible = true
-	result_label.visible = true
-	turn_label.text = ""
-	help_label.text = "K: Continue"
-	selection_arrow.visible = false
-	turn_arrow.visible = false
+	_ui_flow.show_result(_session.result_winner, _session.surrendered)
 	match_finished.emit({
 		"winner": _session.result_winner,
 		"score": score,
@@ -2630,7 +2532,7 @@ func _begin_result_transition() -> void:
 	var flow_result: Dictionary = _match_flow.begin_result_transition()
 	if not bool(flow_result.get("accepted", false)):
 		return
-	help_label.text = ""
+	_ui_flow.begin_result_transition_ui()
 	_run_result_transition(int(flow_result.get("winner", OWNER_NONE)))
 
 func _run_result_transition(winner: int) -> void:
@@ -2641,9 +2543,7 @@ func _run_result_transition(winner: int) -> void:
 	if not is_open():
 		return
 
-	result_label.visible = false
-	if _result_dim != null:
-		_result_dim.visible = false
+	_ui_flow.hide_result_overlay()
 	var destination: StringName = _match_flow.prepare_result_destination(winner)
 	if destination == &"replay":
 		# A draw is a replay, not an exit. Re-deal behind the black result fade,
@@ -2680,18 +2580,18 @@ func _run_result_transition(winner: int) -> void:
 	if raw_eligible is PackedStringArray or raw_eligible is Array:
 		for raw_id in raw_eligible:
 			eligible_reward_ids.append(str(raw_id))
-	reward_view.open_reward(
+	_ui_flow.open_reward(
 		_starting_opponent_cards,
 		_starting_player_cards,
 		winner,
 		true,
 		opponent_take_index,
-		eligible_reward_ids
+		eligible_reward_ids,
+		true
 	)
-	_refresh_phase_ui()
+	_refresh_ui_flow()
 
 	# Reveal the result screen while both card rows begin sliding into place.
-	reward_view.start_entrance()
 	await animation_director.fade_from_cover(
 		transition_fade,
 		RESULT_FADE_OUT_SECONDS
@@ -3130,8 +3030,7 @@ func _resume_pending_match_resolution() -> void:
 				opponent_take_index = index
 				break
 
-	root.visible = true
-	_set_match_skin_visible(false)
+	_ui_flow.show_recovery_surface()
 	var eligible_reward_ids := PackedStringArray()
 	var raw_eligible = pending.get(
 		"eligible_reward_ids",
@@ -3140,15 +3039,16 @@ func _resume_pending_match_resolution() -> void:
 	if raw_eligible is PackedStringArray or raw_eligible is Array:
 		for raw_id in raw_eligible:
 			eligible_reward_ids.append(str(raw_id))
-	reward_view.open_reward(
+	_ui_flow.open_reward(
 		opponent_cards,
 		player_cards,
 		winner,
 		false,
 		opponent_take_index,
-		eligible_reward_ids
+		eligible_reward_ids,
+		false
 	)
-	_refresh_phase_ui()
+	_refresh_ui_flow()
 	tree.paused = true
 	opened.emit()
 	_queue_gameplay_event(
@@ -3245,126 +3145,23 @@ func _refresh_views(captured_cells: Array = []) -> void:
 		_selected_cell_index,
 		captured_cells
 	)
-	var score: Dictionary = _match.get_score()
-	if _match_hud != null:
-		_match_hud.call(
-			"set_scores",
-			int(score["opponent"]),
-			int(score["player"])
-		)
-	_refresh_phase_ui()
+	_refresh_ui_flow()
 	runtime_state_changed.emit(get_runtime_ui_snapshot())
 
 
-func _set_score_digits(target: Control, value: int) -> void:
-	if target == null:
+func _refresh_ui_flow() -> void:
+	if _match == null:
 		return
-	var score_text := str(value)
-	target.call("set_text", score_text)
-	var score_parent := target.get_parent() as Control
-	if score_parent == null:
-		return
-	var glyph_count: int = score_text.length()
-	var unscaled_width := float(glyph_count * 16)
-	var scaled_width := unscaled_width * target.scale.x
-	var scaled_height := 16.0 * target.scale.y
-	target.position = Vector2(
-		(score_parent.size.x - scaled_width) * 0.5,
-		(score_parent.size.y - scaled_height) * 0.5
+	_selected_hand_index = _ui_flow.refresh_match_state(
+		_session.phase,
+		_session.round_number,
+		_match,
+		_selected_hand_index,
+		message_label.text,
+		_region_trait_text(),
+		_current_help_entries(),
+		_match.get_score()
 	)
-
-
-func _refresh_phase_ui() -> void:
-	selection_arrow.visible = false
-	turn_arrow.visible = false
-	# The old beige prototype InfoPanel is retired. Keep its labels empty so no
-	# legacy text can leak over the authored background.
-	info_panel.visible = false
-	turn_label.text = ""
-	info_label.text = ""
-
-	match _session.phase:
-		PHASE_DEALING:
-			help_label.text = ""
-		PHASE_SELECT_CARD:
-			help_label.text = ""
-			_update_player_selection_markers()
-		PHASE_SELECT_CELL:
-			help_label.text = ""
-			_update_player_selection_markers()
-		PHASE_AI:
-			help_label.text = ""
-			_turn_arrow_for_owner(OWNER_OPPONENT)
-		PHASE_ANIMATING:
-			help_label.text = ""
-		PHASE_RESULT:
-			help_label.text = ""
-		PHASE_REWARD:
-			help_label.text = ""
-
-	_refresh_match_hud()
-
-
-func _refresh_match_hud() -> void:
-	if _match_hud == null:
-		return
-
-	var turn_text: String = ""
-	match _session.phase:
-		PHASE_SELECT_CARD, PHASE_SELECT_CELL:
-			turn_text = "Your Turn"
-		PHASE_AI:
-			turn_text = "Opponent Turn"
-		PHASE_DEALING:
-			turn_text = "Dealing"
-		PHASE_RESULT:
-			turn_text = "Result"
-	_match_hud.call("set_turn_text", turn_text)
-	var top_info_text: String = message_label.text.strip_edges()
-	if top_info_text.is_empty():
-		top_info_text = _region_trait_text()
-	_match_hud.call("set_top_info_text", top_info_text)
-	_match_hud.call("set_round_number", _session.round_number)
-	_match_hud.call("set_help_entries", _current_help_entries())
-
-	if (
-		_match != null
-		and _session.phase not in [PHASE_RESULT, PHASE_REWARD, PHASE_CLOSED]
-		and not _match.player_hand.is_empty()
-	):
-		_selected_hand_index = clampi(
-			_selected_hand_index,
-			0,
-			_match.player_hand.size() - 1
-		)
-		var selected_card = _match.player_hand[_selected_hand_index]
-		var selected_rotation: int = _match.get_hand_rotation(
-			OWNER_PLAYER,
-			_selected_hand_index
-		)
-		_match_hud.call("set_card_info", selected_card, selected_rotation)
-	else:
-		_match_hud.call("clear_card_info")
-
-
-func _update_player_selection_markers() -> void:
-	if _match.player_hand.is_empty():
-		return
-	selection_arrow.visible = true
-	selection_arrow.position = Vector2(
-		player_hand_container.position.x - 16.0,
-		player_hand_container.position.y + float(_selected_hand_index) * HAND_STEP_Y + 44.0
-	)
-	_turn_arrow_for_owner(OWNER_PLAYER)
-
-
-func _turn_arrow_for_owner(turn_owner: int) -> void:
-	turn_arrow.visible = true
-	turn_arrow.position = Vector2(58.0, 31.0) if turn_owner == OWNER_OPPONENT else Vector2(574.0, 31.0)
-
-
-func _update_selected_card_info() -> void:
-	_refresh_match_hud()
 
 
 func _capture_message(result: Dictionary) -> String:
@@ -3389,7 +3186,7 @@ func _capture_message(result: Dictionary) -> String:
 
 func _on_reward_selected(card_definition) -> void:
 	if card_definition == null:
-		reward_view.resolve_transfer_request(false)
+		_ui_flow.resolve_reward_transfer(false)
 		return
 
 	_last_info_name = str(card_definition.display_name)
@@ -3421,7 +3218,7 @@ func _on_reward_selected(card_definition) -> void:
 					"TripleTriadGame: reward transfer rejected (%s)."
 					% failure_reason
 				)
-		reward_view.resolve_transfer_request(false)
+		_ui_flow.resolve_reward_transfer(false)
 		return
 
 	var metadata_ok: bool = bool(
@@ -3472,7 +3269,7 @@ func _on_reward_selected(card_definition) -> void:
 
 	_checkpoint_save_integrity("reward_transfer")
 	_publish_backend_state_change("card_transfer")
-	reward_view.resolve_transfer_request(true)
+	_ui_flow.resolve_reward_transfer(true)
 
 
 func _checkpoint_save_integrity(reason: String) -> void:
@@ -3499,7 +3296,7 @@ func _checkpoint_save_integrity(reason: String) -> void:
 
 
 func _on_reward_completed() -> void:
-	reward_view.close_reward()
+	_ui_flow.close_reward()
 	if _match_resolution_journal != null:
 		_match_resolution_journal.clear()
 	_checkpoint_save_integrity("reward_resolution_complete")
@@ -3611,7 +3408,7 @@ func _on_deck_confirmed(cards: Array) -> void:
 			abandon_active_competition()
 			close_game()
 			return
-	deck_setup.close_setup()
+	_ui_flow.close_deck_setup()
 	_publish_backend_state_change("deck_selected")
 	_start_new_match(_active_player_deck)
 

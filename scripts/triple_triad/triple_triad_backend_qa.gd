@@ -38,6 +38,9 @@ const PresentationControllerScript = preload(
 const InputControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_input_controller.gd"
 )
+const UIFlowControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_ui_flow_controller.gd"
+)
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -227,6 +230,9 @@ func run_all() -> Dictionary:
 	_run("Input controller maps gameplay keys", _test_input_controller_key_mapping)
 	_run("Input controller isolates Shift+F10 campaign QA", _test_input_controller_campaign_qa)
 	_run("Input controller clamps board navigation", _test_input_controller_board_navigation)
+	_run("UI flow owns result copy", _test_ui_flow_result_copy)
+	_run("UI flow maps phases to HUD turn state", _test_ui_flow_turn_text)
+	_run("UI flow limits player selection markers to player phases", _test_ui_flow_selection_phase)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -2205,5 +2211,38 @@ func _test_input_controller_board_navigation() -> Dictionary:
 		and controller.move_board_cursor(4, InputControllerScript.ACTION_DOWN) == 7
 		and controller.move_board_cursor(8, InputControllerScript.ACTION_RIGHT) == 8,
 		"Board navigation must stay inside the 3x3 grid while preserving directional movement."
+	)
+
+func _test_ui_flow_result_copy() -> Dictionary:
+	var controller = UIFlowControllerScript.new()
+	return _ok(
+		controller.result_text_for(OWNER_PLAYER, false) == "YOU WIN!"
+		and controller.result_text_for(OWNER_OPPONENT, false) == "YOU LOSE..."
+		and controller.result_text_for(OWNER_OPPONENT, true) == "YOU SURRENDER..."
+		and controller.result_text_for(OWNER_NONE, false) == "DRAW",
+		"UI flow must own deterministic result copy for win/loss/surrender/draw states."
+	)
+
+
+func _test_ui_flow_turn_text() -> Dictionary:
+	var controller = UIFlowControllerScript.new()
+	return _ok(
+		controller.turn_text_for_phase(SessionControllerScript.PHASE_SELECT_CARD) == "Your Turn"
+		and controller.turn_text_for_phase(SessionControllerScript.PHASE_SELECT_CELL) == "Your Turn"
+		and controller.turn_text_for_phase(SessionControllerScript.PHASE_AI) == "Opponent Turn"
+		and controller.turn_text_for_phase(SessionControllerScript.PHASE_DEALING) == "Dealing"
+		and controller.turn_text_for_phase(SessionControllerScript.PHASE_RESULT) == "Result",
+		"UI flow must map session phases to the authored match HUD turn labels."
+	)
+
+
+func _test_ui_flow_selection_phase() -> Dictionary:
+	var controller = UIFlowControllerScript.new()
+	return _ok(
+		controller.phase_uses_player_selection(SessionControllerScript.PHASE_SELECT_CARD)
+		and controller.phase_uses_player_selection(SessionControllerScript.PHASE_SELECT_CELL)
+		and not controller.phase_uses_player_selection(SessionControllerScript.PHASE_AI)
+		and not controller.phase_uses_player_selection(SessionControllerScript.PHASE_RESULT),
+		"Player selection markers must remain scoped to hand/cell selection phases."
 	)
 
