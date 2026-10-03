@@ -14,6 +14,9 @@ const CatchScoring = preload(
 const DebugSettingsScript = preload(
 	"res://scripts/fishing_debug_settings.gd"
 )
+const EconomyProgressionSimulatorScript = preload(
+	"res://scripts/progression/economy_progression_simulator.gd"
+)
 
 const TECHNIQUE_CATALOG: FishingTechniqueCatalog = preload(
 	"res://data/bof4/techniques/all_techniques.tres"
@@ -58,6 +61,8 @@ var _fish_zone: Node = null
 var _encounter: Node = null
 var _regression_harness: FishingRegressionHarness = null
 var _last_regression_summary: String = "NOT RUN"
+var _economy_simulator = EconomyProgressionSimulatorScript.new()
+var _last_economy_summary: String = "NOT RUN"
 var _selected_row: int = Row.PROFILE
 var _profile_index: int = 0
 var _profile_database: Array[FishingQAProfile] = []
@@ -119,6 +124,10 @@ func is_open() -> bool:
 ## Returns true when the menu requests to close.
 func handle_input(event: InputEvent) -> bool:
 	if not is_open():
+		return false
+
+	if _is_key_press(event, KEY_F7):
+		_run_economy_progression_simulator()
 		return false
 
 	if _is_key_press(event, KEY_F9):
@@ -549,12 +558,25 @@ func _refresh() -> void:
 		+ "\nTech RT: " + tech_runtime_text
 		+ "\nSpatial: " + spatial_runtime_text
 		+ "\nTension: " + tension_runtime_text
+		+ "\nECON: " + _last_economy_summary
+		+ " | F7 run 0-12h simulator"
 		+ "\nQA: " + _last_regression_summary
 		+ " | F9 run regression"
 		+ "\nSPECIMEN forcing uses real catch pipeline; SAVE DBG ON persists it"
 		+ "\nShift+R RESET fishing progress"
 		+ "\nF10/K/I close   W/S row   A/D change"
 	)
+
+
+func _run_economy_progression_simulator() -> void:
+	if _economy_simulator == null:
+		_last_economy_summary = "SIMULATOR NOT AVAILABLE"
+		_refresh()
+		return
+
+	var report: Dictionary = _economy_simulator.run_default_suite(true)
+	_last_economy_summary = str(report.get("summary", "NO RESULT"))
+	_refresh()
 
 
 func _run_regression_suite() -> void:
