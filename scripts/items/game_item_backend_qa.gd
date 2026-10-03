@@ -345,8 +345,8 @@ static func _test_failed_save_emits_no_item_events(
 				count_events.append(count)
 	)
 	transaction.transaction_completed.connect(
-		func(result: Dictionary) -> void:
-			completed_events.append(result.duplicate(true))
+		func(transaction_result: Dictionary) -> void:
+			completed_events.append(transaction_result.duplicate(true))
 	)
 
 	var result: Dictionary = transaction.consume_player_items(

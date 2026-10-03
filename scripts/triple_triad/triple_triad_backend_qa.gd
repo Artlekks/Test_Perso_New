@@ -68,6 +68,9 @@ const MatchOrchestratorScript = preload(
 const PersistenceControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_persistence_controller.gd"
 )
+const CompositionRootScript = preload(
+	"res://scripts/triple_triad/triple_triad_composition_root.gd"
+)
 const RegionProfileScript = preload(
 	"res://scripts/triple_triad/triple_triad_region_profile.gd"
 )
@@ -623,6 +626,16 @@ class MockPersistenceJournal:
 		clear_count += 1
 
 
+class MockCompositionPersistence:
+	extends RefCounted
+
+	var reasons: Array[String] = []
+
+	func checkpoint(reason: String) -> Dictionary:
+		reasons.append(reason)
+		return {"valid": true, "reason": reason}
+
+
 var _results: Array[Dictionary] = []
 
 
@@ -715,6 +728,10 @@ func run_all() -> Dictionary:
 	_run("Persistence controller owns match-result bookkeeping", _test_persistence_match_outcome)
 	_run("Persistence controller owns reward deck cleanup", _test_persistence_reward_transfer)
 	_run("Persistence controller owns save checkpoints", _test_persistence_checkpoint)
+	_run("Composition root accepts the complete scene contract", _test_composition_contract_complete)
+	_run("Composition root rejects incomplete scene wiring", _test_composition_contract_guard)
+	_run("Composition root filters bootstrap and service boundaries", _test_composition_boundary_maps)
+	_run("Composition activation defers boot side effects", _test_composition_activation_phase)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -3755,3 +3772,117 @@ func _test_persistence_checkpoint() -> Dictionary:
 		and journal.clear_count == 1,
 		"Persistence controller must centralize save-integrity checkpoints and clear the resolution journal before the final reward checkpoint."
 	)
+
+func _composition_qa_callback() -> void:
+	pass
+
+
+func _composition_contract_fixture() -> Dictionary:
+	var nodes: Dictionary = {}
+	for key in CompositionRootScript.REQUIRED_NODE_KEYS:
+		nodes[key] = self
+	var callbacks: Dictionary = {}
+	var callback := Callable(self, "_composition_qa_callback")
+	for key in CompositionRootScript.REQUIRED_CALLBACK_KEYS:
+		callbacks[key] = callback
+	return {
+		"nodes": nodes,
+		"callbacks": callbacks,
+	}
+
+
+func _test_composition_contract_complete() -> Dictionary:
+	var root = CompositionRootScript.new()
+	var fixture: Dictionary = _composition_contract_fixture()
+	var report: Dictionary = root.validate_contract(
+		fixture.get("nodes", {}),
+		fixture.get("callbacks", {})
+	)
+	var missing_nodes: PackedStringArray = report.get(
+		"missing_nodes",
+		PackedStringArray()
+	)
+	var missing_callbacks: PackedStringArray = report.get(
+		"missing_callbacks",
+		PackedStringArray()
+	)
+	return _ok(
+		bool(report.get("valid", false))
+		and missing_nodes.is_empty()
+		and missing_callbacks.is_empty(),
+		"The composition root should accept the complete scene/controller contract."
+	)
+
+
+func _test_composition_contract_guard() -> Dictionary:
+	var root = CompositionRootScript.new()
+	var fixture: Dictionary = _composition_contract_fixture()
+	var nodes: Dictionary = fixture.get("nodes", {}).duplicate()
+	var callbacks: Dictionary = fixture.get("callbacks", {}).duplicate()
+	nodes.erase("root")
+	callbacks.erase("close_game")
+	var report: Dictionary = root.validate_contract(nodes, callbacks)
+	var missing_nodes: PackedStringArray = report.get(
+		"missing_nodes",
+		PackedStringArray()
+	)
+	var missing_callbacks: PackedStringArray = report.get(
+		"missing_callbacks",
+		PackedStringArray()
+	)
+	return _ok(
+		not bool(report.get("valid", true))
+		and missing_nodes.has("root")
+		and missing_callbacks.has("close_game"),
+		"Composition must fail fast when a required node or callback is missing."
+	)
+
+
+func _test_composition_boundary_maps() -> Dictionary:
+	var root = CompositionRootScript.new()
+	var request: Dictionary = root.build_bootstrap_request({
+		"card_catalog": self,
+		"rule_set": self,
+		"region_profile": self,
+		"opponent_registry": self,
+		"acquisition_policy": self,
+		"acquisition_registry": self,
+		"player_deck_budget": 27,
+		"rogue_value": 999,
+	})
+	var services: Dictionary = root.extract_services({
+		"collection_backend": self,
+		"progression": self,
+		"state_api": self,
+		"rogue_service": self,
+	})
+	return _ok(
+		int(request.get("player_deck_budget", 0)) == 27
+		and not request.has("rogue_value")
+		and services.get("collection_backend") == self
+		and services.get("progression") == self
+		and services.get("state_api") == self
+		and not services.has("rogue_service")
+		and services.size() == CompositionRootScript.SERVICE_KEYS.size(),
+		"Composition should expose only the authored bootstrap/service boundary."
+	)
+
+func _test_composition_activation_phase() -> Dictionary:
+	var root = CompositionRootScript.new()
+	var persistence = MockCompositionPersistence.new()
+	root.activate_after_install({
+		"success": false,
+		"components": {"persistence": persistence},
+	})
+	var stayed_idle: bool = persistence.reasons.is_empty()
+	var activation_report: Dictionary = root.activate_after_install({
+		"success": true,
+		"components": {"persistence": persistence},
+	})
+	return _ok(
+		stayed_idle
+		and persistence.reasons == ["boot"]
+		and bool(activation_report.get("valid", false)),
+		"Composition must not run effectful boot work until the host has installed the composed controller graph."
+	)
+

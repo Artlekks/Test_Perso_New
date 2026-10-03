@@ -12,66 +12,16 @@ signal competition_state_changed(snapshot: Dictionary)
 signal world_progression_changed(snapshot: Dictionary)
 signal gameplay_event_queued(event: Dictionary)
 
-const MatchScript = preload("res://scripts/triple_triad/triple_triad_match.gd")
-const AIScript = preload("res://scripts/triple_triad/triple_triad_ai.gd")
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
 const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/default_acquisition_policy.tres")
-const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
-const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
-const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
-const SessionControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_session_controller.gd"
-)
-const MatchFlowControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_match_flow_controller.gd"
-)
-const MatchResolutionControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_match_resolution_controller.gd"
-)
-const PresentationControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_presentation_controller.gd"
-)
-const InputControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_input_controller.gd"
-)
-const UIFlowControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_ui_flow_controller.gd"
-)
-const WorldGatewayScript = preload(
-	"res://scripts/triple_triad/triple_triad_world_gateway.gd"
-)
-const CompetitionControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_competition_controller.gd"
-)
-const RuntimeRecoveryControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_runtime_recovery_controller.gd"
-)
-const BackendBootstrapScript = preload(
-	"res://scripts/triple_triad/triple_triad_backend_bootstrap.gd"
-)
-const DeveloperToolsControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_developer_tools_controller.gd"
-)
-const MatchContextControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_match_context_controller.gd"
-)
-const RuntimeStateControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_runtime_state_controller.gd"
-)
-const LiveMatchControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_live_match_controller.gd"
-)
-const MatchOrchestratorScript = preload(
-	"res://scripts/triple_triad/triple_triad_match_orchestrator.gd"
-)
-const PersistenceControllerScript = preload(
-	"res://scripts/triple_triad/triple_triad_persistence_controller.gd"
-)
+const SessionControllerScript = preload("res://scripts/triple_triad/triple_triad_session_controller.gd")
+const InputControllerScript = preload("res://scripts/triple_triad/triple_triad_input_controller.gd")
+const CompositionRootScript = preload("res://scripts/triple_triad/triple_triad_composition_root.gd")
 
-const BACKEND_VERSION := "2.17.0"
+const BACKEND_VERSION := "2.18.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -135,308 +85,59 @@ const PHASE_SURRENDER_CONFIRM := SessionControllerScript.PHASE_SURRENDER_CONFIRM
 @onready var debug_menu = $TripleTriadDebugMenu
 @onready var deck_setup = $Root/TripleTriadDeckSetup
 
+var _composition_root = CompositionRootScript.new()
 var _match = null
-var _ai = null
-var _rng := RandomNumberGenerator.new()
-var _session = SessionControllerScript.new()
-var _match_flow = MatchFlowControllerScript.new()
-var _presentation = PresentationControllerScript.new()
-var _input_controller = InputControllerScript.new()
-var _ui_flow = UIFlowControllerScript.new()
-var _world_gateway = WorldGatewayScript.new()
-var _competition = CompetitionControllerScript.new()
-var _runtime_recovery = RuntimeRecoveryControllerScript.new()
+var _session = null
+var _match_flow = null
+var _presentation = null
+var _input_controller = null
+var _ui_flow = null
+var _world_gateway = null
+var _competition = null
+var _runtime_recovery = null
 var _collection_backend = null
 var _opponent_collection_backend = null
-var _card_economy = null
 var _progression = null
-var _save_integrity = null
-var _acquisition_tracker = null
-var _acquisition_service = null
-var _encounter_records = null
-var _state_api = null
-var _stake_policy = StakePolicyScript.new()
 var _backend_ready: bool = false
 var _backend_errors: PackedStringArray = PackedStringArray()
 var _fishing_salvage_bridge: Node = null
-var _world_acquisition_catalog = null
-var _world_reward_ledger = null
-var _competition_catalog = null
-var _competition_service = null
-var _completion_tracker = null
-var _world_progression_director = null
-var _match_resolution_journal = MatchResolutionJournalScript.new()
-var _match_resolution = MatchResolutionControllerScript.new()
-var _backend_bootstrap = BackendBootstrapScript.new()
-var _developer_tools = DeveloperToolsControllerScript.new()
-var _match_context = MatchContextControllerScript.new()
-var _runtime_state = RuntimeStateControllerScript.new()
-var _live_match = LiveMatchControllerScript.new()
-var _match_orchestrator = MatchOrchestratorScript.new()
-var _persistence = PersistenceControllerScript.new()
+var _match_resolution_journal = null
+var _match_resolution = null
+var _developer_tools = null
+var _match_context = null
+var _runtime_state = null
+var _live_match = null
+var _match_orchestrator = null
+var _persistence = null
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_runtime_state.initialize({
-		"backend_version": BACKEND_VERSION,
-		"developer_tools": _developer_tools,
-		"session": _session,
-		"match_context": _match_context,
-		"presentation": _presentation,
-		"event_capacity": 32,
-	})
-	_developer_tools.initialize(
+	var composition_result: Dictionary = _composition_root.compose(
 		self,
-		card_catalog,
-		opponent_registry,
-		BACKEND_VERSION,
-		{
-			&"is_backend_ready": Callable(self, "is_backend_ready"),
-			&"is_card_game_unlocked": Callable(self, "is_card_game_unlocked"),
-			&"get_player_snapshot": Callable(self, "get_player_snapshot"),
-			&"get_acquisition_snapshot": Callable(self, "get_acquisition_snapshot"),
-			&"get_collection_completion_snapshot": Callable(self, "get_collection_completion_snapshot"),
-			&"get_runtime_recovery_snapshot": Callable(self, "get_runtime_recovery_snapshot"),
-			&"get_backend_health": Callable(self, "get_backend_health"),
-			&"get_global_triple_triad_snapshot": Callable(self, "get_global_triple_triad_snapshot"),
-			&"get_pending_gameplay_events": Callable(self, "get_pending_gameplay_events"),
-			&"open_active_competition_match": Callable(self, "open_active_competition_match"),
-			&"reconcile_runtime_state": Callable(self, "reconcile_runtime_state"),
-		}
+		_build_composition_config(),
+		_build_composition_nodes(),
+		_build_composition_callbacks()
 	)
-	_ui_flow.initialize({
-		"root": root,
-		"backdrop": backdrop,
-		"grid_artwork": grid_artwork,
-		"opponent_score_digits": opponent_score_label,
-		"player_score_digits": player_score_label,
-		"turn_label": turn_label,
-		"message_label": message_label,
-		"help_label": help_label,
-		"info_panel": info_panel,
-		"info_label": info_label,
-		"selection_arrow": selection_arrow,
-		"turn_arrow": turn_arrow,
-		"result_label": result_label,
-		"reward_view": reward_view,
-		"transition_fade": transition_fade,
-		"animation_director": animation_director,
-		"debug_menu": debug_menu,
-		"deck_setup": deck_setup,
-		"player_hand_container": player_hand_container,
-	})
-	_ui_flow.prepare_closed_state()
-	_match = MatchScript.new()
-	_ai = AIScript.new()
-	_rng.randomize()
-	_match_flow.initialize(_match, _ai, _rng, _session)
-	_match_resolution_journal.initialize()
+	_install_composition_result(composition_result)
 
-	_presentation.initialize(
-		root,
-		opponent_hand_container,
-		board_container,
-		player_hand_container
-	)
-	ai_timer.timeout.connect(_on_ai_timer_timeout)
-	reward_view.reward_selected.connect(_on_reward_selected)
-	reward_view.completed.connect(_on_reward_completed)
-	debug_menu.apply_requested.connect(_on_qa_profile_apply_requested)
-	deck_setup.deck_confirmed.connect(_on_deck_confirmed)
-	deck_setup.cancelled.connect(_on_deck_cancelled)
-
-	var bootstrap_result: Dictionary = _backend_bootstrap.bootstrap({
-		"card_catalog": card_catalog,
-		"rule_set": rule_set,
-		"region_profile": region_profile,
-		"opponent_registry": opponent_registry,
-		"acquisition_policy": acquisition_policy,
-		"acquisition_registry": acquisition_registry,
-		"player_deck_budget": player_deck_budget,
-	})
-	var services: Dictionary = bootstrap_result.get("services", {})
-	_world_acquisition_catalog = services.get("world_acquisition_catalog")
-	_competition_catalog = services.get("competition_catalog")
-	_save_integrity = services.get("save_integrity")
-	_collection_backend = services.get("collection_backend")
-	_acquisition_tracker = services.get("acquisition_tracker")
-	_acquisition_service = services.get("acquisition_service")
-	_progression = services.get("progression")
-	_world_reward_ledger = services.get("world_reward_ledger")
-	_encounter_records = services.get("encounter_records")
-	_competition_service = services.get("competition_service")
-	_completion_tracker = services.get("completion_tracker")
-	_world_progression_director = services.get("world_progression_director")
-	_card_economy = services.get("card_economy")
-	_state_api = services.get("state_api")
-
-	_backend_errors.clear()
-	for raw_error in bootstrap_result.get("errors", []):
-		_backend_errors.append(str(raw_error))
-	for raw_warning in bootstrap_result.get("warnings", []):
+	for raw_warning in composition_result.get("warnings", []):
 		push_warning("TripleTriadGame backend: %s" % str(raw_warning))
-	if not bool(bootstrap_result.get("success", false)):
+	if not bool(composition_result.get("success", false)):
 		for error_text in _backend_errors:
 			push_error("TripleTriadGame backend: %s" % error_text)
-		push_error("TripleTriadGame: backend bootstrap failed; backend disabled for this session.")
+		push_error("TripleTriadGame: composition/bootstrap failed; backend disabled for this session.")
 		return
 
-	_match_context.initialize(
-		card_catalog,
-		_rng,
-		_encounter_records,
-		{
-			"region_profile": region_profile,
-			"ai_profile": ai_profile,
-			"rule_set": rule_set,
-			"deck_budget": deck_budget,
-			"min_level": prototype_min_level,
-			"max_level": prototype_max_level,
-		}
-	)
-
-	_live_match.initialize(
-		_match,
-		_match_flow,
-		_match_context,
-		_rng
-	)
-
-	_world_gateway.initialize(
-		card_catalog,
-		_acquisition_service,
-		_world_acquisition_catalog,
-		_world_reward_ledger,
-		_collection_backend,
-		_progression,
-		_encounter_records,
-		opponent_registry,
-		_rng,
-		player_card_rank
-	)
-	_world_gateway.acquisition_completed.connect(_on_acquisition_bundle_claimed)
-	_world_gateway.card_game_unlock_changed.connect(_on_card_game_unlock_changed)
-	_world_gateway.gameplay_event_requested.connect(_queue_gameplay_event)
-	_world_gateway.save_checkpoint_requested.connect(_persistence.checkpoint)
-	_world_gateway.backend_state_change_requested.connect(_publish_backend_state_change)
-
-	_completion_tracker.milestone_reached.connect(_persistence.on_collection_milestone_reached)
-	_completion_tracker.collection_completed.connect(_persistence.on_collection_completed)
-
-	_match_resolution.initialize(
-		card_catalog,
-		_collection_backend,
-		_progression,
-		_encounter_records,
-		_competition_service,
-		_card_economy,
-		_acquisition_tracker,
-		_match_resolution_journal,
-		_stake_policy,
-		DefaultEconomyPolicy,
-		DefaultAcquisitionPolicy
-	)
-
-	_competition.initialize(
-		_competition_service,
-		card_catalog,
-		_collection_backend,
-		_progression,
-		_encounter_records,
-		acquisition_policy,
-		_world_gateway,
-		_world_reward_ledger,
-		opponent_registry,
-		player_card_rank
-	)
-	_competition.competition_state_changed.connect(_on_competition_controller_state_changed)
-	_competition.gameplay_event_requested.connect(_queue_gameplay_event)
-	_competition.backend_state_change_requested.connect(_publish_backend_state_change)
-
-	_persistence.initialize({
-		"save_integrity": _save_integrity,
-		"card_catalog": card_catalog,
-		"collection_backend": _collection_backend,
-		"progression": _progression,
-		"match_resolution": _match_resolution,
-		"match_resolution_journal": _match_resolution_journal,
-		"competition": _competition,
-		"deck_setup": deck_setup,
-		"live_match": _live_match,
-		"match_context": _match_context,
-		"acquisition_policy": acquisition_policy,
-		"player_deck_budget": player_deck_budget,
-	})
-	_persistence.gameplay_event_requested.connect(_queue_gameplay_event)
-	_persistence.backend_state_change_requested.connect(_publish_backend_state_change)
-	_persistence.state_api_invalidation_requested.connect(_invalidate_state_api)
-	_persistence.card_reward_selected.connect(_on_persistence_card_reward_selected)
-
-	_match_orchestrator.initialize({
-		"match_flow": _match_flow,
-		"live_match": _live_match,
-		"presentation": _presentation,
-		"ui_flow": _ui_flow,
-		"animation_director": animation_director,
-		"ai_timer": ai_timer,
-		"session": _session,
-		"match_context": _match_context,
-		"competition": _competition,
-		"match_resolution": _match_resolution,
-		"message_label": message_label,
-		"transition_fade": transition_fade,
-		"root": root,
-		"ai_delay_seconds": ai_delay_seconds,
-		"is_open": Callable(self, "is_open"),
-		"refresh_views": Callable(self, "_refresh_views"),
-		"refresh_ui_flow": Callable(self, "_refresh_ui_flow"),
-		"finish_match": Callable(self, "_finish_match"),
-		"close_game": Callable(self, "close_game"),
-	})
-
-	_runtime_recovery.initialize(
-		_competition,
-		card_catalog,
-		_world_gateway,
-		_world_reward_ledger,
-		_match_resolution,
-		_match_resolution_journal,
-		deck_setup,
-		opponent_registry
-	)
-	_runtime_recovery.gameplay_event_requested.connect(_queue_gameplay_event)
-	_runtime_recovery.checkpoint_requested.connect(_persistence.checkpoint)
-	_runtime_recovery.backend_state_change_requested.connect(_publish_backend_state_change)
-
-	_runtime_state.initialize({
-		"backend_version": BACKEND_VERSION,
-		"state_api": _state_api,
-		"completion_tracker": _completion_tracker,
-		"world_progression_director": _world_progression_director,
-		"world_gateway": _world_gateway,
-		"competition": _competition,
-		"runtime_recovery": _runtime_recovery,
-		"developer_tools": _developer_tools,
-		"session": _session,
-		"match_context": _match_context,
-		"presentation": _presentation,
-		"save_integrity": _save_integrity,
-		"collection_backend": _collection_backend,
-		"match_resolution": _match_resolution,
-		"encounter_records": _encounter_records,
-		"event_capacity": 32,
-	})
-	_runtime_state.gameplay_event_queued.connect(_on_runtime_gameplay_event_queued)
-	_runtime_state.backend_state_changed.connect(_on_runtime_backend_state_changed)
-	_runtime_state.world_progression_changed.connect(_on_runtime_world_progression_changed)
-
-	_persistence.checkpoint("boot")
+	# Composition is intentionally two-phase: install references first, then
+	# allow effectful startup work to emit callbacks back into this host.
+	_composition_root.activate_after_install(composition_result)
 
 	_backend_ready = true
 	_world_gateway.set_backend_ready(true)
 	_install_fishing_salvage_bridge()
-	_developer_tools.bind_runtime(_world_reward_ledger)
+	var services: Dictionary = composition_result.get("services", {})
+	_developer_tools.bind_runtime(services.get("world_reward_ledger"))
 	var runtime_recovery: Dictionary = reconcile_runtime_state()
 	_developer_tools.record_session_start(runtime_recovery)
 	if bool(runtime_recovery.get("requires_reward_ui", false)):
@@ -449,6 +150,119 @@ func _ready() -> void:
 			balance_games_per_matchup,
 			balance_simulation_seed
 		)
+
+
+func _build_composition_config() -> Dictionary:
+	return {
+		"backend_version": BACKEND_VERSION,
+		"card_catalog": card_catalog,
+		"rule_set": rule_set,
+		"region_profile": region_profile,
+		"ai_profile": ai_profile,
+		"opponent_registry": opponent_registry,
+		"acquisition_policy": acquisition_policy,
+		"acquisition_registry": acquisition_registry,
+		"deck_budget": deck_budget,
+		"player_deck_budget": player_deck_budget,
+		"player_card_rank": player_card_rank,
+		"prototype_min_level": prototype_min_level,
+		"prototype_max_level": prototype_max_level,
+		"ai_delay_seconds": ai_delay_seconds,
+		"event_capacity": 32,
+	}
+
+
+func _build_composition_nodes() -> Dictionary:
+	return {
+		"root": root,
+		"backdrop": backdrop,
+		"grid_artwork": grid_artwork,
+		"opponent_hand_container": opponent_hand_container,
+		"board_container": board_container,
+		"player_hand_container": player_hand_container,
+		"opponent_score_label": opponent_score_label,
+		"player_score_label": player_score_label,
+		"turn_label": turn_label,
+		"message_label": message_label,
+		"help_label": help_label,
+		"info_panel": info_panel,
+		"info_label": info_label,
+		"selection_arrow": selection_arrow,
+		"turn_arrow": turn_arrow,
+		"result_label": result_label,
+		"reward_view": reward_view,
+		"transition_fade": transition_fade,
+		"animation_director": animation_director,
+		"ai_timer": ai_timer,
+		"debug_menu": debug_menu,
+		"deck_setup": deck_setup,
+	}
+
+
+func _build_composition_callbacks() -> Dictionary:
+	return {
+		"is_backend_ready": Callable(self, "is_backend_ready"),
+		"is_card_game_unlocked": Callable(self, "is_card_game_unlocked"),
+		"get_player_snapshot": Callable(self, "get_player_snapshot"),
+		"get_acquisition_snapshot": Callable(self, "get_acquisition_snapshot"),
+		"get_collection_completion_snapshot": Callable(self, "get_collection_completion_snapshot"),
+		"get_runtime_recovery_snapshot": Callable(self, "get_runtime_recovery_snapshot"),
+		"get_backend_health": Callable(self, "get_backend_health"),
+		"get_global_triple_triad_snapshot": Callable(self, "get_global_triple_triad_snapshot"),
+		"get_pending_gameplay_events": Callable(self, "get_pending_gameplay_events"),
+		"open_active_competition_match": Callable(self, "open_active_competition_match"),
+		"reconcile_runtime_state": Callable(self, "reconcile_runtime_state"),
+		"queue_gameplay_event": Callable(self, "_queue_gameplay_event"),
+		"publish_backend_state_change": Callable(self, "_publish_backend_state_change"),
+		"invalidate_state_api": Callable(self, "_invalidate_state_api"),
+		"on_ai_timer_timeout": Callable(self, "_on_ai_timer_timeout"),
+		"on_reward_selected": Callable(self, "_on_reward_selected"),
+		"on_reward_completed": Callable(self, "_on_reward_completed"),
+		"on_qa_profile_apply_requested": Callable(self, "_on_qa_profile_apply_requested"),
+		"on_deck_confirmed": Callable(self, "_on_deck_confirmed"),
+		"on_deck_cancelled": Callable(self, "_on_deck_cancelled"),
+		"on_runtime_gameplay_event_queued": Callable(self, "_on_runtime_gameplay_event_queued"),
+		"on_runtime_backend_state_changed": Callable(self, "_on_runtime_backend_state_changed"),
+		"on_runtime_world_progression_changed": Callable(self, "_on_runtime_world_progression_changed"),
+		"on_acquisition_bundle_claimed": Callable(self, "_on_acquisition_bundle_claimed"),
+		"on_card_game_unlock_changed": Callable(self, "_on_card_game_unlock_changed"),
+		"on_competition_state_changed": Callable(self, "_on_competition_controller_state_changed"),
+		"on_persistence_card_reward_selected": Callable(self, "_on_persistence_card_reward_selected"),
+		"is_open": Callable(self, "is_open"),
+		"refresh_views": Callable(self, "_refresh_views"),
+		"refresh_ui_flow": Callable(self, "_refresh_ui_flow"),
+		"finish_match": Callable(self, "_finish_match"),
+		"close_game": Callable(self, "close_game"),
+	}
+
+
+func _install_composition_result(result: Dictionary) -> void:
+	var components: Dictionary = result.get("components", {})
+	_match = components.get("match")
+	_session = components.get("session")
+	_match_flow = components.get("match_flow")
+	_presentation = components.get("presentation")
+	_input_controller = components.get("input_controller")
+	_ui_flow = components.get("ui_flow")
+	_world_gateway = components.get("world_gateway")
+	_competition = components.get("competition")
+	_runtime_recovery = components.get("runtime_recovery")
+	_match_resolution_journal = components.get("match_resolution_journal")
+	_match_resolution = components.get("match_resolution")
+	_developer_tools = components.get("developer_tools")
+	_match_context = components.get("match_context")
+	_runtime_state = components.get("runtime_state")
+	_live_match = components.get("live_match")
+	_match_orchestrator = components.get("match_orchestrator")
+	_persistence = components.get("persistence")
+
+	var services: Dictionary = result.get("services", {})
+	_collection_backend = services.get("collection_backend")
+	_progression = services.get("progression")
+	_backend_errors.clear()
+	for raw_error in result.get("errors", []):
+		_backend_errors.append(str(raw_error))
+
 
 func run_backend_qa() -> Dictionary:
 	return _developer_tools.run_backend_qa()
