@@ -97,6 +97,7 @@ const DefaultRegionProfile = preload(
 	"res://data/triple_triad/regions/prototype_coast.tres"
 )
 const HARBOR_LOCKBOX_SCENE_PATH := "res://actors/HarborLockbox.tscn"
+const HARBOR_REQUEST_BOARD_SCENE_PATH := "res://actors/HarborRequestBoard.tscn"
 const MAIN_VERTICAL_SLICE_PATH := "res://actors/FishingTestScene_V2.tscn"
 
 const OWNER_NONE := 0
@@ -688,6 +689,7 @@ func run_all() -> Dictionary:
 	_run("Campaign QA mirrors early acquisition spine", _test_campaign_qa_progression_alignment)
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
 	_run("Treasure cache world vertical slice is authored", _test_treasure_cache_vertical_slice)
+	_run("Quest reward world vertical slice is authored", _test_quest_reward_vertical_slice)
 	_run("Every acquisition source has a gameplay delivery route", _test_acquisition_reachability)
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
@@ -1868,6 +1870,66 @@ func _test_treasure_cache_vertical_slice() -> Dictionary:
 	return _ok(
 		valid,
 		"The beach slice must place a stable one-shot Harbor Lockbox backed by the canonical treasure-cache source."
+	)
+
+
+func _test_quest_reward_vertical_slice() -> Dictionary:
+	if not ResourceLoader.exists(HARBOR_REQUEST_BOARD_SCENE_PATH):
+		return _ok(
+			false,
+			"The reusable Harbor Request Board scene is missing."
+		)
+	if not FileAccess.file_exists(MAIN_VERTICAL_SLICE_PATH):
+		return _ok(
+			false,
+			"The beach vertical-slice scene is missing."
+		)
+
+	var request_file := FileAccess.open(
+		HARBOR_REQUEST_BOARD_SCENE_PATH,
+		FileAccess.READ
+	)
+	if request_file == null:
+		return _ok(
+			false,
+			"The Harbor Request Board scene could not be inspected."
+		)
+	var request_text: String = request_file.get_as_text()
+	request_file.close()
+
+	var beach_file := FileAccess.open(
+		MAIN_VERTICAL_SLICE_PATH,
+		FileAccess.READ
+	)
+	if beach_file == null:
+		return _ok(
+			false,
+			"The beach vertical slice could not be inspected."
+		)
+	var beach_text: String = beach_file.get_as_text()
+	beach_file.close()
+
+	var valid: bool = (
+		request_text.contains(
+			"triple_triad_harbor_request_board.gd"
+		)
+		and request_text.contains(
+			"triple_triad_quest_reward_adapter.gd"
+		)
+		and request_text.contains(
+			"source_id = &\"harbor_errands\""
+		)
+		and request_text.contains(
+			"quest_event_id = &\"beach_demo_harbor_errand_01\""
+		)
+		and request_text.contains(
+			"required_opponent_id = &\"beach_trader\""
+		)
+		and beach_text.contains(HARBOR_REQUEST_BOARD_SCENE_PATH)
+	)
+	return _ok(
+		valid,
+		"The beach slice must turn a persistent Beach Trader win into a stable one-shot Harbor Errands quest reward through the existing quest adapter."
 	)
 
 
