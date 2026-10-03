@@ -103,6 +103,13 @@ func _refresh_state() -> void:
 		return
 
 	if (
+		game.has_method("is_card_game_unlocked")
+		and not bool(game.call("is_card_game_unlocked"))
+	):
+		prompt_label.text = locked_prompt
+		return
+
+	if (
 		one_shot
 		and game.has_method("has_world_reward_event_claimed")
 		and bool(

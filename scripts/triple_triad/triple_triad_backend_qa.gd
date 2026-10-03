@@ -96,6 +96,8 @@ const DefaultRuleSet = preload("res://data/triple_triad/basic_rules.tres")
 const DefaultRegionProfile = preload(
 	"res://data/triple_triad/regions/prototype_coast.tres"
 )
+const HARBOR_LOCKBOX_SCENE_PATH := "res://actors/HarborLockbox.tscn"
+const MAIN_VERTICAL_SLICE_PATH := "res://actors/FishingTestScene_V2.tscn"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -685,6 +687,7 @@ func run_all() -> Dictionary:
 	_run("Early opponent ladder unlocks in order", _test_early_opponent_ladder)
 	_run("Campaign QA mirrors early acquisition spine", _test_campaign_qa_progression_alignment)
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
+	_run("Treasure cache world vertical slice is authored", _test_treasure_cache_vertical_slice)
 	_run("Every acquisition source has a gameplay delivery route", _test_acquisition_reachability)
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
@@ -720,6 +723,7 @@ func run_all() -> Dictionary:
 	_run("UI flow maps phases to HUD turn state", _test_ui_flow_turn_text)
 	_run("UI flow limits player selection markers to player phases", _test_ui_flow_selection_phase)
 	_run("World gateway rejects writes before backend readiness", _test_world_gateway_backend_guard)
+	_run("World gateway blocks direct rewards before card discovery", _test_world_gateway_discovery_gate)
 	_run("World gateway preserves one-shot reward delivery", _test_world_gateway_one_shot_reward)
 	_run("World gateway owns opponent discovery context", _test_world_gateway_opponent_context)
 	_run("Competition controller owns tournament deck locking", _test_competition_controller_deck_lock)
@@ -1807,6 +1811,63 @@ func _test_match_resolution_journal() -> Dictionary:
 	return _ok(
 		valid and not journal.has_pending(),
 		"Match-resolution journal must round-trip selection and commit state without leaving stale data."
+	)
+
+
+func _test_treasure_cache_vertical_slice() -> Dictionary:
+	if not ResourceLoader.exists(HARBOR_LOCKBOX_SCENE_PATH):
+		return _ok(
+			false,
+			"The reusable Harbor Lockbox scene is missing."
+		)
+	if not FileAccess.file_exists(MAIN_VERTICAL_SLICE_PATH):
+		return _ok(
+			false,
+			"The beach vertical-slice scene is missing."
+		)
+
+	var lockbox_file := FileAccess.open(
+		HARBOR_LOCKBOX_SCENE_PATH,
+		FileAccess.READ
+	)
+	if lockbox_file == null:
+		return _ok(
+			false,
+			"The Harbor Lockbox scene could not be inspected."
+		)
+	var lockbox_text: String = lockbox_file.get_as_text()
+	lockbox_file.close()
+
+	var beach_file := FileAccess.open(
+		MAIN_VERTICAL_SLICE_PATH,
+		FileAccess.READ
+	)
+	if beach_file == null:
+		return _ok(
+			false,
+			"The beach vertical slice could not be inspected."
+		)
+	var beach_text: String = beach_file.get_as_text()
+	beach_file.close()
+
+	var valid: bool = (
+		lockbox_text.contains(
+			"triple_triad_world_reward_trigger_3d.gd"
+		)
+		and lockbox_text.contains(
+			"source_type_text = \"treasure_cache\""
+		)
+		and lockbox_text.contains(
+			"source_id = &\"harbor_lockbox\""
+		)
+		and lockbox_text.contains(
+			"event_id = &\"beach_demo_harbor_lockbox_01\""
+		)
+		and beach_text.contains(HARBOR_LOCKBOX_SCENE_PATH)
+	)
+	return _ok(
+		valid,
+		"The beach slice must place a stable one-shot Harbor Lockbox backed by the canonical treasure-cache source."
 	)
 
 
@@ -3138,6 +3199,62 @@ func _test_world_gateway_backend_guard() -> Dictionary:
 		and not bool(card_result.get("success", true))
 		and str(card_result.get("reason", "")) == "backend_not_ready",
 		"World-facing writes must stay closed until the Triple Triad backend is fully ready."
+	)
+
+
+func _test_world_gateway_discovery_gate() -> Dictionary:
+	var gated_card = MockCard.new(&"world_locked", 2, 2, 2, 2)
+	var catalog = MockGatewayCardCatalog.new([gated_card])
+	var collection = MockQuantityStore.new({"world_locked": 0})
+	var acquisition = MockGatewayAcquisitionService.new(collection)
+	acquisition.unlocked = false
+	var world_catalog = MockGatewayWorldCatalog.new([gated_card])
+	var ledger = WorldRewardLedgerScript.new()
+	var ledger_path := "user://triple_triad_world_gateway_locked_qa.cfg"
+	ledger.initialize(ledger_path)
+	ledger.reset_event(&"qa_locked_world_event")
+
+	var gateway = WorldGatewayScript.new()
+	gateway.initialize(
+		catalog,
+		acquisition,
+		world_catalog,
+		ledger,
+		collection,
+		MockGatewayProgression.new(4),
+		MockGatewayEncounterRecords.new(),
+		MockGatewayOpponentRegistry.new(),
+		RandomNumberGenerator.new(),
+		1
+	)
+	gateway.set_backend_ready(true)
+
+	var reward_result: Dictionary = gateway.claim_world_source_reward(
+		&"treasure_cache",
+		&"qa_source",
+		&"qa_context",
+		&"qa_locked_world_event",
+		true
+	)
+	var direct_result: Dictionary = gateway.claim_world_source_card(
+		&"treasure_cache",
+		&"qa_source",
+		&"world_locked",
+		&"qa_context"
+	)
+	var valid: bool = (
+		not bool(reward_result.get("success", true))
+		and str(reward_result.get("reason", "")) == "card_game_locked"
+		and not bool(direct_result.get("success", true))
+		and str(direct_result.get("reason", "")) == "card_game_locked"
+		and collection.get_quantity_by_id(&"world_locked") == 0
+		and not ledger.has_claimed(&"qa_locked_world_event")
+		and ledger.get_pending_delivery(&"qa_locked_world_event").is_empty()
+	)
+	ledger.reset_event(&"qa_locked_world_event")
+	return _ok(
+		valid,
+		"Direct world card sources must stay closed until the Saltworn Card Case unlocks card duels, without journaling a reward early."
 	)
 
 

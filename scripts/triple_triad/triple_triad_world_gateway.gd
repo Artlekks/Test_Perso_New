@@ -208,6 +208,11 @@ func claim_world_source_card(
 			"success": false,
 			"reason": "acquisition_backend_unavailable",
 		}
+	if not is_card_game_unlocked():
+		return {
+			"success": false,
+			"reason": "card_game_locked",
+		}
 
 	var validation: Dictionary = _world_acquisition_catalog.call(
 		"validate_claim",
@@ -270,6 +275,11 @@ func claim_world_source_reward(
 		return {
 			"success": false,
 			"reason": "acquisition_catalog_unavailable",
+		}
+	if not is_card_game_unlocked():
+		return {
+			"success": false,
+			"reason": "card_game_locked",
 		}
 	if not bool(
 		_world_acquisition_catalog.call(
