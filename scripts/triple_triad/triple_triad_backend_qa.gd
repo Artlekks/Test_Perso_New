@@ -65,6 +65,9 @@ const LiveMatchControllerScript = preload(
 const MatchOrchestratorScript = preload(
 	"res://scripts/triple_triad/triple_triad_match_orchestrator.gd"
 )
+const PersistenceControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_persistence_controller.gd"
+)
 const RegionProfileScript = preload(
 	"res://scripts/triple_triad/triple_triad_region_profile.gd"
 )
@@ -505,6 +508,121 @@ class MockLiveOpponentCollection:
 		return cards.duplicate()
 
 
+class MockPersistenceMatchContext:
+	extends RefCounted
+
+	var qa_profile_override = null
+	var active_opponent_profile = null
+	var opponent_id: StringName = &"persistence_opponent"
+	var opponent_name: String = "Persistence Opponent"
+
+	func active_opponent_id() -> StringName:
+		return opponent_id
+
+	func active_opponent_display_name() -> String:
+		return opponent_name
+
+
+class MockPersistenceMatchResolution:
+	extends RefCounted
+
+	var last_winner: int = OWNER_NONE
+	var last_reason: StringName = &""
+	var transfer_result: Dictionary = {
+		"success": true,
+		"metadata_ok": true,
+		"remove_from_decks": false,
+	}
+
+	func record_match_result(
+		winner: int,
+		result_reason: StringName,
+		_surrendered: bool,
+		_opponent_profile,
+		_opponent_id: StringName,
+		_qa_match: bool,
+		_competition_match_active: bool,
+		_starting_player_cards: Array,
+		_starting_opponent_cards: Array,
+		_opponent_collection_backend
+	) -> Dictionary:
+		last_winner = winner
+		last_reason = result_reason
+		return {
+			"progression": {
+				"rank_up": true,
+				"rank_after": 4,
+				"rank_name": "QA Rank",
+			},
+		}
+
+	func commit_reward_transfer(
+		_card_definition,
+		_winner: int,
+		_opponent_id: StringName,
+		_opponent_collection_backend
+	) -> Dictionary:
+		return transfer_result.duplicate(true)
+
+
+class MockPersistenceCompetition:
+	extends RefCounted
+
+	var resolution_applied: bool = false
+
+	func is_match_active() -> bool:
+		return true
+
+	func apply_match_resolution(_resolution: Dictionary) -> Dictionary:
+		resolution_applied = true
+		return {"round_advanced": true}
+
+
+class MockPersistenceDeckSetup:
+	extends RefCounted
+
+	var removed_ids := PackedStringArray()
+
+	func remove_card_from_all_profiles(card_id: StringName) -> void:
+		removed_ids.append(String(card_id))
+
+
+class MockPersistenceLiveMatch:
+	extends RefCounted
+
+	var removed_ids := PackedStringArray()
+
+	func remove_card_from_active_deck(card_id: StringName) -> Array:
+		removed_ids.append(String(card_id))
+		return []
+
+
+class MockPersistenceSaveIntegrity:
+	extends RefCounted
+
+	var reasons: Array[String] = []
+
+	func audit_and_checkpoint(
+		_catalog,
+		_collection,
+		_progression,
+		_budget: int,
+		reason: String,
+		_policy
+	) -> Dictionary:
+		reasons.append(reason)
+		return {"valid": true, "reason": reason}
+
+
+class MockPersistenceJournal:
+	extends RefCounted
+
+	var clear_count: int = 0
+
+	func clear() -> void:
+		clear_count += 1
+
+
 var _results: Array[Dictionary] = []
 
 
@@ -594,6 +712,9 @@ func run_all() -> Dictionary:
 	_run("Match orchestrator preserves placement payload", _test_match_orchestrator_move_plan)
 	_run("Match orchestrator marks capture settle", _test_match_orchestrator_capture_settle)
 	_run("Match orchestrator normalizes reward candidates", _test_match_orchestrator_reward_ids)
+	_run("Persistence controller owns match-result bookkeeping", _test_persistence_match_outcome)
+	_run("Persistence controller owns reward deck cleanup", _test_persistence_reward_transfer)
+	_run("Persistence controller owns save checkpoints", _test_persistence_checkpoint)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -3543,3 +3664,94 @@ func _test_match_orchestrator_reward_ids() -> Dictionary:
 		"Match orchestration must normalize reward candidates and own live move-failure presentation policy."
 	)
 
+
+
+func _test_persistence_match_outcome() -> Dictionary:
+	var resolution = MockPersistenceMatchResolution.new()
+	var competition = MockPersistenceCompetition.new()
+	var context = MockPersistenceMatchContext.new()
+	var controller = PersistenceControllerScript.new()
+	controller.initialize({
+		"match_resolution": resolution,
+		"competition": competition,
+		"match_context": context,
+	})
+	var event_types: Array[StringName] = []
+	controller.gameplay_event_requested.connect(
+		func(event_type, _title, _detail, _payload, _priority):
+			event_types.append(StringName(event_type))
+	)
+	var payload: Dictionary = controller.record_match_outcome(
+		{"player": 6, "opponent": 4},
+		OWNER_PLAYER,
+		&"board_complete",
+		false,
+		[],
+		[],
+		null
+	)
+	return _ok(
+		bool(payload.get("success", false))
+		and resolution.last_winner == OWNER_PLAYER
+		and resolution.last_reason == &"board_complete"
+		and competition.resolution_applied
+		and int(payload.get("progression", {}).get("rank_after", 0)) == 4
+		and bool(payload.get("competition", {}).get("round_advanced", false))
+		and event_types == [&"duel_rank_up"],
+		"Persistence controller must own persistent result bookkeeping, competition handoff, and rank-up event publication."
+	)
+
+
+func _test_persistence_reward_transfer() -> Dictionary:
+	var resolution = MockPersistenceMatchResolution.new()
+	resolution.transfer_result = {
+		"success": true,
+		"metadata_ok": true,
+		"remove_from_decks": true,
+	}
+	var context = MockPersistenceMatchContext.new()
+	var deck_setup = MockPersistenceDeckSetup.new()
+	var live_match = MockPersistenceLiveMatch.new()
+	var controller = PersistenceControllerScript.new()
+	controller.initialize({
+		"match_resolution": resolution,
+		"match_context": context,
+		"deck_setup": deck_setup,
+		"live_match": live_match,
+	})
+	var card = MockCard.new(&"lost_persistence_card", 1, 2, 3, 4, 2)
+	card.display_name = "Lost Persistence Card"
+	var result: Dictionary = controller.commit_reward_transfer(
+		card,
+		OWNER_OPPONENT,
+		MockQuantityStore.new()
+	)
+	return _ok(
+		bool(result.get("success", false))
+		and deck_setup.removed_ids == PackedStringArray(["lost_persistence_card"])
+		and live_match.removed_ids == PackedStringArray(["lost_persistence_card"]),
+		"Persistence controller must remove a permanently lost card from saved and active deck state after a committed transfer."
+	)
+
+
+func _test_persistence_checkpoint() -> Dictionary:
+	var save_integrity = MockPersistenceSaveIntegrity.new()
+	var journal = MockPersistenceJournal.new()
+	var controller = PersistenceControllerScript.new()
+	controller.initialize({
+		"save_integrity": save_integrity,
+		"card_catalog": RefCounted.new(),
+		"collection_backend": RefCounted.new(),
+		"progression": RefCounted.new(),
+		"match_resolution_journal": journal,
+		"player_deck_budget": 30,
+	})
+	var first: Dictionary = controller.checkpoint("qa_checkpoint")
+	var second: Dictionary = controller.complete_reward_resolution()
+	return _ok(
+		bool(first.get("valid", false))
+		and bool(second.get("valid", false))
+		and save_integrity.reasons == ["qa_checkpoint", "reward_resolution_complete"]
+		and journal.clear_count == 1,
+		"Persistence controller must centralize save-integrity checkpoints and clear the resolution journal before the final reward checkpoint."
+	)

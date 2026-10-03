@@ -67,8 +67,11 @@ const LiveMatchControllerScript = preload(
 const MatchOrchestratorScript = preload(
 	"res://scripts/triple_triad/triple_triad_match_orchestrator.gd"
 )
+const PersistenceControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_persistence_controller.gd"
+)
 
-const BACKEND_VERSION := "2.16.0"
+const BACKEND_VERSION := "2.17.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -170,6 +173,7 @@ var _match_context = MatchContextControllerScript.new()
 var _runtime_state = RuntimeStateControllerScript.new()
 var _live_match = LiveMatchControllerScript.new()
 var _match_orchestrator = MatchOrchestratorScript.new()
+var _persistence = PersistenceControllerScript.new()
 
 
 func _ready() -> void:
@@ -314,11 +318,11 @@ func _ready() -> void:
 	_world_gateway.acquisition_completed.connect(_on_acquisition_bundle_claimed)
 	_world_gateway.card_game_unlock_changed.connect(_on_card_game_unlock_changed)
 	_world_gateway.gameplay_event_requested.connect(_queue_gameplay_event)
-	_world_gateway.save_checkpoint_requested.connect(_checkpoint_save_integrity)
+	_world_gateway.save_checkpoint_requested.connect(_persistence.checkpoint)
 	_world_gateway.backend_state_change_requested.connect(_publish_backend_state_change)
 
-	_completion_tracker.milestone_reached.connect(_on_collection_milestone_reached)
-	_completion_tracker.collection_completed.connect(_on_collection_completed)
+	_completion_tracker.milestone_reached.connect(_persistence.on_collection_milestone_reached)
+	_completion_tracker.collection_completed.connect(_persistence.on_collection_completed)
 
 	_match_resolution.initialize(
 		card_catalog,
@@ -349,6 +353,25 @@ func _ready() -> void:
 	_competition.competition_state_changed.connect(_on_competition_controller_state_changed)
 	_competition.gameplay_event_requested.connect(_queue_gameplay_event)
 	_competition.backend_state_change_requested.connect(_publish_backend_state_change)
+
+	_persistence.initialize({
+		"save_integrity": _save_integrity,
+		"card_catalog": card_catalog,
+		"collection_backend": _collection_backend,
+		"progression": _progression,
+		"match_resolution": _match_resolution,
+		"match_resolution_journal": _match_resolution_journal,
+		"competition": _competition,
+		"deck_setup": deck_setup,
+		"live_match": _live_match,
+		"match_context": _match_context,
+		"acquisition_policy": acquisition_policy,
+		"player_deck_budget": player_deck_budget,
+	})
+	_persistence.gameplay_event_requested.connect(_queue_gameplay_event)
+	_persistence.backend_state_change_requested.connect(_publish_backend_state_change)
+	_persistence.state_api_invalidation_requested.connect(_invalidate_state_api)
+	_persistence.card_reward_selected.connect(_on_persistence_card_reward_selected)
 
 	_match_orchestrator.initialize({
 		"match_flow": _match_flow,
@@ -383,7 +406,7 @@ func _ready() -> void:
 		opponent_registry
 	)
 	_runtime_recovery.gameplay_event_requested.connect(_queue_gameplay_event)
-	_runtime_recovery.checkpoint_requested.connect(_checkpoint_save_integrity)
+	_runtime_recovery.checkpoint_requested.connect(_persistence.checkpoint)
 	_runtime_recovery.backend_state_change_requested.connect(_publish_backend_state_change)
 
 	_runtime_state.initialize({
@@ -408,7 +431,7 @@ func _ready() -> void:
 	_runtime_state.backend_state_changed.connect(_on_runtime_backend_state_changed)
 	_runtime_state.world_progression_changed.connect(_on_runtime_world_progression_changed)
 
-	_checkpoint_save_integrity("boot")
+	_persistence.checkpoint("boot")
 
 	_backend_ready = true
 	_world_gateway.set_backend_ready(true)
@@ -922,7 +945,7 @@ func close_game() -> void:
 	_ui_flow.close_session_surfaces()
 	_presentation.hide_preview_visuals()
 	_session.close_session()
-	_checkpoint_save_integrity("close_game")
+	_persistence.checkpoint("close_game")
 	_invalidate_state_api("close_game")
 	_opponent_collection_backend = null
 	var tree: SceneTree = get_tree()
@@ -1085,46 +1108,18 @@ func _finish_match(
 	_match_flow.finish_match(forced_winner, reason)
 	_presentation.hide_preview_visuals()
 	_refresh_views()
-	var score: Dictionary = _match.get_score()
-
-	var resolution: Dictionary = _match_resolution.record_match_result(
+	var result_payload: Dictionary = _persistence.record_match_outcome(
+		_match.get_score(),
 		_session.result_winner,
 		_session.result_reason,
 		_session.surrendered,
-		_match_context.active_opponent_profile,
-		_match_context.active_opponent_id(),
-		_match_context.qa_profile_override != null,
-		_competition.is_match_active(),
 		_live_match.get_starting_player_cards(),
 		_live_match.get_starting_opponent_cards(),
 		_opponent_collection_backend
 	)
-	var progression_change: Dictionary = (
-		resolution.get("progression", {}) as Dictionary
-	).duplicate(true)
-	var competition_change: Dictionary = (
-		_competition.apply_match_resolution(resolution)
-	)
-
-	if bool(progression_change.get("rank_up", false)):
-		_queue_gameplay_event(
-			&"duel_rank_up",
-			"Duel Rank %d" % int(progression_change.get("rank_after", 1)),
-			str(progression_change.get("rank_name", "")),
-			progression_change,
-			2
-		)
 
 	_ui_flow.show_result(_session.result_winner, _session.surrendered)
-	match_finished.emit({
-		"winner": _session.result_winner,
-		"score": score,
-		"progression": progression_change,
-		"competition": competition_change,
-		"reason": String(_session.result_reason),
-		"surrendered": _session.surrendered,
-	})
-	_publish_backend_state_change("match_result")
+	match_finished.emit(result_payload)
 
 
 func _begin_result_transition() -> void:
@@ -1240,114 +1235,24 @@ func _refresh_ui_flow() -> void:
 	)
 
 func _on_reward_selected(card_definition) -> void:
-	if card_definition == null:
-		_ui_flow.resolve_reward_transfer(false)
-		return
-
-	var transfer_result: Dictionary = _match_resolution.commit_reward_transfer(
+	var transfer_result: Dictionary = _persistence.commit_reward_transfer(
 		card_definition,
 		_session.result_winner,
-		_match_context.active_opponent_id(),
 		_opponent_collection_backend
 	)
-	if not bool(transfer_result.get("success", false)):
-		var failure_reason: String = str(
-			transfer_result.get("reason", "unknown")
-		)
-		match failure_reason:
-			"economy_unavailable":
-				push_error(
-					"TripleTriadGame: card economy is unavailable during reward transfer."
-				)
-			"journal_selection_failed":
-				push_error(
-					"TripleTriadGame: could not journal the mandatory card selection."
-				)
-			"transfer_failed":
-				push_error(
-					"TripleTriadGame: failed to commit the mandatory card transfer."
-				)
-			_:
-				push_error(
-					"TripleTriadGame: reward transfer rejected (%s)."
-					% failure_reason
-				)
-		_ui_flow.resolve_reward_transfer(false)
-		return
-
-	var metadata_ok: bool = bool(
-		transfer_result.get("metadata_ok", false)
+	_ui_flow.resolve_reward_transfer(
+		bool(transfer_result.get("success", false))
 	)
-	if _session.result_winner == OWNER_PLAYER:
-		card_reward_selected.emit(card_definition)
-		_queue_gameplay_event(
-			&"opponent_card_won",
-			str(card_definition.display_name),
-			"Won from %s."
-			% _match_context.active_opponent_display_name(),
-			{
-				"card_id": String(card_definition.card_id),
-				"opponent_id": String(_match_context.active_opponent_id()),
-			}
-		)
-	elif _session.result_winner == OWNER_OPPONENT:
-		_queue_gameplay_event(
-			&"card_lost",
-			str(card_definition.display_name),
-			"Lost to %s. Win it back in a rematch."
-			% _match_context.active_opponent_display_name(),
-			{
-				"card_id": String(card_definition.card_id),
-				"opponent_id": String(_match_context.active_opponent_id()),
-			}
-		)
-
-		if bool(transfer_result.get("remove_from_decks", false)):
-			deck_setup.remove_card_from_all_profiles(
-				StringName(card_definition.card_id)
-			)
-			_live_match.remove_card_from_active_deck(
-				StringName(card_definition.card_id)
-			)
-
-	if not metadata_ok:
-		push_warning(
-			"TripleTriadGame: ownership transfer succeeded but reward metadata reconciliation reported a problem."
-		)
-
-	_checkpoint_save_integrity("reward_transfer")
-	_publish_backend_state_change("card_transfer")
-	_ui_flow.resolve_reward_transfer(true)
 
 
-func _checkpoint_save_integrity(reason: String) -> void:
-	if _save_integrity == null:
-		return
-	if card_catalog == null or _collection_backend == null or _progression == null:
-		return
-
-	var report: Dictionary = _save_integrity.audit_and_checkpoint(
-		card_catalog,
-		_collection_backend,
-		_progression,
-		player_deck_budget,
-		reason,
-		acquisition_policy
-	)
-	if not bool(report.get("valid", true)):
-		push_warning(
-			"TripleTriadGame: save integrity checkpoint '%s' reported: %s"
-			% [reason, str(report.get("warnings", []))]
-		)
-	_invalidate_state_api("integrity_checkpoint")
+func _on_persistence_card_reward_selected(card_definition) -> void:
+	card_reward_selected.emit(card_definition)
 
 
 
 func _on_reward_completed() -> void:
 	_ui_flow.close_reward()
-	if _match_resolution_journal != null:
-		_match_resolution_journal.clear()
-	_checkpoint_save_integrity("reward_resolution_complete")
+	_persistence.complete_reward_resolution()
 	if (
 		_competition.should_continue_after_reward()
 		and _continue_active_competition_round()
@@ -1389,33 +1294,6 @@ func _continue_active_competition_round() -> bool:
 	_live_match.set_active_player_deck(locked_cards)
 	_start_new_match(_live_match.get_active_player_deck())
 	return true
-
-
-func _on_collection_milestone_reached(
-	unique_card_count: int,
-	snapshot: Dictionary
-) -> void:
-	_queue_gameplay_event(
-		&"collection_milestone",
-		"%d Cards Collected" % unique_card_count,
-		"Collection progress: %.1f%%"
-		% float(snapshot.get("completion_percent", 0.0)),
-		{
-			"unique_card_count": unique_card_count,
-			"completion": snapshot,
-		},
-		1
-	)
-
-
-func _on_collection_completed(snapshot: Dictionary) -> void:
-	_queue_gameplay_event(
-		&"collection_complete",
-		"179 / 179 Cards",
-		"Card collection complete.",
-		snapshot,
-		3
-	)
 
 
 func _on_deck_confirmed(cards: Array) -> void:
