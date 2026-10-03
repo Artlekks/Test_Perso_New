@@ -32,7 +32,7 @@ mugshot_053,Saltbeard,silver,traveler,1,opponent_win,beach_trader,Beach Trader,1
 mugshot_054,Gimbal,silver,traveler,1,opponent_win,beach_trader,Beach Trader,1
 mugshot_056,Boru,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
 mugshot_057,Boru Breaker,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
-mugshot_058,Boru Brawler,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,1
+mugshot_058,Boru Brawler,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,2
 mugshot_059,Crag,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
 mugshot_061,Iven,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
 mugshot_062,Jax,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
@@ -44,18 +44,18 @@ mugshot_067,Sandbeak,silver,beast,1,opponent_win,marsh_keeper,Marsh Keeper,2
 mugshot_068,Undertow,silver,beast,3,opponent_win,tide_oracle,Tide Oracle,3
 mugshot_069,Pale Sentinel,silver,construct,1,treasure_cache,highland_cache,Highland Caches,2
 mugshot_070,Gearwheel,silver,construct,1,opponent_win,gearwright,Gearwright,1
-mugshot_071,Swiftfin,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_071,Swiftfin,silver,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
 mugshot_072,Bonejaw,silver,beast,3,fishing_salvage,deep_water,Deepwater Salvage,3
 mugshot_073,Mire Turtle,silver,beast,2,opponent_win,highland_keeper,Highland Keeper,2
 mugshot_074,Gloom Toad,silver,beast,2,opponent_win,storm_captain,Storm Captain,4
 mugshot_075,Wharf Cat,silver,beast,3,opponent_win,tide_oracle,Tide Oracle,3
-mugshot_076,Reed Frog,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_076,Reed Frog,silver,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
 mugshot_077,Moss Frog,silver,beast,1,opponent_win,marsh_keeper,Marsh Keeper,2
 mugshot_078,Night Frog,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
 mugshot_079,Duskhopper,silver,beast,1,opponent_win,marsh_keeper,Marsh Keeper,2
-mugshot_080,Red-Eye Toad,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_081,Thorn Toad,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_082,Pondling,silver,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_080,Red-Eye Toad,silver,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
+mugshot_081,Thorn Toad,silver,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
+mugshot_082,Pondling,silver,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
 mugshot_083,Mireling,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
 mugshot_084,Razorbeak,silver,beast,2,fishing_salvage,marsh_reeds,Reedwater Salvage,2
 mugshot_085,Brass Beetle,silver,construct,3,opponent_win,lantern_gambler,Lantern Gambler,3
@@ -81,7 +81,7 @@ mugshot_104,Nia,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guil
 mugshot_105,Grandma Osa,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
 mugshot_106,Master Pell,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
 mugshot_107,Sage Venn,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
-mugshot_108,Koro,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,1
+mugshot_108,Koro,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,2
 mugshot_109,Hamir,silver,traveler,1,quest_reward,harbor_errands,Harbor Errands,1
 mugshot_110,Hamir Bold,silver,traveler,2,quest_reward,guild_commissions,Travelers' Guild Commissions,2
 mugshot_111,Cira,silver,traveler,3,opponent_win,lantern_gambler,Lantern Gambler,3
@@ -92,7 +92,7 @@ mugshot_114,Elder Kesh,silver,traveler,1,quest_reward,harbor_errands,Harbor Erra
 mugshot_117,Torren,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
 mugshot_118,Pello,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
 mugshot_119,Gearface,silver,construct,3,opponent_win,lantern_gambler,Lantern Gambler,3
-mugshot_120,Captain Rusk,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,1
+mugshot_120,Captain Rusk,silver,traveler,1,opponent_win,dock_bruiser,Dock Bruiser,2
 mugshot_121,Rusk Stern,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
 mugshot_122,Rusk Veteran,silver,traveler,1,opponent_win,storm_captain,Storm Captain,4
 mugshot_123,Fira,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
@@ -125,29 +125,29 @@ mugshot_149,Featherbeak,silver,traveler,2,quest_reward,guild_commissions,Travele
 mugshot_150,Glass-Eye,silver,traveler,1,opponent_win,storm_captain,Storm Captain,4
 mugshot_151,Masked Warden,silver,construct,2,opponent_win,highland_keeper,Highland Keeper,2
 mugshot_152,Corin,silver,traveler,1,quest_reward,roadside_stories,Roadside Card Stories,2
-mugshot_153,Embermane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_153,Embermane,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
 mugshot_154,Cindermane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
 mugshot_155,Rustmane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
-mugshot_156,Ashmane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
-mugshot_157,Flamemane,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_156,Ashmane,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_157,Flamemane,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
 mugshot_158,Cliff Ape,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
-mugshot_159,Cliff Alpha,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_159,Cliff Alpha,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
 mugshot_160,Mud Ox,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
-mugshot_161,Cave Bear,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
+mugshot_161,Cave Bear,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
 mugshot_162,Dune Horse,bronze,beast,1,starter_bundle,salvaged_card_case,Saltworn Card Case,1
-mugshot_163,Ramhorn,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_164,Glow Ram,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_165,Ember Hound,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_166,Sand Hound,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_163,Ramhorn,bronze,beast,1,card_maker,bass_card,Bass Card Maker Recipe,1
+mugshot_164,Glow Ram,bronze,beast,1,card_maker,blue_gill_card,Blue Gill Card Maker Recipe,1
+mugshot_165,Ember Hound,bronze,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
+mugshot_166,Sand Hound,bronze,beast,1,card_maker,piranha_card,Piranha Card Maker Recipe,1
 mugshot_167,Pale Hound,bronze,beast,1,opponent_win,pier_apprentice,Pier Apprentice,1
-mugshot_168,Stray Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_169,Moon Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_170,Harbor Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_171,Alley Cat,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
-mugshot_172,Suncrest Hen,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_168,Stray Cat,bronze,beast,1,card_maker,trout_card,Trout Card Maker Recipe,1
+mugshot_169,Moon Cat,bronze,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
+mugshot_170,Harbor Cat,bronze,beast,1,card_maker,sea_bass_card,Sea Bass Card Maker Recipe,1
+mugshot_171,Alley Cat,bronze,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
+mugshot_172,Suncrest Hen,bronze,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
 mugshot_173,Sky Talon,gold,beast,6,tournament_reward,masters_cup,Masters' Cup,5
 mugshot_174,Solin,gold,beast,6,tournament_reward,masters_cup,Masters' Cup,5
-mugshot_175,Foxkin,bronze,beast,1,fishing_salvage,coast_shallows,Coast Shallows Salvage,1
+mugshot_175,Foxkin,bronze,beast,1,fishing_salvage,coast_deeper,Deeper Coastal Salvage,2
 mugshot_176,Tin Walker,bronze,construct,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
 mugshot_177,Steel Walker,bronze,construct,1,treasure_cache,harbor_lockbox,Harbor Lockboxes,1
 mugshot_178,Brass Walker,bronze,construct,1,opponent_win,gearwright,Gearwright,1

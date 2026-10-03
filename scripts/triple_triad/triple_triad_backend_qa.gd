@@ -676,6 +676,7 @@ func run_all() -> Dictionary:
 	_run("Acquisition registry is legal", _test_acquisition_registry)
 	_run("Card-game discovery gates opponents", _test_card_game_discovery_gate)
 	_run("World acquisition map covers all cards", _test_world_acquisition_map)
+	_run("Card acquisition metadata mirrors world map", _test_card_acquisition_metadata_alignment)
 	_run("Early card acquisition plan is coherent", _test_early_acquisition_plan)
 	_run("Early fishing salvage pools are progressive", _test_progressive_salvage_pools)
 	_run("Early opponent ladder unlocks in order", _test_early_opponent_ladder)
@@ -883,6 +884,78 @@ func _test_world_acquisition_map() -> Dictionary:
 		and int(audit.get("covered_card_count", 0)) == 179,
 		"All 179 cards must have a valid acquisition source: %s"
 		% str(audit.get("errors", []))
+	)
+
+
+func _test_card_acquisition_metadata_alignment() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var expected_by_card: Dictionary = {}
+	for raw_source in world_catalog.get_all_source_snapshots():
+		if not (raw_source is Dictionary):
+			continue
+		var source: Dictionary = raw_source
+		var source_type: String = str(source.get("source_type", ""))
+		var metadata_tag: String = "starter" if source_type == "starter_bundle" else source_type
+		for raw_id in source.get("card_ids", PackedStringArray()):
+			var card_id: String = str(raw_id)
+			if not expected_by_card.has(card_id):
+				expected_by_card[card_id] = {}
+			var expected_tags: Dictionary = expected_by_card[card_id]
+			expected_tags[metadata_tag] = true
+			expected_by_card[card_id] = expected_tags
+
+	var mismatches := PackedStringArray()
+	for source_index in range(DefaultCardCatalog.get_total_source_count()):
+		var card = DefaultCardCatalog.get_card(source_index)
+		if card == null:
+			continue
+		var card_id: String = String(card.card_id)
+		var expected: Dictionary = expected_by_card.get(card_id, {})
+		var actual: Dictionary = {}
+		for raw_tag in card.acquisition_tags:
+			actual[str(raw_tag)] = true
+		if actual.size() != expected.size():
+			mismatches.append(card_id)
+			continue
+		for expected_tag in expected.keys():
+			if not actual.has(expected_tag):
+				mismatches.append(card_id)
+				break
+
+	var starter_source: Dictionary = world_catalog.get_source_snapshot(
+		&"starter_bundle",
+		&"salvaged_card_case"
+	)
+	var expected_starters: Dictionary = {}
+	for raw_id in starter_source.get("card_ids", PackedStringArray()):
+		expected_starters[str(raw_id)] = true
+	var policy_starters: Array = DefaultAcquisitionPolicy.build_starting_collection(
+		DefaultCardCatalog
+	)
+	var policy_ids: Dictionary = {}
+	for card in policy_starters:
+		if card != null:
+			policy_ids[String(card.card_id)] = true
+	var starter_matches: bool = policy_ids.size() == expected_starters.size()
+	if starter_matches:
+		for card_id in expected_starters.keys():
+			if not policy_ids.has(card_id):
+				starter_matches = false
+				break
+
+	return _ok(
+		mismatches.is_empty()
+		and expected_by_card.size() == 179
+		and expected_starters.size() == 5
+		and policy_starters.size() == 5
+		and starter_matches,
+		"Card acquisition_tags and starter policy must mirror the canonical world map. Mismatches: %s"
+		% str(mismatches)
 	)
 
 

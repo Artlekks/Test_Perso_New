@@ -10,8 +10,9 @@ This pass makes acquisition provenance a validated backend contract rather than 
 - `treasure_cache` — cache/chest source pools; event persistence belongs to exploration.
 - `quest_reward` — quest/commission source pools; quest state owns one-shot behavior.
 - `tournament_reward` — regional/master competition pools.
+- `card_maker` — fish-to-card conversion recipes owned by the Card Maker economy service.
 
-The acquisition map validates the starter bundle and every opponent reward pool against their real resources, so documentation cannot silently drift away from gameplay.
+The acquisition map validates the starter bundle and every opponent reward pool against their real resources. Card metadata mirrors these source families for filtering, while this map remains the canonical acquisition source of truth.
 
 ## Direct claim API
 
@@ -19,7 +20,7 @@ External world systems use:
 
 `TripleTriadGame.claim_world_source_card(source_type, source_id, card_id, source_context)`
 
-Only fishing salvage, treasure caches, quests, and tournament sources can use that direct path. Starter and opponent rewards remain owned by their existing dedicated systems.
+Fishing salvage, treasure caches, quests, tournaments, and Card Maker recipes can use that validated direct-claim path. Starter and opponent rewards remain owned by their existing dedicated systems.
 
 ## Progression intent
 

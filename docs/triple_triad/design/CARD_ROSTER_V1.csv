@@ -123,15 +123,15 @@ slot,card_id,name,rarity,group,level,cost,required_rank,top,right,bottom,left,ra
 121,mugshot_150,Glass-Eye,silver,traveler,4,6,1,1,7,6,3,17,0,[],False
 122,mugshot_151,Masked Warden,silver,construct,5,7,2,2,3,4,7,16,1,"[[-1,1],[1,1]]",False
 123,mugshot_152,Corin,silver,traveler,4,5,1,2,3,4,6,15,0,[],False
-124,mugshot_153,Embermane,bronze,beast,3,6,1,2,5,4,3,14,1,"[[-1,0],[0,-1]]",True
+124,mugshot_153,Embermane,bronze,beast,3,6,1,2,5,4,3,14,1,"[[-1,0],[0,-1]]",False
 125,mugshot_154,Cindermane,bronze,beast,1,4,1,2,3,2,3,10,0,[],True
 126,mugshot_155,Rustmane,bronze,beast,1,4,1,1,3,1,5,10,0,[],True
-127,mugshot_156,Ashmane,bronze,beast,3,5,1,6,3,2,3,14,0,[],True
-128,mugshot_157,Flamemane,bronze,beast,3,5,1,5,4,1,4,14,0,[],True
+127,mugshot_156,Ashmane,bronze,beast,3,5,1,6,3,2,3,14,0,[],False
+128,mugshot_157,Flamemane,bronze,beast,3,5,1,5,4,1,4,14,0,[],False
 129,mugshot_158,Cliff Ape,bronze,beast,2,5,1,3,4,2,1,10,1,"[[0,-1],[1,0]]",True
-130,mugshot_159,Cliff Alpha,bronze,beast,2,4,1,4,2,1,5,12,0,[],True
+130,mugshot_159,Cliff Alpha,bronze,beast,2,4,1,4,2,1,5,12,0,[],False
 131,mugshot_160,Mud Ox,bronze,beast,2,4,1,5,2,3,2,12,0,[],True
-132,mugshot_161,Cave Bear,bronze,beast,3,5,1,4,3,2,5,14,0,[],True
+132,mugshot_161,Cave Bear,bronze,beast,3,5,1,4,3,2,5,14,0,[],False
 133,mugshot_162,Dune Horse,bronze,beast,3,6,1,4,5,3,2,14,1,"[[-1,-1],[1,-1]]",True
 134,mugshot_163,Ramhorn,bronze,beast,2,4,1,3,4,1,4,12,0,[],False
 135,mugshot_164,Glow Ram,bronze,beast,2,4,1,4,2,1,5,12,0,[],False

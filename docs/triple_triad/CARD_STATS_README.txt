@@ -22,6 +22,7 @@ Influence entry behave exactly as before.
 
 The current 179 cards retain their existing balance values. Twelve temporary
 prototype cards have pressure patterns purely for gameplay testing; these are
-not final lore/rarity/character assignments. Six of the deterministic 10-card
-fresh-save starter collection currently have Influence so the mechanic can be
-playtested immediately.
+not final lore/rarity/character assignments. The fresh-save starter collection
+is the canonical five-card Saltworn Card Case. `acquisition_tags` mirror the
+validated world acquisition map for filtering only; the world acquisition map
+remains the source of truth for where a card is actually obtained.

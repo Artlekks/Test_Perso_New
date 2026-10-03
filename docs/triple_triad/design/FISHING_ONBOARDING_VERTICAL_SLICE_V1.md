@@ -58,7 +58,7 @@ is required.
 The ecosystem acquisition migration remains authoritative:
 - an existing non-empty card collection is treated as already discovered;
 - the starter case is marked satisfied by migration;
-- no duplicate ten-card bundle is granted.
+- no duplicate five-card bundle is granted.
 
 ## QA
 

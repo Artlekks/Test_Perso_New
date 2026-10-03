@@ -16,7 +16,7 @@ The current six-rank progression is respected. Bronze is broadly usable at Rank 
 
 ## Starter collection
 
-Only ten cards carry the `starter` acquisition tag now; previously the entire 179-card roster did. The starter set is a deliberately modest Bronze creature package at compact atlas slots 124-133. Five cheapest starters cost 21 points in total, safely below the base 30-point deck budget. Three starters demonstrate Pressure from the beginning without making every early card an Influence card.
+Exactly five cards carry the `starter` acquisition tag, matching the canonical Saltworn Card Case: Cindermane, Rustmane, Cliff Ape, Mud Ox, and Dune Horse. Their combined 23 Card Points fit safely below the base 30-point deck budget. Two starter cards demonstrate Pressure from the beginning without making every early card an Influence card. The remaining nearby Bronze creatures are earned through the early acquisition spine instead of being mislabeled as starters.
 
 ## Influence distribution
 
