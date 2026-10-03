@@ -21,7 +21,6 @@ const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/de
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
 const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
-const OpponentEvolutionScript = preload("res://scripts/triple_triad/triple_triad_opponent_evolution.gd")
 const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad_gameplay_event_feed.gd")
 const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
 const SessionControllerScript = preload(
@@ -57,8 +56,11 @@ const BackendBootstrapScript = preload(
 const DeveloperToolsControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_developer_tools_controller.gd"
 )
+const MatchContextControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_match_context_controller.gd"
+)
 
-const BACKEND_VERSION := "2.11.0"
+const BACKEND_VERSION := "2.12.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -142,17 +144,6 @@ var _selected_cell_index: int = 4
 var _starting_player_cards: Array = []
 var _starting_opponent_cards: Array = []
 var _last_info_name: String = ""
-var _active_opponent_profile: Resource = null
-var _active_region_profile: Resource = null
-var _active_ai_profile: Resource = null
-var _active_rule_set: Resource = null
-var _active_deck_budget: int = 30
-var _active_min_level: int = 1
-var _active_max_level: int = 3
-var _qa_profile_override: Resource = null
-var _qa_forced_starting_owner: int = OWNER_NONE
-var _qa_hand_seed: int = 0
-var _qa_base_summary: Dictionary = {}
 var _active_player_deck: Array = []
 var _collection_backend = null
 var _opponent_collection_backend = null
@@ -173,13 +164,12 @@ var _competition_catalog = null
 var _competition_service = null
 var _completion_tracker = null
 var _world_progression_director = null
-var _opponent_evolution = OpponentEvolutionScript.new()
-var _active_opponent_evolution: Dictionary = {}
 var _gameplay_event_feed = GameplayEventFeedScript.new()
 var _match_resolution_journal = MatchResolutionJournalScript.new()
 var _match_resolution = MatchResolutionControllerScript.new()
 var _backend_bootstrap = BackendBootstrapScript.new()
 var _developer_tools = DeveloperToolsControllerScript.new()
+var _match_context = MatchContextControllerScript.new()
 
 
 func _ready() -> void:
@@ -280,6 +270,20 @@ func _ready() -> void:
 			push_error("TripleTriadGame backend: %s" % error_text)
 		push_error("TripleTriadGame: backend bootstrap failed; backend disabled for this session.")
 		return
+
+	_match_context.initialize(
+		card_catalog,
+		_rng,
+		_encounter_records,
+		{
+			"region_profile": region_profile,
+			"ai_profile": ai_profile,
+			"rule_set": rule_set,
+			"deck_budget": deck_budget,
+			"min_level": prototype_min_level,
+			"max_level": prototype_max_level,
+		}
+	)
 
 	_world_gateway.initialize(
 		card_catalog,
@@ -600,7 +604,7 @@ func get_global_triple_triad_snapshot() -> Dictionary:
 		"backend_version": BACKEND_VERSION,
 		"is_open": is_open(),
 		"phase": _session.phase,
-		"active_opponent_id": String(_active_opponent_id()) if is_open() else "",
+		"active_opponent_id": String(_match_context.active_opponent_id()) if is_open() else "",
 	}
 	snapshot["completion"] = get_collection_completion_snapshot()
 	snapshot["competitive"] = get_competitive_snapshot()
@@ -647,8 +651,8 @@ func get_runtime_ui_snapshot() -> Dictionary:
 				)
 			)
 		var reveal_opponent: bool = (
-			_active_rule_set == null
-			or bool(_active_rule_set.open_rule)
+			_match_context.active_rule_set == null
+			or bool(_match_context.active_rule_set.open_rule)
 		)
 		for hand_index in range(_match.opponent_hand.size()):
 			if reveal_opponent:
@@ -903,17 +907,11 @@ func get_opponent_evolution_snapshot(
 	var profile = opponent_registry.call("get_opponent", opponent_id)
 	if profile == null:
 		return {}
-	var encounter_snapshot: Dictionary = {}
-	if _encounter_records != null:
-		encounter_snapshot = _encounter_records.get_snapshot(opponent_id)
-	return _opponent_evolution.build_snapshot(
-		profile,
-		encounter_snapshot
-	)
+	return _match_context.build_opponent_evolution_snapshot(profile)
 
 
 func get_active_opponent_evolution_snapshot() -> Dictionary:
-	return _active_opponent_evolution.duplicate(true)
+	return _match_context.get_active_evolution_snapshot()
 
 
 func get_opponent_availability(opponent_id: StringName) -> Dictionary:
@@ -1002,10 +1000,10 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	):
 		call_deferred("_resume_pending_match_resolution")
 		return
-	if _qa_profile_override == null and not is_card_game_unlocked():
+	if _match_context.qa_profile_override == null and not is_card_game_unlocked():
 		push_warning("TripleTriadGame: card game is locked until the first card bundle is acquired.")
 		return
-	if _qa_profile_override == null and opponent_profile_override != null:
+	if _match_context.qa_profile_override == null and opponent_profile_override != null:
 		var raw_opponent_id = opponent_profile_override.get("opponent_id")
 		if raw_opponent_id != null and String(raw_opponent_id) != "":
 			var direct_availability: Dictionary = get_opponent_availability(
@@ -1024,15 +1022,15 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	if tree == null or tree.paused:
 		return
 	_session.open_deck_setup(tree.paused)
-	_resolve_active_configuration(opponent_profile_override)
+	_match_context.resolve(opponent_profile_override)
 	_opponent_collection_backend = OpponentCollectionScript.new()
 	_opponent_collection_backend.initialize(
 		card_catalog,
-		_active_opponent_id(),
-		_active_min_level,
-		_active_max_level,
-		_active_deck_budget,
-		_active_opponent_profile
+		_match_context.active_opponent_id(),
+		_match_context.active_min_level,
+		_match_context.active_max_level,
+		_match_context.active_deck_budget,
+		_match_context.active_opponent_profile
 	)
 	_invalidate_state_api("opponent_loaded")
 	var active_player_budget: int = player_deck_budget
@@ -1103,7 +1101,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if action == InputControllerScript.ACTION_DEBUG and _session.phase in [PHASE_SELECT_CARD, PHASE_SELECT_CELL, PHASE_RESULT]:
-		debug_menu.open_menu(_qa_base_summary, _qa_profile_override)
+		debug_menu.open_menu(_match_context.qa_base_summary, _match_context.qa_profile_override)
 		_accept_input()
 
 
@@ -1213,8 +1211,8 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 	_competition.clear_pending_change()
 	_last_info_name = ""
 
-	if _qa_hand_seed > 0:
-		_rng.seed = _qa_hand_seed
+	if _match_context.qa_hand_seed > 0:
+		_rng.seed = _match_context.qa_hand_seed
 
 	var player_cards: Array = []
 	if player_cards_override.size() == 5:
@@ -1222,22 +1220,22 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 	elif _active_player_deck.size() == 5:
 		player_cards = _active_player_deck.duplicate()
 	else:
-		player_cards = _build_budgeted_hand(_active_min_level, _active_max_level)
+		player_cards = _match_context.build_budgeted_hand()
 	var opponent_cards: Array = []
 	if _opponent_collection_backend != null:
 		opponent_cards = _opponent_collection_backend.build_match_deck(
 			5,
-			_active_deck_budget,
-			_active_opponent_evolution
+			_match_context.active_deck_budget,
+			_match_context.active_opponent_evolution
 		)
 	if opponent_cards.size() != 5:
-		push_error("TripleTriadGame: opponent %s has no legal persistent deck." % String(_active_opponent_id()))
+		push_error("TripleTriadGame: opponent %s has no legal persistent deck." % String(_match_context.active_opponent_id()))
 		message_label.text = "Opponent deck is invalid."
 		close_game()
 		return
 
 	var starting_owner: int
-	match _qa_forced_starting_owner:
+	match _match_context.qa_forced_starting_owner:
 		OWNER_PLAYER:
 			starting_owner = OWNER_PLAYER
 		OWNER_OPPONENT:
@@ -1245,7 +1243,7 @@ func _start_new_match(player_cards_override: Array = []) -> void:
 		_:
 			starting_owner = OWNER_PLAYER if _rng.randi_range(0, 1) == 0 else OWNER_OPPONENT
 	var flow: Dictionary = _match_flow.prepare_match(
-		player_cards, opponent_cards, starting_owner, _active_rule_set, _active_region_profile
+		player_cards, opponent_cards, starting_owner, _match_context.active_rule_set, _match_context.active_region_profile
 	)
 	if not bool(flow.get("success", false)):
 		push_error("TripleTriadGame: match flow setup failed: %s" % str(flow.get("reason", "unknown")))
@@ -1318,7 +1316,7 @@ func _on_ai_timer_timeout() -> void:
 	_run_ai_turn()
 
 func _run_ai_turn() -> void:
-	var flow: Dictionary = _match_flow.commit_ai_move(_active_ai_profile)
+	var flow: Dictionary = _match_flow.commit_ai_move(_match_context.active_ai_profile)
 	if not bool(flow.get("success", false)):
 		if bool(flow.get("finish", false)):
 			_finish_match()
@@ -1411,9 +1409,9 @@ func _finish_match(
 		_session.result_winner,
 		_session.result_reason,
 		_session.surrendered,
-		_active_opponent_profile,
-		_active_opponent_id(),
-		_qa_profile_override != null,
+		_match_context.active_opponent_profile,
+		_match_context.active_opponent_id(),
+		_match_context.qa_profile_override != null,
 		_competition.is_match_active(),
 		_starting_player_cards,
 		_starting_opponent_cards,
@@ -1481,8 +1479,8 @@ func _run_result_transition(winner: int) -> void:
 	var reward_presentation: Dictionary = (
 		_match_resolution.prepare_reward_presentation(
 			winner,
-			_active_opponent_profile,
-			_active_opponent_id(),
+			_match_context.active_opponent_profile,
+			_match_context.active_opponent_id(),
 			_starting_player_cards,
 			_starting_opponent_cards,
 			_opponent_collection_backend
@@ -1551,15 +1549,15 @@ func _resume_pending_match_resolution() -> void:
 		StringName(str(payload.get("result_reason", "recovered"))),
 		bool(payload.get("surrendered", false))
 	)
-	_resolve_active_configuration(profile)
+	_match_context.resolve(profile)
 	_opponent_collection_backend = OpponentCollectionScript.new()
 	_opponent_collection_backend.initialize(
 		card_catalog,
 		opponent_id,
-		_active_min_level,
-		_active_max_level,
-		_active_deck_budget,
-		_active_opponent_profile
+		_match_context.active_min_level,
+		_match_context.active_max_level,
+		_match_context.active_deck_budget,
+		_match_context.active_opponent_profile
 	)
 
 	_starting_player_cards = player_cards.duplicate()
@@ -1668,7 +1666,7 @@ func _refresh_views(captured_cells: Array = []) -> void:
 	_presentation.refresh(
 		_match,
 		_session.phase,
-		_active_rule_set,
+		_match_context.active_rule_set,
 		_selected_hand_index,
 		_selected_cell_index,
 		captured_cells
@@ -1686,7 +1684,7 @@ func _refresh_ui_flow() -> void:
 		_match,
 		_selected_hand_index,
 		message_label.text,
-		_region_trait_text(),
+		_match_context.region_trait_text(),
 		_current_help_entries(),
 		_match.get_score()
 	)
@@ -1721,7 +1719,7 @@ func _on_reward_selected(card_definition) -> void:
 	var transfer_result: Dictionary = _match_resolution.commit_reward_transfer(
 		card_definition,
 		_session.result_winner,
-		_active_opponent_id(),
+		_match_context.active_opponent_id(),
 		_opponent_collection_backend
 	)
 	if not bool(transfer_result.get("success", false)):
@@ -1758,10 +1756,10 @@ func _on_reward_selected(card_definition) -> void:
 			&"opponent_card_won",
 			str(card_definition.display_name),
 			"Won from %s."
-			% str(_active_opponent_profile.get("display_name")),
+			% _match_context.active_opponent_display_name(),
 			{
 				"card_id": String(card_definition.card_id),
-				"opponent_id": String(_active_opponent_id()),
+				"opponent_id": String(_match_context.active_opponent_id()),
 			}
 		)
 	elif _session.result_winner == OWNER_OPPONENT:
@@ -1769,10 +1767,10 @@ func _on_reward_selected(card_definition) -> void:
 			&"card_lost",
 			str(card_definition.display_name),
 			"Lost to %s. Win it back in a rematch."
-			% str(_active_opponent_profile.get("display_name")),
+			% _match_context.active_opponent_display_name(),
 			{
 				"card_id": String(card_definition.card_id),
-				"opponent_id": String(_active_opponent_id()),
+				"opponent_id": String(_match_context.active_opponent_id()),
 			}
 		)
 
@@ -1856,15 +1854,15 @@ func _continue_active_competition_round() -> bool:
 	var profile = round_request.get("profile", null)
 	var locked_cards: Array = round_request.get("locked_cards", [])
 	_session.reset_round()
-	_resolve_active_configuration(profile)
+	_match_context.resolve(profile)
 	_opponent_collection_backend = OpponentCollectionScript.new()
 	_opponent_collection_backend.initialize(
 		card_catalog,
-		_active_opponent_id(),
-		_active_min_level,
-		_active_max_level,
-		_active_deck_budget,
-		_active_opponent_profile
+		_match_context.active_opponent_id(),
+		_match_context.active_min_level,
+		_match_context.active_max_level,
+		_match_context.active_deck_budget,
+		_match_context.active_opponent_profile
 	)
 	_active_player_deck = locked_cards.duplicate()
 	_start_new_match(_active_player_deck)
@@ -1923,186 +1921,9 @@ func _on_deck_cancelled() -> void:
 	close_game()
 
 
-func _resolve_active_configuration(opponent_profile_override: Resource) -> void:
-	_active_opponent_profile = opponent_profile_override
-	_active_region_profile = region_profile
-	_active_ai_profile = ai_profile
-	_active_rule_set = rule_set
-	_active_deck_budget = deck_budget
-	_active_min_level = prototype_min_level
-	_active_max_level = prototype_max_level
-
-	if _active_opponent_profile != null:
-		var profile_region = _active_opponent_profile.get("region_profile")
-		if profile_region != null:
-			_active_region_profile = profile_region
-		var profile_ai = _active_opponent_profile.get("ai_profile")
-		if profile_ai != null:
-			_active_ai_profile = profile_ai
-		var min_level_value = _active_opponent_profile.get("min_card_level")
-		var max_level_value = _active_opponent_profile.get("max_card_level")
-		if min_level_value != null:
-			_active_min_level = clampi(int(min_level_value), 1, 10)
-		if max_level_value != null:
-			_active_max_level = clampi(int(max_level_value), _active_min_level, 10)
-
-	if _active_region_profile != null:
-		var region_rules = _active_region_profile.get("rule_set")
-		if region_rules != null:
-			_active_rule_set = region_rules
-		var region_budget = _active_region_profile.get("deck_budget")
-		if region_budget != null:
-			_active_deck_budget = maxi(5, int(region_budget))
-
-	if _active_opponent_profile != null:
-		var profile_rules = _active_opponent_profile.get("rule_set_override")
-		if profile_rules != null:
-			_active_rule_set = profile_rules
-		var budget_override = _active_opponent_profile.get("deck_budget_override")
-		if budget_override != null and int(budget_override) > 0:
-			_active_deck_budget = int(budget_override)
-
-	_active_opponent_evolution = {}
-	if _qa_profile_override == null and _active_opponent_profile != null:
-		var encounter_snapshot: Dictionary = {}
-		if _encounter_records != null:
-			encounter_snapshot = _encounter_records.get_snapshot(
-				_active_opponent_id()
-			)
-		_active_opponent_evolution = _opponent_evolution.build_snapshot(
-			_active_opponent_profile,
-			encounter_snapshot
-		)
-		_active_deck_budget += maxi(
-			0,
-			int(_active_opponent_evolution.get("budget_bonus", 0))
-		)
-		_active_ai_profile = _opponent_evolution.build_adapted_ai(
-			_active_ai_profile,
-			_active_opponent_evolution
-		)
-
-	# Keep the evolved NPC configuration as the debug menu's CURRENT/NPC baseline,
-	# then layer any temporary QA profile over it.
-	_qa_base_summary = _configuration_summary()
-	_apply_qa_profile_override()
-
-
-func _apply_qa_profile_override() -> void:
-	_qa_forced_starting_owner = OWNER_NONE
-	_qa_hand_seed = 0
-	if _qa_profile_override == null:
-		return
-	# QA profiles are controlled experiments. They intentionally bypass persistent
-	# rematch evolution so the debug profile remains reproducible.
-	_active_opponent_evolution = {}
-
-	var qa_region: Resource = _qa_profile_override.get("region_profile")
-	if qa_region != null:
-		_active_region_profile = qa_region
-		var region_rules = qa_region.get("rule_set")
-		if region_rules != null:
-			_active_rule_set = region_rules
-		var region_budget = qa_region.get("deck_budget")
-		if region_budget != null:
-			_active_deck_budget = maxi(5, int(region_budget))
-
-	var qa_ai: Resource = _qa_profile_override.get("ai_profile")
-	if qa_ai != null:
-		_active_ai_profile = qa_ai
-
-	var qa_rules: Resource = _qa_profile_override.get("rule_set_override")
-	if qa_rules != null:
-		_active_rule_set = qa_rules
-
-	var qa_budget: int = int(_qa_profile_override.get("deck_budget_override"))
-	if qa_budget > 0:
-		_active_deck_budget = qa_budget
-
-	_active_min_level = clampi(int(_qa_profile_override.get("min_card_level")), 1, 10)
-	_active_max_level = clampi(
-		int(_qa_profile_override.get("max_card_level")),
-		_active_min_level,
-		10
-	)
-	_qa_forced_starting_owner = clampi(
-		int(_qa_profile_override.get("starting_owner")),
-		OWNER_NONE,
-		OWNER_OPPONENT
-	)
-	_qa_hand_seed = maxi(0, int(_qa_profile_override.get("hand_seed")))
-
-
 func _on_qa_profile_apply_requested(selected_profile: Resource) -> void:
-	_qa_profile_override = selected_profile
-	if _qa_profile_override == null:
-		_rng.randomize()
-	_resolve_active_configuration(_active_opponent_profile)
+	_match_context.set_qa_profile(selected_profile)
 	_start_new_match(_active_player_deck)
-
-
-func _active_opponent_id() -> StringName:
-	if _active_opponent_profile != null:
-		var raw_id = _active_opponent_profile.get("opponent_id")
-		if raw_id != null and not str(raw_id).is_empty():
-			return StringName(str(raw_id))
-	return &"default_opponent"
-
-
-func _configuration_summary() -> Dictionary:
-	return {
-		"opponent_id": String(_active_opponent_id()),
-		"opponent": _resource_display_name(_active_opponent_profile, "Default Opponent"),
-		"opponent_rank": (
-			int(_active_opponent_profile.get("duel_rank"))
-			if _active_opponent_profile != null
-			else 1
-		),
-		"region": _resource_display_name(_active_region_profile, "Default"),
-		"ai": _resource_display_name(_active_ai_profile, "Default"),
-		"budget": _active_deck_budget,
-		"min_level": _active_min_level,
-		"max_level": _active_max_level,
-		"rules": _rules_summary(_active_rule_set, _active_region_profile),
-		"rematch_stage": int(_active_opponent_evolution.get("stage", 0)),
-		"rematch_stage_label": str(
-			_active_opponent_evolution.get("stage_label", "Baseline")
-		),
-		"rematch_evolution": _active_opponent_evolution.duplicate(true),
-	}
-
-
-func _rules_summary(active_rules: Resource, active_region: Resource) -> String:
-	var labels: PackedStringArray = PackedStringArray()
-	if active_rules != null:
-		if bool(active_rules.get("same_rule")):
-			labels.append("Same")
-		if bool(active_rules.get("plus_rule")):
-			labels.append("Plus")
-		if bool(active_rules.get("combo_rule")):
-			labels.append("Combo")
-		if bool(active_rules.get("influence_rule")):
-			labels.append("Influence")
-	if active_region != null and bool(active_region.get("allow_rotate")):
-		labels.append("Rotate x1")
-	if labels.is_empty():
-		return "Normal capture"
-	return " + ".join(labels)
-
-
-func _resource_display_name(resource: Resource, fallback: String) -> String:
-	if resource == null:
-		return fallback
-	var display_name = resource.get("display_name")
-	if display_name != null and not str(display_name).is_empty():
-		return str(display_name)
-	return resource.resource_path.get_file().get_basename()
-
-
-func _build_budgeted_hand(min_level: int, max_level: int) -> Array:
-	if card_catalog.has_method("build_budgeted_hand"):
-		return card_catalog.build_budgeted_hand(_rng, min_level, max_level, 5, _active_deck_budget)
-	return card_catalog.build_random_hand(_rng, min_level, max_level, 5)
 
 
 func _try_rotate_selected_card() -> void:
@@ -2144,15 +1965,6 @@ func _current_help_entries() -> Array:
 		PHASE_REWARD:
 			entries.append({"key": "K", "action": "Continue"})
 	return entries
-
-
-func _region_trait_text() -> String:
-	if _active_region_profile == null:
-		return ""
-	var description = _active_region_profile.get("board_trait_description")
-	if description == null:
-		return ""
-	return str(description)
 
 
 func _find_nearest_empty_cell(preferred: int) -> int:

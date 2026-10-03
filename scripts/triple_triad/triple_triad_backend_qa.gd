@@ -53,6 +53,18 @@ const RuntimeRecoveryControllerScript = preload(
 const BackendValidatorScript = preload(
 	"res://scripts/triple_triad/triple_triad_backend_validator.gd"
 )
+const MatchContextControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_match_context_controller.gd"
+)
+const RegionProfileScript = preload(
+	"res://scripts/triple_triad/triple_triad_region_profile.gd"
+)
+const QAProfileScript = preload(
+	"res://scripts/triple_triad/triple_triad_qa_profile.gd"
+)
+const AIProfileScript = preload(
+	"res://scripts/triple_triad/triple_triad_ai_profile.gd"
+)
 const DefaultAcquisitionPolicy = preload(
 	"res://data/triple_triad/acquisition/default_acquisition_policy.tres"
 )
@@ -431,6 +443,18 @@ class MockGatewayOpponentRegistry:
 		return []
 
 
+class MockMatchContextEncounterRecords:
+	extends RefCounted
+
+	var wins: int = 0
+
+	func _init(wins_value: int = 0) -> void:
+		wins = maxi(0, wins_value)
+
+	func get_snapshot(_opponent_id: StringName) -> Dictionary:
+		return {"wins": wins}
+
+
 var _results: Array[Dictionary] = []
 
 
@@ -505,6 +529,9 @@ func run_all() -> Dictionary:
 	_run("Backend validator accepts authored defaults", _test_backend_validator_defaults)
 	_run("Backend validator rejects missing catalog", _test_backend_validator_missing_catalog)
 	_run("Backend validator enforces starter deck budget", _test_backend_validator_starter_budget)
+	_run("Match context resolves authored precedence", _test_match_context_authored_precedence)
+	_run("Match context isolates QA overrides", _test_match_context_qa_override)
+	_run("Match context applies rematch evolution", _test_match_context_rematch_evolution)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -2931,3 +2958,172 @@ func _test_backend_validator_starter_budget() -> Dictionary:
 		not bool(report.get("valid", true)) and found_budget_error,
 		"Backend validator must reject a player deck budget that cannot field the five-card starter collection."
 	)
+
+func _make_match_context_controller(
+	encounter_records = null,
+	default_region: Resource = null,
+	default_ai: Resource = null,
+	default_rules: Resource = null,
+	default_budget: int = 30
+):
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 424242
+	var controller = MatchContextControllerScript.new()
+	controller.initialize(
+		DefaultCardCatalog,
+		rng,
+		encounter_records,
+		{
+			"region_profile": default_region,
+			"ai_profile": default_ai,
+			"rule_set": default_rules,
+			"deck_budget": default_budget,
+			"min_level": 1,
+			"max_level": 3,
+		}
+	)
+	return controller
+
+
+func _test_match_context_authored_precedence() -> Dictionary:
+	var base_rules = RuleSetScript.new()
+	base_rules.same_rule = true
+
+	var region_rules = RuleSetScript.new()
+	region_rules.plus_rule = true
+	var region = RegionProfileScript.new()
+	region.region_id = &"qa_region"
+	region.display_name = "QA Region"
+	region.rule_set = region_rules
+	region.deck_budget = 22
+	region.allow_rotate = false
+
+	var opponent_rules = RuleSetScript.new()
+	opponent_rules.combo_rule = true
+	var opponent_ai = AIProfileScript.new()
+	opponent_ai.display_name = "QA Context AI"
+	var opponent = OpponentProfileScript.new()
+	opponent.opponent_id = &"qa_context"
+	opponent.display_name = "QA Context Opponent"
+	opponent.region_profile = region
+	opponent.ai_profile = opponent_ai
+	opponent.rule_set_override = opponent_rules
+	opponent.min_card_level = 2
+	opponent.max_card_level = 4
+	opponent.deck_budget_override = 27
+	opponent.rematch_evolution_enabled = false
+
+	var controller = _make_match_context_controller(
+		null,
+		DefaultRegionProfile,
+		null,
+		base_rules,
+		30
+	)
+	controller.resolve(opponent)
+	var summary: Dictionary = controller.configuration_summary()
+	return _ok(
+		controller.active_opponent_profile == opponent
+		and controller.active_region_profile == region
+		and controller.active_ai_profile == opponent_ai
+		and controller.active_rule_set == opponent_rules
+		and controller.active_deck_budget == 27
+		and controller.active_min_level == 2
+		and controller.active_max_level == 4
+		and String(controller.active_opponent_id()) == "qa_context"
+		and str(summary.get("rules", "")) == "Combo",
+		"Match context must apply opponent region/defaults first, then explicit opponent rule and budget overrides."
+	)
+
+
+func _test_match_context_qa_override() -> Dictionary:
+	var opponent = OpponentProfileScript.new()
+	opponent.opponent_id = &"qa_context_override"
+	opponent.display_name = "QA Context Override"
+	opponent.deck_budget_override = 28
+	opponent.min_card_level = 2
+	opponent.max_card_level = 5
+	opponent.rematch_evolution_enabled = false
+
+	var qa_rules = RuleSetScript.new()
+	qa_rules.same_rule = true
+	qa_rules.plus_rule = true
+	var qa_region = RegionProfileScript.new()
+	qa_region.region_id = &"qa_override_region"
+	qa_region.display_name = "QA Override Region"
+	qa_region.deck_budget = 19
+	qa_region.allow_rotate = true
+	var qa_ai = AIProfileScript.new()
+	qa_ai.display_name = "QA Override AI"
+	var qa_profile = QAProfileScript.new()
+	qa_profile.region_profile = qa_region
+	qa_profile.ai_profile = qa_ai
+	qa_profile.rule_set_override = qa_rules
+	qa_profile.deck_budget_override = 21
+	qa_profile.min_card_level = 4
+	qa_profile.max_card_level = 6
+	qa_profile.starting_owner = OWNER_OPPONENT
+	qa_profile.hand_seed = 777
+
+	var controller = _make_match_context_controller()
+	controller.resolve(opponent)
+	controller.set_qa_profile(qa_profile)
+	var qa_ok: bool = (
+		controller.has_qa_override()
+		and controller.active_region_profile == qa_region
+		and controller.active_ai_profile == qa_ai
+		and controller.active_rule_set == qa_rules
+		and controller.active_deck_budget == 21
+		and controller.active_min_level == 4
+		and controller.active_max_level == 6
+		and controller.qa_forced_starting_owner == OWNER_OPPONENT
+		and controller.qa_hand_seed == 777
+		and controller.active_opponent_evolution.is_empty()
+	)
+	controller.set_qa_profile(null)
+	var restore_ok: bool = (
+		not controller.has_qa_override()
+		and controller.active_deck_budget == 28
+		and controller.active_min_level == 2
+		and controller.active_max_level == 5
+		and controller.qa_forced_starting_owner == OWNER_NONE
+		and controller.qa_hand_seed == 0
+	)
+	return _ok(
+		qa_ok and restore_ok,
+		"QA match context must override the active experiment deterministically and restore authored opponent settings when cleared."
+	)
+
+
+func _test_match_context_rematch_evolution() -> Dictionary:
+	var region = RegionProfileScript.new()
+	region.region_id = &"qa_evolution_region"
+	region.display_name = "QA Evolution Region"
+	region.deck_budget = 20
+	var opponent_ai = AIProfileScript.new()
+	opponent_ai.display_name = "QA Evolution AI"
+	opponent_ai.randomness = 2.0
+	var opponent = OpponentProfileScript.new()
+	opponent.opponent_id = &"qa_evolution"
+	opponent.display_name = "QA Evolution Opponent"
+	opponent.region_profile = region
+	opponent.ai_profile = opponent_ai
+	opponent.rematch_evolution_enabled = true
+	opponent.rematch_win_thresholds = PackedInt32Array([1, 3, 6])
+	opponent.rematch_budget_bonuses = PackedInt32Array([0, 1, 2, 3])
+	opponent.adaptive_style_id = &"aggressive"
+
+	var controller = _make_match_context_controller(
+		MockMatchContextEncounterRecords.new(3)
+	)
+	controller.resolve(opponent)
+	var evolution: Dictionary = controller.get_active_evolution_snapshot()
+	return _ok(
+		int(evolution.get("stage", 0)) == 2
+		and int(evolution.get("budget_bonus", 0)) == 2
+		and controller.active_deck_budget == 22
+		and controller.active_ai_profile != opponent_ai
+		and float(controller.active_ai_profile.get("randomness")) < 2.0,
+		"Match context must fold persistent rematch evolution into the active deck budget and adapted AI when no QA override is active."
+	)
+
