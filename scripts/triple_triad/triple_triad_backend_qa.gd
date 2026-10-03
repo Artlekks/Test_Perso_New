@@ -62,6 +62,9 @@ const RuntimeStateControllerScript = preload(
 const LiveMatchControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_live_match_controller.gd"
 )
+const MatchOrchestratorScript = preload(
+	"res://scripts/triple_triad/triple_triad_match_orchestrator.gd"
+)
 const RegionProfileScript = preload(
 	"res://scripts/triple_triad/triple_triad_region_profile.gd"
 )
@@ -588,6 +591,9 @@ func run_all() -> Dictionary:
 	_run("Live match runtime owns prepared hands", _test_live_match_runtime_setup)
 	_run("Live match runtime owns selection cursors", _test_live_match_runtime_selection)
 	_run("Live match runtime owns active deck mutations", _test_live_match_runtime_deck_state)
+	_run("Match orchestrator preserves placement payload", _test_match_orchestrator_move_plan)
+	_run("Match orchestrator marks capture settle", _test_match_orchestrator_capture_settle)
+	_run("Match orchestrator normalizes reward candidates", _test_match_orchestrator_reward_ids)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -3477,5 +3483,63 @@ func _test_live_match_runtime_deck_state() -> Dictionary:
 		and runtime.get_starting_player_cards().size() == 5
 		and runtime.get_starting_opponent_cards().size() == 5,
 		"Live match runtime must own active-deck filtering and deterministic recovery state without leaking scene-owned arrays."
+	)
+
+func _test_match_orchestrator_move_plan() -> Dictionary:
+	var orchestrator = MatchOrchestratorScript.new()
+	var card = MockCard.new(&"orchestrated", 4, 3, 2, 1)
+	var flow := {
+		"success": true,
+		"hand_index": 2,
+		"cell_index": 7,
+		"played_card": card,
+		"played_rotation": 3,
+		"placement_rank_modifier": 2,
+		"result": {"captured": []},
+	}
+	var plan: Dictionary = orchestrator.build_move_animation_plan(
+		flow,
+		OWNER_PLAYER
+	)
+	return _ok(
+		bool(plan.get("valid", false))
+		and int(plan.get("owner", OWNER_NONE)) == OWNER_PLAYER
+		and int(plan.get("hand_index", -1)) == 2
+		and int(plan.get("cell_index", -1)) == 7
+		and plan.get("played_card") == card
+		and int(plan.get("played_rotation", -1)) == 3
+		and int(plan.get("placement_rank_modifier", -1)) == 2,
+		"Match orchestration must preserve the deterministic placement payload handed off by match flow."
+	)
+
+
+func _test_match_orchestrator_capture_settle() -> Dictionary:
+	var orchestrator = MatchOrchestratorScript.new()
+	var plan: Dictionary = orchestrator.build_move_animation_plan(
+		{
+			"success": true,
+			"result": {"captured": [1, 5]},
+		},
+		OWNER_OPPONENT
+	)
+	var captured: Array = plan.get("captured_cells", [])
+	return _ok(
+		bool(plan.get("requires_capture_settle", false))
+		and captured == [1, 5]
+		and int(plan.get("owner", OWNER_NONE)) == OWNER_OPPONENT,
+		"Match orchestration must explicitly wait for capture presentation before handing the turn onward."
+	)
+
+
+func _test_match_orchestrator_reward_ids() -> Dictionary:
+	var orchestrator = MatchOrchestratorScript.new()
+	var normalized: PackedStringArray = orchestrator.normalize_reward_ids(
+		[&"card_a", &"card_b", "card_c"]
+	)
+	return _ok(
+		normalized == PackedStringArray(["card_a", "card_b", "card_c"])
+		and orchestrator.move_failure_message({"reason": "occupied"}) == "That space is occupied."
+		and orchestrator.move_failure_message({"reason": "other"}) == "Invalid move.",
+		"Match orchestration must normalize reward candidates and own live move-failure presentation policy."
 	)
 

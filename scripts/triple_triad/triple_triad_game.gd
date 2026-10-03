@@ -64,8 +64,11 @@ const RuntimeStateControllerScript = preload(
 const LiveMatchControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_live_match_controller.gd"
 )
+const MatchOrchestratorScript = preload(
+	"res://scripts/triple_triad/triple_triad_match_orchestrator.gd"
+)
 
-const BACKEND_VERSION := "2.15.0"
+const BACKEND_VERSION := "2.16.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -82,10 +85,6 @@ const PHASE_REWARD := SessionControllerScript.PHASE_REWARD
 const PHASE_DECK_SETUP := SessionControllerScript.PHASE_DECK_SETUP
 const PHASE_SURRENDER_CONFIRM := SessionControllerScript.PHASE_SURRENDER_CONFIRM
 
-const HAND_STEP_Y := 47.0
-const CAPTURE_SETTLE_SECONDS := 0.24
-const RESULT_FADE_IN_SECONDS := 0.24
-const RESULT_FADE_OUT_SECONDS := 0.30
 
 @export var card_catalog: Resource
 @export var rule_set: Resource
@@ -170,6 +169,7 @@ var _developer_tools = DeveloperToolsControllerScript.new()
 var _match_context = MatchContextControllerScript.new()
 var _runtime_state = RuntimeStateControllerScript.new()
 var _live_match = LiveMatchControllerScript.new()
+var _match_orchestrator = MatchOrchestratorScript.new()
 
 
 func _ready() -> void:
@@ -349,6 +349,28 @@ func _ready() -> void:
 	_competition.competition_state_changed.connect(_on_competition_controller_state_changed)
 	_competition.gameplay_event_requested.connect(_queue_gameplay_event)
 	_competition.backend_state_change_requested.connect(_publish_backend_state_change)
+
+	_match_orchestrator.initialize({
+		"match_flow": _match_flow,
+		"live_match": _live_match,
+		"presentation": _presentation,
+		"ui_flow": _ui_flow,
+		"animation_director": animation_director,
+		"ai_timer": ai_timer,
+		"session": _session,
+		"match_context": _match_context,
+		"competition": _competition,
+		"match_resolution": _match_resolution,
+		"message_label": message_label,
+		"transition_fade": transition_fade,
+		"root": root,
+		"ai_delay_seconds": ai_delay_seconds,
+		"is_open": Callable(self, "is_open"),
+		"refresh_views": Callable(self, "_refresh_views"),
+		"refresh_ui_flow": Callable(self, "_refresh_ui_flow"),
+		"finish_match": Callable(self, "_finish_match"),
+		"close_game": Callable(self, "close_game"),
+	})
 
 	_runtime_recovery.initialize(
 		_competition,
@@ -1004,127 +1026,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _start_new_match(player_cards_override: Array = []) -> void:
-	ai_timer.stop()
-	_ui_flow.prepare_new_match()
-	_competition.clear_pending_change()
-
-	var setup: Dictionary = _live_match.prepare_new_match(
+	_match_orchestrator.start_new_match(
 		player_cards_override,
 		_opponent_collection_backend
 	)
-	if not bool(setup.get("success", false)):
-		var reason: String = str(setup.get("reason", "unknown"))
-		if reason == "invalid_opponent_deck":
-			push_error(
-				"TripleTriadGame: opponent %s has no legal persistent deck."
-				% String(_match_context.active_opponent_id())
-			)
-			message_label.text = "Opponent deck is invalid."
-		else:
-			push_error(
-				"TripleTriadGame: live match setup failed: %s" % reason
-			)
-		close_game()
-		return
 
-	_refresh_views()
-	_run_deal_sequence(int(setup.get("starting_owner", OWNER_PLAYER)))
-
-func _run_deal_sequence(starting_owner: int) -> void:
-	await animation_director.deal_hands(
-		_presentation.get_player_views(),
-		_presentation.get_opponent_views(),
-		HAND_STEP_Y
-	)
-	if not is_open() or _session.phase != PHASE_DEALING:
-		return
-	var flow_result: Dictionary = _match_flow.complete_deal(starting_owner)
-	if not bool(flow_result.get("success", false)):
-		return
-	message_label.text = ""
-	_refresh_views()
-	if bool(flow_result.get("schedule_ai", false)):
-		_schedule_ai()
 
 func _try_player_move() -> void:
-	var flow: Dictionary = _match_flow.commit_player_move(
-		_live_match.selected_hand_index,
-		_live_match.selected_cell_index
-	)
-	if not bool(flow.get("success", false)):
-		message_label.text = "That space is occupied." if str(flow.get("reason", "")) == "occupied" else "Invalid move."
-		return
+	_match_orchestrator.try_player_move()
 
-	var hand_index: int = int(flow.get("hand_index", 0))
-	var cell_index: int = int(flow.get("cell_index", 0))
-	var played_card = flow.get("played_card")
-	var result: Dictionary = flow.get("result", {})
-	_live_match.apply_player_move_result(flow)
-	_refresh_ui_flow()
-	await animation_director.animate_placement(
-		root, _presentation.get_player_view(hand_index), _presentation.get_board_view(cell_index), played_card,
-		OWNER_PLAYER, int(flow.get("played_rotation", 0)), int(flow.get("placement_rank_modifier", 0))
-	)
-	if not is_open():
-		return
-
-	message_label.text = _live_match.capture_message(result)
-	var captured_cells: Array = result.get("captured", [])
-	_refresh_views(captured_cells)
-	if not captured_cells.is_empty():
-		await animation_director.wait_for_settle(CAPTURE_SETTLE_SECONDS)
-		if not is_open():
-			return
-
-	match _match_flow.complete_player_move(result):
-		&"finish":
-			_finish_match()
-		&"schedule_ai":
-			_refresh_views()
-			_schedule_ai()
 
 func _on_ai_timer_timeout() -> void:
-	if not _match_flow.can_run_ai_timer():
-		return
-	_run_ai_turn()
+	_match_orchestrator.on_ai_timer_timeout()
 
-func _run_ai_turn() -> void:
-	var flow: Dictionary = _match_flow.commit_ai_move(_match_context.active_ai_profile)
-	if not bool(flow.get("success", false)):
-		if bool(flow.get("finish", false)):
-			_finish_match()
-		return
-
-	var hand_index: int = int(flow.get("hand_index", 0))
-	var cell_index: int = int(flow.get("cell_index", 0))
-	var played_card = flow.get("played_card")
-	var result: Dictionary = flow.get("result", {})
-	_refresh_ui_flow()
-	await animation_director.animate_placement(
-		root, _presentation.get_opponent_view(hand_index), _presentation.get_board_view(cell_index), played_card,
-		OWNER_OPPONENT, int(flow.get("played_rotation", 0)), int(flow.get("placement_rank_modifier", 0))
-	)
-	if not is_open():
-		return
-
-	message_label.text = _live_match.capture_message(result)
-	var captured_cells: Array = result.get("captured", [])
-	_refresh_views(captured_cells)
-	if not captured_cells.is_empty():
-		await animation_director.wait_for_settle(CAPTURE_SETTLE_SECONDS)
-		if not is_open():
-			return
-
-	var next_step: Dictionary = _match_flow.complete_ai_move(
-		result,
-		_live_match.selected_hand_index,
-		_live_match.selected_cell_index
-	)
-	if StringName(next_step.get("action", &"")) == &"finish":
-		_finish_match()
-		return
-	_live_match.apply_ai_move_result(next_step)
-	_refresh_views()
 
 func _request_surrender() -> void:
 	match _match_flow.request_surrender():
@@ -1214,75 +1128,10 @@ func _finish_match(
 
 
 func _begin_result_transition() -> void:
-	var flow_result: Dictionary = _match_flow.begin_result_transition()
-	if not bool(flow_result.get("accepted", false)):
-		return
-	_ui_flow.begin_result_transition_ui()
-	_run_result_transition(int(flow_result.get("winner", OWNER_NONE)))
+	_match_orchestrator.begin_result_transition(
+		_opponent_collection_backend
+	)
 
-func _run_result_transition(winner: int) -> void:
-	await animation_director.fade_to_cover(
-		transition_fade,
-		RESULT_FADE_IN_SECONDS
-	)
-	if not is_open():
-		return
-
-	_ui_flow.hide_result_overlay()
-	var destination: StringName = _match_flow.prepare_result_destination(winner)
-	if destination == &"replay":
-		# A draw is a replay, not an exit. Re-deal behind the black result fade,
-		# then reveal the fresh match using the same active QA/opponent profile.
-		_start_new_match(_live_match.get_active_player_deck())
-		await animation_director.fade_from_cover(
-			transition_fade,
-			RESULT_FADE_OUT_SECONDS
-		)
-		if not is_open():
-			return
-		return
-	if destination != &"reward":
-		return
-
-	var reward_presentation: Dictionary = (
-		_match_resolution.prepare_reward_presentation(
-			winner,
-			_match_context.active_opponent_profile,
-			_match_context.active_opponent_id(),
-			_live_match.get_starting_player_cards(),
-			_live_match.get_starting_opponent_cards(),
-			_opponent_collection_backend
-		)
-	)
-	var opponent_take_index: int = int(
-		reward_presentation.get("opponent_take_index", -1)
-	)
-	var eligible_reward_ids := PackedStringArray()
-	var raw_eligible = reward_presentation.get(
-		"eligible_reward_ids",
-		PackedStringArray()
-	)
-	if raw_eligible is PackedStringArray or raw_eligible is Array:
-		for raw_id in raw_eligible:
-			eligible_reward_ids.append(str(raw_id))
-	_ui_flow.open_reward(
-		_live_match.get_starting_opponent_cards(),
-		_live_match.get_starting_player_cards(),
-		winner,
-		true,
-		opponent_take_index,
-		eligible_reward_ids,
-		true
-	)
-	_refresh_ui_flow()
-
-	# Reveal the result screen while both card rows begin sliding into place.
-	await animation_director.fade_from_cover(
-		transition_fade,
-		RESULT_FADE_OUT_SECONDS
-	)
-	if not is_open():
-		return
 
 func get_runtime_recovery_snapshot() -> Dictionary:
 	return _runtime_recovery.get_runtime_snapshot()
@@ -1357,7 +1206,7 @@ func get_card_economy_snapshot() -> Dictionary:
 
 
 func _schedule_ai() -> void:
-	ai_timer.start(maxf(ai_delay_seconds, 0.01))
+	_match_orchestrator.schedule_ai()
 
 
 func _refresh_views(captured_cells: Array = []) -> void:
