@@ -1,0 +1,436 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/fishing_card_maker_menu.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_main"]
+bg_color = Color(0.709804, 0.678431, 0.54902, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm"]
+bg_color = Color(0.78, 0.745, 0.62, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="FishingCardMakerMenu" type="CanvasLayer"]
+process_mode = 3
+layer = 112
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.42)
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -258.0
+offset_top = -213.0
+offset_right = 258.0
+offset_bottom = 213.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_main")
+
+[node name="TitleLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 14.0
+offset_right = 260.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = "CARD MAKER"
+
+[node name="ZennyLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 335.0
+offset_top = 16.0
+offset_right = 490.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Zenny  0"
+horizontal_alignment = 2
+
+[node name="HeaderRule" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 47.0
+offset_right = 498.0
+offset_bottom = 49.0
+color = Color(0.388235, 0.290196, 0.352941, 0.75)
+mouse_filter = 2
+
+[node name="ColumnCard" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 57.0
+offset_right = 250.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "CARD"
+
+[node name="ColumnOwned" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 57.0
+offset_right = 350.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "OWNED"
+horizontal_alignment = 2
+
+[node name="ColumnCost" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 57.0
+offset_right = 476.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "COST"
+horizontal_alignment = 2
+
+[node name="SelectionBar" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 31.0
+offset_top = 139.0
+offset_right = 485.0
+offset_bottom = 165.0
+color = Color(0.388235, 0.290196, 0.352941, 0.16)
+mouse_filter = 2
+
+[node name="SelectionCursor" type="Polygon2D" parent="Root/Panel"]
+polygon = PackedVector2Array(-6, -7, -6, 7, 6, 0)
+position = Vector2(38, 152)
+color = Color(0.388235, 0.290196, 0.352941, 1)
+z_index = 10
+
+[node name="Rows" type="Control" parent="Root/Panel"]
+layout_mode = 0
+offset_right = 516.0
+offset_bottom = 356.0
+mouse_filter = 2
+
+[node name="Row1Name" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 137.0
+offset_right = 280.0
+offset_bottom = 163.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Bass Card"
+vertical_alignment = 1
+
+[node name="Row1Owned" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 137.0
+offset_right = 350.0
+offset_bottom = 163.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "x0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row1Cost" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 137.0
+offset_right = 476.0
+offset_bottom = 163.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+text = "1 fish + 75z"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row2Name" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 169.0
+offset_right = 280.0
+offset_bottom = 195.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+vertical_alignment = 1
+
+[node name="Row2Owned" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 169.0
+offset_right = 350.0
+offset_bottom = 195.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row2Cost" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 169.0
+offset_right = 476.0
+offset_bottom = 195.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row3Name" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 201.0
+offset_right = 280.0
+offset_bottom = 227.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+vertical_alignment = 1
+
+[node name="Row3Owned" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 201.0
+offset_right = 350.0
+offset_bottom = 227.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row3Cost" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 201.0
+offset_right = 476.0
+offset_bottom = 227.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row4Name" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 233.0
+offset_right = 280.0
+offset_bottom = 259.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+vertical_alignment = 1
+
+[node name="Row4Owned" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 233.0
+offset_right = 350.0
+offset_bottom = 259.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row4Cost" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 233.0
+offset_right = 476.0
+offset_bottom = 259.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row5Name" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 265.0
+offset_right = 280.0
+offset_bottom = 291.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+vertical_alignment = 1
+
+[node name="Row5Owned" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 265.0
+offset_right = 350.0
+offset_bottom = 291.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Row5Cost" type="Label" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 364.0
+offset_top = 265.0
+offset_right = 476.0
+offset_bottom = 291.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="DetailRule" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 303.0
+offset_right = 498.0
+offset_bottom = 305.0
+color = Color(0.388235, 0.290196, 0.352941, 0.55)
+mouse_filter = 2
+
+[node name="ModeLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 312.0
+offset_right = 175.0
+offset_bottom = 329.0
+theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "FIRST CREATION"
+
+[node name="OwnedLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 335.0
+offset_top = 312.0
+offset_right = 488.0
+offset_bottom = 329.0
+theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "Card owned: x0"
+horizontal_alignment = 2
+
+[node name="RequirementLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 332.0
+offset_right = 488.0
+offset_bottom = 350.0
+theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+text = "Bass  0/1     Fee  75z"
+
+[node name="StatusLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 353.0
+offset_right = 488.0
+offset_bottom = 374.0
+theme_override_colors/font_color = Color(0.28, 0.12, 0.16, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "Ready."
+
+[node name="HelpLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 384.0
+offset_right = 488.0
+offset_bottom = 405.0
+theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "W/S Select     K Make     I Back"
+horizontal_alignment = 1
+
+[node name="ConfirmPanel" type="Panel" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -72.0
+offset_right = 180.0
+offset_bottom = 72.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_confirm")
+
+[node name="PromptLabel" type="Label" parent="Root/ConfirmPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+text = "Create this card?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ChoiceLabel" type="Label" parent="Root/ConfirmPanel"]
+layout_mode = 1
+anchors_preset = 12
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -42.0
+offset_right = -24.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+text = "YES      > NO <"
+horizontal_alignment = 1

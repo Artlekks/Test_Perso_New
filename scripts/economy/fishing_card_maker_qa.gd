@@ -2,6 +2,9 @@ extends RefCounted
 class_name FishingCardMakerQA
 
 const WORLD_MAP_PATH := "res://data/triple_triad/acquisition/world_acquisition_map.json"
+const CARD_MAKER_NPC_SCENE_PATH := "res://actors/FishingCardMakerNPC.tscn"
+const CARD_MAKER_MENU_SCENE_PATH := "res://actors/FishingCardMakerMenu.tscn"
+const MAIN_VERTICAL_SLICE_PATH := "res://actors/FishingTestScene_V2.tscn"
 
 
 static func run(
@@ -70,6 +73,12 @@ static func run(
 		_world_source_contract_ok(recipes),
 		"Card Maker rewards must appear in the same acquisition-source model as NPC, treasure and fishing rewards."
 	)
+	_record(
+		report,
+		"Player-facing Card Maker vertical slice is authored",
+		_player_facing_vertical_slice_ok(),
+		"The reusable NPC/menu must exist and the beach vertical slice must place the Card Maker NPC."
+	)
 
 	var quote_service := FishingCardMakerService.new()
 	var sample: FishingCardMakerRecipe = (
@@ -133,6 +142,21 @@ static func run(
 	report["valid"] = int(report["passed_count"]) == int(report["test_count"])
 	report["catalog_audit"] = audit
 	return report
+
+
+static func _player_facing_vertical_slice_ok() -> bool:
+	if not ResourceLoader.exists(CARD_MAKER_NPC_SCENE_PATH):
+		return false
+	if not ResourceLoader.exists(CARD_MAKER_MENU_SCENE_PATH):
+		return false
+	if not FileAccess.file_exists(MAIN_VERTICAL_SLICE_PATH):
+		return false
+	var file := FileAccess.open(MAIN_VERTICAL_SLICE_PATH, FileAccess.READ)
+	if file == null:
+		return false
+	var scene_text: String = file.get_as_text()
+	file.close()
+	return scene_text.contains(CARD_MAKER_NPC_SCENE_PATH)
 
 
 static func _world_source_contract_ok(

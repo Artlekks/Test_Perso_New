@@ -59,8 +59,6 @@ func evaluate_recipe(recipe_id: StringName) -> Dictionary:
 	if card_snapshot.is_empty():
 		return _failure(recipe_id, "unknown_card")
 	var player_snapshot: Dictionary = game.call("get_player_snapshot")
-	if not bool(player_snapshot.get("card_game_unlocked", false)):
-		return _failure(recipe_id, "card_game_locked")
 	var duel_rank: int = maxi(1, int(player_snapshot.get("duel_rank", 1)))
 	var card_quantity: int = maxi(0, int(card_snapshot.get("quantity", 0)))
 	var fish_owned: int = fishing_inventory.get_fish_count(String(recipe.fish_species_id))
@@ -75,6 +73,9 @@ func evaluate_recipe(recipe_id: StringName) -> Dictionary:
 	)
 	quote["card_display_name"] = str(card_snapshot.get("display_name", String(recipe.card_id)))
 	quote["fish_display_name"] = _fish_display_name(recipe.fish_species_id)
+	if not bool(player_snapshot.get("card_game_unlocked", false)):
+		quote["can_make"] = false
+		quote["reason"] = "card_game_locked"
 	return quote
 
 
@@ -281,6 +282,15 @@ func has_pending_transaction() -> bool:
 func _find_game() -> Node:
 	if is_instance_valid(_cached_game):
 		return _cached_game
+
+	# FishingSessionServices is intentionally initialized before its deferred
+	# attachment to the SceneTree. During that short bootstrap window this
+	# service is a valid Node, but calling get_tree() would make Godot emit
+	# "Parameter data.tree is null". Treat that state as temporarily
+	# unavailable and let the next runtime query resolve the game normally.
+	if not is_inside_tree():
+		return null
+
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.current_scene == null:
 		return null

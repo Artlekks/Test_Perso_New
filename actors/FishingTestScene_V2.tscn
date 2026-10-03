@@ -74,6 +74,7 @@
 [ext_resource type="PackedScene" uid="uid://kp64wcreffsh" path="res://actors/TripleTriadGame.tscn" id="74_triad_game"]
 [ext_resource type="PackedScene" path="res://actors/BeachCrafterNPC.tscn" id="75_crafter_npc"]
 [ext_resource type="PackedScene" path="res://actors/BeachGatheringCircuit.tscn" id="76_gathering_circuit"]
+[ext_resource type="PackedScene" path="res://actors/FishingCardMakerNPC.tscn" id="77_card_maker_npc"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -250,6 +251,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.0332
 
 [node name="BeachCrafterNPC" parent="World" unique_id=1235902304 instance=ExtResource("75_crafter_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.07, 0.42)
+
+[node name="FishingCardMakerNPC" parent="World" unique_id=1445517099 instance=ExtResource("77_card_maker_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62, 0.07, 0.42)
 
 [node name="BeachGatheringCircuit" parent="World" unique_id=1174588029 instance=ExtResource("76_gathering_circuit")]
 
