@@ -564,6 +564,9 @@ func run_all() -> Dictionary:
 	_run("Input controller maps gameplay keys", _test_input_controller_key_mapping)
 	_run("Input controller isolates Shift+F10 campaign QA", _test_input_controller_campaign_qa)
 	_run("Input controller clamps board navigation", _test_input_controller_board_navigation)
+	_run("Input controller routes stable gameplay phases", _test_input_controller_phase_routing)
+	_run("Input controller protects transactional phases", _test_input_controller_transaction_guard)
+	_run("Input controller owns surrender confirmation routing", _test_input_controller_surrender_routing)
 	_run("UI flow owns result copy", _test_ui_flow_result_copy)
 	_run("UI flow maps phases to HUD turn state", _test_ui_flow_turn_text)
 	_run("UI flow limits player selection markers to player phases", _test_ui_flow_selection_phase)
@@ -2564,6 +2567,80 @@ func _test_input_controller_board_navigation() -> Dictionary:
 		and controller.move_board_cursor(8, InputControllerScript.ACTION_RIGHT) == 8,
 		"Board navigation must stay inside the 3x3 grid while preserving directional movement."
 	)
+
+func _test_input_controller_phase_routing() -> Dictionary:
+	var controller = InputControllerScript.new()
+	var hand_route: Dictionary = controller.route_gameplay_action(
+		SessionControllerScript.PHASE_SELECT_CARD,
+		InputControllerScript.ACTION_DOWN,
+		false
+	)
+	var cell_route: Dictionary = controller.route_gameplay_action(
+		SessionControllerScript.PHASE_SELECT_CELL,
+		InputControllerScript.ACTION_LEFT,
+		false
+	)
+	var result_route: Dictionary = controller.route_gameplay_action(
+		SessionControllerScript.PHASE_RESULT,
+		InputControllerScript.ACTION_CONFIRM,
+		false
+	)
+	return _ok(
+		StringName(hand_route.get("command", &"")) == InputControllerScript.COMMAND_MOVE_HAND
+		and int(hand_route.get("step", 0)) == 1
+		and StringName(cell_route.get("command", &"")) == InputControllerScript.COMMAND_MOVE_BOARD
+		and StringName(cell_route.get("action", &"")) == InputControllerScript.ACTION_LEFT
+		and StringName(result_route.get("command", &"")) == InputControllerScript.COMMAND_RESULT_TRANSITION,
+		"Input routing must translate stable match phases into deterministic scene commands."
+	)
+
+
+func _test_input_controller_transaction_guard() -> Dictionary:
+	var controller = InputControllerScript.new()
+	var animation_back: Dictionary = controller.route_gameplay_action(
+		SessionControllerScript.PHASE_ANIMATING,
+		InputControllerScript.ACTION_BACK,
+		false
+	)
+	var reward_back: Dictionary = controller.route_gameplay_action(
+		SessionControllerScript.PHASE_REWARD,
+		InputControllerScript.ACTION_BACK,
+		false
+	)
+	var deal_back: Dictionary = controller.route_gameplay_action(
+		SessionControllerScript.PHASE_DEALING,
+		InputControllerScript.ACTION_BACK,
+		false
+	)
+	return _ok(
+		StringName(animation_back.get("command", &"")) == InputControllerScript.COMMAND_CONSUME
+		and StringName(reward_back.get("command", &"")) == InputControllerScript.COMMAND_NONE
+		and StringName(deal_back.get("command", &"")) == InputControllerScript.COMMAND_CLOSE,
+		"Input routing must consume Back during transactional animation, leave reward input modal, and allow pre-deal exit."
+	)
+
+
+func _test_input_controller_surrender_routing() -> Dictionary:
+	var controller = InputControllerScript.new()
+	return _ok(
+		controller.route_surrender_confirmation(
+			InputControllerScript.ACTION_LEFT, true, false
+		) == InputControllerScript.COMMAND_SURRENDER_MOVE
+		and controller.route_surrender_confirmation(
+			InputControllerScript.ACTION_CONFIRM, true, true
+		) == InputControllerScript.COMMAND_SURRENDER_CONFIRM
+		and controller.route_surrender_confirmation(
+			InputControllerScript.ACTION_CONFIRM, true, false
+		) == InputControllerScript.COMMAND_SURRENDER_CANCEL
+		and controller.route_surrender_confirmation(
+			InputControllerScript.ACTION_BACK, true, true
+		) == InputControllerScript.COMMAND_SURRENDER_CANCEL
+		and controller.route_surrender_confirmation(
+			InputControllerScript.ACTION_CONFIRM, false, true
+		) == InputControllerScript.COMMAND_SURRENDER_CANCEL,
+		"Surrender confirmation routing must keep modal navigation, confirm, cancellation, and missing-surface recovery deterministic."
+	)
+
 
 func _test_ui_flow_result_copy() -> Dictionary:
 	var controller = UIFlowControllerScript.new()

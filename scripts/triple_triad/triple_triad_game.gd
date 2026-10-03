@@ -65,7 +65,7 @@ const LiveMatchControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_live_match_controller.gd"
 )
 
-const BACKEND_VERSION := "2.14.0"
+const BACKEND_VERSION := "2.15.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -943,93 +943,65 @@ func _input(event: InputEvent) -> void:
 		_accept_input()
 		return
 
-	if action == InputControllerScript.ACTION_DEBUG and _session.phase in [PHASE_SELECT_CARD, PHASE_SELECT_CELL, PHASE_RESULT]:
-		debug_menu.open_menu(_match_context.qa_base_summary, _match_context.qa_profile_override)
+	if (
+		action == InputControllerScript.ACTION_DEBUG
+		and _input_controller.can_open_debug_overlay(_session.phase)
+	):
+		debug_menu.open_menu(
+			_match_context.qa_base_summary,
+			_match_context.qa_profile_override
+		)
 		_accept_input()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	var action: StringName = _input_controller.action_for_event(event, OS.is_debug_build())
+	var action: StringName = _input_controller.action_for_event(
+		event,
+		OS.is_debug_build()
+	)
 	if not is_open() or action == InputControllerScript.ACTION_NONE:
 		return
-
 	if _session.phase == PHASE_DECK_SETUP:
 		return
 
-	# The reward view owns input while it is active and enforces mandatory stake
-	# resolution. It cannot be bypassed with Back/Escape.
-	if _session.phase == PHASE_REWARD:
+	var route: Dictionary = _input_controller.route_gameplay_action(
+		_session.phase,
+		action,
+		_match.player_hand.is_empty()
+	)
+	var command := StringName(route.get("command", &""))
+	if command == InputControllerScript.COMMAND_RESULT_TRANSITION:
+		_begin_result_transition()
+	elif command == InputControllerScript.COMMAND_CLOSE:
+		close_game()
+	elif command == InputControllerScript.COMMAND_CONSUME:
+		pass
+	elif command == InputControllerScript.COMMAND_REQUEST_SURRENDER:
+		_request_surrender()
+	elif command == InputControllerScript.COMMAND_MOVE_HAND:
+		_live_match.move_hand_selection(int(route.get("step", 0)))
+		_refresh_views()
+	elif command == InputControllerScript.COMMAND_ROTATE:
+		_try_rotate_selected_card()
+	elif command == InputControllerScript.COMMAND_BEGIN_CELL_SELECTION:
+		_session.begin_player_cell_selection()
+		_live_match.begin_cell_selection()
+		_refresh_views()
+	elif command == InputControllerScript.COMMAND_MOVE_BOARD:
+		_live_match.move_board_selection(
+			StringName(route.get("action", action)),
+			_input_controller
+		)
+		_refresh_views()
+	elif command == InputControllerScript.COMMAND_TRY_PLAYER_MOVE:
+		_try_player_move()
+	elif command == InputControllerScript.COMMAND_CANCEL_CELL_SELECTION:
+		_session.cancel_player_cell_selection()
+		_refresh_views()
+	else:
 		return
+	_accept_input()
 
-	if _session.phase == PHASE_RESULT:
-		if action == InputControllerScript.ACTION_CONFIRM or action == InputControllerScript.ACTION_BACK:
-			_begin_result_transition()
-			_accept_input()
-		return
-
-	# Before the deal is complete the player can still leave freely. Once the
-	# live match begins, leaving from a stable gameplay phase is a surrender.
-	if _session.phase == PHASE_DEALING:
-		if action == InputControllerScript.ACTION_BACK:
-			close_game()
-			_accept_input()
-		return
-
-	# Placement/capture animation is transactional. Ignore leave input until a
-	# stable phase instead of interrupting a move half-way through.
-	if _session.phase == PHASE_ANIMATING:
-		if action == InputControllerScript.ACTION_BACK:
-			_accept_input()
-		return
-
-	if _session.phase == PHASE_AI:
-		if action == InputControllerScript.ACTION_BACK:
-			_request_surrender()
-			_accept_input()
-		return
-
-	if _session.phase == PHASE_SELECT_CARD:
-		var hand_step: int = _input_controller.hand_step(action)
-		if hand_step != 0:
-			_live_match.move_hand_selection(hand_step)
-			_refresh_views()
-			_accept_input()
-			return
-		if action == InputControllerScript.ACTION_ROTATE:
-			_try_rotate_selected_card()
-			_accept_input()
-			return
-		if action == InputControllerScript.ACTION_CONFIRM and not _match.player_hand.is_empty():
-			_session.begin_player_cell_selection()
-			_live_match.begin_cell_selection()
-			_refresh_views()
-			_accept_input()
-			return
-		if action == InputControllerScript.ACTION_BACK:
-			_request_surrender()
-			_accept_input()
-			return
-
-	if _session.phase == PHASE_SELECT_CELL:
-		if _input_controller.is_direction(action):
-			_live_match.move_board_selection(action, _input_controller)
-			_refresh_views()
-			_accept_input()
-			return
-		if action == InputControllerScript.ACTION_ROTATE:
-			_try_rotate_selected_card()
-			_accept_input()
-			return
-		if action == InputControllerScript.ACTION_CONFIRM:
-			_try_player_move()
-			_accept_input()
-			return
-		if action == InputControllerScript.ACTION_BACK:
-			# First Back cancels the board preview and returns to the hand. A second
-			# Back from card selection is the deliberate surrender action.
-			_session.cancel_player_cell_selection()
-			_refresh_views()
-			_accept_input()
 
 func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
@@ -1163,24 +1135,19 @@ func _request_surrender() -> void:
 			if not _ui_flow.open_surrender_confirm():
 				_cancel_surrender_confirmation()
 
+
 func _handle_surrender_confirm_input(action: StringName) -> void:
-	if not _ui_flow.has_surrender_confirm():
-		_cancel_surrender_confirmation()
-		return
-
-	if _input_controller.is_direction(action):
+	var command: StringName = _input_controller.route_surrender_confirmation(
+		action,
+		_ui_flow.has_surrender_confirm(),
+		_ui_flow.is_surrender_yes_selected()
+	)
+	if command == InputControllerScript.COMMAND_SURRENDER_MOVE:
 		_ui_flow.move_surrender_selection()
-		return
-
-	if action == InputControllerScript.ACTION_BACK:
+	elif command == InputControllerScript.COMMAND_SURRENDER_CONFIRM:
+		_confirm_surrender()
+	elif command == InputControllerScript.COMMAND_SURRENDER_CANCEL:
 		_cancel_surrender_confirmation()
-		return
-
-	if action == InputControllerScript.ACTION_CONFIRM:
-		if _ui_flow.is_surrender_yes_selected():
-			_confirm_surrender()
-		else:
-			_cancel_surrender_confirmation()
 
 
 func _confirm_surrender() -> void:

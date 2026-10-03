@@ -1,5 +1,9 @@
 extends RefCounted
 
+const SessionControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_session_controller.gd"
+)
+
 const ACTION_NONE := &""
 const ACTION_CONFIRM := &"confirm"
 const ACTION_BACK := &"back"
@@ -10,6 +14,21 @@ const ACTION_DOWN := &"down"
 const ACTION_ROTATE := &"rotate"
 const ACTION_DEBUG := &"debug"
 const ACTION_CAMPAIGN_QA := &"campaign_qa"
+
+const COMMAND_NONE := &""
+const COMMAND_RESULT_TRANSITION := &"result_transition"
+const COMMAND_CLOSE := &"close"
+const COMMAND_CONSUME := &"consume"
+const COMMAND_REQUEST_SURRENDER := &"request_surrender"
+const COMMAND_MOVE_HAND := &"move_hand"
+const COMMAND_ROTATE := &"rotate"
+const COMMAND_BEGIN_CELL_SELECTION := &"begin_cell_selection"
+const COMMAND_MOVE_BOARD := &"move_board"
+const COMMAND_TRY_PLAYER_MOVE := &"try_player_move"
+const COMMAND_CANCEL_CELL_SELECTION := &"cancel_cell_selection"
+const COMMAND_SURRENDER_MOVE := &"surrender_move"
+const COMMAND_SURRENDER_CONFIRM := &"surrender_confirm"
+const COMMAND_SURRENDER_CANCEL := &"surrender_cancel"
 
 
 func action_for_event(event: InputEvent, allow_campaign_qa: bool) -> StringName:
@@ -74,6 +93,80 @@ func move_board_cursor(current: int, action: StringName) -> int:
 	column = clampi(column, 0, 2)
 	row = clampi(row, 0, 2)
 	return row * 3 + column
+
+
+func can_open_debug_overlay(phase: int) -> bool:
+	return phase in [
+		SessionControllerScript.PHASE_SELECT_CARD,
+		SessionControllerScript.PHASE_SELECT_CELL,
+		SessionControllerScript.PHASE_RESULT,
+	]
+
+
+func route_gameplay_action(
+	phase: int,
+	action: StringName,
+	player_hand_empty: bool = false
+) -> Dictionary:
+	if action == ACTION_NONE:
+		return {"command": COMMAND_NONE}
+
+	if phase == SessionControllerScript.PHASE_REWARD:
+		# Reward selection is modal and owns its own input.
+		return {"command": COMMAND_NONE}
+	if phase == SessionControllerScript.PHASE_RESULT:
+		if action in [ACTION_CONFIRM, ACTION_BACK]:
+			return {"command": COMMAND_RESULT_TRANSITION}
+	elif phase == SessionControllerScript.PHASE_DEALING:
+		if action == ACTION_BACK:
+			return {"command": COMMAND_CLOSE}
+	elif phase == SessionControllerScript.PHASE_ANIMATING:
+		if action == ACTION_BACK:
+			# Placement/capture animation is transactional. Consume Back
+			# without interrupting the in-flight animation.
+			return {"command": COMMAND_CONSUME}
+	elif phase == SessionControllerScript.PHASE_AI:
+		if action == ACTION_BACK:
+			return {"command": COMMAND_REQUEST_SURRENDER}
+	elif phase == SessionControllerScript.PHASE_SELECT_CARD:
+		var step: int = hand_step(action)
+		if step != 0:
+			return {"command": COMMAND_MOVE_HAND, "step": step}
+		if action == ACTION_ROTATE:
+			return {"command": COMMAND_ROTATE}
+		if action == ACTION_CONFIRM and not player_hand_empty:
+			return {"command": COMMAND_BEGIN_CELL_SELECTION}
+		if action == ACTION_BACK:
+			return {"command": COMMAND_REQUEST_SURRENDER}
+	elif phase == SessionControllerScript.PHASE_SELECT_CELL:
+		if is_direction(action):
+			return {"command": COMMAND_MOVE_BOARD, "action": action}
+		if action == ACTION_ROTATE:
+			return {"command": COMMAND_ROTATE}
+		if action == ACTION_CONFIRM:
+			return {"command": COMMAND_TRY_PLAYER_MOVE}
+		if action == ACTION_BACK:
+			return {"command": COMMAND_CANCEL_CELL_SELECTION}
+
+	return {"command": COMMAND_NONE}
+
+
+func route_surrender_confirmation(
+	action: StringName,
+	has_surface: bool,
+	yes_selected: bool
+) -> StringName:
+	if not has_surface:
+		return COMMAND_SURRENDER_CANCEL
+	if is_direction(action):
+		return COMMAND_SURRENDER_MOVE
+	if action == ACTION_BACK:
+		return COMMAND_SURRENDER_CANCEL
+	if action == ACTION_CONFIRM:
+		if yes_selected:
+			return COMMAND_SURRENDER_CONFIRM
+		return COMMAND_SURRENDER_CANCEL
+	return COMMAND_NONE
 
 
 func _matches_key(event: InputEventKey, key: Key) -> bool:
