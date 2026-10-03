@@ -326,6 +326,13 @@ func get_collection_snapshot() -> Array:
 	return _runtime_state.get_collection_snapshot()
 
 
+func get_card_snapshot(card_id: StringName) -> Dictionary:
+	var state_api = get_state_api()
+	if state_api == null or not state_api.has_method("get_card_snapshot"):
+		return {}
+	return state_api.call("get_card_snapshot", card_id)
+
+
 func get_card_acquisition_sources(card_id: StringName) -> Array:
 	return _world_gateway.get_card_acquisition_sources(card_id)
 

@@ -33,6 +33,12 @@ const FishingPreparedBaitServiceScript = preload(
 const FishingEconomyFoundationQAScript = preload(
 	"res://scripts/economy/fishing_economy_foundation_qa.gd"
 )
+const FishingCardMakerServiceScript = preload(
+	"res://scripts/economy/fishing_card_maker_service.gd"
+)
+const FishingCardMakerQAScript = preload(
+	"res://scripts/economy/fishing_card_maker_qa.gd"
+)
 const FishingSaveIntegrityServiceScript = preload(
 	"res://scripts/fishing_save_integrity_service.gd"
 )
@@ -139,6 +145,12 @@ const BeachCraftingCatalogResource: BeachCraftingCatalog = preload(
 const FishingEconomyConfigResource: FishingEconomyConfig = preload(
 	"res://data/economy/economy_foundation_v1.tres"
 )
+const FishingCardMakerCatalogResource: FishingCardMakerCatalog = preload(
+	"res://data/economy/card_maker/card_maker_catalog_v1.tres"
+)
+const TripleTriadCardCatalogResource: Resource = preload(
+	"res://data/triple_triad/card_catalog.tres"
+)
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -148,6 +160,7 @@ var economy_service = null
 var economy_access = null
 var cooking_service: FishingCookingService = null
 var prepared_bait_service: FishingPreparedBaitService = null
+var card_maker_service: FishingCardMakerService = null
 var save_integrity_service = null
 var session_modifier_service = null
 var environment_service = null
@@ -159,6 +172,7 @@ var journal_service: FishingJournalService = null
 var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
 var economy_foundation_qa_report: Dictionary = {}
+var card_maker_qa_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
 var beach_crafting_integrity_report: Dictionary = {}
@@ -282,6 +296,20 @@ func initialize() -> void:
 		item_transaction_service
 	)
 
+	card_maker_service = (
+		FishingCardMakerServiceScript.new()
+		as FishingCardMakerService
+	)
+	card_maker_service.name = "FishingCardMakerService"
+	add_child(card_maker_service)
+	card_maker_service.configure(
+		FishingCardMakerCatalogResource,
+		inventory,
+		FishingContentCatalogResource
+	)
+
+	card_maker_service.call_deferred("recover_pending_transaction")
+
 	beach_gathering_inventory = (
 		BeachGatheringInventoryScript.new()
 		as BeachGatheringInventory
@@ -388,6 +416,24 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Economy Foundation QA: %s" % str(failure))
+
+		card_maker_qa_report = FishingCardMakerQAScript.run(
+			FishingCardMakerCatalogResource,
+			FishingContentCatalogResource,
+			TripleTriadCardCatalogResource
+		)
+		print(
+			"Card Maker QA: %d/%d tests passed."
+			% [
+				int(card_maker_qa_report.get("passed_count", 0)),
+				int(card_maker_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in card_maker_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Card Maker QA: %s" % str(failure))
 
 	catch_repository = FishingCatchRepositoryScript.new()
 	catch_repository.name = "FishingCatchRepository"
@@ -678,6 +724,41 @@ func get_prepared_bait_service() -> FishingPreparedBaitService:
 	return prepared_bait_service
 
 
+func get_card_maker_service() -> FishingCardMakerService:
+	return card_maker_service
+
+
+func get_card_maker_recipe_statuses() -> Array[Dictionary]:
+	if card_maker_service == null:
+		return []
+	return card_maker_service.get_all_recipe_snapshots()
+
+
+func evaluate_card_maker_recipe(recipe_id: StringName) -> Dictionary:
+	if card_maker_service == null:
+		return {"can_make": false, "reason": "card_maker_unavailable"}
+	return card_maker_service.evaluate_recipe(recipe_id)
+
+
+func make_card_from_fish(recipe_id: StringName) -> Dictionary:
+	if card_maker_service == null:
+		return {"success": false, "reason": "card_maker_unavailable"}
+	return card_maker_service.make_card(recipe_id, &"fishing_card_maker")
+
+
+func get_card_maker_qa_report() -> Dictionary:
+	return card_maker_qa_report.duplicate(true)
+
+
+func run_card_maker_qa() -> Dictionary:
+	card_maker_qa_report = FishingCardMakerQAScript.run(
+		FishingCardMakerCatalogResource,
+		FishingContentCatalogResource,
+		TripleTriadCardCatalogResource
+	)
+	return card_maker_qa_report.duplicate(true)
+
+
 func get_prepared_bait_snapshot() -> Dictionary:
 	if prepared_bait_service == null:
 		return {}
@@ -902,6 +983,7 @@ func is_ready() -> bool:
 		and economy_access != null
 		and cooking_service != null
 		and prepared_bait_service != null
+		and card_maker_service != null
 		and save_integrity_service != null
 		and session_modifier_service != null
 		and environment_service != null

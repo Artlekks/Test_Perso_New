@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/fishing_card_maker_recipe.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+recipe_id = &"bass_card"
+display_name = "Bass Card"
+description = "Prototype fish-to-card recipe. The current portrait is temporary and can be replaced later without changing the recipe id."
+fish_species_id = &"bass"
+first_time_fish_count = 1
+first_time_zenny = 75
+duplicate_fish_count = 0
+duplicate_zenny = 150
+card_id = &"mugshot_163"
+minimum_duel_rank = 1

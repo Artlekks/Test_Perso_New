@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/fishing_card_maker_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/economy/card_maker/recipes/bass_card.tres" id="2_r1"]
+[ext_resource type="Resource" path="res://data/economy/card_maker/recipes/blue_gill_card.tres" id="3_r2"]
+[ext_resource type="Resource" path="res://data/economy/card_maker/recipes/piranha_card.tres" id="4_r3"]
+[ext_resource type="Resource" path="res://data/economy/card_maker/recipes/trout_card.tres" id="5_r4"]
+[ext_resource type="Resource" path="res://data/economy/card_maker/recipes/sea_bass_card.tres" id="6_r5"]
+
+[resource]
+script = ExtResource("1_catalog")
+recipes = Array[Resource]([ExtResource("2_r1"), ExtResource("3_r2"), ExtResource("4_r3"), ExtResource("5_r4"), ExtResource("6_r5")])

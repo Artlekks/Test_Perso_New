@@ -1111,9 +1111,16 @@ func _test_collection_completion_tracker() -> Dictionary:
 			return _ok(false, "Missing-card diagnostic is malformed.")
 		if (diagnostic as Dictionary).get("sources", []).is_empty():
 			return _ok(false, "Every missing card must expose at least one acquisition source.")
+	var expected_source_count: int = (
+		world_catalog.get_all_source_snapshots().size()
+		if world_catalog != null
+		else 0
+	)
 	return _ok(
-		int(snapshot.get("sources_total", 0)) == 23,
-		"Collection tracker must expose all 23 authored acquisition sources."
+		expected_source_count > 0
+		and int(snapshot.get("sources_total", 0)) == expected_source_count,
+		"Collection tracker must expose all %d authored acquisition sources."
+		% expected_source_count
 	)
 
 

@@ -5,7 +5,8 @@
     "fishing_salvage",
     "treasure_cache",
     "quest_reward",
-    "tournament_reward"
+    "tournament_reward",
+    "card_maker"
   ],
   "sources": [
     {
@@ -394,6 +395,56 @@
         "mugshot_043",
         "mugshot_173",
         "mugshot_174"
+      ]
+    },
+    {
+      "source_type": "card_maker",
+      "source_id": "bass_card",
+      "display_name": "Bass Card Maker Recipe",
+      "min_duel_rank": 1,
+      "description": "Prototype Card Maker recipe unlocked by bringing a bass specimen. Current card art is temporary.",
+      "card_ids": [
+        "mugshot_163"
+      ]
+    },
+    {
+      "source_type": "card_maker",
+      "source_id": "blue_gill_card",
+      "display_name": "Blue Gill Card Maker Recipe",
+      "min_duel_rank": 1,
+      "description": "Prototype Card Maker recipe unlocked by bringing a blue gill specimen. Current card art is temporary.",
+      "card_ids": [
+        "mugshot_164"
+      ]
+    },
+    {
+      "source_type": "card_maker",
+      "source_id": "piranha_card",
+      "display_name": "Piranha Card Maker Recipe",
+      "min_duel_rank": 1,
+      "description": "Prototype Card Maker recipe unlocked by bringing a piranha specimen. Current card art is temporary.",
+      "card_ids": [
+        "mugshot_166"
+      ]
+    },
+    {
+      "source_type": "card_maker",
+      "source_id": "trout_card",
+      "display_name": "Trout Card Maker Recipe",
+      "min_duel_rank": 1,
+      "description": "Prototype Card Maker recipe unlocked by bringing a trout specimen. Current card art is temporary.",
+      "card_ids": [
+        "mugshot_168"
+      ]
+    },
+    {
+      "source_type": "card_maker",
+      "source_id": "sea_bass_card",
+      "display_name": "Sea Bass Card Maker Recipe",
+      "min_duel_rank": 1,
+      "description": "Prototype Card Maker recipe unlocked by bringing a sea bass specimen. Current card art is temporary.",
+      "card_ids": [
+        "mugshot_170"
       ]
     }
   ]
