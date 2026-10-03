@@ -21,7 +21,6 @@ const DefaultAcquisitionPolicy = preload("res://data/triple_triad/acquisition/de
 const StakePolicyScript = preload("res://scripts/triple_triad/triple_triad_stake_policy.gd")
 const FishingSalvageBridgeScript = preload("res://scripts/triple_triad/triple_triad_fishing_salvage_bridge.gd")
 const DefaultEconomyPolicy = preload("res://data/triple_triad/economy/default_economy_policy.tres")
-const GameplayEventFeedScript = preload("res://scripts/triple_triad/triple_triad_gameplay_event_feed.gd")
 const MatchResolutionJournalScript = preload("res://scripts/triple_triad/triple_triad_match_resolution_journal.gd")
 const SessionControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_session_controller.gd"
@@ -59,8 +58,14 @@ const DeveloperToolsControllerScript = preload(
 const MatchContextControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_match_context_controller.gd"
 )
+const RuntimeStateControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_runtime_state_controller.gd"
+)
+const LiveMatchControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_live_match_controller.gd"
+)
 
-const BACKEND_VERSION := "2.12.0"
+const BACKEND_VERSION := "2.14.0"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -139,12 +144,6 @@ var _ui_flow = UIFlowControllerScript.new()
 var _world_gateway = WorldGatewayScript.new()
 var _competition = CompetitionControllerScript.new()
 var _runtime_recovery = RuntimeRecoveryControllerScript.new()
-var _selected_hand_index: int = 0
-var _selected_cell_index: int = 4
-var _starting_player_cards: Array = []
-var _starting_opponent_cards: Array = []
-var _last_info_name: String = ""
-var _active_player_deck: Array = []
 var _collection_backend = null
 var _opponent_collection_backend = null
 var _card_economy = null
@@ -164,16 +163,25 @@ var _competition_catalog = null
 var _competition_service = null
 var _completion_tracker = null
 var _world_progression_director = null
-var _gameplay_event_feed = GameplayEventFeedScript.new()
 var _match_resolution_journal = MatchResolutionJournalScript.new()
 var _match_resolution = MatchResolutionControllerScript.new()
 var _backend_bootstrap = BackendBootstrapScript.new()
 var _developer_tools = DeveloperToolsControllerScript.new()
 var _match_context = MatchContextControllerScript.new()
+var _runtime_state = RuntimeStateControllerScript.new()
+var _live_match = LiveMatchControllerScript.new()
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_runtime_state.initialize({
+		"backend_version": BACKEND_VERSION,
+		"developer_tools": _developer_tools,
+		"session": _session,
+		"match_context": _match_context,
+		"presentation": _presentation,
+		"event_capacity": 32,
+	})
 	_developer_tools.initialize(
 		self,
 		card_catalog,
@@ -219,7 +227,6 @@ func _ready() -> void:
 	_ai = AIScript.new()
 	_rng.randomize()
 	_match_flow.initialize(_match, _ai, _rng, _session)
-	_gameplay_event_feed.initialize(32)
 	_match_resolution_journal.initialize()
 
 	_presentation.initialize(
@@ -283,6 +290,13 @@ func _ready() -> void:
 			"min_level": prototype_min_level,
 			"max_level": prototype_max_level,
 		}
+	)
+
+	_live_match.initialize(
+		_match,
+		_match_flow,
+		_match_context,
+		_rng
 	)
 
 	_world_gateway.initialize(
@@ -350,6 +364,28 @@ func _ready() -> void:
 	_runtime_recovery.checkpoint_requested.connect(_checkpoint_save_integrity)
 	_runtime_recovery.backend_state_change_requested.connect(_publish_backend_state_change)
 
+	_runtime_state.initialize({
+		"backend_version": BACKEND_VERSION,
+		"state_api": _state_api,
+		"completion_tracker": _completion_tracker,
+		"world_progression_director": _world_progression_director,
+		"world_gateway": _world_gateway,
+		"competition": _competition,
+		"runtime_recovery": _runtime_recovery,
+		"developer_tools": _developer_tools,
+		"session": _session,
+		"match_context": _match_context,
+		"presentation": _presentation,
+		"save_integrity": _save_integrity,
+		"collection_backend": _collection_backend,
+		"match_resolution": _match_resolution,
+		"encounter_records": _encounter_records,
+		"event_capacity": 32,
+	})
+	_runtime_state.gameplay_event_queued.connect(_on_runtime_gameplay_event_queued)
+	_runtime_state.backend_state_changed.connect(_on_runtime_backend_state_changed)
+	_runtime_state.world_progression_changed.connect(_on_runtime_world_progression_changed)
+
 	_checkpoint_save_integrity("boot")
 
 	_backend_ready = true
@@ -388,29 +424,19 @@ func is_backend_ready() -> bool:
 
 
 func get_backend_health() -> Dictionary:
-	return {
-		"backend_version": BACKEND_VERSION,
-		"ready": _backend_ready,
-		"errors": _backend_errors.duplicate(),
-		"save_integrity": (
-			_save_integrity.get_last_report()
-			if _save_integrity != null
-			and _save_integrity.has_method("get_last_report")
-			else {}
-		),
-	}
+	return _runtime_state.get_backend_health(_backend_ready, _backend_errors)
 
 
 func get_pending_gameplay_events() -> Array:
-	return _gameplay_event_feed.get_pending_events()
+	return _runtime_state.get_pending_gameplay_events()
 
 
 func pop_next_gameplay_event() -> Dictionary:
-	return _gameplay_event_feed.pop_next_event()
+	return _runtime_state.pop_next_gameplay_event()
 
 
 func clear_gameplay_events() -> void:
-	_gameplay_event_feed.clear()
+	_runtime_state.clear_gameplay_events()
 
 
 func _queue_gameplay_event(
@@ -420,36 +446,25 @@ func _queue_gameplay_event(
 	payload: Dictionary = {},
 	priority: int = 0
 ) -> Dictionary:
-	var event: Dictionary = _gameplay_event_feed.push_event(
+	return _runtime_state.queue_gameplay_event(
 		event_type,
 		title,
 		detail,
 		payload,
 		priority
 	)
-	gameplay_event_queued.emit(event.duplicate(true))
-	_developer_tools.append_playtest_event(
-		&"gameplay_event",
-		event
-	)
-	return event
 
 
 func get_state_api():
-	return _state_api
+	return _runtime_state.get_state_api()
 
 
 func get_player_snapshot() -> Dictionary:
-	if _state_api == null:
-		return {}
-	return _state_api.get_player_snapshot()
+	return _runtime_state.get_player_snapshot()
 
 
 func get_collection_snapshot() -> Array:
-	if _state_api == null:
-		return []
-	return _state_api.get_collection_snapshot()
-
+	return _runtime_state.get_collection_snapshot()
 
 
 func get_card_acquisition_sources(card_id: StringName) -> Array:
@@ -561,235 +576,51 @@ func has_world_reward_event_claimed(event_id: StringName) -> bool:
 
 
 func get_deck_profiles_snapshot() -> Array:
-	if _state_api == null:
-		return []
-	return _state_api.get_deck_profiles()
+	return _runtime_state.get_deck_profiles_snapshot()
 
 
 func get_opponent_snapshot(opponent_id: StringName) -> Dictionary:
-	if _state_api == null:
-		return {}
-	return _state_api.get_opponent_snapshot(opponent_id)
+	return _runtime_state.get_opponent_snapshot(opponent_id)
 
 
 func get_opponents_snapshot() -> Array:
-	if _state_api == null:
-		return []
-	return _state_api.get_all_opponents_snapshot()
+	return _runtime_state.get_opponents_snapshot()
 
 
 func get_collection_completion_snapshot() -> Dictionary:
-	if _completion_tracker == null:
-		return {}
-	return _completion_tracker.call("get_snapshot")
+	return _runtime_state.get_collection_completion_snapshot()
 
 
 func get_missing_card_diagnostics() -> Array:
-	var snapshot: Dictionary = get_collection_completion_snapshot()
-	return snapshot.get("missing_cards", []).duplicate(true)
+	return _runtime_state.get_missing_card_diagnostics()
 
 
 func get_source_completion_snapshot() -> Array:
-	var snapshot: Dictionary = get_collection_completion_snapshot()
-	return snapshot.get("source_progress", []).duplicate(true)
+	return _runtime_state.get_source_completion_snapshot()
 
 
 func get_global_triple_triad_snapshot() -> Dictionary:
-	var snapshot: Dictionary = (
-		_state_api.get_global_snapshot()
-		if _state_api != null
-		else {}
-	)
-	snapshot["runtime"] = {
-		"backend_version": BACKEND_VERSION,
-		"is_open": is_open(),
-		"phase": _session.phase,
-		"active_opponent_id": String(_match_context.active_opponent_id()) if is_open() else "",
-	}
-	snapshot["completion"] = get_collection_completion_snapshot()
-	snapshot["competitive"] = get_competitive_snapshot()
-	snapshot["world_progression"] = get_world_progression_snapshot()
-	snapshot["recovery"] = get_runtime_recovery_snapshot()
-	return snapshot
+	return _runtime_state.get_global_snapshot()
 
 
 func get_world_progression_snapshot() -> Dictionary:
-	if _world_progression_director == null:
-		return {}
-	return _world_progression_director.call(
-		"build_snapshot",
-		get_player_snapshot(),
-		get_onboarding_snapshot(),
-		get_competitive_snapshot(),
-		get_collection_completion_snapshot(),
-		get_available_card_player_ids()
-	)
+	return _runtime_state.get_world_progression_snapshot()
 
 
 func get_runtime_ui_snapshot() -> Dictionary:
-	var selected_card = null
-	var selected_rotation: int = 0
-	if (
-		_match != null
-		and _selected_hand_index >= 0
-		and _selected_hand_index < _match.player_hand.size()
-	):
-		selected_card = _match.player_hand[_selected_hand_index]
-		selected_rotation = _match.get_hand_rotation(
-			OWNER_PLAYER,
-			_selected_hand_index
-		)
-
-	var player_hand_snapshot: Array = []
-	var opponent_hand_snapshot: Array = []
-	if _match != null:
-		for hand_index in range(_match.player_hand.size()):
-			player_hand_snapshot.append(
-				_runtime_card_snapshot(
-					_match.player_hand[hand_index],
-					_match.get_hand_rotation(OWNER_PLAYER, hand_index)
-				)
-			)
-		var reveal_opponent: bool = (
-			_match_context.active_rule_set == null
-			or bool(_match_context.active_rule_set.open_rule)
-		)
-		for hand_index in range(_match.opponent_hand.size()):
-			if reveal_opponent:
-				opponent_hand_snapshot.append(
-					_runtime_card_snapshot(
-						_match.opponent_hand[hand_index],
-						_match.get_hand_rotation(
-							OWNER_OPPONENT,
-							hand_index
-						)
-					)
-				)
-			else:
-				opponent_hand_snapshot.append({"hidden": true})
-
-	return {
-		"schema_version": 2,
-		"backend_version": BACKEND_VERSION,
-		"is_open": is_open(),
-		"phase": _session.phase,
-		"phase_name": _phase_name(_session.phase),
-		"round_number": _session.round_number,
-		"match_started": _session.match_started,
-		"current_owner": (
-			int(_match.current_owner)
-			if _match != null
-			else OWNER_NONE
-		),
-		"selected_hand_index": _selected_hand_index,
-		"selected_cell_index": _selected_cell_index,
-		"selected_rotation": selected_rotation,
-		"selected_card": (
-			_runtime_card_snapshot(selected_card, selected_rotation)
-			if selected_card != null
-			else {}
-		),
-		"player_hand": player_hand_snapshot,
-		"opponent_hand": opponent_hand_snapshot,
-		"opponent_hand_count": (
-			_match.opponent_hand.size()
-			if _match != null
-			else 0
-		),
-		"score": _match.get_score() if _match != null else {},
-		"board_influence": (
-			_match.get_influence_board_snapshot()
-			if _match != null
-			and _match.has_method("get_influence_board_snapshot")
-			else []
-		),
-		"placement_preview": _presentation.get_placement_preview(
-			_match,
-			_session.phase,
-			_selected_hand_index,
-			_selected_cell_index
-		),
-		"can_surrender": (
-			_session.match_started
-			and _session.phase in [PHASE_SELECT_CARD, PHASE_AI]
-		),
-	}
-
-
-func _runtime_card_snapshot(card, rotation_quarters: int = 0) -> Dictionary:
-	if card == null:
-		return {}
-	var ranks: Array[int] = []
-	for side in range(4):
-		if card.has_method("rank_for_side_rotated"):
-			ranks.append(int(card.call("rank_for_side_rotated", side, rotation_quarters)))
-		else:
-			ranks.append(int(card.call("rank_for_side", side)))
-	return {
-		"card_id": String(card.get("card_id")),
-		"display_name": str(card.get("display_name")),
-		"rotation": posmod(rotation_quarters, 4),
-		"ranks": ranks,
-		"deck_cost": int(card.get("deck_cost")),
-		"influence": (
-			card.call("get_influence_snapshot", rotation_quarters)
-			if card.has_method("get_influence_snapshot")
-			else {
-				"mode": "none",
-				"strength": 0,
-				"display_name": "None",
-				"description": "This card does not project Influence.",
-				"rotation_quarters": posmod(rotation_quarters, 4),
-				"offsets": [],
-				"grid": {
-					"width": 1,
-					"height": 1,
-					"origin": [0, 0],
-					"cells": [[2]],
-				},
-			}
-		),
-	}
-
-
-func _phase_name(phase_value: int) -> String:
-	match phase_value:
-		PHASE_CLOSED:
-			return "closed"
-		PHASE_DEALING:
-			return "dealing"
-		PHASE_SELECT_CARD:
-			return "select_card"
-		PHASE_SELECT_CELL:
-			return "select_cell"
-		PHASE_ANIMATING:
-			return "animating"
-		PHASE_AI:
-			return "ai"
-		PHASE_RESULT:
-			return "result"
-		PHASE_REWARD:
-			return "reward"
-		PHASE_DECK_SETUP:
-			return "deck_setup"
-		_:
-			return "unknown"
+	return _runtime_state.get_runtime_ui_snapshot(
+		_match,
+		_live_match.selected_hand_index,
+		_live_match.selected_cell_index
+	)
 
 
 func _invalidate_state_api(reason: String = "") -> void:
-	if _state_api != null and _state_api.has_method("invalidate"):
-		_state_api.call("invalidate", reason)
+	_runtime_state.invalidate_state_api(reason)
 
 
 func _publish_backend_state_change(reason: String) -> void:
-	if _completion_tracker != null:
-		_completion_tracker.call("refresh", reason, true)
-	_invalidate_state_api(reason)
-	backend_state_changed.emit(reason)
-	if _world_progression_director != null:
-		world_progression_changed.emit(
-			get_world_progression_snapshot()
-		)
+	_runtime_state.publish_backend_state_change(reason)
 
 
 func is_open() -> bool:
@@ -886,9 +717,9 @@ func open_active_competition_match() -> bool:
 
 	_competition.set_match_active(true)
 	if locked_cards.size() == 5:
-		_active_player_deck = locked_cards.duplicate()
+		_live_match.set_active_player_deck(locked_cards)
 		_ui_flow.close_deck_setup()
-		_start_new_match(_active_player_deck)
+		_start_new_match(_live_match.get_active_player_deck())
 	return true
 
 
@@ -926,6 +757,18 @@ func get_available_card_player_ids(
 		region_id,
 		required_tag
 	)
+
+
+func _on_runtime_gameplay_event_queued(event: Dictionary) -> void:
+	gameplay_event_queued.emit(event.duplicate(true))
+
+
+func _on_runtime_backend_state_changed(reason: String) -> void:
+	backend_state_changed.emit(reason)
+
+
+func _on_runtime_world_progression_changed(snapshot: Dictionary) -> void:
+	world_progression_changed.emit(snapshot.duplicate(true))
 
 
 func _on_acquisition_bundle_claimed(result: Dictionary) -> void:
@@ -1148,11 +991,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _session.phase == PHASE_SELECT_CARD:
 		var hand_step: int = _input_controller.hand_step(action)
 		if hand_step != 0:
-			_selected_hand_index = clampi(
-				_selected_hand_index + hand_step,
-				0,
-				maxi(_match.player_hand.size() - 1, 0)
-			)
+			_live_match.move_hand_selection(hand_step)
 			_refresh_views()
 			_accept_input()
 			return
@@ -1162,7 +1001,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if action == InputControllerScript.ACTION_CONFIRM and not _match.player_hand.is_empty():
 			_session.begin_player_cell_selection()
-			_selected_cell_index = _find_nearest_empty_cell(_selected_cell_index)
+			_live_match.begin_cell_selection()
 			_refresh_views()
 			_accept_input()
 			return
@@ -1172,20 +1011,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 	if _session.phase == PHASE_SELECT_CELL:
-		var moved: bool = false
-		if action == InputControllerScript.ACTION_LEFT:
-			_selected_cell_index = _input_controller.move_board_cursor(_selected_cell_index, action)
-			moved = true
-		elif action == InputControllerScript.ACTION_RIGHT:
-			_selected_cell_index = _input_controller.move_board_cursor(_selected_cell_index, action)
-			moved = true
-		elif action == InputControllerScript.ACTION_UP:
-			_selected_cell_index = _input_controller.move_board_cursor(_selected_cell_index, action)
-			moved = true
-		elif action == InputControllerScript.ACTION_DOWN:
-			_selected_cell_index = _input_controller.move_board_cursor(_selected_cell_index, action)
-			moved = true
-		if moved:
+		if _input_controller.is_direction(action):
+			_live_match.move_board_selection(action, _input_controller)
 			_refresh_views()
 			_accept_input()
 			return
@@ -1204,57 +1031,32 @@ func _unhandled_input(event: InputEvent) -> void:
 			_refresh_views()
 			_accept_input()
 
-
 func _start_new_match(player_cards_override: Array = []) -> void:
 	ai_timer.stop()
 	_ui_flow.prepare_new_match()
 	_competition.clear_pending_change()
-	_last_info_name = ""
 
-	if _match_context.qa_hand_seed > 0:
-		_rng.seed = _match_context.qa_hand_seed
-
-	var player_cards: Array = []
-	if player_cards_override.size() == 5:
-		player_cards = player_cards_override.duplicate()
-	elif _active_player_deck.size() == 5:
-		player_cards = _active_player_deck.duplicate()
-	else:
-		player_cards = _match_context.build_budgeted_hand()
-	var opponent_cards: Array = []
-	if _opponent_collection_backend != null:
-		opponent_cards = _opponent_collection_backend.build_match_deck(
-			5,
-			_match_context.active_deck_budget,
-			_match_context.active_opponent_evolution
-		)
-	if opponent_cards.size() != 5:
-		push_error("TripleTriadGame: opponent %s has no legal persistent deck." % String(_match_context.active_opponent_id()))
-		message_label.text = "Opponent deck is invalid."
-		close_game()
-		return
-
-	var starting_owner: int
-	match _match_context.qa_forced_starting_owner:
-		OWNER_PLAYER:
-			starting_owner = OWNER_PLAYER
-		OWNER_OPPONENT:
-			starting_owner = OWNER_OPPONENT
-		_:
-			starting_owner = OWNER_PLAYER if _rng.randi_range(0, 1) == 0 else OWNER_OPPONENT
-	var flow: Dictionary = _match_flow.prepare_match(
-		player_cards, opponent_cards, starting_owner, _match_context.active_rule_set, _match_context.active_region_profile
+	var setup: Dictionary = _live_match.prepare_new_match(
+		player_cards_override,
+		_opponent_collection_backend
 	)
-	if not bool(flow.get("success", false)):
-		push_error("TripleTriadGame: match flow setup failed: %s" % str(flow.get("reason", "unknown")))
+	if not bool(setup.get("success", false)):
+		var reason: String = str(setup.get("reason", "unknown"))
+		if reason == "invalid_opponent_deck":
+			push_error(
+				"TripleTriadGame: opponent %s has no legal persistent deck."
+				% String(_match_context.active_opponent_id())
+			)
+			message_label.text = "Opponent deck is invalid."
+		else:
+			push_error(
+				"TripleTriadGame: live match setup failed: %s" % reason
+			)
 		close_game()
 		return
-	_starting_player_cards = player_cards.duplicate()
-	_starting_opponent_cards = opponent_cards.duplicate()
-	_selected_hand_index = int(flow.get("selected_hand_index", 0))
-	_selected_cell_index = int(flow.get("selected_cell_index", 4))
+
 	_refresh_views()
-	_run_deal_sequence(int(flow.get("starting_owner", starting_owner)))
+	_run_deal_sequence(int(setup.get("starting_owner", OWNER_PLAYER)))
 
 func _run_deal_sequence(starting_owner: int) -> void:
 	await animation_director.deal_hands(
@@ -1274,8 +1076,8 @@ func _run_deal_sequence(starting_owner: int) -> void:
 
 func _try_player_move() -> void:
 	var flow: Dictionary = _match_flow.commit_player_move(
-		_selected_hand_index,
-		_selected_cell_index
+		_live_match.selected_hand_index,
+		_live_match.selected_cell_index
 	)
 	if not bool(flow.get("success", false)):
 		message_label.text = "That space is occupied." if str(flow.get("reason", "")) == "occupied" else "Invalid move."
@@ -1285,8 +1087,7 @@ func _try_player_move() -> void:
 	var cell_index: int = int(flow.get("cell_index", 0))
 	var played_card = flow.get("played_card")
 	var result: Dictionary = flow.get("result", {})
-	_selected_hand_index = int(flow.get("next_hand_index", _selected_hand_index))
-	_last_info_name = str(played_card.display_name)
+	_live_match.apply_player_move_result(flow)
 	_refresh_ui_flow()
 	await animation_director.animate_placement(
 		root, _presentation.get_player_view(hand_index), _presentation.get_board_view(cell_index), played_card,
@@ -1295,7 +1096,7 @@ func _try_player_move() -> void:
 	if not is_open():
 		return
 
-	message_label.text = _capture_message(result)
+	message_label.text = _live_match.capture_message(result)
 	var captured_cells: Array = result.get("captured", [])
 	_refresh_views(captured_cells)
 	if not captured_cells.is_empty():
@@ -1326,7 +1127,6 @@ func _run_ai_turn() -> void:
 	var cell_index: int = int(flow.get("cell_index", 0))
 	var played_card = flow.get("played_card")
 	var result: Dictionary = flow.get("result", {})
-	_last_info_name = str(played_card.display_name)
 	_refresh_ui_flow()
 	await animation_director.animate_placement(
 		root, _presentation.get_opponent_view(hand_index), _presentation.get_board_view(cell_index), played_card,
@@ -1335,7 +1135,7 @@ func _run_ai_turn() -> void:
 	if not is_open():
 		return
 
-	message_label.text = _capture_message(result)
+	message_label.text = _live_match.capture_message(result)
 	var captured_cells: Array = result.get("captured", [])
 	_refresh_views(captured_cells)
 	if not captured_cells.is_empty():
@@ -1344,13 +1144,14 @@ func _run_ai_turn() -> void:
 			return
 
 	var next_step: Dictionary = _match_flow.complete_ai_move(
-		result, _selected_hand_index, _selected_cell_index
+		result,
+		_live_match.selected_hand_index,
+		_live_match.selected_cell_index
 	)
 	if StringName(next_step.get("action", &"")) == &"finish":
 		_finish_match()
 		return
-	_selected_hand_index = int(next_step.get("selected_hand_index", _selected_hand_index))
-	_selected_cell_index = int(next_step.get("selected_cell_index", _selected_cell_index))
+	_live_match.apply_ai_move_result(next_step)
 	_refresh_views()
 
 func _request_surrender() -> void:
@@ -1413,8 +1214,8 @@ func _finish_match(
 		_match_context.active_opponent_id(),
 		_match_context.qa_profile_override != null,
 		_competition.is_match_active(),
-		_starting_player_cards,
-		_starting_opponent_cards,
+		_live_match.get_starting_player_cards(),
+		_live_match.get_starting_opponent_cards(),
 		_opponent_collection_backend
 	)
 	var progression_change: Dictionary = (
@@ -1465,7 +1266,7 @@ func _run_result_transition(winner: int) -> void:
 	if destination == &"replay":
 		# A draw is a replay, not an exit. Re-deal behind the black result fade,
 		# then reveal the fresh match using the same active QA/opponent profile.
-		_start_new_match(_active_player_deck)
+		_start_new_match(_live_match.get_active_player_deck())
 		await animation_director.fade_from_cover(
 			transition_fade,
 			RESULT_FADE_OUT_SECONDS
@@ -1481,8 +1282,8 @@ func _run_result_transition(winner: int) -> void:
 			winner,
 			_match_context.active_opponent_profile,
 			_match_context.active_opponent_id(),
-			_starting_player_cards,
-			_starting_opponent_cards,
+			_live_match.get_starting_player_cards(),
+			_live_match.get_starting_opponent_cards(),
 			_opponent_collection_backend
 		)
 	)
@@ -1498,8 +1299,8 @@ func _run_result_transition(winner: int) -> void:
 		for raw_id in raw_eligible:
 			eligible_reward_ids.append(str(raw_id))
 	_ui_flow.open_reward(
-		_starting_opponent_cards,
-		_starting_player_cards,
+		_live_match.get_starting_opponent_cards(),
+		_live_match.get_starting_player_cards(),
 		winner,
 		true,
 		opponent_take_index,
@@ -1560,9 +1361,7 @@ func _resume_pending_match_resolution() -> void:
 		_match_context.active_opponent_profile
 	)
 
-	_starting_player_cards = player_cards.duplicate()
-	_starting_opponent_cards = opponent_cards.duplicate()
-	_active_player_deck = player_cards.duplicate()
+	_live_match.install_recovery_state(player_cards, opponent_cards)
 
 	_ui_flow.show_recovery_surface()
 	_ui_flow.open_reward(
@@ -1587,73 +1386,7 @@ func _resume_pending_match_resolution() -> void:
 
 
 func get_card_economy_snapshot() -> Dictionary:
-	var minimum_unique: int = 5
-	var protect_collection: bool = true
-	var stolen_recoverable: bool = true
-	if DefaultEconomyPolicy != null:
-		minimum_unique = maxi(
-			5,
-			int(DefaultEconomyPolicy.minimum_playable_unique_cards)
-		)
-		protect_collection = bool(
-			DefaultEconomyPolicy.protect_minimum_playable_collection
-		)
-		stolen_recoverable = bool(
-			DefaultEconomyPolicy.stolen_cards_recoverable
-		)
-
-	var unique_owned: int = 0
-	var total_owned: int = 0
-	if _collection_backend != null:
-		if _collection_backend.has_method("unique_owned_count"):
-			unique_owned = int(
-				_collection_backend.call("unique_owned_count")
-			)
-		if _collection_backend.has_method("total_owned_count"):
-			total_owned = int(
-				_collection_backend.call("total_owned_count")
-			)
-
-	var playable_unique: int = _match_resolution.get_playable_owned_cards().size()
-	var stolen_total: int = 0
-	var stolen_by_opponent: Array = []
-	if _encounter_records != null:
-		for raw_id in _encounter_records.get_all_recorded_ids():
-			var opponent_id := StringName(str(raw_id))
-			var encounter: Dictionary = _encounter_records.get_snapshot(
-				opponent_id
-			)
-			var opponent_stolen: int = int(
-				encounter.get("stolen_total", 0)
-			)
-			if opponent_stolen <= 0:
-				continue
-			stolen_total += opponent_stolen
-			stolen_by_opponent.append({
-				"opponent_id": String(opponent_id),
-				"stolen_total": opponent_stolen,
-				"stolen_quantities": (
-					encounter.get(
-						"stolen_quantities",
-						{}
-					) as Dictionary
-				).duplicate(true),
-			})
-
-	return {
-		"minimum_playable_unique_cards": minimum_unique,
-		"protect_minimum_playable_collection": protect_collection,
-		"stolen_cards_recoverable": stolen_recoverable,
-		"unique_owned_count": unique_owned,
-		"total_owned_count": total_owned,
-		"playable_unique_count": playable_unique,
-		"minimum_deck_protection_active": (
-			protect_collection
-			and playable_unique <= minimum_unique
-		),
-		"stolen_total": stolen_total,
-		"stolen_by_opponent": stolen_by_opponent,
-	}
+	return _runtime_state.get_card_economy_snapshot()
 
 
 func _schedule_ai() -> void:
@@ -1667,55 +1400,34 @@ func _refresh_views(captured_cells: Array = []) -> void:
 		_match,
 		_session.phase,
 		_match_context.active_rule_set,
-		_selected_hand_index,
-		_selected_cell_index,
+		_live_match.selected_hand_index,
+		_live_match.selected_cell_index,
 		captured_cells
 	)
 	_refresh_ui_flow()
 	runtime_state_changed.emit(get_runtime_ui_snapshot())
 
-
 func _refresh_ui_flow() -> void:
 	if _match == null:
 		return
-	_selected_hand_index = _ui_flow.refresh_match_state(
-		_session.phase,
-		_session.round_number,
-		_match,
-		_selected_hand_index,
-		message_label.text,
-		_match_context.region_trait_text(),
-		_current_help_entries(),
-		_match.get_score()
+	_live_match.set_selected_hand_index(
+		_ui_flow.refresh_match_state(
+			_session.phase,
+			_session.round_number,
+			_match,
+			_live_match.selected_hand_index,
+			message_label.text,
+			_match_context.region_trait_text(),
+			_current_help_entries(),
+			_match.get_score()
+		)
 	)
-
-
-func _capture_message(result: Dictionary) -> String:
-	var combo_captured: Array = result.get("combo_captured", [])
-	var same_triggered: bool = bool(result.get("same_triggered", false))
-	var plus_triggered: bool = bool(result.get("plus_triggered", false))
-
-	var special_text: String = ""
-	if same_triggered and plus_triggered:
-		special_text = "SAME + PLUS!"
-	elif same_triggered:
-		special_text = "SAME!"
-	elif plus_triggered:
-		special_text = "PLUS!"
-
-	if special_text.is_empty():
-		return ""
-	if not combo_captured.is_empty():
-		return "%s  COMBO x%d" % [special_text, combo_captured.size()]
-	return special_text
-
 
 func _on_reward_selected(card_definition) -> void:
 	if card_definition == null:
 		_ui_flow.resolve_reward_transfer(false)
 		return
 
-	_last_info_name = str(card_definition.display_name)
 	var transfer_result: Dictionary = _match_resolution.commit_reward_transfer(
 		card_definition,
 		_session.result_winner,
@@ -1778,15 +1490,9 @@ func _on_reward_selected(card_definition) -> void:
 			deck_setup.remove_card_from_all_profiles(
 				StringName(card_definition.card_id)
 			)
-			var filtered_active_deck: Array = []
-			for card in _active_player_deck:
-				if (
-					card != null
-					and String(card.card_id)
-					!= String(card_definition.card_id)
-				):
-					filtered_active_deck.append(card)
-			_active_player_deck = filtered_active_deck
+			_live_match.remove_card_from_active_deck(
+				StringName(card_definition.card_id)
+			)
 
 	if not metadata_ok:
 		push_warning(
@@ -1864,8 +1570,8 @@ func _continue_active_competition_round() -> bool:
 		_match_context.active_deck_budget,
 		_match_context.active_opponent_profile
 	)
-	_active_player_deck = locked_cards.duplicate()
-	_start_new_match(_active_player_deck)
+	_live_match.set_active_player_deck(locked_cards)
+	_start_new_match(_live_match.get_active_player_deck())
 	return true
 
 
@@ -1899,9 +1605,11 @@ func _on_collection_completed(snapshot: Dictionary) -> void:
 func _on_deck_confirmed(cards: Array) -> void:
 	if _session.phase != PHASE_DECK_SETUP or cards.size() != 5:
 		return
-	_active_player_deck = cards.duplicate()
+	_live_match.set_active_player_deck(cards)
 	if _competition.is_match_active():
-		if not _competition.lock_active_deck(_active_player_deck):
+		if not _competition.lock_active_deck(
+			_live_match.get_active_player_deck()
+		):
 			push_error(
 				"TripleTriadGame: could not lock the tournament deck."
 			)
@@ -1910,7 +1618,7 @@ func _on_deck_confirmed(cards: Array) -> void:
 			return
 	_ui_flow.close_deck_setup()
 	_publish_backend_state_change("deck_selected")
-	_start_new_match(_active_player_deck)
+	_start_new_match(_live_match.get_active_player_deck())
 
 
 func _on_deck_cancelled() -> void:
@@ -1923,53 +1631,16 @@ func _on_deck_cancelled() -> void:
 
 func _on_qa_profile_apply_requested(selected_profile: Resource) -> void:
 	_match_context.set_qa_profile(selected_profile)
-	_start_new_match(_active_player_deck)
+	_start_new_match(_live_match.get_active_player_deck())
 
 
 func _try_rotate_selected_card() -> void:
-	if _selected_hand_index < 0 or _selected_hand_index >= _match.player_hand.size():
-		return
-	if _match.rotate_hand_card(OWNER_PLAYER, _selected_hand_index):
-		message_label.text = "ROTATE! One use spent."
-	else:
-		message_label.text = "Rotate already used."
+	var result: Dictionary = _live_match.try_rotate_selected_card()
+	message_label.text = str(result.get("message", ""))
 	_refresh_views()
 
-
-func _player_help_text(board_selection: bool) -> String:
-	var rotate_text: String = "   R: Rotate" if _match != null and _match.can_rotate(OWNER_PLAYER) else ""
-	if board_selection:
-		return "W/A/S/D: Move   K: Place%s   I: Back" % rotate_text
-	return "W/S: Card   K: Select%s   I: Surrender" % rotate_text
-
-
 func _current_help_entries() -> Array:
-	var entries: Array = []
-	match _session.phase:
-		PHASE_SELECT_CARD:
-			entries.append({"key": "W/S", "action": "Card"})
-			entries.append({"key": "K", "action": "Select"})
-			if _match != null and _match.can_rotate(OWNER_PLAYER):
-				entries.append({"key": "R", "action": "Rotate"})
-			entries.append({"key": "I", "action": "Surrender"})
-		PHASE_SELECT_CELL:
-			entries.append({"key": "WASD", "action": "Move"})
-			entries.append({"key": "K", "action": "Place"})
-			if _match != null and _match.can_rotate(OWNER_PLAYER):
-				entries.append({"key": "R", "action": "Rotate"})
-			entries.append({"key": "I", "action": "Back"})
-		PHASE_AI:
-			entries.append({"key": "I", "action": "Surrender"})
-		PHASE_RESULT:
-			entries.append({"key": "K", "action": "Continue"})
-		PHASE_REWARD:
-			entries.append({"key": "K", "action": "Continue"})
-	return entries
-
-
-func _find_nearest_empty_cell(preferred: int) -> int:
-	return _match_flow.nearest_empty_cell(preferred)
-
+	return _live_match.current_help_entries(_session.phase)
 
 func _accept_input() -> void:
 	var viewport: Viewport = get_viewport()

@@ -56,6 +56,12 @@ const BackendValidatorScript = preload(
 const MatchContextControllerScript = preload(
 	"res://scripts/triple_triad/triple_triad_match_context_controller.gd"
 )
+const RuntimeStateControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_runtime_state_controller.gd"
+)
+const LiveMatchControllerScript = preload(
+	"res://scripts/triple_triad/triple_triad_live_match_controller.gd"
+)
 const RegionProfileScript = preload(
 	"res://scripts/triple_triad/triple_triad_region_profile.gd"
 )
@@ -455,6 +461,47 @@ class MockMatchContextEncounterRecords:
 		return {"wins": wins}
 
 
+class MockRuntimeMatchContext:
+	extends RefCounted
+
+	var active_rule_set = null
+	var opponent_id: StringName = &"qa_runtime_opponent"
+
+	func active_opponent_id() -> StringName:
+		return opponent_id
+
+
+class MockLiveMatchContext:
+	extends RefCounted
+
+	var qa_hand_seed: int = 0
+	var qa_forced_starting_owner: int = OWNER_PLAYER
+	var active_deck_budget: int = 30
+	var active_opponent_evolution: Dictionary = {}
+	var active_rule_set = null
+	var active_region_profile = null
+	var budgeted_hand: Array = []
+
+	func build_budgeted_hand() -> Array:
+		return budgeted_hand.duplicate()
+
+
+class MockLiveOpponentCollection:
+	extends RefCounted
+
+	var cards: Array = []
+
+	func _init(initial_cards: Array = []) -> void:
+		cards = initial_cards.duplicate()
+
+	func build_match_deck(
+		_count: int,
+		_budget: int,
+		_evolution: Dictionary
+	) -> Array:
+		return cards.duplicate()
+
+
 var _results: Array[Dictionary] = []
 
 
@@ -532,6 +579,12 @@ func run_all() -> Dictionary:
 	_run("Match context resolves authored precedence", _test_match_context_authored_precedence)
 	_run("Match context isolates QA overrides", _test_match_context_qa_override)
 	_run("Match context applies rematch evolution", _test_match_context_rematch_evolution)
+	_run("Runtime state feed owns public gameplay events", _test_runtime_state_event_feed)
+	_run("Runtime state card snapshots preserve rotation", _test_runtime_state_card_snapshot)
+	_run("Runtime state UI snapshot respects hidden hands", _test_runtime_state_hidden_hand)
+	_run("Live match runtime owns prepared hands", _test_live_match_runtime_setup)
+	_run("Live match runtime owns selection cursors", _test_live_match_runtime_selection)
+	_run("Live match runtime owns active deck mutations", _test_live_match_runtime_deck_state)
 
 	var passed: int = 0
 	var failed: int = 0
@@ -3125,5 +3178,227 @@ func _test_match_context_rematch_evolution() -> Dictionary:
 		and controller.active_ai_profile != opponent_ai
 		and float(controller.active_ai_profile.get("randomness")) < 2.0,
 		"Match context must fold persistent rematch evolution into the active deck budget and adapted AI when no QA override is active."
+	)
+
+
+
+func _test_runtime_state_event_feed() -> Dictionary:
+	var controller = RuntimeStateControllerScript.new()
+	controller.initialize({
+		"backend_version": "qa",
+		"event_capacity": 2,
+	})
+	controller.queue_gameplay_event(&"first", "First")
+	controller.queue_gameplay_event(&"second", "Second", "detail", {"value": 2}, 1)
+	controller.queue_gameplay_event(&"third", "Third")
+	var pending: Array = controller.get_pending_gameplay_events()
+	var first_kept: Dictionary = {}
+	if pending.size() > 0:
+		first_kept = pending[0]
+	var popped: Dictionary = controller.pop_next_gameplay_event()
+	return _ok(
+		pending.size() == 2
+		and str(first_kept.get("type", "")) == "second"
+		and int(first_kept.get("payload", {}).get("value", 0)) == 2
+		and str(popped.get("type", "")) == "second"
+		and controller.get_pending_gameplay_events().size() == 1,
+		"Runtime state controller must own the bounded public gameplay-event queue without changing FIFO semantics."
+	)
+
+
+func _test_runtime_state_card_snapshot() -> Dictionary:
+	var controller = RuntimeStateControllerScript.new()
+	controller.initialize({"backend_version": "qa"})
+	var card = MockCard.new(&"runtime_rotate", 1, 2, 3, 4, 5)
+	card.display_name = "Runtime Rotate"
+	var snapshot: Dictionary = controller.runtime_card_snapshot(card, 1)
+	var ranks: Array = snapshot.get("ranks", [])
+	return _ok(
+		String(snapshot.get("card_id", "")) == "runtime_rotate"
+		and int(snapshot.get("rotation", -1)) == 1
+		and ranks == [4, 1, 2, 3]
+		and int(snapshot.get("deck_cost", 0)) == 5,
+		"Runtime state card snapshots must preserve rotated rank order and stable public card metadata."
+	)
+
+
+func _test_runtime_state_hidden_hand() -> Dictionary:
+	var session = SessionControllerScript.new()
+	session.open_deck_setup(false)
+	session.prepare_new_match()
+	session.begin_dealing()
+	session.complete_deal(OWNER_PLAYER)
+
+	var rules = MockRuleSet.new()
+	rules.open_rule = false
+	var match_context = MockRuntimeMatchContext.new()
+	match_context.active_rule_set = rules
+
+	var player_cards: Array = []
+	var opponent_cards: Array = []
+	for index in range(5):
+		player_cards.append(MockCard.new(
+			StringName("player_%d" % index),
+			1 + index,
+			2,
+			3,
+			4,
+			1
+		))
+		opponent_cards.append(MockCard.new(
+			StringName("opponent_%d" % index),
+			4,
+			3,
+			2,
+			1 + index,
+			1
+		))
+
+	var match_state = MatchScript.new()
+	match_state.reset_match(
+		player_cards,
+		opponent_cards,
+		OWNER_PLAYER,
+		rules,
+		null
+	)
+
+	var controller = RuntimeStateControllerScript.new()
+	controller.initialize({
+		"backend_version": "qa",
+		"session": session,
+		"match_context": match_context,
+	})
+	var snapshot: Dictionary = controller.get_runtime_ui_snapshot(
+		match_state,
+		1,
+		4
+	)
+	var opponent_hand: Array = snapshot.get("opponent_hand", [])
+	var all_hidden: bool = opponent_hand.size() == 5
+	for card_snapshot in opponent_hand:
+		all_hidden = all_hidden and bool(card_snapshot.get("hidden", false))
+	return _ok(
+		all_hidden
+		and str(snapshot.get("phase_name", "")) == "select_card"
+		and bool(snapshot.get("can_surrender", false))
+		and String(snapshot.get("selected_card", {}).get("card_id", "")) == "player_1",
+		"Runtime UI snapshots must hide closed-rule opponent cards while preserving selected-card and phase state."
+	)
+
+func _make_live_match_runtime_fixture() -> Dictionary:
+	var player_cards: Array = []
+	var opponent_cards: Array = []
+	for index in range(5):
+		player_cards.append(MockCard.new(
+			StringName("live_player_%d" % index),
+			1 + index,
+			2,
+			3,
+			4,
+			1
+		))
+		opponent_cards.append(MockCard.new(
+			StringName("live_opponent_%d" % index),
+			4,
+			3,
+			2,
+			1 + index,
+			1
+		))
+
+	var match_state = MatchScript.new()
+	var ai = AIScript.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var session = SessionControllerScript.new()
+	session.open_deck_setup(false)
+	var flow = MatchFlowControllerScript.new()
+	flow.initialize(match_state, ai, rng, session)
+
+	var context = MockLiveMatchContext.new()
+	context.qa_forced_starting_owner = OWNER_OPPONENT
+	context.active_rule_set = MockRuleSet.new()
+	context.active_region_profile = MockRegion.new()
+	context.budgeted_hand = player_cards.duplicate()
+
+	var runtime = LiveMatchControllerScript.new()
+	runtime.initialize(match_state, flow, context, rng)
+	var opponent_collection = MockLiveOpponentCollection.new(opponent_cards)
+	return {
+		"runtime": runtime,
+		"match": match_state,
+		"session": session,
+		"context": context,
+		"opponent_collection": opponent_collection,
+		"player_cards": player_cards,
+		"opponent_cards": opponent_cards,
+	}
+
+
+func _test_live_match_runtime_setup() -> Dictionary:
+	var fixture: Dictionary = _make_live_match_runtime_fixture()
+	var runtime = fixture.get("runtime")
+	var session = fixture.get("session")
+	var setup: Dictionary = runtime.prepare_new_match(
+		[],
+		fixture.get("opponent_collection")
+	)
+	return _ok(
+		bool(setup.get("success", false))
+		and int(setup.get("starting_owner", OWNER_NONE)) == OWNER_OPPONENT
+		and runtime.get_starting_player_cards().size() == 5
+		and runtime.get_starting_opponent_cards().size() == 5
+		and runtime.selected_hand_index == 0
+		and runtime.selected_cell_index == 4
+		and session.phase == SessionControllerScript.PHASE_DEALING,
+		"Live match runtime must own deterministic hand preparation, starting-owner choice, and initial selection state."
+	)
+
+
+func _test_live_match_runtime_selection() -> Dictionary:
+	var fixture: Dictionary = _make_live_match_runtime_fixture()
+	var runtime = fixture.get("runtime")
+	var setup: Dictionary = runtime.prepare_new_match(
+		[],
+		fixture.get("opponent_collection")
+	)
+	if not bool(setup.get("success", false)):
+		return _ok(false, "Live match runtime fixture failed to prepare a match.")
+
+	runtime.move_hand_selection(3)
+	runtime.move_hand_selection(10)
+	var input = InputControllerScript.new()
+	runtime.move_board_selection(InputControllerScript.ACTION_LEFT, input)
+	runtime.move_board_selection(InputControllerScript.ACTION_UP, input)
+	return _ok(
+		runtime.selected_hand_index == 4
+		and runtime.selected_cell_index == 0,
+		"Live match runtime must clamp hand selection and own board-cursor navigation."
+	)
+
+
+func _test_live_match_runtime_deck_state() -> Dictionary:
+	var fixture: Dictionary = _make_live_match_runtime_fixture()
+	var runtime = fixture.get("runtime")
+	var player_cards: Array = fixture.get("player_cards", [])
+	runtime.set_active_player_deck(player_cards)
+	var removed_id := StringName(player_cards[2].card_id)
+	var filtered: Array = runtime.remove_card_from_active_deck(removed_id)
+	var removed_still_present: bool = false
+	for card in filtered:
+		if card != null and String(card.card_id) == String(removed_id):
+			removed_still_present = true
+			break
+
+	var opponent_cards: Array = fixture.get("opponent_cards", [])
+	runtime.install_recovery_state(player_cards, opponent_cards)
+	return _ok(
+		filtered.size() == 4
+		and not removed_still_present
+		and runtime.get_active_player_deck().size() == 5
+		and runtime.get_starting_player_cards().size() == 5
+		and runtime.get_starting_opponent_cards().size() == 5,
+		"Live match runtime must own active-deck filtering and deterministic recovery state without leaking scene-owned arrays."
 	)
 
