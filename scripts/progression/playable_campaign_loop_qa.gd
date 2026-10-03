@@ -16,6 +16,11 @@ const WORLD_MAP_PATH := (
 	"res://data/triple_triad/acquisition/world_acquisition_map.json"
 )
 
+const STARTER_SPARKLE_SCRIPT_PATH := (
+	"res://scripts/triple_triad/triple_triad_salvage_sparkle.gd"
+)
+const OPPONENT_SCENE_PATH := "res://actors/TripleTriadOpponentNPC.tscn"
+
 const REQUIRED_WORLD_SCENES := [
 	"res://actors/FishingCardMakerNPC.tscn",
 	"res://actors/HarborLockbox.tscn",
@@ -39,6 +44,8 @@ static func run(economy_config: FishingEconomyConfig) -> Dictionary:
 	_test_plan_shape(report, plan)
 	_test_fresh_save_contract(report, plan, economy_config)
 	_test_starter_case_contract(report, plan)
+	_test_starter_discovery_contract(report, plan, simulation)
+	_test_card_challenge_control(report)
 	_test_milestone_order(report, plan)
 	_test_early_card_plan_alignment(report, plan, early_plan)
 	_test_authored_sources_exist(report, plan, world_map)
@@ -114,6 +121,53 @@ static func _test_starter_case_contract(
 		"First fishing trip points at the real five-card Saltworn Card Case",
 		valid,
 		"Onboarding must not drift back to an already-unlocked or ten-card start."
+	)
+
+
+static func _test_starter_discovery_contract(
+	report: Dictionary,
+	plan: Dictionary,
+	simulation: Dictionary
+) -> void:
+	var first: Dictionary = _milestone_by_id(plan, "first_fishing_trip")
+	var assumptions: Dictionary = {}
+	var raw_assumptions = simulation.get("assumptions", {})
+	if raw_assumptions is Dictionary:
+		assumptions = raw_assumptions as Dictionary
+	var target_catches: int = int(
+		assumptions.get("starter_case_target_catches", 0)
+	)
+	var valid: bool = (
+		str(first.get("player_goal", "")).to_lower().contains("glint")
+		and target_catches >= 4
+		and target_catches <= 6
+		and ResourceLoader.exists(STARTER_SPARKLE_SCRIPT_PATH)
+	)
+	_record(
+		report,
+		"Starter-card discovery is a visible early fishing event, not a first-catch auto grant",
+		valid,
+		"Campaign onboarding should surface a water glint after only a few catches and require an intentional cast."
+	)
+
+
+static func _test_card_challenge_control(report: Dictionary) -> void:
+	var valid: bool = false
+	if ResourceLoader.exists(OPPONENT_SCENE_PATH):
+		var packed = load(OPPONENT_SCENE_PATH)
+		if packed is PackedScene:
+			var node = (packed as PackedScene).instantiate()
+			if node != null:
+				valid = (
+					str(node.get("interaction_prompt")) == "C : Cards"
+					and str(node.get("rematch_prompt")) == "C : Rematch"
+				)
+				node.free()
+	_record(
+		report,
+		"Card-player interaction advertises the same C key the runtime actually uses",
+		valid,
+		"The first card tutorial must not teach C while the world prompt still says K."
 	)
 
 

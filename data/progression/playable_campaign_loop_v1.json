@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "plan_id": "playable_campaign_loop_v1",
-  "description": "Canonical fresh-save campaign spine for the current beach vertical slice. Milestones are design targets, not forced timers.",
+  "description": "Canonical fresh-save campaign spine for the current beach vertical slice. Checkpoint hours are upper-bound design checks, never forced timers; opening discoveries are expected to happen earlier when the player moves quickly.",
   "fresh_save": {
     "starting_zenny": 100,
     "starting_cards": 0,
@@ -15,8 +15,8 @@
     {
       "milestone_id": "first_fishing_trip",
       "checkpoint_hour": 0.25,
-      "headline": "Fish first; discover cards through play.",
-      "player_goal": "Land an eligible coastal catch and recover the Saltworn Card Case.",
+      "headline": "Fish first; notice something strange in the water.",
+      "player_goal": "After a few coastal catches, spot the water glint, cast onto it, and reel in the Saltworn Card Case.",
       "card_owned_min": 5,
       "card_owned_max": 5,
       "species_discovered_min": 1,
@@ -42,8 +42,8 @@
     {
       "milestone_id": "learn_loop",
       "checkpoint_hour": 1.0,
-      "headline": "Learn the fishing and card loops without pressure.",
-      "player_goal": "Catch several species, try early card duels, and begin coastal salvage.",
+      "headline": "Settle into the fishing and card loops.",
+      "player_goal": "By the first-hour checkpoint, catch several species, try the Beach Trader, and recover a post-starter coastal salvage card. Fast players can reach this much earlier.",
       "card_owned_min": 7,
       "card_owned_max": 10,
       "species_discovered_min": 4,
@@ -203,8 +203,9 @@
     }
   ],
   "playtest_questions": [
-    "Does the first fishing trip feel rewarding before cards appear?",
-    "Does discovering the Saltworn Card Case feel like a natural surprise rather than a menu unlock?",
+    "Does fishing feel rewarding for the first few catches before cards appear?",
+    "Does the water glint appear after roughly three to five catches and make the Saltworn Card Case feel discovered rather than menu-unlocked?",
+    "Does the first card-playing NPC explain the C challenge interaction without replacing normal NPC dialogue?",
     "By hour one, are fishing, selling, gathering and card play all understandable without a tutorial dump?",
     "By hour four, do prepared bait and the Card Maker create meaningful competition for fish and Zenny?",
     "By hour twelve, do players have multiple viable goals instead of one mandatory progression route?"

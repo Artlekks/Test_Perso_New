@@ -19,7 +19,7 @@ class_name EconomyProgressionSimulator
 const STEP_HOURS: float = 0.25
 const STARTING_ZENNY: float = 100.0
 const STARTING_CARDS: float = 0.0
-const STARTER_CASE_UNLOCK_HOUR: float = 0.25
+const STARTER_CASE_TARGET_CATCHES: float = 5.0
 const STARTER_CASE_CARDS: float = 5.0
 const STARTING_RODS: int = 1
 const STARTING_LURES: int = 1
@@ -162,13 +162,13 @@ func _simulate_step(
 
 	state["fish_caught"] = float(state.get("fish_caught", 0.0)) + base_catches
 
-	# Campaign-loop v1 begins from the real fresh-save state. The temporary
-	# onboarding rule discovers the Saltworn Card Case on the first eligible
-	# fishing catch; the 15-minute checkpoint models that first committed trip.
+	# Campaign-loop v1 begins from the real fresh-save state. Runtime onboarding
+	# now exposes a visible salvage glint after roughly 3-5 catches and resolves
+	# the Saltworn Card Case on the targeted follow-up catch. The simulator uses
+	# five total catches as the representative midpoint for that discovery.
 	if (
 		not bool(state.get("card_game_unlocked", false))
-		and step_end >= STARTER_CASE_UNLOCK_HOUR
-		and base_catches > 0.0
+		and float(state.get("fish_caught", 0.0)) >= STARTER_CASE_TARGET_CATCHES
 	):
 		state["card_game_unlocked"] = true
 		state["starter_case_discovered"] = true
@@ -488,7 +488,7 @@ func _build_stages() -> Array:
 			"id": "LEARN",
 			"start_hour": 0.0,
 			"end_hour": 1.0,
-			"catches_per_hour": 11.0,
+			"catches_per_hour": 20.0,
 			"average_fish_value_zenny": 45.0,
 			"herbs_per_hour": 2.0,
 			"species_discovery_per_hour": 4.5,
@@ -619,7 +619,7 @@ func _get_assumption_snapshot() -> Dictionary:
 	return {
 		"starting_zenny": STARTING_ZENNY,
 		"starting_cards": STARTING_CARDS,
-		"starter_case_unlock_hour": STARTER_CASE_UNLOCK_HOUR,
+		"starter_case_target_catches": STARTER_CASE_TARGET_CATCHES,
 		"starter_case_cards": STARTER_CASE_CARDS,
 		"bait_recipe": "1 common fish + 2 herbs -> 3 prepared bait portions",
 		"bait_expected_catch_value_uplift": BAIT_VALUE_BONUS,
@@ -634,7 +634,7 @@ func _get_assumption_snapshot() -> Dictionary:
 func _print_report(report: Dictionary) -> void:
 	print("")
 	print("=== ECONOMY / PROGRESSION SIMULATOR 0-12H ===")
-	print("Fresh save: 0 cards / card game locked; first fishing trip discovers the five-card Saltworn Card Case.")
+	print("Fresh save: 0 cards / card game locked; after roughly 3-5 catches a visible water glint leads to the five-card Saltworn Card Case.")
 	print("Prepared bait assumption: 1 common fish + 2 herbs -> 3 portions")
 	print("Baited catches model a +30% expected quality/value mix, not a direct fish-price buff.")
 	print("Profiles are deterministic design stress tests; no save/runtime state is touched.")

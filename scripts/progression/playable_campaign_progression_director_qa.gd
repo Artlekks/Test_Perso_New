@@ -17,6 +17,8 @@ static func run() -> Dictionary:
 
 	_test_fresh_start(report, plan)
 	_test_locked_after_noneligible_catch(report, plan)
+	_test_visible_glint_becomes_cast_objective(report, plan)
+	_test_armed_glint_becomes_land_objective(report, plan)
 	_test_first_trip_advances_to_learn_loop(report, plan)
 	_test_quantities_alone_do_not_skip_learn_loop(report, plan)
 	_test_learn_loop_surfaces_salvage_after_trader(report, plan)
@@ -58,8 +60,60 @@ static func _test_locked_after_noneligible_catch(
 		report,
 		"A catch without card discovery stays in the starter-case search phase",
 		str(snapshot.get("phase_id", "")) == "starter_case_search"
-		and str(snapshot.get("next_objective", {}).get("code", "")) == "discover_starter_case",
+		and str(snapshot.get("next_objective", {}).get("code", "")) == "discover_starter_glint",
 		"The director must distinguish 'has fished' from 'has discovered cards'."
+	)
+
+
+static func _test_visible_glint_becomes_cast_objective(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var cards := _cards(false, false, 0)
+	cards["onboarding"] = {
+		"fishing_salvage_bridge": {
+			"starter_search_count": 4,
+			"starter_spawn_threshold": 4,
+			"starter_sparkle_active": true,
+			"starter_salvage_armed": false,
+		}
+	}
+	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
+		plan,
+		_state(4, 2, 1, 1, cards)
+	)
+	_record(
+		report,
+		"A visible starter glint becomes an intentional cast objective",
+		str(snapshot.get("next_objective", {}).get("code", ""))
+		== "cast_at_starter_glint",
+		"Once the glint exists, guidance should stop saying 'keep fishing' and point at the visible target."
+	)
+
+
+static func _test_armed_glint_becomes_land_objective(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var cards := _cards(false, false, 0)
+	cards["onboarding"] = {
+		"fishing_salvage_bridge": {
+			"starter_search_count": 4,
+			"starter_spawn_threshold": 4,
+			"starter_sparkle_active": true,
+			"starter_salvage_armed": true,
+		}
+	}
+	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
+		plan,
+		_state(4, 2, 1, 1, cards)
+	)
+	_record(
+		report,
+		"A cast that lands on the glint becomes a finish-the-catch objective",
+		str(snapshot.get("next_objective", {}).get("code", ""))
+		== "land_starter_salvage",
+		"The director should acknowledge that the player already found and targeted the salvage."
 	)
 
 
@@ -333,6 +387,7 @@ static func _cards(
 		"regional_championship": {},
 		"world_progression": {},
 		"source_acquisition_counts": {},
+		"onboarding": {},
 	}
 
 

@@ -543,12 +543,7 @@ static func _build_next_objective(
 				"fishing"
 			)
 		"starter_case_search":
-			return _objective(
-				"discover_starter_case",
-				"Keep fishing the coastal shallows.",
-				"An eligible sea catch advances the first cross-system discovery.",
-				"fishing"
-			)
+			return _starter_case_search_objective(card_state)
 		"first_fishing_trip":
 			return _objective_from_deficits(
 				current_milestone,
@@ -583,22 +578,62 @@ static func _build_next_objective(
 			)
 
 
+static func _starter_case_search_objective(
+	card_state: Dictionary
+) -> Dictionary:
+	var onboarding: Dictionary = {}
+	var raw_onboarding = card_state.get("onboarding", {})
+	if raw_onboarding is Dictionary:
+		onboarding = raw_onboarding as Dictionary
+	var bridge: Dictionary = {}
+	var raw_bridge = onboarding.get("fishing_salvage_bridge", {})
+	if raw_bridge is Dictionary:
+		bridge = raw_bridge as Dictionary
+
+	if bool(bridge.get("starter_salvage_armed", false)):
+		return _objective(
+			"land_starter_salvage",
+			"Finish this catch and reel the glint back in.",
+			"Your cast landed on the unusual shine in the water.",
+			"fishing"
+		)
+	if bool(bridge.get("starter_sparkle_active", false)):
+		return _objective(
+			"cast_at_starter_glint",
+			"Cast directly at the glint in the water.",
+			"Something unusual has surfaced after your first few catches.",
+			"fishing"
+		)
+
+	var current: int = maxi(
+		0,
+		int(bridge.get("starter_search_count", 0))
+	)
+	var threshold: int = maxi(
+		3,
+		int(bridge.get("starter_spawn_threshold", 5))
+	)
+	return _objective(
+		"discover_starter_glint",
+		"Keep fishing the coastal shallows.",
+		"After a few catches, watch the water for an unusual glint. (%d/%d)"
+		% [mini(current, threshold), threshold],
+		"fishing"
+	)
+
+
 static func _learn_loop_objective(
 	milestone: Dictionary,
 	card_state: Dictionary
 ) -> Dictionary:
-	if _deficit_value(milestone, "species_discovered") > 0:
-		return _objective(
-			"discover_more_fish",
-			"Catch a few different fish species.",
-			"Build the catch journal before pushing the economy harder.",
-			"fishing"
-		)
+	# Card discovery is meant to create an immediate "what is this?" payoff.
+	# Point the player at the first card opponent before asking for more journal
+	# breadth, otherwise the introduction can feel artificially delayed.
 	if not _activity_complete(milestone, "beat_beach_trader"):
 		return _objective(
 			"challenge_beach_trader",
-			"Challenge the Beach Trader to cards.",
-			"The first opponent win proves the duel loop and expands the starter collection.",
+			"Show the recovered cards to the Beach Trader.",
+			"The first card player introduces the C challenge control; win once to learn the duel loop.",
 			"triple_triad"
 		)
 	if not _activity_complete(
@@ -609,6 +644,13 @@ static func _learn_loop_objective(
 			"recover_coast_shallows_salvage",
 			"Keep fishing the coast after finding the card case.",
 			"Post-starter coastal catches eventually recover another card from the shallows.",
+			"fishing"
+		)
+	if _deficit_value(milestone, "species_discovered") > 0:
+		return _objective(
+			"discover_more_fish",
+			"Catch a few different fish species.",
+			"Now that the card loop is introduced, broaden the catch journal naturally while fishing.",
 			"fishing"
 		)
 	if _deficit_value(milestone, "cards_owned_unique") > 0:

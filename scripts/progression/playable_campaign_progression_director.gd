@@ -174,6 +174,7 @@ func _collect_card_state() -> Dictionary:
 		"regional_championship": {},
 		"world_progression": {},
 		"source_acquisition_counts": {},
+		"onboarding": {},
 	}
 	var game: Node = _find_triple_triad_game()
 	if game == null:
@@ -217,6 +218,13 @@ func _collect_card_state() -> Dictionary:
 		acquisition_snapshot.get("claimed_bundle_ids", []),
 		STARTER_BUNDLE_ID
 	)
+
+	if game.has_method("get_onboarding_snapshot"):
+		var raw_onboarding = game.call("get_onboarding_snapshot")
+		if raw_onboarding is Dictionary:
+			result["onboarding"] = (
+				raw_onboarding as Dictionary
+			).duplicate(true)
 
 	var opponents: Dictionary = {}
 	var beaten_ids := PackedStringArray()

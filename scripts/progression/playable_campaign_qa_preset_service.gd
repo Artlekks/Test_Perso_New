@@ -76,21 +76,21 @@ func get_presets() -> Array:
 			[
 				"Enter fishing with no card-system knowledge.",
 				"Confirm the first useful action is obvious without debug help.",
-				"Catch naturally until the Saltworn Card Case is discovered.",
+				"Catch naturally and watch for the water glint after the first few fish.",
 			]
 		),
 		_preset(
-			"first_fishing_trip", "After First Fishing Trip", "~15 min",
-			"2 species recorded, Saltworn Card Case found, exactly 5 starter cards.",
+			"first_fishing_trip", "Card Discovery", "~15-30 min",
+			"2 species recorded, water-glint salvage completed, exactly 5 starter cards.",
 			"starter", 2, 160, ["wooden_rod"], ["straight"], 0,
 			[
-				"Open the card game and confirm the five-card deck is usable.",
-				"Check that fishing still feels like the primary activity.",
-				"Verify the Director now points toward the Learn Loop.",
+				"Confirm the water glint asks for an intentional cast rather than auto-granting cards.",
+				"Approach the Beach Trader and verify the first C press teaches the card challenge interaction.",
+				"Press C again and confirm the five-card starter deck is usable.",
 			]
 		),
 		_preset(
-			"learn_loop", "Hour 1 / Learn Loop", "~1 h",
+			"learn_loop", "Hour 1 / Settled Loop", "~1 h upper bound",
 			"5 species, 8 reachable cards, Beach Trader cleared, light tackle growth.",
 			"learn_loop", 5, 350, ["wooden_rod"], ["straight", "tail"], 0,
 			[

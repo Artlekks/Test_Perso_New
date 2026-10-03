@@ -4,6 +4,9 @@ signal deck_confirmed(cards: Array)
 signal cancelled
 
 const CardViewScene = preload("res://actors/TripleTriadCardView.tscn")
+const DeckUIFont = preload("res://assets/fonts/BOF_Font_Refined.fnt")
+const BitmapTextScript = preload("res://scripts/bitmap_text.gd")
+const DistanceNumbersTexture = preload("res://assets/ui/shared/DistanceNumbers.png")
 
 const OWNER_PLAYER := 1
 const MIN_PROFILE_COUNT := 5
@@ -11,6 +14,7 @@ const VISIBLE_PROFILE_COUNT := 5
 const MAX_PROFILE_COUNT := 50
 const HAND_SIZE := 5
 const COLLECTION_COLUMNS := 10
+const VISIBLE_COLLECTION_COLUMNS := 9
 const COLLECTION_ROWS := 2
 const PAGE_SIZE := COLLECTION_COLUMNS * COLLECTION_ROWS
 const COLLECTION_SCALE := Vector2(0.50, 0.50)
@@ -52,6 +56,11 @@ const LOCKED_CARD_MODULATE := Color(0.30, 0.30, 0.30, 0.86)
 const CARD_TRANSFER_LIFT_Y := 82.0
 const CARD_TRANSFER_LIFT_SECONDS := 0.22
 const CARD_TRANSFER_DROP_SECONDS := 0.16
+const DECK_COST_LABEL_NAME := "DeckCostLabel"
+const COST_COLOR_BRONZE := Color(0.78, 0.43, 0.22, 1.0)
+const COST_COLOR_SILVER := Color(0.82, 0.86, 0.90, 1.0)
+const COST_COLOR_GOLD := Color(1.0, 0.78, 0.22, 1.0)
+const COST_COLOR_DEFAULT := Color(0.95, 0.90, 0.72, 1.0)
 
 @onready var collection_root: Control = $CollectionRoot
 @onready var deck_root: Control = $DeckRoot
@@ -64,6 +73,7 @@ const CARD_TRANSFER_DROP_SECONDS := 0.16
 @onready var detail_number: Label = $DetailNumber
 @onready var detail_rarity: Label = $DetailRarity
 @onready var detail_description: Label = $DetailDescription
+@onready var detail_effect: Label = $DetailEffect
 @onready var status_label: Label = $StatusLabel
 @onready var collection_arrow: Polygon2D = $CollectionArrow
 @onready var deck_arrow: Polygon2D = $DeckArrow
@@ -134,6 +144,7 @@ func _ready() -> void:
 	name_button.pressed.connect(_on_sort_category_pressed.bind(2))
 	if detail_card.has_method("set_owner_outline_visible"):
 		detail_card.call("set_owner_outline_visible", false)
+	_ensure_cost_label(detail_card)
 
 
 func open_setup(
@@ -362,6 +373,7 @@ func _build_views() -> void:
 		view.scale = COLLECTION_SCALE
 		if view.has_method("set_owner_outline_visible"):
 			view.call("set_owner_outline_visible", false)
+		_ensure_cost_label(view)
 		view.position = COLLECTION_CARD_OFFSET + Vector2(
 			float(index % COLLECTION_COLUMNS) * COLLECTION_STEP_X,
 			float(floori(float(index) / float(COLLECTION_COLUMNS))) * COLLECTION_STEP_Y
@@ -384,11 +396,81 @@ func _build_views() -> void:
 		deck_view.scale = DECK_SCALE
 		if deck_view.has_method("set_owner_outline_visible"):
 			deck_view.call("set_owner_outline_visible", false)
+		_ensure_cost_label(deck_view)
 		deck_view.position = DECK_CARD_OFFSET + Vector2(float(index) * DECK_STEP_X, 0.0)
 		deck_view.z_index = 20 + index
 		_deck_views.append(deck_view)
 
 	_refresh_slot_styles()
+
+
+func _ensure_cost_label(view: Control) -> Control:
+	if view == null:
+		return null
+	var root := view.get_node_or_null("Root") as Control
+	if root == null:
+		return null
+	var existing := root.get_node_or_null(DECK_COST_LABEL_NAME) as Control
+	if existing != null:
+		return existing
+
+	# Use the exact same bitmap digit renderer as the four card power values.
+	# The bitmap glyph has transparent space inside its 16x16 control box, so the
+	# control origin is intentionally farther right/down than a raw 48px-box
+	# calculation. (78,89) places the VISIBLE digit one pixel from the card art's
+	# bottom-right edge; Root clipping trims only the renderer's transparent area.
+	var digit := Control.new()
+	digit.name = DECK_COST_LABEL_NAME
+	digit.set_script(BitmapTextScript)
+	digit.position = Vector2(78.0, 89.0)
+	digit.size = Vector2(16.0, 16.0)
+	digit.scale = Vector2(3.0, 3.0)
+	digit.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	digit.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	digit.set("font_texture", DistanceNumbersTexture)
+	digit.z_index = 80
+	root.add_child(digit)
+	return digit
+
+
+func _refresh_cost_label(view: Control, card, show: bool = true) -> void:
+	var digit := _ensure_cost_label(view)
+	if digit == null:
+		return
+	digit.visible = show and card != null
+	if not digit.visible:
+		return
+	# Authored deck costs use the same 0-9 digit strip as card power values.
+	var cost_digit := clampi(int(card.deck_cost), 0, 9)
+	digit.call("set_text", str(cost_digit))
+	digit.set("font_color", _cost_color_for_card(card))
+
+
+func _cost_color_for_card(card) -> Color:
+	if card == null:
+		return COST_COLOR_DEFAULT
+	match String(card.get("rarity_id")).strip_edges().to_lower():
+		"bronze":
+			return COST_COLOR_BRONZE
+		"silver":
+			return COST_COLOR_SILVER
+		"gold":
+			return COST_COLOR_GOLD
+		_:
+			return COST_COLOR_DEFAULT
+
+
+func _collection_scroll_x(page_start: int) -> float:
+	var focus_index: int = _cursor_index
+	if _state == STATE_REPLACE and _replace_source_index >= 0:
+		focus_index = _replace_source_index
+	if focus_index < page_start or focus_index >= page_start + PAGE_SIZE:
+		return 0.0
+	var local_index: int = focus_index - page_start
+	var column: int = local_index % COLLECTION_COLUMNS
+	var hidden_columns: int = maxi(0, column - (VISIBLE_COLLECTION_COLUMNS - 1))
+	return -float(hidden_columns) * COLLECTION_STEP_X
+
 
 func _refresh_all() -> void:
 	_refresh_collection()
@@ -398,6 +480,7 @@ func _refresh_all() -> void:
 
 func _refresh_collection() -> void:
 	var page_start: int = _page_index * PAGE_SIZE
+	var scroll_x: float = _collection_scroll_x(page_start)
 	collection_arrow.visible = false
 	for local_index in range(_collection_views.size()):
 		var view: Control = _collection_views[local_index]
@@ -406,6 +489,7 @@ func _refresh_collection() -> void:
 			var card = _cards[card_index]
 			view.visible = true
 			view.configure(card, OWNER_PLAYER, false)
+			_refresh_cost_label(view, card)
 			view.pivot_offset = Vector2.ZERO
 			var is_in_deck: bool = _deck_has_card(card)
 			if not _can_use_card(card):
@@ -420,7 +504,7 @@ func _refresh_collection() -> void:
 			var is_replace_source: bool = _state == STATE_REPLACE and card_index == _replace_source_index
 			view.scale = COLLECTION_FOCUS_SCALE if is_replace_source else COLLECTION_SCALE
 			var base_position := COLLECTION_CARD_OFFSET + Vector2(
-				float(local_index % COLLECTION_COLUMNS) * COLLECTION_STEP_X,
+				float(local_index % COLLECTION_COLUMNS) * COLLECTION_STEP_X + scroll_x,
 				float(floori(float(local_index) / float(COLLECTION_COLUMNS))) * COLLECTION_STEP_Y
 			)
 			view.position = base_position + (
@@ -432,16 +516,17 @@ func _refresh_collection() -> void:
 				# Locked cards are darkened with modulate, which also darkens
 				# their internal selection artwork. This arrow stays bright.
 				collection_arrow.visible = true
-				collection_arrow.position = (
-					collection_root.position
-					+ view.position
-					+ Vector2(
-						(view.size.x * view.scale.x) * 0.5 - 6.0,
-						-12.0
-					)
+				var arrow_local := view.position + Vector2(
+					(view.size.x * view.scale.x) * 0.5 - 6.0,
+					-12.0
+				)
+				collection_arrow.position = collection_root.position + Vector2(
+					arrow_local.x * collection_root.scale.x,
+					arrow_local.y * collection_root.scale.y
 				)
 		else:
 			view.modulate = Color.WHITE
+			_refresh_cost_label(view, null, false)
 			view.visible = false
 
 func _refresh_deck() -> void:
@@ -457,21 +542,27 @@ func _refresh_deck() -> void:
 		if index < _deck.size():
 			view.visible = true
 			view.configure(_deck[index], OWNER_PLAYER, false)
+			_refresh_cost_label(view, _deck[index])
 			view.scale = DECK_SCALE
 			view.set_selected(is_replace_target)
 		else:
+			_refresh_cost_label(view, null, false)
 			view.visible = false
 
 	_refresh_slot_styles()
 	if _state == STATE_REPLACE:
-		deck_arrow.position = deck_root.position + DECK_CARD_OFFSET + Vector2(
+		var deck_arrow_local := DECK_CARD_OFFSET + Vector2(
 			float(_replace_slot_index) * DECK_STEP_X - 14.0,
 			(DECK_SLOT_SIZE.y * 0.5) - 6.0
+		)
+		deck_arrow.position = deck_root.position + Vector2(
+			deck_arrow_local.x * deck_root.scale.x,
+			deck_arrow_local.y * deck_root.scale.y
 		)
 
 func _refresh_labels() -> void:
 	current_deck_label.text = "Deck #%d" % (_profile_index + 1)
-	current_deck_count.text = "%d / %d" % [_deck.size(), HAND_SIZE]
+	current_deck_count.text = "%d/%d" % [_deck.size(), HAND_SIZE]
 	cards_owned_label.text = "Cards Owned  %d / %d" % [
 		_cards.size(),
 		_total_catalog_card_count(),
@@ -502,7 +593,7 @@ func _refresh_labels() -> void:
 			if profile_index == _profile_index
 			else _saved_profile_count(profile_index)
 		)
-		_profile_count_labels[local_index].text = "%d / %d" % [
+		_profile_count_labels[local_index].text = "%d/%d" % [
 			count,
 			HAND_SIZE,
 		]
@@ -527,6 +618,7 @@ func _refresh_labels() -> void:
 		var card = detail_focus_card
 		detail_card.visible = true
 		detail_card.configure(card, OWNER_PLAYER, false)
+		_refresh_cost_label(detail_card, card)
 		detail_card.pivot_offset = Vector2.ZERO
 		detail_card.set_selected(false)
 		if detail_card.has_method("set_owner_outline_visible"):
@@ -535,12 +627,15 @@ func _refresh_labels() -> void:
 		detail_number.text = "No. %03d" % (int(card.source_index) + 1)
 		detail_rarity.text = String(card.rarity_id).capitalize()
 		detail_description.text = _detail_description(card)
+		detail_effect.text = _detail_effect_text(card)
 	else:
+		_refresh_cost_label(detail_card, null, false)
 		detail_card.visible = false
 		detail_name.text = ""
 		detail_number.text = ""
 		detail_rarity.text = ""
 		detail_description.text = ""
+		detail_effect.text = ""
 
 
 func _detail_description(card) -> String:
@@ -562,11 +657,13 @@ func _detail_description(card) -> String:
 				int(card.rank_total()),
 			]
 		)
-	if card.has_method("get_influence_description"):
-		var influence_text: String = str(card.call("get_influence_description")).strip_edges()
-		if not influence_text.is_empty():
-			lines.append(influence_text)
 	return "\n".join(lines)
+
+
+func _detail_effect_text(card) -> String:
+	if card == null or not card.has_method("get_influence_description"):
+		return ""
+	return str(card.call("get_influence_description")).strip_edges()
 
 
 func _total_catalog_card_count() -> int:
@@ -1022,7 +1119,7 @@ func _refresh_sort_ui() -> void:
 		_state == STATE_BROWSE
 		and _nav_zone == NAV_SORT
 	)
-	var selection_x := [445.0, 515.0, 581.0]
+	var selection_x := [425.0, 497.0, 572.0]
 	sort_selection_arrow.position = Vector2(
 		selection_x[_sort_cursor_index],
 		190.0
