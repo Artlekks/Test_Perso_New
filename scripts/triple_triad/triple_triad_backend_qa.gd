@@ -98,6 +98,7 @@ const DefaultRegionProfile = preload(
 )
 const HARBOR_LOCKBOX_SCENE_PATH := "res://actors/HarborLockbox.tscn"
 const HARBOR_REQUEST_BOARD_SCENE_PATH := "res://actors/HarborRequestBoard.tscn"
+const REGIONAL_CHAMPIONSHIP_REGISTRAR_SCENE_PATH := "res://actors/RegionalChampionshipRegistrar.tscn"
 const MAIN_VERTICAL_SLICE_PATH := "res://actors/FishingTestScene_V2.tscn"
 
 const OWNER_NONE := 0
@@ -690,6 +691,7 @@ func run_all() -> Dictionary:
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
 	_run("Treasure cache world vertical slice is authored", _test_treasure_cache_vertical_slice)
 	_run("Quest reward world vertical slice is authored", _test_quest_reward_vertical_slice)
+	_run("Tournament reward world vertical slice is authored", _test_tournament_reward_vertical_slice)
 	_run("Every acquisition source has a gameplay delivery route", _test_acquisition_reachability)
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
@@ -1930,6 +1932,86 @@ func _test_quest_reward_vertical_slice() -> Dictionary:
 	return _ok(
 		valid,
 		"The beach slice must turn a persistent Beach Trader win into a stable one-shot Harbor Errands quest reward through the existing quest adapter."
+	)
+
+
+func _test_tournament_reward_vertical_slice() -> Dictionary:
+	if not ResourceLoader.exists(REGIONAL_CHAMPIONSHIP_REGISTRAR_SCENE_PATH):
+		return _ok(
+			false,
+			"The reusable Regional Championship registrar scene is missing."
+		)
+	if not FileAccess.file_exists(MAIN_VERTICAL_SLICE_PATH):
+		return _ok(
+			false,
+			"The beach vertical-slice scene is missing."
+		)
+
+	var registrar_file := FileAccess.open(
+		REGIONAL_CHAMPIONSHIP_REGISTRAR_SCENE_PATH,
+		FileAccess.READ
+	)
+	if registrar_file == null:
+		return _ok(
+			false,
+			"The Regional Championship registrar scene could not be inspected."
+		)
+	var registrar_text: String = registrar_file.get_as_text()
+	registrar_file.close()
+
+	var beach_file := FileAccess.open(
+		MAIN_VERTICAL_SLICE_PATH,
+		FileAccess.READ
+	)
+	if beach_file == null:
+		return _ok(
+			false,
+			"The beach vertical slice could not be inspected."
+		)
+	var beach_text: String = beach_file.get_as_text()
+	beach_file.close()
+
+	var competition_data: Dictionary = {}
+	if FileAccess.file_exists(
+		"res://data/triple_triad/competition/competition_catalog.json"
+	):
+		var parsed = JSON.parse_string(
+			FileAccess.get_file_as_string(
+				"res://data/triple_triad/competition/competition_catalog.json"
+			)
+		)
+		if parsed is Dictionary:
+			competition_data = parsed
+
+	var regional_reward_source: String = ""
+	for raw_competition in competition_data.get("competitions", []):
+		if not (raw_competition is Dictionary):
+			continue
+		if str(raw_competition.get("competition_id", "")) != "regional_championship":
+			continue
+		regional_reward_source = str(
+			raw_competition.get("reward_source_id", "")
+		)
+		break
+
+	var valid: bool = (
+		registrar_text.contains(
+			"triple_triad_competition_interaction_3d.gd"
+		)
+		and registrar_text.contains(
+			"competition_id = &\"regional_championship\""
+		)
+		and registrar_text.contains(
+			"enter_prompt = \"K : Enter Regional Championship\""
+		)
+		and regional_reward_source == "regional_circuit"
+		and beach_text.contains(
+			REGIONAL_CHAMPIONSHIP_REGISTRAR_SCENE_PATH
+		)
+	)
+	return _ok(
+		valid,
+		"The beach slice must expose the authored Regional Championship through the existing competition interaction and its canonical regional-circuit tournament reward."
 	)
 
 
