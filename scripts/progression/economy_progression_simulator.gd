@@ -18,7 +18,9 @@ class_name EconomyProgressionSimulator
 
 const STEP_HOURS: float = 0.25
 const STARTING_ZENNY: float = 100.0
-const STARTING_CARDS: float = 5.0
+const STARTING_CARDS: float = 0.0
+const STARTER_CASE_UNLOCK_HOUR: float = 0.25
+const STARTER_CASE_CARDS: float = 5.0
 const STARTING_RODS: int = 1
 const STARTING_LURES: int = 1
 
@@ -30,7 +32,7 @@ const BAIT_PORTIONS_PER_BATCH: float = 3.0
 const BAIT_VALUE_BONUS: float = 0.30
 const BAIT_DISCOVERY_BONUS: float = 0.25
 
-const CHECKPOINT_HOURS := [1.0, 4.0, 12.0]
+const CHECKPOINT_HOURS := [0.25, 1.0, 4.0, 12.0]
 
 
 func run_default_suite(print_to_output: bool = true) -> Dictionary:
@@ -46,7 +48,7 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 			passed += 1
 
 	var report := {
-		"version": "0.2",
+		"version": "0.3",
 		"hours_simulated": 12.0,
 		"step_hours": STEP_HOURS,
 		"profiles": profile_reports,
@@ -94,6 +96,8 @@ func _simulate_profile(profile: Dictionary) -> Dictionary:
 		"bait_batches": 0.0,
 		"baited_catches": 0.0,
 		"unique_cards": STARTING_CARDS,
+		"card_game_unlocked": false,
+		"starter_case_discovered": false,
 		"species_discovered": 0.0,
 		"rods_owned": STARTING_RODS,
 		"lures_owned": STARTING_LURES,
@@ -158,10 +162,27 @@ func _simulate_step(
 
 	state["fish_caught"] = float(state.get("fish_caught", 0.0)) + base_catches
 
+	# Campaign-loop v1 begins from the real fresh-save state. The temporary
+	# onboarding rule discovers the Saltworn Card Case on the first eligible
+	# fishing catch; the 15-minute checkpoint models that first committed trip.
+	if (
+		not bool(state.get("card_game_unlocked", false))
+		and step_end >= STARTER_CASE_UNLOCK_HOUR
+		and base_catches > 0.0
+	):
+		state["card_game_unlocked"] = true
+		state["starter_case_discovered"] = true
+		state["unique_cards"] = (
+			float(state.get("unique_cards", 0.0)) + STARTER_CASE_CARDS
+		)
+
 	var sell_share: float = float(profile.get("sell_share", 0.0))
 	var bait_share: float = float(profile.get("bait_share", 0.0))
 	var card_share: float = 0.0
-	if step_end >= CARD_MAKER_UNLOCK_HOUR:
+	if (
+		bool(state.get("card_game_unlocked", false))
+		and step_end >= CARD_MAKER_UNLOCK_HOUR
+	):
 		card_share = float(profile.get("card_share", 0.0))
 
 	var sold_count: float = base_catches * sell_share
@@ -187,10 +208,12 @@ func _simulate_step(
 	# smaller discovery stream; the Card Maker is handled separately below.
 	var card_activity: float = float(profile.get("card_play_multiplier", 1.0))
 	var uniqueness: float = float(stage.get("card_unique_factor", 1.0))
-	var passive_card_gain: float = (
-		float(stage.get("npc_cards_per_hour", 0.0)) * card_activity
-		+ float(stage.get("fishing_cards_per_hour", 0.0))
-	) * uniqueness * STEP_HOURS
+	var passive_card_gain: float = 0.0
+	if bool(state.get("card_game_unlocked", false)):
+		passive_card_gain = (
+			float(stage.get("npc_cards_per_hour", 0.0)) * card_activity
+			+ float(stage.get("fishing_cards_per_hour", 0.0))
+		) * uniqueness * STEP_HOURS
 	state["unique_cards"] = float(state.get("unique_cards", 0.0)) + passive_card_gain
 
 	var discovery_gain: float = (
@@ -315,6 +338,8 @@ func _snapshot_state(state: Dictionary, purchased: Dictionary) -> Dictionary:
 		"bait_portions_remaining": roundi(float(state.get("bait_portions", 0.0))),
 		"baited_catches": roundi(float(state.get("baited_catches", 0.0))),
 		"unique_cards": roundi(float(state.get("unique_cards", 0.0))),
+		"card_game_unlocked": bool(state.get("card_game_unlocked", false)),
+		"starter_case_discovered": bool(state.get("starter_case_discovered", false)),
 		"species_discovered": roundi(float(state.get("species_discovered", 0.0))),
 		"rods_owned": int(state.get("rods_owned", 0)),
 		"lures_owned": int(state.get("lures_owned", 0)),
@@ -324,6 +349,7 @@ func _snapshot_state(state: Dictionary, purchased: Dictionary) -> Dictionary:
 
 func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	var checks: Array = []
+	var balanced_15m := _checkpoint(profile_reports, "BALANCED", 0.25)
 	var balanced_1 := _checkpoint(profile_reports, "BALANCED", 1.0)
 	var balanced_4 := _checkpoint(profile_reports, "BALANCED", 4.0)
 	var balanced_12 := _checkpoint(profile_reports, "BALANCED", 12.0)
@@ -333,6 +359,9 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	var crafter_12 := _checkpoint(profile_reports, "CRAFTER", 12.0)
 	var card_12 := _checkpoint(profile_reports, "CARD_HEAVY", 12.0)
 
+	_add_bool_check(checks, "Fresh trip unlocks card game", balanced_15m, "card_game_unlocked", true)
+	_add_bool_check(checks, "Fresh trip discovers starter case", balanced_15m, "starter_case_discovered", true)
+	_add_exact_check(checks, "Fresh trip grants five starter cards", balanced_15m, "unique_cards", 5)
 	_add_range_check(checks, "Balanced H1 species", balanced_1, "species_discovered", 4, 6)
 	_add_range_check(checks, "Balanced H1 cards", balanced_1, "unique_cards", 7, 10)
 	_add_min_check(checks, "Balanced H4 first rod upgrade", balanced_4, "rods_owned", 2)
@@ -350,6 +379,38 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	_add_min_check(checks, "Card-heavy collection beats balanced", card_12, "unique_cards", int(balanced_12.get("unique_cards", 0)) + 1)
 
 	return checks
+
+
+func _add_exact_check(
+	checks: Array,
+	label: String,
+	snapshot: Dictionary,
+	field: String,
+	expected: int
+) -> void:
+	var value: int = int(snapshot.get(field, 0))
+	checks.append({
+		"label": label,
+		"passed": value == expected,
+		"value": value,
+		"target": "= %d" % expected,
+	})
+
+
+func _add_bool_check(
+	checks: Array,
+	label: String,
+	snapshot: Dictionary,
+	field: String,
+	expected: bool
+) -> void:
+	var value: bool = bool(snapshot.get(field, false))
+	checks.append({
+		"label": label,
+		"passed": value == expected,
+		"value": ("YES" if value else "NO"),
+		"target": ("YES" if expected else "NO"),
+	})
 
 
 func _add_range_check(
@@ -408,6 +469,8 @@ func _checkpoint(profile_reports: Dictionary, profile_id: String, hour: float) -
 
 
 func _checkpoint_key(hour: float) -> String:
+	if hour < 1.0:
+		return "M%d" % roundi(hour * 60.0)
 	return "H%d" % roundi(hour)
 
 
@@ -556,6 +619,8 @@ func _get_assumption_snapshot() -> Dictionary:
 	return {
 		"starting_zenny": STARTING_ZENNY,
 		"starting_cards": STARTING_CARDS,
+		"starter_case_unlock_hour": STARTER_CASE_UNLOCK_HOUR,
+		"starter_case_cards": STARTER_CASE_CARDS,
 		"bait_recipe": "1 common fish + 2 herbs -> 3 prepared bait portions",
 		"bait_expected_catch_value_uplift": BAIT_VALUE_BONUS,
 		"bait_discovery_bonus": BAIT_DISCOVERY_BONUS,
@@ -569,6 +634,7 @@ func _get_assumption_snapshot() -> Dictionary:
 func _print_report(report: Dictionary) -> void:
 	print("")
 	print("=== ECONOMY / PROGRESSION SIMULATOR 0-12H ===")
+	print("Fresh save: 0 cards / card game locked; first fishing trip discovers the five-card Saltworn Card Case.")
 	print("Prepared bait assumption: 1 common fish + 2 herbs -> 3 portions")
 	print("Baited catches model a +30% expected quality/value mix, not a direct fish-price buff.")
 	print("Profiles are deterministic design stress tests; no save/runtime state is touched.")
@@ -579,15 +645,16 @@ func _print_report(report: Dictionary) -> void:
 		print("")
 		print("-- %s --" % str(profile.get("display_name", profile_id)))
 		var checkpoints: Dictionary = profile.get("checkpoints", {})
-		for checkpoint_key in ["H1", "H4", "H12"]:
+		for checkpoint_key in ["M15", "H1", "H4", "H12"]:
 			var snapshot: Dictionary = checkpoints.get(checkpoint_key, {})
 			print(
-				"%s | %dz | fish %d | species %d | cards %d | rods %d | lures %d | bait batches %d" % [
+				"%s | %dz | fish %d | species %d | cards %d | cards unlocked %s | rods %d | lures %d | bait batches %d" % [
 					checkpoint_key,
 					int(snapshot.get("zenny", 0)),
 					int(snapshot.get("fish_caught", 0)),
 					int(snapshot.get("species_discovered", 0)),
 					int(snapshot.get("unique_cards", 0)),
+					("YES" if bool(snapshot.get("card_game_unlocked", false)) else "NO"),
 					int(snapshot.get("rods_owned", 0)),
 					int(snapshot.get("lures_owned", 0)),
 					int(snapshot.get("bait_batches", 0)),

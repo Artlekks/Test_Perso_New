@@ -9,7 +9,7 @@ A fresh save now has a complete non-UI gameplay path:
 3. `TripleTriadFishingSalvageBridge` observes the committed transaction.
 4. On the first eligible catch at `ocean_2`, the bridge resolves the one-shot
    `salvaged_card_case` acquisition bundle.
-5. Triple Triad grants the ten starter cards, persists ownership, records the
+5. Triple Triad grants the five starter cards, persists ownership, records the
    acquisition source, and unlocks card-player encounters.
 6. The authored Beach Trader already placed in `FishingTestScene_V2` becomes
    challengeable.

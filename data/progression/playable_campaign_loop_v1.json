@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "plan_id": "playable_campaign_loop_v1",
+  "description": "Canonical fresh-save campaign spine for the current beach vertical slice. Milestones are design targets, not forced timers.",
+  "fresh_save": {
+    "starting_zenny": 100,
+    "starting_cards": 0,
+    "starting_rods": 1,
+    "starting_lures": 1,
+    "starter_rod_id": "wooden_rod",
+    "starter_lure_id": "straight",
+    "card_game_unlocked": false
+  },
+  "milestones": [
+    {
+      "milestone_id": "first_fishing_trip",
+      "checkpoint_hour": 0.25,
+      "headline": "Fish first; discover cards through play.",
+      "player_goal": "Land an eligible coastal catch and recover the Saltworn Card Case.",
+      "card_owned_min": 5,
+      "card_owned_max": 5,
+      "species_discovered_min": 1,
+      "species_discovered_max": 3,
+      "rod_owned_min": 1,
+      "lure_owned_min": 1,
+      "required_flags": ["card_game_unlocked", "starter_case_discovered"],
+      "required_sources": [
+        {"source_type": "starter_bundle", "source_id": "salvaged_card_case"}
+      ],
+      "systems_introduced": ["fishing", "catch_records", "triple_triad_discovery"]
+    },
+    {
+      "milestone_id": "learn_loop",
+      "checkpoint_hour": 1.0,
+      "headline": "Learn the fishing and card loops without pressure.",
+      "player_goal": "Catch several species, try early card duels, and begin coastal salvage.",
+      "card_owned_min": 7,
+      "card_owned_max": 10,
+      "species_discovered_min": 4,
+      "species_discovered_max": 6,
+      "rod_owned_min": 1,
+      "lure_owned_min": 1,
+      "required_flags": ["card_game_unlocked"],
+      "required_sources": [
+        {"source_type": "opponent_win", "source_id": "beach_trader"},
+        {"source_type": "fishing_salvage", "source_id": "coast_shallows"}
+      ],
+      "systems_introduced": ["fish_sales", "card_duels", "coast_salvage", "gathering"]
+    },
+    {
+      "milestone_id": "connected_systems",
+      "checkpoint_hour": 4.0,
+      "headline": "Fishing starts feeding every other system.",
+      "player_goal": "Use fish and gathered materials for bait, gear, cards, and early world rewards.",
+      "card_owned_min": 15,
+      "card_owned_max": 22,
+      "species_discovered_min": 9,
+      "species_discovered_max": 12,
+      "rod_owned_min": 2,
+      "lure_owned_min": 4,
+      "required_flags": ["card_game_unlocked"],
+      "required_sources": [
+        {"source_type": "opponent_win", "source_id": "pier_apprentice"},
+        {"source_type": "opponent_win", "source_id": "gearwright"},
+        {"source_type": "card_maker", "source_id": "bass_card"}
+      ],
+      "systems_introduced": ["prepared_bait", "card_maker", "harbor_request", "harbor_lockbox", "gear_progression"]
+    },
+    {
+      "milestone_id": "specialization",
+      "checkpoint_hour": 12.0,
+      "headline": "Choose what kind of fisherman and card player you are becoming.",
+      "player_goal": "Build a stronger tackle set, exploit prepared bait, and push deeper fishing and card progression.",
+      "card_owned_min": 30,
+      "card_owned_max": 40,
+      "species_discovered_min": 15,
+      "species_discovered_max": 25,
+      "rod_owned_min": 2,
+      "lure_owned_min": 6,
+      "required_flags": ["card_game_unlocked"],
+      "required_sources": [
+        {"source_type": "opponent_win", "source_id": "dock_bruiser"},
+        {"source_type": "opponent_win", "source_id": "marsh_keeper"},
+        {"source_type": "fishing_salvage", "source_id": "coast_deeper"}
+      ],
+      "systems_introduced": ["specialized_tackle", "deeper_salvage", "rank_2_card_ladder", "repeatable_cross_system_choices"]
+    }
+  ],
+  "playtest_questions": [
+    "Does the first fishing trip feel rewarding before cards appear?",
+    "Does discovering the Saltworn Card Case feel like a natural surprise rather than a menu unlock?",
+    "By hour one, are fishing, selling, gathering and card play all understandable without a tutorial dump?",
+    "By hour four, do prepared bait and the Card Maker create meaningful competition for fish and Zenny?",
+    "By hour twelve, do players have multiple viable goals instead of one mandatory progression route?"
+  ]
+}

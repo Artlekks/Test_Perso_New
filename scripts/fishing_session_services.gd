@@ -33,6 +33,9 @@ const FishingPreparedBaitServiceScript = preload(
 const FishingEconomyFoundationQAScript = preload(
 	"res://scripts/economy/fishing_economy_foundation_qa.gd"
 )
+const PlayableCampaignLoopQAScript = preload(
+	"res://scripts/progression/playable_campaign_loop_qa.gd"
+)
 const FishingCardMakerServiceScript = preload(
 	"res://scripts/economy/fishing_card_maker_service.gd"
 )
@@ -172,6 +175,7 @@ var journal_service: FishingJournalService = null
 var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
 var economy_foundation_qa_report: Dictionary = {}
+var campaign_loop_qa_report: Dictionary = {}
 var card_maker_qa_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
@@ -416,6 +420,23 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Economy Foundation QA: %s" % str(failure))
+
+		campaign_loop_qa_report = PlayableCampaignLoopQAScript.run(
+			FishingEconomyConfigResource
+		)
+		print(
+			"Campaign Loop QA: %d/%d tests passed. Simulator: %s"
+			% [
+				int(campaign_loop_qa_report.get("passed_count", 0)),
+				int(campaign_loop_qa_report.get("test_count", 0)),
+				str(campaign_loop_qa_report.get("simulator_summary", "NO RESULT")),
+			]
+		)
+		for failure in campaign_loop_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Campaign Loop QA: %s" % str(failure))
 
 		card_maker_qa_report = FishingCardMakerQAScript.run(
 			FishingCardMakerCatalogResource,
