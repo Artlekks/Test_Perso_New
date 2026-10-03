@@ -22,6 +22,9 @@ const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple
 const AcquisitionProgressionPlanScript = preload(
 	"res://scripts/triple_triad/triple_triad_acquisition_progression_plan.gd"
 )
+const AcquisitionReachabilityAuditScript = preload(
+	"res://scripts/triple_triad/triple_triad_acquisition_reachability_audit.gd"
+)
 const CampaignQAHarnessScript = preload(
 	"res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd"
 )
@@ -682,6 +685,7 @@ func run_all() -> Dictionary:
 	_run("Early opponent ladder unlocks in order", _test_early_opponent_ladder)
 	_run("Campaign QA mirrors early acquisition spine", _test_campaign_qa_progression_alignment)
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
+	_run("Every acquisition source has a gameplay delivery route", _test_acquisition_reachability)
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
 	_run("Collection tracker covers all 179 cards", _test_collection_completion_tracker)
@@ -1133,6 +1137,7 @@ func _test_world_delivery_contract() -> Dictionary:
 		"treasure_cache",
 		"quest_reward",
 		"tournament_reward",
+		"card_maker",
 	])
 	for type_name in direct_types:
 		if not bool(
@@ -1151,6 +1156,7 @@ func _test_world_delivery_contract() -> Dictionary:
 		[&"treasure_cache", &"harbor_lockbox"],
 		[&"quest_reward", &"town_requests"],
 		[&"tournament_reward", &"regional_circuit"],
+		[&"card_maker", &"bass_card"],
 	]
 	for pair in required_sources:
 		var source_type: StringName = pair[0]
@@ -1169,6 +1175,36 @@ func _test_world_delivery_contract() -> Dictionary:
 	return _ok(
 		true,
 		"Runtime world reward source contract is valid."
+	)
+
+
+func _test_acquisition_reachability() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var audit: Dictionary = AcquisitionReachabilityAuditScript.audit(
+		world_catalog,
+		DefaultCardCatalog
+	)
+	var type_counts: Dictionary = audit.get("source_type_counts", {})
+	return _ok(
+		bool(audit.get("valid", false))
+		and int(audit.get("catalog_card_count", 0)) == 179
+		and int(audit.get("covered_card_count", 0)) == 179
+		and int(audit.get("source_count", 0)) == 29
+		and int(audit.get("source_type_count", 0)) == 7
+		and int(type_counts.get("starter_bundle", 0)) == 1
+		and int(type_counts.get("opponent_win", 0)) == 11
+		and int(type_counts.get("fishing_salvage", 0)) == 4
+		and int(type_counts.get("treasure_cache", 0)) == 2
+		and int(type_counts.get("quest_reward", 0)) == 4
+		and int(type_counts.get("tournament_reward", 0)) == 2
+		and int(type_counts.get("card_maker", 0)) == 5,
+		"All 179 cards and all 29 authored sources must terminate in a supported gameplay delivery route: %s"
+		% str(audit.get("errors", []))
 	)
 
 
