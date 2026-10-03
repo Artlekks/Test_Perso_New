@@ -36,6 +36,12 @@ const FishingEconomyFoundationQAScript = preload(
 const PlayableCampaignLoopQAScript = preload(
 	"res://scripts/progression/playable_campaign_loop_qa.gd"
 )
+const PlayableCampaignProgressionDirectorScript = preload(
+	"res://scripts/progression/playable_campaign_progression_director.gd"
+)
+const PlayableCampaignProgressionDirectorQAScript = preload(
+	"res://scripts/progression/playable_campaign_progression_director_qa.gd"
+)
 const FishingCardMakerServiceScript = preload(
 	"res://scripts/economy/fishing_card_maker_service.gd"
 )
@@ -176,6 +182,8 @@ var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
 var economy_foundation_qa_report: Dictionary = {}
 var campaign_loop_qa_report: Dictionary = {}
+var campaign_progression_director = null
+var campaign_progression_director_qa_report: Dictionary = {}
 var card_maker_qa_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
@@ -438,6 +446,22 @@ func initialize() -> void:
 		):
 			push_error("Campaign Loop QA: %s" % str(failure))
 
+		campaign_progression_director_qa_report = (
+			PlayableCampaignProgressionDirectorQAScript.run()
+		)
+		print(
+			"Campaign Director QA: %d/%d tests passed."
+			% [
+				int(campaign_progression_director_qa_report.get("passed_count", 0)),
+				int(campaign_progression_director_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in campaign_progression_director_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Campaign Director QA: %s" % str(failure))
+
 		card_maker_qa_report = FishingCardMakerQAScript.run(
 			FishingCardMakerCatalogResource,
 			FishingContentCatalogResource,
@@ -579,6 +603,19 @@ func initialize() -> void:
 		push_warning("Fishing save integrity: %s" % str(warning))
 	for error in save_integrity_report.get("errors", PackedStringArray()):
 		push_error("Fishing save integrity: %s" % str(error))
+
+	campaign_progression_director = (
+		PlayableCampaignProgressionDirectorScript.new()
+	)
+	campaign_progression_director.name = "PlayableCampaignProgressionDirector"
+	add_child(campaign_progression_director)
+	campaign_progression_director.configure(
+		progress,
+		inventory,
+		unlock_state,
+		prepared_bait_service,
+		card_maker_service
+	)
 
 	_run_progression_integrity_audit()
 	_run_economy_integrity_audit()
@@ -804,6 +841,27 @@ func run_economy_foundation_qa() -> Dictionary:
 		FishingShopCatalogResource
 	)
 	return economy_foundation_qa_report.duplicate(true)
+
+
+func get_campaign_progression_director():
+	return campaign_progression_director
+
+
+func get_campaign_progression_snapshot() -> Dictionary:
+	if campaign_progression_director == null:
+		return {}
+	return campaign_progression_director.get_snapshot()
+
+
+func get_campaign_progression_director_qa_report() -> Dictionary:
+	return campaign_progression_director_qa_report.duplicate(true)
+
+
+func run_campaign_progression_director_qa() -> Dictionary:
+	campaign_progression_director_qa_report = (
+		PlayableCampaignProgressionDirectorQAScript.run()
+	)
+	return campaign_progression_director_qa_report.duplicate(true)
 
 
 func cook_prepared_bait(
