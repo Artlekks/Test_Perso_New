@@ -44,6 +44,7 @@ var _bound_progress: FishingProgress = null
 var _dirty: bool = false
 var _next_specimen_id: int = 1
 var _notification_frames: Array[Dictionary] = []
+var _loaded_existing_save: bool = false
 
 
 func _ready() -> void:
@@ -57,6 +58,19 @@ func initialize() -> void:
 	_initialized = true
 	load_from_disk()
 	_seed_starter_tackle()
+
+
+func ensure_new_game_starting_zenny(
+	amount: int,
+	persist: bool = true
+) -> bool:
+	if _loaded_existing_save:
+		return false
+	if zenny_balance > 0 or amount <= 0:
+		return false
+	set_zenny(amount, persist)
+	_loaded_existing_save = true
+	return true
 
 
 func begin_notification_batch() -> void:
@@ -1046,6 +1060,7 @@ func save_to_disk() -> bool:
 
 func load_from_disk() -> bool:
 	_reset_runtime_state()
+	_loaded_existing_save = false
 
 	if not FileAccess.file_exists(SAVE_PATH):
 		return true
@@ -1063,6 +1078,7 @@ func load_from_disk() -> bool:
 		return false
 
 	var data: Dictionary = parsed
+	_loaded_existing_save = true
 	var version := int(data.get("version", 0))
 	if version > SAVE_VERSION:
 		push_warning("FishingInventory: save version is newer than this build.")

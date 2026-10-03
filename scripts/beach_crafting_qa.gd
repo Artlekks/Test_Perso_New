@@ -367,21 +367,6 @@ static func _test_beach_circuit_economy(
 	# for an unattached QA instance, so inspect the authored gather children
 	# directly here.
 	var yields: Dictionary = {}
-	var descendants := circuit.find_children(
-		"*",
-		"",
-		true,
-		false
-	)
-	var gather_node_count: int = 0
-	for raw_node in descendants:
-		if not (raw_node is BeachGatheringNode3D):
-			continue
-		var node := raw_node as BeachGatheringNode3D
-		gather_node_count += 1
-		var key: String = String(node.material_id)
-		yields[key] = int(yields.get(key, 0)) + maxi(1, node.amount)
-
 	var required := {
 		"driftwood": 2,
 		"shell": 2,
@@ -389,7 +374,26 @@ static func _test_beach_circuit_economy(
 		"iron_scrap": 2,
 		"sea_glass": 1,
 	}
-	var enough: bool = gather_node_count == 10
+	var descendants := circuit.find_children(
+		"*",
+		"",
+		true,
+		false
+	)
+	var starter_crafting_node_count: int = 0
+	for raw_node in descendants:
+		if not (raw_node is BeachGatheringNode3D):
+			continue
+		var node := raw_node as BeachGatheringNode3D
+		var key: String = String(node.material_id)
+		yields[key] = int(yields.get(key, 0)) + maxi(1, node.amount)
+		if required.has(key):
+			starter_crafting_node_count += 1
+
+	# The beach circuit is allowed to grow with gathering resources that do
+	# not belong to the original lure-crafting slice (for example herbs).
+	# Keep this regression focused on the ten authored starter crafting nodes.
+	var enough: bool = starter_crafting_node_count == 10
 	for material_id in required.keys():
 		enough = (
 			enough
@@ -401,7 +405,7 @@ static func _test_beach_circuit_economy(
 		report,
 		"Beach circuit supports three starter crafts",
 		enough,
-		"Expected 10 deterministic nodes and enough resources for Surface + Sinker + Minnow test crafts."
+		"Expected 10 deterministic starter lure-material nodes and enough resources for Surface + Sinker + Minnow test crafts; unrelated gathering nodes must not invalidate this test."
 	)
 	circuit.free()
 

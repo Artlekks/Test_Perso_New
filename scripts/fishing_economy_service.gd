@@ -19,6 +19,7 @@ var content_catalog: FishingContentCatalog = null
 var tackle_catalog: FishingTackleCatalog = null
 var shop_catalog: ShopCatalogScript = null
 var trade_service: FishingTradeService = null
+var economy_config: FishingEconomyConfig = null
 
 
 func configure(
@@ -26,13 +27,15 @@ func configure(
 	new_content_catalog: FishingContentCatalog,
 	new_tackle_catalog: FishingTackleCatalog,
 	new_shop_catalog: ShopCatalogScript,
-	new_trade_service: FishingTradeService = null
+	new_trade_service: FishingTradeService = null,
+	new_economy_config: FishingEconomyConfig = null
 ) -> void:
 	inventory = new_inventory
 	content_catalog = new_content_catalog
 	tackle_catalog = new_tackle_catalog
 	shop_catalog = new_shop_catalog
 	trade_service = new_trade_service
+	economy_config = new_economy_config
 
 
 func get_zenny() -> int:
@@ -45,7 +48,13 @@ func get_fish_sell_value(species_id: StringName) -> int:
 	var fish := _get_fish(species_id)
 	if fish == null:
 		return 0
-	return fish.get_sell_value_zenny()
+	var fallback: int = fish.get_sell_value_zenny()
+	if economy_config == null:
+		return fallback
+	return economy_config.get_fish_sell_price(
+		StringName(fish.get_stable_species_id()),
+		fallback
+	)
 
 
 func get_fish_reference(species_id: StringName) -> Dictionary:
@@ -55,7 +64,9 @@ func get_fish_reference(species_id: StringName) -> Dictionary:
 	return {
 		"species_id": fish.get_stable_species_id(),
 		"fish_name": fish.fish_name,
-		"sell_value_zenny": fish.get_sell_value_zenny(),
+		"sell_value_zenny": get_fish_sell_value(
+			StringName(fish.get_stable_species_id())
+		),
 		"legacy_item_effect": fish.get_legacy_item_effect(),
 		"owned_count": inventory.get_fish_count(fish.get_stable_species_id()) if inventory != null else 0,
 	}
@@ -84,7 +95,7 @@ func evaluate_fish_sale(species_id: StringName, amount: int = 1) -> Dictionary:
 		return result
 	var stable_id := fish.get_stable_species_id()
 	var owned := inventory.get_fish_count(stable_id)
-	var unit_value := fish.get_sell_value_zenny()
+	var unit_value := get_fish_sell_value(StringName(stable_id))
 	result["species_id"] = StringName(stable_id)
 	result["owned_count"] = owned
 	result["unit_value_zenny"] = unit_value
@@ -105,6 +116,7 @@ func sell_fish(species_id: StringName, amount: int = 1) -> Dictionary:
 	if not bool(result.get("can_sell", false)):
 		return result
 	var snapshot := inventory.create_transaction_snapshot()
+	inventory.begin_notification_batch()
 	var stable_id := str(result.get("species_id", species_id))
 	var consumption := inventory.consume_fish_costs(
 		PackedStringArray([stable_id]),
@@ -113,6 +125,7 @@ func sell_fish(species_id: StringName, amount: int = 1) -> Dictionary:
 	)
 	if not bool(consumption.get("success", false)):
 		inventory.restore_transaction_snapshot(snapshot)
+		inventory.cancel_notification_batch()
 		result["can_sell"] = false
 		result["reason"] = "inventory_changed"
 		return result
@@ -120,9 +133,11 @@ func sell_fish(species_id: StringName, amount: int = 1) -> Dictionary:
 	inventory.add_zenny(total, false)
 	if not inventory.commit_changes():
 		inventory.restore_transaction_snapshot(snapshot)
+		inventory.cancel_notification_batch()
 		result["can_sell"] = false
 		result["reason"] = "inventory_save_failed"
 		return result
+	inventory.commit_notification_batch()
 	result["reason"] = "completed"
 	result["state_label"] = STATE_COMPLETED
 	result["zenny_after"] = inventory.get_zenny()
@@ -162,8 +177,17 @@ func evaluate_purchase(
 	result["item_id"] = offer.item_id
 	result["item_type"] = offer.item_type
 	result["reward_quantity"] = offer.quantity * purchase_count
-	result["unit_price_zenny"] = offer.price_zenny
-	result["total_price_zenny"] = offer.get_total_price(purchase_count)
+	var unit_price: int = offer.price_zenny
+	if economy_config != null:
+		unit_price = economy_config.get_offer_buy_price(
+			int(offer.item_type),
+			offer.item_id,
+			unit_price
+		)
+	result["unit_price_zenny"] = maxi(0, unit_price)
+	result["total_price_zenny"] = (
+		maxi(0, unit_price) * purchase_count
+	)
 	if offer.availability_tag != &"":
 		var availability_ok := bool(
 			availability.get(
@@ -206,9 +230,11 @@ func purchase_offer(
 	if not bool(result.get("can_purchase", false)):
 		return result
 	var snapshot := inventory.create_transaction_snapshot()
+	inventory.begin_notification_batch()
 	var total_price := int(result.get("total_price_zenny", 0))
 	if not inventory.spend_zenny(total_price, false):
 		inventory.restore_transaction_snapshot(snapshot)
+		inventory.cancel_notification_batch()
 		result["can_purchase"] = false
 		result["state_label"] = STATE_NOT_ENOUGH_ZENNY
 		result["reason"] = "wallet_changed"
@@ -224,16 +250,19 @@ func purchase_offer(
 			count_after = 0
 	if count_after <= 0:
 		inventory.restore_transaction_snapshot(snapshot)
+		inventory.cancel_notification_batch()
 		result["can_purchase"] = false
 		result["state_label"] = STATE_INVALID
 		result["reason"] = "grant_failed"
 		return result
 	if not inventory.commit_changes():
 		inventory.restore_transaction_snapshot(snapshot)
+		inventory.cancel_notification_batch()
 		result["can_purchase"] = false
 		result["state_label"] = STATE_INVALID
 		result["reason"] = "inventory_save_failed"
 		return result
+	inventory.commit_notification_batch()
 	result["state_label"] = STATE_COMPLETED
 	result["reason"] = "completed"
 	result["zenny_after"] = inventory.get_zenny()

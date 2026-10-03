@@ -24,6 +24,12 @@ const FishingEconomyServiceScript = preload(
 const FishingEconomyAccessScript = preload(
 	"res://scripts/fishing_economy_access.gd"
 )
+const FishingCookingServiceScript = preload(
+	"res://scripts/economy/fishing_cooking_service.gd"
+)
+const FishingEconomyFoundationQAScript = preload(
+	"res://scripts/economy/fishing_economy_foundation_qa.gd"
+)
 const FishingSaveIntegrityServiceScript = preload(
 	"res://scripts/fishing_save_integrity_service.gd"
 )
@@ -127,6 +133,9 @@ const FishingContentCatalogResource: FishingContentCatalog = preload(
 const BeachCraftingCatalogResource: BeachCraftingCatalog = preload(
 	"res://data/crafting/beach/beach_vertical_slice_catalog.tres"
 )
+const FishingEconomyConfigResource: FishingEconomyConfig = preload(
+	"res://data/economy/economy_foundation_v1.tres"
+)
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -134,6 +143,7 @@ var catch_repository: FishingCatchRepository = null
 var trade_service: FishingTradeService = null
 var economy_service = null
 var economy_access = null
+var cooking_service: FishingCookingService = null
 var save_integrity_service = null
 var session_modifier_service = null
 var environment_service = null
@@ -144,6 +154,7 @@ var reward_service: FishingRewardService = null
 var journal_service: FishingJournalService = null
 var progression_integrity_report: Dictionary = {}
 var economy_integrity_report: Dictionary = {}
+var economy_foundation_qa_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
 var beach_crafting_integrity_report: Dictionary = {}
@@ -190,6 +201,10 @@ func initialize() -> void:
 	inventory.name = "FishingInventory"
 	add_child(inventory)
 	inventory.initialize()
+	inventory.ensure_new_game_starting_zenny(
+		FishingEconomyConfigResource.new_game_starting_zenny,
+		true
+	)
 
 	# Run the existing migration/enrichment path, but normal new catches are
 	# committed explicitly by FishingCatchRepository.
@@ -205,7 +220,8 @@ func initialize() -> void:
 		BeachCraftingCatalogResource,
 		FishingContentCatalogResource,
 		FishingTackleCatalogResource,
-		FishingShopCatalogResource
+		FishingShopCatalogResource,
+		FishingEconomyConfigResource
 	)
 
 	player_item_inventory = PlayerItemInventoryScript.new() as PlayerItemInventory
@@ -233,6 +249,20 @@ func initialize() -> void:
 		player_item_inventory,
 		item_inventory_facade,
 		inventory
+	)
+
+	cooking_service = (
+		FishingCookingServiceScript.new()
+		as FishingCookingService
+	)
+	cooking_service.name = "FishingCookingService"
+	add_child(cooking_service)
+	cooking_service.configure(
+		FishingEconomyConfigResource,
+		item_catalog,
+		player_item_inventory,
+		inventory,
+		item_transaction_service
 	)
 
 	beach_gathering_inventory = (
@@ -322,6 +352,26 @@ func initialize() -> void:
 		):
 			push_error("Beach Crafting QA: %s" % str(failure))
 
+		economy_foundation_qa_report = FishingEconomyFoundationQAScript.run(
+			FishingEconomyConfigResource,
+			item_catalog,
+			FishingContentCatalogResource,
+			FishingTackleCatalogResource,
+			FishingShopCatalogResource
+		)
+		print(
+			"Economy Foundation QA: %d/%d tests passed."
+			% [
+				int(economy_foundation_qa_report.get("passed_count", 0)),
+				int(economy_foundation_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in economy_foundation_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Economy Foundation QA: %s" % str(failure))
+
 	catch_repository = FishingCatchRepositoryScript.new()
 	catch_repository.name = "FishingCatchRepository"
 	add_child(catch_repository)
@@ -361,7 +411,8 @@ func initialize() -> void:
 		FishingContentCatalogResource,
 		FishingTackleCatalogResource,
 		FishingShopCatalogResource,
-		trade_service
+		trade_service,
+		FishingEconomyConfigResource
 	)
 
 	session_modifier_service = FishingSessionModifierServiceScript.new()
@@ -469,7 +520,8 @@ func _run_economy_integrity_audit() -> void:
 	economy_integrity_report = FishingEconomyIntegrityScript.audit(
 		FishingContentCatalogResource,
 		FishingShopCatalogResource,
-		FishingTradeCatalogResource
+		FishingTradeCatalogResource,
+		FishingEconomyConfigResource
 	)
 	for warning in economy_integrity_report.get("warnings", PackedStringArray()):
 		push_warning("Fishing economy audit: %s" % str(warning))
@@ -595,6 +647,45 @@ func get_item_backend_qa_report() -> Dictionary:
 func run_item_backend_qa() -> Dictionary:
 	item_backend_qa_report = GameItemBackendQAScript.run(item_catalog)
 	return item_backend_qa_report.duplicate(true)
+
+
+func get_economy_config() -> FishingEconomyConfig:
+	return FishingEconomyConfigResource
+
+
+func get_cooking_service() -> FishingCookingService:
+	return cooking_service
+
+
+func get_economy_foundation_qa_report() -> Dictionary:
+	return economy_foundation_qa_report.duplicate(true)
+
+
+func run_economy_foundation_qa() -> Dictionary:
+	economy_foundation_qa_report = FishingEconomyFoundationQAScript.run(
+		FishingEconomyConfigResource,
+		item_catalog,
+		FishingContentCatalogResource,
+		FishingTackleCatalogResource,
+		FishingShopCatalogResource
+	)
+	return economy_foundation_qa_report.duplicate(true)
+
+
+func cook_prepared_bait(
+	fish_species_id: StringName,
+	batch_count: int = 1
+) -> Dictionary:
+	if cooking_service == null:
+		return {
+			"success": false,
+			"reason": "cooking_backend_unavailable",
+		}
+	return cooking_service.cook_prepared_bait(
+		fish_species_id,
+		batch_count,
+		true
+	)
 
 
 func get_beach_gathering_inventory() -> BeachGatheringInventory:

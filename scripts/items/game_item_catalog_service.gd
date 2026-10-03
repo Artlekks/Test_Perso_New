@@ -13,6 +13,7 @@ const CATEGORY_MATERIALS: StringName = &"MATERIALS"
 const CATEGORY_FISH: StringName = &"FISH"
 const CATEGORY_LURES: StringName = &"LURES"
 const CATEGORY_RODS: StringName = &"RODS"
+const CATEGORY_BAIT: StringName = &"BAIT"
 
 var _definitions: Dictionary = {}
 var _domain_lookup: Dictionary = {}
@@ -23,15 +24,17 @@ func configure(
 	beach_catalog: BeachCraftingCatalog,
 	fishing_content: FishingContentCatalog,
 	tackle_catalog: FishingTackleCatalog,
-	shop_catalog
+	shop_catalog,
+	economy_config: FishingEconomyConfig = null
 ) -> void:
 	_definitions.clear()
 	_domain_lookup.clear()
 
 	_register_beach_materials(beach_catalog)
-	_register_fish(fishing_content)
-	_register_tackle(tackle_catalog)
-	_apply_shop_prices(shop_catalog)
+	_register_fish(fishing_content, economy_config)
+	_register_tackle(tackle_catalog, economy_config)
+	_register_economy_items(economy_config)
+	_apply_shop_prices(shop_catalog, economy_config)
 
 	_configured = true
 	catalog_rebuilt.emit(get_snapshot())
@@ -163,7 +166,10 @@ func _register_beach_materials(
 		_register(definition)
 
 
-func _register_fish(content: FishingContentCatalog) -> void:
+func _register_fish(
+	content: FishingContentCatalog,
+	economy_config: FishingEconomyConfig = null
+) -> void:
 	if content == null:
 		return
 	for fish in content.fish:
@@ -183,12 +189,23 @@ func _register_fish(content: FishingContentCatalog) -> void:
 		definition.storage_kind = STORAGE_FISH
 		definition.stackable = true
 		definition.max_stack = 9999
-		definition.sell_price_zenny = fish.get_sell_value_zenny()
+		var legacy_sell_value: int = fish.get_sell_value_zenny()
+		definition.sell_price_zenny = (
+			economy_config.get_fish_sell_price(
+				StringName(domain_text),
+				legacy_sell_value
+			)
+			if economy_config != null
+			else legacy_sell_value
+		)
 		definition.tags = PackedStringArray(["fishing", "fish"])
 		_register(definition)
 
 
-func _register_tackle(tackle_catalog: FishingTackleCatalog) -> void:
+func _register_tackle(
+	tackle_catalog: FishingTackleCatalog,
+	economy_config: FishingEconomyConfig = null
+) -> void:
 	if tackle_catalog == null:
 		return
 
@@ -208,6 +225,11 @@ func _register_tackle(tackle_catalog: FishingTackleCatalog) -> void:
 			lure_definition.storage_kind = STORAGE_LURE
 			lure_definition.stackable = true
 			lure_definition.max_stack = 999
+			if economy_config != null:
+				lure_definition.buy_price_zenny = economy_config.get_lure_buy_price(
+					lure.lure_id,
+					0
+				)
 			lure_definition.tags = PackedStringArray(["fishing", "lure"])
 			_register(lure_definition)
 
@@ -226,11 +248,52 @@ func _register_tackle(tackle_catalog: FishingTackleCatalog) -> void:
 		rod_definition.storage_kind = STORAGE_ROD
 		rod_definition.stackable = false
 		rod_definition.max_stack = 1
+		if economy_config != null:
+			rod_definition.buy_price_zenny = economy_config.get_rod_buy_price(
+				rod.rod_id,
+				0
+			)
 		rod_definition.tags = PackedStringArray(["fishing", "rod"])
 		_register(rod_definition)
 
 
-func _apply_shop_prices(shop_catalog) -> void:
+func _register_economy_items(
+	economy_config: FishingEconomyConfig
+) -> void:
+	if economy_config == null:
+		return
+	if economy_config.prepared_bait_item_domain_id == &"":
+		return
+
+	var definition := GameItemDefinition.new()
+	definition.item_id = make_item_id(
+		STORAGE_PLAYER,
+		economy_config.prepared_bait_item_domain_id
+	)
+	definition.domain_id = economy_config.prepared_bait_item_domain_id
+	definition.display_name = economy_config.prepared_bait_display_name
+	definition.description = economy_config.prepared_bait_description
+	definition.category = CATEGORY_BAIT
+	definition.storage_kind = STORAGE_PLAYER
+	definition.stackable = true
+	definition.max_stack = 999
+	definition.sell_price_zenny = maxi(
+		0,
+		economy_config.prepared_bait_sell_price_zenny
+	)
+	definition.tags = PackedStringArray([
+		"fishing",
+		"bait",
+		"consumable",
+		"cooked",
+	])
+	_register(definition)
+
+
+func _apply_shop_prices(
+	shop_catalog,
+	economy_config: FishingEconomyConfig = null
+) -> void:
 	if shop_catalog == null or not shop_catalog.has_method("get_all_offers"):
 		return
 	for raw_offer in shop_catalog.call("get_all_offers"):
@@ -248,7 +311,14 @@ func _apply_shop_prices(shop_catalog) -> void:
 		if definition == null:
 			continue
 		var price: int = maxi(0, int(raw_offer.price_zenny))
-		if definition.buy_price_zenny <= 0:
+		if economy_config != null:
+			price = economy_config.get_offer_buy_price(
+				int(raw_offer.item_type),
+				raw_offer.item_id,
+				price
+			)
+			definition.buy_price_zenny = price
+		elif definition.buy_price_zenny <= 0:
 			definition.buy_price_zenny = price
 		else:
 			definition.buy_price_zenny = mini(

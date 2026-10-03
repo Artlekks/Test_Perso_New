@@ -13,9 +13,9 @@ static func audit(
 		errors.append("Beach crafting catalog is missing.")
 		return _report(errors, warnings, 0, 0)
 
-	if catalog.materials.size() != 5:
+	if catalog.materials.size() != 6:
 		warnings.append(
-			"Vertical slice expects 5 materials; found %d."
+			"Vertical slice expects 6 materials; found %d."
 			% catalog.materials.size()
 		)
 	if catalog.recipes.size() != 3:

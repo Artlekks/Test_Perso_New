@@ -11,7 +11,9 @@ class_name EconomyProgressionSimulator
 ##
 ## Prepared bait is intentionally modelled as a cross-system loop:
 ##   1 cheap/common fish + 2 gathered herb units -> 3 prepared bait portions.
-## A baited catch gets a modest quality/value lift and improves discovery pace.
+## A baited catch shifts the expected catch mix toward better/bigger fish and
+## improves discovery pace. BAIT_VALUE_BONUS models expected catch quality, not
+## a literal +30% vendor price multiplier on an individual fish.
 ## The exact recipe/bonuses are assumptions for tuning, not shipped gameplay.
 
 const STEP_HOURS: float = 0.25
@@ -25,7 +27,7 @@ const CARD_MAKER_UNLOCK_HOUR: float = 1.5
 const BAIT_FISH_PER_BATCH: float = 1.0
 const BAIT_HERBS_PER_BATCH: float = 2.0
 const BAIT_PORTIONS_PER_BATCH: float = 3.0
-const BAIT_VALUE_BONUS: float = 0.12
+const BAIT_VALUE_BONUS: float = 0.30
 const BAIT_DISCOVERY_BONUS: float = 0.25
 
 const CHECKPOINT_HOURS := [1.0, 4.0, 12.0]
@@ -44,7 +46,7 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 			passed += 1
 
 	var report := {
-		"version": "0.1",
+		"version": "0.2",
 		"hours_simulated": 12.0,
 		"step_hours": STEP_HOURS,
 		"profiles": profile_reports,
@@ -326,6 +328,7 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	var balanced_4 := _checkpoint(profile_reports, "BALANCED", 4.0)
 	var balanced_12 := _checkpoint(profile_reports, "BALANCED", 12.0)
 	var sell_4 := _checkpoint(profile_reports, "SELL_HEAVY", 4.0)
+	var sell_12 := _checkpoint(profile_reports, "SELL_HEAVY", 12.0)
 	var crafter_4 := _checkpoint(profile_reports, "CRAFTER", 4.0)
 	var crafter_12 := _checkpoint(profile_reports, "CRAFTER", 12.0)
 	var card_12 := _checkpoint(profile_reports, "CARD_HEAVY", 12.0)
@@ -338,7 +341,10 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	_add_range_check(checks, "Balanced H12 species", balanced_12, "species_discovered", 15, 25)
 	_add_range_check(checks, "Balanced H12 cards", balanced_12, "unique_cards", 30, 40)
 	_add_max_check(checks, "Sell-heavy H4 cash does not explode", sell_4, "zenny", 5000)
+	_add_max_check(checks, "Sell-heavy H12 cash remains a useful economy", sell_12, "zenny", 15000)
+	_add_max_check(checks, "Balanced H12 cash remains spendable, not absurd", balanced_12, "zenny", 8000)
 	_add_min_check(checks, "Crafter H4 can still afford progression rod", crafter_4, "rods_owned", 2)
+	_add_min_check(checks, "Crafter H4 keeps a small cash buffer after progression", crafter_4, "zenny", 75)
 	_add_min_check(checks, "Crafter actually uses cooked bait", crafter_12, "bait_batches", 20)
 	_add_min_check(checks, "Card-heavy still reaches first rod upgrade", card_12, "rods_owned", 2)
 	_add_min_check(checks, "Card-heavy collection beats balanced", card_12, "unique_cards", int(balanced_12.get("unique_cards", 0)) + 1)
@@ -438,7 +444,7 @@ func _build_stages() -> Array:
 			"herbs_per_hour": 6.0,
 			"species_discovery_per_hour": 2.2,
 			"max_species_pool": 12.0,
-			"npc_cards_per_hour": 1.8,
+			"npc_cards_per_hour": 2.0,
 			"fishing_cards_per_hour": 0.35,
 			"card_maker_fee_zenny": 100.0,
 			"card_unique_factor": 0.75,
@@ -551,7 +557,7 @@ func _get_assumption_snapshot() -> Dictionary:
 		"starting_zenny": STARTING_ZENNY,
 		"starting_cards": STARTING_CARDS,
 		"bait_recipe": "1 common fish + 2 herbs -> 3 prepared bait portions",
-		"bait_value_bonus": BAIT_VALUE_BONUS,
+		"bait_expected_catch_value_uplift": BAIT_VALUE_BONUS,
 		"bait_discovery_bonus": BAIT_DISCOVERY_BONUS,
 		"bait_cooking_unlock_hour": BAIT_COOKING_UNLOCK_HOUR,
 		"card_maker_unlock_hour": CARD_MAKER_UNLOCK_HOUR,
@@ -564,6 +570,7 @@ func _print_report(report: Dictionary) -> void:
 	print("")
 	print("=== ECONOMY / PROGRESSION SIMULATOR 0-12H ===")
 	print("Prepared bait assumption: 1 common fish + 2 herbs -> 3 portions")
+	print("Baited catches model a +30% expected quality/value mix, not a direct fish-price buff.")
 	print("Profiles are deterministic design stress tests; no save/runtime state is touched.")
 
 	var profiles: Dictionary = report.get("profiles", {})

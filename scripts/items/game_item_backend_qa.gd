@@ -34,6 +34,7 @@ static func run(catalog: GameItemCatalogService) -> Dictionary:
 	_test_shared_event_stream(report, catalog)
 	_test_material_sale_transaction(report, catalog)
 	_test_cross_store_notifications_are_atomic(report, catalog)
+	_test_cross_store_recipe_exchange(report, catalog)
 	_test_failed_save_emits_no_item_events(report, catalog)
 	_test_native_adapter_coherence(report, catalog)
 	_cleanup()
@@ -167,7 +168,7 @@ static func _test_material_sell_values(
 	var definitions = catalog.get_definitions_in_category(
 		GameItemCatalogService.CATEGORY_MATERIALS
 	)
-	var valid: bool = definitions.size() == 5
+	var valid: bool = definitions.size() == 6
 	for definition in definitions:
 		if definition.sell_price_zenny <= 0:
 			valid = false
@@ -176,7 +177,7 @@ static func _test_material_sell_values(
 		report,
 		"Beach materials expose sell values through canonical definitions",
 		valid,
-		"All five current beach materials must have a positive provisional sell value."
+		"All six current beach materials must have a positive provisional sell value."
 	)
 
 
@@ -319,6 +320,80 @@ static func _test_cross_store_notifications_are_atomic(
 	transaction.queue_free()
 	facade.queue_free()
 	wallet.queue_free()
+	inventory.queue_free()
+
+
+static func _test_cross_store_recipe_exchange(
+	report: Dictionary,
+	catalog: GameItemCatalogService
+) -> void:
+	var inventory := _new_inventory()
+	var fishing := FishingInventoryScript.new() as FishingInventory
+	var facade := InventoryFacadeScript.new() as GameInventoryFacade
+	facade.configure(catalog, inventory, fishing)
+	var transaction := TransactionServiceScript.new() as GameItemTransactionService
+	transaction.configure(catalog, inventory, facade, fishing)
+
+	var herb := catalog.make_item_id(&"player", &"coastal_herb")
+	var bait := catalog.make_item_id(&"player", &"prepared_bait")
+	inventory.grant(herb, 2, false)
+	fishing.add_fish("sea_bass", 1, false)
+	var success: Dictionary = transaction.exchange_fish_and_player_items(
+		{"sea_bass": 1},
+		{String(herb): 2},
+		{String(bait): 3},
+		false,
+		&"qa_cross_store_recipe"
+	)
+	var success_ok: bool = (
+		bool(success.get("success", false))
+		and fishing.get_fish_count("sea_bass") == 0
+		and inventory.get_count(herb) == 0
+		and inventory.get_count(bait) == 3
+	)
+
+	var inventory_failure := _new_inventory()
+	var fishing_failure := FishingInventoryScript.new() as FishingInventory
+	var facade_failure := InventoryFacadeScript.new() as GameInventoryFacade
+	facade_failure.configure(catalog, inventory_failure, fishing_failure)
+	var transaction_failure := (
+		TransactionServiceScript.new() as GameItemTransactionService
+	)
+	transaction_failure.configure(
+		catalog,
+		inventory_failure,
+		facade_failure,
+		fishing_failure
+	)
+	inventory_failure.grant(herb, 1, false)
+	fishing_failure.add_fish("sea_bass", 1, false)
+	var failed: Dictionary = transaction_failure.exchange_fish_and_player_items(
+		{"sea_bass": 1},
+		{String(herb): 2},
+		{String(bait): 3},
+		false,
+		&"qa_cross_store_recipe_failure"
+	)
+	var rollback_ok: bool = (
+		not bool(failed.get("success", false))
+		and fishing_failure.get_fish_count("sea_bass") == 1
+		and inventory_failure.get_count(herb) == 1
+		and inventory_failure.get_count(bait) == 0
+	)
+
+	_record(
+		report,
+		"Fish + material recipe exchange is atomic across both inventories",
+		success_ok and rollback_ok,
+		"Cooking/Card-Maker style exchanges must either consume every cost and grant every reward, or change nothing."
+	)
+	transaction_failure.queue_free()
+	facade_failure.queue_free()
+	fishing_failure.queue_free()
+	inventory_failure.queue_free()
+	transaction.queue_free()
+	facade.queue_free()
+	fishing.queue_free()
 	inventory.queue_free()
 
 

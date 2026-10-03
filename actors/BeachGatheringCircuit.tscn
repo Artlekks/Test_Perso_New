@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/beach_gathering_circuit.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://actors/gathering/DriftwoodGatherNode.tscn" id="2_drift"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://actors/gathering/SeaGlassGatherNode.tscn" id="4_glass"]
 [ext_resource type="PackedScene" path="res://actors/gathering/IronScrapGatherNode.tscn" id="5_iron"]
 [ext_resource type="PackedScene" path="res://actors/gathering/SeaweedGatherNode.tscn" id="6_weed"]
+[ext_resource type="PackedScene" path="res://actors/gathering/CoastalHerbGatherNode.tscn" id="7_herb"]
 
 [node name="BeachGatheringCircuit" type="Node3D"]
 script = ExtResource("1_script")
@@ -40,3 +41,9 @@ position = Vector3(2.7, 0.04, 0.24)
 
 [node name="Seaweed02" parent="." instance=ExtResource("6_weed")]
 position = Vector3(3.45, 0.04, 0.65)
+[node name="CoastalHerb01" parent="." instance=ExtResource("7_herb")]
+position = Vector3(-2.2, 0.04, 0.48)
+
+[node name="CoastalHerb02" parent="." instance=ExtResource("7_herb")]
+position = Vector3(2.05, 0.04, 0.43)
+

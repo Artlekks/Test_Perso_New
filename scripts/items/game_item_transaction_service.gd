@@ -267,6 +267,186 @@ func exchange_player_items(
 	return result
 
 
+## Atomic bridge for recipes that consume physical fish plus generic player
+## items and produce generic player items. Prepared bait uses this now; the same
+## boundary can later support a fish-driven Card Maker without duplicating
+## rollback or notification logic.
+func exchange_fish_and_player_items(
+	fish_costs: Dictionary,
+	player_costs: Dictionary,
+	player_rewards: Dictionary,
+	persist: bool = true,
+	context: StringName = &""
+) -> Dictionary:
+	var result := {
+		"success": false,
+		"reason": "",
+		"context": String(context),
+		"consumed_fish": {},
+		"consumed_player_items": {},
+		"granted_player_items": {},
+	}
+	if (
+		item_catalog == null
+		or player_inventory == null
+		or fishing_inventory == null
+	):
+		result["reason"] = "item_backend_unavailable"
+		return result
+
+	var fish_species_ids := PackedStringArray()
+	var fish_counts := PackedInt32Array()
+	for raw_species_id in fish_costs.keys():
+		var species_id := StringName(str(raw_species_id))
+		var amount: int = maxi(0, int(fish_costs[raw_species_id]))
+		if amount <= 0:
+			continue
+		var fish_definition: GameItemDefinition = item_catalog.get_by_domain(
+			GameItemCatalogService.STORAGE_FISH,
+			species_id
+		)
+		if fish_definition == null:
+			result["reason"] = "unknown_fish"
+			result["unknown_species_id"] = String(species_id)
+			return result
+		fish_species_ids.append(String(species_id))
+		fish_counts.append(amount)
+
+	var fish_plan: Dictionary = fishing_inventory.plan_fish_costs(
+		fish_species_ids,
+		fish_counts
+	)
+	if not bool(fish_plan.get("can_afford", false)):
+		result["reason"] = "missing_fish"
+		var missing_fish: Dictionary = fish_plan.get("missing_fish", {})
+		result["missing_fish"] = missing_fish.duplicate(true)
+		return result
+
+	var player_cost_evaluation: Dictionary = evaluate_player_costs(
+		player_costs
+	)
+	if not bool(player_cost_evaluation.get("can_afford", false)):
+		result["reason"] = str(
+			player_cost_evaluation.get("reason", "missing_items")
+		)
+		var missing_items: Dictionary = player_cost_evaluation.get(
+			"missing",
+			{}
+		)
+		result["missing_player_items"] = missing_items.duplicate(true)
+		return result
+
+	var normalized_rewards: Dictionary = {}
+	for raw_id in player_rewards.keys():
+		var reward_item_id := StringName(str(raw_id))
+		var reward_amount: int = maxi(0, int(player_rewards[raw_id]))
+		if reward_amount <= 0:
+			continue
+		var reward_definition: GameItemDefinition = item_catalog.get_definition(
+			reward_item_id
+		)
+		if reward_definition == null:
+			result["reason"] = "unknown_item"
+			result["unknown_item_id"] = String(reward_item_id)
+			return result
+		if (
+			reward_definition.storage_kind
+			!= GameItemCatalogService.STORAGE_PLAYER
+		):
+			result["reason"] = "non_player_storage_reward"
+			result["unsupported_item_id"] = String(reward_item_id)
+			return result
+		normalized_rewards[String(reward_item_id)] = reward_amount
+
+	var player_snapshot: Dictionary = player_inventory.create_transaction_snapshot()
+	var fishing_snapshot: Dictionary = fishing_inventory.create_transaction_snapshot()
+	_begin_cross_inventory_notifications()
+
+	var fish_result: Dictionary = fishing_inventory.consume_fish_costs(
+		fish_species_ids,
+		fish_counts,
+		false
+	)
+	if not bool(fish_result.get("success", false)):
+		_rollback_cross_inventory_exchange(
+			player_snapshot,
+			fishing_snapshot,
+			false
+		)
+		result["reason"] = "fish_inventory_changed"
+		return result
+
+	var player_consume: Dictionary = player_inventory.consume_costs(
+		player_cost_evaluation.get("normalized_costs", {}),
+		false
+	)
+	if not bool(player_consume.get("success", false)):
+		_rollback_cross_inventory_exchange(
+			player_snapshot,
+			fishing_snapshot,
+			false
+		)
+		result["reason"] = "player_inventory_changed"
+		return result
+
+	for raw_id in normalized_rewards.keys():
+		player_inventory.grant(
+			StringName(str(raw_id)),
+			int(normalized_rewards[raw_id]),
+			false
+		)
+
+	if persist:
+		if not player_inventory.commit_changes():
+			_rollback_cross_inventory_exchange(
+				player_snapshot,
+				fishing_snapshot,
+				true
+			)
+			result["reason"] = "item_save_failed"
+			return result
+		if not fishing_inventory.commit_changes():
+			_rollback_cross_inventory_exchange(
+				player_snapshot,
+				fishing_snapshot,
+				true
+			)
+			result["reason"] = "fish_save_failed"
+			return result
+
+	var consumed_fish: Dictionary = fish_result.get(
+		"consumed_specimens",
+		{}
+	)
+	var consumed_player: Dictionary = player_consume.get("consumed", {})
+	result["success"] = true
+	result["reason"] = "completed"
+	result["consumed_fish"] = consumed_fish.duplicate(true)
+	result["consumed_player_items"] = consumed_player.duplicate(true)
+	result["granted_player_items"] = normalized_rewards.duplicate(true)
+	_commit_cross_inventory_notifications()
+	_emit_completed(result)
+	return result
+
+
+func _rollback_cross_inventory_exchange(
+	player_snapshot: Dictionary,
+	fishing_snapshot: Dictionary,
+	rewrite_disk: bool
+) -> void:
+	player_inventory.restore_transaction_snapshot(
+		player_snapshot,
+		false
+	)
+	fishing_inventory.restore_transaction_snapshot(
+		fishing_snapshot
+	)
+	if rewrite_disk:
+		player_inventory.save_to_disk()
+		fishing_inventory.save_to_disk()
+	_cancel_cross_inventory_notifications()
+
+
 func sell_player_item_for_zenny(
 	item_id: StringName,
 	amount: int,
