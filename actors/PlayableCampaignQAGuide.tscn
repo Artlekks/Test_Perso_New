@@ -1,0 +1,145 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/playable_campaign_qa_guide.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_guide"]
+bg_color = Color(0.709804, 0.678431, 0.54902, 0.985)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+content_margin_left = 18.0
+content_margin_top = 14.0
+content_margin_right = 18.0
+content_margin_bottom = 14.0
+
+[node name="PlayableCampaignQAGuide" type="CanvasLayer"]
+process_mode = 3
+layer = 130
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -225.0
+offset_right = 310.0
+offset_bottom = 225.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_guide")
+
+[node name="TitleLabel" type="Label" parent="Root/Panel"]
+offset_left = 18.0
+offset_top = 12.0
+offset_right = 602.0
+offset_bottom = 38.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 17
+text = "CAMPAIGN QA / DEVELOPER GUIDE"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="Root/Panel"]
+offset_left = 22.0
+offset_top = 42.0
+offset_right = 598.0
+offset_bottom = 62.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = "LIVE SAVE + CONTROLLED PLAYTEST CHECKPOINTS"
+horizontal_alignment = 1
+
+[node name="StageListLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 78.0
+offset_right = 300.0
+offset_bottom = 202.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "> LIVE / Current Save"
+
+[node name="CurrentLabel" type="Label" parent="Root/Panel"]
+offset_left = 315.0
+offset_top = 76.0
+offset_right = 592.0
+offset_bottom = 138.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+text = "LIVE  PHASE: ..."
+
+[node name="ObjectiveLabel" type="Label" parent="Root/Panel"]
+offset_left = 315.0
+offset_top = 145.0
+offset_right = 592.0
+offset_bottom = 204.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+text = "NEXT OBJECTIVE"
+
+[node name="DividerLabel" type="Label" parent="Root/Panel"]
+offset_left = 18.0
+offset_top = 210.0
+offset_right = 602.0
+offset_bottom = 228.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = "--------------------------------------------------------------------------------"
+horizontal_alignment = 1
+
+[node name="GuideLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 232.0
+offset_right = 592.0
+offset_bottom = 302.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+text = "Selected checkpoint guide."
+
+[node name="ChecklistLabel" type="Label" parent="Root/Panel"]
+offset_left = 28.0
+offset_top = 308.0
+offset_right = 592.0
+offset_bottom = 408.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+text = "- Checklist"
+
+[node name="StatusLabel" type="Label" parent="Root/Panel"]
+offset_left = 20.0
+offset_top = 416.0
+offset_right = 600.0
+offset_bottom = 442.0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = "W/S select   K inspect/apply   R refresh   Shift+F10 / I close"
+horizontal_alignment = 1

@@ -23,11 +23,21 @@
       "species_discovered_max": 3,
       "rod_owned_min": 1,
       "lure_owned_min": 1,
-      "required_flags": ["card_game_unlocked", "starter_case_discovered"],
-      "required_sources": [
-        {"source_type": "starter_bundle", "source_id": "salvaged_card_case"}
+      "required_flags": [
+        "card_game_unlocked",
+        "starter_case_discovered"
       ],
-      "systems_introduced": ["fishing", "catch_records", "triple_triad_discovery"]
+      "required_sources": [
+        {
+          "source_type": "starter_bundle",
+          "source_id": "salvaged_card_case"
+        }
+      ],
+      "systems_introduced": [
+        "fishing",
+        "catch_records",
+        "triple_triad_discovery"
+      ]
     },
     {
       "milestone_id": "learn_loop",
@@ -40,12 +50,41 @@
       "species_discovered_max": 6,
       "rod_owned_min": 1,
       "lure_owned_min": 1,
-      "required_flags": ["card_game_unlocked"],
-      "required_sources": [
-        {"source_type": "opponent_win", "source_id": "beach_trader"},
-        {"source_type": "fishing_salvage", "source_id": "coast_shallows"}
+      "required_flags": [
+        "card_game_unlocked"
       ],
-      "systems_introduced": ["fish_sales", "card_duels", "coast_salvage", "gathering"]
+      "required_sources": [
+        {
+          "source_type": "opponent_win",
+          "source_id": "beach_trader"
+        },
+        {
+          "source_type": "fishing_salvage",
+          "source_id": "coast_shallows"
+        }
+      ],
+      "systems_introduced": [
+        "fish_sales",
+        "card_duels",
+        "coast_salvage",
+        "gathering"
+      ],
+      "activity_requirements": [
+        {
+          "activity_id": "beat_beach_trader",
+          "label": "Defeat the Beach Trader once.",
+          "kind": "opponent_beaten",
+          "opponent_id": "beach_trader"
+        },
+        {
+          "activity_id": "recover_coast_shallows_salvage",
+          "label": "Recover at least one post-starter card from Coast Shallows Salvage.",
+          "kind": "source_acquired",
+          "source_type": "fishing_salvage",
+          "source_id": "coast_shallows",
+          "minimum_count": 1
+        }
+      ]
     },
     {
       "milestone_id": "connected_systems",
@@ -58,13 +97,58 @@
       "species_discovered_max": 12,
       "rod_owned_min": 2,
       "lure_owned_min": 4,
-      "required_flags": ["card_game_unlocked"],
-      "required_sources": [
-        {"source_type": "opponent_win", "source_id": "pier_apprentice"},
-        {"source_type": "opponent_win", "source_id": "gearwright"},
-        {"source_type": "card_maker", "source_id": "bass_card"}
+      "required_flags": [
+        "card_game_unlocked"
       ],
-      "systems_introduced": ["prepared_bait", "card_maker", "harbor_request", "harbor_lockbox", "gear_progression"]
+      "required_sources": [
+        {
+          "source_type": "opponent_win",
+          "source_id": "pier_apprentice"
+        },
+        {
+          "source_type": "opponent_win",
+          "source_id": "gearwright"
+        },
+        {
+          "source_type": "card_maker",
+          "source_id": "bass_card"
+        }
+      ],
+      "systems_introduced": [
+        "prepared_bait",
+        "card_maker",
+        "harbor_request",
+        "harbor_lockbox",
+        "gear_progression"
+      ],
+      "activity_choice_groups": [
+        {
+          "group_id": "use_one_connected_card_route",
+          "label": "Use at least one connected-system card route.",
+          "minimum_complete": 1,
+          "options": [
+            {
+              "activity_id": "use_card_maker",
+              "label": "Make at least one card with the Card Maker.",
+              "kind": "source_type_acquired",
+              "source_type": "card_maker",
+              "minimum_count": 1
+            },
+            {
+              "activity_id": "turn_in_harbor_request",
+              "label": "Turn in the Harbor Request.",
+              "kind": "world_event_claimed",
+              "event_id": "beach_demo_harbor_errand_01"
+            },
+            {
+              "activity_id": "open_harbor_lockbox",
+              "label": "Open the Harbor Lockbox.",
+              "kind": "world_event_claimed",
+              "event_id": "beach_demo_harbor_lockbox_01"
+            }
+          ]
+        }
+      ]
     },
     {
       "milestone_id": "specialization",
@@ -77,13 +161,45 @@
       "species_discovered_max": 25,
       "rod_owned_min": 2,
       "lure_owned_min": 6,
-      "required_flags": ["card_game_unlocked"],
-      "required_sources": [
-        {"source_type": "opponent_win", "source_id": "dock_bruiser"},
-        {"source_type": "opponent_win", "source_id": "marsh_keeper"},
-        {"source_type": "fishing_salvage", "source_id": "coast_deeper"}
+      "required_flags": [
+        "card_game_unlocked"
       ],
-      "systems_introduced": ["specialized_tackle", "deeper_salvage", "rank_2_card_ladder", "repeatable_cross_system_choices"]
+      "required_sources": [
+        {
+          "source_type": "opponent_win",
+          "source_id": "dock_bruiser"
+        },
+        {
+          "source_type": "opponent_win",
+          "source_id": "marsh_keeper"
+        },
+        {
+          "source_type": "fishing_salvage",
+          "source_id": "coast_deeper"
+        }
+      ],
+      "systems_introduced": [
+        "specialized_tackle",
+        "deeper_salvage",
+        "rank_2_card_ladder",
+        "repeatable_cross_system_choices"
+      ],
+      "activity_requirements": [
+        {
+          "activity_id": "reach_duel_rank_2",
+          "label": "Reach Duel Rank 2.",
+          "kind": "duel_rank_at_least",
+          "minimum_rank": 2
+        },
+        {
+          "activity_id": "recover_deeper_coast_salvage",
+          "label": "Recover at least one card from Deeper Coastal Salvage.",
+          "kind": "source_acquired",
+          "source_type": "fishing_salvage",
+          "source_id": "coast_deeper",
+          "minimum_count": 1
+        }
+      ]
     }
   ],
   "playtest_questions": [
@@ -92,5 +208,7 @@
     "By hour one, are fishing, selling, gathering and card play all understandable without a tutorial dump?",
     "By hour four, do prepared bait and the Card Maker create meaningful competition for fish and Zenny?",
     "By hour twelve, do players have multiple viable goals instead of one mandatory progression route?"
-  ]
+  ],
+  "activity_evidence_version": 1,
+  "activity_evidence_note": "Milestone totals are necessary but not sufficient from Learn Loop onward; runtime activity evidence proves the intended cross-system loops were actually used."
 }

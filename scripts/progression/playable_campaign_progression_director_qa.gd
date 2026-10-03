@@ -18,9 +18,12 @@ static func run() -> Dictionary:
 	_test_fresh_start(report, plan)
 	_test_locked_after_noneligible_catch(report, plan)
 	_test_first_trip_advances_to_learn_loop(report, plan)
+	_test_quantities_alone_do_not_skip_learn_loop(report, plan)
+	_test_learn_loop_surfaces_salvage_after_trader(report, plan)
 	_test_learn_loop_advances_to_connected_systems(report, plan)
 	_test_connected_systems_prioritizes_ready_request(report, plan)
 	_test_connected_systems_advances_to_specialization(report, plan)
+	_test_connected_route_choice_is_not_railroaded(report, plan)
 	_test_specialization_completion(report, plan)
 	_test_active_competition_priority(report, plan)
 	_test_pending_reward_recovery_surfaces_blocker(report, plan)
@@ -77,6 +80,46 @@ static func _test_first_trip_advances_to_learn_loop(
 	)
 
 
+static func _test_quantities_alone_do_not_skip_learn_loop(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
+		plan,
+		_state(8, 4, 1, 1, _cards(true, true, 8))
+	)
+	var target: Dictionary = snapshot.get("target_milestone", {})
+	_record(
+		report,
+		"Milestone quantities alone do not skip the intended Learn Loop activities",
+		str(snapshot.get("phase_id", "")) == "learn_loop"
+		and not bool(target.get("complete", true)),
+		"Eight cards and four species must not bypass the Beach Trader and shallow-salvage pacing evidence."
+	)
+
+
+static func _test_learn_loop_surfaces_salvage_after_trader(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var cards := _cards(true, true, 8)
+	cards["opponents"] = {
+		"beach_trader": {"beaten_before": true},
+	}
+	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
+		plan,
+		_state(8, 4, 1, 1, cards)
+	)
+	_record(
+		report,
+		"After the Beach Trader, Learn Loop guidance points at coastal salvage",
+		str(snapshot.get("phase_id", "")) == "learn_loop"
+		and str(snapshot.get("next_objective", {}).get("code", ""))
+		== "recover_coast_shallows_salvage",
+		"The first-hour sequence should teach duel play, then return the player to fishing for salvage."
+	)
+
+
 static func _test_learn_loop_advances_to_connected_systems(
 	report: Dictionary,
 	plan: Dictionary
@@ -85,6 +128,7 @@ static func _test_learn_loop_advances_to_connected_systems(
 	cards["opponents"] = {
 		"beach_trader": {"beaten_before": true},
 	}
+	_set_source_count(cards, "fishing_salvage:coast_shallows", 1)
 	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
 		plan,
 		_state(8, 4, 1, 1, cards)
@@ -106,6 +150,7 @@ static func _test_connected_systems_prioritizes_ready_request(
 	cards["opponents"] = {
 		"beach_trader": {"beaten_before": true},
 	}
+	_set_source_count(cards, "fishing_salvage:coast_shallows", 1)
 	cards["claimed_world_event_ids"] = PackedStringArray()
 	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
 		plan,
@@ -124,6 +169,10 @@ static func _test_connected_systems_advances_to_specialization(
 	plan: Dictionary
 ) -> void:
 	var cards := _cards(true, true, 18)
+	cards["opponents"] = {
+		"beach_trader": {"beaten_before": true},
+	}
+	_set_source_count(cards, "fishing_salvage:coast_shallows", 1)
 	cards["claimed_world_event_ids"] = PackedStringArray([
 		"beach_demo_harbor_errand_01",
 		"beach_demo_harbor_lockbox_01",
@@ -141,11 +190,41 @@ static func _test_connected_systems_advances_to_specialization(
 	)
 
 
+static func _test_connected_route_choice_is_not_railroaded(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var cards := _cards(true, true, 18)
+	cards["opponents"] = {
+		"beach_trader": {"beaten_before": true},
+	}
+	_set_source_count(cards, "fishing_salvage:coast_shallows", 1)
+	_set_source_count(cards, "card_maker:*", 1)
+	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
+		plan,
+		_state(24, 10, 2, 4, cards)
+	)
+	_record(
+		report,
+		"Any one connected card route can satisfy the hour-four activity choice",
+		str(snapshot.get("phase_id", "")) == "specialization"
+		and _has_completed(snapshot, "connected_systems"),
+		"Card Maker alone must be sufficient; Harbor Request and Lockbox are alternatives, not mandatory rails."
+	)
+
+
 static func _test_specialization_completion(
 	report: Dictionary,
 	plan: Dictionary
 ) -> void:
 	var cards := _cards(true, true, 35)
+	cards["duel_rank"] = 2
+	cards["opponents"] = {
+		"beach_trader": {"beaten_before": true},
+	}
+	_set_source_count(cards, "fishing_salvage:coast_shallows", 1)
+	_set_source_count(cards, "card_maker:*", 1)
+	_set_source_count(cards, "fishing_salvage:coast_deeper", 1)
 	var snapshot: Dictionary = DirectorScript.build_snapshot_from_state(
 		plan,
 		_state(60, 18, 2, 6, cards)
@@ -253,7 +332,18 @@ static func _cards(
 		"active_competition": {},
 		"regional_championship": {},
 		"world_progression": {},
+		"source_acquisition_counts": {},
 	}
+
+
+static func _set_source_count(
+	cards: Dictionary,
+	source_key: String,
+	count: int
+) -> void:
+	var counts: Dictionary = cards.get("source_acquisition_counts", {})
+	counts[source_key] = maxi(0, count)
+	cards["source_acquisition_counts"] = counts
 
 
 static func _has_completed(snapshot: Dictionary, milestone_id: String) -> bool:

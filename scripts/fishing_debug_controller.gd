@@ -93,8 +93,8 @@ func is_toggle_event(event: InputEvent) -> bool:
 		return false
 	if not event.pressed or event.echo:
 		return false
-	# Shift+F10 is reserved for the Triple Triad Campaign QA harness. Normal F10
-	# remains the fishing QA menu.
+	# Shift+F10 is reserved for campaign QA overlays. Normal F10 remains the
+	# fishing QA menu, so the broader developer guide never steals existing QA input.
 	if event.shift_pressed:
 		return false
 

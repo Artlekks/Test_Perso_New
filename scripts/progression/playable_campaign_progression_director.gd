@@ -173,6 +173,7 @@ func _collect_card_state() -> Dictionary:
 		"active_competition": {},
 		"regional_championship": {},
 		"world_progression": {},
+		"source_acquisition_counts": {},
 	}
 	var game: Node = _find_triple_triad_game()
 	if game == null:
@@ -277,7 +278,152 @@ func _collect_card_state() -> Dictionary:
 				raw_world_progression as Dictionary
 			).duplicate(true)
 
+	result["source_acquisition_counts"] = (
+		_collect_required_source_acquisition_counts(game)
+	)
+
 	return result
+
+
+func _collect_required_source_acquisition_counts(game: Node) -> Dictionary:
+	var result: Dictionary = {}
+	if game == null or _plan.is_empty():
+		return result
+	if (
+		not game.has_method("get_acquisition_source_snapshot")
+		or not game.has_method("get_acquisition_sources_snapshot")
+		or not game.has_method("get_card_snapshot")
+	):
+		return result
+
+	var exact_sources: Dictionary = {}
+	var wildcard_types: Dictionary = {}
+	for raw_milestone in _plan.get("milestones", []):
+		if not (raw_milestone is Dictionary):
+			continue
+		var milestone: Dictionary = raw_milestone
+		_collect_activity_source_refs(
+			milestone.get("activity_requirements", []),
+			exact_sources,
+			wildcard_types
+		)
+		for raw_group in milestone.get("activity_choice_groups", []):
+			if not (raw_group is Dictionary):
+				continue
+			_collect_activity_source_refs(
+				(raw_group as Dictionary).get("options", []),
+				exact_sources,
+				wildcard_types
+			)
+
+	for raw_key in exact_sources.keys():
+		var key: String = str(raw_key)
+		var parts: PackedStringArray = key.split(":", false, 1)
+		if parts.size() != 2:
+			continue
+		var source_type := StringName(parts[0])
+		var source_id := StringName(parts[1])
+		var raw_source = game.call(
+			"get_acquisition_source_snapshot",
+			source_type,
+			source_id
+		)
+		if not (raw_source is Dictionary):
+			continue
+		result[key] = _count_source_acquisition_history(
+			game,
+			raw_source as Dictionary
+		)
+
+	if not wildcard_types.is_empty():
+		var raw_sources = game.call("get_acquisition_sources_snapshot")
+		if raw_sources is Array:
+			for raw_type in wildcard_types.keys():
+				var source_type_text: String = str(raw_type)
+				var acquired_count: int = 0
+				for raw_source in raw_sources:
+					if not (raw_source is Dictionary):
+						continue
+					var source: Dictionary = raw_source
+					if str(source.get("source_type", "")) != source_type_text:
+						continue
+					acquired_count += _count_source_acquisition_history(
+						game,
+						source
+					)
+				result["%s:*" % source_type_text] = acquired_count
+
+	return result
+
+
+func _collect_activity_source_refs(
+	raw_activities,
+	exact_sources: Dictionary,
+	wildcard_types: Dictionary
+) -> void:
+	if not (raw_activities is Array):
+		return
+	for raw_activity in raw_activities:
+		if not (raw_activity is Dictionary):
+			continue
+		var activity: Dictionary = raw_activity
+		var kind: String = str(activity.get("kind", ""))
+		var source_type: String = str(
+			activity.get("source_type", "")
+		).strip_edges()
+		if source_type.is_empty():
+			continue
+		if kind == "source_acquired":
+			var source_id: String = str(
+				activity.get("source_id", "")
+			).strip_edges()
+			if not source_id.is_empty():
+				exact_sources["%s:%s" % [source_type, source_id]] = true
+		elif kind == "source_type_acquired":
+			wildcard_types[source_type] = true
+
+
+func _count_source_acquisition_history(
+	game: Node,
+	source: Dictionary
+) -> int:
+	var source_type: String = str(source.get("source_type", ""))
+	if source_type.is_empty():
+		return 0
+	var count: int = 0
+	for raw_card_id in source.get("card_ids", []):
+		var raw_card = game.call(
+			"get_card_snapshot",
+			StringName(str(raw_card_id))
+		)
+		if not (raw_card is Dictionary):
+			continue
+		var card: Dictionary = raw_card
+		var raw_history = card.get("history", {})
+		var history: Dictionary = (
+			raw_history as Dictionary
+			if raw_history is Dictionary
+			else {}
+		)
+		var acquired: int = maxi(0, int(history.get("acquired", 0)))
+		var first_source: String = str(history.get("first_source", ""))
+		var last_source: String = str(history.get("last_source", ""))
+		var history_matches: bool = (
+			acquired > 0
+			and (first_source == source_type or last_source == source_type)
+		)
+		# QA presets and pre-history migration saves can own a canonical source
+		# card without an acquisition-history entry. Since the early campaign
+		# sources used here are exclusive primary routes, current ownership is a
+		# safe compatibility fallback only when no history exists.
+		var migration_fallback: bool = (
+			acquired <= 0
+			and history.is_empty()
+			and bool(card.get("owned", false))
+		)
+		if history_matches or migration_fallback:
+			count += 1
+	return count
 
 
 func _find_triple_triad_game() -> Node:

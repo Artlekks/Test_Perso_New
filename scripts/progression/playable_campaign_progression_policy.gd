@@ -48,7 +48,9 @@ static func build_snapshot_from_state(
 			rods_owned,
 			lures_owned,
 			unlocked,
-			starter_case_discovered
+			starter_case_discovered,
+			runtime,
+			card_state
 		)
 		status["index"] = milestone_index
 		milestone_index += 1
@@ -91,6 +93,9 @@ static func build_snapshot_from_state(
 		"systems": systems,
 		"blockers": blockers,
 		"facts": {
+			"card_backend_available": bool(
+				card_state.get("backend_available", false)
+			),
 			"zenny": maxi(0, int(runtime.get("zenny", 0))),
 			"total_catches": total_catches,
 			"species_discovered": species_discovered,
@@ -114,7 +119,9 @@ static func _evaluate_milestone(
 	rods_owned: int,
 	lures_owned: int,
 	card_game_unlocked: bool,
-	starter_case_discovered: bool
+	starter_case_discovered: bool,
+	runtime: Dictionary,
+	card_state: Dictionary
 ) -> Dictionary:
 	var card_min: int = maxi(0, int(milestone.get("card_owned_min", 0)))
 	var species_min: int = maxi(
@@ -173,6 +180,15 @@ static func _evaluate_milestone(
 			"missing": 1,
 		})
 
+	var activity_evaluation: Dictionary = _evaluate_activity_requirements(
+		milestone,
+		runtime,
+		card_state
+	)
+	for raw_activity_deficit in activity_evaluation.get("deficits", []):
+		if raw_activity_deficit is Dictionary:
+			deficits.append((raw_activity_deficit as Dictionary).duplicate(true))
+
 	var score_parts := [
 		_ratio(cards_owned, card_min),
 		_ratio(species_discovered, species_min),
@@ -184,13 +200,17 @@ static func _evaluate_milestone(
 		if missing_flags.is_empty()
 		else 0.0
 	)
+	score_parts.append(flags_ratio)
+	if int(activity_evaluation.get("component_count", 0)) > 0:
+		score_parts.append(
+			float(activity_evaluation.get("progress_ratio", 0.0))
+		)
+	var progress_total: float = 0.0
+	for raw_score in score_parts:
+		progress_total += float(raw_score)
 	var progress_ratio: float = (
-		float(score_parts[0])
-		+ float(score_parts[1])
-		+ float(score_parts[2])
-		+ float(score_parts[3])
-		+ flags_ratio
-	) / 5.0
+		progress_total / float(maxi(1, score_parts.size()))
+	)
 
 	return {
 		"milestone_id": str(milestone.get("milestone_id", "")),
@@ -202,6 +222,11 @@ static func _evaluate_milestone(
 		"deficits": deficits,
 		"systems_introduced": milestone.get("systems_introduced", []),
 		"required_sources": milestone.get("required_sources", []),
+		"activity_requirements": activity_evaluation.get("requirements", []),
+		"activity_choice_groups": activity_evaluation.get("choice_groups", []),
+		"activity_progress_ratio": float(
+			activity_evaluation.get("progress_ratio", 1.0)
+		),
 		"target": {
 			"cards_owned_min": card_min,
 			"species_discovered_min": species_min,
@@ -209,6 +234,189 @@ static func _evaluate_milestone(
 			"lures_owned_min": lure_min,
 		},
 	}
+
+
+static func _evaluate_activity_requirements(
+	milestone: Dictionary,
+	runtime: Dictionary,
+	card_state: Dictionary
+) -> Dictionary:
+	var requirement_statuses: Array = []
+	var choice_group_statuses: Array = []
+	var deficits: Array = []
+	var component_count: int = 0
+	var progress_total: float = 0.0
+
+	var raw_requirements = milestone.get("activity_requirements", [])
+	if raw_requirements is Array:
+		for raw_requirement in raw_requirements:
+			if not (raw_requirement is Dictionary):
+				continue
+			var requirement: Dictionary = (
+				raw_requirement as Dictionary
+			).duplicate(true)
+			var complete: bool = _activity_is_satisfied(
+				requirement,
+				runtime,
+				card_state
+			)
+			requirement["complete"] = complete
+			requirement_statuses.append(requirement)
+			component_count += 1
+			if complete:
+				progress_total += 1.0
+			else:
+				deficits.append({
+					"field": "activity",
+					"activity_id": str(requirement.get("activity_id", "")),
+					"label": str(requirement.get("label", "")),
+					"missing": 1,
+				})
+
+	var raw_groups = milestone.get("activity_choice_groups", [])
+	if raw_groups is Array:
+		for raw_group in raw_groups:
+			if not (raw_group is Dictionary):
+				continue
+			var group: Dictionary = (raw_group as Dictionary).duplicate(true)
+			var option_statuses: Array = []
+			var complete_count: int = 0
+			var raw_options = group.get("options", [])
+			if raw_options is Array:
+				for raw_option in raw_options:
+					if not (raw_option is Dictionary):
+						continue
+					var option: Dictionary = (
+						raw_option as Dictionary
+					).duplicate(true)
+					var option_complete: bool = _activity_is_satisfied(
+						option,
+						runtime,
+						card_state
+					)
+					option["complete"] = option_complete
+					option_statuses.append(option)
+					if option_complete:
+						complete_count += 1
+
+			var minimum_complete: int = clampi(
+				int(group.get("minimum_complete", 1)),
+				0,
+				option_statuses.size()
+			)
+			var group_complete: bool = complete_count >= minimum_complete
+			group["options"] = option_statuses
+			group["complete_count"] = complete_count
+			group["minimum_complete"] = minimum_complete
+			group["complete"] = group_complete
+			choice_group_statuses.append(group)
+			component_count += 1
+			if minimum_complete <= 0:
+				progress_total += 1.0
+			else:
+				progress_total += clampf(
+					float(complete_count) / float(minimum_complete),
+					0.0,
+					1.0
+				)
+			if not group_complete:
+				deficits.append({
+					"field": "activity_group",
+					"group_id": str(group.get("group_id", "")),
+					"label": str(group.get("label", "")),
+					"current": complete_count,
+					"target": minimum_complete,
+					"missing": maxi(0, minimum_complete - complete_count),
+				})
+
+	return {
+		"requirements": requirement_statuses,
+		"choice_groups": choice_group_statuses,
+		"deficits": deficits,
+		"component_count": component_count,
+		"progress_ratio": (
+			progress_total / float(component_count)
+			if component_count > 0
+			else 1.0
+		),
+	}
+
+
+static func _activity_is_satisfied(
+	activity: Dictionary,
+	runtime: Dictionary,
+	card_state: Dictionary
+) -> bool:
+	var kind: String = str(activity.get("kind", ""))
+	match kind:
+		"opponent_beaten":
+			var opponent_id: String = str(activity.get("opponent_id", ""))
+			var raw_opponents = card_state.get("opponents", {})
+			if raw_opponents is Dictionary:
+				var raw_opponent = (raw_opponents as Dictionary).get(
+					opponent_id,
+					{}
+				)
+				if raw_opponent is Dictionary:
+					return bool(
+						(raw_opponent as Dictionary).get(
+							"beaten_before",
+							false
+						)
+					)
+			return _list_has_string(
+				card_state.get("beaten_opponent_ids", []),
+				opponent_id
+			)
+		"source_acquired":
+			var source_key: String = "%s:%s" % [
+				str(activity.get("source_type", "")),
+				str(activity.get("source_id", "")),
+			]
+			return _source_acquisition_count(
+				card_state,
+				source_key
+			) >= maxi(1, int(activity.get("minimum_count", 1)))
+		"source_type_acquired":
+			var wildcard_key: String = "%s:*" % str(
+				activity.get("source_type", "")
+			)
+			return _source_acquisition_count(
+				card_state,
+				wildcard_key
+			) >= maxi(1, int(activity.get("minimum_count", 1)))
+		"world_event_claimed":
+			return _list_has_string(
+				card_state.get("claimed_world_event_ids", []),
+				str(activity.get("event_id", ""))
+			)
+		"duel_rank_at_least":
+			return maxi(1, int(card_state.get("duel_rank", 1))) >= maxi(
+				1,
+				int(activity.get("minimum_rank", 1))
+			)
+		"prepared_bait_owned":
+			return _prepared_bait_owned(runtime) >= maxi(
+				1,
+				int(activity.get("minimum_count", 1))
+			)
+		"total_catches_at_least":
+			return maxi(0, int(runtime.get("total_catches", 0))) >= maxi(
+				1,
+				int(activity.get("minimum_count", 1))
+			)
+		_:
+			return false
+
+
+static func _source_acquisition_count(
+	card_state: Dictionary,
+	source_key: String
+) -> int:
+	var raw_counts = card_state.get("source_acquisition_counts", {})
+	if not (raw_counts is Dictionary):
+		return 0
+	return maxi(0, int((raw_counts as Dictionary).get(source_key, 0)))
 
 
 static func _build_system_snapshot(
@@ -386,21 +594,24 @@ static func _learn_loop_objective(
 			"Build the catch journal before pushing the economy harder.",
 			"fishing"
 		)
+	if not _activity_complete(milestone, "beat_beach_trader"):
+		return _objective(
+			"challenge_beach_trader",
+			"Challenge the Beach Trader to cards.",
+			"The first opponent win proves the duel loop and expands the starter collection.",
+			"triple_triad"
+		)
+	if not _activity_complete(
+		milestone,
+		"recover_coast_shallows_salvage"
+	):
+		return _objective(
+			"recover_coast_shallows_salvage",
+			"Keep fishing the coast after finding the card case.",
+			"Post-starter coastal catches eventually recover another card from the shallows.",
+			"fishing"
+		)
 	if _deficit_value(milestone, "cards_owned_unique") > 0:
-		var opponents: Dictionary = {}
-		var raw_opponents = card_state.get("opponents", {})
-		if raw_opponents is Dictionary:
-			opponents = raw_opponents
-		var raw_trader = opponents.get("beach_trader", {})
-		if raw_trader is Dictionary and not bool(
-			(raw_trader as Dictionary).get("beaten_before", false)
-		):
-			return _objective(
-				"challenge_beach_trader",
-				"Challenge the Beach Trader to cards.",
-				"The first opponent win expands the starter collection.",
-				"triple_triad"
-			)
 		return _objective(
 			"grow_early_card_collection",
 			"Grow the early card collection.",
@@ -438,13 +649,35 @@ static func _connected_systems_objective(
 			"The Beach Trader request is ready to turn in.",
 			"world_reward"
 		)
-	if not _list_has_string(claimed_events, HARBOR_LOCKBOX_EVENT_ID):
+
+	if not _activity_group_complete(
+		milestone,
+		"use_one_connected_card_route"
+	):
+		if (
+			not _activity_complete(milestone, "use_card_maker")
+			and _ready_card_maker_recipe_count(runtime) > 0
+		):
+			return _objective(
+				"use_card_maker",
+				"Turn a fish into a new card.",
+				"A Card Maker recipe is currently affordable and ready.",
+				"card_maker"
+			)
+		if not _activity_complete(milestone, "open_harbor_lockbox"):
+			return _objective(
+				"search_harbor_lockbox",
+				"Search the Harbor Lockbox.",
+				"Use one connected-system card route before treating the milestone as learned.",
+				"world_reward"
+			)
 		return _objective(
-			"search_harbor_lockbox",
-			"Search the Harbor Lockbox.",
-			"It is an early one-shot world card reward.",
-			"world_reward"
+			"use_connected_card_route",
+			"Use one of the new connected card routes.",
+			"Card Maker, Harbor Request or Harbor Lockbox can satisfy this pacing step.",
+			"cross_system"
 		)
+
 	if _deficit_value(milestone, "rods_owned") > 0 or _deficit_value(
 		milestone,
 		"lures_owned"
@@ -486,6 +719,23 @@ static func _specialization_objective(
 	milestone: Dictionary,
 	card_state: Dictionary
 ) -> Dictionary:
+	if not _activity_complete(milestone, "reach_duel_rank_2"):
+		return _objective(
+			"reach_duel_rank_2",
+			"Push the card ladder to Duel Rank 2.",
+			"Rank 2 is the bridge into deeper coastal salvage and the next opponent tier.",
+			"triple_triad"
+		)
+	if not _activity_complete(
+		milestone,
+		"recover_deeper_coast_salvage"
+	):
+		return _objective(
+			"recover_deeper_coast_salvage",
+			"Push the coastal salvage loop into deeper rewards.",
+			"After the shallow salvage pool is exhausted at Rank 2, keep fishing the coast for the deeper pool.",
+			"fishing"
+		)
 	if _deficit_value(milestone, "rods_owned") > 0 or _deficit_value(
 		milestone,
 		"lures_owned"
@@ -557,6 +807,16 @@ static func _objective_from_deficits(
 						"Reach the current rod and lure target.",
 						"economy"
 					)
+				"activity", "activity_group":
+					return _objective(
+						"complete_pacing_activity",
+						str((first as Dictionary).get(
+							"label",
+							"Complete the current campaign activity."
+						)),
+						"Milestone totals are not enough until the intended activity has actually happened.",
+						"campaign"
+					)
 	return _objective(
 		"continue_campaign",
 		fallback_title,
@@ -577,6 +837,41 @@ static func _objective(
 		"detail": detail,
 		"category": category,
 	}
+
+
+static func _activity_complete(
+	milestone: Dictionary,
+	activity_id: String
+) -> bool:
+	for raw_status in milestone.get("activity_requirements", []):
+		if not (raw_status is Dictionary):
+			continue
+		var status: Dictionary = raw_status
+		if str(status.get("activity_id", "")) == activity_id:
+			return bool(status.get("complete", false))
+	for raw_group in milestone.get("activity_choice_groups", []):
+		if not (raw_group is Dictionary):
+			continue
+		for raw_option in (raw_group as Dictionary).get("options", []):
+			if not (raw_option is Dictionary):
+				continue
+			var option: Dictionary = raw_option
+			if str(option.get("activity_id", "")) == activity_id:
+				return bool(option.get("complete", false))
+	return false
+
+
+static func _activity_group_complete(
+	milestone: Dictionary,
+	group_id: String
+) -> bool:
+	for raw_group in milestone.get("activity_choice_groups", []):
+		if not (raw_group is Dictionary):
+			continue
+		var group: Dictionary = raw_group
+		if str(group.get("group_id", "")) == group_id:
+			return bool(group.get("complete", false))
+	return false
 
 
 static func _deficit_value(milestone: Dictionary, field: String) -> int:

@@ -42,6 +42,18 @@ const PlayableCampaignProgressionDirectorScript = preload(
 const PlayableCampaignProgressionDirectorQAScript = preload(
 	"res://scripts/progression/playable_campaign_progression_director_qa.gd"
 )
+const PlayableCampaignQAControllerScript = preload(
+	"res://scripts/progression/playable_campaign_qa_controller.gd"
+)
+const PlayableCampaignQAGuideQAScript = preload(
+	"res://scripts/progression/playable_campaign_qa_guide_qa.gd"
+)
+const PlayableCampaignPresentationControllerScript = preload(
+	"res://scripts/progression/playable_campaign_presentation_controller.gd"
+)
+const PlayableCampaignPresentationQAScript = preload(
+	"res://scripts/progression/playable_campaign_presentation_qa.gd"
+)
 const FishingCardMakerServiceScript = preload(
 	"res://scripts/economy/fishing_card_maker_service.gd"
 )
@@ -184,6 +196,10 @@ var economy_foundation_qa_report: Dictionary = {}
 var campaign_loop_qa_report: Dictionary = {}
 var campaign_progression_director = null
 var campaign_progression_director_qa_report: Dictionary = {}
+var campaign_qa_controller = null
+var campaign_qa_guide_qa_report: Dictionary = {}
+var campaign_presentation_controller = null
+var campaign_presentation_qa_report: Dictionary = {}
 var card_maker_qa_report: Dictionary = {}
 var fish_effect_integrity_report: Dictionary = {}
 var environment_integrity_report: Dictionary = {}
@@ -462,6 +478,36 @@ func initialize() -> void:
 		):
 			push_error("Campaign Director QA: %s" % str(failure))
 
+		campaign_qa_guide_qa_report = PlayableCampaignQAGuideQAScript.run()
+		print(
+			"Campaign Guide QA: %d/%d tests passed."
+			% [
+				int(campaign_qa_guide_qa_report.get("passed_count", 0)),
+				int(campaign_qa_guide_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in campaign_qa_guide_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Campaign Guide QA: %s" % str(failure))
+
+		campaign_presentation_qa_report = (
+			PlayableCampaignPresentationQAScript.run()
+		)
+		print(
+			"Campaign Presentation QA: %d/%d tests passed."
+			% [
+				int(campaign_presentation_qa_report.get("passed_count", 0)),
+				int(campaign_presentation_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in campaign_presentation_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Campaign Presentation QA: %s" % str(failure))
+
 		card_maker_qa_report = FishingCardMakerQAScript.run(
 			FishingCardMakerCatalogResource,
 			FishingContentCatalogResource,
@@ -616,6 +662,26 @@ func initialize() -> void:
 		prepared_bait_service,
 		card_maker_service
 	)
+
+	campaign_presentation_controller = (
+		PlayableCampaignPresentationControllerScript.new()
+	)
+	campaign_presentation_controller.name = (
+		"PlayableCampaignPresentationController"
+	)
+	add_child(campaign_presentation_controller)
+	campaign_presentation_controller.configure(
+		campaign_progression_director
+	)
+
+	if OS.is_debug_build():
+		campaign_qa_controller = PlayableCampaignQAControllerScript.new()
+		campaign_qa_controller.name = "PlayableCampaignQAController"
+		add_child(campaign_qa_controller)
+		campaign_qa_controller.configure(
+			self,
+			campaign_progression_director
+		)
 
 	_run_progression_integrity_audit()
 	_run_economy_integrity_audit()
@@ -782,6 +848,16 @@ func get_prepared_bait_service() -> FishingPreparedBaitService:
 	return prepared_bait_service
 
 
+func get_campaign_presentation_snapshot() -> Dictionary:
+	if campaign_presentation_controller == null:
+		return {}
+	return campaign_presentation_controller.get_debug_snapshot()
+
+
+func get_campaign_presentation_qa_report() -> Dictionary:
+	return campaign_presentation_qa_report.duplicate(true)
+
+
 func get_card_maker_service() -> FishingCardMakerService:
 	return card_maker_service
 
@@ -862,6 +938,15 @@ func run_campaign_progression_director_qa() -> Dictionary:
 		PlayableCampaignProgressionDirectorQAScript.run()
 	)
 	return campaign_progression_director_qa_report.duplicate(true)
+
+
+func get_campaign_qa_guide_qa_report() -> Dictionary:
+	return campaign_qa_guide_qa_report.duplicate(true)
+
+
+func run_campaign_qa_guide_qa() -> Dictionary:
+	campaign_qa_guide_qa_report = PlayableCampaignQAGuideQAScript.run()
+	return campaign_qa_guide_qa_report.duplicate(true)
 
 
 func cook_prepared_bait(

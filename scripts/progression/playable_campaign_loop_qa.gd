@@ -42,6 +42,9 @@ static func run(economy_config: FishingEconomyConfig) -> Dictionary:
 	_test_milestone_order(report, plan)
 	_test_early_card_plan_alignment(report, plan, early_plan)
 	_test_authored_sources_exist(report, plan, world_map)
+	_test_activity_contract_shape(report, plan)
+	_test_activity_sources_exist(report, plan, world_map)
+	_test_pacing_does_not_require_unspawned_opponents(report, plan)
 	_test_world_vertical_slice_presence(report)
 	_test_balanced_simulation(report, plan, simulation)
 	_test_simulator_health(report, simulation)
@@ -219,6 +222,143 @@ static func _test_authored_sources_exist(
 	)
 
 
+static func _test_activity_contract_shape(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var learn: Dictionary = _milestone_by_id(plan, "learn_loop")
+	var connected: Dictionary = _milestone_by_id(plan, "connected_systems")
+	var specialization: Dictionary = _milestone_by_id(plan, "specialization")
+	var learn_activities = learn.get("activity_requirements", [])
+	var groups = connected.get("activity_choice_groups", [])
+	var specialization_activities = specialization.get("activity_requirements", [])
+	var valid: bool = (
+		int(plan.get("activity_evidence_version", 0)) == 1
+		and learn_activities is Array
+		and learn_activities.size() == 2
+		and _activity_list_has(learn_activities, "beat_beach_trader")
+		and _activity_list_has(learn_activities, "recover_coast_shallows_salvage")
+		and groups is Array
+		and groups.size() == 1
+		and _choice_group_has_three_routes(groups)
+		and specialization_activities is Array
+		and _activity_list_has(specialization_activities, "reach_duel_rank_2")
+		and _activity_list_has(specialization_activities, "recover_deeper_coast_salvage")
+	)
+	_record(
+		report,
+		"Campaign milestones include explicit activity evidence instead of quantity-only gates",
+		valid,
+		"H1 must prove duel + shallow salvage, H4 one connected route, and H12 Rank 2 + deeper salvage."
+	)
+
+
+static func _test_activity_sources_exist(
+	report: Dictionary,
+	plan: Dictionary,
+	world_map: Dictionary
+) -> void:
+	var sources = world_map.get("sources", [])
+	var valid: bool = sources is Array and not sources.is_empty()
+	for raw_milestone in plan.get("milestones", []):
+		if not valid or not (raw_milestone is Dictionary):
+			valid = false
+			break
+		var milestone: Dictionary = raw_milestone
+		var activities: Array = []
+		for raw_activity in milestone.get("activity_requirements", []):
+			if raw_activity is Dictionary:
+				activities.append(raw_activity)
+		for raw_group in milestone.get("activity_choice_groups", []):
+			if not (raw_group is Dictionary):
+				continue
+			for raw_option in (raw_group as Dictionary).get("options", []):
+				if raw_option is Dictionary:
+					activities.append(raw_option)
+		for raw_activity in activities:
+			var activity: Dictionary = raw_activity
+			var kind: String = str(activity.get("kind", ""))
+			match kind:
+				"source_acquired":
+					if not _world_source_exists(
+						sources,
+						str(activity.get("source_type", "")),
+						str(activity.get("source_id", ""))
+					):
+						valid = false
+				"source_type_acquired":
+					if not _world_source_type_exists(
+						sources,
+						str(activity.get("source_type", ""))
+					):
+						valid = false
+				"opponent_beaten":
+					if not _world_source_exists(
+						sources,
+						"opponent_win",
+						str(activity.get("opponent_id", ""))
+					):
+						valid = false
+				"world_event_claimed":
+					if str(activity.get("event_id", "")).strip_edges().is_empty():
+						valid = false
+				"duel_rank_at_least":
+					if int(activity.get("minimum_rank", 0)) < 1:
+						valid = false
+				_:
+					valid = false
+			if not valid:
+				break
+		if not valid:
+			break
+	_record(
+		report,
+		"Every pacing activity resolves to a real authored source or durable world fact",
+		valid,
+		"Campaign evidence must never depend on a source identifier the runtime cannot resolve."
+	)
+
+
+static func _test_pacing_does_not_require_unspawned_opponents(
+	report: Dictionary,
+	plan: Dictionary
+) -> void:
+	var unavailable := {
+		"pier_apprentice": true,
+		"gearwright": true,
+		"dock_bruiser": true,
+		"marsh_keeper": true,
+	}
+	var valid: bool = true
+	for raw_milestone in plan.get("milestones", []):
+		if not (raw_milestone is Dictionary):
+			continue
+		var milestone: Dictionary = raw_milestone
+		var activities: Array = []
+		activities.append_array(milestone.get("activity_requirements", []))
+		for raw_group in milestone.get("activity_choice_groups", []):
+			if raw_group is Dictionary:
+				activities.append_array((raw_group as Dictionary).get("options", []))
+		for raw_activity in activities:
+			if not (raw_activity is Dictionary):
+				continue
+			var activity: Dictionary = raw_activity
+			if (
+				str(activity.get("kind", "")) == "opponent_beaten"
+				and unavailable.has(str(activity.get("opponent_id", "")))
+			):
+				valid = false
+				break
+		if not valid:
+			break
+	_record(
+		report,
+		"Current beach pacing never hard-gates progress behind opponents that are not spawned yet",
+		valid,
+		"Pier Apprentice, Gearwright, Dock Bruiser and Marsh Keeper may define future card pools but cannot be runtime milestone requirements yet."
+	)
+
+
 static func _test_world_vertical_slice_presence(report: Dictionary) -> void:
 	var valid: bool = true
 	for scene_path in REQUIRED_WORLD_SCENES:
@@ -329,6 +469,46 @@ static func _world_source_exists(raw_sources, source_type: String, source_id: St
 			str(raw.get("source_type", "")) == source_type
 			and str(raw.get("source_id", "")) == source_id
 		):
+			return true
+	return false
+
+
+static func _activity_list_has(raw_activities, activity_id: String) -> bool:
+	if not (raw_activities is Array):
+		return false
+	for raw_activity in raw_activities:
+		if (
+			raw_activity is Dictionary
+			and str((raw_activity as Dictionary).get("activity_id", "")) == activity_id
+		):
+			return true
+	return false
+
+
+static func _choice_group_has_three_routes(raw_groups) -> bool:
+	if not (raw_groups is Array) or raw_groups.size() != 1:
+		return false
+	var raw_group = raw_groups[0]
+	if not (raw_group is Dictionary):
+		return false
+	var group: Dictionary = raw_group
+	var options = group.get("options", [])
+	return (
+		str(group.get("group_id", "")) == "use_one_connected_card_route"
+		and int(group.get("minimum_complete", 0)) == 1
+		and options is Array
+		and options.size() == 3
+		and _activity_list_has(options, "use_card_maker")
+		and _activity_list_has(options, "turn_in_harbor_request")
+		and _activity_list_has(options, "open_harbor_lockbox")
+	)
+
+
+static func _world_source_type_exists(raw_sources, source_type: String) -> bool:
+	if not (raw_sources is Array):
+		return false
+	for raw in raw_sources:
+		if raw is Dictionary and str(raw.get("source_type", "")) == source_type:
 			return true
 	return false
 
