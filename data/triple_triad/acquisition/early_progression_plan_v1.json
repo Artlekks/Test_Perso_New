@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "plan_id": "first_12h_v1",
+  "description": "Canonical primary acquisition spine for the first twelve hours. Targets are ownership goals; pool sizes are the intentionally available unique-card ceiling for each milestone.",
+  "exclusive_primary_routes": true,
+  "stages": [
+    {
+      "stage_id": "starter_deck",
+      "milestone_hour": 0,
+      "duel_rank_floor": 1,
+      "target_owned_min": 5,
+      "target_owned_max": 5,
+      "expected_cumulative_pool": 5,
+      "new_sources": [
+        {
+          "source_type": "starter_bundle",
+          "source_id": "salvaged_card_case"
+        }
+      ]
+    },
+    {
+      "stage_id": "learn_loop",
+      "milestone_hour": 1,
+      "duel_rank_floor": 1,
+      "target_owned_min": 7,
+      "target_owned_max": 10,
+      "expected_cumulative_pool": 13,
+      "new_sources": [
+        {
+          "source_type": "opponent_win",
+          "source_id": "beach_trader"
+        },
+        {
+          "source_type": "fishing_salvage",
+          "source_id": "coast_shallows"
+        }
+      ]
+    },
+    {
+      "stage_id": "connected_systems",
+      "milestone_hour": 4,
+      "duel_rank_floor": 1,
+      "target_owned_min": 15,
+      "target_owned_max": 22,
+      "expected_cumulative_pool": 24,
+      "new_sources": [
+        {
+          "source_type": "opponent_win",
+          "source_id": "pier_apprentice"
+        },
+        {
+          "source_type": "opponent_win",
+          "source_id": "gearwright"
+        },
+        {
+          "source_type": "card_maker",
+          "source_id": "bass_card"
+        },
+        {
+          "source_type": "card_maker",
+          "source_id": "blue_gill_card"
+        },
+        {
+          "source_type": "card_maker",
+          "source_id": "piranha_card"
+        },
+        {
+          "source_type": "card_maker",
+          "source_id": "trout_card"
+        },
+        {
+          "source_type": "card_maker",
+          "source_id": "sea_bass_card"
+        }
+      ]
+    },
+    {
+      "stage_id": "specialization",
+      "milestone_hour": 12,
+      "duel_rank_floor": 2,
+      "target_owned_min": 30,
+      "target_owned_max": 40,
+      "expected_cumulative_pool": 40,
+      "new_sources": [
+        {
+          "source_type": "opponent_win",
+          "source_id": "dock_bruiser"
+        },
+        {
+          "source_type": "opponent_win",
+          "source_id": "marsh_keeper"
+        },
+        {
+          "source_type": "fishing_salvage",
+          "source_id": "coast_deeper"
+        }
+      ]
+    }
+  ]
+}

@@ -19,6 +19,12 @@ const DefaultCardCatalog = preload("res://data/triple_triad/card_catalog.tres")
 const DefaultOpponentRegistry = preload("res://data/triple_triad/opponents/opponent_registry.tres")
 const DefaultAcquisitionRegistry = preload("res://data/triple_triad/acquisition/acquisition_registry.tres")
 const WorldAcquisitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_world_acquisition_catalog.gd")
+const AcquisitionProgressionPlanScript = preload(
+	"res://scripts/triple_triad/triple_triad_acquisition_progression_plan.gd"
+)
+const CampaignQAHarnessScript = preload(
+	"res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd"
+)
 const CompetitionCatalogScript = preload("res://scripts/triple_triad/triple_triad_competition_catalog.gd")
 const CompetitionServiceScript = preload("res://scripts/triple_triad/triple_triad_competition_service.gd")
 const CompletionTrackerScript = preload("res://scripts/triple_triad/triple_triad_completion_tracker.gd")
@@ -670,6 +676,10 @@ func run_all() -> Dictionary:
 	_run("Acquisition registry is legal", _test_acquisition_registry)
 	_run("Card-game discovery gates opponents", _test_card_game_discovery_gate)
 	_run("World acquisition map covers all cards", _test_world_acquisition_map)
+	_run("Early card acquisition plan is coherent", _test_early_acquisition_plan)
+	_run("Early fishing salvage pools are progressive", _test_progressive_salvage_pools)
+	_run("Early opponent ladder unlocks in order", _test_early_opponent_ladder)
+	_run("Campaign QA mirrors early acquisition spine", _test_campaign_qa_progression_alignment)
 	_run("World delivery source contract is legal", _test_world_delivery_contract)
 	_run("Competition catalog is legal", _test_competition_catalog)
 	_run("Competitive progression reaches Card Master", _test_competitive_progression_flow)
@@ -820,8 +830,8 @@ func _test_acquisition_registry() -> Dictionary:
 	return _ok(
 		starter != null
 		and bool(starter.unlocks_card_game)
-		and starter.card_ids.size() == 10,
-		"Expected a ten-card one-shot salvage bundle that unlocks Triple Triad."
+		and starter.card_ids.size() == 5,
+		"Expected a five-card one-shot salvage bundle that unlocks Triple Triad."
 	)
 
 
@@ -872,6 +882,167 @@ func _test_world_acquisition_map() -> Dictionary:
 		and int(audit.get("card_count", 0)) == 179
 		and int(audit.get("covered_card_count", 0)) == 179,
 		"All 179 cards must have a valid acquisition source: %s"
+		% str(audit.get("errors", []))
+	)
+
+
+func _test_early_acquisition_plan() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var plan = AcquisitionProgressionPlanScript.new()
+	var audit: Dictionary = plan.validate(world_catalog, DefaultCardCatalog)
+	var stages: Array = audit.get("stages", [])
+	var pools := PackedInt32Array()
+	for raw_stage in stages:
+		if raw_stage is Dictionary:
+			pools.append(int(raw_stage.get("cumulative_pool", 0)))
+	return _ok(
+		bool(audit.get("valid", false))
+		and String(plan.get_plan_id()) == "first_12h_v1"
+		and pools == PackedInt32Array([5, 13, 24, 40]),
+		"First-12h acquisition plan must expose cumulative pools 5/13/24/40: %s"
+		% str(audit.get("errors", []))
+	)
+
+
+func _test_progressive_salvage_pools() -> Dictionary:
+	var world_catalog = WorldAcquisitionCatalogScript.new()
+	world_catalog.initialize(
+		DefaultCardCatalog,
+		DefaultOpponentRegistry,
+		DefaultAcquisitionRegistry
+	)
+	var shallow: Dictionary = world_catalog.get_source_snapshot(
+		&"fishing_salvage",
+		&"coast_shallows"
+	)
+	var deeper: Dictionary = world_catalog.get_source_snapshot(
+		&"fishing_salvage",
+		&"coast_deeper"
+	)
+	var shallow_ids: Dictionary = {}
+	for raw_id in shallow.get("card_ids", PackedStringArray()):
+		shallow_ids[str(raw_id)] = true
+	var overlap: bool = false
+	for raw_id in deeper.get("card_ids", PackedStringArray()):
+		if shallow_ids.has(str(raw_id)):
+			overlap = true
+			break
+	var card_maker_ids := PackedStringArray([
+		"mugshot_163",
+		"mugshot_164",
+		"mugshot_166",
+		"mugshot_168",
+		"mugshot_170",
+	])
+	var maker_overlap: bool = false
+	for card_id in card_maker_ids:
+		if shallow_ids.has(card_id):
+			maker_overlap = true
+			break
+		for raw_id in deeper.get("card_ids", PackedStringArray()):
+			if str(raw_id) == card_id:
+				maker_overlap = true
+				break
+	var shallow_cards = shallow.get("card_ids", PackedStringArray())
+	var deeper_cards = deeper.get("card_ids", PackedStringArray())
+	return _ok(
+		shallow_cards.size() == 5
+		and deeper_cards.size() == 10
+		and int(deeper.get("min_duel_rank", 1)) == 2
+		and not overlap
+		and not maker_overlap,
+		"Coast salvage must be 5 rank-1 cards then 10 rank-2 cards, without Card Maker overlap."
+	)
+
+
+func _test_early_opponent_ladder() -> Dictionary:
+	var base_context := {
+		"card_game_unlocked": true,
+		"beaten_opponent_ids": PackedStringArray(),
+		"total_player_wins": 0,
+	}
+	var beach: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"beach_trader",
+		1,
+		&"",
+		&"",
+		base_context
+	)
+	var pier_locked: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"pier_apprentice",
+		1,
+		&"",
+		&"",
+		base_context
+	)
+	var pier_context := base_context.duplicate(true)
+	pier_context["beaten_opponent_ids"] = PackedStringArray(["beach_trader"])
+	var pier_open: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"pier_apprentice",
+		1,
+		&"",
+		&"",
+		pier_context
+	)
+	var gear_context := base_context.duplicate(true)
+	gear_context["beaten_opponent_ids"] = PackedStringArray([
+		"beach_trader",
+		"pier_apprentice",
+	])
+	var gear_open: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"gearwright",
+		1,
+		&"",
+		&"",
+		gear_context
+	)
+	var dock_context := base_context.duplicate(true)
+	dock_context["beaten_opponent_ids"] = PackedStringArray([
+		"beach_trader",
+		"pier_apprentice",
+		"gearwright",
+	])
+	var dock_rank_1: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"dock_bruiser",
+		1,
+		&"",
+		&"",
+		dock_context
+	)
+	var dock_rank_2: Dictionary = DefaultOpponentRegistry.get_availability(
+		&"dock_bruiser",
+		2,
+		&"",
+		&"",
+		dock_context
+	)
+	return _ok(
+		bool(beach.get("available", false))
+		and not bool(pier_locked.get("available", true))
+		and bool(pier_open.get("available", false))
+		and bool(gear_open.get("available", false))
+		and not bool(dock_rank_1.get("available", true))
+		and bool(dock_rank_2.get("available", false)),
+		"Early opponent chain must be Beach Trader -> Pier Apprentice -> Gearwright -> Rank-2 Dock Bruiser."
+	)
+
+
+func _test_campaign_qa_progression_alignment() -> Dictionary:
+	var harness = CampaignQAHarnessScript.new()
+	var audit: Dictionary = harness.validate_progression_alignment(
+		DefaultCardCatalog
+	)
+	return _ok(
+		bool(audit.get("valid", false))
+		and audit.get("pool_sizes", PackedInt32Array())
+			== PackedInt32Array([5, 13, 24, 40])
+		and int(audit.get("six_card_recovery_count", 0)) == 6,
+		"Campaign QA must seed only reachable early cards and preserve the 5/13/24/40 acquisition spine: %s"
 		% str(audit.get("errors", []))
 	)
 

@@ -21,6 +21,7 @@ signal salvage_card_recovered(result: Dictionary)
 
 const STARTER_BUNDLE_ID: StringName = &"salvaged_card_case"
 const COAST_SALVAGE_SOURCE_ID: StringName = &"coast_shallows"
+const COAST_ADVANCED_SALVAGE_SOURCE_ID: StringName = &"coast_deeper"
 const COAST_SALVAGE_INTERVAL := 4
 
 var _triple_triad_game: Node = null
@@ -65,6 +66,8 @@ func get_debug_snapshot() -> Dictionary:
 		"eligible_spot_ids": _eligible_spot_ids.duplicate(),
 		"last_result": _last_result.duplicate(true),
 		"post_starter_salvage_interval": COAST_SALVAGE_INTERVAL,
+		"coast_salvage_source_id": String(COAST_SALVAGE_SOURCE_ID),
+		"coast_advanced_salvage_source_id": String(COAST_ADVANCED_SALVAGE_SOURCE_ID),
 	}
 
 
@@ -245,35 +248,55 @@ func _try_post_starter_salvage(spot_id: String) -> void:
 		"fishing_salvage:%s:catch_%d"
 		% [spot_id, catch_count]
 	)
-	var raw_result = _triple_triad_game.call(
-		"claim_fishing_salvage_reward",
+	var reward_result: Dictionary = _claim_salvage_pool(
 		COAST_SALVAGE_SOURCE_ID,
 		context
 	)
-	if not (raw_result is Dictionary):
-		return
-
-	var reward_result: Dictionary = (
-		raw_result as Dictionary
-	).duplicate(true)
-	_last_result = reward_result.duplicate(true)
-
-	if bool(reward_result.get("success", false)):
-		salvage_card_recovered.emit(
-			reward_result.duplicate(true)
+	if (
+		not bool(reward_result.get("success", false))
+		and str(reward_result.get("reason", "")) == "source_complete"
+		and _current_duel_rank() >= 2
+	):
+		reward_result = _claim_salvage_pool(
+			COAST_ADVANCED_SALVAGE_SOURCE_ID,
+			context
 		)
+
+	_last_result = reward_result.duplicate(true)
+	if bool(reward_result.get("success", false)):
+		salvage_card_recovered.emit(reward_result.duplicate(true))
 		print(
 			"TripleTriad Salvage: recovered %s from %s."
 			% [
-				str(
-					reward_result.get(
-						"display_name",
-						"card"
-					)
-				),
+				str(reward_result.get("display_name", "card")),
 				spot_id,
 			]
 		)
+
+
+func _claim_salvage_pool(
+	source_id: StringName,
+	context: StringName
+) -> Dictionary:
+	var raw_result = _triple_triad_game.call(
+		"claim_fishing_salvage_reward",
+		source_id,
+		context
+	)
+	if raw_result is Dictionary:
+		return (raw_result as Dictionary).duplicate(true)
+	return {"success": false, "reason": "invalid_salvage_result"}
+
+
+func _current_duel_rank() -> int:
+	if (
+		is_instance_valid(_triple_triad_game)
+		and _triple_triad_game.has_method("get_player_snapshot")
+	):
+		var raw_snapshot = _triple_triad_game.call("get_player_snapshot")
+		if raw_snapshot is Dictionary:
+			return maxi(1, int(raw_snapshot.get("duel_rank", 1)))
+	return 1
 
 
 func _is_eligible_spot(spot_id: String) -> bool:

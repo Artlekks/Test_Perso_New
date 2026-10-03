@@ -15,18 +15,13 @@
       "display_name": "Saltworn Card Case",
       "min_duel_rank": 1,
       "card_ids": [
-        "mugshot_153",
         "mugshot_154",
         "mugshot_155",
-        "mugshot_156",
-        "mugshot_157",
         "mugshot_158",
-        "mugshot_159",
         "mugshot_160",
-        "mugshot_161",
         "mugshot_162"
       ],
-      "description": "The one-shot starter collection discovered through fishing salvage."
+      "description": "Five-card starter deck recovered through fishing salvage."
     },
     {
       "source_type": "opponent_win",
@@ -56,7 +51,7 @@
       "source_type": "opponent_win",
       "source_id": "dock_bruiser",
       "display_name": "Dock Bruiser",
-      "min_duel_rank": 1,
+      "min_duel_rank": 2,
       "card_ids": [
         "mugshot_058",
         "mugshot_108",
@@ -166,15 +161,23 @@
       "source_id": "coast_shallows",
       "display_name": "Coast Shallows Salvage",
       "min_duel_rank": 1,
-      "description": "Common cards recovered from bottles, tackle tins, and drift caught while fishing the coast.",
+      "description": "First-hour coastal salvage pool. Five beginner cards, exhausted before advanced salvage begins.",
       "card_ids": [
-        "mugshot_163",
-        "mugshot_164",
+        "mugshot_153",
+        "mugshot_156",
+        "mugshot_157",
+        "mugshot_159",
+        "mugshot_161"
+      ]
+    },
+    {
+      "source_type": "fishing_salvage",
+      "source_id": "coast_deeper",
+      "display_name": "Deeper Coastal Salvage",
+      "min_duel_rank": 2,
+      "card_ids": [
         "mugshot_165",
-        "mugshot_166",
-        "mugshot_168",
         "mugshot_169",
-        "mugshot_170",
         "mugshot_171",
         "mugshot_172",
         "mugshot_175",
@@ -183,7 +186,8 @@
         "mugshot_080",
         "mugshot_081",
         "mugshot_082"
-      ]
+      ],
+      "description": "Second-tier coast salvage pool unlocked at Duel Rank 2 after the shallow pool is exhausted."
     },
     {
       "source_type": "fishing_salvage",

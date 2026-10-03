@@ -1,9 +1,9 @@
-[gd_resource type="Resource" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="TripleTriadOpponentProfile" format=3 uid="uid://ddsmewv1kw7mj"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
-[ext_resource type="Resource" path="res://data/triple_triad/ai/defensive.tres" id="2_ai"]
+[ext_resource type="Script" uid="uid://dwr2w67nod5iv" path="res://scripts/triple_triad/triple_triad_opponent_profile.gd" id="1_profile"]
+[ext_resource type="Resource" uid="uid://bv5pssv4a5dfp" path="res://data/triple_triad/ai/defensive.tres" id="2_ai"]
 [ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_docks.tres" id="3_region"]
-[ext_resource type="Resource" path="res://data/triple_triad/basic_rules.tres" id="4_rules"]
+[ext_resource type="Resource" uid="uid://bop8hafk7xbag" path="res://data/triple_triad/basic_rules.tres" id="4_rules"]
 
 [resource]
 script = ExtResource("1_profile")
@@ -11,16 +11,13 @@ opponent_id = &"gearwright"
 display_name = "Gearwright"
 archetype_id = &"construct_defensive"
 strategy_summary = "A dockside tinkerer who favors sturdy construct cards and safe placements."
-content_revision = 1
+content_revision = 2
 duel_rank = 2
-required_player_rank = 1
-enabled_by_default = true
-progression_spine = false
 encounter_tags = PackedStringArray("dock", "workshop", "construct", "defensive")
+unlock_after_opponent_ids = PackedStringArray("pier_apprentice")
 ai_profile = ExtResource("2_ai")
 region_profile = ExtResource("3_region")
 rule_set_override = ExtResource("4_rules")
-min_card_level = 1
 max_card_level = 4
 deck_budget_override = 25
 native_card_ids = PackedStringArray("mugshot_086", "mugshot_070", "mugshot_069", "mugshot_178", "mugshot_179", "mugshot_176", "mugshot_177", "mugshot_180", "mugshot_181", "mugshot_182")
@@ -28,13 +25,8 @@ preferred_deck_ids = PackedStringArray("mugshot_086", "mugshot_070", "mugshot_06
 reward_card_ids = PackedStringArray("mugshot_086", "mugshot_070", "mugshot_178")
 initial_collection_size = 10
 progression_points_on_win = 2
-first_win_progression_only = true
-rematch_progression_points_on_win = 0
-
-rematch_evolution_enabled = true
 rematch_win_thresholds = PackedInt32Array(1, 3, 6)
 rematch_budget_bonuses = PackedInt32Array(0, 1, 2, 2)
 rematch_promoted_card_ids = PackedStringArray("mugshot_182", "mugshot_181", "mugshot_180")
 signature_card_ids = PackedStringArray("mugshot_182")
-signature_card_stage = 1
 adaptive_style_id = &"construct_defensive"

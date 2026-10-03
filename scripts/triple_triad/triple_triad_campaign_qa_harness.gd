@@ -5,10 +5,19 @@ const StarterBundle = preload(
 	"res://data/triple_triad/acquisition/bundles/salvaged_card_case.tres"
 )
 
+const WORLD_ACQUISITION_MAP_PATH := (
+	"res://data/triple_triad/acquisition/world_acquisition_map.json"
+)
+const EARLY_PROGRESSION_PLAN_PATH := (
+	"res://data/triple_triad/acquisition/early_progression_plan_v1.json"
+)
+
 const SCENARIO_FRESH: StringName = &"fresh"
 const SCENARIO_STARTER: StringName = &"starter"
+const SCENARIO_LEARN_LOOP: StringName = &"learn_loop"
 const SCENARIO_FIVE_CARD_SAFETY: StringName = &"five_card_safety"
 const SCENARIO_EARLY: StringName = &"early"
+const SCENARIO_SPECIALIZATION: StringName = &"specialization"
 const SCENARIO_MID: StringName = &"mid"
 const SCENARIO_REGIONAL_READY: StringName = &"regional_ready"
 const SCENARIO_MASTERS_READY: StringName = &"masters_ready"
@@ -32,14 +41,6 @@ const COMPETITIONS_PATH := "user://triple_triad_competitions.cfg"
 const COMPLETION_PATH := "user://triple_triad_completion.cfg"
 const MANIFEST_PATH := "user://triple_triad_save_manifest.cfg"
 const QA_SNAPSHOT_PATH := "user://triple_triad_qa_snapshot_A.json"
-
-const FIVE_CARD_IDS = [
-	"mugshot_156",
-	"mugshot_157",
-	"mugshot_161",
-	"mugshot_153",
-	"mugshot_162",
-]
 
 const ALL_OPPONENT_IDS = [
 	"pier_apprentice",
@@ -77,7 +78,12 @@ func get_scenarios() -> Array:
 		{
 			"id": String(SCENARIO_STARTER),
 			"name": "Starter / Just Unlocked",
-			"summary": "10 starter cards, Rank 1, unlocked. Deck #1 rebuilds from the real starter collection.",
+			"summary": "5 starter cards, Rank 1, unlocked. Deck #1 rebuilds from the real Saltworn Card Case.",
+		},
+		{
+			"id": String(SCENARIO_LEARN_LOOP),
+			"name": "Hour 1 / Learn Loop",
+			"summary": "Rank 1 with 8 reachable cards from the real 13-card first-hour pool; Beach Trader has been beaten once.",
 		},
 		{
 			"id": String(SCENARIO_FIVE_CARD_SAFETY),
@@ -87,7 +93,7 @@ func get_scenarios() -> Array:
 		{
 			"id": String(SCENARIO_SIX_CARD_RECOVERY),
 			"name": "Six-Card Loss / Recovery",
-			"summary": "Exactly 6 playable starter cards. Lose once to drop to the protected floor of five, then rematch to recover the stolen card.",
+			"summary": "Exactly 6 reachable early cards: the five-card starter deck plus one earned card. Lose once, then rematch to test recovery.",
 		},
 		{
 			"id": String(SCENARIO_VETERAN_REMATCH),
@@ -96,8 +102,13 @@ func get_scenarios() -> Array:
 		},
 		{
 			"id": String(SCENARIO_EARLY),
-			"name": "Early Game",
-			"summary": "Rank 2, 24 cards, a couple of early NPC wins. Useful for deck growth and rematch testing.",
+			"name": "Hour 4 / Connected Systems",
+			"summary": "Rank 2 with 20 reachable cards from the real 24-card first-four-hour pool; Beach Trader, Pier Apprentice and Gearwright are cleared.",
+		},
+		{
+			"id": String(SCENARIO_SPECIALIZATION),
+			"name": "Hour 12 / Specialization",
+			"summary": "Rank 2 with 35 reachable cards from the real 40-card first-twelve-hour pool; deeper coast salvage and the Rank-2 ladder are active.",
 		},
 		{
 			"id": String(SCENARIO_MID),
@@ -149,34 +160,83 @@ func apply_scenario(
 			# No authored files are needed. New-save initialization is the test.
 			pass
 		SCENARIO_STARTER:
+			_seed_collection(
+				_primary_pool_for_stage(&"starter_deck", card_catalog),
+				card_catalog
+			)
+			_seed_progression(1)
+			_seed_acquisition_unlocked()
+		SCENARIO_LEARN_LOOP:
+			_seed_collection(
+				_take_ids(
+					_primary_pool_for_stage(&"learn_loop", card_catalog),
+					8
+				),
+				card_catalog
+			)
+			_seed_progression(1)
+			_seed_acquisition_unlocked()
+			_seed_encounters(PackedStringArray(["beach_trader"]))
+		SCENARIO_FIVE_CARD_SAFETY:
 			_seed_collection(_starter_ids(), card_catalog)
 			_seed_progression(1)
 			_seed_acquisition_unlocked()
-		SCENARIO_FIVE_CARD_SAFETY:
-			_seed_collection(FIVE_CARD_IDS, card_catalog)
-			_seed_progression(1)
-			_seed_acquisition_unlocked()
 		SCENARIO_SIX_CARD_RECOVERY:
-			var six_ids: PackedStringArray = _starter_ids()
-			if six_ids.size() > 6:
-				six_ids.resize(6)
+			var six_ids: PackedStringArray = _take_ids(
+				_primary_pool_for_stage(&"learn_loop", card_catalog),
+				6
+			)
 			_seed_collection(six_ids, card_catalog)
 			_seed_progression(1)
 			_seed_acquisition_unlocked()
+			_seed_encounters(PackedStringArray(["beach_trader"]))
 		SCENARIO_VETERAN_REMATCH:
-			_seed_collection(_cards_for_rank(card_catalog, 2, 32), card_catalog)
+			_seed_collection(
+				_take_ids(
+					_primary_pool_for_stage(&"specialization", card_catalog),
+					32
+				),
+				card_catalog
+			)
 			_seed_progression(2)
 			_seed_acquisition_unlocked()
 			_seed_encounters_with_wins({
+				"beach_trader": 1,
+				"pier_apprentice": 1,
+				"gearwright": 1,
 				"dock_bruiser": 6,
 			})
 		SCENARIO_EARLY:
-			_seed_collection(_cards_for_rank(card_catalog, 2, 24), card_catalog)
+			_seed_collection(
+				_take_ids(
+					_primary_pool_for_stage(&"connected_systems", card_catalog),
+					20
+				),
+				card_catalog
+			)
 			_seed_progression(2)
 			_seed_acquisition_unlocked()
 			_seed_encounters(PackedStringArray([
-				"pier_apprentice",
 				"beach_trader",
+				"pier_apprentice",
+				"gearwright",
+			]))
+		SCENARIO_SPECIALIZATION:
+			_seed_collection(
+				_take_ids(
+					_primary_pool_for_stage(&"specialization", card_catalog),
+					35
+				),
+				card_catalog
+			)
+			_seed_progression(2)
+			_seed_acquisition_unlocked()
+			_seed_encounters(PackedStringArray([
+				"beach_trader",
+				"pier_apprentice",
+				"gearwright",
+				"dock_bruiser",
+				"marsh_keeper",
 			]))
 		SCENARIO_MID:
 			_seed_collection(_cards_for_rank(card_catalog, 3, 60), card_catalog)
@@ -490,7 +550,7 @@ func _seed_active_regional_round_two() -> void:
 	config.set_value(
 		"active",
 		"locked_deck_ids",
-		FIVE_CARD_IDS
+		_starter_ids()
 	)
 	config.save(COMPETITIONS_PATH)
 
@@ -546,6 +606,180 @@ func _seed_competitions(
 		PackedStringArray()
 	)
 	config.save(COMPETITIONS_PATH)
+
+
+func validate_progression_alignment(card_catalog: Resource) -> Dictionary:
+	var errors := PackedStringArray()
+	if card_catalog == null:
+		errors.append("card_catalog_unavailable")
+		return {
+			"valid": false,
+			"errors": errors,
+			"pool_sizes": PackedInt32Array(),
+		}
+
+	var stage_ids := PackedStringArray([
+		"starter_deck",
+		"learn_loop",
+		"connected_systems",
+		"specialization",
+	])
+	var expected_sizes := PackedInt32Array([5, 13, 24, 40])
+	var pool_sizes := PackedInt32Array()
+	var pools: Array = []
+	for stage_id in stage_ids:
+		var pool: PackedStringArray = _primary_pool_for_stage(
+			StringName(stage_id),
+			card_catalog
+		)
+		pools.append(pool)
+		pool_sizes.append(pool.size())
+
+	if pool_sizes != expected_sizes:
+		errors.append(
+			"early primary pools are %s, expected 5/13/24/40"
+			% str(pool_sizes)
+		)
+
+	var starter_ids: PackedStringArray = _starter_ids()
+	if pools.is_empty() or not _same_id_set(pools[0], starter_ids):
+		errors.append(
+			"starter QA preset does not mirror salvaged_card_case"
+		)
+
+	var scenario_targets := PackedInt32Array([5, 8, 20, 35])
+	for index in range(mini(pools.size(), scenario_targets.size())):
+		var seeded: PackedStringArray = _take_ids(
+			pools[index],
+			scenario_targets[index]
+		)
+		if seeded.size() != scenario_targets[index]:
+			errors.append(
+				"scenario %s cannot seed %d reachable cards"
+				% [stage_ids[index], scenario_targets[index]]
+			)
+
+	var six_card_recovery: PackedStringArray = _take_ids(
+		pools[1] if pools.size() > 1 else PackedStringArray(),
+		6
+	)
+	if six_card_recovery.size() != 6:
+		errors.append(
+			"six-card recovery preset cannot seed six reachable cards"
+		)
+
+	return {
+		"valid": errors.is_empty(),
+		"errors": errors,
+		"pool_sizes": pool_sizes,
+		"scenario_targets": scenario_targets,
+		"six_card_recovery_count": six_card_recovery.size(),
+	}
+
+
+func _primary_pool_for_stage(
+	stage_id: StringName,
+	card_catalog: Resource
+) -> PackedStringArray:
+	var plan: Dictionary = _load_json_dictionary(
+		EARLY_PROGRESSION_PLAN_PATH
+	)
+	var world_map: Dictionary = _load_json_dictionary(
+		WORLD_ACQUISITION_MAP_PATH
+	)
+	if plan.is_empty() or world_map.is_empty():
+		return PackedStringArray()
+
+	var source_cards: Dictionary = {}
+	var raw_sources = world_map.get("sources", [])
+	if raw_sources is Array:
+		for raw_source in raw_sources:
+			if not (raw_source is Dictionary):
+				continue
+			var source: Dictionary = raw_source
+			var source_type: String = str(
+				source.get("source_type", "")
+			)
+			var source_id: String = str(
+				source.get("source_id", "")
+			)
+			if source_type.is_empty() or source_id.is_empty():
+				continue
+			source_cards["%s:%s" % [source_type, source_id]] = (
+				source.get("card_ids", [])
+			)
+
+	var result := PackedStringArray()
+	var found_stage: bool = false
+	var raw_stages = plan.get("stages", [])
+	if not (raw_stages is Array):
+		return result
+	for raw_stage in raw_stages:
+		if not (raw_stage is Dictionary):
+			continue
+		var stage: Dictionary = raw_stage
+		var raw_new_sources = stage.get("new_sources", [])
+		if raw_new_sources is Array:
+			for raw_ref in raw_new_sources:
+				if not (raw_ref is Dictionary):
+					continue
+				var source_ref: Dictionary = raw_ref
+				var key: String = "%s:%s" % [
+					str(source_ref.get("source_type", "")),
+					str(source_ref.get("source_id", "")),
+				]
+				var raw_ids = source_cards.get(key, [])
+				if raw_ids is Array or raw_ids is PackedStringArray:
+					for raw_id in raw_ids:
+						var card_id: String = str(raw_id)
+						if card_id.is_empty() or result.has(card_id):
+							continue
+						if (
+							card_catalog.has_method("get_card_by_id")
+							and card_catalog.call(
+								"get_card_by_id",
+								StringName(card_id)
+							) == null
+						):
+							continue
+						result.append(card_id)
+		if str(stage.get("stage_id", "")) == String(stage_id):
+			found_stage = true
+			break
+
+	if not found_stage:
+		return PackedStringArray()
+	return result
+
+
+func _take_ids(ids: PackedStringArray, target_count: int) -> PackedStringArray:
+	var result := ids.duplicate()
+	var clean_target: int = maxi(0, target_count)
+	if result.size() > clean_target:
+		result.resize(clean_target)
+	return result
+
+
+func _same_id_set(a: PackedStringArray, b: PackedStringArray) -> bool:
+	if a.size() != b.size():
+		return false
+	for card_id in a:
+		if not b.has(card_id):
+			return false
+	return true
+
+
+func _load_json_dictionary(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary:
+		return (parsed as Dictionary).duplicate(true)
+	return {}
 
 
 func _starter_ids() -> PackedStringArray:

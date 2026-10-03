@@ -1,14 +1,13 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="TripleTriadAcquisitionBundle" format=3 uid="uid://s5125dq82t6c"]
 
-[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_acquisition_bundle.gd" id="1_bundle"]
+[ext_resource type="Script" uid="uid://cqq0ekmm6t0fy" path="res://scripts/triple_triad/triple_triad_acquisition_bundle.gd" id="1_bundle"]
 
 [resource]
 script = ExtResource("1_bundle")
 bundle_id = &"salvaged_card_case"
 display_name = "Saltworn Card Case"
-description = "A battered waterproof case pulled from the sea. Inside is a complete beginner card collection."
+description = "A battered waterproof case pulled from the sea. Inside are five playable beginner cards: enough for a first deck, with the rest of the early collection earned through fishing and duels."
 source_type = &"fishing_salvage"
-one_shot = true
 unlocks_card_game = true
 migration_claim_if_collection_nonempty = true
-card_ids = PackedStringArray("mugshot_153", "mugshot_154", "mugshot_155", "mugshot_156", "mugshot_157", "mugshot_158", "mugshot_159", "mugshot_160", "mugshot_161", "mugshot_162")
+card_ids = PackedStringArray("mugshot_154", "mugshot_155", "mugshot_158", "mugshot_160", "mugshot_162")

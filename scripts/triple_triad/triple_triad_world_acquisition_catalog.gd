@@ -242,6 +242,13 @@ func _validate_opponent_contract(source: Dictionary, errors: PackedStringArray) 
 		return
 	if not _same_string_set(source.get("card_ids", []), profile.get("reward_card_ids")):
 		errors.append("opponent source %s does not match reward_card_ids" % String(opponent_id))
+	var source_rank: int = maxi(1, int(source.get("min_duel_rank", 1)))
+	var profile_rank: int = maxi(1, int(profile.get("required_player_rank")))
+	if source_rank != profile_rank:
+		errors.append(
+			"opponent source %s rank gate %d does not match profile rank %d"
+			% [String(opponent_id), source_rank, profile_rank]
+		)
 
 
 func _same_string_set(a, b) -> bool:
