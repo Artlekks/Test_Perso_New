@@ -27,6 +27,9 @@ const FishingEconomyAccessScript = preload(
 const FishingCookingServiceScript = preload(
 	"res://scripts/economy/fishing_cooking_service.gd"
 )
+const FishingPreparedBaitServiceScript = preload(
+	"res://scripts/economy/fishing_prepared_bait_service.gd"
+)
 const FishingEconomyFoundationQAScript = preload(
 	"res://scripts/economy/fishing_economy_foundation_qa.gd"
 )
@@ -144,6 +147,7 @@ var trade_service: FishingTradeService = null
 var economy_service = null
 var economy_access = null
 var cooking_service: FishingCookingService = null
+var prepared_bait_service: FishingPreparedBaitService = null
 var save_integrity_service = null
 var session_modifier_service = null
 var environment_service = null
@@ -262,6 +266,19 @@ func initialize() -> void:
 		item_catalog,
 		player_item_inventory,
 		inventory,
+		item_transaction_service
+	)
+
+	prepared_bait_service = (
+		FishingPreparedBaitServiceScript.new()
+		as FishingPreparedBaitService
+	)
+	prepared_bait_service.name = "FishingPreparedBaitService"
+	add_child(prepared_bait_service)
+	prepared_bait_service.configure(
+		FishingEconomyConfigResource,
+		item_catalog,
+		player_item_inventory,
 		item_transaction_service
 	)
 
@@ -657,6 +674,21 @@ func get_cooking_service() -> FishingCookingService:
 	return cooking_service
 
 
+func get_prepared_bait_service() -> FishingPreparedBaitService:
+	return prepared_bait_service
+
+
+func get_prepared_bait_snapshot() -> Dictionary:
+	if prepared_bait_service == null:
+		return {}
+	return prepared_bait_service.get_runtime_snapshot()
+
+
+func set_prepared_bait_auto_use(enabled: bool) -> void:
+	if prepared_bait_service != null:
+		prepared_bait_service.set_auto_use_enabled(enabled)
+
+
 func get_economy_foundation_qa_report() -> Dictionary:
 	return economy_foundation_qa_report.duplicate(true)
 
@@ -868,6 +900,8 @@ func is_ready() -> bool:
 		and trade_service != null
 		and economy_service != null
 		and economy_access != null
+		and cooking_service != null
+		and prepared_bait_service != null
 		and save_integrity_service != null
 		and session_modifier_service != null
 		and environment_service != null

@@ -1,23 +1,14 @@
-[gd_resource type="Resource" script_class="FishingEconomyConfig" format=3]
+[gd_resource type="Resource" script_class="FishingEconomyConfig" format=3 uid="uid://y6uktk2bweam"]
 
-[ext_resource type="Script" path="res://scripts/economy/fishing_economy_config.gd" id="1_config"]
+[ext_resource type="Script" uid="uid://bbiess35ygk3f" path="res://scripts/economy/fishing_economy_config.gd" id="1_config"]
 
 [resource]
 script = ExtResource("1_config")
-economy_version = "1.0"
-new_game_starting_zenny = 100
+economy_version = "1.1"
 fish_ids = PackedStringArray("acheron", "angelfish", "angler", "barandy", "bass", "black_bass", "black_porgy", "blowfish", "blue_gill", "bonito", "browntail", "bullcat", "dorado", "flatfish", "flying_fish", "jellyfish", "man_o_war", "martian_squid", "moorfish", "octopus", "piranha", "rainbow_trout", "salmon", "sea_bass", "sea_bream", "spearfish", "sturgeon", "sweetfish", "trout", "whale")
 fish_sell_prices_zenny = PackedInt32Array(220, 350, 1000, 1400, 70, 250, 1000, 80, 150, 700, 180, 600, 800, 300, 30, 20, 20, 400, 100, 400, 35, 320, 1000, 40, 350, 1500, 1800, 25, 50, 2000)
 lure_ids = PackedStringArray("straight", "baby_frog", "floater", "popper", "silver_top", "hanger", "toad", "tail", "spoon", "king_frog")
 lure_buy_prices_zenny = PackedInt32Array(200, 250, 300, 350, 450, 600, 600, 600, 900, 2500)
 rod_ids = PackedStringArray("wooden_rod", "bamboo_rod", "angling_rod", "spanner", "deluxe_rod", "masters_rod")
 rod_buy_prices_zenny = PackedInt32Array(500, 1000, 2500, 4000, 7000, 12000)
-prepared_bait_item_domain_id = &"prepared_bait"
-prepared_bait_display_name = "Prepared Bait"
-prepared_bait_description = "A cooked fishing bait made from a common fish and aromatic coastal herbs."
-prepared_bait_sell_price_zenny = 0
-bait_herb_material_id = &"coastal_herb"
-fish_per_bait_batch = 1
-herbs_per_bait_batch = 2
-portions_per_bait_batch = 3
 common_bait_fish_ids = PackedStringArray("sweetfish", "flying_fish", "sea_bass", "trout", "piranha", "bass", "blowfish", "moorfish", "blue_gill")

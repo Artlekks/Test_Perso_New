@@ -145,6 +145,7 @@ var active_bait_data: BaitData = null
 var debug_settings = null
 var fishing_progress: FishingProgress = null
 var session_modifier_service = null
+var prepared_bait_service = null
 var environment_service = null
 var active_rod_data: RodData = null
 ## Immutable per-hook snapshot of fish + rod + lure fight values. Encounter only
@@ -274,6 +275,16 @@ func _on_bite_timer_timeout() -> void:
 				0.01
 			)
 
+		var prepared_bait_multiplier: float = 1.0
+		if (
+			prepared_bait_service != null
+			and prepared_bait_service.has_method("get_bite_attraction_multiplier")
+		):
+			prepared_bait_multiplier = maxf(
+				float(prepared_bait_service.get_bite_attraction_multiplier()),
+				0.01
+			)
+
 		var environment_bite_multiplier: float = 1.0
 		if (
 			environment_service != null
@@ -292,6 +303,7 @@ func _on_bite_timer_timeout() -> void:
 			* max_bite_chance_per_check
 			* _get_tech_attraction_multiplier()
 			* session_bite_multiplier
+			* prepared_bait_multiplier
 			* environment_bite_multiplier
 			* _get_spatial_bite_density_multiplier(
 				spatial_context
@@ -424,6 +436,16 @@ func _confirm_hit() -> bool:
 		)
 		for key in session_generation:
 			generation_context[key] = session_generation[key]
+
+	if (
+		prepared_bait_service != null
+		and prepared_bait_service.has_method("get_specimen_generation_context")
+	):
+		var bait_generation: Dictionary = (
+			prepared_bait_service.get_specimen_generation_context()
+		)
+		for key in bait_generation:
+			generation_context[key] = bait_generation[key]
 
 	if (
 		environment_service != null
@@ -1126,6 +1148,12 @@ func get_fish_debug_snapshot() -> Dictionary:
 		)
 
 	if (
+		prepared_bait_service != null
+		and prepared_bait_service.has_method("get_runtime_snapshot")
+	):
+		snapshot["prepared_bait"] = prepared_bait_service.get_runtime_snapshot()
+
+	if (
 		environment_service != null
 		and environment_service.has_method("get_debug_snapshot")
 	):
@@ -1373,6 +1401,10 @@ func _on_session_modifiers_changed(_snapshot: Dictionary) -> void:
 	if active_fish != null:
 		_rebuild_active_fight_context()
 	_apply_rod_tension_settings()
+
+
+func set_prepared_bait_service(service) -> void:
+	prepared_bait_service = service
 
 
 func set_environment_service(service) -> void:

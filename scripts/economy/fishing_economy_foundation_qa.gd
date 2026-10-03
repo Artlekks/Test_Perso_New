@@ -7,6 +7,9 @@ const PlayerInventoryScript = preload("res://scripts/items/player_item_inventory
 const FishingInventoryScript = preload("res://scripts/fishing_inventory.gd")
 const InventoryFacadeScript = preload("res://scripts/items/game_inventory_facade.gd")
 const TransactionServiceScript = preload("res://scripts/items/game_item_transaction_service.gd")
+const PreparedBaitServiceScript = preload(
+	"res://scripts/economy/fishing_prepared_bait_service.gd"
+)
 
 
 static func run(
@@ -29,6 +32,10 @@ static func run(
 	_test_runtime_price_resolution(report, config, content, tackle, shop_catalog)
 	_test_prepared_bait_cooking(report, config, catalog)
 	_test_unsuitable_fish_rejected(report, config, catalog)
+	_test_prepared_bait_gameplay_tuning(report, config)
+	_test_prepared_bait_cast_consumption(report, config, catalog)
+	_test_prepared_bait_cast_modifiers(report, config, catalog)
+	_test_prepared_bait_cast_cleanup(report, config, catalog)
 	report["valid"] = int(report["passed_count"]) == int(report["test_count"])
 	return report
 
@@ -242,6 +249,139 @@ static func _test_unsuitable_fish_rejected(
 		"High-value or special fish must never be auto-treated as cheap bait ingredients."
 	)
 	_free_cooking_setup(setup)
+
+
+static func _test_prepared_bait_gameplay_tuning(
+	report: Dictionary,
+	config: FishingEconomyConfig
+) -> void:
+	var valid: bool = (
+		config != null
+		and config.prepared_bait_bite_attraction_multiplier > 1.0
+		and config.prepared_bait_quality_bonus_roll_chance > 0.0
+		and config.prepared_bait_quality_bonus_rolls > 0
+	)
+	_record(
+		report,
+		"Prepared bait has bounded live fishing bonuses",
+		valid,
+		"Prepared bait must improve bite activity and specimen quality without editing fish prices."
+	)
+
+
+static func _test_prepared_bait_cast_consumption(
+	report: Dictionary,
+	config: FishingEconomyConfig,
+	catalog: GameItemCatalogService
+) -> void:
+	var setup: Dictionary = _make_prepared_bait_gameplay_setup(config, catalog)
+	var service := setup.get("prepared_bait", null) as FishingPreparedBaitService
+	var items := setup.get("items", null) as PlayerItemInventory
+	var bait_id := catalog.make_item_id(
+		GameItemCatalogService.STORAGE_PLAYER,
+		config.prepared_bait_item_domain_id
+	)
+	items.grant(bait_id, 2, false)
+	var use_result: Dictionary = service.try_begin_cast(false)
+	var valid: bool = (
+		bool(use_result.get("used", false))
+		and service.is_cast_baited()
+		and items.get_count(bait_id) == 1
+	)
+	_record(
+		report,
+		"A committed baited cast consumes exactly one prepared-bait portion",
+		valid,
+		"Prepared bait must behave as a real consumable, one portion per successfully-created cast."
+	)
+	_free_prepared_bait_gameplay_setup(setup)
+
+
+static func _test_prepared_bait_cast_modifiers(
+	report: Dictionary,
+	config: FishingEconomyConfig,
+	catalog: GameItemCatalogService
+) -> void:
+	var setup: Dictionary = _make_prepared_bait_gameplay_setup(config, catalog)
+	var service := setup.get("prepared_bait", null) as FishingPreparedBaitService
+	var items := setup.get("items", null) as PlayerItemInventory
+	var bait_id := catalog.make_item_id(
+		GameItemCatalogService.STORAGE_PLAYER,
+		config.prepared_bait_item_domain_id
+	)
+	items.grant(bait_id, 1, false)
+	service.try_begin_cast(false)
+	var generation: Dictionary = service.get_specimen_generation_context()
+	var valid: bool = (
+		service.get_bite_attraction_multiplier() > 1.0
+		and bool(generation.get("prepared_bait_quality_active", false))
+		and float(generation.get("prepared_bait_quality_bonus_chance", 0.0)) > 0.0
+		and int(generation.get("prepared_bait_quality_bonus_rolls", 0)) > 0
+	)
+	_record(
+		report,
+		"Prepared bait exposes per-cast attraction and natural quality-roll bonuses",
+		valid,
+		"The live bonus must improve fishing opportunity/quality rather than directly inflating fish sell prices."
+	)
+	_free_prepared_bait_gameplay_setup(setup)
+
+
+static func _test_prepared_bait_cast_cleanup(
+	report: Dictionary,
+	config: FishingEconomyConfig,
+	catalog: GameItemCatalogService
+) -> void:
+	var setup: Dictionary = _make_prepared_bait_gameplay_setup(config, catalog)
+	var service := setup.get("prepared_bait", null) as FishingPreparedBaitService
+	var items := setup.get("items", null) as PlayerItemInventory
+	var bait_id := catalog.make_item_id(
+		GameItemCatalogService.STORAGE_PLAYER,
+		config.prepared_bait_item_domain_id
+	)
+	items.grant(bait_id, 2, false)
+	service.try_begin_cast(false)
+	service.clear_cast(&"qa_cleanup")
+	var valid: bool = (
+		not service.is_cast_baited()
+		and absf(service.get_bite_attraction_multiplier() - 1.0) < 0.0001
+		and items.get_count(bait_id) == 1
+	)
+	_record(
+		report,
+		"Prepared-bait bonuses end with the cast and never consume twice on cleanup",
+		valid,
+		"Per-cast bait state must not leak into the next throw or delete another portion."
+	)
+	_free_prepared_bait_gameplay_setup(setup)
+
+
+static func _make_prepared_bait_gameplay_setup(
+	config: FishingEconomyConfig,
+	catalog: GameItemCatalogService
+) -> Dictionary:
+	var items := PlayerInventoryScript.new() as PlayerItemInventory
+	var fishing := FishingInventoryScript.new() as FishingInventory
+	var facade := InventoryFacadeScript.new() as GameInventoryFacade
+	facade.configure(catalog, items, fishing)
+	var transaction := TransactionServiceScript.new() as GameItemTransactionService
+	transaction.configure(catalog, items, facade, fishing)
+	var prepared_bait := PreparedBaitServiceScript.new() as FishingPreparedBaitService
+	prepared_bait.configure(config, catalog, items, transaction)
+	return {
+		"items": items,
+		"fishing": fishing,
+		"facade": facade,
+		"transaction": transaction,
+		"prepared_bait": prepared_bait,
+	}
+
+
+static func _free_prepared_bait_gameplay_setup(setup: Dictionary) -> void:
+	for key in ["prepared_bait", "transaction", "facade", "fishing", "items"]:
+		var node = setup.get(key, null)
+		if node is Node:
+			(node as Node).queue_free()
 
 
 static func _make_cooking_setup(

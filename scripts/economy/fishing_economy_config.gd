@@ -34,6 +34,15 @@ class_name FishingEconomyConfig
 @export_range(1, 99, 1) var portions_per_bait_batch: int = 3
 @export var common_bait_fish_ids: PackedStringArray = PackedStringArray()
 
+@export_category("Prepared Bait Gameplay")
+@export var prepared_bait_auto_use_default: bool = true
+@export_range(1.0, 2.0, 0.01)
+var prepared_bait_bite_attraction_multiplier: float = 1.20
+@export_range(0.0, 0.75, 0.01)
+var prepared_bait_quality_bonus_roll_chance: float = 0.30
+@export_range(0, 2, 1)
+var prepared_bait_quality_bonus_rolls: int = 1
+
 
 func get_fish_sell_price(
 	species_id: StringName,
@@ -103,6 +112,10 @@ func get_prepared_bait_recipe_snapshot() -> Dictionary:
 		"herbs_per_batch": maxi(1, herbs_per_bait_batch),
 		"portions_per_batch": maxi(1, portions_per_bait_batch),
 		"common_bait_fish_ids": common_bait_fish_ids.duplicate(),
+		"auto_use_default": prepared_bait_auto_use_default,
+		"bite_attraction_multiplier": prepared_bait_bite_attraction_multiplier,
+		"quality_bonus_roll_chance": prepared_bait_quality_bonus_roll_chance,
+		"quality_bonus_rolls": prepared_bait_quality_bonus_rolls,
 	}
 
 
@@ -120,6 +133,12 @@ func validate_shape() -> Dictionary:
 		errors.append("prepared bait herb material id is empty")
 	if common_bait_fish_ids.is_empty():
 		errors.append("prepared bait has no eligible common fish")
+	if prepared_bait_bite_attraction_multiplier < 1.0:
+		errors.append("prepared bait attraction multiplier must not reduce bites")
+	if prepared_bait_quality_bonus_roll_chance < 0.0:
+		errors.append("prepared bait quality chance cannot be negative")
+	if prepared_bait_quality_bonus_rolls < 0:
+		errors.append("prepared bait quality rolls cannot be negative")
 	return {
 		"valid": errors.is_empty(),
 		"errors": errors,

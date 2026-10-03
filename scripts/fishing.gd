@@ -129,6 +129,7 @@ var fishing_trade_service: FishingTradeService = null
 var fishing_economy_service = null
 var fishing_economy_access = null
 var fishing_session_modifier_service = null
+var fishing_prepared_bait_service: FishingPreparedBaitService = null
 var fishing_environment_service = null
 var fishing_fish_consumable_service = null
 var fishing_unlock_state: FishingUnlockState = null
@@ -139,6 +140,7 @@ var fishing_economy_menu: CanvasLayer = null
 var catch_record_result: Dictionary = {}
 var last_lure_loss_result: Dictionary = {}
 var last_outcome_result: Dictionary = {}
+var last_prepared_bait_use_result: Dictionary = {}
 var outcome_service = null
 
 var locked_cast_power: float = 0.0
@@ -233,6 +235,7 @@ func _ready() -> void:
 	fishing_economy_service = session_services.economy_service
 	fishing_economy_access = session_services.economy_access
 	fishing_session_modifier_service = session_services.session_modifier_service
+	fishing_prepared_bait_service = session_services.prepared_bait_service
 	fishing_environment_service = session_services.environment_service
 	fishing_fish_consumable_service = session_services.fish_consumable_service
 	fishing_unlock_state = session_services.unlock_state
@@ -251,6 +254,14 @@ func _ready() -> void:
 	):
 		encounter.set_session_modifier_service(
 			fishing_session_modifier_service
+		)
+
+	if (
+		encounter != null
+		and encounter.has_method("set_prepared_bait_service")
+	):
+		encounter.set_prepared_bait_service(
+			fishing_prepared_bait_service
 		)
 
 	if (
@@ -619,6 +630,8 @@ func _on_mode_changed(new_mode) -> void:
 	set_process_unhandled_input(active)
 
 	if not active:
+		if fishing_prepared_bait_service != null:
+			fishing_prepared_bait_service.clear_cast(&"fishing_exit")
 		if fishing_economy_menu != null and fishing_economy_menu.has_method("is_open"):
 			if bool(fishing_economy_menu.is_open()):
 				fishing_economy_menu.close_menu()
@@ -1209,6 +1222,9 @@ func _on_bait_returned() -> void:
 	if phase != Phase.IN_WATER and phase != Phase.FIGHT:
 		return
 
+	if phase == Phase.IN_WATER and fishing_prepared_bait_service != null:
+		fishing_prepared_bait_service.clear_cast(&"bait_returned")
+
 	technique_detector.reset()
 	technique_view.clear()
 
@@ -1476,6 +1492,8 @@ func _on_fish_caught(fish: FishInstance) -> void:
 		_build_catch_record_context(),
 		should_record
 	)
+	if fishing_prepared_bait_service != null:
+		fishing_prepared_bait_service.clear_cast(&"catch_completed")
 
 	var raw_catch_result: Variant = last_outcome_result.get(
 		"catch_result",
@@ -1503,7 +1521,17 @@ func _build_catch_record_context() -> Dictionary:
 		"spot_name": "",
 		"lure_id": "",
 		"lure_name": "",
+		"prepared_bait_used": false,
+		"prepared_bait_item_id": "",
 	}
+
+	if fishing_prepared_bait_service != null:
+		context["prepared_bait_used"] = (
+			fishing_prepared_bait_service.is_cast_baited()
+		)
+		context["prepared_bait_item_id"] = String(
+			fishing_prepared_bait_service.get_prepared_bait_item_id()
+		)
 
 	var zone = game_mode.active_fish_zone if game_mode != null else null
 	if zone != null and zone.has_method("get_fishing_spot"):
@@ -1708,6 +1736,8 @@ func _resolve_failed_fight(outcome: StringName) -> void:
 		return
 
 	last_outcome_result = result.duplicate(true)
+	if fishing_prepared_bait_service != null:
+		fishing_prepared_bait_service.clear_cast(outcome)
 	var raw_lure_loss: Variant = result.get("lure_loss", {})
 	last_lure_loss_result = (
 		(raw_lure_loss as Dictionary).duplicate(true)
@@ -1933,6 +1963,14 @@ func _commit_curved_cast() -> void:
 			"Fishing: caster failed to create bait; keeping cast selection active."
 		)
 		return
+
+	# Only a successfully created bait can consume prepared bait. The cast remains
+	# legal if no prepared bait is owned or if its persistence transaction fails.
+	last_prepared_bait_use_result = {}
+	if fishing_prepared_bait_service != null:
+		last_prepared_bait_use_result = (
+			fishing_prepared_bait_service.try_begin_cast(true)
+		)
 
 	# Only a successfully created bait commits the cast visually/state-wise.
 	power.confirm_locked()

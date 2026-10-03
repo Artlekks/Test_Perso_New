@@ -1,17 +1,19 @@
-[gd_resource type="Resource" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="BeachCraftingCatalog" format=3 uid="uid://ddm800mk1esog"]
 
-[ext_resource type="Script" path="res://scripts/beach_crafting_catalog.gd" id="1_catalog"]
-[ext_resource type="Resource" path="res://data/crafting/beach/materials/driftwood.tres" id="2_m1"]
-[ext_resource type="Resource" path="res://data/crafting/beach/materials/shell.tres" id="3_m2"]
-[ext_resource type="Resource" path="res://data/crafting/beach/materials/sea_glass.tres" id="4_m3"]
-[ext_resource type="Resource" path="res://data/crafting/beach/materials/iron_scrap.tres" id="5_m4"]
-[ext_resource type="Resource" path="res://data/crafting/beach/materials/seaweed_fibre.tres" id="6_m5"]
+[ext_resource type="Script" uid="uid://c42k1scqnhv3l" path="res://scripts/beach_crafting_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" uid="uid://uexiqy3jjgxr" path="res://scripts/beach_material_definition.gd" id="1_xx7p8"]
+[ext_resource type="Resource" uid="uid://b0v4dpmiafc7w" path="res://data/crafting/beach/materials/driftwood.tres" id="2_m1"]
+[ext_resource type="Resource" uid="uid://xc5d282871hx" path="res://data/crafting/beach/materials/shell.tres" id="3_m2"]
+[ext_resource type="Resource" uid="uid://bmtf04fw3p72w" path="res://data/crafting/beach/materials/sea_glass.tres" id="4_m3"]
+[ext_resource type="Resource" uid="uid://ba6g04ypkuf3u" path="res://data/crafting/beach/materials/iron_scrap.tres" id="5_m4"]
+[ext_resource type="Resource" uid="uid://c5cawua6locm3" path="res://data/crafting/beach/materials/seaweed_fibre.tres" id="6_m5"]
 [ext_resource type="Resource" path="res://data/crafting/beach/materials/coastal_herb.tres" id="7_m6"]
+[ext_resource type="Script" uid="uid://wloldh6n6b3d" path="res://scripts/beach_crafting_recipe.gd" id="8_gpvsj"]
 [ext_resource type="Resource" path="res://data/crafting/beach/recipes/beach_minnow.tres" id="8_r1"]
 [ext_resource type="Resource" path="res://data/crafting/beach/recipes/beach_surface.tres" id="9_r2"]
 [ext_resource type="Resource" path="res://data/crafting/beach/recipes/beach_sinker.tres" id="10_r3"]
 
 [resource]
 script = ExtResource("1_catalog")
-materials = Array[Resource]([ExtResource("2_m1"), ExtResource("3_m2"), ExtResource("4_m3"), ExtResource("5_m4"), ExtResource("6_m5"), ExtResource("7_m6")])
-recipes = Array[Resource]([ExtResource("8_r1"), ExtResource("9_r2"), ExtResource("10_r3")])
+materials = Array[ExtResource("1_xx7p8")]([ExtResource("2_m1"), ExtResource("3_m2"), ExtResource("4_m3"), ExtResource("5_m4"), ExtResource("6_m5"), ExtResource("7_m6")])
+recipes = Array[ExtResource("8_gpvsj")]([ExtResource("8_r1"), ExtResource("9_r2"), ExtResource("10_r3")])

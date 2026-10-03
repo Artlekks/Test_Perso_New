@@ -146,6 +146,47 @@ static func _roll_internal(
 				selected = session_candidate
 				session_selected_better_candidate = true
 
+	var prepared_bait_quality_active: bool = bool(
+		mercy_context.get("prepared_bait_quality_active", false)
+	)
+	var prepared_bait_quality_chance: float = clampf(
+		float(mercy_context.get("prepared_bait_quality_bonus_chance", 0.0)),
+		0.0,
+		0.75
+	)
+	var prepared_bait_quality_rolls: int = clampi(
+		int(mercy_context.get("prepared_bait_quality_bonus_rolls", 0)),
+		0,
+		2
+	)
+	var prepared_bait_bonus_rolls_used: int = 0
+	var prepared_bait_selected_better_candidate: bool = false
+
+	# Prepared bait improves specimen odds with extra natural rolls. It never
+	# fabricates a size or overrides deterministic QA specimen forcing.
+	if king_override != -1:
+		prepared_bait_quality_active = false
+
+	if prepared_bait_quality_active and prepared_bait_quality_chance > 0.0:
+		for _bait_index in range(prepared_bait_quality_rolls):
+			if _randf(rng) >= prepared_bait_quality_chance:
+				continue
+
+			var bait_candidate: Dictionary = _base_roll(
+				data,
+				-1,
+				rng
+			)
+			var bait_candidate_size: float = float(
+				bait_candidate.get("size", 0.0)
+			)
+			candidate_sizes.append(bait_candidate_size)
+			prepared_bait_bonus_rolls_used += 1
+
+			if bait_candidate_size > float(selected.get("size", 0.0)):
+				selected = bait_candidate
+				prepared_bait_selected_better_candidate = true
+
 	var environment_quality_active: bool = bool(
 		mercy_context.get("environment_quality_active", false)
 	)
@@ -204,6 +245,16 @@ static func _roll_internal(
 	result["session_quality_bonus_rolls_used"] = session_bonus_rolls_used
 	result["session_quality_selected_better_candidate"] = (
 		session_selected_better_candidate
+	)
+	result["prepared_bait_quality_active"] = prepared_bait_quality_active
+	result["prepared_bait_quality_bonus_chance"] = (
+		prepared_bait_quality_chance if prepared_bait_quality_active else 0.0
+	)
+	result["prepared_bait_quality_bonus_rolls_used"] = (
+		prepared_bait_bonus_rolls_used
+	)
+	result["prepared_bait_quality_selected_better_candidate"] = (
+		prepared_bait_selected_better_candidate
 	)
 	result["environment_quality_active"] = environment_quality_active
 	result["environment_quality_bonus_chance"] = (
