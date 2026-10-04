@@ -33,6 +33,10 @@ static func run(
 	_record(report, "Tide Sense exposes observation capability", tide_sense != null and tide_sense.has_capability(&"tide_sense"), "Tide interpretation should query mastery capability instead of changing the tide itself.")
 	_record(report, "Tide Sense builds on current reading", _has_prerequisite(catalog, &"tide_sense", &"read_current"), "Tidal knowledge should build on understanding moving water.")
 	_record(report, "Tide Sense builds on weather reading", _has_prerequisite(catalog, &"tide_sense", &"weather_sense"), "Tides belong to advanced environmental fieldcraft rather than an isolated rank unlock.")
+	var deep_water_control := catalog.get_technique(&"deep_water_control") if catalog != null else null
+	_record(report, "Deep-Water Control is authored", deep_water_control != null, "Long vertical fights need a real master-taught control technique rather than a hidden pressure modifier.")
+	_record(report, "Deep-Water Control exposes fight capability", deep_water_control != null and deep_water_control.has_capability(&"deep_water_control"), "Encounter should query one stable mastery capability for trained deep-water recovery.")
+	_record(report, "Deep-Water Control builds on Line Feel and Read Depth", _has_prerequisite(catalog, &"deep_water_control", &"line_feel") and _has_prerequisite(catalog, &"deep_water_control", &"read_depth"), "The advanced vertical technique should require both pressure awareness and depth reading.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
 	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
 	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
@@ -77,6 +81,24 @@ static func run(
 		false
 	)
 	_record(report, "Tide Sense becomes runtime capability", bool(tide_learned.get("success", false)) and service.has_capability(&"tide_sense") and bool(service.get_snapshot().get("can_read_tide", false)), "The tide readout needs one persistent mastery capability without granting any tide bonus.")
+
+	var deep_before_prereqs := service.can_learn(
+		&"deep_water_control",
+		deep_water_control.teacher_id if deep_water_control != null else &""
+	)
+	_record(report, "Deep-Water Control waits for prerequisites", str(deep_before_prereqs.get("reason", "")) == "missing_prerequisite", "The deep-water veteran should require Line Feel and Read Depth before teaching the vertical recovery technique.")
+	var deep_line_feel := catalog.get_technique(&"line_feel") if catalog != null else null
+	var deep_read_depth := catalog.get_technique(&"read_depth") if catalog != null else null
+	if deep_line_feel != null:
+		service.learn_technique(&"line_feel", deep_line_feel.teacher_id, false)
+	if deep_read_depth != null:
+		service.learn_technique(&"read_depth", deep_read_depth.teacher_id, false)
+	var deep_learned := service.learn_technique(
+		&"deep_water_control",
+		deep_water_control.teacher_id if deep_water_control != null else &"",
+		false
+	)
+	_record(report, "Deep-Water Control becomes runtime capability", bool(deep_learned.get("success", false)) and service.has_capability(&"deep_water_control") and bool(service.get_snapshot().get("can_control_deep_water", false)), "The live fight needs one persistent gate for the trained second-stage deep-water response.")
 
 	var read_structure := catalog.get_technique(&"read_structure") if catalog != null else null
 	var line_feel := catalog.get_technique(&"line_feel") if catalog != null else null

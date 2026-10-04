@@ -105,6 +105,9 @@ const FishingWeatherSenseQAScript = preload(
 const FishingTideSenseQAScript = preload(
 	"res://scripts/fishing_tide_sense_qa.gd"
 )
+const FishingDeepWaterControlQAScript = preload(
+	"res://scripts/fishing_deep_water_control_qa.gd"
+)
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
 )
@@ -199,6 +202,9 @@ const FishingMasteryTechniqueCatalogResource: FishingMasteryTechniqueCatalog = p
 const FishingTideSenseTechniqueResource: FishingMasteryTechniqueDefinition = preload(
 	"res://data/bof4/mastery/tide_sense.tres"
 )
+const FishingDeepWaterControlTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/deep_water_control.tres"
+)
 const FishingMasteryQASpotResource: FishingSpotData = preload(
 	"res://data/bof4/spots/ocean_2.tres"
 )
@@ -242,6 +248,7 @@ var run_reading_qa_report: Dictionary = {}
 var aerial_control_qa_report: Dictionary = {}
 var weather_sense_qa_report: Dictionary = {}
 var tide_sense_qa_report: Dictionary = {}
+var deep_water_control_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -600,6 +607,9 @@ func initialize() -> void:
 		FishingMasteryTechniqueCatalogResource.ensure_technique(
 			FishingTideSenseTechniqueResource
 		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingDeepWaterControlTechniqueResource
+		)
 
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
 	mastery_service.name = "FishingMasteryService"
@@ -799,6 +809,22 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Tide Sense QA: %s" % str(failure))
+
+		deep_water_control_qa_report = FishingDeepWaterControlQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Deep-Water Control QA: %d/%d tests passed."
+			% [
+				int(deep_water_control_qa_report.get("passed_count", 0)),
+				int(deep_water_control_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in deep_water_control_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Deep-Water Control QA: %s" % str(failure))
 
 	fish_consumable_service = FishingFishConsumableServiceScript.new()
 	fish_consumable_service.name = "FishingFishConsumableService"
@@ -1226,6 +1252,10 @@ func get_fishing_tide_sense_snapshot() -> Dictionary:
 	):
 		return {}
 	return environment_service.get_tide_sense_snapshot()
+
+
+func get_fishing_deep_water_control_qa_report() -> Dictionary:
+	return deep_water_control_qa_report.duplicate(true)
 
 
 func get_fishing_tide_service() -> FishingTideService:

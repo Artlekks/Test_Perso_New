@@ -30,6 +30,9 @@ const RunReadingPolicy = preload(
 const AerialControlPolicy = preload(
 	"res://scripts/fishing_aerial_control_policy.gd"
 )
+const DeepWaterControlPolicy = preload(
+	"res://scripts/fishing_deep_water_control_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_commit_ready(snapshot: Dictionary)
@@ -61,6 +64,8 @@ signal pump_reel_state_changed(snapshot: Dictionary)
 signal run_read_state_changed(snapshot: Dictionary)
 signal fish_aerial_started(snapshot: Dictionary)
 signal aerial_control_state_changed(snapshot: Dictionary)
+signal deep_water_load_started(snapshot: Dictionary)
+signal deep_water_control_state_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -196,6 +201,19 @@ var aerial_control_success_count: int = 0
 var aerial_control_intent_snapshot: Dictionary = {}
 var aerial_control_profile: FishBehaviorProfile = null
 var aerial_control_hook_security: float = 1.0
+var deep_water_control_active: bool = false
+var deep_water_control_phase: StringName = DeepWaterControlPolicy.PHASE_NONE
+var deep_water_delay_left: float = 0.0
+var deep_water_window_left: float = 0.0
+var deep_water_match_time: float = 0.0
+var deep_water_cooldown_left: float = 0.0
+var deep_water_last_result: StringName = DeepWaterControlPolicy.RESULT_IDLE
+var deep_water_success_count: int = 0
+var deep_water_intent_snapshot: Dictionary = {}
+var deep_water_mastery_known: bool = false
+var deep_water_current_depth_m: float = 0.0
+var deep_water_total_depth_m: float = 0.0
+var deep_water_load_impulse: float = 0.0
 
 enum FightState {
 	NONE,
@@ -907,6 +925,7 @@ func _process(delta: float) -> void:
 	_update_pump_reel(delta)
 	_update_run_read(delta)
 	_update_aerial_control(delta)
+	_update_deep_water_control(delta)
 	_update_structure_combat(delta)
 	_update_final_surge_state()
 
@@ -1702,6 +1721,239 @@ func get_aerial_control_snapshot() -> Dictionary:
 	)
 
 
+
+func _refresh_deep_water_depths() -> void:
+	deep_water_current_depth_m = 0.0
+	deep_water_total_depth_m = 0.0
+	if caster == null:
+		return
+	if caster.has_method("get_current_bait_depth"):
+		deep_water_current_depth_m = maxf(
+			float(caster.get_current_bait_depth()),
+			0.0
+		)
+	if caster.has_method("get_current_total_depth"):
+		deep_water_total_depth_m = maxf(
+			float(caster.get_current_total_depth()),
+			0.0
+		)
+
+
+func _try_start_deep_water_control(intent_snapshot: Dictionary) -> bool:
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or deep_water_control_active
+		or caster == null
+	):
+		return false
+
+	_refresh_deep_water_depths()
+	if not DeepWaterControlPolicy.should_start(
+		intent_snapshot,
+		deep_water_current_depth_m,
+		deep_water_total_depth_m,
+		deep_water_cooldown_left
+	):
+		return false
+
+	deep_water_control_active = true
+	deep_water_control_phase = DeepWaterControlPolicy.PHASE_FOLLOW
+	deep_water_delay_left = DeepWaterControlPolicy.get_follow_delay_seconds(
+		intent_snapshot
+	)
+	deep_water_window_left = 0.0
+	deep_water_match_time = 0.0
+	deep_water_last_result = DeepWaterControlPolicy.RESULT_FOLLOWING
+	deep_water_intent_snapshot = intent_snapshot.duplicate(true)
+	deep_water_mastery_known = _has_mastery_capability(
+		&"deep_water_control"
+	)
+	deep_water_load_impulse = 0.0
+
+	deep_water_control_state_changed.emit(
+		get_deep_water_control_snapshot().duplicate(true)
+	)
+	return true
+
+
+func _update_deep_water_control(delta: float) -> void:
+	if deep_water_cooldown_left > 0.0:
+		deep_water_cooldown_left = maxf(
+			deep_water_cooldown_left - maxf(delta, 0.0),
+			0.0
+		)
+
+	if not deep_water_control_active:
+		return
+
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or not lifecycle.is_hooked()
+	):
+		_cancel_deep_water_control(true)
+		return
+
+	_refresh_deep_water_depths()
+
+	if deep_water_control_phase == DeepWaterControlPolicy.PHASE_FOLLOW:
+		deep_water_delay_left = maxf(
+			deep_water_delay_left - maxf(delta, 0.0),
+			0.0
+		)
+		if deep_water_delay_left <= 0.0:
+			_apply_deep_water_load()
+		return
+
+	if deep_water_control_phase != DeepWaterControlPolicy.PHASE_RECOVER:
+		_cancel_deep_water_control(true)
+		return
+
+	var matches := DeepWaterControlPolicy.is_recovery_response_matching(
+		player_reeling,
+		player_tension_bias
+	)
+	deep_water_match_time = DeepWaterControlPolicy.advance_match_time(
+		deep_water_match_time,
+		matches,
+		delta
+	)
+
+	if DeepWaterControlPolicy.is_recovery_complete(
+		deep_water_match_time
+	):
+		_complete_deep_water_control()
+		return
+
+	deep_water_window_left = maxf(
+		deep_water_window_left - maxf(delta, 0.0),
+		0.0
+	)
+	if deep_water_window_left <= 0.0:
+		_fail_deep_water_control()
+
+
+func _apply_deep_water_load() -> void:
+	if not deep_water_control_active:
+		return
+
+	deep_water_load_impulse = DeepWaterControlPolicy.get_delayed_load_impulse(
+		deep_water_intent_snapshot,
+		deep_water_current_depth_m,
+		deep_water_total_depth_m
+	)
+	if tension != null:
+		tension.add_impulse(deep_water_load_impulse)
+
+	deep_water_load_started.emit(
+		get_deep_water_control_snapshot().duplicate(true)
+	)
+
+	if not deep_water_mastery_known:
+		deep_water_control_active = false
+		deep_water_control_phase = DeepWaterControlPolicy.PHASE_NONE
+		deep_water_last_result = DeepWaterControlPolicy.RESULT_UNCONTROLLED
+		deep_water_cooldown_left = DeepWaterControlPolicy.EVENT_COOLDOWN_SECONDS
+		deep_water_control_state_changed.emit(
+			get_deep_water_control_snapshot().duplicate(true)
+		)
+		return
+
+	deep_water_control_phase = DeepWaterControlPolicy.PHASE_RECOVER
+	deep_water_window_left = DeepWaterControlPolicy.get_recovery_window_seconds(
+		deep_water_intent_snapshot
+	)
+	deep_water_match_time = 0.0
+	deep_water_last_result = DeepWaterControlPolicy.RESULT_RECOVERING
+	deep_water_control_state_changed.emit(
+		get_deep_water_control_snapshot().duplicate(true)
+	)
+
+
+func _complete_deep_water_control() -> void:
+	if not deep_water_control_active:
+		return
+
+	deep_water_control_active = false
+	deep_water_control_phase = DeepWaterControlPolicy.PHASE_NONE
+	deep_water_window_left = 0.0
+	deep_water_match_time = DeepWaterControlPolicy.RECOVERY_HOLD_SECONDS
+	deep_water_last_result = DeepWaterControlPolicy.RESULT_SUCCESS
+	deep_water_success_count += 1
+	deep_water_cooldown_left = DeepWaterControlPolicy.EVENT_COOLDOWN_SECONDS
+
+	if tension != null:
+		tension.add_impulse(
+			DeepWaterControlPolicy.get_success_relief_impulse(
+				deep_water_load_impulse,
+				deep_water_intent_snapshot
+			)
+		)
+
+	if fight_state == FightState.RESISTING:
+		var max_stamina := _get_max_stamina()
+		var bonus_ratio := DeepWaterControlPolicy.get_stamina_bonus_ratio(
+			deep_water_intent_snapshot
+		)
+		fish_stamina = maxf(
+			fish_stamina - max_stamina * bonus_ratio,
+			0.0
+		)
+		fish_stamina_changed.emit(fish_stamina, max_stamina)
+
+	deep_water_control_state_changed.emit(
+		get_deep_water_control_snapshot().duplicate(true)
+	)
+
+
+func _fail_deep_water_control() -> void:
+	if not deep_water_control_active:
+		return
+
+	deep_water_control_active = false
+	deep_water_control_phase = DeepWaterControlPolicy.PHASE_NONE
+	deep_water_window_left = 0.0
+	deep_water_match_time = 0.0
+	deep_water_last_result = DeepWaterControlPolicy.RESULT_MISSED
+	deep_water_cooldown_left = DeepWaterControlPolicy.EVENT_COOLDOWN_SECONDS
+	deep_water_control_state_changed.emit(
+		get_deep_water_control_snapshot().duplicate(true)
+	)
+
+
+func _cancel_deep_water_control(mark_cancelled: bool) -> void:
+	if not deep_water_control_active and not mark_cancelled:
+		return
+	deep_water_control_active = false
+	deep_water_control_phase = DeepWaterControlPolicy.PHASE_NONE
+	deep_water_delay_left = 0.0
+	deep_water_window_left = 0.0
+	deep_water_match_time = 0.0
+	if mark_cancelled:
+		deep_water_last_result = DeepWaterControlPolicy.RESULT_CANCELLED
+	deep_water_control_state_changed.emit(
+		get_deep_water_control_snapshot().duplicate(true)
+	)
+
+
+func get_deep_water_control_snapshot() -> Dictionary:
+	return DeepWaterControlPolicy.build_snapshot(
+		deep_water_control_active,
+		deep_water_control_phase,
+		deep_water_delay_left,
+		deep_water_window_left,
+		deep_water_match_time,
+		deep_water_last_result,
+		deep_water_success_count,
+		deep_water_intent_snapshot,
+		deep_water_mastery_known,
+		deep_water_current_depth_m,
+		deep_water_total_depth_m,
+		deep_water_load_impulse,
+		deep_water_cooldown_left
+	)
+
 func _react_to_reel_release() -> void:
 	if fight_state == FightState.NONE:
 		return
@@ -2431,6 +2683,7 @@ func _on_fish_behavior_intent_started(snapshot: Dictionary) -> void:
 		if _try_start_aerial_control(current_fight_intent):
 			return
 		_start_run_read(current_fight_intent)
+		_try_start_deep_water_control(current_fight_intent)
 
 
 func _update_line_pressure_state() -> void:
@@ -2632,6 +2885,19 @@ func _reset_fight_readouts() -> void:
 	aerial_control_intent_snapshot.clear()
 	aerial_control_profile = null
 	aerial_control_hook_security = 1.0
+	deep_water_control_active = false
+	deep_water_control_phase = DeepWaterControlPolicy.PHASE_NONE
+	deep_water_delay_left = 0.0
+	deep_water_window_left = 0.0
+	deep_water_match_time = 0.0
+	deep_water_cooldown_left = 0.0
+	deep_water_last_result = DeepWaterControlPolicy.RESULT_IDLE
+	deep_water_success_count = 0
+	deep_water_intent_snapshot.clear()
+	deep_water_mastery_known = false
+	deep_water_current_depth_m = 0.0
+	deep_water_total_depth_m = 0.0
+	deep_water_load_impulse = 0.0
 	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})
