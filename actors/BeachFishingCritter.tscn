@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/beach_fishing_critter.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_critter_frames.tres" id="2_frames"]
+
+[node name="BeachFishingCritter" type="Node3D"]
+process_mode = 3
+script = ExtResource("1_script")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+billboard = 1
+alpha_cut = 1
+texture_filter = 0
+pixel_size = 0.012
+sprite_frames = ExtResource("2_frames")
+animation = &"green_e"
+autoplay = "green_e"

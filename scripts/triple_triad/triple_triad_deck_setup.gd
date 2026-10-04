@@ -433,11 +433,11 @@ func _ensure_cost_label(view: Control) -> Control:
 	return digit
 
 
-func _refresh_cost_label(view: Control, card, show: bool = true) -> void:
+func _refresh_cost_label(view: Control, card, should_show: bool = true) -> void:
 	var digit := _ensure_cost_label(view)
 	if digit == null:
 		return
-	digit.visible = show and card != null
+	digit.visible = should_show and card != null
 	if not digit.visible:
 		return
 	# Authored deck costs use the same 0-9 digit strip as card power values.

@@ -5,8 +5,14 @@ signal opened
 signal closed
 
 const ROW_COUNT := 5
-const ROW_START_Y := 139.0
-const ROW_HEIGHT := 32.0
+const ROW_START_Y := 133.0
+const ROW_HEIGHT := 31.0
+
+const ICON_RAMHORN := preload("res://assets/ui/card_maker/cards/ramhorn.png")
+const ICON_GLOW_RAM := preload("res://assets/ui/card_maker/cards/glow_ram.png")
+const ICON_SAND_HOUND := preload("res://assets/ui/card_maker/cards/sand_hound.png")
+const ICON_STRAY_CAT := preload("res://assets/ui/card_maker/cards/stray_cat.png")
+const ICON_HARBOR_CAT := preload("res://assets/ui/card_maker/cards/harbor_cat.png")
 
 const READY_COLOR := Color(0.16, 0.10, 0.13, 1.0)
 const BLOCKED_COLOR := Color(0.40, 0.35, 0.36, 1.0)
@@ -21,6 +27,11 @@ const SELECTED_COLOR := Color(0.12, 0.07, 0.10, 1.0)
 @onready var owned_label: Label = $Root/Panel/OwnedLabel
 @onready var status_label: Label = $Root/Panel/StatusLabel
 @onready var help_label: Label = $Root/Panel/HelpLabel
+@onready var selected_name_label: Label = $Root/Panel/SelectedNameLabel
+@onready var selected_description_label: Label = $Root/Panel/SelectedDescriptionLabel
+@onready var selected_preview: TextureRect = $Root/Panel/SelectedPreview
+@onready var selected_small_preview: TextureRect = $Root/Panel/SelectedSmallPreview
+@onready var fee_value_label: Label = $Root/Panel/FeeValueLabel
 @onready var confirm_panel: Panel = $Root/ConfirmPanel
 @onready var confirm_prompt: Label = $Root/ConfirmPanel/PromptLabel
 @onready var confirm_choice: Label = $Root/ConfirmPanel/ChoiceLabel
@@ -45,6 +56,14 @@ const SELECTED_COLOR := Color(0.12, 0.07, 0.10, 1.0)
 	$Root/Panel/Rows/Row3Owned,
 	$Root/Panel/Rows/Row4Owned,
 	$Root/Panel/Rows/Row5Owned,
+]
+
+@onready var row_icons: Array[TextureRect] = [
+	$Root/Panel/Rows/Row1Icon,
+	$Root/Panel/Rows/Row2Icon,
+	$Root/Panel/Rows/Row3Icon,
+	$Root/Panel/Rows/Row4Icon,
+	$Root/Panel/Rows/Row5Icon,
 ]
 
 var _service: FishingCardMakerService = null
@@ -236,17 +255,22 @@ func _refresh() -> void:
 
 	if _entries.is_empty():
 		_index = 0
-		zenny_label.text = "Zenny  ---"
+		zenny_label.text = "Zenny ---"
 		status_label.text = "Card Maker unavailable."
 		for i in range(ROW_COUNT):
 			_clear_row(i)
 		selection_bar.visible = false
 		selection_cursor.visible = false
+		selected_name_label.text = ""
+		selected_description_label.text = ""
+		selected_preview.texture = null
+		selected_small_preview.texture = null
+		fee_value_label.text = "---"
 		return
 
 	_index = clampi(_index, 0, _entries.size() - 1)
 	var selected: Dictionary = _entries[_index]
-	zenny_label.text = "Zenny  %d" % int(selected.get("zenny_owned", 0))
+	zenny_label.text = "Zenny %d" % int(selected.get("zenny_owned", 0))
 
 	for i in range(ROW_COUNT):
 		if i >= _entries.size():
@@ -257,11 +281,13 @@ func _refresh() -> void:
 		var row_color: Color = READY_COLOR if is_ready else BLOCKED_COLOR
 		if i == _index:
 			row_color = SELECTED_COLOR if is_ready else BLOCKED_COLOR
-		row_name_labels[i].text = str(
+		var display_name: String = str(
 			quote.get("card_display_name", quote.get("display_name", "Card"))
 		)
+		row_name_labels[i].text = display_name
 		row_owned_labels[i].text = "x%d" % int(quote.get("card_quantity_before", 0))
 		row_cost_labels[i].text = _short_cost_text(quote)
+		row_icons[i].texture = _icon_for_card(display_name)
 		row_name_labels[i].modulate = row_color
 		row_owned_labels[i].modulate = row_color
 		row_cost_labels[i].modulate = row_color
@@ -269,36 +295,45 @@ func _refresh() -> void:
 	selection_bar.visible = true
 	selection_cursor.visible = true
 	selection_bar.position.y = ROW_START_Y + float(_index) * ROW_HEIGHT
-	selection_cursor.position.y = ROW_START_Y + 13.0 + float(_index) * ROW_HEIGHT
+	selection_cursor.position.y = ROW_START_Y + 15.0 + float(_index) * ROW_HEIGHT
+
+	var selected_name: String = str(
+		selected.get("card_display_name", selected.get("display_name", "Card"))
+	)
+	selected_name_label.text = selected_name
+	selected_description_label.text = str(selected.get("description", ""))
+	selected_preview.texture = _icon_for_card(selected_name)
+	selected_small_preview.texture = selected_preview.texture
 
 	var duplicate_print: bool = bool(selected.get("is_duplicate_print", false))
 	mode_label.text = "DUPLICATE PRINT" if duplicate_print else "FIRST CREATION"
-	owned_label.text = "Card owned: x%d" % int(selected.get("card_quantity_before", 0))
+	owned_label.text = "Owned x%d" % int(selected.get("card_quantity_before", 0))
 	var fish_required: int = int(selected.get("fish_required", 0))
 	var fish_owned: int = int(selected.get("fish_owned", 0))
 	var fish_name: String = str(selected.get("fish_display_name", selected.get("fish_species_id", "Fish")))
 	var fee: int = int(selected.get("zenny_required", 0))
 	if fish_required > 0:
-		requirement_label.text = "%s  %d/%d     Fee  %dz" % [
+		requirement_label.text = "%s\n%d / %d" % [
 			fish_name,
 			fish_owned,
 			fish_required,
-			fee,
 		]
 	else:
-		requirement_label.text = "No specimen needed     Fee  %dz" % fee
+		requirement_label.text = "No specimen\nneeded"
+	fee_value_label.text = "%dz" % fee
 
 	if not _message.is_empty():
 		status_label.text = _message
 	else:
 		status_label.text = _reason_text(selected)
-	help_label.text = "W/S Select     K Make     I Back"
+	help_label.text = ""
 
 
 func _clear_row(index: int) -> void:
 	row_name_labels[index].text = ""
 	row_cost_labels[index].text = ""
 	row_owned_labels[index].text = ""
+	row_icons[index].texture = null
 
 
 func _current_quote() -> Dictionary:
@@ -313,6 +348,23 @@ func _short_cost_text(quote: Dictionary) -> String:
 	if fish_required > 0:
 		return "1 fish + %dz" % fee
 	return "%dz" % fee
+
+
+
+func _icon_for_card(display_name: String) -> Texture2D:
+	match display_name:
+		"Ramhorn":
+			return ICON_RAMHORN
+		"Glow Ram":
+			return ICON_GLOW_RAM
+		"Sand Hound":
+			return ICON_SAND_HOUND
+		"Stray Cat":
+			return ICON_STRAY_CAT
+		"Harbor Cat":
+			return ICON_HARBOR_CAT
+		_:
+			return null
 
 
 func _reason_text(quote: Dictionary) -> String:

@@ -2,21 +2,10 @@
 
 [ext_resource type="Script" path="res://scripts/economy/fishing_card_maker_menu.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_main"]
-bg_color = Color(0.709804, 0.678431, 0.54902, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0.388235, 0.290196, 0.352941, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[ext_resource type="Texture2D" path="res://assets/ui/card_maker/CardMaker_Screen.png" id="3_bg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm"]
-bg_color = Color(0.78, 0.745, 0.62, 1)
+bg_color = Color(0.78, 0.745, 0.62, 0.98)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -49,340 +38,483 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.42)
+color = Color(0, 0, 0, 0.7)
 mouse_filter = 2
 
-[node name="Panel" type="Panel" parent="Root"]
+[node name="Backdrop" type="TextureRect" parent="Root"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -258.0
-offset_top = -213.0
-offset_right = 258.0
-offset_bottom = 213.0
+offset_left = -320.0
+offset_top = -240.0
+offset_right = 320.0
+offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_main")
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 0
 
-[node name="TitleLabel" type="Label" parent="Root/Panel"]
+[node name="Panel" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -240.0
+offset_right = 320.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ListMask" type="ColorRect" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 14.0
-offset_right = 260.0
-offset_bottom = 40.0
-theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 10
-text = "CARD MAKER"
+offset_left = 68.0
+offset_top = 133.0
+offset_right = 340.0
+offset_bottom = 291.0
+color = Color(0.80, 0.69, 0.57, 1)
+mouse_filter = 2
+
+[node name="ZennyMask" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 496.0
+offset_top = 17.0
+offset_right = 579.0
+offset_bottom = 42.0
+color = Color(0.63, 0.52, 0.43, 0.96)
+mouse_filter = 2
+
+[node name="DetailTextMask" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 142.0
+offset_top = 316.0
+offset_right = 342.0
+offset_bottom = 405.0
+color = Color(0.80, 0.68, 0.55, 0.97)
+mouse_filter = 2
+
+[node name="LargePreviewMask" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 397.0
+offset_top = 128.0
+offset_right = 476.0
+offset_bottom = 247.0
+color = Color(0.36, 0.29, 0.25, 0.97)
+mouse_filter = 2
+
+[node name="SmallPreviewMask" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 83.0
+offset_top = 333.0
+offset_right = 133.0
+offset_bottom = 398.0
+color = Color(0.48, 0.39, 0.31, 0.97)
+mouse_filter = 2
+
+[node name="MaterialTextMask" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 429.0
+offset_top = 335.0
+offset_right = 530.0
+offset_bottom = 388.0
+color = Color(0.80, 0.68, 0.56, 0.98)
+mouse_filter = 2
+
+[node name="FeeMask" type="ColorRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 462.0
+offset_top = 407.0
+offset_right = 520.0
+offset_bottom = 427.0
+color = Color(0.79, 0.67, 0.55, 0.98)
+mouse_filter = 2
 
 [node name="ZennyLabel" type="Label" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 335.0
-offset_top = 16.0
-offset_right = 490.0
-offset_bottom = 38.0
-theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-text = "Zenny  0"
-horizontal_alignment = 2
-
-[node name="HeaderRule" type="ColorRect" parent="Root/Panel"]
-layout_mode = 0
-offset_left = 18.0
-offset_top = 47.0
-offset_right = 498.0
-offset_bottom = 49.0
-color = Color(0.388235, 0.290196, 0.352941, 0.75)
-mouse_filter = 2
-
-[node name="ColumnCard" type="Label" parent="Root/Panel"]
-layout_mode = 0
-offset_left = 50.0
-offset_top = 57.0
-offset_right = 250.0
-offset_bottom = 76.0
-theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+offset_left = 504.0
+offset_top = 21.0
+offset_right = 572.0
+offset_bottom = 39.0
+theme_override_colors/font_color = Color(0.12, 0.09, 0.08, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 6
-text = "CARD"
-
-[node name="ColumnOwned" type="Label" parent="Root/Panel"]
-layout_mode = 0
-offset_left = 300.0
-offset_top = 57.0
-offset_right = 350.0
-offset_bottom = 76.0
-theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 6
-text = "OWNED"
-horizontal_alignment = 2
-
-[node name="ColumnCost" type="Label" parent="Root/Panel"]
-layout_mode = 0
-offset_left = 364.0
-offset_top = 57.0
-offset_right = 476.0
-offset_bottom = 76.0
-theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 6
-text = "COST"
-horizontal_alignment = 2
+text = "Zenny 0"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="SelectionBar" type="ColorRect" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 31.0
-offset_top = 139.0
-offset_right = 485.0
-offset_bottom = 165.0
-color = Color(0.388235, 0.290196, 0.352941, 0.16)
+offset_left = 68.0
+offset_top = 133.0
+offset_right = 337.0
+offset_bottom = 163.0
+color = Color(0.24, 0.17, 0.18, 0.16)
 mouse_filter = 2
 
 [node name="SelectionCursor" type="Polygon2D" parent="Root/Panel"]
-polygon = PackedVector2Array(-6, -7, -6, 7, 6, 0)
-position = Vector2(38, 152)
-color = Color(0.388235, 0.290196, 0.352941, 1)
+polygon = PackedVector2Array(-5, -6, -5, 6, 5, 0)
+position = Vector2(72, 148)
+color = Color(0.21, 0.16, 0.18, 1)
 z_index = 10
 
 [node name="Rows" type="Control" parent="Root/Panel"]
 layout_mode = 0
-offset_right = 516.0
-offset_bottom = 356.0
+offset_right = 640.0
+offset_bottom = 480.0
 mouse_filter = 2
+
+[node name="Row1Icon" type="TextureRect" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 136.0
+offset_right = 111.0
+offset_bottom = 164.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Row1Name" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 137.0
-offset_right = 280.0
-offset_bottom = 163.0
+offset_left = 116.0
+offset_top = 135.0
+offset_right = 234.0
+offset_bottom = 162.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-text = "Bass Card"
+theme_override_font_sizes/font_size = 7
+text = "Ramhorn"
 vertical_alignment = 1
 
 [node name="Row1Owned" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 137.0
-offset_right = 350.0
-offset_bottom = 163.0
+offset_left = 240.0
+offset_top = 135.0
+offset_right = 278.0
+offset_bottom = 162.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 7
 text = "x0"
-horizontal_alignment = 2
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Row1Cost" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 364.0
-offset_top = 137.0
-offset_right = 476.0
-offset_bottom = 163.0
+offset_left = 276.0
+offset_top = 135.0
+offset_right = 338.0
+offset_bottom = 162.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
-text = "1 fish + 75z"
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 5
+text = "150z"
+horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Row2Icon" type="TextureRect" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 167.0
+offset_right = 111.0
+offset_bottom = 195.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Row2Name" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 169.0
-offset_right = 280.0
-offset_bottom = 195.0
+offset_left = 116.0
+offset_top = 166.0
+offset_right = 234.0
+offset_bottom = 193.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 7
 vertical_alignment = 1
 
 [node name="Row2Owned" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 169.0
-offset_right = 350.0
-offset_bottom = 195.0
+offset_left = 240.0
+offset_top = 166.0
+offset_right = 278.0
+offset_bottom = 193.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Row2Cost" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 364.0
-offset_top = 169.0
-offset_right = 476.0
-offset_bottom = 195.0
+offset_left = 276.0
+offset_top = 166.0
+offset_right = 338.0
+offset_bottom = 193.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 5
+horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Row3Icon" type="TextureRect" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 198.0
+offset_right = 111.0
+offset_bottom = 226.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Row3Name" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 201.0
-offset_right = 280.0
-offset_bottom = 227.0
+offset_left = 116.0
+offset_top = 197.0
+offset_right = 234.0
+offset_bottom = 224.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 7
 vertical_alignment = 1
 
 [node name="Row3Owned" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 201.0
-offset_right = 350.0
-offset_bottom = 227.0
+offset_left = 240.0
+offset_top = 197.0
+offset_right = 278.0
+offset_bottom = 224.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Row3Cost" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 364.0
-offset_top = 201.0
-offset_right = 476.0
-offset_bottom = 227.0
+offset_left = 276.0
+offset_top = 197.0
+offset_right = 338.0
+offset_bottom = 224.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 5
+horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Row4Icon" type="TextureRect" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 229.0
+offset_right = 111.0
+offset_bottom = 257.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Row4Name" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 233.0
-offset_right = 280.0
-offset_bottom = 259.0
+offset_left = 116.0
+offset_top = 228.0
+offset_right = 234.0
+offset_bottom = 255.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 7
 vertical_alignment = 1
 
 [node name="Row4Owned" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 233.0
-offset_right = 350.0
-offset_bottom = 259.0
+offset_left = 240.0
+offset_top = 228.0
+offset_right = 278.0
+offset_bottom = 255.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Row4Cost" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 364.0
-offset_top = 233.0
-offset_right = 476.0
-offset_bottom = 259.0
+offset_left = 276.0
+offset_top = 228.0
+offset_right = 338.0
+offset_bottom = 255.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 5
+horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Row5Icon" type="TextureRect" parent="Root/Panel/Rows"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 260.0
+offset_right = 111.0
+offset_bottom = 288.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Row5Name" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 50.0
-offset_top = 265.0
-offset_right = 280.0
-offset_bottom = 291.0
+offset_left = 116.0
+offset_top = 259.0
+offset_right = 234.0
+offset_bottom = 286.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 7
 vertical_alignment = 1
 
 [node name="Row5Owned" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 265.0
-offset_right = 350.0
-offset_bottom = 291.0
+offset_left = 240.0
+offset_top = 259.0
+offset_right = 278.0
+offset_bottom = 286.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Row5Cost" type="Label" parent="Root/Panel/Rows"]
 layout_mode = 0
-offset_left = 364.0
-offset_top = 265.0
-offset_right = 476.0
-offset_bottom = 291.0
+offset_left = 276.0
+offset_top = 259.0
+offset_right = 338.0
+offset_bottom = 286.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 5
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DetailRule" type="ColorRect" parent="Root/Panel"]
+[node name="SelectedPreview" type="TextureRect" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 18.0
-offset_top = 303.0
-offset_right = 498.0
-offset_bottom = 305.0
-color = Color(0.388235, 0.290196, 0.352941, 0.55)
-mouse_filter = 2
+offset_left = 398.0
+offset_top = 130.0
+offset_right = 475.0
+offset_bottom = 245.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SelectedSmallPreview" type="TextureRect" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 334.0
+offset_right = 132.0
+offset_bottom = 397.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SelectedNameLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 148.0
+offset_top = 319.0
+offset_right = 334.0
+offset_bottom = 345.0
+theme_override_colors/font_color = Color(0.12, 0.08, 0.07, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "Ramhorn"
+vertical_alignment = 1
+
+[node name="SelectedDescriptionLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 148.0
+offset_top = 348.0
+offset_right = 334.0
+offset_bottom = 390.0
+theme_override_colors/font_color = Color(0.18, 0.13, 0.11, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 5
+text = "A sturdy mountain ram."
+autowrap_mode = 2
+vertical_alignment = 0
 
 [node name="ModeLabel" type="Label" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 28.0
-offset_top = 312.0
-offset_right = 175.0
-offset_bottom = 329.0
-theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
+offset_left = 148.0
+offset_top = 391.0
+offset_right = 240.0
+offset_bottom = 407.0
+theme_override_colors/font_color = Color(0.34, 0.20, 0.18, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 6
+theme_override_font_sizes/font_size = 4
 text = "FIRST CREATION"
 
 [node name="OwnedLabel" type="Label" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 335.0
-offset_top = 312.0
-offset_right = 488.0
-offset_bottom = 329.0
-theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+offset_left = 240.0
+offset_top = 391.0
+offset_right = 334.0
+offset_bottom = 407.0
+theme_override_colors/font_color = Color(0.25, 0.17, 0.14, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 6
-text = "Card owned: x0"
+theme_override_font_sizes/font_size = 4
+text = "Owned x0"
 horizontal_alignment = 2
 
 [node name="RequirementLabel" type="Label" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 28.0
-offset_top = 332.0
-offset_right = 488.0
-offset_bottom = 350.0
-theme_override_colors/font_color = Color(0.16, 0.1, 0.13, 1)
+offset_left = 432.0
+offset_top = 337.0
+offset_right = 526.0
+offset_bottom = 385.0
+theme_override_colors/font_color = Color(0.13, 0.09, 0.08, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
-text = "Bass  0/1     Fee  75z"
+theme_override_font_sizes/font_size = 5
+text = "Ramhorn\n1 / 1"
+vertical_alignment = 0
+
+[node name="FeeValueLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 462.0
+offset_top = 408.0
+offset_right = 519.0
+offset_bottom = 426.0
+theme_override_colors/font_color = Color(0.15, 0.10, 0.09, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 6
+text = "75z"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="Root/Panel"]
 layout_mode = 0
-offset_left = 28.0
-offset_top = 353.0
-offset_right = 488.0
-offset_bottom = 374.0
-theme_override_colors/font_color = Color(0.28, 0.12, 0.16, 1)
+offset_left = 389.0
+offset_top = 388.0
+offset_right = 538.0
+offset_bottom = 405.0
+theme_override_colors/font_color = Color(0.36, 0.17, 0.15, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 6
+theme_override_font_sizes/font_size = 4
 text = "Ready."
+horizontal_alignment = 1
 
 [node name="HelpLabel" type="Label" parent="Root/Panel"]
+visible = false
 layout_mode = 0
-offset_left = 28.0
-offset_top = 384.0
-offset_right = 488.0
-offset_bottom = 405.0
-theme_override_colors/font_color = Color(0.30, 0.22, 0.26, 1)
+offset_left = 190.0
+offset_top = 438.0
+offset_right = 452.0
+offset_bottom = 460.0
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 6
-text = "W/S Select     K Make     I Back"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 5
+text = ""
 
 [node name="ConfirmPanel" type="Panel" parent="Root"]
 visible = false

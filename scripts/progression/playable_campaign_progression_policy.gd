@@ -624,7 +624,7 @@ static func _starter_case_search_objective(
 
 static func _learn_loop_objective(
 	milestone: Dictionary,
-	card_state: Dictionary
+	_card_state: Dictionary
 ) -> Dictionary:
 	# Card discovery is meant to create an immediate "what is this?" payoff.
 	# Point the player at the first card opponent before asking for more journal
