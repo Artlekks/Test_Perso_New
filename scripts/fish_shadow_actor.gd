@@ -768,6 +768,7 @@ func _update_bait_interest(delta: float) -> void:
 	var horizontal := candidate.global_position - global_position
 	horizontal.y = 0.0
 	var distance := horizontal.length()
+	var presentation_multiplier: float = _get_bait_presentation_multiplier(candidate)
 
 	match _pre_bite_state:
 		PreBiteState.ROAM:
@@ -782,7 +783,12 @@ func _update_bait_interest(delta: float) -> void:
 			if distance > seek_detection_radius * 1.35:
 				_return_to_roam_with_cooldown()
 			elif _pre_bite_timer <= 0.0:
-				if _rng.randf() <= seek_bait_chance:
+				var presentation_seek_chance: float = clampf(
+					seek_bait_chance * presentation_multiplier,
+					0.02,
+					0.98
+				)
+				if _rng.randf() <= presentation_seek_chance:
 					_enter_approach_state()
 				else:
 					_return_to_roam_with_cooldown()
@@ -801,7 +807,11 @@ func _update_bait_interest(delta: float) -> void:
 			_target_depth_ratio = minf(_target_depth_ratio, 0.30)
 			_depth_change_remaining = maxf(_depth_change_remaining, 1.0)
 			_pre_bite_timer -= delta
-			_bite_ready_timer = maxf(_bite_ready_timer - delta, 0.0)
+			_bite_ready_timer = maxf(
+				_bite_ready_timer
+				- delta * clampf(presentation_multiplier, 0.35, 1.35),
+				0.0
+			)
 			_inspect_target_timer -= delta
 
 			if _inspect_target_timer <= 0.0:
@@ -815,6 +825,18 @@ func _update_bait_interest(delta: float) -> void:
 				# No bite happened during the visible inspection window: this fish
 				# loses interest and disappears. A shadow is risk, never a promise.
 				abandon_bait_and_dive()
+
+
+func _get_bait_presentation_multiplier(candidate: Node) -> float:
+	if not is_instance_valid(candidate):
+		return 1.0
+	if not candidate.has_method("get_presentation_attraction_multiplier"):
+		return 1.0
+	return clampf(
+		float(candidate.get_presentation_attraction_multiplier()),
+		0.25,
+		2.0
+	)
 
 
 func _enter_watch_state() -> void:

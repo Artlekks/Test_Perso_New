@@ -81,6 +81,9 @@ const FishingMasteryQAScript = preload(
 const FishingFightCombatQAScript = preload(
 	"res://scripts/fishing_fight_combat_qa.gd"
 )
+const FishingPresentationQAScript = preload(
+	"res://scripts/fishing_presentation_qa.gd"
+)
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
 )
@@ -207,6 +210,7 @@ var current_service: FishingCurrentService = null
 var mastery_service: FishingMasteryService = null
 var mastery_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
+var presentation_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -604,6 +608,20 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Fight QA: %s" % str(failure))
+
+		presentation_qa_report = FishingPresentationQAScript.run()
+		print(
+			"Fishing Presentation QA: %d/%d tests passed."
+			% [
+				int(presentation_qa_report.get("passed_count", 0)),
+				int(presentation_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in presentation_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Presentation QA: %s" % str(failure))
 
 	manillo_ledger = FishingManilloLedgerScript.new()
 	manillo_ledger.name = "FishingManilloLedger"
@@ -1019,6 +1037,10 @@ func get_fishing_mastery_qa_report() -> Dictionary:
 
 func get_fishing_fight_qa_report() -> Dictionary:
 	return fight_combat_qa_report.duplicate(true)
+
+
+func get_fishing_presentation_qa_report() -> Dictionary:
+	return presentation_qa_report.duplicate(true)
 
 
 func get_fishing_current_service() -> FishingCurrentService:

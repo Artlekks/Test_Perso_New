@@ -3,6 +3,9 @@ extends Node3D
 const LureActionRuntimeScript = preload(
 	"res://scripts/lure_action_runtime.gd"
 )
+const FishingLurePresentationPolicyScript = preload(
+	"res://scripts/fishing_lure_presentation_policy.gd"
+)
 const StructureCombatPolicy = preload(
 	"res://scripts/fishing_structure_combat_policy.gd"
 )
@@ -80,6 +83,13 @@ var fight_return_pull_threshold: float = 0.12
 
 @export_category("Free Reeling")
 @export var free_reel_speed_multiplier: float = 2.5
+
+@export_category("Lure Presentation")
+## Reference speed used to normalize how quickly the player is working the lure.
+@export_range(0.05, 1.0, 0.01)
+var presentation_reference_retrieve_speed: float = 0.18
+@export_range(0.1, 5.0, 0.05)
+var presentation_action_memory_seconds: float = 3.0
 
 @export_category("Manual Pull")
 ## One S press queues this much horizontal travel toward the player.
@@ -182,6 +192,11 @@ var landing_completion_blocked: bool = false
 ## data changes; there are no per-frame resource loads or SceneTree searches.
 var lure_action_runtime: LureActionRuntime = LureActionRuntimeScript.new()
 
+# Baseline-fishing presentation memory. Fish read this; it never changes input.
+var _presentation_pause_seconds: float = 0.0
+var _presentation_twitch_age: float = 999.0
+var _presentation_pull_age: float = 999.0
+
 func _ready() -> void:
 	_ensure_snag_probe()
 	_configure_lure_action_runtime()
@@ -224,6 +239,9 @@ func launch(
 	air_path = PackedVector3Array()
 	air_path_progress = 0.0
 	air_path_playback_speed = 1.0
+	_presentation_pause_seconds = 0.0
+	_presentation_twitch_age = 999.0
+	_presentation_pull_age = 999.0
 	_reset_micro_movement()
 	_reset_snag_state()
 	_reset_control_smoothing()
@@ -436,6 +454,7 @@ func _physics_process(delta: float) -> void:
 	
 	_update_twitch_motion(delta)
 	_update_current_drift(delta)
+	_update_presentation_state(delta)
 	
 	_enforce_fight_distance()
 	_enforce_shore_boundary()
@@ -903,6 +922,8 @@ func queue_manual_pull() -> void:
 		if snag_triggered:
 			return
 
+		_presentation_pull_age = 0.0
+
 	var distance_multiplier := 1.0
 
 	if fight_mode:
@@ -1291,6 +1312,70 @@ func _get_lure_action_forward() -> Vector3:
 	return Vector3.FORWARD
 
 
+func _update_presentation_state(delta: float) -> void:
+	if delta <= 0.0:
+		return
+
+	var memory: float = maxf(presentation_action_memory_seconds, 0.1)
+	_presentation_twitch_age = minf(_presentation_twitch_age + delta, memory)
+	_presentation_pull_age = minf(_presentation_pull_age + delta, memory)
+
+	if fight_mode or (state != State.SINKING and state != State.IN_WATER):
+		_presentation_pause_seconds = 0.0
+		return
+
+	var player_working_lure: bool = (
+		reeling
+		or manual_pull_remaining > 0.001
+		or manual_pull_current_speed > 0.02
+		or twitch_velocity.length() > 0.03
+		or twitch_target_velocity.length() > 0.03
+	)
+
+	if player_working_lure:
+		_presentation_pause_seconds = 0.0
+	else:
+		_presentation_pause_seconds += delta
+
+
+func get_presentation_snapshot() -> Dictionary:
+	if data == null or data.get_action_profile() == null:
+		return {
+			"multiplier": 1.0,
+			"quality": 0.5,
+			"label": "GOOD",
+			"retrieve_speed_ratio": 0.0,
+			"pause_seconds": _presentation_pause_seconds,
+			"twitch_recent": 0.0,
+			"pull_recent": 0.0,
+		}
+
+	var continuous_speed: float = 0.0
+	if reeling and not fight_mode:
+		continuous_speed = (
+			maxf(data.reel_speed, 0.0)
+			* maxf(free_reel_speed_multiplier, 0.0)
+			* maxf(reel_speed_multiplier, 0.0)
+		)
+
+	var speed_ratio: float = continuous_speed / maxf(
+		presentation_reference_retrieve_speed,
+		0.01
+	)
+
+	return FishingLurePresentationPolicyScript.evaluate(
+		data.get_action_profile().motion_style,
+		speed_ratio,
+		_presentation_pause_seconds,
+		_presentation_twitch_age,
+		_presentation_pull_age
+	)
+
+
+func get_presentation_attraction_multiplier() -> float:
+	return float(get_presentation_snapshot().get("multiplier", 1.0))
+
+
 func is_reeling_active() -> bool:
 	return reeling
 
@@ -1316,6 +1401,11 @@ func get_lure_debug_snapshot() -> Dictionary:
 
 	if lure_action_runtime != null:
 		snapshot["action_mode"] = lure_action_runtime.get_mode_label()
+
+	var presentation: Dictionary = get_presentation_snapshot()
+	snapshot["presentation"] = presentation.get("label", "GOOD")
+	snapshot["presentation_multiplier"] = presentation.get("multiplier", 1.0)
+	snapshot["presentation_pause"] = presentation.get("pause_seconds", 0.0)
 
 	return snapshot
 
@@ -1786,6 +1876,8 @@ func twitch_side(direction: float) -> void:
 
 		if snag_triggered:
 			return
+
+		_presentation_twitch_age = 0.0
 
 	var toward_player := reel_target.global_position - global_position
 	toward_player.y = 0.0

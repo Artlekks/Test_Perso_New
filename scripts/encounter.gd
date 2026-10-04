@@ -334,6 +334,14 @@ func _on_bite_timer_timeout() -> void:
 				0.01
 			)
 
+		var presentation_multiplier: float = 1.0
+		if caster.has_method("get_active_bait_presentation_multiplier"):
+			presentation_multiplier = clampf(
+				float(caster.get_active_bait_presentation_multiplier()),
+				0.25,
+				2.0
+			)
+
 		var bite_chance := (
 			attraction
 			* max_bite_chance_per_check
@@ -341,6 +349,7 @@ func _on_bite_timer_timeout() -> void:
 			* session_bite_multiplier
 			* prepared_bait_multiplier
 			* environment_bite_multiplier
+			* presentation_multiplier
 			* _get_spatial_bite_density_multiplier(
 				spatial_context
 			)

@@ -608,6 +608,31 @@ func is_active_bait_reeling() -> bool:
 	return bool(active_bait.is_reeling_active())
 
 
+func get_active_bait_presentation_multiplier() -> float:
+	if not is_instance_valid(active_bait):
+		return 1.0
+
+	if not active_bait.has_method("get_presentation_attraction_multiplier"):
+		return 1.0
+
+	return clampf(
+		float(active_bait.get_presentation_attraction_multiplier()),
+		0.25,
+		2.0
+	)
+
+
+func get_active_bait_presentation_snapshot() -> Dictionary:
+	if not is_instance_valid(active_bait):
+		return {}
+
+	if not active_bait.has_method("get_presentation_snapshot"):
+		return {}
+
+	var snapshot = active_bait.get_presentation_snapshot()
+	return snapshot if snapshot is Dictionary else {}
+
+
 func set_reel_speed_multiplier(value: float) -> void:
 	if is_instance_valid(active_bait):
 		active_bait.set_reel_speed_multiplier(
