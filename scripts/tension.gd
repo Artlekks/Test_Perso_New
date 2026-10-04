@@ -522,6 +522,18 @@ func set_player_tension_bias(
 	)
 
 
+func get_tension_value() -> float:
+	return value
+
+
+func get_safe_min_value() -> float:
+	return _get_profile().safe_min
+
+
+func get_safe_max_value() -> float:
+	return _get_profile().safe_max
+
+
 func get_state_label() -> String:
 	match current_state:
 		State.SLACK:

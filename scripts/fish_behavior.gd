@@ -1,9 +1,14 @@
 extends Node
 
+const FightIntent = preload(
+	"res://scripts/fishing_fight_intent.gd"
+)
+
 signal movement_changed(lateral: float)
 signal depth_changed(value: float)
 signal pressure_changed(value: float)
 signal thrash_started(intensity: float)
+signal intent_started(snapshot: Dictionary)
 
 
 @export_category("Movement")
@@ -97,6 +102,7 @@ var pressure: float = 0.0
 var target_lateral: float = 0.0
 var target_depth: float = 0.0
 var target_pressure: float = 0.0
+var current_intent_snapshot: Dictionary = {}
 
 # Per-target response multipliers are reset whenever a new movement is chosen.
 # They affect presentation cadence only; they do not change fight balance.
@@ -283,6 +289,7 @@ func stop() -> void:
 	lateral = 0.0
 	depth = 0.0
 	pressure = 0.0
+	current_intent_snapshot.clear()
 
 	movement_changed.emit(0.0)
 	depth_changed.emit(0.0)
@@ -515,6 +522,17 @@ func _choose_new_movement(
 		1.0
 	)
 
+	current_intent_snapshot = FightIntent.build_snapshot(
+		current_fight_back,
+		movement_intensity,
+		time_until_change,
+		target_lateral,
+		target_depth,
+		target_pressure,
+		is_thrashing
+	)
+	intent_started.emit(current_intent_snapshot.duplicate(true))
+
 
 func _apply_response_rhythm_for_current_behavior() -> void:
 	current_lateral_response_multiplier = 1.0
@@ -704,6 +722,10 @@ func _choose_fight_back_type(
 	return FightBackType.ERRATIC
 
 
+func get_current_intent_snapshot() -> Dictionary:
+	return current_intent_snapshot.duplicate(true)
+
+
 func get_debug_snapshot() -> Dictionary:
 	return {
 		"active": active,
@@ -718,6 +740,7 @@ func get_debug_snapshot() -> Dictionary:
 		"pressure_multiplier": profile_pressure_multiplier,
 		"fight_intensity_multiplier": effective_fight_intensity_multiplier,
 		"time_to_change": maxf(time_until_change, 0.0),
+		"intent": current_intent_snapshot.duplicate(true),
 	}
 
 

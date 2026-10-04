@@ -9,6 +9,9 @@ const FightLifecycleScript = preload(
 const FightResolver = preload(
 	"res://scripts/fishing_fight_resolver.gd"
 )
+const FightPressurePolicy = preload(
+	"res://scripts/fishing_fight_pressure_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_triggered
@@ -29,6 +32,8 @@ signal fish_resistance_started
 signal fish_spent
 signal technique_applied(level: int)
 signal fish_thrash_started(intensity: float)
+signal fish_intent_changed(snapshot: Dictionary)
+signal line_pressure_band_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -118,6 +123,10 @@ var fish_behavior_pressure: float = 0.0
 var current_tension_state: int = FishingTension.State.SAFE
 var player_steering: float = 0.0
 var current_fish_lateral: float = 0.0
+var current_fight_intent: Dictionary = {}
+var current_line_pressure_band: StringName = &"none"
+var current_safe_pressure_ratio: float = 0.5
+var current_pressure_fatigue_multiplier: float = 1.0
 
 enum FightState {
 	NONE,
@@ -165,6 +174,7 @@ func _ready() -> void:
 	bite_window_timer.timeout.connect(_on_bite_window_timeout)
 	fish_behavior.movement_changed.connect(_on_fish_behavior_movement_changed)
 	fish_behavior.depth_changed.connect(_on_fish_behavior_depth_changed)
+	fish_behavior.intent_started.connect(_on_fish_behavior_intent_started)
 	tension.tension_changed.connect(_on_tension_changed)
 	tension.state_changed.connect(_on_tension_state_changed)
 	tension.hook_off.connect(_on_hook_off)
@@ -491,11 +501,13 @@ func _confirm_hit() -> bool:
 	)
 
 	rounds_remaining = total_rounds
+	_reset_fight_readouts()
 
 	_start_resistance_round()
 
 	tension.start()
 	tension.set_reel_gain_multiplier(1.0)
+	_update_line_pressure_state()
 
 	bite_triggered.emit()
 	fish_hooked.emit()
@@ -662,6 +674,7 @@ func begin_catch_landing() -> bool:
 	current_fish_lateral = 0.0
 	fish_behavior_pressure = 0.0
 	fish_behavior.stop()
+	_reset_fight_readouts()
 
 	_set_active_fight_shadow_visual_state(&"spent")
 	if (
@@ -698,6 +711,7 @@ func catch_fish() -> bool:
 	current_fish_lateral = 0.0
 	fish_behavior_pressure = 0.0
 	fish_behavior.stop()
+	_reset_fight_readouts()
 	active_fish = null
 	active_bait_data = null
 	active_fight_context.clear()
@@ -714,6 +728,8 @@ func _process(delta: float) -> void:
 
 	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
+
+	_update_line_pressure_state()
 
 	if fight_state == FightState.SPENT:
 		var spent_pressure := clampf(
@@ -801,6 +817,10 @@ func _process(delta: float) -> void:
 					"stamina_drain_multiplier",
 					1.0
 				)),
+				0.01
+			)
+			drain_speed *= maxf(
+				current_pressure_fatigue_multiplier,
 				0.01
 			)
 
@@ -1123,6 +1143,8 @@ func get_fish_debug_snapshot() -> Dictionary:
 		"lateral": current_fish_lateral,
 		"bite_active": bite_active,
 		"pending_fish": "NONE",
+		"fight_intent": current_fight_intent.duplicate(true),
+		"line_pressure": get_line_pressure_snapshot(),
 	}
 
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -1590,6 +1612,7 @@ func _fail_fight(reason: int) -> bool:
 	fish_behavior_pressure = 0.0
 
 	fish_behavior.stop()
+	_reset_fight_readouts()
 
 	fish_resistance_changed.emit(0.0)
 	fish_pull_changed.emit(0.0)
@@ -1602,6 +1625,72 @@ func _fail_fight(reason: int) -> bool:
 	active_bait_data = null
 	active_fight_context.clear()
 	return true
+
+
+func _on_fish_behavior_intent_started(snapshot: Dictionary) -> void:
+	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
+		return
+
+	current_fight_intent = snapshot.duplicate(true)
+	fish_intent_changed.emit(current_fight_intent.duplicate(true))
+
+
+func _update_line_pressure_state() -> void:
+	if tension == null:
+		return
+
+	var value := tension.get_tension_value()
+	var safe_min := tension.get_safe_min_value()
+	var safe_max := tension.get_safe_max_value()
+	var next_band: StringName = FightPressurePolicy.get_band(
+		value,
+		safe_min,
+		safe_max
+	)
+
+	current_safe_pressure_ratio = FightPressurePolicy.get_safe_ratio(
+		value,
+		safe_min,
+		safe_max
+	)
+	current_pressure_fatigue_multiplier = (
+		FightPressurePolicy.get_fatigue_multiplier(
+			value,
+			safe_min,
+			safe_max
+		)
+	)
+
+	if next_band == current_line_pressure_band:
+		return
+
+	current_line_pressure_band = next_band
+	line_pressure_band_changed.emit(get_line_pressure_snapshot())
+
+
+func get_line_pressure_snapshot() -> Dictionary:
+	if tension == null:
+		return {
+			"band": &"none",
+			"safe_ratio": 0.5,
+			"fatigue_multiplier": 1.0,
+		}
+
+	return {
+		"band": current_line_pressure_band,
+		"safe_ratio": current_safe_pressure_ratio,
+		"fatigue_multiplier": current_pressure_fatigue_multiplier,
+		"tension": tension.get_tension_value(),
+		"safe_min": tension.get_safe_min_value(),
+		"safe_max": tension.get_safe_max_value(),
+	}
+
+
+func _reset_fight_readouts() -> void:
+	current_fight_intent.clear()
+	current_line_pressure_band = &"none"
+	current_safe_pressure_ratio = 0.5
+	current_pressure_fatigue_multiplier = 1.0
 
 
 func _on_fish_behavior_thrash_started(intensity: float) -> void:
@@ -1680,6 +1769,7 @@ func _reset_cast_runtime(clear_bait_data: bool) -> void:
 
 	fish_behavior.stop()
 	tension.stop()
+	_reset_fight_readouts()
 
 	fish_resistance_changed.emit(0.0)
 	fish_pull_changed.emit(0.0)
