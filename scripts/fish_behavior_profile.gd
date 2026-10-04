@@ -47,12 +47,34 @@ var release_reaction_multiplier: float = 1.0
 var recovery_time_multiplier: float = 1.0
 
 @export_category("Bite Behavior")
+
+## Hook-set personality is separate from fight personality, but AUTO deliberately
+## derives a useful first-pass behavior from the existing archetype so the full
+## roster gains bite variety without rewriting every fish resource.
+enum BiteTimingStyle {
+	AUTO,
+	STRIKE,
+	NIBBLE,
+	LOAD,
+	FEINT,
+}
+
+@export_enum("Auto", "Strike", "Nibble", "Load", "Feint")
+var bite_timing_style: int = BiteTimingStyle.AUTO
+
+## Scales only the tentative pre-hook delay. The total authored bite window still
+## comes from bite_window_multiplier below, so this cannot silently inflate the
+## complete reaction window.
+@export_range(0.50, 1.50, 0.05)
+var bite_commit_delay_multiplier: float = 1.0
+
 ## Multiplies this species' effective attraction weight after lure/depth/tech
 ## compatibility has been evaluated. This is behavior personality, not spawn rate.
 @export_range(0.25, 2.0, 0.05)
 var bite_aggression_multiplier: float = 1.0
 
-## Multiplies the base hook-input window after this species commits to a bite.
+## Multiplies this species' complete bite opportunity window. Bite Recognition
+## then divides that authored total between tentative read time and hook-set time.
 @export_range(0.50, 1.50, 0.05)
 var bite_window_multiplier: float = 1.0
 
@@ -119,6 +141,9 @@ func is_valid_profile() -> bool:
 		and movement_response_multiplier > 0.0
 		and release_reaction_multiplier > 0.0
 		and recovery_time_multiplier > 0.0
+		and bite_timing_style >= BiteTimingStyle.AUTO
+		and bite_timing_style <= BiteTimingStyle.FEINT
+		and bite_commit_delay_multiplier > 0.0
 		and bite_aggression_multiplier >= 0.0
 		and bite_window_multiplier > 0.0
 		and bite_retry_multiplier > 0.0
@@ -136,6 +161,33 @@ func is_valid_profile() -> bool:
 		and thrash_chance <= 1.0
 		and thrash_multiplier >= 1.0
 	)
+
+
+func get_resolved_bite_timing_style() -> int:
+	if bite_timing_style != BiteTimingStyle.AUTO:
+		return bite_timing_style
+
+	match archetype:
+		FightArchetype.DARTING, FightArchetype.AGGRESSIVE:
+			return BiteTimingStyle.STRIKE
+		FightArchetype.HEAVY:
+			return BiteTimingStyle.LOAD
+		FightArchetype.ERRATIC:
+			return BiteTimingStyle.FEINT
+		_:
+			return BiteTimingStyle.NIBBLE
+
+
+func get_bite_timing_style_label() -> String:
+	match get_resolved_bite_timing_style():
+		BiteTimingStyle.STRIKE:
+			return "STRIKE"
+		BiteTimingStyle.LOAD:
+			return "LOAD"
+		BiteTimingStyle.FEINT:
+			return "FEINT"
+		_:
+			return "NIBBLE"
 
 
 func get_total_action_weight() -> float:
@@ -234,13 +286,14 @@ func get_archetype_label() -> String:
 
 func get_debug_summary() -> String:
 	return (
-		"%s | T%d %s / %s | bite %.2f window %.2f retry %.2f | "
+		"%s | T%d %s / %s | bite %s %.2f window %.2f retry %.2f | "
 		+ "fight %.2f pressure %.2f pull %.2f recover %.2f"
 	) % [
 		get_archetype_label(),
 		difficulty_tier,
 		get_personality_label(),
 		get_dominant_action_label(),
+		get_bite_timing_style_label(),
 		bite_aggression_multiplier,
 		bite_window_multiplier,
 		bite_retry_multiplier,

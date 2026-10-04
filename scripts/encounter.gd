@@ -18,8 +18,12 @@ const StructureCombatPolicy = preload(
 const LandingPolicy = preload(
 	"res://scripts/fishing_landing_policy.gd"
 )
+const BiteTimingPolicy = preload(
+	"res://scripts/fishing_bite_timing_policy.gd"
+)
 
 signal bite_opportunity_started
+signal bite_commit_ready(snapshot: Dictionary)
 signal bite_triggered
 signal bite_missed
 signal fish_hooked
@@ -86,6 +90,9 @@ var spent_pull_strength: float = 0.20
 
 @export var first_bite_delay: float = 0.5
 @export var retry_bite_delay: float = 0.5
+## Chance that the fish skips its tentative read and commits immediately.
+## Bite Recognition v1 deliberately keeps the old exported property name so
+## existing scenes remain compatible; a direct hit no longer auto-hooks for free.
 @export_range(0.0, 1.0, 0.05)
 var direct_hit_chance: float = 0.5
 
@@ -163,6 +170,9 @@ enum FightState {
 var fish_stamina: float = 0.0
 var player_reeling: bool = false
 var bite_active: bool = false
+var bite_hook_ready: bool = false
+var bite_commit_time_left: float = 0.0
+var active_bite_timing: Dictionary = {}
 var active_fish: FishInstance = null
 
 var fight_state: int = FightState.NONE
@@ -403,21 +413,46 @@ func _on_bite_timer_timeout() -> void:
 		bite_timer.start(retry_bite_delay)
 		return
 
-	if randf() < direct_hit_chance:
-		_confirm_hit()
-		return
-
 	if not lifecycle.open_bite_window():
 		pending_fish_entry = null
 		pending_shadow = null
 		return
 
+	var total_window: float = _get_pending_bite_window_time()
+	var direct_commit: bool = randf() < direct_hit_chance
+	var behavior_profile: FishBehaviorProfile = pending_fish_entry.fish.behavior_profile
+
+	active_bite_timing = BiteTimingPolicy.resolve_for_profile(
+		behavior_profile,
+		total_window,
+		direct_commit
+	)
+	active_bite_timing["fish_name"] = pending_fish_entry.fish.fish_name
+	active_bite_timing["species_id"] = pending_fish_entry.fish.get_stable_species_id()
+	active_bite_timing["active"] = true
+	active_bite_timing["hook_ready"] = false
+	active_bite_timing["commit_cue_emitted"] = false
+	active_bite_timing["miss_reason"] = &""
+
 	bite_active = true
+	bite_hook_ready = false
+	bite_commit_time_left = float(active_bite_timing.get("commit_delay", 0.0))
+	var resolved_total_window: float = float(
+		active_bite_timing.get("total_window", total_window)
+	)
 	bite_opportunity_started.emit()
-	bite_window_timer.start(_get_pending_bite_window_time())
+	bite_window_timer.start(resolved_total_window)
+
+	if bite_commit_time_left <= 0.001:
+		_set_bite_hook_ready()
 
 func try_hook() -> bool:
 	if not bite_active or not lifecycle.is_bite_window_open():
+		return false
+
+	if not bite_hook_ready:
+		if bool(active_bite_timing.get("early_hook_is_miss", false)):
+			_resolve_bite_miss(&"early_hook")
 		return false
 
 	return _confirm_hit()
@@ -439,8 +474,13 @@ func _confirm_hit() -> bool:
 		return false
 
 	bite_active = false
+	bite_hook_ready = false
+	bite_commit_time_left = 0.0
 	bite_timer.stop()
 	bite_window_timer.stop()
+	active_bite_timing["active"] = false
+	active_bite_timing["hook_ready"] = true
+	active_bite_timing["confirmed"] = true
 
 	active_fish = FishInstance.new()
 
@@ -550,14 +590,27 @@ func _confirm_hit() -> bool:
 	return true
 
 func _on_bite_window_timeout() -> void:
-	if not lifecycle.is_bite_window_open():
-		return
+	_resolve_bite_miss(&"late_hook")
 
-	bite_active = false
+
+func _resolve_bite_miss(reason: StringName) -> bool:
+	if not lifecycle.is_bite_window_open():
+		return false
 
 	var retry_delay: float = (
 		retry_bite_delay * _get_pending_bite_retry_multiplier()
 	)
+
+	if not lifecycle.miss_bite():
+		return false
+
+	bite_active = false
+	bite_hook_ready = false
+	bite_commit_time_left = 0.0
+	bite_window_timer.stop()
+	active_bite_timing["active"] = false
+	active_bite_timing["hook_ready"] = false
+	active_bite_timing["miss_reason"] = reason
 
 	if is_instance_valid(pending_shadow):
 		if pending_shadow.has_method("abandon_bait_and_dive"):
@@ -566,11 +619,57 @@ func _on_bite_window_timeout() -> void:
 	pending_shadow = null
 	pending_fish_entry = null
 
-	if not lifecycle.miss_bite():
-		return
-
 	bite_missed.emit()
 	bite_timer.start(retry_delay)
+	return true
+
+
+func _set_bite_hook_ready() -> void:
+	if (
+		not bite_active
+		or bite_hook_ready
+		or not lifecycle.is_bite_window_open()
+	):
+		return
+
+	bite_hook_ready = true
+	bite_commit_time_left = 0.0
+	active_bite_timing["hook_ready"] = true
+	active_bite_timing["commit_time_left"] = 0.0
+	active_bite_timing["commit_cue_emitted"] = true
+	bite_commit_ready.emit(get_bite_timing_snapshot())
+
+
+func _update_bite_timing(delta: float) -> void:
+	if (
+		not bite_active
+		or bite_hook_ready
+		or not lifecycle.is_bite_window_open()
+	):
+		return
+
+	bite_commit_time_left = maxf(bite_commit_time_left - delta, 0.0)
+	active_bite_timing["commit_time_left"] = bite_commit_time_left
+
+	if bite_commit_time_left <= 0.001:
+		_set_bite_hook_ready()
+
+
+func get_bite_timing_snapshot() -> Dictionary:
+	if active_bite_timing.is_empty():
+		return {
+			"active": false,
+			"hook_ready": false,
+		}
+
+	var snapshot := active_bite_timing.duplicate(true)
+	snapshot["active"] = bite_active and lifecycle.is_bite_window_open()
+	snapshot["hook_ready"] = bite_hook_ready
+	snapshot["commit_time_left"] = bite_commit_time_left
+	snapshot["window_time_left"] = (
+		0.0 if bite_window_timer.is_stopped() else bite_window_timer.time_left
+	)
+	return snapshot
 
 func _get_visible_shadow_candidate() -> Node:
 	var bait := get_tree().get_first_node_in_group("bait") as Node3D
@@ -760,6 +859,7 @@ func catch_fish() -> bool:
 
 func _process(delta: float) -> void:
 	_update_technique_timer(delta)
+	_update_bite_timing(delta)
 
 	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
@@ -2069,6 +2169,9 @@ func _reset_cast_runtime(clear_bait_data: bool) -> void:
 	bite_timer.stop()
 	bite_window_timer.stop()
 	bite_active = false
+	bite_hook_ready = false
+	bite_commit_time_left = 0.0
+	active_bite_timing.clear()
 	pending_fish_entry = null
 	pending_shadow = null
 	active_fish = null

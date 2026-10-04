@@ -179,6 +179,7 @@ func _ready() -> void:
 	encounter.bite_opportunity_started.connect(
 		_on_bite_opportunity_started
 	)
+	encounter.bite_commit_ready.connect(_on_bite_commit_ready)
 
 	encounter.bite_triggered.connect(_on_bite_triggered)
 	encounter.bite_missed.connect(_on_bite_missed)
@@ -252,8 +253,6 @@ func _ready() -> void:
 
 	if caster != null and caster.has_method("set_current_service"):
 		caster.set_current_service(fishing_current_service)
-	if caster != null and caster.has_method("set_mastery_service"):
-		caster.set_mastery_service(fishing_mastery_service)
 
 	fishing_current_view = FishingCurrentSurfaceViewScript.new() as FishingCurrentSurfaceView
 	fishing_current_view.name = "FishingCurrentSurfaceView"
@@ -294,12 +293,6 @@ func _ready() -> void:
 		encounter.set_environment_service(
 			fishing_environment_service
 		)
-
-	if (
-		encounter != null
-		and encounter.has_method("set_mastery_service")
-	):
-		encounter.set_mastery_service(fishing_mastery_service)
 
 	if (
 		fishing_environment_service != null
@@ -1016,7 +1009,7 @@ func _update_reel_animation() -> void:
 	if bite_opportunity_animation_active:
 		return
 
-	# Reel_Bite_Strong is a one-shot confirmed-HIT reaction.
+	# Reel_Bite_Strong is the one-shot committed-take cue.
 	if bite_animation_active:
 		return
 
@@ -1619,28 +1612,43 @@ func _build_catch_record_context() -> Dictionary:
 	return context
 
 
+func _on_bite_commit_ready(_snapshot: Dictionary) -> void:
+	if phase != Phase.IN_WATER:
+		return
+
+	# This is the readable moment the player is waiting for. Tentative bites hold
+	# Reel_Front first; the strong one-shot marks the actual hook-set window.
+	bite_opportunity_animation_active = false
+	manual_pull_animation_active = false
+	bite_animation_active = true
+	current_reel_animation = &"Reel_Bite_Strong"
+
+	caster.show_bait_ripple()
+	sprite_director.play(&"Reel_Bite_Strong")
+
+
 func _on_bite_triggered() -> void:
 	if phase != Phase.IN_WATER:
 		return
 
 	caster.hide_bait_ripple()
 
-	# Confirmed hit owns the character until this non-looping animation
-	# finishes. _on_fish_hooked() may switch the gameplay phase to FIGHT
-	# immediately, but it deliberately does not stomp this reaction.
+	# The strong take is now the pre-hook recognition cue, so a successful K
+	# should not replay it a second time. If the one-shot is still running it owns
+	# presentation into FIGHT; otherwise the normal reel resolver takes over.
 	bite_opportunity_animation_active = false
 	manual_pull_animation_active = false
-	bite_animation_active = true
-	current_reel_animation = &"Reel_Bite_Strong"
 
-	sprite_director.play(&"Reel_Bite_Strong")
+	if not bite_animation_active:
+		current_reel_animation = &""
+		_update_reel_animation()
 
 func _on_bite_opportunity_started() -> void:
 	if phase != Phase.IN_WATER:
 		return
 
 	# The fish is tugging without being hooked yet: visibly pull Ryu
-	# forward and hold this state for the entire bite window.
+	# forward until the bite commits or the opportunity is missed.
 	manual_pull_animation_active = false
 	bite_opportunity_animation_active = true
 	current_reel_animation = &"Reel_Front"
