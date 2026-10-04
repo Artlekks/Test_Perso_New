@@ -135,6 +135,22 @@ func get_shadow_population_debug_counts() -> Vector2i:
 	return Vector2i.ZERO
 
 
+func get_fish_sign_snapshot() -> Dictionary:
+	if shadow_presence == null:
+		shadow_presence = get_node_or_null("FishShadowPresence")
+
+	if (
+		shadow_presence == null
+		or not shadow_presence.has_method("get_fish_sign_snapshot")
+	):
+		return {
+			"available": false,
+			"reason": "fish_presence_unavailable",
+		}
+
+	return shadow_presence.get_fish_sign_snapshot()
+
+
 func get_concentration_snapshot(
 	world_position: Vector3,
 	current_depth: float,

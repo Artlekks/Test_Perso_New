@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+technique_id = &"read_fish_sign"
+display_name = "Read Fish Sign"
+category = &"observation"
+description = "Read surface boils, baitfish movement, bubbles, shadows and feeding turns to judge where fish are active and what may be moving through the water."
+teacher_id = &"master_sign_reader"
+capability_tags = PackedStringArray("read_fish_sign")

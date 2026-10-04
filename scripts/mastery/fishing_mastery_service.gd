@@ -112,6 +112,7 @@ func get_snapshot() -> Dictionary:
 		"can_compensate_drift": has_capability(&"current_compensation"),
 		"can_read_weather": has_capability(&"weather_sense"),
 		"can_read_tide": has_capability(&"tide_sense"),
+		"can_read_fish_sign": has_capability(&"read_fish_sign"),
 		"can_control_deep_water": has_capability(&"deep_water_control"),
 		"can_control_surface": has_capability(&"surface_control"),
 		"can_land_fish": has_capability(&"landing_technique"),

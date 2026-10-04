@@ -7,6 +7,9 @@ const DefaultWideFishShadowScene := preload("res://actors/FishShadowWide.tscn")
 const DefaultSquidFishShadowScene := preload("res://actors/FishShadowSquid.tscn")
 const DefaultJellyFishShadowScene := preload("res://actors/FishShadowJelly.tscn")
 const DefaultAmbientFishProfile := preload("res://data/bof4/ambient_profiles/default.tres")
+const FishingFishSignPolicyScript = preload(
+	"res://scripts/fishing_fish_sign_policy.gd"
+)
 
 @export_category("Visual Profiles")
 ## Alternate shadow scenes are optional. Every scene must use FishShadowActor
@@ -169,15 +172,7 @@ func _update_player_disturbance(delta: float) -> void:
 			)
 			_player_lookup_cooldown = PLAYER_LOOKUP_INTERVAL_WHEN_ABSENT
 
-	if _mastery_service == null:
-		var services := get_node_or_null(
-			"/root/FishingSessionServices"
-		)
-		if (
-			services != null
-			and services.has_method("get_fishing_mastery_service")
-		):
-			_mastery_service = services.get_fishing_mastery_service()
+	_resolve_mastery_service_if_needed()
 
 	var raw_noise := 0.0
 	var player_position := Vector3.ZERO
@@ -456,6 +451,50 @@ func get_population_debug_counts() -> Vector2i:
 		_get_ambient_shadow_count(),
 		_get_readable_ambient_shadow_count()
 	)
+
+
+func get_fish_sign_snapshot() -> Dictionary:
+	_resolve_mastery_service_if_needed()
+	if (
+		_mastery_service == null
+		or not _mastery_service.has_method("has_capability")
+		or not bool(_mastery_service.has_capability(&"read_fish_sign"))
+	):
+		return {
+			"available": false,
+			"reason": "read_fish_sign_not_learned",
+		}
+
+	_cleanup_invalid_shadows()
+	var observations: Array = []
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if shadow.is_hooked_tracking():
+			continue
+		var fish: FishData = shadow.get_fish_data()
+		if fish == null:
+			continue
+		observations.append(
+			FishingFishSignPolicyScript.build_observation(
+				fish,
+				shadow.get_pre_bite_state_name(),
+				shadow.is_ambient_readable()
+			)
+		)
+
+	return FishingFishSignPolicyScript.build_read_snapshot(observations)
+
+
+func _resolve_mastery_service_if_needed() -> void:
+	if _mastery_service != null:
+		return
+	var services := get_node_or_null("/root/FishingSessionServices")
+	if (
+		services != null
+		and services.has_method("get_fishing_mastery_service")
+	):
+		_mastery_service = services.get_fishing_mastery_service()
 
 
 func set_environment_context(context: Dictionary) -> void:
