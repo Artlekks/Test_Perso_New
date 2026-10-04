@@ -33,6 +33,9 @@ const AerialControlPolicy = preload(
 const DeepWaterControlPolicy = preload(
 	"res://scripts/fishing_deep_water_control_policy.gd"
 )
+const SurfaceControlPolicy = preload(
+	"res://scripts/fishing_surface_control_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_commit_ready(snapshot: Dictionary)
@@ -66,6 +69,8 @@ signal fish_aerial_started(snapshot: Dictionary)
 signal aerial_control_state_changed(snapshot: Dictionary)
 signal deep_water_load_started(snapshot: Dictionary)
 signal deep_water_control_state_changed(snapshot: Dictionary)
+signal surface_instability_started(snapshot: Dictionary)
+signal surface_control_state_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -214,6 +219,18 @@ var deep_water_mastery_known: bool = false
 var deep_water_current_depth_m: float = 0.0
 var deep_water_total_depth_m: float = 0.0
 var deep_water_load_impulse: float = 0.0
+var surface_control_active: bool = false
+var surface_control_window_left: float = 0.0
+var surface_control_match_time: float = 0.0
+var surface_control_cooldown_left: float = 0.0
+var surface_control_expected_response: StringName = SurfaceControlPolicy.RESPONSE_NONE
+var surface_control_last_result: StringName = SurfaceControlPolicy.RESULT_IDLE
+var surface_control_success_count: int = 0
+var surface_control_intent_snapshot: Dictionary = {}
+var surface_control_mastery_known: bool = false
+var surface_current_depth_m: float = 0.0
+var surface_total_depth_m: float = 0.0
+var surface_instability_impulse: float = 0.0
 
 enum FightState {
 	NONE,
@@ -926,6 +943,7 @@ func _process(delta: float) -> void:
 	_update_run_read(delta)
 	_update_aerial_control(delta)
 	_update_deep_water_control(delta)
+	_update_surface_control(delta)
 	_update_structure_combat(delta)
 	_update_final_surge_state()
 
@@ -1573,8 +1591,11 @@ func _try_start_aerial_control(intent_snapshot: Dictionary) -> bool:
 		return false
 
 	# An aerial breach replaces the ordinary RISE read for this one intent.
-	# Normal rises still use Reading the Run exactly as before.
+	# Normal rises still use Reading the Run exactly as before. Surface Control
+	# also yields here because a true breach belongs to Aerial Fish Control.
 	_cancel_run_read(false)
+	if surface_control_active:
+		_cancel_surface_control(true)
 	aerial_control_active = true
 	aerial_control_window_left = AerialControlPolicy.get_window_seconds(
 		intent_snapshot
@@ -1718,6 +1739,207 @@ func get_aerial_control_snapshot() -> Dictionary:
 		aerial_control_profile,
 		aerial_control_hook_security,
 		aerial_control_cooldown_left
+	)
+
+
+
+func _refresh_surface_depths() -> void:
+	surface_current_depth_m = 0.0
+	surface_total_depth_m = 0.0
+	if caster == null:
+		return
+	if caster.has_method("get_current_bait_depth"):
+		surface_current_depth_m = maxf(
+			float(caster.get_current_bait_depth()),
+			0.0
+		)
+	if caster.has_method("get_current_total_depth"):
+		surface_total_depth_m = maxf(
+			float(caster.get_current_total_depth()),
+			0.0
+		)
+
+
+func _try_start_surface_control(intent_snapshot: Dictionary) -> bool:
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or aerial_control_active
+		or surface_control_active
+		or caster == null
+	):
+		return false
+
+	_refresh_surface_depths()
+	if not SurfaceControlPolicy.should_start(
+		intent_snapshot,
+		surface_current_depth_m,
+		surface_total_depth_m,
+		surface_control_cooldown_left
+	):
+		return false
+
+	var expected := SurfaceControlPolicy.get_expected_response(intent_snapshot)
+	if expected == SurfaceControlPolicy.RESPONSE_NONE:
+		return false
+
+	surface_control_intent_snapshot = intent_snapshot.duplicate(true)
+	surface_control_expected_response = expected
+	surface_control_mastery_known = _has_mastery_capability(
+		&"surface_control"
+	)
+	surface_control_match_time = 0.0
+	surface_instability_impulse = (
+		SurfaceControlPolicy.get_surface_instability_impulse(
+			intent_snapshot,
+			surface_current_depth_m,
+			surface_total_depth_m
+		)
+	)
+
+	if tension != null:
+		tension.add_impulse(surface_instability_impulse)
+
+	if not surface_control_mastery_known:
+		surface_control_active = false
+		surface_control_window_left = 0.0
+		surface_control_last_result = SurfaceControlPolicy.RESULT_UNCONTROLLED
+		surface_control_cooldown_left = SurfaceControlPolicy.EVENT_COOLDOWN_SECONDS
+		var uncontrolled_snapshot := get_surface_control_snapshot()
+		surface_instability_started.emit(uncontrolled_snapshot.duplicate(true))
+		surface_control_state_changed.emit(uncontrolled_snapshot.duplicate(true))
+		return true
+
+	surface_control_active = true
+	surface_control_window_left = SurfaceControlPolicy.get_window_seconds(
+		intent_snapshot
+	)
+	surface_control_last_result = SurfaceControlPolicy.RESULT_READING
+	var snapshot := get_surface_control_snapshot()
+	surface_instability_started.emit(snapshot.duplicate(true))
+	surface_control_state_changed.emit(snapshot.duplicate(true))
+	return true
+
+
+func _update_surface_control(delta: float) -> void:
+	if surface_control_cooldown_left > 0.0:
+		surface_control_cooldown_left = maxf(
+			surface_control_cooldown_left - maxf(delta, 0.0),
+			0.0
+		)
+
+	if not surface_control_active:
+		return
+
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or not lifecycle.is_hooked()
+	):
+		_cancel_surface_control(true)
+		return
+
+	var matches := SurfaceControlPolicy.is_response_matching(
+		surface_control_expected_response,
+		surface_control_intent_snapshot,
+		player_reeling,
+		player_steering,
+		player_tension_bias
+	)
+	surface_control_match_time = SurfaceControlPolicy.advance_match_time(
+		surface_control_match_time,
+		matches,
+		delta
+	)
+
+	if SurfaceControlPolicy.is_response_complete(surface_control_match_time):
+		_complete_surface_control()
+		return
+
+	surface_control_window_left = maxf(
+		surface_control_window_left - maxf(delta, 0.0),
+		0.0
+	)
+	if surface_control_window_left <= 0.0:
+		_fail_surface_control()
+
+
+func _complete_surface_control() -> void:
+	if not surface_control_active:
+		return
+
+	surface_control_active = false
+	surface_control_window_left = 0.0
+	surface_control_match_time = SurfaceControlPolicy.RESPONSE_HOLD_SECONDS
+	surface_control_last_result = SurfaceControlPolicy.RESULT_SUCCESS
+	surface_control_success_count += 1
+	surface_control_cooldown_left = SurfaceControlPolicy.EVENT_COOLDOWN_SECONDS
+
+	if tension != null:
+		tension.add_impulse(
+			SurfaceControlPolicy.get_success_relief_impulse(
+				surface_instability_impulse,
+				surface_control_intent_snapshot
+			)
+		)
+
+	if fight_state == FightState.RESISTING:
+		var max_stamina := _get_max_stamina()
+		var bonus_ratio := SurfaceControlPolicy.get_stamina_bonus_ratio(
+			surface_control_intent_snapshot
+		)
+		fish_stamina = maxf(
+			fish_stamina - max_stamina * bonus_ratio,
+			0.0
+		)
+		fish_stamina_changed.emit(fish_stamina, max_stamina)
+
+	surface_control_state_changed.emit(
+		get_surface_control_snapshot().duplicate(true)
+	)
+
+
+func _fail_surface_control() -> void:
+	if not surface_control_active:
+		return
+
+	surface_control_active = false
+	surface_control_window_left = 0.0
+	surface_control_match_time = 0.0
+	surface_control_last_result = SurfaceControlPolicy.RESULT_MISSED
+	surface_control_cooldown_left = SurfaceControlPolicy.EVENT_COOLDOWN_SECONDS
+	surface_control_state_changed.emit(
+		get_surface_control_snapshot().duplicate(true)
+	)
+
+
+func _cancel_surface_control(mark_cancelled: bool) -> void:
+	if not surface_control_active and not mark_cancelled:
+		return
+	surface_control_active = false
+	surface_control_window_left = 0.0
+	surface_control_match_time = 0.0
+	if mark_cancelled:
+		surface_control_last_result = SurfaceControlPolicy.RESULT_CANCELLED
+	surface_control_state_changed.emit(
+		get_surface_control_snapshot().duplicate(true)
+	)
+
+
+func get_surface_control_snapshot() -> Dictionary:
+	return SurfaceControlPolicy.build_snapshot(
+		surface_control_active,
+		surface_control_window_left,
+		surface_control_match_time,
+		surface_control_expected_response,
+		surface_control_last_result,
+		surface_control_success_count,
+		surface_control_intent_snapshot,
+		surface_control_mastery_known,
+		surface_current_depth_m,
+		surface_total_depth_m,
+		surface_instability_impulse,
+		surface_control_cooldown_left
 	)
 
 
@@ -2684,6 +2906,7 @@ func _on_fish_behavior_intent_started(snapshot: Dictionary) -> void:
 			return
 		_start_run_read(current_fight_intent)
 		_try_start_deep_water_control(current_fight_intent)
+		_try_start_surface_control(current_fight_intent)
 
 
 func _update_line_pressure_state() -> void:
@@ -2898,6 +3121,18 @@ func _reset_fight_readouts() -> void:
 	deep_water_current_depth_m = 0.0
 	deep_water_total_depth_m = 0.0
 	deep_water_load_impulse = 0.0
+	surface_control_active = false
+	surface_control_window_left = 0.0
+	surface_control_match_time = 0.0
+	surface_control_cooldown_left = 0.0
+	surface_control_expected_response = SurfaceControlPolicy.RESPONSE_NONE
+	surface_control_last_result = SurfaceControlPolicy.RESULT_IDLE
+	surface_control_success_count = 0
+	surface_control_intent_snapshot.clear()
+	surface_control_mastery_known = false
+	surface_current_depth_m = 0.0
+	surface_total_depth_m = 0.0
+	surface_instability_impulse = 0.0
 	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+technique_id = &"surface_control"
+display_name = "Surface Control"
+category = &"fight"
+description = "Keep a hooked fish stable in the top layer by lowering the rod while preserving the correct pressure and steering response."
+teacher_id = &"master_surface_angler"
+prerequisite_ids = PackedStringArray("line_feel")
+capability_tags = PackedStringArray("surface_control")

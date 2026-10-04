@@ -37,6 +37,11 @@ static func run(
 	_record(report, "Deep-Water Control is authored", deep_water_control != null, "Long vertical fights need a real master-taught control technique rather than a hidden pressure modifier.")
 	_record(report, "Deep-Water Control exposes fight capability", deep_water_control != null and deep_water_control.has_capability(&"deep_water_control"), "Encounter should query one stable mastery capability for trained deep-water recovery.")
 	_record(report, "Deep-Water Control builds on Line Feel and Read Depth", _has_prerequisite(catalog, &"deep_water_control", &"line_feel") and _has_prerequisite(catalog, &"deep_water_control", &"read_depth"), "The advanced vertical technique should require both pressure awareness and depth reading.")
+	var surface_control := catalog.get_technique(&"surface_control") if catalog != null else null
+	_record(report, "Surface Control is authored", surface_control != null, "Top-water fish control needs a real master-taught technique rather than a hidden fight modifier.")
+	_record(report, "Surface Control exposes fight capability", surface_control != null and surface_control.has_capability(&"surface_control"), "Encounter should query one stable capability for trained near-surface rod control.")
+	_record(report, "Surface Control builds on Line Feel", _has_prerequisite(catalog, &"surface_control", &"line_feel"), "Lowered-rod surface control should build on understanding line pressure first.")
+	_record(report, "Surface Control belongs to Surface Angler", surface_control != null and surface_control.teacher_id == &"master_surface_angler", "The technique should stay master-taught and keep a stable future NPC identity.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
 	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
 	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
@@ -99,6 +104,13 @@ static func run(
 		false
 	)
 	_record(report, "Deep-Water Control becomes runtime capability", bool(deep_learned.get("success", false)) and service.has_capability(&"deep_water_control") and bool(service.get_snapshot().get("can_control_deep_water", false)), "The live fight needs one persistent gate for the trained second-stage deep-water response.")
+
+	var surface_learned := service.learn_technique(
+		&"surface_control",
+		surface_control.teacher_id if surface_control != null else &"",
+		false
+	)
+	_record(report, "Surface Control becomes runtime capability", bool(surface_learned.get("success", false)) and service.has_capability(&"surface_control") and bool(service.get_snapshot().get("can_control_surface", false)), "Once taught, the live fight needs one persistent gate for the low-rod top-water correction.")
 
 	var read_structure := catalog.get_technique(&"read_structure") if catalog != null else null
 	var line_feel := catalog.get_technique(&"line_feel") if catalog != null else null
