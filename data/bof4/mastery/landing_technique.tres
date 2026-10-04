@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+technique_id = &"landing_technique"
+display_name = "Landing Technique"
+category = &"fight"
+description = "Guide a spent fish head-first through the final approach, reducing the chance and severity of a last-second surge."
+teacher_id = &"master_landing_guide"
+prerequisite_ids = PackedStringArray("surface_control")
+capability_tags = PackedStringArray("landing_technique")

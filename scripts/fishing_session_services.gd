@@ -111,6 +111,9 @@ const FishingDeepWaterControlQAScript = preload(
 const FishingSurfaceControlQAScript = preload(
 	"res://scripts/fishing_surface_control_qa.gd"
 )
+const FishingLandingTechniqueQAScript = preload(
+	"res://scripts/fishing_landing_technique_qa.gd"
+)
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
 )
@@ -211,6 +214,9 @@ const FishingDeepWaterControlTechniqueResource: FishingMasteryTechniqueDefinitio
 const FishingSurfaceControlTechniqueResource: FishingMasteryTechniqueDefinition = preload(
 	"res://data/bof4/mastery/surface_control.tres"
 )
+const FishingLandingTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/landing_technique.tres"
+)
 const FishingMasteryQASpotResource: FishingSpotData = preload(
 	"res://data/bof4/spots/ocean_2.tres"
 )
@@ -256,6 +262,7 @@ var weather_sense_qa_report: Dictionary = {}
 var tide_sense_qa_report: Dictionary = {}
 var deep_water_control_qa_report: Dictionary = {}
 var surface_control_qa_report: Dictionary = {}
+var landing_technique_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -620,6 +627,9 @@ func initialize() -> void:
 		FishingMasteryTechniqueCatalogResource.ensure_technique(
 			FishingSurfaceControlTechniqueResource
 		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingLandingTechniqueResource
+		)
 
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
 	mastery_service.name = "FishingMasteryService"
@@ -851,6 +861,22 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Surface Control QA: %s" % str(failure))
+
+		landing_technique_qa_report = FishingLandingTechniqueQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Landing Technique QA: %d/%d tests passed."
+			% [
+				int(landing_technique_qa_report.get("passed_count", 0)),
+				int(landing_technique_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in landing_technique_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Landing Technique QA: %s" % str(failure))
 
 	fish_consumable_service = FishingFishConsumableServiceScript.new()
 	fish_consumable_service.name = "FishingFishConsumableService"
@@ -1286,6 +1312,10 @@ func get_fishing_deep_water_control_qa_report() -> Dictionary:
 
 func get_fishing_surface_control_qa_report() -> Dictionary:
 	return surface_control_qa_report.duplicate(true)
+
+
+func get_fishing_landing_technique_qa_report() -> Dictionary:
+	return landing_technique_qa_report.duplicate(true)
 
 
 func get_fishing_tide_service() -> FishingTideService:

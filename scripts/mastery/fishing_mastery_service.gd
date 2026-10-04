@@ -114,6 +114,7 @@ func get_snapshot() -> Dictionary:
 		"can_read_tide": has_capability(&"tide_sense"),
 		"can_control_deep_water": has_capability(&"deep_water_control"),
 		"can_control_surface": has_capability(&"surface_control"),
+		"can_land_fish": has_capability(&"landing_technique"),
 	}
 
 

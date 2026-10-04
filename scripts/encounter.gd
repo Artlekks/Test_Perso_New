@@ -36,6 +36,9 @@ const DeepWaterControlPolicy = preload(
 const SurfaceControlPolicy = preload(
 	"res://scripts/fishing_surface_control_policy.gd"
 )
+const LandingTechniquePolicy = preload(
+	"res://scripts/fishing_landing_technique_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_commit_ready(snapshot: Dictionary)
@@ -71,6 +74,8 @@ signal deep_water_load_started(snapshot: Dictionary)
 signal deep_water_control_state_changed(snapshot: Dictionary)
 signal surface_instability_started(snapshot: Dictionary)
 signal surface_control_state_changed(snapshot: Dictionary)
+signal landing_technique_started(snapshot: Dictionary)
+signal landing_technique_state_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -231,6 +236,17 @@ var surface_control_mastery_known: bool = false
 var surface_current_depth_m: float = 0.0
 var surface_total_depth_m: float = 0.0
 var surface_instability_impulse: float = 0.0
+var landing_technique_active: bool = false
+var landing_technique_checked: bool = false
+var landing_technique_secured: bool = false
+var landing_technique_window_left: float = 0.0
+var landing_technique_match_time: float = 0.0
+var landing_technique_expected_response: StringName = LandingTechniquePolicy.RESPONSE_NONE
+var landing_technique_last_result: StringName = LandingTechniquePolicy.RESULT_IDLE
+var landing_technique_success_count: int = 0
+var landing_technique_fish_lateral: float = 0.0
+var landing_technique_distance_meters: float = 0.0
+var landing_technique_mastery_known: bool = false
 
 enum FightState {
 	NONE,
@@ -945,6 +961,7 @@ func _process(delta: float) -> void:
 	_update_deep_water_control(delta)
 	_update_surface_control(delta)
 	_update_structure_combat(delta)
+	_update_landing_technique(delta)
 	_update_final_surge_state()
 
 	if not lifecycle.is_hooked():
@@ -1113,11 +1130,183 @@ func _process(delta: float) -> void:
 	if fish_stamina <= 0.0:
 		_finish_resistance_round()
 
+func _update_landing_technique(delta: float) -> void:
+	if not lifecycle.is_hooked() or active_fish == null:
+		if landing_technique_active:
+			_cancel_landing_technique(true)
+		return
+
+	if landing_technique_active:
+		if fight_state != FightState.SPENT or final_surge_active:
+			_cancel_landing_technique(true)
+			return
+
+		if caster != null and caster.has_method("get_active_bait_distance_meters"):
+			landing_technique_distance_meters = maxf(
+				float(caster.get_active_bait_distance_meters()),
+				0.0
+			)
+
+		var matches := LandingTechniquePolicy.is_response_matching(
+			landing_technique_expected_response,
+			landing_technique_fish_lateral,
+			player_reeling,
+			player_steering
+		)
+		landing_technique_match_time = LandingTechniquePolicy.advance_match_time(
+			landing_technique_match_time,
+			matches,
+			delta
+		)
+
+		if LandingTechniquePolicy.is_response_complete(
+			landing_technique_match_time
+		):
+			_complete_landing_technique()
+			return
+
+		landing_technique_window_left = maxf(
+			landing_technique_window_left - maxf(delta, 0.0),
+			0.0
+		)
+		if landing_technique_window_left <= 0.0:
+			_fail_landing_technique()
+		return
+
+	if (
+		fight_state != FightState.SPENT
+		or final_surge_active
+		or final_surge_checked
+		or landing_technique_checked
+		or not final_surge_enabled
+		or caster == null
+		or not caster.has_method("get_active_bait_distance_meters")
+	):
+		return
+
+	landing_technique_mastery_known = _has_mastery_capability(
+		&"landing_technique"
+	)
+	landing_technique_distance_meters = float(
+		caster.get_active_bait_distance_meters()
+	)
+	var trigger_distance := LandingTechniquePolicy.get_trigger_distance(
+		final_surge_trigger_distance_meters
+	)
+	if not LandingTechniquePolicy.should_start(
+		landing_technique_distance_meters,
+		trigger_distance,
+		landing_technique_checked,
+		final_surge_checked,
+		final_surge_active,
+		landing_technique_mastery_known
+	):
+		return
+
+	_start_landing_technique()
+
+
+func _start_landing_technique() -> void:
+	landing_technique_active = true
+	landing_technique_checked = true
+	landing_technique_secured = false
+	landing_technique_match_time = 0.0
+	landing_technique_fish_lateral = clampf(current_fish_lateral, -1.0, 1.0)
+	landing_technique_expected_response = (
+		LandingTechniquePolicy.get_expected_response(
+			landing_technique_fish_lateral
+		)
+	)
+	var difficulty_tier := clampi(
+		int(active_fight_context.get("difficulty_tier", 1)),
+		1,
+		5
+	)
+	var is_king := bool(active_fight_context.get("is_king", false))
+	landing_technique_window_left = LandingTechniquePolicy.get_window_seconds(
+		difficulty_tier,
+		is_king
+	)
+	landing_technique_last_result = LandingTechniquePolicy.RESULT_READING
+
+	# Hold the bait/fish on the water side while the player lines up the final
+	# approach. This reuses the same authoritative return veto as Final Surge.
+	_set_landing_completion_blocked(true)
+
+	var snapshot := get_landing_technique_snapshot()
+	landing_technique_started.emit(snapshot.duplicate(true))
+	landing_technique_state_changed.emit(snapshot.duplicate(true))
+
+
+func _complete_landing_technique() -> void:
+	if not landing_technique_active:
+		return
+
+	landing_technique_active = false
+	landing_technique_window_left = 0.0
+	landing_technique_match_time = LandingTechniquePolicy.RESPONSE_HOLD_SECONDS
+	landing_technique_secured = true
+	landing_technique_last_result = LandingTechniquePolicy.RESULT_SUCCESS
+	landing_technique_success_count += 1
+	_set_landing_completion_blocked(false)
+	landing_technique_state_changed.emit(
+		get_landing_technique_snapshot().duplicate(true)
+	)
+
+
+func _fail_landing_technique() -> void:
+	if not landing_technique_active:
+		return
+
+	landing_technique_active = false
+	landing_technique_window_left = 0.0
+	landing_technique_match_time = 0.0
+	landing_technique_secured = false
+	landing_technique_last_result = LandingTechniquePolicy.RESULT_MISSED
+	# Missing the trained lead adds no artificial failure. The normal Final Surge
+	# roll simply proceeds with its original probability and strength.
+	_set_landing_completion_blocked(false)
+	landing_technique_state_changed.emit(
+		get_landing_technique_snapshot().duplicate(true)
+	)
+
+
+func _cancel_landing_technique(mark_cancelled: bool) -> void:
+	if not landing_technique_active and not mark_cancelled:
+		return
+	landing_technique_active = false
+	landing_technique_window_left = 0.0
+	landing_technique_match_time = 0.0
+	if mark_cancelled:
+		landing_technique_last_result = LandingTechniquePolicy.RESULT_CANCELLED
+	_set_landing_completion_blocked(false)
+	landing_technique_state_changed.emit(
+		get_landing_technique_snapshot().duplicate(true)
+	)
+
+
+func get_landing_technique_snapshot() -> Dictionary:
+	return LandingTechniquePolicy.build_snapshot(
+		landing_technique_active,
+		landing_technique_window_left,
+		landing_technique_match_time,
+		landing_technique_expected_response,
+		landing_technique_last_result,
+		landing_technique_success_count,
+		landing_technique_fish_lateral,
+		landing_technique_distance_meters,
+		landing_technique_mastery_known,
+		landing_technique_secured,
+		landing_technique_checked
+	)
+
+
 func _update_final_surge_state() -> void:
 	if (
 		not final_surge_enabled
 		or final_surge_checked
 		or final_surge_active
+		or landing_technique_active
 		or fight_state != FightState.SPENT
 		or active_fish == null
 		or caster == null
@@ -1150,6 +1339,12 @@ func _update_final_surge_state() -> void:
 		size_ratio,
 		is_king
 	)
+	if landing_technique_secured:
+		chance = LandingTechniquePolicy.adjust_final_surge_chance(
+			chance,
+			difficulty_tier,
+			is_king
+		)
 
 	if randf() > chance:
 		return
@@ -1182,6 +1377,15 @@ func _start_final_surge(
 		difficulty_tier,
 		is_king
 	)
+	if landing_technique_secured:
+		stamina_ratio = LandingTechniquePolicy.adjust_final_surge_stamina_ratio(
+			stamina_ratio,
+			is_king
+		)
+		intensity = LandingTechniquePolicy.adjust_final_surge_intensity(
+			intensity,
+			is_king
+		)
 
 	final_surge_snapshot = LandingPolicy.build_snapshot(
 		distance_meters,
@@ -1189,6 +1393,7 @@ func _start_final_surge(
 		stamina_ratio,
 		intensity
 	)
+	final_surge_snapshot["landing_technique_secured"] = landing_technique_secured
 
 	fight_state = FightState.RESISTING
 	rounds_remaining = 1
@@ -3133,6 +3338,17 @@ func _reset_fight_readouts() -> void:
 	surface_current_depth_m = 0.0
 	surface_total_depth_m = 0.0
 	surface_instability_impulse = 0.0
+	landing_technique_active = false
+	landing_technique_checked = false
+	landing_technique_secured = false
+	landing_technique_window_left = 0.0
+	landing_technique_match_time = 0.0
+	landing_technique_expected_response = LandingTechniquePolicy.RESPONSE_NONE
+	landing_technique_last_result = LandingTechniquePolicy.RESULT_IDLE
+	landing_technique_success_count = 0
+	landing_technique_fish_lateral = 0.0
+	landing_technique_distance_meters = 0.0
+	landing_technique_mastery_known = false
 	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})
