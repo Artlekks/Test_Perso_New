@@ -10,6 +10,9 @@ const FightIntent = preload(
 const StructurePolicy = preload(
 	"res://scripts/fishing_structure_combat_policy.gd"
 )
+const LandingPolicy = preload(
+	"res://scripts/fishing_landing_policy.gd"
+)
 
 
 static func run() -> Dictionary:
@@ -62,6 +65,21 @@ static func run() -> Dictionary:
 	var trained_escape := StructurePolicy.get_abrasion_rate_multiplier(0.7, 0.7, true, true, true)
 	_record(report, "Structure Fighting improves deliberate escape", trained_escape < untrained_escape * 0.6, "The taught technique should reward correct side pressure without making structure harmless.")
 	_record(report, "Snag Escape improves lure recovery odds", StructurePolicy.get_lure_snag_build_multiplier(true) < 1.0 and StructurePolicy.get_lure_snag_recovery_multiplier(true) > 1.0, "The lure-control mastery should reduce snag buildup and accelerate recovery using the existing snag system.")
+
+
+	_record(report, "Landing window is distance driven", LandingPolicy.is_in_final_surge_window(1.8, 2.4) and not LandingPolicy.is_in_final_surge_window(3.0, 2.4), "Final-surge eligibility should depend on actually bringing the fish close, not an arbitrary timer.")
+	var easy_surge_chance := LandingPolicy.get_final_surge_chance(1, 1.0, false)
+	var hard_surge_chance := LandingPolicy.get_final_surge_chance(5, 1.0, false)
+	var king_surge_chance := LandingPolicy.get_final_surge_chance(5, 1.25, true)
+	_record(report, "Final surge scales with fish difficulty", hard_surge_chance > easy_surge_chance, "More difficult fish should be more likely to make a last run without making every beginner fish do it.")
+	_record(report, "King fish are dangerous near landing", king_surge_chance > hard_surge_chance, "King specimens should preserve late-fight drama even after their main stamina is exhausted.")
+	_record(report, "Final surge chance stays bounded", easy_surge_chance >= LandingPolicy.MIN_FINAL_SURGE_CHANCE and king_surge_chance <= LandingPolicy.MAX_FINAL_SURGE_CHANCE, "Landing danger needs authored limits so it never becomes guaranteed or vanishingly rare by accident.")
+	var easy_surge_stamina := LandingPolicy.get_final_surge_stamina_ratio(1, false)
+	var king_surge_stamina := LandingPolicy.get_final_surge_stamina_ratio(5, true)
+	_record(report, "Final surge is a short burst, not a full fight reset", easy_surge_stamina > 0.0 and easy_surge_stamina < 0.30 and king_surge_stamina < 0.40, "A last run should reopen pressure management briefly, not secretly refill the entire fish fight.")
+	_record(report, "Stronger fish get a stronger final burst", king_surge_stamina > easy_surge_stamina and LandingPolicy.get_final_surge_intensity(5, true) > LandingPolicy.get_final_surge_intensity(1, false), "Late-game fish should express the same mechanic more aggressively through stamina and behavior intensity.")
+	var landing_snapshot := LandingPolicy.build_snapshot(1.4, king_surge_chance, king_surge_stamina, 1.0)
+	_record(report, "Final surge exposes a stable read model", str(landing_snapshot.get("label", "")) == "FINAL SURGE" and bool(landing_snapshot.get("active", false)), "HUD, tutorials and future Landing Technique insights should consume one stable snapshot rather than infer the event from movement.")
 
 	report["valid"] = int(report["passed_count"]) == int(report["test_count"])
 	return report

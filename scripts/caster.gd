@@ -79,6 +79,28 @@ func _process(_delta: float) -> void:
 
 	bait_distance_changed.emit(distance_meters)
 	
+func get_active_bait_distance_meters() -> float:
+	if not is_instance_valid(active_bait) or not is_instance_valid(reel_target):
+		return INF
+	var bait_flat := Vector2(
+		active_bait.global_position.x,
+		active_bait.global_position.z
+	)
+	var target_flat := Vector2(
+		reel_target.global_position.x,
+		reel_target.global_position.z
+	)
+	return bait_flat.distance_to(target_flat) * maxf(distance_meter_scale, 0.0)
+
+
+func set_landing_completion_blocked(active: bool) -> void:
+	if (
+		is_instance_valid(active_bait)
+		and active_bait.has_method("set_landing_completion_blocked")
+	):
+		active_bait.set_landing_completion_blocked(active)
+
+
 func set_current_service(service: FishingCurrentService) -> void:
 	current_service = service
 	if is_instance_valid(active_bait) and active_bait.has_method("set_current_service"):

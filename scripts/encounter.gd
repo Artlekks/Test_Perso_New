@@ -15,6 +15,9 @@ const FightPressurePolicy = preload(
 const StructureCombatPolicy = preload(
 	"res://scripts/fishing_structure_combat_policy.gd"
 )
+const LandingPolicy = preload(
+	"res://scripts/fishing_landing_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_triggered
@@ -39,6 +42,8 @@ signal fish_intent_changed(snapshot: Dictionary)
 signal line_pressure_band_changed(snapshot: Dictionary)
 signal structure_threat_changed(snapshot: Dictionary)
 signal line_abrasion_changed(value: float)
+signal fish_final_surge_started(snapshot: Dictionary)
+signal fish_final_surge_ended
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -72,6 +77,12 @@ var spent_pull_strength: float = 0.20
 
 @export_category("Structure Fighting")
 @export_range(0.05, 2.0, 0.05) var structure_line_break_threshold: float = 1.0
+
+@export_category("Landing / Final Surge")
+## Trigger check happens before the normal 1 m-ish catch threshold so a fish
+## has room to make a readable last burst instead of teleporting into landing.
+@export_range(1.0, 6.0, 0.1) var final_surge_trigger_distance_meters: float = 2.4
+@export var final_surge_enabled: bool = true
 
 @export var first_bite_delay: float = 0.5
 @export var retry_bite_delay: float = 0.5
@@ -138,6 +149,9 @@ var current_pressure_fatigue_multiplier: float = 1.0
 var current_structure_contact: Dictionary = {}
 var current_structure_snapshot: Dictionary = {}
 var line_abrasion: float = 0.0
+var final_surge_checked: bool = false
+var final_surge_active: bool = false
+var final_surge_snapshot: Dictionary = {}
 
 enum FightState {
 	NONE,
@@ -743,6 +757,7 @@ func _process(delta: float) -> void:
 
 	_update_line_pressure_state()
 	_update_structure_combat(delta)
+	_update_final_surge_state()
 
 	if not lifecycle.is_hooked():
 		return
@@ -909,6 +924,126 @@ func _process(delta: float) -> void:
 
 	if fish_stamina <= 0.0:
 		_finish_resistance_round()
+
+func _update_final_surge_state() -> void:
+	if (
+		not final_surge_enabled
+		or final_surge_checked
+		or final_surge_active
+		or fight_state != FightState.SPENT
+		or active_fish == null
+		or caster == null
+		or not caster.has_method("get_active_bait_distance_meters")
+	):
+		return
+
+	var distance_meters: float = caster.get_active_bait_distance_meters()
+	if not LandingPolicy.is_in_final_surge_window(
+		distance_meters,
+		final_surge_trigger_distance_meters
+	):
+		return
+
+	# One roll per hooked fish. A fish that stays calm here remains calm; moving
+	# in/out of the landing window cannot be used to reroll the encounter.
+	final_surge_checked = true
+	var difficulty_tier := clampi(
+		int(active_fight_context.get("difficulty_tier", 1)),
+		1,
+		5
+	)
+	var size_ratio := maxf(
+		float(active_fight_context.get("size_ratio_to_average", 1.0)),
+		0.0
+	)
+	var is_king := bool(active_fight_context.get("is_king", false))
+	var chance := LandingPolicy.get_final_surge_chance(
+		difficulty_tier,
+		size_ratio,
+		is_king
+	)
+
+	if randf() > chance:
+		return
+
+	_start_final_surge(
+		distance_meters,
+		chance,
+		difficulty_tier,
+		is_king
+	)
+
+
+func _start_final_surge(
+	distance_meters: float,
+	chance: float,
+	difficulty_tier: int,
+	is_king: bool
+) -> void:
+	if not lifecycle.is_hooked() or active_fish == null:
+		return
+
+	final_surge_active = true
+	_set_landing_completion_blocked(true)
+
+	var stamina_ratio := LandingPolicy.get_final_surge_stamina_ratio(
+		difficulty_tier,
+		is_king
+	)
+	var intensity := LandingPolicy.get_final_surge_intensity(
+		difficulty_tier,
+		is_king
+	)
+
+	final_surge_snapshot = LandingPolicy.build_snapshot(
+		distance_meters,
+		chance,
+		stamina_ratio,
+		intensity
+	)
+
+	fight_state = FightState.RESISTING
+	rounds_remaining = 1
+	recovery_time_left = 0.0
+	_set_active_fight_shadow_visual_state(&"resisting")
+
+	fish_stamina = _get_max_stamina() * stamina_ratio
+	fish_stamina_changed.emit(fish_stamina, _get_max_stamina())
+	tension.set_reel_gain_multiplier(1.0)
+	caster.set_reel_speed_multiplier(1.0)
+	fish_behavior.start(intensity)
+
+	# Presentation can use this as a distinct last-second tell; the existing
+	# thrash signal also gives the current splash system immediate feedback.
+	fish_final_surge_started.emit(final_surge_snapshot.duplicate(true))
+	fish_thrash_started.emit(clampf(intensity, 0.0, 1.0))
+
+
+func _finish_final_surge_if_active() -> void:
+	if not final_surge_active:
+		return
+
+	final_surge_active = false
+	_set_landing_completion_blocked(false)
+	fish_final_surge_ended.emit()
+
+
+func _set_landing_completion_blocked(active: bool) -> void:
+	if caster != null and caster.has_method("set_landing_completion_blocked"):
+		caster.set_landing_completion_blocked(active)
+
+
+func get_landing_combat_snapshot() -> Dictionary:
+	if final_surge_snapshot.is_empty():
+		return {
+			"active": false,
+			"checked": final_surge_checked,
+		}
+	var snapshot := final_surge_snapshot.duplicate(true)
+	snapshot["active"] = final_surge_active
+	snapshot["checked"] = final_surge_checked
+	return snapshot
+
 
 func _get_pending_bite_window_time() -> float:
 	var multiplier: float = 1.0
@@ -1120,6 +1255,7 @@ func _enter_spent() -> void:
 	fight_state = FightState.SPENT
 	_set_active_fight_shadow_visual_state(&"spent")
 	fish_spent.emit()
+	_finish_final_surge_if_active()
 
 	recovery_time_left = spent_recovery_time
 
@@ -1180,6 +1316,7 @@ func get_fish_debug_snapshot() -> Dictionary:
 		"line_pressure": get_line_pressure_snapshot(),
 		"line_abrasion": line_abrasion,
 		"structure": current_structure_snapshot.duplicate(true),
+		"landing": get_landing_combat_snapshot(),
 	}
 
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -1854,6 +1991,10 @@ func _reset_fight_readouts() -> void:
 	current_structure_contact.clear()
 	current_structure_snapshot.clear()
 	line_abrasion = 0.0
+	final_surge_checked = false
+	final_surge_active = false
+	final_surge_snapshot.clear()
+	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})
 

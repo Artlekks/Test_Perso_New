@@ -176,6 +176,7 @@ var mastery_service = null
 var snag_probe: Area3D = null
 var snag_risk: float = 0.0
 var snag_triggered: bool = false
+var landing_completion_blocked: bool = false
 
 ## One cached runtime per spawned bait. Profiles are configured only when lure
 ## data changes; there are no per-frame resource loads or SceneTree searches.
@@ -1305,6 +1306,7 @@ func get_lure_debug_snapshot() -> Dictionary:
 		"action": "NONE",
 		"steering": reel_steering,
 		"steering_target": reel_steering_target,
+		"landing_completion_blocked": landing_completion_blocked,
 		"manual_pull_remaining": manual_pull_remaining,
 	}
 
@@ -1411,6 +1413,14 @@ func _get_fight_calm_factor() -> float:
 	return t * t * (3.0 - 2.0 * t)
 
 
+func set_landing_completion_blocked(active: bool) -> void:
+	landing_completion_blocked = active
+
+
+func is_landing_completion_blocked() -> bool:
+	return landing_completion_blocked
+
+
 func can_complete_return(
 	distance_to_player: float
 ) -> bool:
@@ -1465,6 +1475,8 @@ func get_effective_return_distance() -> float:
 func _can_complete_active_return(
 	distance_to_player: float
 ) -> bool:
+	if fight_mode and landing_completion_blocked:
+		return false
 	return (
 		distance_to_player
 		<= get_effective_return_distance()
