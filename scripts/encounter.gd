@@ -24,6 +24,9 @@ const BiteTimingPolicy = preload(
 const PumpReelPolicy = preload(
 	"res://scripts/fishing_pump_reel_policy.gd"
 )
+const RunReadingPolicy = preload(
+	"res://scripts/fishing_run_reading_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_commit_ready(snapshot: Dictionary)
@@ -52,6 +55,7 @@ signal line_abrasion_changed(value: float)
 signal fish_final_surge_started(snapshot: Dictionary)
 signal fish_final_surge_ended
 signal pump_reel_state_changed(snapshot: Dictionary)
+signal run_read_state_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -168,6 +172,14 @@ var pump_reel_window_left: float = 0.0
 var pump_reel_cooldown_left: float = 0.0
 var pump_reel_last_result: StringName = PumpReelPolicy.RESULT_IDLE
 var pump_reel_success_count: int = 0
+var run_read_active: bool = false
+var run_read_window_left: float = 0.0
+var run_read_match_time: float = 0.0
+var run_read_expected_response: StringName = RunReadingPolicy.RESPONSE_NONE
+var run_read_last_result: StringName = RunReadingPolicy.RESULT_IDLE
+var run_read_success_count: int = 0
+var run_read_intent_snapshot: Dictionary = {}
+var suppress_next_run_read_intent: bool = false
 
 enum FightState {
 	NONE,
@@ -875,6 +887,7 @@ func _process(delta: float) -> void:
 
 	_update_line_pressure_state()
 	_update_pump_reel(delta)
+	_update_run_read(delta)
 	_update_structure_combat(delta)
 	_update_final_surge_state()
 
@@ -1349,6 +1362,133 @@ func get_pump_reel_snapshot() -> Dictionary:
 	)
 
 
+func _start_run_read(intent_snapshot: Dictionary) -> void:
+	# Reading the Run is a response layer on top of the existing FishIntent
+	# vocabulary. It does not create or modify the fish behavior itself.
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+	):
+		_cancel_run_read(false)
+		return
+
+	var expected := RunReadingPolicy.get_expected_response(intent_snapshot)
+	if expected == RunReadingPolicy.RESPONSE_NONE:
+		_cancel_run_read(false)
+		return
+
+	run_read_active = true
+	run_read_window_left = RunReadingPolicy.get_read_window_seconds(
+		intent_snapshot
+	)
+	run_read_match_time = 0.0
+	run_read_expected_response = expected
+	run_read_last_result = RunReadingPolicy.RESULT_READING
+	run_read_intent_snapshot = intent_snapshot.duplicate(true)
+	run_read_state_changed.emit(
+		get_run_read_snapshot().duplicate(true)
+	)
+
+
+func _update_run_read(delta: float) -> void:
+	if not run_read_active:
+		return
+
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or not lifecycle.is_hooked()
+	):
+		_cancel_run_read(true)
+		return
+
+	var matches := RunReadingPolicy.is_response_matching(
+		run_read_intent_snapshot,
+		player_reeling,
+		player_steering,
+		steering_deadzone
+	)
+	run_read_match_time = RunReadingPolicy.advance_match_time(
+		run_read_match_time,
+		matches,
+		delta
+	)
+
+	if RunReadingPolicy.is_read_complete(run_read_match_time):
+		_complete_run_read()
+		return
+
+	run_read_window_left = maxf(
+		run_read_window_left - maxf(delta, 0.0),
+		0.0
+	)
+	if run_read_window_left > 0.0:
+		return
+
+	run_read_active = false
+	run_read_match_time = 0.0
+	run_read_last_result = RunReadingPolicy.RESULT_MISSED
+	run_read_state_changed.emit(
+		get_run_read_snapshot().duplicate(true)
+	)
+
+
+func _complete_run_read() -> void:
+	if not run_read_active:
+		return
+
+	run_read_active = false
+	run_read_window_left = 0.0
+	run_read_match_time = RunReadingPolicy.RESPONSE_HOLD_SECONDS
+	run_read_last_result = RunReadingPolicy.RESULT_SUCCESS
+	run_read_success_count += 1
+
+	# The reward is intentionally small. Existing pressure control, directional
+	# fatigue, Pump & Reel and fish stamina remain the main fight economy.
+	if fight_state == FightState.RESISTING:
+		var max_stamina := _get_max_stamina()
+		var bonus_ratio := RunReadingPolicy.get_stamina_control_bonus_ratio(
+			run_read_intent_snapshot
+		)
+		fish_stamina = maxf(
+			fish_stamina - max_stamina * bonus_ratio,
+			0.0
+		)
+		fish_stamina_changed.emit(
+			fish_stamina,
+			max_stamina
+		)
+
+	run_read_state_changed.emit(
+		get_run_read_snapshot().duplicate(true)
+	)
+
+
+func _cancel_run_read(mark_cancelled: bool) -> void:
+	if not run_read_active and not mark_cancelled:
+		return
+	run_read_active = false
+	run_read_window_left = 0.0
+	run_read_match_time = 0.0
+	if mark_cancelled:
+		run_read_last_result = RunReadingPolicy.RESULT_CANCELLED
+	run_read_state_changed.emit(
+		get_run_read_snapshot().duplicate(true)
+	)
+
+
+func get_run_read_snapshot() -> Dictionary:
+	return RunReadingPolicy.build_snapshot(
+		run_read_active,
+		run_read_window_left,
+		run_read_match_time,
+		run_read_expected_response,
+		run_read_last_result,
+		run_read_success_count,
+		run_read_intent_snapshot
+	)
+
+
 func _react_to_reel_release() -> void:
 	if fight_state == FightState.NONE:
 		return
@@ -1361,9 +1501,14 @@ func _react_to_reel_release() -> void:
 	elif fight_state == FightState.SPENT:
 		reaction_intensity = spent_release_movement_intensity
 
+	# FishBehavior intentionally reacts to a reel release with a fresh movement
+	# target. That synthetic reaction still drives visuals/pressure, but it must
+	# not replace the authored intent the player is currently trying to read.
+	suppress_next_run_read_intent = true
 	fish_behavior.react_to_release(
 		reaction_intensity
 	)
+	suppress_next_run_read_intent = false
 
 func set_player_steering(value: float) -> void:
 	if not lifecycle.is_hooked():
@@ -1566,6 +1711,7 @@ func get_fish_debug_snapshot() -> Dictionary:
 		"structure": current_structure_snapshot.duplicate(true),
 		"landing": get_landing_combat_snapshot(),
 		"pump_reel": get_pump_reel_snapshot(),
+		"reading_the_run": get_run_read_snapshot(),
 	}
 
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -2066,6 +2212,8 @@ func _on_fish_behavior_intent_started(snapshot: Dictionary) -> void:
 
 	current_fight_intent = snapshot.duplicate(true)
 	fish_intent_changed.emit(current_fight_intent.duplicate(true))
+	if not suppress_next_run_read_intent:
+		_start_run_read(current_fight_intent)
 
 
 func _update_line_pressure_state() -> void:
@@ -2248,6 +2396,14 @@ func _reset_fight_readouts() -> void:
 	pump_reel_cooldown_left = 0.0
 	pump_reel_last_result = PumpReelPolicy.RESULT_IDLE
 	pump_reel_success_count = 0
+	run_read_active = false
+	run_read_window_left = 0.0
+	run_read_match_time = 0.0
+	run_read_expected_response = RunReadingPolicy.RESPONSE_NONE
+	run_read_last_result = RunReadingPolicy.RESULT_IDLE
+	run_read_success_count = 0
+	run_read_intent_snapshot.clear()
+	suppress_next_run_read_intent = false
 	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})
