@@ -79,6 +79,7 @@
 [ext_resource type="PackedScene" path="res://actors/HarborRequestBoard.tscn" id="79_harbor_request"]
 [ext_resource type="PackedScene" path="res://actors/RegionalChampionshipRegistrar.tscn" id="80_regional_championship"]
 [ext_resource type="PackedScene" path="res://actors/BeachFishingCritter.tscn" id="81_beach_critter"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterStillWaterNPC.tscn" id="82_still_water_master"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -270,7 +271,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.08, 0.07, 0.5)
 
 [node name="BeachGatheringCircuit" parent="World" unique_id=1174588029 instance=ExtResource("76_gathering_circuit")]
 
-[node name="BeachCritter" parent="World" unique_id=1695576825 instance=ExtResource("81_beach_critter")]
+[node name="FishingMasterStillWaterNPC" parent="World" unique_id=179015231 instance=ExtResource("82_still_water_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.07, -0.1)
+
+[node name="BeachCritter" parent="World" unique_id=80480580 instance=ExtResource("81_beach_critter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, 0.34, 0.12)
 roam_half_width = 0.48
 roam_half_depth = 0.26
@@ -853,33 +857,11 @@ script = ExtResource("24_cybga")
 max_fish_stamina = 20.0
 stamina_drain_speed = 60.0
 stamina_recovery_speed = 0.0
-spent_behavior_intensity = null
-spent_resistance = null
-spent_pull_strength = null
+caster = NodePath("../Caster")
 spent_recovery_time = 20.0
-spent_recovery_stamina_ratio = null
-spent_restart_intensity = null
-spent_tension_multiplier = null
 spent_reel_speed_multiplier = 6.0
-counter_steer_fatigue_multiplier = null
-steering_deadzone = null
 first_bite_delay = 2.0
 retry_bite_delay = 3.0
-direct_hit_chance = null
-max_bite_chance_per_check = null
-shadow_bite_chance_multiplier = null
-shadow_species_selection_chance = null
-shadow_candidate_radius = null
-shadow_pre_bite_hold_radius = null
-shadow_pre_bite_retry_delay = null
-technique_catalog = null
-release_movement_intensity = null
-spent_release_movement_intensity = null
-resisting_behavior_intensity = null
-exhausted_behavior_intensity = null
-exhausted_resistance = null
-exhausted_pull_strength = null
-caster = NodePath("../Caster")
 
 [node name="BiteTimer" type="Timer" parent="Game/Fishing/Encounter" unique_id=1520843133]
 wait_time = 3.0

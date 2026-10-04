@@ -1,6 +1,13 @@
 extends RefCounted
 class_name FishingMasteryQA
 
+const FishingWarinessPolicyScript = preload(
+	"res://scripts/fishing_wariness_policy.gd"
+)
+const FishingMasterLessonPolicyScript = preload(
+	"res://scripts/mastery/fishing_master_lesson_policy.gd"
+)
+
 static func run(
 	catalog: FishingMasteryTechniqueCatalog,
 	current_spot: FishingSpotData = null
@@ -15,6 +22,9 @@ static func run(
 	var read_current := catalog.get_technique(&"read_current") if catalog != null else null
 	_record(report, "Read Current exposes capability", read_current != null and read_current.has_capability(&"read_current"), "Fishing mechanics should query capability tags rather than special-case UI state.")
 	_record(report, "Drift Casting depends on current knowledge", _has_prerequisite(catalog, &"drift_casting", &"read_current"), "Advanced current control should build on current-reading rather than unlock independently.")
+	var quiet_approach := catalog.get_technique(&"quiet_approach") if catalog != null else null
+	_record(report, "Quiet Approach is authored", quiet_approach != null, "Bank-side fieldcraft needs a real master-taught technique in the canonical mastery catalog.")
+	_record(report, "Quiet Approach exposes movement capability", quiet_approach != null and quiet_approach.has_capability(&"quiet_approach"), "Fish wariness should query a stable capability tag rather than hard-code a tutorial flag.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
 	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
 	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
@@ -32,6 +42,13 @@ static func run(
 	var drift_definition := catalog.get_technique(&"drift_casting") if catalog != null else null
 	var drift_quote := service.can_learn(&"drift_casting", drift_definition.teacher_id if drift_definition != null else &"")
 	_record(report, "Prerequisite unlock enables next technique", bool(drift_quote.get("can_learn", false)), "Technique chains should become available from learned knowledge, not numeric rank.")
+
+	var quiet_learned := service.learn_technique(
+		&"quiet_approach",
+		quiet_approach.teacher_id if quiet_approach != null else &"",
+		false
+	)
+	_record(report, "Quiet Approach becomes runtime capability", bool(quiet_learned.get("success", false)) and service.has_capability(&"quiet_approach"), "Once taught by its master, the live fish-presence system should be able to reduce player disturbance.")
 
 	var read_structure := catalog.get_technique(&"read_structure") if catalog != null else null
 	var line_feel := catalog.get_technique(&"line_feel") if catalog != null else null
@@ -78,6 +95,24 @@ static func run(
 
 	var drift_learned := service.learn_technique(&"drift_casting", drift_definition.teacher_id if drift_definition != null else &"", false)
 	_record(report, "Drift Casting exposes prediction capability", bool(drift_learned.get("success", false)) and service.has_capability(&"current_compensation"), "The taught technique should unlock the drift-path readout without altering current physics.")
+
+	var bold_radius := FishingWarinessPolicyScript.get_scare_radius(0.15)
+	var wary_radius := FishingWarinessPolicyScript.get_scare_radius(0.95)
+	_record(report, "Wary species notice bank disturbance farther away", wary_radius > bold_radius * 1.5, "Species wariness must change practical approach distance, not just exist as metadata.")
+	var noisy_gain := FishingWarinessPolicyScript.get_stress_delta(1.0, 1.0, 0.85, false, 1.0)
+	var quiet_gain := FishingWarinessPolicyScript.get_stress_delta(1.0, 1.0, 0.85, true, 1.0)
+	_record(report, "Quiet Approach materially reduces disturbance", quiet_gain > 0.0 and quiet_gain < noisy_gain * 0.45, "The learned technique should reward careful movement without making fish completely deaf.")
+	var distant_delta := FishingWarinessPolicyScript.get_stress_delta(1.0, 99.0, 0.85, false, 1.0)
+	_record(report, "Distant movement does not scare fish", distant_delta < 0.0, "Bank noise should be spatial; running elsewhere in the scene must not globally panic the water.")
+	_record(report, "Wariness threshold is deterministic", FishingWarinessPolicyScript.should_spook(0.90) and not FishingWarinessPolicyScript.should_spook(0.30), "Fish shadows need a stable threshold for readable flee/dive behavior.")
+
+	_record(report, "Quiet Approach belongs to Still Water", quiet_approach != null and quiet_approach.teacher_id == &"master_still_water", "The first real mastery lesson must be taught by the authored master rather than a generic unlock.")
+	var still_progress := FishingMasterLessonPolicyScript.advance_stillness(0.0, 0.0, 2.0)
+	_record(report, "Still Water lesson rewards actual stillness", still_progress > 1.9, "The lesson should progress only while the player is genuinely settled near the bank.")
+	var reset_progress := FishingMasterLessonPolicyScript.advance_stillness(still_progress, 1.0, 0.1)
+	_record(report, "Movement resets the Still Water lesson", is_zero_approx(reset_progress), "The first master challenge must be performed, not clicked through.")
+	var complete_progress := FishingMasterLessonPolicyScript.advance_stillness(3.6, 0.0, 1.0)
+	_record(report, "Still Water lesson has a deterministic completion point", FishingMasterLessonPolicyScript.is_stillness_complete(complete_progress), "The lesson needs a stable transition from observation to the catch challenge.")
 
 	service.free()
 	unlock.free()

@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="FishingMasteryTechniqueCatalog" format=3 uid="uid://ddg21j8qc3bii"]
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueCatalog" format=3]
 
-[ext_resource type="Script" uid="uid://b1wrd2s41gkvd" path="res://scripts/mastery/fishing_mastery_technique_catalog.gd" id="1_catalog"]
-[ext_resource type="Script" uid="uid://b5olmp8qtm1i4" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="2_definition"]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="2_definition"]
 [ext_resource type="Resource" path="res://data/bof4/mastery/read_current.tres" id="3_read_current"]
 [ext_resource type="Resource" path="res://data/bof4/mastery/quiet_approach.tres" id="4_quiet"]
 [ext_resource type="Resource" path="res://data/bof4/mastery/drift_casting.tres" id="5_drift"]

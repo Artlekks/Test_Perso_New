@@ -1,6 +1,10 @@
 extends Node3D
 class_name FishShadowActor
 
+const FishingWarinessPolicyScript = preload(
+	"res://scripts/fishing_wariness_policy.gd"
+)
+
 signal expired(shadow: FishShadowActor)
 
 @export_category("Movement")
@@ -127,6 +131,19 @@ var rejected_interest_cooldown_max: float = 3.0
 @export_range(0.3, 3.0, 0.05)
 var inspect_speed_multiplier: float = 0.48
 
+@export_category("Approach / Wariness")
+@export_range(0.5, 4.0, 0.1)
+var spook_duration_min: float = 1.25
+
+@export_range(0.5, 5.0, 0.1)
+var spook_duration_max: float = 2.4
+
+@export_range(1.0, 3.0, 0.05)
+var spook_speed_multiplier: float = 1.55
+
+@export_range(0.5, 1.0, 0.05)
+var spook_depth_ratio: float = 0.88
+
 @export_category("Hooked Fight")
 ## Legacy fallback only. While the head texture is available, the real
 ## center-to-nose distance is derived automatically from the Sprite3D width.
@@ -243,6 +260,12 @@ var _bite_ready_timer: float = 0.0
 var _interest_cooldown: float = 0.0
 var _inspect_target_timer: float = 0.0
 var _inspect_offset: Vector3 = Vector3.ZERO
+
+var _player_disturbance_position: Vector3 = Vector3.ZERO
+var _player_disturbance_noise: float = 0.0
+var _quiet_approach_active: bool = false
+var _wariness_stress: float = 0.0
+var _spook_remaining: float = 0.0
 
 var _fight_tracking: bool = false
 var _fight_bait: Node3D = null
@@ -377,6 +400,30 @@ func restore_readable_presence() -> void:
 	_life_remaining = maxf(_life_remaining, 4.0)
 
 
+func set_player_disturbance(
+	source_position: Vector3,
+	raw_noise: float,
+	has_quiet_approach: bool
+) -> void:
+	_player_disturbance_position = source_position
+	_player_disturbance_noise = clampf(raw_noise, 0.0, 1.0)
+	_quiet_approach_active = has_quiet_approach
+
+
+func get_wariness_snapshot() -> Dictionary:
+	var wariness := _get_species_wariness()
+	var distance := global_position.distance_to(_player_disturbance_position)
+	var snapshot := FishingWarinessPolicyScript.build_snapshot(
+		_player_disturbance_noise,
+		distance,
+		wariness,
+		_quiet_approach_active
+	)
+	snapshot["stress"] = _wariness_stress
+	snapshot["spooked"] = _spook_remaining > 0.0
+	return snapshot
+
+
 func attach_to_hooked_bait(
 	bait: Node3D,
 	hooked_fish_data: FishData = null,
@@ -390,6 +437,8 @@ func attach_to_hooked_bait(
 
 	_fight_tracking = true
 	_fight_bait = bait
+	_spook_remaining = 0.0
+	_wariness_stress = 0.0
 	_bait = bait
 	_observed_bait_id = bait.get_instance_id()
 	_pre_bite_state = PreBiteState.ROAM
@@ -523,10 +572,85 @@ func _process(delta: float) -> void:
 		_update_visuals()
 		return
 
-	_update_bait_interest(delta)
+	_update_wariness(delta)
+	if _spook_remaining <= 0.0:
+		_update_bait_interest(delta)
 	_update_motion(delta)
 	_place_body()
 	_update_visuals()
+
+
+func _update_wariness(delta: float) -> void:
+	if _fight_tracking or _expiring:
+		return
+
+	var wariness := _get_species_wariness()
+	var horizontal := _player_disturbance_position - global_position
+	horizontal.y = 0.0
+	var stress_delta := FishingWarinessPolicyScript.get_stress_delta(
+		_player_disturbance_noise,
+		horizontal.length(),
+		wariness,
+		_quiet_approach_active,
+		delta
+	)
+	_wariness_stress = clampf(
+		_wariness_stress + stress_delta,
+		0.0,
+		1.0
+	)
+
+	if _spook_remaining > 0.0:
+		_spook_remaining = maxf(_spook_remaining - delta, 0.0)
+		_target_depth_ratio = maxf(_target_depth_ratio, spook_depth_ratio)
+		_depth_change_remaining = maxf(_depth_change_remaining, 0.4)
+		return
+
+	if FishingWarinessPolicyScript.should_spook(_wariness_stress):
+		_enter_spooked_state()
+
+
+func _enter_spooked_state() -> void:
+	_spook_remaining = _rng.randf_range(
+		spook_duration_min,
+		maxf(spook_duration_max, spook_duration_min)
+	)
+	_pre_bite_state = PreBiteState.ROAM
+	_pre_bite_timer = 0.0
+	_bite_ready_timer = 0.0
+	_inspect_target_timer = 0.0
+	_inspect_offset = Vector3.ZERO
+	_interest_cooldown = maxf(
+		_interest_cooldown,
+		_spook_remaining + 1.0
+	)
+	_pause_remaining = 0.0
+	_target_depth_ratio = maxf(_target_depth_ratio, spook_depth_ratio)
+	_depth_change_remaining = maxf(_depth_change_remaining, _spook_remaining)
+
+	var away := global_position - _player_disturbance_position
+	away.y = 0.0
+	if away.length_squared() <= 0.0001:
+		var angle := _rng.randf_range(-PI, PI)
+		away = Vector3(cos(angle), 0.0, sin(angle))
+	else:
+		away = away.normalized()
+
+	var flee_distance := FishingWarinessPolicyScript.get_scare_radius(
+		_get_species_wariness()
+	) * 0.85
+	var flee_target := global_position + away * flee_distance
+	_target_world_position = swim_bounds.constrain_fish_motion(
+		global_position,
+		flee_target
+	)
+	_has_target = true
+
+
+func _get_species_wariness() -> float:
+	if fish_data == null:
+		return 0.55
+	return clampf(fish_data.approach_wariness, 0.0, 1.0)
 
 
 func _update_lifetime(delta: float) -> void:
@@ -821,6 +945,9 @@ func _update_motion(delta: float) -> void:
 		speed *= seek_speed_multiplier
 	elif _pre_bite_state == PreBiteState.INSPECT:
 		speed *= inspect_speed_multiplier
+
+	if _spook_remaining > 0.0:
+		speed *= spook_speed_multiplier
 
 	# Deeper fish feel a little more distant and unhurried.
 	speed *= lerpf(1.0, 0.82, _depth_ratio)

@@ -1020,7 +1020,7 @@ func _on_fish_behavior_movement_changed(lateral: float) -> void:
 
 	var resolved_lateral := lateral
 	if not current_structure_contact.is_empty() and caster != null:
-		var bait_position := caster.get_active_bait_world_position()
+		var bait_position: Vector3 = caster.get_active_bait_world_position()
 		var structure_position: Vector3 = current_structure_contact.get(
 			"world_position",
 			bait_position
@@ -1769,7 +1769,7 @@ func _update_structure_combat(delta: float) -> void:
 	if current_structure_contact.is_empty():
 		return
 
-	var bait_position := caster.get_active_bait_world_position()
+	var bait_position: Vector3 = caster.get_active_bait_world_position()
 	var structure_position: Vector3 = current_structure_contact.get(
 		"world_position",
 		bait_position

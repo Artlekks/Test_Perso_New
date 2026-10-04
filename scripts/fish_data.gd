@@ -148,6 +148,12 @@ var out_of_depth_multiplier: float = 0.15
 
 @export var preferred_lure_ids: Array[StringName] = []
 
+@export_category("Approach / Wariness")
+## How strongly this species reacts to movement/noise near the bank.
+## 0.0 = bold/indifferent, 1.0 = extremely wary.
+@export_range(0.0, 1.0, 0.05)
+var approach_wariness: float = 0.55
+
 @export_category("Fight Behavior")
 @export var behavior_profile: FishBehaviorProfile
 

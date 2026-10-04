@@ -84,8 +84,12 @@ var _environment_context: Dictionary = {}
 var _active_bait: Node3D = null
 var _active_bait_id: int = 0
 var _bait_lookup_cooldown: float = 0.0
+var _fishing_player: Node3D = null
+var _mastery_service = null
+var _player_lookup_cooldown: float = 0.0
 
 const BAIT_LOOKUP_INTERVAL_WHEN_ABSENT: float = 0.10
+const PLAYER_LOOKUP_INTERVAL_WHEN_ABSENT: float = 0.50
 
 
 func _ready() -> void:
@@ -102,6 +106,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_cleanup_invalid_shadows()
+	_update_player_disturbance(delta)
 	_update_active_bait_reference(delta)
 	_population_reconsider_remaining -= delta
 	_spawn_remaining -= delta
@@ -149,6 +154,61 @@ func _initialize_presence() -> void:
 	# Spawn the initial population immediately. Later replacements are staggered.
 	for _index in range(_desired_count):
 		_spawn_one_shadow()
+
+
+func _update_player_disturbance(delta: float) -> void:
+	if not is_instance_valid(_fishing_player):
+		_player_lookup_cooldown = maxf(
+			_player_lookup_cooldown - delta,
+			0.0
+		)
+		if _player_lookup_cooldown <= 0.0:
+			_fishing_player = (
+				get_tree().get_first_node_in_group("fishing_player")
+				as Node3D
+			)
+			_player_lookup_cooldown = PLAYER_LOOKUP_INTERVAL_WHEN_ABSENT
+
+	if _mastery_service == null:
+		var services := get_node_or_null(
+			"/root/FishingSessionServices"
+		)
+		if (
+			services != null
+			and services.has_method("get_fishing_mastery_service")
+		):
+			_mastery_service = services.get_fishing_mastery_service()
+
+	var raw_noise := 0.0
+	var player_position := Vector3.ZERO
+	if is_instance_valid(_fishing_player):
+		player_position = _fishing_player.global_position
+		if _fishing_player.has_method(
+			"get_fishing_disturbance_strength"
+		):
+			raw_noise = float(
+				_fishing_player.get_fishing_disturbance_strength()
+			)
+
+	var has_quiet_approach := false
+	if (
+		_mastery_service != null
+		and _mastery_service.has_method("has_capability")
+	):
+		has_quiet_approach = bool(
+			_mastery_service.has_capability(&"quiet_approach")
+		)
+
+	for shadow in _spawned_shadows:
+		if not is_instance_valid(shadow):
+			continue
+		if shadow.is_hooked_tracking():
+			continue
+		shadow.set_player_disturbance(
+			player_position,
+			raw_noise,
+			has_quiet_approach
+		)
 
 
 func _update_active_bait_reference(delta: float) -> void:
