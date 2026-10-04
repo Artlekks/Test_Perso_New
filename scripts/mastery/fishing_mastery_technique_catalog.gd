@@ -16,6 +16,17 @@ func get_technique(technique_id: StringName) -> FishingMasteryTechniqueDefinitio
 	return null
 
 
+func ensure_technique(technique: FishingMasteryTechniqueDefinition) -> bool:
+	## Incremental-safe registration for techniques delivered by modular passes.
+	## Existing authored entries are never replaced or removed.
+	if technique == null or not technique.is_valid_definition():
+		return false
+	if get_technique(technique.technique_id) != null:
+		return false
+	techniques.append(technique)
+	return true
+
+
 func get_technique_ids() -> PackedStringArray:
 	var result := PackedStringArray()
 	for technique in techniques:

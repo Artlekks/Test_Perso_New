@@ -72,6 +72,9 @@ const FishingEnvironmentServiceScript = preload(
 const FishingCurrentServiceScript = preload(
 	"res://scripts/fishing_current_service.gd"
 )
+const FishingTideServiceScript = preload(
+	"res://scripts/fishing_tide_service.gd"
+)
 const FishingMasteryServiceScript = preload(
 	"res://scripts/mastery/fishing_mastery_service.gd"
 )
@@ -98,6 +101,9 @@ const FishingAerialControlQAScript = preload(
 )
 const FishingWeatherSenseQAScript = preload(
 	"res://scripts/fishing_weather_sense_qa.gd"
+)
+const FishingTideSenseQAScript = preload(
+	"res://scripts/fishing_tide_sense_qa.gd"
 )
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
@@ -190,6 +196,9 @@ const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 const FishingMasteryTechniqueCatalogResource: FishingMasteryTechniqueCatalog = preload(
 	"res://data/bof4/mastery/all_techniques.tres"
 )
+const FishingTideSenseTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/tide_sense.tres"
+)
 const FishingMasteryQASpotResource: FishingSpotData = preload(
 	"res://data/bof4/spots/ocean_2.tres"
 )
@@ -222,6 +231,7 @@ var save_integrity_service = null
 var session_modifier_service = null
 var environment_service = null
 var current_service: FishingCurrentService = null
+var tide_service: FishingTideService = null
 var mastery_service: FishingMasteryService = null
 var mastery_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
@@ -231,6 +241,7 @@ var pump_reel_qa_report: Dictionary = {}
 var run_reading_qa_report: Dictionary = {}
 var aerial_control_qa_report: Dictionary = {}
 var weather_sense_qa_report: Dictionary = {}
+var tide_sense_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -585,6 +596,11 @@ func initialize() -> void:
 	add_child(unlock_state)
 	unlock_state.initialize()
 
+	if FishingMasteryTechniqueCatalogResource.has_method("ensure_technique"):
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingTideSenseTechniqueResource
+		)
+
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
 	mastery_service.name = "FishingMasteryService"
 	add_child(mastery_service)
@@ -596,6 +612,11 @@ func initialize() -> void:
 	current_service = FishingCurrentServiceScript.new() as FishingCurrentService
 	current_service.name = "FishingCurrentService"
 	add_child(current_service)
+
+	tide_service = FishingTideServiceScript.new() as FishingTideService
+	tide_service.name = "FishingTideService"
+	add_child(tide_service)
+	current_service.set_tide_service(tide_service)
 
 	if OS.is_debug_build():
 		mastery_qa_report = FishingMasteryQAScript.run(
@@ -740,6 +761,8 @@ func initialize() -> void:
 	environment_service.configure(FishingEnvironmentCatalogResource)
 	if environment_service.has_method("set_mastery_service"):
 		environment_service.set_mastery_service(mastery_service)
+	if environment_service.has_method("set_tide_service"):
+		environment_service.set_tide_service(tide_service)
 
 	if OS.is_debug_build():
 		weather_sense_qa_report = FishingWeatherSenseQAScript.run(
@@ -758,6 +781,24 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Weather Sense QA: %s" % str(failure))
+
+		tide_sense_qa_report = FishingTideSenseQAScript.run(
+			FishingEnvironmentCatalogResource,
+			FishingMasteryTechniqueCatalogResource,
+			FishingMasteryQASpotResource
+		)
+		print(
+			"Fishing Tide Sense QA: %d/%d tests passed."
+			% [
+				int(tide_sense_qa_report.get("passed_count", 0)),
+				int(tide_sense_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in tide_sense_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Tide Sense QA: %s" % str(failure))
 
 	fish_consumable_service = FishingFishConsumableServiceScript.new()
 	fish_consumable_service.name = "FishingFishConsumableService"
@@ -1174,6 +1215,39 @@ func get_fishing_weather_sense_snapshot(
 	)
 
 
+func get_fishing_tide_sense_qa_report() -> Dictionary:
+	return tide_sense_qa_report.duplicate(true)
+
+
+func get_fishing_tide_sense_snapshot() -> Dictionary:
+	if (
+		environment_service == null
+		or not environment_service.has_method("get_tide_sense_snapshot")
+	):
+		return {}
+	return environment_service.get_tide_sense_snapshot()
+
+
+func get_fishing_tide_service() -> FishingTideService:
+	return tide_service
+
+
+func get_fishing_tide_snapshot() -> Dictionary:
+	if tide_service == null:
+		return {}
+	return tide_service.get_snapshot()
+
+
+func set_fishing_tide_cycle_position(normalized_position: float) -> Dictionary:
+	if tide_service == null:
+		return {"success": false, "reason": "tide_service_unavailable"}
+	tide_service.set_cycle_position(normalized_position)
+	return {
+		"success": true,
+		"snapshot": tide_service.get_snapshot(),
+	}
+
+
 func get_fishing_current_service() -> FishingCurrentService:
 	return current_service
 
@@ -1417,6 +1491,7 @@ func is_ready() -> bool:
 		and session_modifier_service != null
 		and environment_service != null
 		and current_service != null
+		and tide_service != null
 		and mastery_service != null
 		and fish_consumable_service != null
 		and item_catalog != null

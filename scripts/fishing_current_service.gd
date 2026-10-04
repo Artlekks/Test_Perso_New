@@ -5,10 +5,30 @@ signal current_profile_changed(snapshot: Dictionary)
 
 var _spot: FishingSpotData = null
 var _swim_bounds: FishSwimBounds = null
+var _tide_service: Node = null
 
 
 func set_spot(spot: FishingSpotData) -> void:
 	_spot = spot
+	current_profile_changed.emit(get_snapshot())
+
+
+func set_tide_service(service: Node) -> void:
+	var callback := Callable(self, "_on_tide_changed")
+	if (
+		_tide_service != null
+		and _tide_service.has_signal("tide_changed")
+		and _tide_service.is_connected("tide_changed", callback)
+	):
+		_tide_service.disconnect("tide_changed", callback)
+
+	_tide_service = service
+	if (
+		_tide_service != null
+		and _tide_service.has_signal("tide_changed")
+		and not _tide_service.is_connected("tide_changed", callback)
+	):
+		_tide_service.connect("tide_changed", callback)
 	current_profile_changed.emit(get_snapshot())
 
 
@@ -74,6 +94,15 @@ func sample_current_at_uv(
 		var multiplier := 1.0 + sin(phase) * _spot.current_gust_strength
 		velocity *= maxf(multiplier, 0.05)
 
+	if (
+		_tide_service != null
+		and _tide_service.has_method("get_current_multiplier")
+	):
+		velocity *= maxf(
+			float(_tide_service.call("get_current_multiplier")),
+			0.05
+		)
+
 	return velocity
 
 
@@ -134,6 +163,9 @@ func get_snapshot() -> Dictionary:
 			"gust_strength": 0.0,
 			"field_count": 0,
 		}
+	var tide_snapshot: Dictionary = {}
+	if _tide_service != null and _tide_service.has_method("get_snapshot"):
+		tide_snapshot = _tide_service.call("get_snapshot") as Dictionary
 	return {
 		"spot_id": str(_spot.spot_id),
 		"active": (
@@ -145,4 +177,9 @@ func get_snapshot() -> Dictionary:
 		"gust_strength": _spot.current_gust_strength,
 		"visual_strength": _spot.current_visual_strength,
 		"field_count": _spot.get_valid_current_field_count(),
+		"tide": tide_snapshot,
 	}
+
+
+func _on_tide_changed(_snapshot: Dictionary) -> void:
+	current_profile_changed.emit(get_snapshot())

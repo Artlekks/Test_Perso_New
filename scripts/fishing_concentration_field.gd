@@ -46,8 +46,9 @@ func sample(
 			1.0
 		)
 
+	var tide_zone_multiplier := _get_tide_zone_multiplier(uv)
 	var baseline: float = maxf(
-		fishing_spot.baseline_concentration,
+		fishing_spot.baseline_concentration * tide_zone_multiplier,
 		0.01
 	)
 	var density: float = baseline
@@ -70,7 +71,7 @@ func sample(
 
 		var local_density: float = lerpf(
 			baseline,
-			hotspot.density_multiplier,
+			hotspot.density_multiplier * tide_zone_multiplier,
 			horizontal_strength
 		)
 		density = maxf(
@@ -106,6 +107,7 @@ func sample(
 		"uv": uv,
 		"depth_ratio": depth_ratio,
 		"baseline_concentration": baseline,
+		"tide_zone_multiplier": tide_zone_multiplier,
 		"local_concentration": density,
 		"bite_density_multiplier": clampf(
 			density,
@@ -134,8 +136,9 @@ func build_radar_snapshot(
 			world_position
 		)
 	)
+	var tide_zone_multiplier := _get_tide_zone_multiplier(uv)
 	var baseline: float = maxf(
-		fishing_spot.baseline_concentration,
+		fishing_spot.baseline_concentration * tide_zone_multiplier,
 		0.01
 	)
 	var density: float = baseline
@@ -160,7 +163,7 @@ func build_radar_snapshot(
 			density,
 			lerpf(
 				baseline,
-				hotspot.density_multiplier,
+				hotspot.density_multiplier * tide_zone_multiplier,
 				strength
 			)
 		)
@@ -217,6 +220,7 @@ func build_radar_snapshot(
 		return {
 			"uv": uv,
 			"density": density,
+			"tide_zone_multiplier": tide_zone_multiplier,
 			"dot_count": 0,
 			"dots": [],
 			"active_hotspots": active_hotspots,
@@ -309,6 +313,7 @@ func build_radar_snapshot(
 	return {
 		"uv": uv,
 		"density": density,
+		"tide_zone_multiplier": tide_zone_multiplier,
 		"dot_count": dots.size(),
 		"dots": dots,
 		"active_hotspots": active_hotspots,
@@ -373,6 +378,23 @@ func _apply_hotspot_species_multipliers(
 		)
 
 
+func _get_tide_zone_multiplier(uv: Vector2) -> float:
+	var zones: Dictionary = environment_context.get(
+		"tide_zone_multipliers",
+		{}
+	) as Dictionary
+	if zones.is_empty():
+		return 1.0
+
+	var shore := maxf(float(zones.get("shore", 1.0)), 0.01)
+	var mid := maxf(float(zones.get("mid", 1.0)), 0.01)
+	var outer := maxf(float(zones.get("outer", 1.0)), 0.01)
+	var y := clampf(uv.y, 0.0, 1.0)
+	if y <= 0.5:
+		return lerpf(shore, mid, y * 2.0)
+	return lerpf(mid, outer, (y - 0.5) * 2.0)
+
+
 func _choose_weighted_fish(
 	weighted_species: Array[Dictionary],
 	roll: float
@@ -419,6 +441,7 @@ func _empty_sample() -> Dictionary:
 		"uv": Vector2(0.5, 0.5),
 		"depth_ratio": 0.0,
 		"baseline_concentration": 1.0,
+		"tide_zone_multiplier": 1.0,
 		"local_concentration": 1.0,
 		"bite_density_multiplier": 1.0,
 		"species_multipliers": {},

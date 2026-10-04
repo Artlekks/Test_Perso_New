@@ -28,6 +28,11 @@ static func run(
 	var weather_sense := catalog.get_technique(&"weather_sense") if catalog != null else null
 	_record(report, "Weather Sense is authored", weather_sense != null, "Weather should become learnable fishing information instead of remaining invisible backend math.")
 	_record(report, "Weather Sense exposes observation capability", weather_sense != null and weather_sense.has_capability(&"weather_sense"), "Environment presentation should query mastery capability rather than hard-code a weather tutorial state.")
+	var tide_sense := catalog.get_technique(&"tide_sense") if catalog != null else null
+	_record(report, "Tide Sense is authored", tide_sense != null, "Coastal tide knowledge needs its own master-taught observation technique.")
+	_record(report, "Tide Sense exposes observation capability", tide_sense != null and tide_sense.has_capability(&"tide_sense"), "Tide interpretation should query mastery capability instead of changing the tide itself.")
+	_record(report, "Tide Sense builds on current reading", _has_prerequisite(catalog, &"tide_sense", &"read_current"), "Tidal knowledge should build on understanding moving water.")
+	_record(report, "Tide Sense builds on weather reading", _has_prerequisite(catalog, &"tide_sense", &"weather_sense"), "Tides belong to advanced environmental fieldcraft rather than an isolated rank unlock.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
 	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
 	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
@@ -53,12 +58,25 @@ static func run(
 	)
 	_record(report, "Quiet Approach becomes runtime capability", bool(quiet_learned.get("success", false)) and service.has_capability(&"quiet_approach"), "Once taught by its master, the live fish-presence system should be able to reduce player disturbance.")
 
+	var tide_before_weather := service.can_learn(
+		&"tide_sense",
+		tide_sense.teacher_id if tide_sense != null else &""
+	)
+	_record(report, "Tide Sense waits for Weather Sense", str(tide_before_weather.get("reason", "")) == "missing_prerequisite", "The environmental mastery chain should not allow Tide Sense before Weather Sense.")
+
 	var weather_learned := service.learn_technique(
 		&"weather_sense",
 		weather_sense.teacher_id if weather_sense != null else &"",
 		false
 	)
 	_record(report, "Weather Sense becomes runtime capability", bool(weather_learned.get("success", false)) and service.has_capability(&"weather_sense") and bool(service.get_snapshot().get("can_read_weather", false)), "The environment system needs one persistent capability gate for its qualitative fishing readout.")
+
+	var tide_learned := service.learn_technique(
+		&"tide_sense",
+		tide_sense.teacher_id if tide_sense != null else &"",
+		false
+	)
+	_record(report, "Tide Sense becomes runtime capability", bool(tide_learned.get("success", false)) and service.has_capability(&"tide_sense") and bool(service.get_snapshot().get("can_read_tide", false)), "The tide readout needs one persistent mastery capability without granting any tide bonus.")
 
 	var read_structure := catalog.get_technique(&"read_structure") if catalog != null else null
 	var line_feel := catalog.get_technique(&"line_feel") if catalog != null else null

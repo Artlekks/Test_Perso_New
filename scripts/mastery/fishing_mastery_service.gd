@@ -111,6 +111,7 @@ func get_snapshot() -> Dictionary:
 		"can_move_quietly": has_capability(&"quiet_approach"),
 		"can_compensate_drift": has_capability(&"current_compensation"),
 		"can_read_weather": has_capability(&"weather_sense"),
+		"can_read_tide": has_capability(&"tide_sense"),
 	}
 
 

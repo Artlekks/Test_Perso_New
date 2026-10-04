@@ -11,6 +11,9 @@ const EnvironmentCatalogScript = preload(
 const FishingWeatherSensePolicyScript = preload(
 	"res://scripts/fishing_weather_sense_policy.gd"
 )
+const FishingTideSensePolicyScript = preload(
+	"res://scripts/fishing_tide_sense_policy.gd"
+)
 
 const MAX_BITE_MULTIPLIER: float = 2.50
 const MAX_QUALITY_CHANCE: float = 0.50
@@ -23,6 +26,7 @@ const MAX_SPECIES_WEIGHT_MULTIPLIER: float = 4.0
 var _catalog: EnvironmentCatalogScript = null
 var _spot: FishingSpotData = null
 var _mastery_service: Node = null
+var _tide_service: Node = null
 ## stacking_group -> condition resource
 var _active_by_group: Dictionary = {}
 
@@ -34,6 +38,29 @@ func configure(catalog: EnvironmentCatalogScript) -> void:
 
 func set_spot(spot: FishingSpotData) -> void:
 	_spot = spot
+	if _tide_service != null and _tide_service.has_method("set_spot"):
+		_tide_service.call("set_spot", spot)
+	_emit_changed()
+
+
+func set_tide_service(service: Node) -> void:
+	var callback := Callable(self, "_on_tide_changed")
+	if (
+		_tide_service != null
+		and _tide_service.has_signal("tide_changed")
+		and _tide_service.is_connected("tide_changed", callback)
+	):
+		_tide_service.disconnect("tide_changed", callback)
+
+	_tide_service = service
+	if (
+		_tide_service != null
+		and _tide_service.has_signal("tide_changed")
+		and not _tide_service.is_connected("tide_changed", callback)
+	):
+		_tide_service.connect("tide_changed", callback)
+	if _tide_service != null and _tide_service.has_method("set_spot"):
+		_tide_service.call("set_spot", _spot)
 	_emit_changed()
 
 
@@ -62,6 +89,14 @@ func has_weather_sense() -> bool:
 		_mastery_service != null
 		and _mastery_service.has_method("has_capability")
 		and bool(_mastery_service.call("has_capability", &"weather_sense"))
+	)
+
+
+func has_tide_sense() -> bool:
+	return (
+		_mastery_service != null
+		and _mastery_service.has_method("has_capability")
+		and bool(_mastery_service.call("has_capability", &"tide_sense"))
 	)
 
 
@@ -180,6 +215,16 @@ func get_active_condition_display_names() -> PackedStringArray:
 
 
 func get_depth_activity_profile() -> Dictionary:
+	var profile := _get_weather_depth_activity_profile()
+	var tide_profile := _get_tide_depth_activity_profile()
+	return {
+		"surface": float(profile.get("surface", 1.0)) * float(tide_profile.get("surface", 1.0)),
+		"mid": float(profile.get("mid", 1.0)) * float(tide_profile.get("mid", 1.0)),
+		"deep": float(profile.get("deep", 1.0)) * float(tide_profile.get("deep", 1.0)),
+	}
+
+
+func _get_weather_depth_activity_profile() -> Dictionary:
 	var surface := 1.0
 	var mid := 1.0
 	var deep := 1.0
@@ -195,6 +240,12 @@ func get_depth_activity_profile() -> Dictionary:
 		"mid": mid,
 		"deep": deep,
 	}
+
+
+func _get_tide_depth_activity_profile() -> Dictionary:
+	if _tide_service == null or not _tide_service.has_method("get_depth_activity_profile"):
+		return {"surface": 1.0, "mid": 1.0, "deep": 1.0}
+	return _tide_service.call("get_depth_activity_profile") as Dictionary
 
 
 func get_tier_activity_profile() -> PackedFloat32Array:
@@ -224,13 +275,13 @@ func get_weather_sense_snapshot(
 			"condition_names": condition_names,
 		}
 
-	var depth_profile := get_depth_activity_profile()
+	var depth_profile := _get_weather_depth_activity_profile()
 	var generation := get_specimen_generation_context()
 	var fight := get_fight_modifiers()
 	return FishingWeatherSensePolicyScript.build_read_snapshot(
 		condition_ids,
 		condition_names,
-		get_bite_activity_multiplier(current_depth, total_depth),
+		_get_weather_bite_activity_multiplier(current_depth, total_depth),
 		float(depth_profile.get("surface", 1.0)),
 		float(depth_profile.get("mid", 1.0)),
 		float(depth_profile.get("deep", 1.0)),
@@ -242,6 +293,29 @@ func get_weather_sense_snapshot(
 		float(fight.get("counter_steer_multiplier", 1.0)),
 		get_tier_activity_profile()
 	)
+
+
+func get_tide_sense_snapshot() -> Dictionary:
+	if _tide_service == null or not _tide_service.has_method("get_snapshot"):
+		return {
+			"available": false,
+			"reason": "tide_service_unavailable",
+		}
+
+	var tide_snapshot := _tide_service.call("get_snapshot") as Dictionary
+	if not bool(tide_snapshot.get("active", false)):
+		return {
+			"available": false,
+			"reason": "tide_not_applicable",
+			"active": false,
+		}
+	if not has_tide_sense():
+		return {
+			"available": false,
+			"reason": "tide_sense_not_learned",
+			"active": true,
+		}
+	return FishingTideSensePolicyScript.build_read_snapshot(tide_snapshot)
 
 
 func get_species_selection_multiplier(fish: FishData) -> float:
@@ -260,6 +334,11 @@ func get_species_selection_multiplier(fish: FishData) -> float:
 			return 0.0
 		multiplier *= condition.get_tier_selection_multiplier(tier)
 		multiplier *= condition.get_species_selection_multiplier(species_id)
+	if _tide_service != null and _tide_service.has_method("get_species_selection_multiplier"):
+		multiplier *= maxf(
+			float(_tide_service.call("get_species_selection_multiplier", fish)),
+			0.0
+		)
 	return clampf(multiplier, 0.0, MAX_SPECIES_WEIGHT_MULTIPLIER)
 
 
@@ -270,15 +349,33 @@ func get_selection_context(entries: Array = []) -> Dictionary:
 			continue
 		var species_id: String = raw_entry.fish.get_stable_species_id().strip_edges().to_lower()
 		species_multipliers[species_id] = get_species_selection_multiplier(raw_entry.fish)
+	var tide_snapshot: Dictionary = {}
+	if _tide_service != null and _tide_service.has_method("get_snapshot"):
+		tide_snapshot = _tide_service.call("get_snapshot") as Dictionary
 	return {
 		"active_condition_ids": get_active_condition_ids(),
 		"active_environment_tags": get_active_tags(),
 		"species_multipliers": species_multipliers,
 		"spot_id": _get_spot_id(),
+		"tide_phase_id": tide_snapshot.get("phase_id", &"none"),
+		"tide_zone_multipliers": tide_snapshot.get("zone_multipliers", {}).duplicate(true) if tide_snapshot.has("zone_multipliers") else {},
 	}
 
 
 func get_bite_activity_multiplier(current_depth: float, total_depth: float) -> float:
+	var depth_ratio: float = 0.5
+	if total_depth > 0.0:
+		depth_ratio = clampf(current_depth / total_depth, 0.0, 1.0)
+	var multiplier := _get_weather_bite_activity_multiplier(current_depth, total_depth)
+	if _tide_service != null and _tide_service.has_method("get_bite_activity_multiplier"):
+		multiplier *= maxf(
+			float(_tide_service.call("get_bite_activity_multiplier", depth_ratio)),
+			0.01
+		)
+	return clampf(multiplier, 0.25, MAX_BITE_MULTIPLIER)
+
+
+func _get_weather_bite_activity_multiplier(current_depth: float, total_depth: float) -> float:
 	var depth_ratio: float = 0.5
 	if total_depth > 0.0:
 		depth_ratio = clampf(current_depth / total_depth, 0.0, 1.0)
@@ -348,6 +445,8 @@ func get_debug_snapshot(current_depth: float = 0.0, total_depth: float = 1.0) ->
 		"quality_bonus_rolls": int(generation.get("environment_quality_bonus_rolls", 0)),
 		"fish_pressure_multiplier": float(fight.get("fish_pressure_multiplier", 1.0)),
 		"weather_sense": get_weather_sense_snapshot(current_depth, total_depth),
+		"tide_sense": get_tide_sense_snapshot(),
+		"tide": _tide_service.call("get_snapshot") if _tide_service != null and _tide_service.has_method("get_snapshot") else {},
 	}
 
 
@@ -358,8 +457,13 @@ func _get_spot_id() -> String:
 
 
 func _on_mastery_changed(_snapshot: Dictionary) -> void:
-	# Weather Sense changes only what the player can read, so reuse the same
-	# environment signal consumed by future HUD/menu presentation.
+	# Weather/Tide Sense change only what the player can read.
+	_emit_changed()
+
+
+func _on_tide_changed(_snapshot: Dictionary) -> void:
+	# Tide itself changes fishing math independently of mastery. Reuse the
+	# environment signal so concentration fields and future presentation refresh.
 	_emit_changed()
 
 
