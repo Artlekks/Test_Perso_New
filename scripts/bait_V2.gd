@@ -3,6 +3,9 @@ extends Node3D
 const LureActionRuntimeScript = preload(
 	"res://scripts/lure_action_runtime.gd"
 )
+const StructureCombatPolicy = preload(
+	"res://scripts/fishing_structure_combat_policy.gd"
+)
 
 signal landed(point: Vector3)
 signal returned
@@ -168,6 +171,7 @@ var simulation_frozen: bool = false
 var swim_bounds: Node = null
 var shore_boundary: Node = null
 var current_service: FishingCurrentService = null
+var mastery_service = null
 
 var snag_probe: Area3D = null
 var snag_risk: float = 0.0
@@ -344,6 +348,10 @@ func set_swim_bounds(bounds: Node) -> void:
 
 func set_current_service(service: FishingCurrentService) -> void:
 	current_service = service
+
+
+func set_mastery_service(service) -> void:
+	mastery_service = service
 
 
 func set_shore_boundary(boundary: Node) -> void:
@@ -587,6 +595,30 @@ func _get_obstacle_snag_multiplier() -> float:
 	return strongest
 
 
+func get_fight_structure_contacts() -> Array[Dictionary]:
+	var contacts: Array[Dictionary] = []
+	if not is_instance_valid(snag_probe):
+		return contacts
+	for area in snag_probe.get_overlapping_areas():
+		if not area.is_in_group("fishing_structure"):
+			continue
+		if not area.has_method("get_fight_structure_snapshot"):
+			continue
+		var snapshot: Dictionary = area.get_fight_structure_snapshot()
+		if snapshot.is_empty():
+			continue
+		contacts.append(snapshot)
+	return contacts
+
+
+func _has_mastery_capability(capability: StringName) -> bool:
+	return (
+		mastery_service != null
+		and mastery_service.has_method("has_capability")
+		and bool(mastery_service.has_capability(capability))
+	)
+
+
 func _get_current_snag_multiplier() -> float:
 	var multiplier := 0.0
 
@@ -674,6 +706,9 @@ func _apply_snag_input_impulse(amount: float) -> void:
 	_change_snag_risk(
 		maxf(amount, 0.0)
 		* hazard_multiplier
+		* StructureCombatPolicy.get_lure_snag_build_multiplier(
+			_has_mastery_capability(&"snag_escape")
+		)
 	)
 
 
@@ -685,10 +720,14 @@ func _update_snag_risk(delta: float) -> void:
 		_get_current_snag_multiplier()
 	)
 
+	var knows_snag_escape := _has_mastery_capability(&"snag_escape")
 	if hazard_multiplier > 0.0 and reeling:
 		_change_snag_risk(
 			maxf(snag_build_rate, 0.0)
 			* hazard_multiplier
+			* StructureCombatPolicy.get_lure_snag_build_multiplier(
+				knows_snag_escape
+			)
 			* delta
 		)
 		return
@@ -696,6 +735,9 @@ func _update_snag_risk(delta: float) -> void:
 	if snag_risk > 0.0:
 		_change_snag_risk(
 			-maxf(snag_recovery_rate, 0.0)
+			* StructureCombatPolicy.get_lure_snag_recovery_multiplier(
+				knows_snag_escape
+			)
 			* delta
 		)
 

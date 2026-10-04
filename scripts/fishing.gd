@@ -252,6 +252,8 @@ func _ready() -> void:
 
 	if caster != null and caster.has_method("set_current_service"):
 		caster.set_current_service(fishing_current_service)
+	if caster != null and caster.has_method("set_mastery_service"):
+		caster.set_mastery_service(fishing_mastery_service)
 
 	fishing_current_view = FishingCurrentSurfaceViewScript.new() as FishingCurrentSurfaceView
 	fishing_current_view.name = "FishingCurrentSurfaceView"
@@ -292,6 +294,12 @@ func _ready() -> void:
 		encounter.set_environment_service(
 			fishing_environment_service
 		)
+
+	if (
+		encounter != null
+		and encounter.has_method("set_mastery_service")
+	):
+		encounter.set_mastery_service(fishing_mastery_service)
 
 	if (
 		fishing_environment_service != null

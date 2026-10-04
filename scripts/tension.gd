@@ -364,6 +364,10 @@ func _trigger_line_break() -> void:
 	line_broken.emit()
 
 
+func force_line_break() -> void:
+	_trigger_line_break()
+
+
 func set_reel_gain_multiplier(
 	multiplier: float
 ) -> void:

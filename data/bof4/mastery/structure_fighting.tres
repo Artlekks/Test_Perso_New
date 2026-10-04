@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"structure_fighting"
+display_name = "Structure Fighting"
+category = &"fight"
+description = "Use side pressure and rod direction to turn a hooked fish away from coral, rocks, timber and weed before the line grinds through cover."
+teacher_id = &"master_structure_hunter"
+prerequisite_ids = PackedStringArray("read_structure", "line_feel")
+capability_tags = PackedStringArray("structure_fighting")

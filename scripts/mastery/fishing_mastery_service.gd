@@ -110,6 +110,9 @@ func get_snapshot() -> Dictionary:
 		"can_read_current": has_capability(&"read_current"),
 		"can_move_quietly": has_capability(&"quiet_approach"),
 		"can_compensate_drift": has_capability(&"current_compensation"),
+		"can_read_structure": has_capability(&"read_structure"),
+		"can_fight_structure": has_capability(&"structure_fighting"),
+		"can_escape_snags": has_capability(&"snag_escape"),
 	}
 
 

@@ -47,6 +47,7 @@ var current_bait_depth: float = 0.0
 var current_total_depth: float = 0.0
 var active_rod_data: RodData = null
 var current_service: FishingCurrentService = null
+var mastery_service = null
 
 # During a successful hooked return, keep the bait node alive for a brief
 # landing presentation instead of deleting it the instant it reaches Ryu.
@@ -82,6 +83,12 @@ func set_current_service(service: FishingCurrentService) -> void:
 	current_service = service
 	if is_instance_valid(active_bait) and active_bait.has_method("set_current_service"):
 		active_bait.set_current_service(current_service)
+
+
+func set_mastery_service(service) -> void:
+	mastery_service = service
+	if is_instance_valid(active_bait) and active_bait.has_method("set_mastery_service"):
+		active_bait.set_mastery_service(mastery_service)
 
 
 func perform_cast(
@@ -137,6 +144,8 @@ func perform_cast(
 	active_bait.set_swim_bounds(swim_bounds)
 	if active_bait.has_method("set_current_service"):
 		active_bait.set_current_service(current_service)
+	if active_bait.has_method("set_mastery_service"):
+		active_bait.set_mastery_service(mastery_service)
 	active_bait.set_shore_boundary(shore_boundary)
 	active_bait.gravity = cast_gravity
 
@@ -471,6 +480,21 @@ func get_active_bait_world_position() -> Vector3:
 
 	return active_bait.global_position
 
+
+
+func get_active_fight_structure_contacts() -> Array[Dictionary]:
+	if not is_instance_valid(active_bait):
+		return []
+	if not active_bait.has_method("get_fight_structure_contacts"):
+		return []
+	var contacts = active_bait.get_fight_structure_contacts()
+	if contacts is Array:
+		var typed: Array[Dictionary] = []
+		for contact in contacts:
+			if contact is Dictionary:
+				typed.append(contact)
+		return typed
+	return []
 
 
 func has_active_bait() -> bool:

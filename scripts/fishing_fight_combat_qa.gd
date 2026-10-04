@@ -7,6 +7,9 @@ const PressurePolicy = preload(
 const FightIntent = preload(
 	"res://scripts/fishing_fight_intent.gd"
 )
+const StructurePolicy = preload(
+	"res://scripts/fishing_structure_combat_policy.gd"
+)
 
 
 static func run() -> Dictionary:
@@ -43,6 +46,22 @@ static func run() -> Dictionary:
 
 	var pressure_snapshot := PressurePolicy.build_snapshot(0.69, safe_min, safe_max)
 	_record(report, "Pressure snapshot is UI-ready", pressure_snapshot.get("band", &"") == &"heavy" and float(pressure_snapshot.get("safe_ratio", 0.0)) > 0.9, "Future Line Feel presentation should consume one read model rather than recompute fight rules.")
+
+	var bait_pos := Vector3(2.0, 0.0, 0.0)
+	var cover_pos := Vector3(1.0, 0.0, 0.0)
+	var escape_sign := StructurePolicy.get_escape_steering_sign(bait_pos, cover_pos)
+	_record(report, "Structure escape direction is stable", escape_sign > 0.0, "A fish beside cover needs a deterministic side-pressure direction for escape guidance.")
+	_record(report, "Steering away is recognized", StructurePolicy.is_steering_away(0.8, escape_sign), "A/D structure fighting should recognize deliberate rod pressure away from cover.")
+	_record(report, "Fish drive into cover is recognized", StructurePolicy.is_fish_driving_into_structure(-0.8, escape_sign), "The fight needs to know when the fish is using the opposite side to bury the line in structure.")
+	var seek_lateral := StructurePolicy.get_structure_seek_lateral(0.0, escape_sign, 0.75)
+	_record(report, "Structure seek biases fish toward cover", seek_lateral < -0.5, "A hooked fish near cover should be able to deliberately choose the dangerous side instead of structure being passive scenery.")
+	var low_abrasion := StructurePolicy.get_abrasion_rate_multiplier(0.15, 0.4, false, false, false)
+	var high_abrasion := StructurePolicy.get_abrasion_rate_multiplier(0.95, 0.8, true, false, false)
+	_record(report, "Heavy pressure increases structure abrasion", high_abrasion > low_abrasion * 1.5, "Brute forcing a fish against coral or rock should be materially more dangerous than controlled pressure.")
+	var untrained_escape := StructurePolicy.get_abrasion_rate_multiplier(0.7, 0.7, true, true, false)
+	var trained_escape := StructurePolicy.get_abrasion_rate_multiplier(0.7, 0.7, true, true, true)
+	_record(report, "Structure Fighting improves deliberate escape", trained_escape < untrained_escape * 0.6, "The taught technique should reward correct side pressure without making structure harmless.")
+	_record(report, "Snag Escape improves lure recovery odds", StructurePolicy.get_lure_snag_build_multiplier(true) < 1.0 and StructurePolicy.get_lure_snag_recovery_multiplier(true) > 1.0, "The lure-control mastery should reduce snag buildup and accelerate recovery using the existing snag system.")
 
 	report["valid"] = int(report["passed_count"]) == int(report["test_count"])
 	return report

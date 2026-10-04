@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"snag_escape"
+display_name = "Snag Escape"
+category = &"lure_control"
+description = "Recognize a lure touching bottom or cover and free it with controlled tension instead of immediately pulling it deeper into the snag."
+teacher_id = &"master_structure_hunter"
+prerequisite_ids = PackedStringArray("read_structure")
+capability_tags = PackedStringArray("snag_escape")

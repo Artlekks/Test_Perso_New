@@ -1,4 +1,4 @@
-extends Node3D
+extends AnimatableBody3D
 class_name FishingCardMakerNPC
 
 @export var interaction_prompt: String = "K : Card Maker"
@@ -51,7 +51,7 @@ func _ready() -> void:
 	call_deferred("_cache_player_body")
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_update_depth_sort()
 	var tree := get_tree()
 	if tree == null or tree.paused:

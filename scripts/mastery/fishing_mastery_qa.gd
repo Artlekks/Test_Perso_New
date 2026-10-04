@@ -16,6 +16,9 @@ static func run(
 	_record(report, "Read Current exposes capability", read_current != null and read_current.has_capability(&"read_current"), "Fishing mechanics should query capability tags rather than special-case UI state.")
 	_record(report, "Drift Casting depends on current knowledge", _has_prerequisite(catalog, &"drift_casting", &"read_current"), "Advanced current control should build on current-reading rather than unlock independently.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
+	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
+	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
+	_record(report, "Snag Escape builds on Read Structure", _has_prerequisite(catalog, &"snag_escape", &"read_structure"), "Lure recovery should build on recognizing the hazard first.")
 
 	var unlock := FishingUnlockState.new()
 	unlock.reset_unlocks(false)
@@ -29,6 +32,19 @@ static func run(
 	var drift_definition := catalog.get_technique(&"drift_casting") if catalog != null else null
 	var drift_quote := service.can_learn(&"drift_casting", drift_definition.teacher_id if drift_definition != null else &"")
 	_record(report, "Prerequisite unlock enables next technique", bool(drift_quote.get("can_learn", false)), "Technique chains should become available from learned knowledge, not numeric rank.")
+
+	var read_structure := catalog.get_technique(&"read_structure") if catalog != null else null
+	var line_feel := catalog.get_technique(&"line_feel") if catalog != null else null
+	var structure_fighting := catalog.get_technique(&"structure_fighting") if catalog != null else null
+	var snag_escape := catalog.get_technique(&"snag_escape") if catalog != null else null
+	if read_structure != null:
+		service.learn_technique(&"read_structure", read_structure.teacher_id, false)
+	if line_feel != null:
+		service.learn_technique(&"line_feel", line_feel.teacher_id, false)
+	var structure_learned := service.learn_technique(&"structure_fighting", structure_fighting.teacher_id if structure_fighting != null else &"", false)
+	var snag_learned := service.learn_technique(&"snag_escape", snag_escape.teacher_id if snag_escape != null else &"", false)
+	_record(report, "Structure Fighting exposes fight capability", bool(structure_learned.get("success", false)) and service.has_capability(&"structure_fighting"), "The fight runtime should query a stable mastery capability after the master teaches it.")
+	_record(report, "Snag Escape exposes lure-control capability", bool(snag_learned.get("success", false)) and service.has_capability(&"snag_escape"), "Existing lure snag mechanics should be able to consume the taught recovery skill.")
 
 	var current_service := FishingCurrentService.new()
 	current_service.set_spot(current_spot)

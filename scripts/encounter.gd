@@ -12,6 +12,9 @@ const FightResolver = preload(
 const FightPressurePolicy = preload(
 	"res://scripts/fishing_fight_pressure_policy.gd"
 )
+const StructureCombatPolicy = preload(
+	"res://scripts/fishing_structure_combat_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_triggered
@@ -34,6 +37,8 @@ signal technique_applied(level: int)
 signal fish_thrash_started(intensity: float)
 signal fish_intent_changed(snapshot: Dictionary)
 signal line_pressure_band_changed(snapshot: Dictionary)
+signal structure_threat_changed(snapshot: Dictionary)
+signal line_abrasion_changed(value: float)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -64,6 +69,9 @@ var spent_pull_strength: float = 0.20
 @export_category("Directional Fatigue")
 @export var counter_steer_fatigue_multiplier: float = 1.35
 @export var steering_deadzone: float = 0.2
+
+@export_category("Structure Fighting")
+@export_range(0.05, 2.0, 0.05) var structure_line_break_threshold: float = 1.0
 
 @export var first_bite_delay: float = 0.5
 @export var retry_bite_delay: float = 0.5
@@ -127,6 +135,9 @@ var current_fight_intent: Dictionary = {}
 var current_line_pressure_band: StringName = &"none"
 var current_safe_pressure_ratio: float = 0.5
 var current_pressure_fatigue_multiplier: float = 1.0
+var current_structure_contact: Dictionary = {}
+var current_structure_snapshot: Dictionary = {}
+var line_abrasion: float = 0.0
 
 enum FightState {
 	NONE,
@@ -156,6 +167,7 @@ var fishing_progress: FishingProgress = null
 var session_modifier_service = null
 var prepared_bait_service = null
 var environment_service = null
+var mastery_service = null
 var active_rod_data: RodData = null
 ## Immutable per-hook snapshot of fish + rod + lure fight values. Encounter only
 ## consumes this resolved package; it does not reinterpret source resources.
@@ -730,6 +742,10 @@ func _process(delta: float) -> void:
 		return
 
 	_update_line_pressure_state()
+	_update_structure_combat(delta)
+
+	if not lifecycle.is_hooked():
+		return
 
 	if fight_state == FightState.SPENT:
 		var spent_pressure := clampf(
@@ -1002,8 +1018,25 @@ func _on_fish_behavior_movement_changed(lateral: float) -> void:
 	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
 		return
 
-	current_fish_lateral = lateral
-	fish_movement_changed.emit(lateral)
+	var resolved_lateral := lateral
+	if not current_structure_contact.is_empty() and caster != null:
+		var bait_position := caster.get_active_bait_world_position()
+		var structure_position: Vector3 = current_structure_contact.get(
+			"world_position",
+			bait_position
+		)
+		var escape_sign := StructureCombatPolicy.get_escape_steering_sign(
+			bait_position,
+			structure_position
+		)
+		resolved_lateral = StructureCombatPolicy.get_structure_seek_lateral(
+			lateral,
+			escape_sign,
+			float(current_structure_contact.get("seek_strength", 0.0))
+		)
+
+	current_fish_lateral = resolved_lateral
+	fish_movement_changed.emit(resolved_lateral)
 
 func _on_fish_behavior_depth_changed(value: float) -> void:
 	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
@@ -1145,6 +1178,8 @@ func get_fish_debug_snapshot() -> Dictionary:
 		"pending_fish": "NONE",
 		"fight_intent": current_fight_intent.duplicate(true),
 		"line_pressure": get_line_pressure_snapshot(),
+		"line_abrasion": line_abrasion,
+		"structure": current_structure_snapshot.duplicate(true),
 	}
 
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -1450,6 +1485,18 @@ func set_environment_service(service) -> void:
 	_on_environment_changed({})
 
 
+func set_mastery_service(service) -> void:
+	mastery_service = service
+
+
+func _has_mastery_capability(capability: StringName) -> bool:
+	return (
+		mastery_service != null
+		and mastery_service.has_method("has_capability")
+		and bool(mastery_service.has_capability(capability))
+	)
+
+
 func _on_environment_changed(_snapshot: Dictionary) -> void:
 	if active_fish != null:
 		_rebuild_active_fight_context()
@@ -1686,11 +1733,129 @@ func get_line_pressure_snapshot() -> Dictionary:
 	}
 
 
+func _get_structure_contacts() -> Array[Dictionary]:
+	if caster == null or not caster.has_method("get_active_fight_structure_contacts"):
+		return []
+	return caster.get_active_fight_structure_contacts()
+
+
+func _select_structure_contact(contacts: Array[Dictionary]) -> Dictionary:
+	var best: Dictionary = {}
+	var best_score := -1.0
+	for contact in contacts:
+		var score := (
+			maxf(float(contact.get("abrasion_rate", 0.0)), 0.0)
+			* maxf(float(contact.get("pressure_multiplier", 1.0)), 0.0)
+		)
+		if score > best_score:
+			best_score = score
+			best = contact.duplicate(true)
+	return best
+
+
+func _update_structure_combat(delta: float) -> void:
+	if delta <= 0.0 or caster == null:
+		return
+
+	var contacts := _get_structure_contacts()
+	if contacts.is_empty():
+		if not current_structure_contact.is_empty():
+			current_structure_contact.clear()
+			current_structure_snapshot.clear()
+			structure_threat_changed.emit({})
+		return
+
+	current_structure_contact = _select_structure_contact(contacts)
+	if current_structure_contact.is_empty():
+		return
+
+	var bait_position := caster.get_active_bait_world_position()
+	var structure_position: Vector3 = current_structure_contact.get(
+		"world_position",
+		bait_position
+	)
+	var escape_sign := StructureCombatPolicy.get_escape_steering_sign(
+		bait_position,
+		structure_position
+	)
+	var steering_away := StructureCombatPolicy.is_steering_away(
+		player_steering,
+		escape_sign,
+		steering_deadzone
+	)
+	var fish_driving_in := StructureCombatPolicy.is_fish_driving_into_structure(
+		current_fish_lateral,
+		escape_sign,
+		steering_deadzone
+	)
+	var knows_structure_fighting := _has_mastery_capability(
+		&"structure_fighting"
+	)
+	var abrasion_rate := maxf(
+		float(current_structure_contact.get("abrasion_rate", 0.0)),
+		0.0
+	)
+	abrasion_rate *= maxf(
+		float(current_structure_contact.get("pressure_multiplier", 1.0)),
+		0.0
+	)
+	abrasion_rate *= StructureCombatPolicy.get_abrasion_rate_multiplier(
+		current_safe_pressure_ratio,
+		fish_behavior_pressure,
+		fish_driving_in,
+		steering_away,
+		knows_structure_fighting
+	)
+
+	var threshold := maxf(structure_line_break_threshold, 0.05)
+	var previous := line_abrasion
+	line_abrasion = clampf(
+		line_abrasion + abrasion_rate * delta,
+		0.0,
+		threshold
+	)
+	if not is_equal_approx(previous, line_abrasion):
+		line_abrasion_changed.emit(line_abrasion / threshold)
+
+	current_structure_snapshot = StructureCombatPolicy.build_structure_snapshot(
+		current_structure_contact,
+		line_abrasion / threshold,
+		escape_sign,
+		steering_away,
+		fish_driving_in,
+		knows_structure_fighting
+	)
+	current_structure_snapshot["read_structure_known"] = _has_mastery_capability(
+		&"read_structure"
+	)
+	structure_threat_changed.emit(current_structure_snapshot.duplicate(true))
+
+	if line_abrasion >= threshold and tension != null:
+		if tension.has_method("force_line_break"):
+			tension.force_line_break()
+
+
+func get_structure_combat_snapshot() -> Dictionary:
+	if current_structure_snapshot.is_empty():
+		return {
+			"active": false,
+			"abrasion": line_abrasion / maxf(structure_line_break_threshold, 0.05),
+		}
+	var snapshot := current_structure_snapshot.duplicate(true)
+	snapshot["active"] = true
+	return snapshot
+
+
 func _reset_fight_readouts() -> void:
 	current_fight_intent.clear()
 	current_line_pressure_band = &"none"
 	current_safe_pressure_ratio = 0.5
 	current_pressure_fatigue_multiplier = 1.0
+	current_structure_contact.clear()
+	current_structure_snapshot.clear()
+	line_abrasion = 0.0
+	line_abrasion_changed.emit(0.0)
+	structure_threat_changed.emit({})
 
 
 func _on_fish_behavior_thrash_started(intensity: float) -> void:
