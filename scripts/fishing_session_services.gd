@@ -96,6 +96,9 @@ const FishingRunReadingQAScript = preload(
 const FishingAerialControlQAScript = preload(
 	"res://scripts/fishing_aerial_control_qa.gd"
 )
+const FishingWeatherSenseQAScript = preload(
+	"res://scripts/fishing_weather_sense_qa.gd"
+)
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
 )
@@ -227,6 +230,7 @@ var bite_timing_qa_report: Dictionary = {}
 var pump_reel_qa_report: Dictionary = {}
 var run_reading_qa_report: Dictionary = {}
 var aerial_control_qa_report: Dictionary = {}
+var weather_sense_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -734,6 +738,26 @@ func initialize() -> void:
 	environment_service.name = "FishingEnvironmentService"
 	add_child(environment_service)
 	environment_service.configure(FishingEnvironmentCatalogResource)
+	if environment_service.has_method("set_mastery_service"):
+		environment_service.set_mastery_service(mastery_service)
+
+	if OS.is_debug_build():
+		weather_sense_qa_report = FishingWeatherSenseQAScript.run(
+			FishingEnvironmentCatalogResource,
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Weather Sense QA: %d/%d tests passed."
+			% [
+				int(weather_sense_qa_report.get("passed_count", 0)),
+				int(weather_sense_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in weather_sense_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Weather Sense QA: %s" % str(failure))
 
 	fish_consumable_service = FishingFishConsumableServiceScript.new()
 	fish_consumable_service.name = "FishingFishConsumableService"
@@ -1129,6 +1153,25 @@ func get_fishing_run_reading_qa_report() -> Dictionary:
 
 func get_fishing_aerial_control_qa_report() -> Dictionary:
 	return aerial_control_qa_report.duplicate(true)
+
+
+func get_fishing_weather_sense_qa_report() -> Dictionary:
+	return weather_sense_qa_report.duplicate(true)
+
+
+func get_fishing_weather_sense_snapshot(
+	current_depth: float = 0.0,
+	total_depth: float = 1.0
+) -> Dictionary:
+	if (
+		environment_service == null
+		or not environment_service.has_method("get_weather_sense_snapshot")
+	):
+		return {}
+	return environment_service.get_weather_sense_snapshot(
+		current_depth,
+		total_depth
+	)
 
 
 func get_fishing_current_service() -> FishingCurrentService:

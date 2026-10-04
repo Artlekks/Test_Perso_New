@@ -8,6 +8,9 @@ const ConditionDefinitionScript = preload(
 const EnvironmentCatalogScript = preload(
 	"res://scripts/fishing_environment_catalog.gd"
 )
+const FishingWeatherSensePolicyScript = preload(
+	"res://scripts/fishing_weather_sense_policy.gd"
+)
 
 const MAX_BITE_MULTIPLIER: float = 2.50
 const MAX_QUALITY_CHANCE: float = 0.50
@@ -19,6 +22,7 @@ const MAX_SPECIES_WEIGHT_MULTIPLIER: float = 4.0
 
 var _catalog: EnvironmentCatalogScript = null
 var _spot: FishingSpotData = null
+var _mastery_service: Node = null
 ## stacking_group -> condition resource
 var _active_by_group: Dictionary = {}
 
@@ -31,6 +35,34 @@ func configure(catalog: EnvironmentCatalogScript) -> void:
 func set_spot(spot: FishingSpotData) -> void:
 	_spot = spot
 	_emit_changed()
+
+
+func set_mastery_service(service: Node) -> void:
+	var old_callback := Callable(self, "_on_mastery_changed")
+	if (
+		_mastery_service != null
+		and _mastery_service.has_signal("mastery_changed")
+		and _mastery_service.is_connected("mastery_changed", old_callback)
+	):
+		_mastery_service.disconnect("mastery_changed", old_callback)
+
+	_mastery_service = service
+	if (
+		_mastery_service != null
+		and _mastery_service.has_signal("mastery_changed")
+		and not _mastery_service.is_connected("mastery_changed", old_callback)
+	):
+		_mastery_service.connect("mastery_changed", old_callback)
+
+	_emit_changed()
+
+
+func has_weather_sense() -> bool:
+	return (
+		_mastery_service != null
+		and _mastery_service.has_method("has_capability")
+		and bool(_mastery_service.call("has_capability", &"weather_sense"))
+	)
 
 
 func get_spot() -> FishingSpotData:
@@ -131,6 +163,85 @@ func get_active_tags() -> PackedStringArray:
 				result.append(tag)
 	result.sort()
 	return result
+
+
+func get_active_condition_display_names() -> PackedStringArray:
+	var result := PackedStringArray()
+	for raw_condition in _active_by_group.values():
+		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
+		if condition == null:
+			continue
+		var display_name := condition.display_name.strip_edges()
+		if display_name.is_empty():
+			display_name = str(condition.condition_id)
+		result.append(display_name)
+	result.sort()
+	return result
+
+
+func get_depth_activity_profile() -> Dictionary:
+	var surface := 1.0
+	var mid := 1.0
+	var deep := 1.0
+	for raw_condition in _active_by_group.values():
+		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
+		if condition == null:
+			continue
+		surface *= maxf(float(condition.surface_activity_multiplier), 0.01)
+		mid *= maxf(float(condition.mid_activity_multiplier), 0.01)
+		deep *= maxf(float(condition.deep_activity_multiplier), 0.01)
+	return {
+		"surface": surface,
+		"mid": mid,
+		"deep": deep,
+	}
+
+
+func get_tier_activity_profile() -> PackedFloat32Array:
+	var result := PackedFloat32Array([1.0, 1.0, 1.0, 1.0, 1.0])
+	for raw_condition in _active_by_group.values():
+		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
+		if condition == null:
+			continue
+		for index in range(5):
+			result[index] *= condition.get_tier_selection_multiplier(index + 1)
+	return result
+
+
+func get_weather_sense_snapshot(
+	current_depth: float = 0.0,
+	total_depth: float = 1.0
+) -> Dictionary:
+	var condition_ids := get_active_condition_ids()
+	var condition_names := get_active_condition_display_names()
+	if not has_weather_sense():
+		return {
+			"available": false,
+			"reason": "weather_sense_not_learned",
+			# Weather itself is visible to the player; the technique gates the fishing
+			# interpretation, not the existence/name of the current conditions.
+			"condition_ids": condition_ids,
+			"condition_names": condition_names,
+		}
+
+	var depth_profile := get_depth_activity_profile()
+	var generation := get_specimen_generation_context()
+	var fight := get_fight_modifiers()
+	return FishingWeatherSensePolicyScript.build_read_snapshot(
+		condition_ids,
+		condition_names,
+		get_bite_activity_multiplier(current_depth, total_depth),
+		float(depth_profile.get("surface", 1.0)),
+		float(depth_profile.get("mid", 1.0)),
+		float(depth_profile.get("deep", 1.0)),
+		float(generation.get("environment_quality_bonus_chance", 0.0)),
+		int(generation.get("environment_quality_bonus_rolls", 0)),
+		float(fight.get("fish_pressure_multiplier", 1.0)),
+		float(fight.get("line_tolerance_multiplier", 1.0)),
+		float(fight.get("hook_off_delay_multiplier", 1.0)),
+		float(fight.get("counter_steer_multiplier", 1.0)),
+		get_tier_activity_profile()
+	)
 
 
 func get_species_selection_multiplier(fish: FishData) -> float:
@@ -236,6 +347,7 @@ func get_debug_snapshot(current_depth: float = 0.0, total_depth: float = 1.0) ->
 		"quality_bonus_roll_chance": float(generation.get("environment_quality_bonus_chance", 0.0)),
 		"quality_bonus_rolls": int(generation.get("environment_quality_bonus_rolls", 0)),
 		"fish_pressure_multiplier": float(fight.get("fish_pressure_multiplier", 1.0)),
+		"weather_sense": get_weather_sense_snapshot(current_depth, total_depth),
 	}
 
 
@@ -243,6 +355,12 @@ func _get_spot_id() -> String:
 	if _spot == null:
 		return ""
 	return str(_spot.get("spot_id"))
+
+
+func _on_mastery_changed(_snapshot: Dictionary) -> void:
+	# Weather Sense changes only what the player can read, so reuse the same
+	# environment signal consumed by future HUD/menu presentation.
+	_emit_changed()
 
 
 func _emit_changed() -> void:

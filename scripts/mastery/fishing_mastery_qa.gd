@@ -25,6 +25,9 @@ static func run(
 	var quiet_approach := catalog.get_technique(&"quiet_approach") if catalog != null else null
 	_record(report, "Quiet Approach is authored", quiet_approach != null, "Bank-side fieldcraft needs a real master-taught technique in the canonical mastery catalog.")
 	_record(report, "Quiet Approach exposes movement capability", quiet_approach != null and quiet_approach.has_capability(&"quiet_approach"), "Fish wariness should query a stable capability tag rather than hard-code a tutorial flag.")
+	var weather_sense := catalog.get_technique(&"weather_sense") if catalog != null else null
+	_record(report, "Weather Sense is authored", weather_sense != null, "Weather should become learnable fishing information instead of remaining invisible backend math.")
+	_record(report, "Weather Sense exposes observation capability", weather_sense != null and weather_sense.has_capability(&"weather_sense"), "Environment presentation should query mastery capability rather than hard-code a weather tutorial state.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
 	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
 	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
@@ -49,6 +52,13 @@ static func run(
 		false
 	)
 	_record(report, "Quiet Approach becomes runtime capability", bool(quiet_learned.get("success", false)) and service.has_capability(&"quiet_approach"), "Once taught by its master, the live fish-presence system should be able to reduce player disturbance.")
+
+	var weather_learned := service.learn_technique(
+		&"weather_sense",
+		weather_sense.teacher_id if weather_sense != null else &"",
+		false
+	)
+	_record(report, "Weather Sense becomes runtime capability", bool(weather_learned.get("success", false)) and service.has_capability(&"weather_sense") and bool(service.get_snapshot().get("can_read_weather", false)), "The environment system needs one persistent capability gate for its qualitative fishing readout.")
 
 	var read_structure := catalog.get_technique(&"read_structure") if catalog != null else null
 	var line_feel := catalog.get_technique(&"line_feel") if catalog != null else null
