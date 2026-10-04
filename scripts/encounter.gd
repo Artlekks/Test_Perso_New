@@ -27,6 +27,9 @@ const PumpReelPolicy = preload(
 const RunReadingPolicy = preload(
 	"res://scripts/fishing_run_reading_policy.gd"
 )
+const AerialControlPolicy = preload(
+	"res://scripts/fishing_aerial_control_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_commit_ready(snapshot: Dictionary)
@@ -56,6 +59,8 @@ signal fish_final_surge_started(snapshot: Dictionary)
 signal fish_final_surge_ended
 signal pump_reel_state_changed(snapshot: Dictionary)
 signal run_read_state_changed(snapshot: Dictionary)
+signal fish_aerial_started(snapshot: Dictionary)
+signal aerial_control_state_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -180,6 +185,17 @@ var run_read_last_result: StringName = RunReadingPolicy.RESULT_IDLE
 var run_read_success_count: int = 0
 var run_read_intent_snapshot: Dictionary = {}
 var suppress_next_run_read_intent: bool = false
+var player_tension_bias: float = 0.0
+var aerial_control_active: bool = false
+var aerial_control_window_left: float = 0.0
+var aerial_control_match_time: float = 0.0
+var aerial_control_cooldown_left: float = 0.0
+var aerial_control_expected_response: StringName = AerialControlPolicy.RESPONSE_NONE
+var aerial_control_last_result: StringName = AerialControlPolicy.RESULT_IDLE
+var aerial_control_success_count: int = 0
+var aerial_control_intent_snapshot: Dictionary = {}
+var aerial_control_profile: FishBehaviorProfile = null
+var aerial_control_hook_security: float = 1.0
 
 enum FightState {
 	NONE,
@@ -826,6 +842,7 @@ func begin_catch_landing() -> bool:
 	recovery_time_left = 0.0
 	player_reeling = false
 	player_steering = 0.0
+	player_tension_bias = 0.0
 	current_fish_lateral = 0.0
 	fish_behavior_pressure = 0.0
 	fish_behavior.stop()
@@ -863,6 +880,7 @@ func catch_fish() -> bool:
 	recovery_time_left = 0.0
 	player_reeling = false
 	player_steering = 0.0
+	player_tension_bias = 0.0
 	current_fish_lateral = 0.0
 	fish_behavior_pressure = 0.0
 	fish_behavior.stop()
@@ -888,6 +906,7 @@ func _process(delta: float) -> void:
 	_update_line_pressure_state()
 	_update_pump_reel(delta)
 	_update_run_read(delta)
+	_update_aerial_control(delta)
 	_update_structure_combat(delta)
 	_update_final_surge_state()
 
@@ -1489,6 +1508,200 @@ func get_run_read_snapshot() -> Dictionary:
 	)
 
 
+func _is_aerial_visual_profile_allowed() -> bool:
+	if active_fish == null or active_fish.species == null:
+		return false
+
+	# Jelly/squid silhouettes are intentionally excluded from v1 surface
+	# breaches. Their rise behavior remains intact and can receive bespoke
+	# surface-control presentation later without pretending they jump like fish.
+	var profile := int(active_fish.species.shadow_visual_profile)
+	return (
+		profile != FishData.ShadowVisualProfile.SQUID
+		and profile != FishData.ShadowVisualProfile.JELLY
+	)
+
+
+func _try_start_aerial_control(intent_snapshot: Dictionary) -> bool:
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or aerial_control_active
+		or active_fish == null
+		or active_fish.behavior_profile == null
+	):
+		return false
+
+	var profile: FishBehaviorProfile = active_fish.behavior_profile
+	if not AerialControlPolicy.should_start(
+		intent_snapshot,
+		profile,
+		randf(),
+		aerial_control_cooldown_left,
+		_is_aerial_visual_profile_allowed()
+	):
+		return false
+
+	var hook_security := maxf(
+		float(active_fight_context.get("hook_off_delay_multiplier", 1.0)),
+		0.01
+	)
+	var expected := AerialControlPolicy.get_expected_response(
+		profile,
+		hook_security
+	)
+	if expected == AerialControlPolicy.RESPONSE_NONE:
+		return false
+
+	# An aerial breach replaces the ordinary RISE read for this one intent.
+	# Normal rises still use Reading the Run exactly as before.
+	_cancel_run_read(false)
+	aerial_control_active = true
+	aerial_control_window_left = AerialControlPolicy.get_window_seconds(
+		intent_snapshot
+	)
+	aerial_control_match_time = 0.0
+	aerial_control_expected_response = expected
+	aerial_control_last_result = AerialControlPolicy.RESULT_READING
+	aerial_control_intent_snapshot = intent_snapshot.duplicate(true)
+	aerial_control_profile = profile
+	aerial_control_hook_security = hook_security
+
+	var snapshot := get_aerial_control_snapshot()
+	fish_aerial_started.emit(snapshot.duplicate(true))
+	aerial_control_state_changed.emit(snapshot.duplicate(true))
+	return true
+
+
+func _update_aerial_control(delta: float) -> void:
+	if aerial_control_cooldown_left > 0.0:
+		aerial_control_cooldown_left = maxf(
+			aerial_control_cooldown_left - maxf(delta, 0.0),
+			0.0
+		)
+
+	if not aerial_control_active:
+		return
+
+	if (
+		fight_state != FightState.RESISTING
+		or final_surge_active
+		or not lifecycle.is_hooked()
+	):
+		_cancel_aerial_control(true)
+		return
+
+	var matches := AerialControlPolicy.is_response_matching(
+		aerial_control_expected_response,
+		player_reeling,
+		player_tension_bias
+	)
+	aerial_control_match_time = AerialControlPolicy.advance_match_time(
+		aerial_control_match_time,
+		matches,
+		delta
+	)
+
+	if AerialControlPolicy.is_response_complete(aerial_control_match_time):
+		_complete_aerial_control()
+		return
+
+	aerial_control_window_left = maxf(
+		aerial_control_window_left - maxf(delta, 0.0),
+		0.0
+	)
+	if aerial_control_window_left > 0.0:
+		return
+
+	_fail_aerial_control()
+
+
+func _complete_aerial_control() -> void:
+	if not aerial_control_active:
+		return
+
+	aerial_control_active = false
+	aerial_control_window_left = 0.0
+	aerial_control_match_time = AerialControlPolicy.RESPONSE_HOLD_SECONDS
+	aerial_control_last_result = AerialControlPolicy.RESULT_SUCCESS
+	aerial_control_success_count += 1
+	aerial_control_cooldown_left = AerialControlPolicy.EVENT_COOLDOWN_SECONDS
+
+	if tension != null:
+		var intensity := clampf(
+			float(aerial_control_intent_snapshot.get("intensity", 0.0)),
+			0.0,
+			1.0
+		)
+		tension.add_impulse(
+			AerialControlPolicy.get_success_stabilization_impulse(
+				aerial_control_expected_response,
+				intensity
+			)
+		)
+
+	aerial_control_state_changed.emit(
+		get_aerial_control_snapshot().duplicate(true)
+	)
+
+
+func _fail_aerial_control() -> void:
+	if not aerial_control_active:
+		return
+
+	aerial_control_active = false
+	aerial_control_window_left = 0.0
+	aerial_control_match_time = 0.0
+	aerial_control_last_result = AerialControlPolicy.RESULT_MISSED
+	aerial_control_cooldown_left = AerialControlPolicy.EVENT_COOLDOWN_SECONDS
+
+	if tension != null:
+		var intensity := clampf(
+			float(aerial_control_intent_snapshot.get("intensity", 0.0)),
+			0.0,
+			1.0
+		)
+		tension.add_impulse(
+			AerialControlPolicy.get_failure_tension_impulse(
+				aerial_control_expected_response,
+				intensity,
+				aerial_control_hook_security
+			)
+		)
+
+	aerial_control_state_changed.emit(
+		get_aerial_control_snapshot().duplicate(true)
+	)
+
+
+func _cancel_aerial_control(mark_cancelled: bool) -> void:
+	if not aerial_control_active and not mark_cancelled:
+		return
+	aerial_control_active = false
+	aerial_control_window_left = 0.0
+	aerial_control_match_time = 0.0
+	if mark_cancelled:
+		aerial_control_last_result = AerialControlPolicy.RESULT_CANCELLED
+	aerial_control_state_changed.emit(
+		get_aerial_control_snapshot().duplicate(true)
+	)
+
+
+func get_aerial_control_snapshot() -> Dictionary:
+	return AerialControlPolicy.build_snapshot(
+		aerial_control_active,
+		aerial_control_window_left,
+		aerial_control_match_time,
+		aerial_control_expected_response,
+		aerial_control_last_result,
+		aerial_control_success_count,
+		aerial_control_intent_snapshot,
+		aerial_control_profile,
+		aerial_control_hook_security,
+		aerial_control_cooldown_left
+	)
+
+
 func _react_to_reel_release() -> void:
 	if fight_state == FightState.NONE:
 		return
@@ -1712,6 +1925,7 @@ func get_fish_debug_snapshot() -> Dictionary:
 		"landing": get_landing_combat_snapshot(),
 		"pump_reel": get_pump_reel_snapshot(),
 		"reading_the_run": get_run_read_snapshot(),
+		"aerial_control": get_aerial_control_snapshot(),
 	}
 
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -2187,6 +2401,7 @@ func _fail_fight(reason: int) -> bool:
 	recovery_time_left = 0.0
 	player_reeling = false
 	player_steering = 0.0
+	player_tension_bias = 0.0
 	current_fish_lateral = 0.0
 	fish_behavior_pressure = 0.0
 
@@ -2213,6 +2428,8 @@ func _on_fish_behavior_intent_started(snapshot: Dictionary) -> void:
 	current_fight_intent = snapshot.duplicate(true)
 	fish_intent_changed.emit(current_fight_intent.duplicate(true))
 	if not suppress_next_run_read_intent:
+		if _try_start_aerial_control(current_fight_intent):
+			return
 		_start_run_read(current_fight_intent)
 
 
@@ -2404,6 +2621,17 @@ func _reset_fight_readouts() -> void:
 	run_read_success_count = 0
 	run_read_intent_snapshot.clear()
 	suppress_next_run_read_intent = false
+	player_tension_bias = 0.0
+	aerial_control_active = false
+	aerial_control_window_left = 0.0
+	aerial_control_match_time = 0.0
+	aerial_control_cooldown_left = 0.0
+	aerial_control_expected_response = AerialControlPolicy.RESPONSE_NONE
+	aerial_control_last_result = AerialControlPolicy.RESULT_IDLE
+	aerial_control_success_count = 0
+	aerial_control_intent_snapshot.clear()
+	aerial_control_profile = null
+	aerial_control_hook_security = 1.0
 	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})
@@ -2452,8 +2680,10 @@ func add_lure_tension(amount: float) -> void:
 
 func set_player_tension_bias(value: float) -> void:
 	if lifecycle.is_hooked():
-		tension.set_player_tension_bias(value)
+		player_tension_bias = clampf(value, -1.0, 1.0)
+		tension.set_player_tension_bias(player_tension_bias)
 	else:
+		player_tension_bias = 0.0
 		tension.set_player_tension_bias(0.0)
 
 
@@ -2483,6 +2713,7 @@ func _reset_cast_runtime(clear_bait_data: bool) -> void:
 	recovery_time_left = 0.0
 	player_reeling = false
 	player_steering = 0.0
+	player_tension_bias = 0.0
 	current_fish_lateral = 0.0
 	fish_behavior_pressure = 0.0
 

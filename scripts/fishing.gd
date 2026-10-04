@@ -188,6 +188,7 @@ func _ready() -> void:
 	encounter.fish_movement_changed.connect(_on_fish_movement_changed)
 	encounter.fish_depth_intent_changed.connect(_on_fish_depth_intent_changed)
 	encounter.fish_thrash_started.connect(_on_fish_thrash_started)
+	encounter.fish_aerial_started.connect(_on_fish_aerial_started)
 	encounter.fish_resistance_started.connect(_on_fish_resistance_started_splash)
 	encounter.hook_off.connect(_on_fight_failed)
 	encounter.line_broken.connect(_on_line_broken)
@@ -1747,6 +1748,26 @@ func _on_fish_thrash_started(intensity: float) -> void:
 		clampf(intensity, 0.0, 1.0)
 	)
 
+	_spawn_surface_splash(surface_position, strength, true)
+	_fight_splash_cooldown_left = fight_thrash_splash_cooldown
+
+
+func _on_fish_aerial_started(snapshot: Dictionary) -> void:
+	if phase != Phase.FIGHT:
+		return
+
+	# V1 uses the existing surface splash language as the breach cue. The actual
+	# fish shadow remains the underwater ownership/presentation actor; a later art
+	# pass can add a dedicated above-water fish sprite without changing mechanics.
+	var surface_position: Vector3 = caster.get_active_bait_visual_surface_position()
+	var intensity := clampf(float(snapshot.get("intensity", 0.6)), 0.0, 1.0)
+	var response := StringName(str(snapshot.get("expected_response", "none")))
+	var strength_multiplier := lerpf(0.95, 1.20, intensity)
+	if response == &"bow_low":
+		# Acrobatic launches get the sharper splash cue; power breaches stay
+		# broader/calmer so the two learned response families are not identical.
+		strength_multiplier = lerpf(1.25, 1.55, intensity)
+	var strength := fight_thrash_splash_strength * strength_multiplier
 	_spawn_surface_splash(surface_position, strength, true)
 	_fight_splash_cooldown_left = fight_thrash_splash_cooldown
 

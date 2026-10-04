@@ -82,6 +82,25 @@ var bite_window_multiplier: float = 1.0
 @export_range(0.50, 2.0, 0.05)
 var bite_retry_multiplier: float = 1.0
 
+@export_category("Aerial Control")
+## AUTO derives the jump response from species rise/vertical personality plus
+## the active tackle hook-security context. Explicit overrides are available for
+## future species tuning without changing Encounter or the input contract.
+enum AerialControlStyle {
+	AUTO,
+	BOW_LOW,
+	HIGH_FOLLOW,
+	DISABLED,
+}
+
+@export_enum("Auto", "Bow / Low Rod", "High Rod / Follow", "Disabled")
+var aerial_control_style: int = AerialControlStyle.AUTO
+
+## Multiplies only the chance that an authored RISE becomes an aerial breach.
+## The existing rise_weight still owns how often the species chooses RISE.
+@export_range(0.0, 2.0, 0.05)
+var aerial_frequency_multiplier: float = 1.0
+
 @export_category("Fight Output")
 ## Multiplies movement intensity without changing FishData stamina/strength.
 @export_range(0.50, 1.50, 0.05)
@@ -147,6 +166,9 @@ func is_valid_profile() -> bool:
 		and bite_aggression_multiplier >= 0.0
 		and bite_window_multiplier > 0.0
 		and bite_retry_multiplier > 0.0
+		and aerial_control_style >= AerialControlStyle.AUTO
+		and aerial_control_style <= AerialControlStyle.DISABLED
+		and aerial_frequency_multiplier >= 0.0
 		and fight_intensity_multiplier > 0.0
 		and pressure_multiplier > 0.0
 		and pull_multiplier > 0.0
