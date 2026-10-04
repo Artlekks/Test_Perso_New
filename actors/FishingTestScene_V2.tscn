@@ -80,6 +80,7 @@
 [ext_resource type="PackedScene" path="res://actors/RegionalChampionshipRegistrar.tscn" id="80_regional_championship"]
 [ext_resource type="PackedScene" path="res://actors/BeachFishingCritter.tscn" id="81_beach_critter"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterStillWaterNPC.tscn" id="82_still_water_master"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterCurrentReaderNPC.tscn" id="83_current_reader_master"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -271,10 +272,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.08, 0.07, 0.5)
 
 [node name="BeachGatheringCircuit" parent="World" unique_id=1174588029 instance=ExtResource("76_gathering_circuit")]
 
-[node name="FishingMasterStillWaterNPC" parent="World" unique_id=179015231 instance=ExtResource("82_still_water_master")]
+[node name="FishingMasterStillWaterNPC" parent="World" unique_id=900302825 instance=ExtResource("82_still_water_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.07, -0.1)
 
-[node name="BeachCritter" parent="World" unique_id=80480580 instance=ExtResource("81_beach_critter")]
+[node name="FishingMasterCurrentReaderNPC" parent="World" unique_id=1213018717 instance=ExtResource("83_current_reader_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.07, -0.1)
+
+[node name="BeachCritter" parent="World" unique_id=1887300377 instance=ExtResource("81_beach_critter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, 0.34, 0.12)
 roam_half_width = 0.48
 roam_half_depth = 0.26

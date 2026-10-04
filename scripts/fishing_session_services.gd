@@ -81,6 +81,9 @@ const FishingMasteryServiceScript = preload(
 const FishingMasteryQAScript = preload(
 	"res://scripts/mastery/fishing_mastery_qa.gd"
 )
+const FishingMasterCurrentReaderQAScript = preload(
+	"res://scripts/mastery/fishing_master_current_reader_qa.gd"
+)
 const FishingFightCombatQAScript = preload(
 	"res://scripts/fishing_fight_combat_qa.gd"
 )
@@ -264,6 +267,7 @@ var current_service: FishingCurrentService = null
 var tide_service: FishingTideService = null
 var mastery_service: FishingMasteryService = null
 var mastery_qa_report: Dictionary = {}
+var master_current_reader_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
 var presentation_qa_report: Dictionary = {}
 var bite_timing_qa_report: Dictionary = {}
@@ -685,6 +689,22 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Mastery QA: %s" % str(failure))
+
+		master_current_reader_qa_report = FishingMasterCurrentReaderQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Current Reader QA: %d/%d tests passed."
+			% [
+				int(master_current_reader_qa_report.get("passed_count", 0)),
+				int(master_current_reader_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_current_reader_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Current Reader QA: %s" % str(failure))
 
 		fight_combat_qa_report = FishingFightCombatQAScript.run()
 		print(
@@ -1300,6 +1320,10 @@ func learn_fishing_technique(
 
 func get_fishing_mastery_qa_report() -> Dictionary:
 	return mastery_qa_report.duplicate(true)
+
+
+func get_fishing_master_current_reader_qa_report() -> Dictionary:
+	return master_current_reader_qa_report.duplicate(true)
 
 
 func get_fishing_fight_qa_report() -> Dictionary:
