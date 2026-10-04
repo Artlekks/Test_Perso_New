@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"line_feel"
+display_name = "Line Feel"
+category = &"fight"
+description = "Read pressure through the line and recognize when to pull, yield, or hold instead of treating every fish the same."
+teacher_id = &"master_line_fighter"
+capability_tags = PackedStringArray("line_feel")

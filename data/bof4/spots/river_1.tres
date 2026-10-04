@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://drtr8dooxsml8" path="res://scripts/fish_spawn_entry.gd" id="2_spawn"]
 [ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://d0sap4gwweio" path="res://data/bof4/fish/sweetfish.tres" id="4_fish"]
+[ext_resource type="Script" uid="uid://b8cv7hluf70by" path="res://scripts/database/fishing_current_field_definition.gd" id="4_ybyt0"]
 [ext_resource type="Resource" uid="uid://o2y8get1kdr8" path="res://data/bof4/fish/trout.tres" id="5_fish"]
 [ext_resource type="Resource" uid="uid://cf817j27214sf" path="res://data/bof4/fish/rainbow_trout.tres" id="6_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/river_1.tres" id="ambient_profile"]

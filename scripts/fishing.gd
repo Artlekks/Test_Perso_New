@@ -39,6 +39,9 @@ const FishingTackleCatalogResource = preload(
 const FishingSurfaceSplashScene = preload(
 	"res://actors/FishingSurfaceSplash.tscn"
 )
+const FishingCurrentSurfaceViewScript = preload(
+	"res://scripts/fishing_current_surface_view.gd"
+)
 
 
 enum Phase {
@@ -131,6 +134,9 @@ var fishing_economy_access = null
 var fishing_session_modifier_service = null
 var fishing_prepared_bait_service: FishingPreparedBaitService = null
 var fishing_environment_service = null
+var fishing_current_service: FishingCurrentService = null
+var fishing_mastery_service: FishingMasteryService = null
+var fishing_current_view: FishingCurrentSurfaceView = null
 var fishing_fish_consumable_service = null
 var fishing_unlock_state: FishingUnlockState = null
 var fishing_reward_service: FishingRewardService = null
@@ -237,10 +243,25 @@ func _ready() -> void:
 	fishing_session_modifier_service = session_services.session_modifier_service
 	fishing_prepared_bait_service = session_services.prepared_bait_service
 	fishing_environment_service = session_services.environment_service
+	fishing_current_service = session_services.get_fishing_current_service()
+	fishing_mastery_service = session_services.get_fishing_mastery_service()
 	fishing_fish_consumable_service = session_services.fish_consumable_service
 	fishing_unlock_state = session_services.unlock_state
 	fishing_reward_service = session_services.reward_service
 	fishing_journal_service = session_services.journal_service
+
+	if caster != null and caster.has_method("set_current_service"):
+		caster.set_current_service(fishing_current_service)
+
+	fishing_current_view = FishingCurrentSurfaceViewScript.new() as FishingCurrentSurfaceView
+	fishing_current_view.name = "FishingCurrentSurfaceView"
+	add_child(fishing_current_view)
+	fishing_current_view.configure(
+		fishing_current_service,
+		fishing_mastery_service
+	)
+	fishing_current_view.bind_caster(caster)
+	_sync_current_context_to_zone()
 
 	if (
 		encounter != null
@@ -668,6 +689,12 @@ func _on_mode_changed(new_mode) -> void:
 		):
 			fishing_environment_service.set_spot(null)
 
+		if fishing_current_service != null:
+			fishing_current_service.set_spot(null)
+			fishing_current_service.set_swim_bounds(null)
+		if fishing_current_view != null:
+			fishing_current_view.bind_zone(null)
+
 		if (
 			depth_meter_view != null
 			and depth_meter_view.has_method(
@@ -712,6 +739,15 @@ func _on_mode_changed(new_mode) -> void:
 				zone.get_fishing_spot()
 			)
 
+		if fishing_current_service != null:
+			fishing_current_service.set_spot(zone.get_fishing_spot())
+			var zone_swim_bounds: FishSwimBounds = null
+			if zone.has_method("get_swim_bounds"):
+				zone_swim_bounds = zone.get_swim_bounds() as FishSwimBounds
+			fishing_current_service.set_swim_bounds(zone_swim_bounds)
+		if fishing_current_view != null:
+			fishing_current_view.bind_zone(zone)
+
 		if encounter.has_method("set_fish_zone"):
 			encounter.set_fish_zone(zone)
 
@@ -733,6 +769,31 @@ func _on_mode_changed(new_mode) -> void:
 
 
 
+
+
+func _sync_current_context_to_zone() -> void:
+	if fishing_current_service == null:
+		return
+	if game_mode == null or not game_mode.is_fishing():
+		fishing_current_service.set_spot(null)
+		fishing_current_service.set_swim_bounds(null)
+		if fishing_current_view != null:
+			fishing_current_view.bind_zone(null)
+		return
+	var zone = game_mode.active_fish_zone
+	if zone == null:
+		fishing_current_service.set_spot(null)
+		fishing_current_service.set_swim_bounds(null)
+		if fishing_current_view != null:
+			fishing_current_view.bind_zone(null)
+		return
+	var zone_swim_bounds: FishSwimBounds = null
+	if zone.has_method("get_swim_bounds"):
+		zone_swim_bounds = zone.get_swim_bounds() as FishSwimBounds
+	fishing_current_service.set_spot(zone.get_fishing_spot())
+	fishing_current_service.set_swim_bounds(zone_swim_bounds)
+	if fishing_current_view != null:
+		fishing_current_view.bind_zone(zone)
 
 
 func _on_fishing_environment_changed(_snapshot: Dictionary) -> void:

@@ -30,6 +30,24 @@ var baseline_concentration: float = 0.72
 ## Species selection still comes from fish_population.
 @export var ambient_profile: AmbientFishProfile
 
+@export_category("Water Current")
+## Horizontal world-space direction encoded as X/Z. Current exists whether or
+## not the player has learned how to read it.
+@export var current_direction: Vector2 = Vector2.ZERO
+@export_range(0.0, 2.0, 0.005)
+var current_speed: float = 0.0
+## Low-frequency natural variation. 0.20 means roughly +/-20% around base speed.
+@export_range(0.0, 0.75, 0.01)
+var current_gust_strength: float = 0.0
+@export_range(0.25, 30.0, 0.25)
+var current_gust_period_seconds: float = 6.0
+## Presentation intensity used once the player can read the current.
+@export_range(0.0, 1.0, 0.05)
+var current_visual_strength: float = 0.5
+## Optional local flow zones. These modify the baseline current by normalized
+## position inside FishSwimBounds, allowing channels, calm pockets and eddies.
+@export var current_fields: Array[FishingCurrentFieldDefinition] = []
+
 @export_category("Strategy Metadata")
 ## Recommendations only. They are not hard gameplay gates.
 @export_range(0, 3, 1)
@@ -47,6 +65,18 @@ func get_fish_population() -> Array[FishSpawnEntry]:
 
 func get_ambient_profile() -> AmbientFishProfile:
 	return ambient_profile
+
+
+func get_current_fields() -> Array[FishingCurrentFieldDefinition]:
+	return current_fields
+
+
+func get_valid_current_field_count() -> int:
+	var count: int = 0
+	for field in current_fields:
+		if field != null and field.is_valid_definition():
+			count += 1
+	return count
 
 
 func get_concentration_hotspots() -> Array[FishingHotspotDefinition]:

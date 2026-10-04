@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"read_structure"
+display_name = "Read Structure"
+category = &"observation"
+description = "Recognize rocks, logs, weed edges and ambush cover where fish gather—and where careless line work gets punished."
+teacher_id = &"master_structure_hunter"
+capability_tags = PackedStringArray("read_structure")

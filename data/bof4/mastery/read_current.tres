@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+technique_id = &"read_current"
+display_name = "Read the Current"
+category = &"observation"
+description = "Read surface movement and subtle water signs so hidden current becomes visible before and during a cast."
+teacher_id = &"master_current_reader"
+capability_tags = PackedStringArray("read_current")

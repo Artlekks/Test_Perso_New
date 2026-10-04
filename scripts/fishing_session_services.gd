@@ -69,6 +69,15 @@ const FishingSessionModifierServiceScript = preload(
 const FishingEnvironmentServiceScript = preload(
 	"res://scripts/fishing_environment_service.gd"
 )
+const FishingCurrentServiceScript = preload(
+	"res://scripts/fishing_current_service.gd"
+)
+const FishingMasteryServiceScript = preload(
+	"res://scripts/mastery/fishing_mastery_service.gd"
+)
+const FishingMasteryQAScript = preload(
+	"res://scripts/mastery/fishing_mastery_qa.gd"
+)
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
 )
@@ -157,6 +166,12 @@ const FishingEnvironmentCatalogResource: FishingEnvironmentCatalogScript = prelo
 const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 	"res://data/bof4/progression/all_progression.tres"
 )
+const FishingMasteryTechniqueCatalogResource: FishingMasteryTechniqueCatalog = preload(
+	"res://data/bof4/mastery/all_techniques.tres"
+)
+const FishingMasteryQASpotResource: FishingSpotData = preload(
+	"res://data/bof4/spots/ocean_2.tres"
+)
 const FishingContentCatalogResource: FishingContentCatalog = preload(
 	"res://data/bof4/catalogs/all_content.tres"
 )
@@ -185,6 +200,9 @@ var card_maker_service: FishingCardMakerService = null
 var save_integrity_service = null
 var session_modifier_service = null
 var environment_service = null
+var current_service: FishingCurrentService = null
+var mastery_service: FishingMasteryService = null
+var mastery_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -538,6 +556,36 @@ func initialize() -> void:
 	unlock_state.name = "FishingUnlockState"
 	add_child(unlock_state)
 	unlock_state.initialize()
+
+	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
+	mastery_service.name = "FishingMasteryService"
+	add_child(mastery_service)
+	mastery_service.configure(
+		FishingMasteryTechniqueCatalogResource,
+		unlock_state
+	)
+
+	current_service = FishingCurrentServiceScript.new() as FishingCurrentService
+	current_service.name = "FishingCurrentService"
+	add_child(current_service)
+
+	if OS.is_debug_build():
+		mastery_qa_report = FishingMasteryQAScript.run(
+			FishingMasteryTechniqueCatalogResource,
+			FishingMasteryQASpotResource
+		)
+		print(
+			"Fishing Mastery QA: %d/%d tests passed."
+			% [
+				int(mastery_qa_report.get("passed_count", 0)),
+				int(mastery_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in mastery_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Mastery QA: %s" % str(failure))
 
 	manillo_ledger = FishingManilloLedgerScript.new()
 	manillo_ledger.name = "FishingManilloLedger"
@@ -919,6 +967,48 @@ func run_economy_foundation_qa() -> Dictionary:
 	return economy_foundation_qa_report.duplicate(true)
 
 
+func get_fishing_mastery_service() -> FishingMasteryService:
+	return mastery_service
+
+
+func get_fishing_mastery_snapshot() -> Dictionary:
+	if mastery_service == null:
+		return {}
+	return mastery_service.get_snapshot()
+
+
+func can_learn_fishing_technique(
+	technique_id: StringName,
+	teacher_id: StringName
+) -> Dictionary:
+	if mastery_service == null:
+		return {"can_learn": false, "reason": "mastery_unavailable"}
+	return mastery_service.can_learn(technique_id, teacher_id)
+
+
+func learn_fishing_technique(
+	technique_id: StringName,
+	teacher_id: StringName
+) -> Dictionary:
+	if mastery_service == null:
+		return {"success": false, "reason": "mastery_unavailable"}
+	return mastery_service.learn_technique(technique_id, teacher_id, true)
+
+
+func get_fishing_mastery_qa_report() -> Dictionary:
+	return mastery_qa_report.duplicate(true)
+
+
+func get_fishing_current_service() -> FishingCurrentService:
+	return current_service
+
+
+func get_fishing_current_snapshot() -> Dictionary:
+	if current_service == null:
+		return {}
+	return current_service.get_snapshot()
+
+
 func get_campaign_progression_director():
 	return campaign_progression_director
 
@@ -1151,6 +1241,8 @@ func is_ready() -> bool:
 		and save_integrity_service != null
 		and session_modifier_service != null
 		and environment_service != null
+		and current_service != null
+		and mastery_service != null
 		and fish_consumable_service != null
 		and item_catalog != null
 		and player_item_inventory != null

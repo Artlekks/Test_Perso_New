@@ -167,6 +167,7 @@ var reeling: bool = false
 var simulation_frozen: bool = false
 var swim_bounds: Node = null
 var shore_boundary: Node = null
+var current_service: FishingCurrentService = null
 
 var snag_probe: Area3D = null
 var snag_risk: float = 0.0
@@ -329,12 +330,20 @@ func is_cast_flying() -> bool:
 	return state == State.FLYING
 
 
+func is_in_water_state() -> bool:
+	return state == State.SINKING or state == State.IN_WATER
+
+
 func get_visual_velocity() -> Vector3:
 	return velocity
 
 
 func set_swim_bounds(bounds: Node) -> void:
 	swim_bounds = bounds
+
+
+func set_current_service(service: FishingCurrentService) -> void:
+	current_service = service
 
 
 func set_shore_boundary(boundary: Node) -> void:
@@ -417,10 +426,41 @@ func _physics_process(delta: float) -> void:
 		_update_lure_action_motion(delta)
 	
 	_update_twitch_motion(delta)
+	_update_current_drift(delta)
 	
 	_enforce_fight_distance()
 	_enforce_shore_boundary()
 	
+func _update_current_drift(delta: float) -> void:
+	if (
+		current_service == null
+		or (state != State.SINKING and state != State.IN_WATER)
+		or delta <= 0.0
+	):
+		return
+
+	var current_velocity: Vector3 = (
+		current_service.sample_current_velocity(global_position)
+	)
+	if current_velocity.length_squared() <= 0.0000001:
+		return
+
+	var proposed_position: Vector3 = (
+		global_position + current_velocity * delta
+	)
+	if (
+		swim_bounds != null
+		and swim_bounds.has_method("constrain_fish_motion")
+	):
+		proposed_position = swim_bounds.constrain_fish_motion(
+			global_position,
+			proposed_position
+		)
+
+	global_position.x = proposed_position.x
+	global_position.z = proposed_position.z
+
+
 func _update_flying(delta: float) -> void:
 	if air_path.size() >= 2:
 		_update_flying_path(delta)

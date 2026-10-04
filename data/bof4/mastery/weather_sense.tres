@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"weather_sense"
+display_name = "Weather Sense"
+category = &"fieldcraft"
+description = "Read wind, rain, pressure and light as fishing information rather than scenery."
+teacher_id = &"master_weather_watcher"
+capability_tags = PackedStringArray("weather_sense")

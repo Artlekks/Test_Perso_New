@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"drift_casting"
+display_name = "Drift Casting"
+category = &"casting"
+description = "Use the current instead of fighting it: cast upstream or across flow so the lure naturally reaches difficult water."
+teacher_id = &"master_drift_angler"
+prerequisite_ids = PackedStringArray("read_current")
+capability_tags = PackedStringArray("current_compensation")

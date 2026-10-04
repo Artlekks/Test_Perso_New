@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"deep_water_control"
+display_name = "Deep-Water Control"
+category = &"fight"
+description = "Manage long vertical fights, delayed pressure and powerful dives without losing contact with the fish."
+teacher_id = &"master_deepwater_veteran"
+prerequisite_ids = PackedStringArray("line_feel", "read_depth")
+capability_tags = PackedStringArray("deep_water_control")

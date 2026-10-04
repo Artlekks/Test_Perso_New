@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://cj8wqhyprxqa" path="res://scripts/database/fishing_hotspot_definition.gd" id="2_vx5oi"]
 [ext_resource type="Resource" uid="uid://c3jjdf5ntdfcc" path="res://data/bof4/fish/jellyfish.tres" id="3_fish"]
 [ext_resource type="Resource" uid="uid://die2ltgr3x351" path="res://data/bof4/fish/bullcat.tres" id="4_fish"]
+[ext_resource type="Script" uid="uid://b8cv7hluf70by" path="res://scripts/database/fishing_current_field_definition.gd" id="4_g5np6"]
 [ext_resource type="Resource" uid="uid://dx0kf16ay62nk" path="res://data/bof4/fish/acheron.tres" id="5_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/chamba.tres" id="ambient_profile"]
 [ext_resource type="Resource" path="res://data/bof4/hotspots/chamba_acheron.tres" id="hotspot_1"]

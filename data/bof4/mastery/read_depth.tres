@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"read_depth"
+display_name = "Read the Depth"
+category = &"observation"
+description = "Interpret color, contour and line feedback to estimate shelves, drop-offs and the water column before committing a cast."
+teacher_id = &"master_depth_reader"
+capability_tags = PackedStringArray("read_depth")

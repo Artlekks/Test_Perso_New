@@ -46,6 +46,7 @@ var active_bait: Node3D
 var current_bait_depth: float = 0.0
 var current_total_depth: float = 0.0
 var active_rod_data: RodData = null
+var current_service: FishingCurrentService = null
 
 # During a successful hooked return, keep the bait node alive for a brief
 # landing presentation instead of deleting it the instant it reaches Ryu.
@@ -77,6 +78,12 @@ func _process(_delta: float) -> void:
 
 	bait_distance_changed.emit(distance_meters)
 	
+func set_current_service(service: FishingCurrentService) -> void:
+	current_service = service
+	if is_instance_valid(active_bait) and active_bait.has_method("set_current_service"):
+		active_bait.set_current_service(current_service)
+
+
 func perform_cast(
 	power: float,
 	direction: Vector3,
@@ -128,6 +135,8 @@ func perform_cast(
 
 	active_bait.set_reel_target(reel_target)
 	active_bait.set_swim_bounds(swim_bounds)
+	if active_bait.has_method("set_current_service"):
+		active_bait.set_current_service(current_service)
 	active_bait.set_shore_boundary(shore_boundary)
 	active_bait.gravity = cast_gravity
 
@@ -462,6 +471,18 @@ func get_active_bait_world_position() -> Vector3:
 
 	return active_bait.global_position
 
+
+
+func has_active_bait() -> bool:
+	return is_instance_valid(active_bait)
+
+
+func is_active_bait_in_water() -> bool:
+	return (
+		is_instance_valid(active_bait)
+		and active_bait.has_method("is_in_water_state")
+		and bool(active_bait.call("is_in_water_state"))
+	)
 
 func get_active_bait_surface_position() -> Vector3:
 	if not is_instance_valid(active_bait):

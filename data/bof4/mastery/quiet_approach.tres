@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FishingMasteryTechniqueDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+technique_id = &"quiet_approach"
+display_name = "Quiet Approach"
+category = &"fieldcraft"
+description = "Control movement and presence near the bank so wary fish are less likely to scatter or shut down."
+teacher_id = &"master_still_water"
+capability_tags = PackedStringArray("quiet_approach")
