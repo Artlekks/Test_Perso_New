@@ -117,6 +117,9 @@ const FishingLandingTechniqueQAScript = preload(
 const FishingReadFishSignQAScript = preload(
 	"res://scripts/fishing_read_fish_sign_qa.gd"
 )
+const FishingOneWithNatureQAScript = preload(
+	"res://scripts/fishing_one_with_nature_qa.gd"
+)
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
 )
@@ -223,6 +226,9 @@ const FishingLandingTechniqueResource: FishingMasteryTechniqueDefinition = prelo
 const FishingReadFishSignTechniqueResource: FishingMasteryTechniqueDefinition = preload(
 	"res://data/bof4/mastery/read_fish_sign.tres"
 )
+const FishingOneWithNatureTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/one_with_nature.tres"
+)
 const FishingMasteryQASpotResource: FishingSpotData = preload(
 	"res://data/bof4/spots/ocean_2.tres"
 )
@@ -270,6 +276,7 @@ var deep_water_control_qa_report: Dictionary = {}
 var surface_control_qa_report: Dictionary = {}
 var landing_technique_qa_report: Dictionary = {}
 var read_fish_sign_qa_report: Dictionary = {}
+var one_with_nature_qa_report: Dictionary = {}
 var fish_consumable_service = null
 var manillo_ledger: FishingManilloLedger = null
 var unlock_state: FishingUnlockState = null
@@ -640,6 +647,9 @@ func initialize() -> void:
 		FishingMasteryTechniqueCatalogResource.ensure_technique(
 			FishingReadFishSignTechniqueResource
 		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingOneWithNatureTechniqueResource
+		)
 
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
 	mastery_service.name = "FishingMasteryService"
@@ -903,6 +913,22 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Read Fish Sign QA: %s" % str(failure))
+
+		one_with_nature_qa_report = FishingOneWithNatureQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing One With Nature QA: %d/%d tests passed."
+			% [
+				int(one_with_nature_qa_report.get("passed_count", 0)),
+				int(one_with_nature_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in one_with_nature_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing One With Nature QA: %s" % str(failure))
 
 	fish_consumable_service = FishingFishConsumableServiceScript.new()
 	fish_consumable_service.name = "FishingFishConsumableService"
@@ -1346,6 +1372,10 @@ func get_fishing_landing_technique_qa_report() -> Dictionary:
 
 func get_fishing_read_fish_sign_qa_report() -> Dictionary:
 	return read_fish_sign_qa_report.duplicate(true)
+
+
+func get_fishing_one_with_nature_qa_report() -> Dictionary:
+	return one_with_nature_qa_report.duplicate(true)
 
 
 func get_fishing_tide_service() -> FishingTideService:

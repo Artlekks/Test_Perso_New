@@ -47,6 +47,12 @@ static func run(
 	_record(report, "Landing Technique exposes fight capability", landing_technique != null and landing_technique.has_capability(&"landing_technique"), "Encounter should query one stable capability for the trained final-approach response.")
 	_record(report, "Landing Technique builds on Surface Control", _has_prerequisite(catalog, &"landing_technique", &"surface_control"), "Final landing should build on controlling a fish in the top layer before teaching bank-side finishing technique.")
 	_record(report, "Landing Technique belongs to Landing Guide", landing_technique != null and landing_technique.teacher_id == &"master_landing_guide", "The final-approach lesson should keep a stable future master identity.")
+	var one_with_nature := catalog.get_technique(&"one_with_nature") if catalog != null else null
+	_record(report, "One With Nature is authored", one_with_nature != null, "The fieldcraft synthesis needs a real master-taught capstone rather than an invisible global bonus.")
+	_record(report, "One With Nature exposes fieldcraft capability", one_with_nature != null and one_with_nature.has_capability(&"one_with_nature"), "Ambient fish should query one stable capstone capability.")
+	_record(report, "One With Nature builds on Quiet Approach", _has_prerequisite(catalog, &"one_with_nature", &"quiet_approach"), "The capstone should require genuine bank-side stillness first.")
+	_record(report, "One With Nature builds on Read Fish Sign", _has_prerequisite(catalog, &"one_with_nature", &"read_fish_sign"), "The capstone should require observing fish behavior before influencing wary approaches.")
+	_record(report, "One With Nature belongs to Nature Guide", one_with_nature != null and one_with_nature.teacher_id == &"master_nature_guide", "The capstone should keep a stable future master identity.")
 	_record(report, "Techniques are master-taught", _all_have_teachers(catalog), "Mastery progression must not silently become a fishing-rank unlock table.")
 	_record(report, "Structure Fighting is authored", catalog != null and catalog.get_technique(&"structure_fighting") != null, "Cover combat needs a taught technique rather than an invisible stat bonus.")
 	_record(report, "Structure Fighting builds on observation and line control", _has_prerequisite(catalog, &"structure_fighting", &"read_structure") and _has_prerequisite(catalog, &"structure_fighting", &"line_feel"), "Turning a fish out of cover should require understanding both structure and line pressure.")
@@ -71,6 +77,21 @@ static func run(
 		false
 	)
 	_record(report, "Quiet Approach becomes runtime capability", bool(quiet_learned.get("success", false)) and service.has_capability(&"quiet_approach"), "Once taught by its master, the live fish-presence system should be able to reduce player disturbance.")
+
+	var capstone_before_sign := service.can_learn(
+		&"one_with_nature",
+		one_with_nature.teacher_id if one_with_nature != null else &""
+	)
+	_record(report, "One With Nature waits for Read Fish Sign", str(capstone_before_sign.get("reason", "")) == "missing_prerequisite", "Quiet Approach alone should not unlock the capstone before the player learns to read fish behavior.")
+	var read_fish_sign := catalog.get_technique(&"read_fish_sign") if catalog != null else null
+	if read_fish_sign != null:
+		service.learn_technique(&"read_fish_sign", read_fish_sign.teacher_id, false)
+	var capstone_learned := service.learn_technique(
+		&"one_with_nature",
+		one_with_nature.teacher_id if one_with_nature != null else &"",
+		false
+	)
+	_record(report, "One With Nature becomes runtime capability", bool(capstone_learned.get("success", false)) and service.has_capability(&"one_with_nature") and bool(service.get_snapshot().get("can_be_one_with_nature", false)), "Once both fieldcraft prerequisites are learned, the live fish-presence system should receive one persistent capstone gate.")
 
 	var tide_before_weather := service.can_learn(
 		&"tide_sense",

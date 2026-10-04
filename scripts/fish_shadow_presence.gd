@@ -10,6 +10,9 @@ const DefaultAmbientFishProfile := preload("res://data/bof4/ambient_profiles/def
 const FishingFishSignPolicyScript = preload(
 	"res://scripts/fishing_fish_sign_policy.gd"
 )
+const FishingOneWithNaturePolicyScript = preload(
+	"res://scripts/fishing_one_with_nature_policy.gd"
+)
 
 @export_category("Visual Profiles")
 ## Alternate shadow scenes are optional. Every scene must use FishShadowActor
@@ -90,6 +93,9 @@ var _bait_lookup_cooldown: float = 0.0
 var _fishing_player: Node3D = null
 var _mastery_service = null
 var _player_lookup_cooldown: float = 0.0
+var _one_with_nature_settle_seconds: float = 0.0
+var _one_with_nature_attuned: bool = false
+var _last_player_disturbance: float = 0.0
 
 const BAIT_LOOKUP_INTERVAL_WHEN_ABSENT: float = 0.10
 const PLAYER_LOOKUP_INTERVAL_WHEN_ABSENT: float = 0.50
@@ -186,6 +192,7 @@ func _update_player_disturbance(delta: float) -> void:
 			)
 
 	var has_quiet_approach := false
+	var has_one_with_nature := false
 	if (
 		_mastery_service != null
 		and _mastery_service.has_method("has_capability")
@@ -193,6 +200,29 @@ func _update_player_disturbance(delta: float) -> void:
 		has_quiet_approach = bool(
 			_mastery_service.has_capability(&"quiet_approach")
 		)
+		has_one_with_nature = bool(
+			_mastery_service.has_capability(&"one_with_nature")
+		)
+
+	_last_player_disturbance = clampf(raw_noise, 0.0, 1.0)
+	var can_settle := has_one_with_nature and is_instance_valid(_fishing_player)
+	_one_with_nature_settle_seconds = (
+		FishingOneWithNaturePolicyScript.advance_settle_time(
+			_one_with_nature_settle_seconds,
+			_last_player_disturbance,
+			delta,
+			can_settle
+		)
+	)
+	_one_with_nature_attuned = (
+		FishingOneWithNaturePolicyScript.is_attuned(
+			has_one_with_nature,
+			_one_with_nature_settle_seconds
+		)
+	)
+	var settle_ratio := FishingOneWithNaturePolicyScript.get_settle_ratio(
+		_one_with_nature_settle_seconds
+	)
 
 	for shadow in _spawned_shadows:
 		if not is_instance_valid(shadow):
@@ -202,7 +232,9 @@ func _update_player_disturbance(delta: float) -> void:
 		shadow.set_player_disturbance(
 			player_position,
 			raw_noise,
-			has_quiet_approach
+			has_quiet_approach,
+			_one_with_nature_attuned,
+			settle_ratio
 		)
 
 
@@ -450,6 +482,23 @@ func get_population_debug_counts() -> Vector2i:
 	return Vector2i(
 		_get_ambient_shadow_count(),
 		_get_readable_ambient_shadow_count()
+	)
+
+
+func get_one_with_nature_snapshot() -> Dictionary:
+	_resolve_mastery_service_if_needed()
+	var has_capstone := false
+	if (
+		_mastery_service != null
+		and _mastery_service.has_method("has_capability")
+	):
+		has_capstone = bool(
+			_mastery_service.has_capability(&"one_with_nature")
+		)
+	return FishingOneWithNaturePolicyScript.build_snapshot(
+		has_capstone,
+		_one_with_nature_settle_seconds,
+		_last_player_disturbance
 	)
 
 

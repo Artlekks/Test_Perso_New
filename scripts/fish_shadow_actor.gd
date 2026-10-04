@@ -4,6 +4,9 @@ class_name FishShadowActor
 const FishingWarinessPolicyScript = preload(
 	"res://scripts/fishing_wariness_policy.gd"
 )
+const FishingOneWithNaturePolicyScript = preload(
+	"res://scripts/fishing_one_with_nature_policy.gd"
+)
 
 signal expired(shadow: FishShadowActor)
 
@@ -264,6 +267,8 @@ var _inspect_offset: Vector3 = Vector3.ZERO
 var _player_disturbance_position: Vector3 = Vector3.ZERO
 var _player_disturbance_noise: float = 0.0
 var _quiet_approach_active: bool = false
+var _one_with_nature_attuned: bool = false
+var _one_with_nature_settle_ratio: float = 0.0
 var _wariness_stress: float = 0.0
 var _spook_remaining: float = 0.0
 
@@ -403,11 +408,19 @@ func restore_readable_presence() -> void:
 func set_player_disturbance(
 	source_position: Vector3,
 	raw_noise: float,
-	has_quiet_approach: bool
+	has_quiet_approach: bool,
+	one_with_nature_attuned: bool = false,
+	one_with_nature_settle_ratio: float = 0.0
 ) -> void:
 	_player_disturbance_position = source_position
 	_player_disturbance_noise = clampf(raw_noise, 0.0, 1.0)
 	_quiet_approach_active = has_quiet_approach
+	_one_with_nature_attuned = one_with_nature_attuned
+	_one_with_nature_settle_ratio = clampf(
+		one_with_nature_settle_ratio,
+		0.0,
+		1.0
+	)
 
 
 func get_wariness_snapshot() -> Dictionary:
@@ -421,6 +434,8 @@ func get_wariness_snapshot() -> Dictionary:
 	)
 	snapshot["stress"] = _wariness_stress
 	snapshot["spooked"] = _spook_remaining > 0.0
+	snapshot["one_with_nature_attuned"] = _one_with_nature_attuned
+	snapshot["one_with_nature_settle_ratio"] = _one_with_nature_settle_ratio
 	return snapshot
 
 
@@ -594,6 +609,13 @@ func _update_wariness(delta: float) -> void:
 		_quiet_approach_active,
 		delta
 	)
+	if stress_delta > 0.0:
+		stress_delta *= (
+			FishingOneWithNaturePolicyScript.get_positive_stress_multiplier(
+				wariness,
+				_one_with_nature_attuned
+			)
+		)
 	_wariness_stress = clampf(
 		_wariness_stress + stress_delta,
 		0.0,
@@ -783,8 +805,17 @@ func _update_bait_interest(delta: float) -> void:
 			if distance > seek_detection_radius * 1.35:
 				_return_to_roam_with_cooldown()
 			elif _pre_bite_timer <= 0.0:
+				var nature_multiplier := (
+					FishingOneWithNaturePolicyScript.get_approach_multiplier(
+						_get_species_wariness(),
+						presentation_multiplier,
+						_one_with_nature_attuned
+					)
+				)
 				var presentation_seek_chance: float = clampf(
-					seek_bait_chance * presentation_multiplier,
+					seek_bait_chance
+					* presentation_multiplier
+					* nature_multiplier,
 					0.02,
 					0.98
 				)
