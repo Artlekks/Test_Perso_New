@@ -13,6 +13,10 @@ const FEATURE_HARBOR_REQUEST := "harbor_request"
 const FEATURE_HARBOR_LOCKBOX := "harbor_lockbox"
 const FEATURE_REGIONAL_CHAMPIONSHIP := "regional_championship"
 
+# Temporary development/UI-authoring override. This only keeps the world
+# interaction/menu available; Card Maker backend rules remain authoritative.
+const DEV_ALWAYS_SHOW_CARD_MAKER := true
+
 
 static func feature_states(snapshot: Dictionary) -> Dictionary:
 	var phase_id: String = str(snapshot.get("phase_id", "fresh_start"))
@@ -40,7 +44,9 @@ static func feature_states(snapshot: Dictionary) -> Dictionary:
 
 	return {
 		FEATURE_BEACH_TRADER: unlocked,
-		FEATURE_CARD_MAKER: unlocked and connected,
+		FEATURE_CARD_MAKER: (
+			DEV_ALWAYS_SHOW_CARD_MAKER or (unlocked and connected)
+		),
 		FEATURE_HARBOR_REQUEST: unlocked and connected,
 		FEATURE_HARBOR_LOCKBOX: unlocked and connected,
 		FEATURE_REGIONAL_CHAMPIONSHIP: (

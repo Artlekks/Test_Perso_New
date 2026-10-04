@@ -11,18 +11,21 @@ static func run() -> Dictionary:
 	var passed: int = 0
 
 	passed += _check(
-		_enabled_ids(_snapshot("fresh_start", false)) == [],
-		"Fresh save exposes no card-system interaction prompts.",
+		_enabled_ids(_snapshot("fresh_start", false)) == ["card_maker"],
+		"Fresh save keeps only the Card Maker available for UI authoring.",
 		failures
 	)
 	passed += _check(
-		_enabled_ids(_snapshot("starter_case_search", false)) == [],
-		"Starter-case search remains fishing-first.",
+		_enabled_ids(_snapshot("starter_case_search", false)) == ["card_maker"],
+		"Starter-case search keeps Card Maker UI accessible without exposing other card interactions.",
 		failures
 	)
 	passed += _check(
-		_enabled_ids(_snapshot("learn_loop", true)) == ["beach_trader"],
-		"Learn Loop introduces the first card opponent without dumping later systems.",
+		_enabled_ids(_snapshot("learn_loop", true)) == [
+			"beach_trader",
+			"card_maker",
+		],
+		"Learn Loop introduces the first card opponent while keeping Card Maker UI accessible.",
 		failures
 	)
 	passed += _check(
