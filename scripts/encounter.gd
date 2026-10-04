@@ -21,6 +21,9 @@ const LandingPolicy = preload(
 const BiteTimingPolicy = preload(
 	"res://scripts/fishing_bite_timing_policy.gd"
 )
+const PumpReelPolicy = preload(
+	"res://scripts/fishing_pump_reel_policy.gd"
+)
 
 signal bite_opportunity_started
 signal bite_commit_ready(snapshot: Dictionary)
@@ -48,6 +51,7 @@ signal structure_threat_changed(snapshot: Dictionary)
 signal line_abrasion_changed(value: float)
 signal fish_final_surge_started(snapshot: Dictionary)
 signal fish_final_surge_ended
+signal pump_reel_state_changed(snapshot: Dictionary)
 
 @onready var bite_window_timer: Timer = $BiteWindowTimer
 @onready var bite_timer: Timer = $BiteTimer
@@ -159,6 +163,11 @@ var line_abrasion: float = 0.0
 var final_surge_checked: bool = false
 var final_surge_active: bool = false
 var final_surge_snapshot: Dictionary = {}
+var pump_reel_active: bool = false
+var pump_reel_window_left: float = 0.0
+var pump_reel_cooldown_left: float = 0.0
+var pump_reel_last_result: StringName = PumpReelPolicy.RESULT_IDLE
+var pump_reel_success_count: int = 0
 
 enum FightState {
 	NONE,
@@ -865,6 +874,7 @@ func _process(delta: float) -> void:
 		return
 
 	_update_line_pressure_state()
+	_update_pump_reel(delta)
 	_update_structure_combat(delta)
 	_update_final_surge_state()
 
@@ -1200,6 +1210,14 @@ func set_player_reeling(active: bool) -> void:
 	player_reeling = active
 	tension.set_player_reeling(active)
 
+	if (
+		lifecycle.is_hooked()
+		and active
+		and not was_reeling
+		and pump_reel_active
+	):
+		_complete_pump_reel_cycle()
+
 	# Only a hooked fish owns release reactions. Releasing free-reel input must
 	# never wake FishBehavior or mutate a future fight.
 	if (
@@ -1208,6 +1226,127 @@ func set_player_reeling(active: bool) -> void:
 		and not active
 	):
 		_react_to_reel_release()
+
+
+func try_start_pump_reel_cycle() -> Dictionary:
+	if not lifecycle.is_hooked() or fight_state == FightState.NONE:
+		return {
+			"started": false,
+			"reason": &"not_hooked",
+		}
+
+	# Refresh the pressure snapshot so an S press uses the latest tension value
+	# even if it lands between regular Encounter process ticks.
+	_update_line_pressure_state()
+
+	var thrashing := bool(
+		current_fight_intent.get("thrashing", false)
+	)
+	var block_reason: StringName = PumpReelPolicy.get_start_block_reason(
+		player_reeling,
+		current_line_pressure_band,
+		current_safe_pressure_ratio,
+		thrashing,
+		pump_reel_cooldown_left
+	)
+
+	if block_reason != &"":
+		return {
+			"started": false,
+			"reason": block_reason,
+			"snapshot": get_pump_reel_snapshot(),
+		}
+
+	pump_reel_active = true
+	pump_reel_window_left = PumpReelPolicy.PUMP_REEL_WINDOW_SECONDS
+	pump_reel_last_result = PumpReelPolicy.RESULT_LIFTED
+
+	if tension != null:
+		tension.add_impulse(
+			PumpReelPolicy.get_lift_tension_impulse(
+				current_safe_pressure_ratio
+			)
+		)
+
+	var snapshot := get_pump_reel_snapshot()
+	pump_reel_state_changed.emit(snapshot.duplicate(true))
+	return {
+		"started": true,
+		"reason": &"",
+		"snapshot": snapshot,
+	}
+
+
+func _update_pump_reel(delta: float) -> void:
+	if pump_reel_cooldown_left > 0.0:
+		pump_reel_cooldown_left = maxf(
+			pump_reel_cooldown_left - delta,
+			0.0
+		)
+
+	if not pump_reel_active:
+		return
+
+	pump_reel_window_left = maxf(
+		pump_reel_window_left - delta,
+		0.0
+	)
+
+	if pump_reel_window_left > 0.0:
+		return
+
+	pump_reel_active = false
+	pump_reel_last_result = PumpReelPolicy.RESULT_EXPIRED
+	var snapshot := get_pump_reel_snapshot()
+	pump_reel_state_changed.emit(snapshot.duplicate(true))
+
+
+func _complete_pump_reel_cycle() -> void:
+	if not pump_reel_active:
+		return
+
+	pump_reel_active = false
+	pump_reel_window_left = 0.0
+	pump_reel_cooldown_left = PumpReelPolicy.PUMP_REEL_COOLDOWN_SECONDS
+	pump_reel_last_result = PumpReelPolicy.RESULT_SUCCESS
+	pump_reel_success_count += 1
+
+	if fight_state == FightState.RESISTING:
+		var max_stamina := _get_max_stamina()
+		var bonus_ratio := PumpReelPolicy.get_stamina_bonus_ratio(
+			current_safe_pressure_ratio
+		)
+		fish_stamina = maxf(
+			fish_stamina - max_stamina * bonus_ratio,
+			0.0
+		)
+		fish_stamina_changed.emit(
+			fish_stamina,
+			max_stamina
+		)
+
+	# The initial S lift keeps the existing manual pull. A successful K
+	# reel-down queues one additional resisted pulse, making the cadence useful
+	# without bypassing rod/fish resistance rules inside Bait.
+	if (
+		caster != null
+		and caster.has_method("pull_bait_toward_player")
+	):
+		caster.pull_bait_toward_player()
+
+	var snapshot := get_pump_reel_snapshot()
+	pump_reel_state_changed.emit(snapshot.duplicate(true))
+
+
+func get_pump_reel_snapshot() -> Dictionary:
+	return PumpReelPolicy.build_snapshot(
+		pump_reel_active,
+		pump_reel_window_left,
+		pump_reel_cooldown_left,
+		pump_reel_last_result,
+		pump_reel_success_count,
+		current_safe_pressure_ratio
+	)
 
 
 func _react_to_reel_release() -> void:
@@ -1426,6 +1565,7 @@ func get_fish_debug_snapshot() -> Dictionary:
 		"line_abrasion": line_abrasion,
 		"structure": current_structure_snapshot.duplicate(true),
 		"landing": get_landing_combat_snapshot(),
+		"pump_reel": get_pump_reel_snapshot(),
 	}
 
 	if pending_fish_entry != null and pending_fish_entry.fish != null:
@@ -2103,6 +2243,11 @@ func _reset_fight_readouts() -> void:
 	final_surge_checked = false
 	final_surge_active = false
 	final_surge_snapshot.clear()
+	pump_reel_active = false
+	pump_reel_window_left = 0.0
+	pump_reel_cooldown_left = 0.0
+	pump_reel_last_result = PumpReelPolicy.RESULT_IDLE
+	pump_reel_success_count = 0
 	_set_landing_completion_blocked(false)
 	line_abrasion_changed.emit(0.0)
 	structure_threat_changed.emit({})

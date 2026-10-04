@@ -1467,6 +1467,17 @@ func _process(delta: float) -> void:
 	if phase == Phase.FIGHT:
 		if Input.is_action_just_pressed("move_back"):
 			if not bite_animation_active:
+				# Sync the current K state before evaluating the S lift. This
+				# makes release-K + tap-S work even when both changes land in
+				# the same frame.
+				var pump_reeling_now := Input.is_action_pressed(
+					"enter_fishing"
+				)
+				encounter.set_player_reeling(pump_reeling_now)
+
+				if encounter.has_method("try_start_pump_reel_cycle"):
+					encounter.try_start_pump_reel_cycle()
+
 				caster.pull_bait_toward_player()
 				_play_manual_pull_animation()
 
