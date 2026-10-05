@@ -1,19 +1,17 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/fish_thrash_visual.gd" id="1_script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/fish_thrash_jump_frames.tres" id="2_frames"]
 
-[node name="FishThrashVisual" type="Node3D"]
+[node name="FishThrashVisual" type="Node"]
+process_mode = 3
 script = ExtResource("1_script")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="CanvasLayer"]
 visible = false
-position = Vector3(0, 0.08, 0)
-billboard = 1
-shaded = false
-alpha_cut = 1
-texture_filter = 0
-pixel_size = 0.015
-sorting_offset = 1.0
+texture_filter = 1
 sprite_frames = ExtResource("2_frames")
 animation = &"thrash_jump"

@@ -102,26 +102,26 @@ static func run(
         not Policy.is_initial_yield(thrash_dive, false),
         "THRASH already has its own response and must stay separate.")
 
-    var load := _load_snapshot(0.72, 3.1, 5.0, 0.68, 0.11)
+    var load_snapshot := _load_snapshot(0.72, 3.1, 5.0, 0.68, 0.11)
     _record(report, "Real deep DIVE load qualifies for the lesson",
-        Policy.is_qualifying_load(load),
+        Policy.is_qualifying_load(load_snapshot),
         "The second beat should start only from a real deep-water load.")
-    var no_load := load.duplicate(true)
+    var no_load := load_snapshot.duplicate(true)
     no_load["load_impulse"] = 0.0
     _record(report, "Zero-load event cannot start the second beat",
         not Policy.is_qualifying_load(no_load),
         "The lesson must react to actual pressure from below.")
-    var shallow := load.duplicate(true)
+    var shallow := load_snapshot.duplicate(true)
     shallow["total_depth_m"] = 1.8
     _record(report, "Shallow water does not qualify",
         not Policy.is_qualifying_load(shallow),
         "Deep-Water Control should stay a genuinely deep-water lesson.")
-    var low_ratio := load.duplicate(true)
+    var low_ratio := load_snapshot.duplicate(true)
     low_ratio["depth_ratio"] = 0.35
     _record(report, "Low depth commitment does not qualify",
         not Policy.is_qualifying_load(low_ratio),
         "The lesson should not trigger from a superficial downward twitch.")
-    var wrong_intent := load.duplicate(true)
+    var wrong_intent := load_snapshot.duplicate(true)
     wrong_intent["intent_id"] = &"rise"
     _record(report, "Non-dive load snapshot is rejected",
         not Policy.is_qualifying_load(wrong_intent),

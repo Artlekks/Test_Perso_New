@@ -1050,9 +1050,14 @@ func _update_reel_animation() -> void:
 			else &"Reel_Right_Idle"
 		)
 
-	# W / S only override the pose while K is held.
-	elif is_reeling and vertical < -0.1:
-		desired_animation = &"Reel_Front"
+	# W gives a forward-lean pose even without K. Without reeling we freeze
+	# the first Reel_Front frame instead of playing the reel cycle.
+	elif vertical < -0.1:
+		desired_animation = (
+			&"Reel_Front"
+			if is_reeling
+			else &"Reel_Front_Idle_Pose"
+		)
 
 	elif is_reeling and vertical > 0.1:
 		desired_animation = &"Reel_Back"
@@ -1086,7 +1091,13 @@ func _update_reel_animation() -> void:
 		return
 
 	current_reel_animation = desired_animation
-	sprite_director.play(desired_animation)
+	if (
+		desired_animation == &"Reel_Front_Idle_Pose"
+		and sprite_director.has_method("show_animation_frame")
+	):
+		sprite_director.call("show_animation_frame", &"Reel_Front", 0)
+	else:
+		sprite_director.play(desired_animation)
 
 
 func _play_manual_pull_animation() -> void:

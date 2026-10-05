@@ -51,3 +51,20 @@ func play_backwards(animation_name: StringName) -> void:
 
 	sprite.flip_h = false
 	sprite.play_backwards(animation_name)
+
+
+func show_animation_frame(animation_name: StringName, frame_index: int = 0) -> void:
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	if not sprite.sprite_frames.has_animation(animation_name):
+		return
+
+	var frame_count: int = sprite.sprite_frames.get_frame_count(animation_name)
+	if frame_count <= 0:
+		return
+
+	sprite.flip_h = false
+	sprite.play(animation_name)
+	sprite.pause()
+	sprite.frame = clampi(frame_index, 0, frame_count - 1)
+	sprite.frame_progress = 0.0

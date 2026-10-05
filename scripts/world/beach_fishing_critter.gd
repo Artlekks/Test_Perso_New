@@ -1,4 +1,4 @@
-extends Node3D
+extends AnimatableBody3D
 class_name BeachFishingCritter
 
 ## Crab-style ambient critter using the user's directional sheet.

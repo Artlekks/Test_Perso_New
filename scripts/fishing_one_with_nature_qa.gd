@@ -77,11 +77,11 @@ static func run(
 	)
 
 	var quiet := mastery_catalog.get_technique(&"quiet_approach") if mastery_catalog != null else null
-	var sign := mastery_catalog.get_technique(&"read_fish_sign") if mastery_catalog != null else null
+	var sign_definition := mastery_catalog.get_technique(&"read_fish_sign") if mastery_catalog != null else null
 	if quiet != null:
 		mastery.learn_technique(&"quiet_approach", quiet.teacher_id, false)
-	if sign != null:
-		mastery.learn_technique(&"read_fish_sign", sign.teacher_id, false)
+	if sign_definition != null:
+		mastery.learn_technique(&"read_fish_sign", sign_definition.teacher_id, false)
 	var learned := mastery.learn_technique(
 		&"one_with_nature",
 		definition.teacher_id if definition != null else &"",

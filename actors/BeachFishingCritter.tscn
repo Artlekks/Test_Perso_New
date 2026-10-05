@@ -1,35 +1,26 @@
-[gd_scene format=3 uid="uid://k3mlp7ml5k0f"]
+[gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" uid="uid://rhx6o2k00mau" path="res://scripts/world/beach_fishing_critter.gd" id="1_script"]
-[ext_resource type="SpriteFrames" uid="uid://d3tlnkuq4dbel" path="res://assets/animations/beach_fishing_crab_frames.tres" id="2_frames"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_wee8d"]
+[ext_resource type="Script" path="res://scripts/world/beach_fishing_critter.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_crab_frames.tres" id="2_frames"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2lbj7"]
-transparency = 1
-cull_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("3_wee8d")
-proximity_fade_distance = 0.01
+[sub_resource type="SphereShape3D" id="SphereShape3D_crab"]
+radius = 0.075
 
-[node name="BeachFishingCritter" type="Node3D" unique_id=1645556980]
+[node name="BeachFishingCritter" type="AnimatableBody3D"]
+collision_layer = 1
+collision_mask = 1
 process_mode = 3
 script = ExtResource("1_script")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=421409593]
-pixel_size = 0.012
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 billboard = 1
 alpha_cut = 1
 texture_filter = 0
+pixel_size = 0.012
 sprite_frames = ExtResource("2_frames")
 animation = &"idle_s"
 autoplay = "idle_s"
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=1006401715]
-transform = Transform3D(0.62, 0, 0, 0, -3.7635505e-08, 0.861, 0, -0.861, -3.7635505e-08, 0, -0.036892515, 0.005828619)
-sorting_offset = -0.25
-material_override = SubResource("StandardMaterial3D_2lbj7")
-cast_shadow = 0
-alpha_cut = 2
-texture_filter = 0
-texture = ExtResource("3_wee8d")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.065, 0)
+shape = SubResource("SphereShape3D_crab")

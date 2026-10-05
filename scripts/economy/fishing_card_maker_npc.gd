@@ -1,15 +1,24 @@
-extends AnimatableBody3D
+extends Node3D
 class_name FishingCardMakerNPC
 
+@export var idle_animation: StringName = &"idle_s"
+@export var side_idle_animation: StringName = &"idle_se"
+@export var talk_animation: StringName = &"smoke"
+@export var walk_left_animation: StringName = &"walk_sw"
+@export var walk_right_animation: StringName = &"walk_se"
 @export var interaction_prompt: String = "K : Card Maker"
 
-@export_category("Beach Patrol")
-@export var patrol_enabled: bool = true
-@export_range(0.05, 1.0, 0.01) var patrol_speed: float = 0.18
-@export_range(0.25, 20.0, 0.25) var idle_pause_min: float = 1.75
-@export_range(0.25, 20.0, 0.25) var idle_pause_max: float = 4.25
-@export_range(1.0, 60.0, 0.5) var smoke_interval_min: float = 7.0
-@export_range(1.0, 60.0, 0.5) var smoke_interval_max: float = 14.0
+@export_category("Ambient Roaming")
+@export var roaming_enabled: bool = true
+@export_range(0.05, 1.0, 0.01) var roam_half_width: float = 0.34
+@export_range(0.05, 1.0, 0.01) var roam_speed: float = 0.16
+@export_range(0.25, 20.0, 0.25) var idle_pause_min: float = 2.0
+@export_range(0.25, 20.0, 0.25) var idle_pause_max: float = 5.0
+@export_range(1.0, 60.0, 0.5) var smoke_interval_min: float = 8.0
+@export_range(1.0, 60.0, 0.5) var smoke_interval_max: float = 16.0
+
+@export_category("Smoke Alignment")
+@export_range(0.0, 20.0, 0.5) var smoke_horizontal_correction_pixels: float = 8.0
 
 @onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
@@ -18,28 +27,27 @@ class_name FishingCardMakerNPC
 
 var _player_in_range: bool = false
 var _service: FishingCardMakerService = null
-var _player_body: Node3D = null
 var _rng := RandomNumberGenerator.new()
-
-var _home_position := Vector3.ZERO
-var _patrol_index: int = 0
-var _target_position := Vector3.ZERO
-var _moving: bool = false
+var _home_x: float = 0.0
+var _target_x: float = 0.0
 var _pause_remaining: float = 0.0
 var _smoke_remaining: float = 0.0
-var _smoke_pending: bool = false
+var _roaming: bool = false
 var _special_playing: bool = false
-var _facing: StringName = &"se"
+var _facing_right: bool = true
+var _base_sprite_offset: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
-	_home_position = position
-	_target_position = position
+	_home_x = position.x
+	if animated_sprite != null:
+		_base_sprite_offset = animated_sprite.offset
+	_target_x = _home_x
 	_pause_remaining = _random_idle_pause()
 	_smoke_remaining = _random_smoke_interval()
-	_play_idle(_facing)
+	_play_idle()
 	prompt_label.visible = false
 	prompt_label.text = interaction_prompt
 	interaction_area.body_entered.connect(_on_body_entered)
@@ -48,13 +56,13 @@ func _ready() -> void:
 	if animated_sprite != null:
 		animated_sprite.animation_finished.connect(_on_animation_finished)
 	call_deferred("_bind_card_maker")
-	call_deferred("_cache_player_body")
 
 
-func _physics_process(delta: float) -> void:
-	_update_depth_sort()
+func _process(delta: float) -> void:
 	var tree := get_tree()
 	if tree == null or tree.paused:
+		return
+	if not roaming_enabled:
 		return
 	if _player_in_range or (card_maker_menu != null and card_maker_menu.is_open()):
 		return
@@ -63,23 +71,17 @@ func _physics_process(delta: float) -> void:
 
 	_smoke_remaining -= delta
 	if _smoke_remaining <= 0.0:
-		if _moving:
-			_smoke_pending = true
-		else:
-			_play_smoke()
-			_smoke_remaining = _random_smoke_interval()
+		_play_smoke()
+		_smoke_remaining = _random_smoke_interval()
 		return
 
-	if not patrol_enabled:
-		return
-
-	if _moving:
-		_process_patrol_leg(delta)
+	if _roaming:
+		_process_roaming(delta)
 		return
 
 	_pause_remaining -= delta
 	if _pause_remaining <= 0.0:
-		_begin_next_patrol_leg()
+		_begin_roaming_leg()
 
 
 func _input(event: InputEvent) -> void:
@@ -99,154 +101,11 @@ func _input(event: InputEvent) -> void:
 			viewport.set_input_as_handled()
 
 
-func _patrol_offsets() -> Array[Vector2]:
-	# Small loop around the Card Maker's authored beach position.
-	# Every leg is diagonal so it uses the real walk animations that exist
-	# in the source sheet rather than faking missing cardinal walk cycles.
-	return [
-		Vector2(0.0, 0.0),
-		Vector2(0.30, -0.17),
-		Vector2(0.62, 0.05),
-		Vector2(0.35, 0.28),
-		Vector2(-0.10, 0.10),
-	]
-
-
-func _begin_next_patrol_leg() -> void:
-	var points := _patrol_offsets()
-	if points.size() < 2:
-		_pause_remaining = _random_idle_pause()
-		return
-
-	_patrol_index = (_patrol_index + 1) % points.size()
-	var offset := points[_patrol_index]
-	_target_position = _home_position + Vector3(offset.x, 0.0, offset.y)
-	var travel := Vector2(
-		_target_position.x - position.x,
-		_target_position.z - position.z
-	)
-	if travel.length_squared() <= 0.0001:
-		_finish_patrol_leg()
-		return
-
-	_moving = true
-	_facing = _direction_name(travel)
-	_play_walk(_facing)
-
-
-func _process_patrol_leg(delta: float) -> void:
-	var flat_position := Vector2(position.x, position.z)
-	var flat_target := Vector2(_target_position.x, _target_position.z)
-	var delta_to_target := flat_target - flat_position
-	var distance := delta_to_target.length()
-	if distance <= 0.005:
-		position.x = _target_position.x
-		position.z = _target_position.z
-		_finish_patrol_leg()
-		return
-
-	var direction := delta_to_target / distance
-	_facing = _direction_name(direction)
-	_play_walk(_facing)
-	var step := minf(patrol_speed * delta, distance)
-	position.x += direction.x * step
-	position.z += direction.y * step
-
-
-func _finish_patrol_leg() -> void:
-	_moving = false
-	_pause_remaining = _random_idle_pause()
-	# Keep a single relaxed idle pose. Directional frames are reserved for
-	# locomotion/turning so the captain does not snap through cardinal idles.
-	_play_idle(&"se")
-
-	if _smoke_pending:
-		_smoke_pending = false
-		_play_smoke()
-		_smoke_remaining = _random_smoke_interval()
-		return
-
-
-func _stop_patrol() -> void:
-	_moving = false
-	_pause_remaining = _random_idle_pause()
-
-
-func _direction_name(direction: Vector2) -> StringName:
-	var x := direction.x
-	var z := direction.y
-	var ax := absf(x)
-	var az := absf(z)
-
-	if ax > az * 2.25:
-		return &"e" if x >= 0.0 else &"w"
-	if az > ax * 2.25:
-		return &"s" if z >= 0.0 else &"n"
-	if z < 0.0:
-		return &"ne" if x >= 0.0 else &"nw"
-	return &"se" if x >= 0.0 else &"sw"
-
-
-func _play_idle(_direction: StringName = &"se") -> void:
-	_special_playing = false
-	_play_animation_if_available(&"idle_se")
-
-
-func _play_walk(direction: StringName) -> void:
-	_special_playing = false
-	var walk_direction := direction
-	# The original sprite sheet contains real walking cycles for NE and SE.
-	# West versions are exact mirrors. Cardinal movement is intentionally
-	# resolved to the nearest diagonal instead of replaying an idle cycle.
-	match direction:
-		&"n", &"e":
-			walk_direction = &"ne"
-		&"s":
-			walk_direction = &"se"
-		&"w":
-			walk_direction = &"sw"
-	_play_animation_if_available(StringName("walk_%s" % String(walk_direction)))
-
-
-func _play_smoke() -> void:
-	if animated_sprite == null or animated_sprite.sprite_frames == null:
-		return
-	if not animated_sprite.sprite_frames.has_animation(&"smoke"):
-		_play_idle(_facing)
-		return
-	_special_playing = true
-	animated_sprite.play(&"smoke")
-
-
-func _play_animation_if_available(animation_name: StringName) -> void:
-	if animated_sprite == null or animated_sprite.sprite_frames == null:
-		return
-	if not animated_sprite.sprite_frames.has_animation(animation_name):
-		return
-	if animated_sprite.animation == animation_name and animated_sprite.is_playing():
-		return
-	animated_sprite.play(animation_name)
-
-
-func _random_idle_pause() -> float:
-	return _rng.randf_range(
-		minf(idle_pause_min, idle_pause_max),
-		maxf(idle_pause_min, idle_pause_max)
-	)
-
-
-func _random_smoke_interval() -> float:
-	return _rng.randf_range(
-		minf(smoke_interval_min, smoke_interval_max),
-		maxf(smoke_interval_min, smoke_interval_max)
-	)
-
-
 func _start_interaction() -> bool:
 	if not _bind_card_maker():
 		return false
-	_stop_patrol()
-	_play_idle(_facing)
+	_stop_roaming()
+	_play_smoke()
 	return card_maker_menu.open_menu()
 
 
@@ -291,20 +150,129 @@ func _find_session_services() -> Node:
 	return null
 
 
+func _process_roaming(delta: float) -> void:
+	var direction := signf(_target_x - position.x)
+	if is_zero_approx(direction):
+		_finish_roaming_leg()
+		return
+
+	_facing_right = direction > 0.0
+	_play_walk_for_direction()
+	position.x = move_toward(position.x, _target_x, roam_speed * delta)
+	if is_equal_approx(position.x, _target_x):
+		_finish_roaming_leg()
+
+
+func _begin_roaming_leg() -> void:
+	if roam_half_width <= 0.0:
+		_pause_remaining = _random_idle_pause()
+		return
+
+	var left_x := _home_x - roam_half_width
+	var right_x := _home_x + roam_half_width
+	if absf(position.x - left_x) < absf(position.x - right_x):
+		_target_x = right_x
+	else:
+		_target_x = left_x
+	_roaming = true
+	_facing_right = _target_x > position.x
+	_play_walk_for_direction()
+
+
+func _finish_roaming_leg() -> void:
+	_roaming = false
+	_pause_remaining = _random_idle_pause()
+	_play_side_idle()
+
+
+func _stop_roaming() -> void:
+	_roaming = false
+	_pause_remaining = _random_idle_pause()
+
+
+func _play_idle() -> void:
+	_special_playing = false
+	if animated_sprite != null:
+		animated_sprite.flip_h = false
+	_play_animation_if_available(idle_animation)
+
+
+func _play_side_idle() -> void:
+	_special_playing = false
+	if animated_sprite != null:
+		animated_sprite.flip_h = not _facing_right
+	_play_animation_if_available(side_idle_animation)
+
+
+func _play_walk_for_direction() -> void:
+	_special_playing = false
+	if animated_sprite == null:
+		return
+	animated_sprite.flip_h = false
+	if _facing_right:
+		_play_animation_if_available(walk_right_animation)
+	else:
+		_play_animation_if_available(walk_left_animation)
+
+
+func _play_smoke() -> void:
+	if animated_sprite == null or animated_sprite.sprite_frames == null:
+		return
+	if not animated_sprite.sprite_frames.has_animation(talk_animation):
+		_play_side_idle()
+		return
+	_special_playing = true
+	animated_sprite.flip_h = not _facing_right
+	var smoke_shift: float = smoke_horizontal_correction_pixels
+	if animated_sprite.flip_h:
+		smoke_shift = -smoke_shift
+	animated_sprite.offset = _base_sprite_offset + Vector2(smoke_shift, 0.0)
+	animated_sprite.play(talk_animation)
+
+
+func _play_animation_if_available(animation_name: StringName) -> void:
+	if animated_sprite == null or animated_sprite.sprite_frames == null:
+		return
+	if not animated_sprite.sprite_frames.has_animation(animation_name):
+		return
+	animated_sprite.offset = _base_sprite_offset
+	if animated_sprite.animation == animation_name and animated_sprite.is_playing():
+		return
+	animated_sprite.play(animation_name)
+
+
+func _random_idle_pause() -> float:
+	return _rng.randf_range(
+		minf(idle_pause_min, idle_pause_max),
+		maxf(idle_pause_min, idle_pause_max)
+	)
+
+
+func _random_smoke_interval() -> float:
+	return _rng.randf_range(
+		minf(smoke_interval_min, smoke_interval_max),
+		maxf(smoke_interval_min, smoke_interval_max)
+	)
+
+
 func _on_animation_finished() -> void:
-	if animated_sprite == null or animated_sprite.animation != &"smoke":
+	if animated_sprite == null:
+		return
+	if animated_sprite.animation != talk_animation:
 		return
 	_special_playing = false
-	_play_idle(_facing)
+	if _player_in_range or (card_maker_menu != null and card_maker_menu.is_open()):
+		_play_idle()
+	else:
+		_play_side_idle()
 
 
 func _on_body_entered(body: Node) -> void:
 	if not _is_player_body(body):
 		return
-	_player_body = body as Node3D
 	_player_in_range = true
-	_stop_patrol()
-	_play_idle(_facing)
+	_stop_roaming()
+	_play_idle()
 	prompt_label.visible = false
 
 
@@ -314,60 +282,13 @@ func _on_body_exited(body: Node) -> void:
 	_player_in_range = false
 	prompt_label.visible = false
 	if card_maker_menu == null or not card_maker_menu.is_open():
-		_pause_remaining = _random_idle_pause()
-		_play_idle(_facing)
+		_play_side_idle()
 
 
 func _on_menu_closed() -> void:
 	_pause_remaining = _random_idle_pause()
 	_smoke_remaining = _random_smoke_interval()
-	_play_idle(_facing)
-
-
-
-func _cache_player_body() -> void:
-	if not is_inside_tree():
-		return
-	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
-		return
-	var candidate := tree.current_scene.get_node_or_null("Player/CharacterBody3D")
-	if candidate is Node3D:
-		_player_body = candidate as Node3D
-		return
-	var found := tree.current_scene.find_child("CharacterBody3D", true, false)
-	if found is Node3D:
-		_player_body = found as Node3D
-
-
-func _update_depth_sort() -> void:
-	if animated_sprite == null or not is_inside_tree():
-		return
-	if not is_instance_valid(_player_body):
-		_cache_player_body()
-	if not is_instance_valid(_player_body):
-		animated_sprite.sorting_offset = 0.0
-		return
-
-	var viewport := get_viewport()
-	if viewport == null:
-		return
-	var camera := viewport.get_camera_3d()
-	if camera == null:
-		return
-
-	# 2.5D overlap rule: whichever character appears lower on screen is in
-	# front. sorting_offset is only used as a small tie-breaker between the
-	# two billboard sprites; normal world depth still handles everything else.
-	var npc_screen := camera.unproject_position(global_position)
-	var player_screen := camera.unproject_position(_player_body.global_position)
-	var delta_y := npc_screen.y - player_screen.y
-	if absf(delta_y) < 1.0:
-		animated_sprite.sorting_offset = 0.0
-	elif delta_y > 0.0:
-		animated_sprite.sorting_offset = 0.65
-	else:
-		animated_sprite.sorting_offset = -0.65
+	_play_idle()
 
 
 func _is_player_body(body: Node) -> bool:
