@@ -1472,8 +1472,12 @@ func _configure_cephalopod_shadow_visual() -> void:
 		_cephalopod_sprite.pixel_size = 0.0062
 		_cephalopod_sprite.shaded = false
 		_cephalopod_sprite.double_sided = true
-		_cephalopod_sprite.cast_shadow = 0
-		_cephalopod_sprite.texture_filter = 0
+		_cephalopod_sprite.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_cephalopod_sprite.texture_filter = (
+			BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		)
 		head_segment.add_child(_cephalopod_sprite)
 
 	_cephalopod_sprite.speed_scale = FishingCephalopodShadowPolicyScript.get_animation_speed_scale(

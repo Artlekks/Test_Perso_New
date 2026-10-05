@@ -6,6 +6,51 @@ class_name FishingSessionServices
 ## FishingController no longer decides how Progress, Inventory, Journal,
 ## Rewards, Trades and UnlockState are created or wired together.
 
+## Debug QA is loaded dynamically so a QA-only parse regression cannot
+## prevent the gameplay session services from compiling and launching.
+const DEBUG_QA_PATHS: Dictionary = {
+	"FishingEconomyFoundationQAScript": "res://scripts/economy/fishing_economy_foundation_qa.gd",
+	"PlayableCampaignLoopQAScript": "res://scripts/progression/playable_campaign_loop_qa.gd",
+	"PlayableCampaignProgressionDirectorQAScript": "res://scripts/progression/playable_campaign_progression_director_qa.gd",
+	"PlayableCampaignQAControllerScript": "res://scripts/progression/playable_campaign_qa_controller.gd",
+	"PlayableCampaignQAGuideQAScript": "res://scripts/progression/playable_campaign_qa_guide_qa.gd",
+	"PlayableCampaignPresentationQAScript": "res://scripts/progression/playable_campaign_presentation_qa.gd",
+	"FishingCardMakerQAScript": "res://scripts/economy/fishing_card_maker_qa.gd",
+	"FishingMasteryQAScript": "res://scripts/mastery/fishing_mastery_qa.gd",
+	"FishingMasterCurrentReaderQAScript": "res://scripts/mastery/fishing_master_current_reader_qa.gd",
+	"FishingMasterDepthReaderQAScript": "res://scripts/mastery/fishing_master_depth_reader_qa.gd",
+	"FishingMasterStructureHunterQAScript": "res://scripts/mastery/fishing_master_structure_hunter_qa.gd",
+	"FishingMasterLineFighterQAScript": "res://scripts/mastery/fishing_master_line_fighter_qa.gd",
+	"FishingMasterDeepwaterVeteranQAScript": "res://scripts/mastery/fishing_master_deepwater_veteran_qa.gd",
+	"FishingMasterSurfaceAnglerQAScript": "res://scripts/mastery/fishing_master_surface_angler_qa.gd",
+	"FishingMasterLandingGuideQAScript": "res://scripts/mastery/fishing_master_landing_guide_qa.gd",
+	"FishingMasterWeatherWatcherQAScript": "res://scripts/mastery/fishing_master_weather_watcher_qa.gd",
+	"FishingMasterTideReaderQAScript": "res://scripts/mastery/fishing_master_tide_reader_qa.gd",
+	"FishingMasterSignReaderQAScript": "res://scripts/mastery/fishing_master_sign_reader_qa.gd",
+	"FishingMasterNatureGuideQAScript": "res://scripts/mastery/fishing_master_nature_guide_qa.gd",
+	"FishingMasterDriftAnglerQAScript": "res://scripts/mastery/fishing_master_drift_angler_qa.gd",
+	"FishingCephalopodShadowQAScript": "res://scripts/fishing_cephalopod_shadow_qa.gd",
+	"FishingMasterGyosilQAScript": "res://scripts/progression/fishing_master_gyosil_qa.gd",
+	"FishingFightCombatQAScript": "res://scripts/fishing_fight_combat_qa.gd",
+	"FishingPresentationQAScript": "res://scripts/fishing_presentation_qa.gd",
+	"FishingBiteTimingQAScript": "res://scripts/fishing_bite_timing_qa.gd",
+	"FishingPumpReelQAScript": "res://scripts/fishing_pump_reel_qa.gd",
+	"FishingRunReadingQAScript": "res://scripts/fishing_run_reading_qa.gd",
+	"FishingAerialControlQAScript": "res://scripts/fishing_aerial_control_qa.gd",
+	"FishingWeatherSenseQAScript": "res://scripts/fishing_weather_sense_qa.gd",
+	"FishingTideSenseQAScript": "res://scripts/fishing_tide_sense_qa.gd",
+	"FishingDeepWaterControlQAScript": "res://scripts/fishing_deep_water_control_qa.gd",
+	"FishingSurfaceControlQAScript": "res://scripts/fishing_surface_control_qa.gd",
+	"FishingLandingTechniqueQAScript": "res://scripts/fishing_landing_technique_qa.gd",
+	"FishingReadFishSignQAScript": "res://scripts/fishing_read_fish_sign_qa.gd",
+	"FishingOneWithNatureQAScript": "res://scripts/fishing_one_with_nature_qa.gd",
+	"GameItemBackendQAScript": "res://scripts/items/game_item_backend_qa.gd",
+	"BeachCraftingQAScript": "res://scripts/beach_crafting_qa.gd",
+	"BeachCraftingFeelQAHUDScene": "res://actors/BeachCraftingFeelQAHUD.tscn",
+	"FishingSystemStabilityQAScript": "res://scripts/qa/fishing_system_stability_qa.gd",
+	"FishingFreshSaveRehearsalQAScript": "res://scripts/qa/fishing_fresh_save_rehearsal_qa.gd",
+}
+
 const FishingProgressScript = preload(
 	"res://scripts/fishing_progress.gd"
 )
@@ -30,35 +75,14 @@ const FishingCookingServiceScript = preload(
 const FishingPreparedBaitServiceScript = preload(
 	"res://scripts/economy/fishing_prepared_bait_service.gd"
 )
-const FishingEconomyFoundationQAScript = preload(
-	"res://scripts/economy/fishing_economy_foundation_qa.gd"
-)
-const PlayableCampaignLoopQAScript = preload(
-	"res://scripts/progression/playable_campaign_loop_qa.gd"
-)
 const PlayableCampaignProgressionDirectorScript = preload(
 	"res://scripts/progression/playable_campaign_progression_director.gd"
-)
-const PlayableCampaignProgressionDirectorQAScript = preload(
-	"res://scripts/progression/playable_campaign_progression_director_qa.gd"
-)
-const PlayableCampaignQAControllerScript = preload(
-	"res://scripts/progression/playable_campaign_qa_controller.gd"
-)
-const PlayableCampaignQAGuideQAScript = preload(
-	"res://scripts/progression/playable_campaign_qa_guide_qa.gd"
 )
 const PlayableCampaignPresentationControllerScript = preload(
 	"res://scripts/progression/playable_campaign_presentation_controller.gd"
 )
-const PlayableCampaignPresentationQAScript = preload(
-	"res://scripts/progression/playable_campaign_presentation_qa.gd"
-)
 const FishingCardMakerServiceScript = preload(
 	"res://scripts/economy/fishing_card_maker_service.gd"
-)
-const FishingCardMakerQAScript = preload(
-	"res://scripts/economy/fishing_card_maker_qa.gd"
 )
 const FishingSaveIntegrityServiceScript = preload(
 	"res://scripts/fishing_save_integrity_service.gd"
@@ -77,90 +101,6 @@ const FishingTideServiceScript = preload(
 )
 const FishingMasteryServiceScript = preload(
 	"res://scripts/mastery/fishing_mastery_service.gd"
-)
-const FishingMasteryQAScript = preload(
-	"res://scripts/mastery/fishing_mastery_qa.gd"
-)
-const FishingMasterCurrentReaderQAScript = preload(
-	"res://scripts/mastery/fishing_master_current_reader_qa.gd"
-)
-const FishingMasterDepthReaderQAScript = preload(
-	"res://scripts/mastery/fishing_master_depth_reader_qa.gd"
-)
-const FishingMasterStructureHunterQAScript = preload(
-	"res://scripts/mastery/fishing_master_structure_hunter_qa.gd"
-)
-const FishingMasterLineFighterQAScript = preload(
-	"res://scripts/mastery/fishing_master_line_fighter_qa.gd"
-)
-const FishingMasterDeepwaterVeteranQAScript = preload(
-	"res://scripts/mastery/fishing_master_deepwater_veteran_qa.gd"
-)
-const FishingMasterSurfaceAnglerQAScript = preload(
-	"res://scripts/mastery/fishing_master_surface_angler_qa.gd"
-)
-const FishingMasterLandingGuideQAScript = preload(
-	"res://scripts/mastery/fishing_master_landing_guide_qa.gd"
-)
-const FishingMasterWeatherWatcherQAScript = preload(
-	"res://scripts/mastery/fishing_master_weather_watcher_qa.gd"
-)
-const FishingMasterTideReaderQAScript = preload(
-	"res://scripts/mastery/fishing_master_tide_reader_qa.gd"
-)
-const FishingMasterSignReaderQAScript = preload(
-	"res://scripts/mastery/fishing_master_sign_reader_qa.gd"
-)
-const FishingMasterNatureGuideQAScript = preload(
-	"res://scripts/mastery/fishing_master_nature_guide_qa.gd"
-)
-const FishingMasterDriftAnglerQAScript = preload(
-	"res://scripts/mastery/fishing_master_drift_angler_qa.gd"
-)
-const FishingCephalopodShadowQAScript = preload(
-	"res://scripts/fishing_cephalopod_shadow_qa.gd"
-)
-const FishingMasterGyosilQAScript = preload(
-	"res://scripts/progression/fishing_master_gyosil_qa.gd"
-)
-const FishingFightCombatQAScript = preload(
-	"res://scripts/fishing_fight_combat_qa.gd"
-)
-const FishingPresentationQAScript = preload(
-	"res://scripts/fishing_presentation_qa.gd"
-)
-const FishingBiteTimingQAScript = preload(
-	"res://scripts/fishing_bite_timing_qa.gd"
-)
-const FishingPumpReelQAScript = preload(
-	"res://scripts/fishing_pump_reel_qa.gd"
-)
-const FishingRunReadingQAScript = preload(
-	"res://scripts/fishing_run_reading_qa.gd"
-)
-const FishingAerialControlQAScript = preload(
-	"res://scripts/fishing_aerial_control_qa.gd"
-)
-const FishingWeatherSenseQAScript = preload(
-	"res://scripts/fishing_weather_sense_qa.gd"
-)
-const FishingTideSenseQAScript = preload(
-	"res://scripts/fishing_tide_sense_qa.gd"
-)
-const FishingDeepWaterControlQAScript = preload(
-	"res://scripts/fishing_deep_water_control_qa.gd"
-)
-const FishingSurfaceControlQAScript = preload(
-	"res://scripts/fishing_surface_control_qa.gd"
-)
-const FishingLandingTechniqueQAScript = preload(
-	"res://scripts/fishing_landing_technique_qa.gd"
-)
-const FishingReadFishSignQAScript = preload(
-	"res://scripts/fishing_read_fish_sign_qa.gd"
-)
-const FishingOneWithNatureQAScript = preload(
-	"res://scripts/fishing_one_with_nature_qa.gd"
 )
 const FishingFishConsumableServiceScript = preload(
 	"res://scripts/fishing_fish_consumable_service.gd"
@@ -204,9 +144,6 @@ const GameInventoryFacadeScript = preload(
 const GameItemTransactionServiceScript = preload(
 	"res://scripts/items/game_item_transaction_service.gd"
 )
-const GameItemBackendQAScript = preload(
-	"res://scripts/items/game_item_backend_qa.gd"
-)
 const BeachGatheringInventoryScript = preload(
 	"res://scripts/beach_gathering_inventory.gd"
 )
@@ -216,14 +153,8 @@ const BeachCraftingServiceScript = preload(
 const BeachCraftingIntegrityScript = preload(
 	"res://scripts/beach_crafting_integrity.gd"
 )
-const BeachCraftingQAScript = preload(
-	"res://scripts/beach_crafting_qa.gd"
-)
 const BeachGatheringFeedbackScene = preload(
 	"res://actors/BeachGatheringFeedbackView.tscn"
-)
-const BeachCraftingFeelQAHUDScene = preload(
-	"res://actors/BeachCraftingFeelQAHUD.tscn"
 )
 
 const FishingTackleCatalogResource = preload(
@@ -289,6 +220,53 @@ const FishingCardMakerCatalogResource: FishingCardMakerCatalog = preload(
 const TripleTriadCardCatalogResource: Resource = preload(
 	"res://data/triple_triad/card_catalog.tres"
 )
+
+var FishingEconomyFoundationQAScript = null
+var PlayableCampaignLoopQAScript = null
+var PlayableCampaignProgressionDirectorQAScript = null
+var PlayableCampaignQAControllerScript = null
+var PlayableCampaignQAGuideQAScript = null
+var PlayableCampaignPresentationQAScript = null
+var FishingCardMakerQAScript = null
+var FishingMasteryQAScript = null
+var FishingMasterCurrentReaderQAScript = null
+var FishingMasterDepthReaderQAScript = null
+var FishingMasterStructureHunterQAScript = null
+var FishingMasterLineFighterQAScript = null
+var FishingMasterDeepwaterVeteranQAScript = null
+var FishingMasterSurfaceAnglerQAScript = null
+var FishingMasterLandingGuideQAScript = null
+var FishingMasterWeatherWatcherQAScript = null
+var FishingMasterTideReaderQAScript = null
+var FishingMasterSignReaderQAScript = null
+var FishingMasterNatureGuideQAScript = null
+var FishingMasterDriftAnglerQAScript = null
+var FishingCephalopodShadowQAScript = null
+var FishingMasterGyosilQAScript = null
+var FishingFightCombatQAScript = null
+var FishingPresentationQAScript = null
+var FishingBiteTimingQAScript = null
+var FishingPumpReelQAScript = null
+var FishingRunReadingQAScript = null
+var FishingAerialControlQAScript = null
+var FishingWeatherSenseQAScript = null
+var FishingTideSenseQAScript = null
+var FishingDeepWaterControlQAScript = null
+var FishingSurfaceControlQAScript = null
+var FishingLandingTechniqueQAScript = null
+var FishingReadFishSignQAScript = null
+var FishingOneWithNatureQAScript = null
+var GameItemBackendQAScript = null
+var BeachCraftingQAScript = null
+var BeachCraftingFeelQAHUDScene = null
+var FishingSystemStabilityQAScript = null
+var FishingFreshSaveRehearsalQAScript = null
+
+var _debug_qa_load_attempted: bool = false
+var _debug_qa_scripts_ready: bool = false
+var _debug_qa_load_failures: PackedStringArray = PackedStringArray()
+var system_stability_qa_report: Dictionary = {}
+var fresh_save_rehearsal_qa_report: Dictionary = {}
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -382,6 +360,9 @@ func initialize() -> void:
 		return
 
 	_initialized = true
+
+	if OS.is_debug_build():
+		_load_debug_qa_dependencies()
 
 	progress = FishingProgressScript.new()
 	progress.name = "FishingProgress"
@@ -539,7 +520,7 @@ func initialize() -> void:
 			"Beach crafting audit: %s" % str(error)
 		)
 
-	if OS.is_debug_build():
+	if _debug_qa_scripts_ready:
 		item_backend_qa_report = GameItemBackendQAScript.run(item_catalog)
 		print(
 			"Item Backend QA: %d/%d tests passed."
@@ -724,7 +705,7 @@ func initialize() -> void:
 	add_child(tide_service)
 	current_service.set_tide_service(tide_service)
 
-	if OS.is_debug_build():
+	if _debug_qa_scripts_ready:
 		mastery_qa_report = FishingMasteryQAScript.run(
 			FishingMasteryTechniqueCatalogResource,
 			FishingMasteryQASpotResource
@@ -1092,7 +1073,7 @@ func initialize() -> void:
 	if environment_service.has_method("set_tide_service"):
 		environment_service.set_tide_service(tide_service)
 
-	if OS.is_debug_build():
+	if _debug_qa_scripts_ready:
 		weather_sense_qa_report = FishingWeatherSenseQAScript.run(
 			FishingEnvironmentCatalogResource,
 			FishingMasteryTechniqueCatalogResource
@@ -1303,7 +1284,7 @@ func initialize() -> void:
 		campaign_progression_director
 	)
 
-	if OS.is_debug_build():
+	if _debug_qa_scripts_ready:
 		campaign_qa_controller = PlayableCampaignQAControllerScript.new()
 		campaign_qa_controller.name = "PlayableCampaignQAController"
 		add_child(campaign_qa_controller)
@@ -1316,6 +1297,131 @@ func initialize() -> void:
 	_run_economy_integrity_audit()
 	_run_fish_effect_integrity_audit()
 	_run_environment_integrity_audit()
+
+	if _debug_qa_scripts_ready:
+		system_stability_qa_report = FishingSystemStabilityQAScript.run(self)
+		print(
+			"Fishing System Stability QA: %d/%d tests passed."
+			% [
+				int(system_stability_qa_report.get("passed_count", 0)),
+				int(system_stability_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in system_stability_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing System Stability QA: %s" % str(failure))
+
+		fresh_save_rehearsal_qa_report = FishingFreshSaveRehearsalQAScript.run(self)
+		print(
+			"Fishing Fresh Save Rehearsal QA: %d/%d tests passed."
+			% [
+				int(fresh_save_rehearsal_qa_report.get("passed_count", 0)),
+				int(fresh_save_rehearsal_qa_report.get("test_count", 0)),
+			]
+		)
+		var rehearsal_path = fresh_save_rehearsal_qa_report.get(
+			"rehearsal_path",
+			PackedStringArray()
+		)
+		if rehearsal_path is PackedStringArray or rehearsal_path is Array:
+			print(
+				"Fresh Save Path: %s"
+				% " -> ".join(rehearsal_path)
+			)
+		for failure in fresh_save_rehearsal_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Fresh Save Rehearsal QA: %s" % str(failure))
+
+
+func _load_debug_qa_dependencies() -> bool:
+	if _debug_qa_load_attempted:
+		return _debug_qa_scripts_ready
+	_debug_qa_load_attempted = true
+	_debug_qa_load_failures = PackedStringArray()
+
+	var loaded: Dictionary = {}
+	for dependency_name in DEBUG_QA_PATHS.keys():
+		var path := str(DEBUG_QA_PATHS[dependency_name])
+		var resource = ResourceLoader.load(path)
+		if resource == null:
+			_debug_qa_load_failures.append(
+				"%s -> %s" % [str(dependency_name), path]
+			)
+			continue
+		loaded[dependency_name] = resource
+
+	FishingEconomyFoundationQAScript = loaded.get("FishingEconomyFoundationQAScript", null)
+	PlayableCampaignLoopQAScript = loaded.get("PlayableCampaignLoopQAScript", null)
+	PlayableCampaignProgressionDirectorQAScript = loaded.get("PlayableCampaignProgressionDirectorQAScript", null)
+	PlayableCampaignQAControllerScript = loaded.get("PlayableCampaignQAControllerScript", null)
+	PlayableCampaignQAGuideQAScript = loaded.get("PlayableCampaignQAGuideQAScript", null)
+	PlayableCampaignPresentationQAScript = loaded.get("PlayableCampaignPresentationQAScript", null)
+	FishingCardMakerQAScript = loaded.get("FishingCardMakerQAScript", null)
+	FishingMasteryQAScript = loaded.get("FishingMasteryQAScript", null)
+	FishingMasterCurrentReaderQAScript = loaded.get("FishingMasterCurrentReaderQAScript", null)
+	FishingMasterDepthReaderQAScript = loaded.get("FishingMasterDepthReaderQAScript", null)
+	FishingMasterStructureHunterQAScript = loaded.get("FishingMasterStructureHunterQAScript", null)
+	FishingMasterLineFighterQAScript = loaded.get("FishingMasterLineFighterQAScript", null)
+	FishingMasterDeepwaterVeteranQAScript = loaded.get("FishingMasterDeepwaterVeteranQAScript", null)
+	FishingMasterSurfaceAnglerQAScript = loaded.get("FishingMasterSurfaceAnglerQAScript", null)
+	FishingMasterLandingGuideQAScript = loaded.get("FishingMasterLandingGuideQAScript", null)
+	FishingMasterWeatherWatcherQAScript = loaded.get("FishingMasterWeatherWatcherQAScript", null)
+	FishingMasterTideReaderQAScript = loaded.get("FishingMasterTideReaderQAScript", null)
+	FishingMasterSignReaderQAScript = loaded.get("FishingMasterSignReaderQAScript", null)
+	FishingMasterNatureGuideQAScript = loaded.get("FishingMasterNatureGuideQAScript", null)
+	FishingMasterDriftAnglerQAScript = loaded.get("FishingMasterDriftAnglerQAScript", null)
+	FishingCephalopodShadowQAScript = loaded.get("FishingCephalopodShadowQAScript", null)
+	FishingMasterGyosilQAScript = loaded.get("FishingMasterGyosilQAScript", null)
+	FishingFightCombatQAScript = loaded.get("FishingFightCombatQAScript", null)
+	FishingPresentationQAScript = loaded.get("FishingPresentationQAScript", null)
+	FishingBiteTimingQAScript = loaded.get("FishingBiteTimingQAScript", null)
+	FishingPumpReelQAScript = loaded.get("FishingPumpReelQAScript", null)
+	FishingRunReadingQAScript = loaded.get("FishingRunReadingQAScript", null)
+	FishingAerialControlQAScript = loaded.get("FishingAerialControlQAScript", null)
+	FishingWeatherSenseQAScript = loaded.get("FishingWeatherSenseQAScript", null)
+	FishingTideSenseQAScript = loaded.get("FishingTideSenseQAScript", null)
+	FishingDeepWaterControlQAScript = loaded.get("FishingDeepWaterControlQAScript", null)
+	FishingSurfaceControlQAScript = loaded.get("FishingSurfaceControlQAScript", null)
+	FishingLandingTechniqueQAScript = loaded.get("FishingLandingTechniqueQAScript", null)
+	FishingReadFishSignQAScript = loaded.get("FishingReadFishSignQAScript", null)
+	FishingOneWithNatureQAScript = loaded.get("FishingOneWithNatureQAScript", null)
+	GameItemBackendQAScript = loaded.get("GameItemBackendQAScript", null)
+	BeachCraftingQAScript = loaded.get("BeachCraftingQAScript", null)
+	BeachCraftingFeelQAHUDScene = loaded.get("BeachCraftingFeelQAHUDScene", null)
+	FishingSystemStabilityQAScript = loaded.get("FishingSystemStabilityQAScript", null)
+	FishingFreshSaveRehearsalQAScript = loaded.get("FishingFreshSaveRehearsalQAScript", null)
+
+	_debug_qa_scripts_ready = _debug_qa_load_failures.is_empty()
+	if not _debug_qa_scripts_ready:
+		push_warning(
+			"Fishing debug QA was isolated and skipped for this run because "
+			+ "%d QA dependencies failed to load. Gameplay services will continue."
+			% _debug_qa_load_failures.size()
+		)
+		for failure in _debug_qa_load_failures:
+			push_warning("Fishing QA dependency: %s" % str(failure))
+	return _debug_qa_scripts_ready
+
+
+func get_debug_qa_dependency_health() -> Dictionary:
+	return {
+		"attempted": _debug_qa_load_attempted,
+		"ready": _debug_qa_scripts_ready,
+		"failure_count": _debug_qa_load_failures.size(),
+		"failures": _debug_qa_load_failures.duplicate(),
+	}
+
+
+func get_fishing_system_stability_qa_report() -> Dictionary:
+	return system_stability_qa_report.duplicate(true)
+
+
+func get_fishing_fresh_save_rehearsal_qa_report() -> Dictionary:
+	return fresh_save_rehearsal_qa_report.duplicate(true)
 
 
 func _run_progression_integrity_audit() -> void:
@@ -1385,6 +1491,10 @@ func get_beach_crafting_qa_report() -> Dictionary:
 
 
 func run_beach_crafting_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {"available": false, "reason": "debug_qa_unavailable", "failures": _debug_qa_load_failures.duplicate()}
 	beach_crafting_qa_report = BeachCraftingQAScript.run(
 		BeachCraftingCatalogResource,
 		beach_crafting_service,
@@ -1461,6 +1571,10 @@ func get_item_backend_qa_report() -> Dictionary:
 
 
 func run_item_backend_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {"available": false, "reason": "debug_qa_unavailable", "failures": _debug_qa_load_failures.duplicate()}
 	item_backend_qa_report = GameItemBackendQAScript.run(item_catalog)
 	return item_backend_qa_report.duplicate(true)
 
@@ -1514,6 +1628,10 @@ func get_card_maker_qa_report() -> Dictionary:
 
 
 func run_card_maker_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {"available": false, "reason": "debug_qa_unavailable", "failures": _debug_qa_load_failures.duplicate()}
 	card_maker_qa_report = FishingCardMakerQAScript.run(
 		FishingCardMakerCatalogResource,
 		FishingContentCatalogResource,
@@ -1538,6 +1656,10 @@ func get_economy_foundation_qa_report() -> Dictionary:
 
 
 func run_economy_foundation_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {"available": false, "reason": "debug_qa_unavailable", "failures": _debug_qa_load_failures.duplicate()}
 	economy_foundation_qa_report = FishingEconomyFoundationQAScript.run(
 		FishingEconomyConfigResource,
 		item_catalog,
@@ -1763,6 +1885,10 @@ func get_campaign_progression_director_qa_report() -> Dictionary:
 
 
 func run_campaign_progression_director_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {"available": false, "reason": "debug_qa_unavailable", "failures": _debug_qa_load_failures.duplicate()}
 	campaign_progression_director_qa_report = (
 		PlayableCampaignProgressionDirectorQAScript.run()
 	)
@@ -1774,6 +1900,10 @@ func get_campaign_qa_guide_qa_report() -> Dictionary:
 
 
 func run_campaign_qa_guide_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {"available": false, "reason": "debug_qa_unavailable", "failures": _debug_qa_load_failures.duplicate()}
 	campaign_qa_guide_qa_report = PlayableCampaignQAGuideQAScript.run()
 	return campaign_qa_guide_qa_report.duplicate(true)
 
@@ -1930,6 +2060,10 @@ func _ensure_beach_gathering_feedback_view() -> void:
 
 func _ensure_beach_crafting_feel_qa_hud() -> void:
 	if not OS.is_debug_build():
+		return
+	if not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if BeachCraftingFeelQAHUDScene == null:
 		return
 	if is_instance_valid(beach_crafting_feel_qa_hud):
 		return

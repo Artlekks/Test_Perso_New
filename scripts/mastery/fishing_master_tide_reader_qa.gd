@@ -62,8 +62,11 @@ static func run(mastery_catalog: Resource) -> Dictionary:
 			"Tide Reader must build on water-column/environment reading."
 		)
 
+	# QA must start from a blank in-memory mastery state. Do NOT call
+	# FishingUnlockState.initialize() here: initialize() loads the player's
+	# persistent user://fishing_unlocks.json and makes this deterministic test
+	# depend on whatever techniques the current save already knows.
 	var unlock = UnlockStateScript.new()
-	unlock.initialize()
 	var mastery = MasteryServiceScript.new()
 	mastery.configure(mastery_catalog, unlock)
 

@@ -1,6 +1,6 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dfcr4ej7xdgmp"]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/fish/shadows/cephalopod_shadow_atlas.png" id="1_atlas"]
+[ext_resource type="Texture2D" uid="uid://ddcon2nbd2r4m" path="res://assets/sprites/fish/shadows/cephalopod_shadow_atlas.png" id="1_atlas"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_00"]
 atlas = ExtResource("1_atlas")
@@ -68,7 +68,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_08")
 }],
-"loop": true,
+"loop": 1,
 "name": &"pulse",
 "speed": 7.0
 }]
