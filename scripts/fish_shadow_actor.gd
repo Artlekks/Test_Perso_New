@@ -7,6 +7,12 @@ const FishingWarinessPolicyScript = preload(
 const FishingOneWithNaturePolicyScript = preload(
 	"res://scripts/fishing_one_with_nature_policy.gd"
 )
+const FishingCephalopodShadowPolicyScript = preload(
+	"res://scripts/fishing_cephalopod_shadow_policy.gd"
+)
+const CephalopodShadowFrames: SpriteFrames = preload(
+	"res://assets/animations/cephalopod_shadow_frames.tres"
+)
 
 signal expired(shadow: FishShadowActor)
 
@@ -224,6 +230,13 @@ var fade_out_time: float = 1.0
 @onready var middle_sprite: Sprite3D = $MiddleSegment/Sprite3D
 @onready var tail_sprite: Sprite3D = $TailSegment/Sprite3D
 
+var _cephalopod_sprite: AnimatedSprite3D = null
+var _cephalopod_shadow_active: bool = false
+var _cephalopod_cycle_time: float = 0.0
+var _cephalopod_hold_seconds: float = 1.8
+var _cephalopod_hidden_seconds: float = 0.9
+var _cephalopod_species_scale: float = 1.0
+
 var fish_data: FishData = null
 var swim_bounds: FishSwimBounds = null
 var water_surface_y: float = 0.0
@@ -306,6 +319,7 @@ func configure(
 	_place_at_random_point()
 	_pick_new_target()
 	_pick_new_depth_target()
+	_configure_cephalopod_shadow_visual()
 	_place_body()
 	_update_visuals()
 
@@ -580,6 +594,7 @@ func _process(delta: float) -> void:
 		return
 
 	_update_depth(delta)
+	_update_cephalopod_shadow_cycle(delta)
 
 	if _fight_tracking:
 		_update_hooked_motion(delta)
@@ -1402,6 +1417,77 @@ func _update_visuals() -> void:
 		middle_sprite.modulate = color
 	if tail_sprite != null:
 		tail_sprite.modulate = color
+
+	if _cephalopod_shadow_active and is_instance_valid(_cephalopod_sprite):
+		var envelope := 1.0 if _fight_tracking else FishingCephalopodShadowPolicyScript.get_visibility_envelope(
+			_cephalopod_cycle_time,
+			_cephalopod_hold_seconds,
+			_cephalopod_hidden_seconds
+		)
+		var presented_alpha := FishingCephalopodShadowPolicyScript.get_presented_alpha(
+			alpha,
+			envelope
+		)
+		_cephalopod_sprite.modulate = Color(1.0, 1.0, 1.0, presented_alpha)
+		var pulse_scale := FishingCephalopodShadowPolicyScript.get_presented_scale(envelope)
+		_cephalopod_sprite.scale = Vector3.ONE * pulse_scale * _cephalopod_species_scale
+		_cephalopod_sprite.visible = presented_alpha > 0.01
+
+
+func _configure_cephalopod_shadow_visual() -> void:
+	_cephalopod_shadow_active = false
+	if fish_data == null:
+		return
+	if not FishingCephalopodShadowPolicyScript.uses_animated_shadow(fish_data.species_id):
+		return
+
+	_cephalopod_shadow_active = true
+	_cephalopod_hold_seconds = _rng.randf_range(1.15, 2.85)
+	_cephalopod_hidden_seconds = _rng.randf_range(0.45, 1.45)
+	_cephalopod_cycle_time = _rng.randf_range(
+		0.0,
+		FishingCephalopodShadowPolicyScript.get_cycle_duration(
+			_cephalopod_hold_seconds,
+			_cephalopod_hidden_seconds
+		)
+	)
+	_cephalopod_species_scale = FishingCephalopodShadowPolicyScript.get_species_scale_multiplier(
+		fish_data.species_id
+	)
+
+	if head_sprite != null:
+		head_sprite.visible = false
+	if middle_sprite != null:
+		middle_sprite.visible = false
+	if tail_sprite != null:
+		tail_sprite.visible = false
+
+	if not is_instance_valid(_cephalopod_sprite):
+		_cephalopod_sprite = AnimatedSprite3D.new()
+		_cephalopod_sprite.name = "CephalopodAnimatedShadow"
+		_cephalopod_sprite.sprite_frames = CephalopodShadowFrames
+		_cephalopod_sprite.animation = &"pulse"
+		_cephalopod_sprite.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+		_cephalopod_sprite.position = Vector3(0.0, 0.0025, 0.0)
+		_cephalopod_sprite.pixel_size = 0.0062
+		_cephalopod_sprite.shaded = false
+		_cephalopod_sprite.double_sided = true
+		_cephalopod_sprite.cast_shadow = 0
+		_cephalopod_sprite.texture_filter = 0
+		head_segment.add_child(_cephalopod_sprite)
+
+	_cephalopod_sprite.speed_scale = FishingCephalopodShadowPolicyScript.get_animation_speed_scale(
+		fish_data.species_id
+	)
+	_cephalopod_sprite.play(&"pulse")
+
+
+func _update_cephalopod_shadow_cycle(delta: float) -> void:
+	if not _cephalopod_shadow_active:
+		return
+	if _fight_tracking:
+		return
+	_cephalopod_cycle_time += maxf(delta, 0.0)
 
 
 func _get_lifecycle_alpha() -> float:

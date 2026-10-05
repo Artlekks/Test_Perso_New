@@ -22,13 +22,21 @@ func _ready() -> void:
 	)
 
 	screen_transition.covered.connect(
-	_on_screen_covered
+		_on_screen_covered
 	)
 	
 func _on_fish_resistance_started() -> void:
 	info_view.show_message(
 		"The fish is thrashing about!"
 	)
+
+	# The fish jump is intentionally fired from the SAME code path as the message.
+	# If the message is visible, the presentation event is guaranteed to be sent.
+	# Deferred execution gives FishingLineView one frame to refresh its exact
+	# water-entry point before the visual resolves its screen anchor.
+	var thrash_visual: Node = get_node_or_null("../FishThrashVisual")
+	if thrash_visual != null and thrash_visual.has_method("play_resistance_jump"):
+		thrash_visual.call_deferred("play_resistance_jump")
 
 
 func _on_fish_spent() -> void:
@@ -53,4 +61,3 @@ func _on_line_broken() -> void:
 
 func _on_screen_covered() -> void:
 	info_view.clear()
-	

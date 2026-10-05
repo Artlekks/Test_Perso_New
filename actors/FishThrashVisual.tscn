@@ -8,10 +8,11 @@ process_mode = 3
 script = ExtResource("1_script")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-layer = 20
+layer = 90
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="CanvasLayer"]
 visible = false
+z_index = 100
 texture_filter = 1
 sprite_frames = ExtResource("2_frames")
 animation = &"thrash_jump"

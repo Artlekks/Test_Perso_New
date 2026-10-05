@@ -114,6 +114,15 @@ const FishingMasterSignReaderQAScript = preload(
 const FishingMasterNatureGuideQAScript = preload(
 	"res://scripts/mastery/fishing_master_nature_guide_qa.gd"
 )
+const FishingMasterDriftAnglerQAScript = preload(
+	"res://scripts/mastery/fishing_master_drift_angler_qa.gd"
+)
+const FishingCephalopodShadowQAScript = preload(
+	"res://scripts/fishing_cephalopod_shadow_qa.gd"
+)
+const FishingMasterGyosilQAScript = preload(
+	"res://scripts/progression/fishing_master_gyosil_qa.gd"
+)
 const FishingFightCombatQAScript = preload(
 	"res://scripts/fishing_fight_combat_qa.gd"
 )
@@ -308,6 +317,9 @@ var master_weather_watcher_qa_report: Dictionary = {}
 var master_tide_reader_qa_report: Dictionary = {}
 var master_sign_reader_qa_report: Dictionary = {}
 var master_nature_guide_qa_report: Dictionary = {}
+var master_drift_angler_qa_report: Dictionary = {}
+var cephalopod_shadow_qa_report: Dictionary = {}
+var master_gyosil_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
 var presentation_qa_report: Dictionary = {}
 var bite_timing_qa_report: Dictionary = {}
@@ -905,6 +917,52 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Master Nature Guide QA: %s" % str(failure))
+
+		master_drift_angler_qa_report = FishingMasterDriftAnglerQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Drift Angler QA: %d/%d tests passed."
+			% [
+				int(master_drift_angler_qa_report.get("passed_count", 0)),
+				int(master_drift_angler_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_drift_angler_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Drift Angler QA: %s" % str(failure))
+
+		cephalopod_shadow_qa_report = FishingCephalopodShadowQAScript.run()
+		print(
+			"Fishing Cephalopod Shadow QA: %d/%d tests passed."
+			% [
+				int(cephalopod_shadow_qa_report.get("passed_count", 0)),
+				int(cephalopod_shadow_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in cephalopod_shadow_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Cephalopod Shadow QA: %s" % str(failure))
+
+		master_gyosil_qa_report = FishingMasterGyosilQAScript.run(
+			FishingRewardCatalogResource
+		)
+		print(
+			"Fishing Master Gyosil QA: %d/%d tests passed."
+			% [
+				int(master_gyosil_qa_report.get("passed_count", 0)),
+				int(master_gyosil_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_gyosil_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Gyosil QA: %s" % str(failure))
 
 		fight_combat_qa_report = FishingFightCombatQAScript.run()
 		print(
@@ -1522,6 +1580,18 @@ func get_fishing_mastery_qa_report() -> Dictionary:
 	return mastery_qa_report.duplicate(true)
 
 
+func get_fishing_reward_service() -> FishingRewardService:
+	return reward_service
+
+
+func get_fishing_master_gyosil_qa_report() -> Dictionary:
+	return master_gyosil_qa_report.duplicate(true)
+
+
+func get_fishing_cephalopod_shadow_qa_report() -> Dictionary:
+	return cephalopod_shadow_qa_report.duplicate(true)
+
+
 func get_fishing_master_current_reader_qa_report() -> Dictionary:
 	return master_current_reader_qa_report.duplicate(true)
 
@@ -1562,6 +1632,10 @@ func get_fishing_master_sign_reader_qa_report() -> Dictionary:
 
 func get_fishing_master_nature_guide_qa_report() -> Dictionary:
 	return master_nature_guide_qa_report.duplicate(true)
+
+
+func get_fishing_master_drift_angler_qa_report() -> Dictionary:
+	return master_drift_angler_qa_report.duplicate(true)
 
 
 func get_fishing_fight_qa_report() -> Dictionary:

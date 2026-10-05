@@ -78,7 +78,7 @@
 [ext_resource type="PackedScene" path="res://actors/HarborLockbox.tscn" id="78_harbor_lockbox"]
 [ext_resource type="PackedScene" path="res://actors/HarborRequestBoard.tscn" id="79_harbor_request"]
 [ext_resource type="PackedScene" path="res://actors/RegionalChampionshipRegistrar.tscn" id="80_regional_championship"]
-[ext_resource type="PackedScene" path="res://actors/BeachFishingCritter.tscn" id="81_beach_critter"]
+[ext_resource type="PackedScene" uid="uid://k3mlp7ml5k0f" path="res://actors/BeachFishingCritter.tscn" id="81_beach_critter"]
 [ext_resource type="PackedScene" uid="uid://bvk23rw0i0b5b" path="res://actors/FishingMasterStillWaterNPC.tscn" id="82_still_water_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterCurrentReaderNPC.tscn" id="83_current_reader_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterDepthReaderNPC.tscn" id="84_depth_reader_master"]
@@ -93,7 +93,9 @@
 [ext_resource type="Script" uid="uid://d1khgllba40fp" path="res://scripts/npc_animation_autoplay.gd" id="93_npc_anim_autoplay"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterNatureGuideNPC.tscn" id="94_nature_guide_master"]
 [ext_resource type="PackedScene" path="res://actors/FishThrashVisual.tscn" id="95_fish_thrash_visual"]
-[ext_resource type="Script" uid="uid://rv8ugppryiry" path="res://scripts/world_actor_presentation.gd" id="96_world_actor_presentation"]
+[ext_resource type="Script" path="res://scripts/world_actor_presentation.gd" id="96_world_actor_presentation"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterDriftAnglerNPC.tscn" id="97_drift_angler_master"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterGyosilNPC.tscn" id="98_gyosil_master"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -321,6 +323,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.07, -0.1)
 [node name="FishingMasterNatureGuideNPC" parent="World" unique_id=2033202793 instance=ExtResource("94_nature_guide_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0.07, -0.1)
 
+[node name="FishingMasterDriftAnglerNPC" parent="World" instance=ExtResource("97_drift_angler_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0.07, -0.1)
+
+[node name="FishingMasterGyosilNPC" parent="World" instance=ExtResource("98_gyosil_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.65, 0.07, -0.1)
+
 [node name="BeachCritter" parent="World" unique_id=232758415 instance=ExtResource("81_beach_critter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, -0.055645004, 0.12)
 roam_half_width = 0.48
@@ -330,7 +338,7 @@ move_speed = 0.19
 [node name="NPCAnimationAutoplay" type="Node" parent="." unique_id=907469643]
 script = ExtResource("93_npc_anim_autoplay")
 
-[node name="WorldActorPresentation" type="Node" parent="." unique_id=451224729 node_paths=PackedStringArray("world_root", "player", "camera")]
+[node name="WorldActorPresentation" type="Node" parent="." node_paths=PackedStringArray("world_root", "player", "camera")]
 script = ExtResource("96_world_actor_presentation")
 world_root = NodePath("../World")
 player = NodePath("../Player/CharacterBody3D")
