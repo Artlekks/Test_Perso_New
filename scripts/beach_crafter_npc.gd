@@ -11,6 +11,8 @@ const CHOICE_CRAFT: StringName = &"craft"
 const CHOICE_ABOUT: StringName = &"about"
 const CHOICE_CARDS: StringName = &"cards"
 const CHOICE_LEAVE: StringName = &"leave"
+const CHOICE_REQUEST: StringName = &"request"
+const CHOICE_JOURNAL: StringName = &"journal"
 
 @export var idle_animation: StringName = &"Bag_Search"
 @export var talk_animation: StringName = &"Stand_Interest"
@@ -30,6 +32,7 @@ const CHOICE_LEAVE: StringName = &"leave"
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var crafting_menu: BeachCraftingMenu = $BeachCraftingMenu
+@onready var request_source: BeachCrafterRequestSource = $RequestSource
 
 var _player_in_range: bool = false
 var _crafting_service: BeachCraftingService = null
@@ -46,6 +49,7 @@ func _ready() -> void:
 	interaction_area.body_entered.connect(_on_body_entered)
 	interaction_area.body_exited.connect(_on_body_exited)
 	_create_dialogue_bridge()
+	_configure_request_source()
 	call_deferred("_bind_crafting")
 
 
@@ -78,6 +82,9 @@ func _start_interaction() -> bool:
 		cards_choice_text,
 		leave_choice_text
 	)
+	if request_source != null:
+		request_source.refresh()
+		choices = request_source.augment_service_choices(choices)
 	if (
 		_dialogue_bridge != null
 		and _dialogue_bridge.start_choice_prompt(
@@ -210,6 +217,10 @@ func _on_dialogue_choice_made(
 			call_deferred("_start_explanation")
 		CHOICE_CARDS:
 			call_deferred("_open_card_game")
+		CHOICE_REQUEST, CHOICE_JOURNAL:
+			# BeachCrafterRequestSource listens to the same bridge signal and owns
+			# request/journal routing. Keep service ownership out of this NPC.
+			pass
 		CHOICE_LEAVE:
 			_play_idle()
 		_:
@@ -229,6 +240,27 @@ func _on_dialogue_interaction_finished(
 	if reason == &"completed":
 		call_deferred("_start_interaction")
 		return
+	_play_idle()
+
+
+func _configure_request_source() -> void:
+	if request_source == null or _dialogue_bridge == null:
+		return
+	request_source.configure(_dialogue_bridge, PORTRAIT)
+	if not request_source.return_to_services_requested.is_connected(_on_request_return_to_services):
+		request_source.return_to_services_requested.connect(_on_request_return_to_services)
+	if not request_source.idle_requested.is_connected(_on_request_idle_requested):
+		request_source.idle_requested.connect(_on_request_idle_requested)
+
+
+func _on_request_return_to_services() -> void:
+	if not _player_in_range:
+		_play_idle()
+		return
+	call_deferred("_start_interaction")
+
+
+func _on_request_idle_requested() -> void:
 	_play_idle()
 
 

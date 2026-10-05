@@ -23,6 +23,13 @@ func grant_reward(
 		}
 		reward_failed.emit(missing.duplicate(true))
 		return missing
+	if not _backend_ready(game):
+		var not_ready := {
+			"success": false,
+			"reason": "triple_triad_backend_not_ready",
+		}
+		reward_failed.emit(not_ready.duplicate(true))
+		return not_ready
 
 	var resolved_event_id: StringName = _resolved_event_id()
 	if not String(override_event_id).is_empty():
@@ -57,6 +64,8 @@ func is_claimed(override_event_id: StringName = &"") -> bool:
 	var game: Node = _find_game()
 	if game == null or not game.has_method("has_world_reward_event_claimed"):
 		return false
+	if not _backend_ready(game):
+		return false
 	var resolved_event_id: StringName = _resolved_event_id()
 	if not String(override_event_id).is_empty():
 		resolved_event_id = override_event_id
@@ -66,6 +75,17 @@ func is_claimed(override_event_id: StringName = &"") -> bool:
 			resolved_event_id
 		)
 	)
+
+
+func _backend_ready(game: Node) -> bool:
+	if game == null:
+		return false
+	# TripleTriadGame is composed in stages. Any adapter operation that reaches
+	# the world gateway must respect the facade's explicit readiness contract.
+	if game.has_method("is_backend_ready"):
+		return bool(game.call("is_backend_ready"))
+	# Compatibility for older game facades that predate the readiness method.
+	return true
 
 
 func _resolved_event_id() -> StringName:

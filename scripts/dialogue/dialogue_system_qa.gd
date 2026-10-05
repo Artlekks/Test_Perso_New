@@ -16,6 +16,9 @@ const FishingCardMakerNPCScript = preload("res://scripts/economy/fishing_card_ma
 const FishingCardMakerScene = preload("res://actors/FishingCardMakerNPC.tscn")
 const BeachCrafterNPCScript = preload("res://scripts/beach_crafter_npc.gd")
 const BeachCrafterScene = preload("res://actors/BeachCrafterNPC.tscn")
+const BeachCrafterRequestSourceScript = preload("res://scripts/quests/beach_crafter_request_source.gd")
+const MaterialCountRequestObjectiveScript = preload("res://scripts/quests/material_count_request_objective.gd")
+const WorldRequestProgressStoreScript = preload("res://scripts/quests/world_request_progress_store.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
 const COMPLETE_DIALOGUE_ID: StringName = &"master_gyosil_complete"
 const WorldRequestStateScript = preload("res://scripts/quests/world_request_state.gd")
@@ -26,6 +29,8 @@ const HarborRequestBoardScene = preload("res://actors/HarborRequestBoard.tscn")
 const WorldRequestMarkerScript = preload("res://scripts/quests/world_request_marker.gd")
 const WorldObjectiveTrackerScript = preload("res://scripts/quests/world_objective_tracker.gd")
 const WorldObjectiveTrackerScene = preload("res://actors/WorldObjectiveTracker.tscn")
+const WorldRequestJournalScript = preload("res://scripts/quests/world_request_journal.gd")
+const WorldRequestJournalScene = preload("res://actors/WorldRequestJournal.tscn")
 
 
 static func run(catalog: DialogueCatalog) -> Dictionary:
@@ -822,29 +827,32 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	var request_available_choices: Array = HarborRequestBoardScript.build_available_choices()
 	_record(
 		report,
-		"available request choices are accept and later",
-		request_available_choices.size() == 2
+		"available request choices expose acceptance and journal",
+		request_available_choices.size() == 3
 		and request_available_choices[0].get("choice_id", &"") == &"accept"
-		and request_available_choices[1].get("choice_id", &"") == &"later",
-		"AVAILABLE requests should ask for explicit acceptance rather than silently starting."
+		and request_available_choices[1].get("choice_id", &"") == &"journal"
+		and request_available_choices[2].get("choice_id", &"") == &"later",
+		"AVAILABLE requests should allow explicit acceptance while keeping the shared request log reachable."
 	)
 	var request_accepted_choices: Array = HarborRequestBoardScript.build_accepted_choices()
 	_record(
 		report,
-		"accepted request choices are review and leave",
-		request_accepted_choices.size() == 2
+		"accepted request choices expose review and journal",
+		request_accepted_choices.size() == 3
 		and request_accepted_choices[0].get("choice_id", &"") == &"review"
-		and request_accepted_choices[1].get("choice_id", &"") == &"leave",
-		"ACCEPTED requests need a reusable way to restate the objective without owning objective logic."
+		and request_accepted_choices[1].get("choice_id", &"") == &"journal"
+		and request_accepted_choices[2].get("choice_id", &"") == &"leave",
+		"ACCEPTED requests need both local objective review and access to the shared read-only request log."
 	)
 	var request_ready_choices: Array = HarborRequestBoardScript.build_ready_choices()
 	_record(
 		report,
-		"ready request choices are turn in and not yet",
-		request_ready_choices.size() == 2
+		"ready request choices expose turn in and journal",
+		request_ready_choices.size() == 3
 		and request_ready_choices[0].get("choice_id", &"") == &"turn_in"
-		and request_ready_choices[1].get("choice_id", &"") == &"not_yet",
-		"READY requests must require an explicit turn-in before the gameplay reward adapter runs."
+		and request_ready_choices[1].get("choice_id", &"") == &"journal"
+		and request_ready_choices[2].get("choice_id", &"") == &"not_yet",
+		"READY requests must keep explicit turn-in while the request log remains inspectable."
 	)
 
 	# Request presentation: world markers and a lightweight exploration tracker
@@ -954,6 +962,250 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	)
 	if tracker_scene_node != null:
 		tracker_scene_node.free()
+
+	# Request Journal v1: historical/read-only presentation reuses the same
+	# request snapshots without becoming another progression owner.
+	_record(
+		report,
+		"request journal keeps accepted ready and completed states",
+		WorldObjectiveTrackerScript.should_keep_journal_state(&"accepted")
+		and WorldObjectiveTrackerScript.should_keep_journal_state(&"ready_to_turn_in")
+		and WorldObjectiveTrackerScript.should_keep_journal_state(&"completed"),
+		"The journal must preserve active, return-ready, and completed request history."
+	)
+	_record(
+		report,
+		"request journal ignores available and locked states",
+		not WorldObjectiveTrackerScript.should_keep_journal_state(&"available")
+		and not WorldObjectiveTrackerScript.should_keep_journal_state(&"locked"),
+		"The journal is a log of accepted requests, not a discovery list of every possible request."
+	)
+	_record(
+		report,
+		"completed requests stay out of active tracker",
+		not WorldObjectiveTrackerScript.should_track_state(&"completed")
+		and WorldObjectiveTrackerScript.status_text(&"completed") == "COMPLETE",
+		"Completion history may remain journal-visible without reappearing as an active HUD objective."
+	)
+
+	var journal_candidates := {
+		"done": {
+			"request_id": &"done",
+			"title": "Done Request",
+			"objective": "Completed.",
+			"state_id": &"completed",
+		},
+		"active": {
+			"request_id": &"active",
+			"title": "Active Request",
+			"objective": "Keep working.",
+			"state_id": &"accepted",
+		},
+		"ready": {
+			"request_id": &"ready",
+			"title": "Ready Request",
+			"objective": "Return now.",
+			"state_id": &"ready_to_turn_in",
+		},
+	}
+	var journal_sorted: Array = WorldObjectiveTrackerScript.sort_journal_snapshots(journal_candidates)
+	_record(
+		report,
+		"request journal ordering prioritizes ready then active then complete",
+		journal_sorted.size() == 3
+		and str(journal_sorted[0].get("request_id", "")) == "ready"
+		and str(journal_sorted[1].get("request_id", "")) == "active"
+		and str(journal_sorted[2].get("request_id", "")) == "done",
+		"When several requests exist, the journal should surface actionable entries before history."
+	)
+	_record(
+		report,
+		"journal view normalizes supported request states",
+		WorldRequestJournalScript.normalize_snapshots(journal_sorted).size() == 3,
+		"The presentation view must consume resolved snapshots without inventing request state."
+	)
+	_record(
+		report,
+		"journal view exposes stable status labels",
+		WorldRequestJournalScript.state_label(&"accepted") == "ACTIVE"
+		and WorldRequestJournalScript.state_label(&"ready_to_turn_in") == "READY"
+		and WorldRequestJournalScript.state_label(&"completed") == "COMPLETE",
+		"Request status language must remain consistent between the compact tracker and full journal."
+	)
+	var completed_choices: Array = HarborRequestBoardScript.build_completed_choices()
+	_record(
+		report,
+		"completed request remains journal-accessible",
+		completed_choices.size() == 2
+		and completed_choices[0].get("choice_id", &"") == &"journal"
+		and completed_choices[1].get("choice_id", &"") == &"leave",
+		"Turning in a request must not remove the player's ability to review that completed history."
+	)
+	var journal_scene_node = WorldRequestJournalScene.instantiate()
+	_record(
+		report,
+		"request journal scene exposes read-only open close API",
+		journal_scene_node != null
+		and journal_scene_node.has_method("open_with_requests")
+		and journal_scene_node.has_method("close_journal")
+		and journal_scene_node.has_method("is_open"),
+		"Request sources need one reusable journal view instead of bespoke quest-log panels."
+	)
+	if journal_scene_node != null:
+		journal_scene_node.free()
+	var journal_tracker_node = WorldObjectiveTrackerScene.instantiate()
+	_record(
+		report,
+		"objective tracker exposes journal snapshot and open APIs",
+		journal_tracker_node != null
+		and journal_tracker_node.has_method("get_journal_snapshots")
+		and journal_tracker_node.has_method("open_journal")
+		and journal_tracker_node.has_method("has_journal_entries"),
+		"The active objective tracker must double as a read model for the journal without owning quest state."
+	)
+	if journal_tracker_node != null:
+		journal_tracker_node.free()
+
+
+	# Second Request Source v1: prove the request stack against a non-duel
+	# objective owned by the gathering inventory and surfaced through the Crafter.
+	var material_two: Dictionary = MaterialCountRequestObjectiveScript.progress_snapshot_for_count(2, 3)
+	_record(
+		report,
+		"material request progress stays incomplete below target",
+		int(material_two.get("current", -1)) == 2
+		and int(material_two.get("required", -1)) == 3
+		and not bool(material_two.get("complete", true))
+		and str(material_two.get("progress_text", "")) == "2/3",
+		"Inventory-backed requests need deterministic progress before completion."
+	)
+	var material_three: Dictionary = MaterialCountRequestObjectiveScript.progress_snapshot_for_count(3, 3)
+	_record(
+		report,
+		"material request completes exactly at target",
+		bool(material_three.get("complete", false))
+		and int(material_three.get("remaining", -1)) == 0
+		and str(material_three.get("progress_text", "")) == "3/3",
+		"Gathering objectives must become turn-in-ready as soon as the required count is owned."
+	)
+	_record(
+		report,
+		"material request progress clamps negative counts",
+		int(MaterialCountRequestObjectiveScript.progress_snapshot_for_count(-5, 3).get("current", -1)) == 0,
+		"Malformed/legacy inventory counts must never create negative objective progress."
+	)
+	_record(
+		report,
+		"generic request acceptance key is stable",
+		WorldRequestProgressStoreScript.acceptance_key(&"beach_demo_crafter_sea_glass_01")
+		== "world_request/accepted/beach_demo_crafter_sea_glass_01",
+		"Future request sources need deterministic acceptance persistence without inventing new save files."
+	)
+	_record(
+		report,
+		"crafter request main labels reflect request state",
+		BeachCrafterRequestSourceScript.main_choice_text_for_state(&"available") == "Sea Glass Survey"
+		and BeachCrafterRequestSourceScript.main_choice_text_for_state(&"accepted") == "Review Sea Glass Survey"
+		and BeachCrafterRequestSourceScript.main_choice_text_for_state(&"ready_to_turn_in") == "Turn In Sea Glass Survey"
+		and BeachCrafterRequestSourceScript.main_choice_text_for_state(&"completed") == "Sea Glass Survey Complete",
+		"The same NPC service menu must remain truthful as the request advances."
+	)
+	_record(
+		report,
+		"locked crafter request stays out of service choices",
+		BeachCrafterRequestSourceScript.main_choice_text_for_state(&"locked").is_empty(),
+		"A reward-backed request must not advertise itself before its unlock condition is valid."
+	)
+	var crafter_available_choices: Array = BeachCrafterRequestSourceScript.build_available_choices()
+	_record(
+		report,
+		"crafter available request choices accept or defer",
+		crafter_available_choices.size() == 2
+		and crafter_available_choices[0].get("choice_id", &"") == &"accept"
+		and crafter_available_choices[1].get("choice_id", &"") == &"later",
+		"The second request source must use the same explicit acceptance pattern as the Harbor Board."
+	)
+	var crafter_active_choices: Array = BeachCrafterRequestSourceScript.build_accepted_choices()
+	_record(
+		report,
+		"crafter active request choices review or back",
+		crafter_active_choices.size() == 2
+		and crafter_active_choices[0].get("choice_id", &"") == &"review"
+		and crafter_active_choices[1].get("choice_id", &"") == &"back",
+		"Active material requests need a reusable progress-review path."
+	)
+	var crafter_ready_choices: Array = BeachCrafterRequestSourceScript.build_ready_choices()
+	_record(
+		report,
+		"crafter ready request choices claim or defer",
+		crafter_ready_choices.size() == 2
+		and crafter_ready_choices[0].get("choice_id", &"") == &"turn_in"
+		and crafter_ready_choices[1].get("choice_id", &"") == &"not_yet",
+		"Turn-in remains explicit even when the objective is already satisfied."
+	)
+	var crafter_request_scene = BeachCrafterScene.instantiate()
+	_record(
+		report,
+		"beach crafter scene contains modular request source",
+		crafter_request_scene != null and crafter_request_scene.get_node_or_null("RequestSource") != null,
+		"The second request must be composed as a reusable child instead of bloating the core crafter controller."
+	)
+	_record(
+		report,
+		"beach crafter scene contains request marker",
+		crafter_request_scene != null and crafter_request_scene.get_node_or_null("RequestMarker") != null,
+		"Every live request source should feed the shared world-marker presentation."
+	)
+	var crafter_reward_adapter: Node = null
+	var crafter_material_objective: Node = null
+	if crafter_request_scene != null:
+		crafter_reward_adapter = crafter_request_scene.get_node_or_null("RequestSource/QuestRewardAdapter")
+		crafter_material_objective = crafter_request_scene.get_node_or_null("RequestSource/MaterialObjective")
+	_record(
+		report,
+		"crafter survey uses canonical Town Requests card source",
+		crafter_reward_adapter != null
+		and StringName(str(crafter_reward_adapter.get("source_id"))) == &"town_requests",
+		"A gathering request should extend the authored card-acquisition map instead of inventing a new reward source."
+	)
+	_record(
+		report,
+		"crafter survey has unique one-shot reward event",
+		crafter_reward_adapter != null
+		and StringName(str(crafter_reward_adapter.get("quest_event_id"))) == &"beach_demo_crafter_sea_glass_01",
+		"The second request reward needs independent durable claim identity."
+	)
+	_record(
+		report,
+		"crafter survey objective is three Sea Glass",
+		crafter_material_objective != null
+		and StringName(str(crafter_material_objective.get("material_id"))) == &"sea_glass"
+		and int(crafter_material_objective.get("required_count")) == 3,
+		"The scalability proof must use a real beach-gathering domain id rather than a synthetic QA item."
+	)
+	var multi_source_candidates := {
+		"beach_demo_harbor_errand_01": {
+			"request_id": &"beach_demo_harbor_errand_01",
+			"title": "Harbor Request",
+			"objective": "Defeat Beach Trader.",
+			"state_id": &"accepted",
+		},
+		"beach_demo_crafter_sea_glass_01": {
+			"request_id": &"beach_demo_crafter_sea_glass_01",
+			"title": "Sea Glass Survey",
+			"objective": "Return to the Crafter.",
+			"state_id": &"ready_to_turn_in",
+		},
+	}
+	var multi_primary: Dictionary = WorldObjectiveTrackerScript.select_primary(multi_source_candidates)
+	_record(
+		report,
+		"tracker prioritizes ready request across different objective backends",
+		str(multi_primary.get("request_id", "")) == "beach_demo_crafter_sea_glass_01",
+		"Ready-to-turn-in priority must work across duel and gathering request sources, not only within one system."
+	)
+	if crafter_request_scene != null:
+		crafter_request_scene.free()
 
 	bridge.free()
 

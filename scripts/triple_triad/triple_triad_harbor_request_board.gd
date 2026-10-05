@@ -16,6 +16,7 @@ signal request_reward_unavailable(result: Dictionary)
 @export var request_title: String = "Harbor Request"
 @export var active_objective_text: String = "Defeat Beach Trader in a card duel."
 @export var ready_objective_text: String = "Return to the Harbor Request Board."
+@export var completed_objective_text: String = "Request completed."
 
 @export_category("World Prompts")
 @export var locked_prompt: String = "Cards : Locked"
@@ -115,13 +116,16 @@ func _start_state_dialogue(state: int) -> bool:
 				{"request_id": String(request_id)}
 			)
 		WorldRequestStateScript.State.COMPLETED:
-			return _start_lines(
+			return dialogue_bridge.start_choice_prompt(
 				&"harbor_request_completed",
 				&"request_completed",
-				[
-					"Request complete. The reward has already been collected.",
-					"A small mark beside the notice shows that the harbor considers the errand settled.",
-				]
+				&"harbor_request_board",
+				speaker_name,
+				"Request complete. The harbor considers the errand settled.",
+				build_completed_choices(),
+				null,
+				true,
+				{"request_id": String(request_id)}
 			)
 		WorldRequestStateScript.State.SOURCE_COMPLETE:
 			return _start_lines(
@@ -140,6 +144,11 @@ func _on_dialogue_choice_made(
 	choice_id: StringName,
 	_choice_metadata: Dictionary
 ) -> void:
+	if choice_id == &"journal":
+		call_deferred("_open_request_journal")
+		_refresh_state()
+		return
+
 	match action_id:
 		&"request_available":
 			if choice_id == &"accept":
@@ -425,7 +434,8 @@ func _sync_request_presentation(state: int) -> void:
 				request_id,
 				request_title,
 				active_objective_text,
-				state_id
+				state_id,
+				{"source": "harbor_request_board"}
 			)
 		return
 
@@ -437,7 +447,21 @@ func _sync_request_presentation(state: int) -> void:
 				request_id,
 				request_title,
 				ready_objective_text,
-				state_id
+				state_id,
+				{"source": "harbor_request_board"}
+			)
+		return
+
+	if state == WorldRequestStateScript.State.COMPLETED:
+		var tracker := _ensure_objective_tracker()
+		if tracker != null:
+			tracker.call(
+				"register_request",
+				request_id,
+				request_title,
+				completed_objective_text,
+				state_id,
+				{"source": "harbor_request_board"}
 			)
 		return
 
@@ -469,6 +493,13 @@ func _ensure_objective_tracker() -> Node:
 	tree.current_scene.add_child(tracker)
 	_objective_tracker = tracker
 	return _objective_tracker
+
+
+func _open_request_journal() -> void:
+	var tracker := _ensure_objective_tracker()
+	if tracker == null or not tracker.has_method("open_journal"):
+		return
+	tracker.call("open_journal")
 
 
 func _find_game() -> Node:
@@ -520,6 +551,7 @@ func _is_confirm(event: InputEvent) -> bool:
 static func build_available_choices() -> Array:
 	return [
 		{"choice_id": &"accept", "text": "Accept Request"},
+		{"choice_id": &"journal", "text": "View Requests"},
 		{"choice_id": &"later", "text": "Maybe Later"},
 	]
 
@@ -527,6 +559,7 @@ static func build_available_choices() -> Array:
 static func build_accepted_choices() -> Array:
 	return [
 		{"choice_id": &"review", "text": "Review Request"},
+		{"choice_id": &"journal", "text": "View Requests"},
 		{"choice_id": &"leave", "text": "Leave"},
 	]
 
@@ -534,5 +567,13 @@ static func build_accepted_choices() -> Array:
 static func build_ready_choices() -> Array:
 	return [
 		{"choice_id": &"turn_in", "text": "Turn In"},
+		{"choice_id": &"journal", "text": "View Requests"},
 		{"choice_id": &"not_yet", "text": "Not Yet"},
+	]
+
+
+static func build_completed_choices() -> Array:
+	return [
+		{"choice_id": &"journal", "text": "View Requests"},
+		{"choice_id": &"leave", "text": "Leave"},
 	]

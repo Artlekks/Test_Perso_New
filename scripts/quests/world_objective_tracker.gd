@@ -1,11 +1,14 @@
 extends CanvasLayer
 class_name WorldObjectiveTracker
 
-## Lightweight exploration objective tracker.
+## Lightweight exploration objective tracker + request read model.
 ##
 ## Request/gameplay owners register already-resolved presentation snapshots.
-## This view chooses one primary request deterministically and renders it. It
-## never accepts quests, completes objectives, grants rewards, or writes saves.
+## This node chooses one primary active request for the exploration HUD and
+## keeps accepted/ready/completed snapshots available to the read-only journal.
+## It never accepts quests, completes objectives, grants rewards, or writes saves.
+
+const WorldRequestJournalScene = preload("res://actors/WorldRequestJournal.tscn")
 
 @export var game_mode_node_name: StringName = &"GameMode"
 
@@ -17,6 +20,7 @@ class_name WorldObjectiveTracker
 var _requests: Dictionary = {}
 var _primary_snapshot: Dictionary = {}
 var _game_mode: Node = null
+var _journal_view: Node = null
 
 
 func _ready() -> void:
@@ -37,10 +41,11 @@ func register_request(
 	request_id: StringName,
 	title: String,
 	objective: String,
-	state_id: StringName
+	state_id: StringName,
+	metadata: Dictionary = {}
 ) -> void:
 	var key := String(request_id)
-	if not should_track_state(state_id):
+	if not should_keep_journal_state(state_id):
 		_requests.erase(key)
 		_refresh_primary()
 		return
@@ -51,6 +56,8 @@ func register_request(
 		"objective": objective,
 		"state_id": state_id,
 		"priority": priority_for_state(state_id),
+		"journal_priority": journal_priority_for_state(state_id),
+		"metadata": metadata.duplicate(true),
 	}
 	_refresh_primary()
 
@@ -70,6 +77,41 @@ func get_primary_snapshot() -> Dictionary:
 
 func get_registered_request_count() -> int:
 	return _requests.size()
+
+
+func get_journal_snapshots() -> Array:
+	return sort_journal_snapshots(_requests)
+
+
+func has_journal_entries() -> bool:
+	return not get_journal_snapshots().is_empty()
+
+
+func open_journal() -> bool:
+	if not is_inside_tree():
+		return false
+	var tree := get_tree()
+	if tree == null or tree.current_scene == null:
+		return false
+
+	if not is_instance_valid(_journal_view):
+		var existing := tree.current_scene.find_child(
+			"WorldRequestJournal",
+			true,
+			false
+		)
+		if existing != null and existing.has_method("open_with_requests"):
+			_journal_view = existing
+		else:
+			_journal_view = WorldRequestJournalScene.instantiate()
+			if _journal_view == null:
+				return false
+			tree.current_scene.add_child(_journal_view)
+
+	if not _journal_view.has_method("open_with_requests"):
+		return false
+	_journal_view.call("open_with_requests", get_journal_snapshots())
+	return true
 
 
 func _refresh_primary() -> void:
@@ -136,6 +178,14 @@ static func should_track_state(state_id: StringName) -> bool:
 	return state_id == &"accepted" or state_id == &"ready_to_turn_in"
 
 
+static func should_keep_journal_state(state_id: StringName) -> bool:
+	return (
+		state_id == &"accepted"
+		or state_id == &"ready_to_turn_in"
+		or state_id == &"completed"
+	)
+
+
 static func priority_for_state(state_id: StringName) -> int:
 	match state_id:
 		&"ready_to_turn_in":
@@ -145,11 +195,24 @@ static func priority_for_state(state_id: StringName) -> int:
 	return -1
 
 
+static func journal_priority_for_state(state_id: StringName) -> int:
+	match state_id:
+		&"ready_to_turn_in":
+			return 30
+		&"accepted":
+			return 20
+		&"completed":
+			return 10
+	return -1
+
+
 static func status_text(state_id: StringName) -> String:
 	if state_id == &"ready_to_turn_in":
 		return "READY"
 	if state_id == &"accepted":
 		return "ACTIVE"
+	if state_id == &"completed":
+		return "COMPLETE"
 	return ""
 
 
@@ -179,3 +242,48 @@ static func select_primary(requests: Dictionary) -> Dictionary:
 			best_priority = priority
 			best_id = key
 	return best
+
+
+static func sort_journal_snapshots(requests: Dictionary) -> Array:
+	var snapshots: Array = []
+	for raw_key in requests.keys():
+		var raw_snapshot = requests.get(raw_key, {})
+		if not (raw_snapshot is Dictionary):
+			continue
+		var snapshot: Dictionary = (raw_snapshot as Dictionary).duplicate(true)
+		var state_id := StringName(str(snapshot.get("state_id", "")))
+		if not should_keep_journal_state(state_id):
+			continue
+		snapshot["journal_priority"] = int(
+			snapshot.get(
+				"journal_priority",
+				journal_priority_for_state(state_id)
+			)
+		)
+		snapshots.append(snapshot)
+
+	# Small deterministic insertion sort avoids coupling the resource to a
+	# callable/lambda comparator and keeps ordering easy to audit in QA.
+	for index in range(1, snapshots.size()):
+		var candidate: Dictionary = snapshots[index]
+		var cursor := index - 1
+		while cursor >= 0:
+			var current: Dictionary = snapshots[cursor]
+			if not _journal_snapshot_before(candidate, current):
+				break
+			snapshots[cursor + 1] = current
+			cursor -= 1
+		snapshots[cursor + 1] = candidate
+	return snapshots
+
+
+static func _journal_snapshot_before(a: Dictionary, b: Dictionary) -> bool:
+	var a_priority := int(a.get("journal_priority", -1))
+	var b_priority := int(b.get("journal_priority", -1))
+	if a_priority != b_priority:
+		return a_priority > b_priority
+	var a_title := str(a.get("title", ""))
+	var b_title := str(b.get("title", ""))
+	if a_title != b_title:
+		return a_title.naturalnocasecmp_to(b_title) < 0
+	return str(a.get("request_id", "")) < str(b.get("request_id", ""))

@@ -1,0 +1,182 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/world_request_journal.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_main"]
+bg_color = Color(0.709804, 0.678431, 0.54902, 0.98)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inner"]
+bg_color = Color(0.745098, 0.717647, 0.603922, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.388235, 0.290196, 0.352941, 0.78)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_selected"]
+bg_color = Color(0.388235, 0.290196, 0.352941, 0.24)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_list"]
+
+[node name="WorldRequestJournal" type="CanvasLayer"]
+process_mode = 3
+layer = 110
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.34)
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 70.0
+offset_right = 582.0
+offset_bottom = 410.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_main")
+
+[node name="Header" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 12.0
+offset_right = 250.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "REQUESTS"
+
+[node name="RequestList" type="ItemList" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 48.0
+offset_right = 238.0
+offset_bottom = 292.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_colors/font_selected_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+theme_override_constants/line_separation = 5
+theme_override_styles/panel = SubResource("StyleBoxFlat_inner")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_list")
+theme_override_styles/selected = SubResource("StyleBoxFlat_selected")
+theme_override_styles/selected_focus = SubResource("StyleBoxFlat_selected")
+mouse_filter = 2
+
+[node name="Details" type="Panel" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 252.0
+offset_top = 48.0
+offset_right = 506.0
+offset_bottom = 292.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_inner")
+
+[node name="TitleLabel" type="Label" parent="Root/Panel/Details"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 238.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "Harbor Request"
+
+[node name="StatusLabel" type="Label" parent="Root/Panel/Details"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 42.0
+offset_right = 238.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "ACTIVE"
+
+[node name="ObjectiveHeading" type="Label" parent="Root/Panel/Details"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 78.0
+offset_right = 238.0
+offset_bottom = 96.0
+theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "Objective"
+
+[node name="ObjectiveLabel" type="Label" parent="Root/Panel/Details"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 103.0
+offset_right = 238.0
+offset_bottom = 220.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 10
+text = "Defeat Beach Trader in a card duel."
+autowrap_mode = 2
+
+[node name="EmptyLabel" type="Label" parent="Root/Panel"]
+visible = false
+layout_mode = 0
+offset_left = 18.0
+offset_top = 82.0
+offset_right = 506.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 11
+text = "No accepted or completed requests are recorded yet."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ControlsLabel" type="Label" parent="Root/Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 304.0
+offset_right = 506.0
+offset_bottom = 326.0
+theme_override_colors/font_color = Color(0.239216, 0.160784, 0.2, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "W/S : Select     I : Back"
+horizontal_alignment = 2

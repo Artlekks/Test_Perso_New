@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="DialogueDefinition" format=3 uid="uid://dx4jbch64qykn"]
 
 [ext_resource type="Script" uid="uid://dey3qaly58kwq" path="res://scripts/dialogue/dialogue_definition.gd" id="1_definition"]
+[ext_resource type="Script" uid="uid://cd0jcqh327dkv" path="res://scripts/dialogue/dialogue_choice_definition.gd" id="2_j5i8n"]
 [ext_resource type="Script" uid="uid://c6gj1aprhyftw" path="res://scripts/dialogue/dialogue_line_definition.gd" id="2_line"]
 [ext_resource type="Texture2D" path="res://data/dialogue/portraits/master_gyosil.tres" id="3_portrait"]
 
