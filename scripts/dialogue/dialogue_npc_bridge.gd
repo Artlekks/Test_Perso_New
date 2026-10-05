@@ -93,6 +93,24 @@ func start_choice_prompt(
 	)
 
 
+func start_lines(
+	dialogue_id: StringName,
+	action_id: StringName,
+	lines: Array,
+	allow_cancel: bool = true,
+	metadata: Dictionary = {}
+) -> bool:
+	if lines.is_empty():
+		return false
+	return _start_inline_interaction(
+		dialogue_id,
+		action_id,
+		lines,
+		allow_cancel,
+		metadata
+	)
+
+
 func cancel_pending() -> void:
 	_pending_dialogue_id = &""
 	_pending_action_id = &""

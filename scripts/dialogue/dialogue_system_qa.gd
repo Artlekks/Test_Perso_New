@@ -9,6 +9,10 @@ const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_rou
 const BeachMerchantNPCScript = preload("res://scripts/beach_merchant_npc.gd")
 const BeachMerchantScene = preload("res://actors/BeachMerchantNPC.tscn")
 const FishingEconomyMenuScene = preload("res://actors/FishingEconomyMenu.tscn")
+const FishingCardMakerNPCScript = preload("res://scripts/economy/fishing_card_maker_npc.gd")
+const FishingCardMakerScene = preload("res://actors/FishingCardMakerNPC.tscn")
+const BeachCrafterNPCScript = preload("res://scripts/beach_crafter_npc.gd")
+const BeachCrafterScene = preload("res://actors/BeachCrafterNPC.tscn")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
 const COMPLETE_DIALOGUE_ID: StringName = &"master_gyosil_complete"
 
@@ -439,6 +443,121 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 		and bridge_choice_result.get("choice_id", &"") == &"leave"
 		and not bridge.has_pending_interaction(),
 		"Choice completion must not leave an NPC bridge stuck waiting forever."
+	)
+
+	var bridge_lines_started := bridge.start_lines(
+		&"qa_bridge_lines",
+		&"qa_explanation",
+		[
+			{"speaker_name": "QA NPC", "text": "First explanation line."},
+			{"speaker_name": "QA NPC", "text": "Second explanation line."},
+		],
+		true,
+		{"source": "qa_multiline_bridge"}
+	)
+	_record(
+		report,
+		"NPC bridge starts reusable multi-line dialogue",
+		bridge_lines_started
+		and service.is_active()
+		and bridge.has_pending_interaction(),
+		"NPC explanations should use the same bridge instead of reaching into DialogueService directly."
+	)
+	service.advance()
+	var bridge_lines_second := service.get_snapshot()
+	_record(
+		report,
+		"NPC bridge multi-line dialogue advances normally",
+		service.is_active()
+		and int(bridge_lines_second.get("line_index", -1)) == 1
+		and str(bridge_lines_second.get("text", "")) == "Second explanation line.",
+		"Multi-line help must preserve normal K-to-advance behavior."
+	)
+	service.advance()
+	_record(
+		report,
+		"NPC bridge multi-line completion releases pending state",
+		not service.is_active() and not bridge.has_pending_interaction(),
+		"Finishing an explanation must release pause/input ownership before an NPC reopens its choices."
+	)
+
+
+	# Card Maker + Crafter now use the same single-key service-choice pattern.
+	var card_maker_scene_node = FishingCardMakerScene.instantiate()
+	_record(
+		report,
+		"card maker world prompt is unified under K talk",
+		card_maker_scene_node != null
+		and str(card_maker_scene_node.get("interaction_prompt")) == "K : Talk",
+		"The Card Maker should enter conversation first instead of advertising a direct menu action."
+	)
+	if card_maker_scene_node != null:
+		card_maker_scene_node.free()
+
+	var card_maker_choices: Array = FishingCardMakerNPCScript.build_service_choices(true)
+	_record(
+		report,
+		"card maker choices are make about leave",
+		card_maker_choices.size() == 3
+		and card_maker_choices[0].get("choice_id", &"") == &"make_card"
+		and card_maker_choices[1].get("choice_id", &"") == &"about"
+		and card_maker_choices[2].get("choice_id", &"") == &"leave",
+		"The Card Maker must expose stable service ids without moving card-making rules into dialogue."
+	)
+	var unavailable_card_maker_choices: Array = FishingCardMakerNPCScript.build_service_choices(false)
+	_record(
+		report,
+		"card maker disables only unavailable workshop action",
+		not bool(unavailable_card_maker_choices[0].get("enabled", true))
+		and bool(unavailable_card_maker_choices[1].get("enabled", false))
+		and bool(unavailable_card_maker_choices[2].get("enabled", false)),
+		"Help and Leave must remain usable even if the card-making service is temporarily unavailable."
+	)
+
+	var crafter_scene_node = BeachCrafterScene.instantiate()
+	_record(
+		report,
+		"crafter world prompt is unified under K talk",
+		crafter_scene_node != null
+		and str(crafter_scene_node.get("interaction_prompt")) == "K : Talk",
+		"The Crafter should use conversation as the single player-facing interaction entry point."
+	)
+	if crafter_scene_node != null:
+		crafter_scene_node.free()
+
+	var crafter_choices: Array = BeachCrafterNPCScript.build_service_choices(true, false, false)
+	_record(
+		report,
+		"crafter base choices are craft about leave",
+		crafter_choices.size() == 3
+		and crafter_choices[0].get("choice_id", &"") == &"craft"
+		and crafter_choices[1].get("choice_id", &"") == &"about"
+		and crafter_choices[2].get("choice_id", &"") == &"leave",
+		"The normal beach crafter should route crafting and explanation through stable choices."
+	)
+	var crafter_has_cards_choice := false
+	for raw_choice in crafter_choices:
+		if raw_choice is Dictionary and raw_choice.get("choice_id", &"") == &"cards":
+			crafter_has_cards_choice = true
+			break
+	_record(
+		report,
+		"crafter does not invent a card role",
+		not crafter_has_cards_choice,
+		"An NPC should only expose Play Cards when it is genuinely configured as an opponent."
+	)
+	var mixed_crafter_choices: Array = BeachCrafterNPCScript.build_service_choices(true, true, false)
+	var mixed_crafter_cards: Dictionary = {}
+	for raw_choice in mixed_crafter_choices:
+		if raw_choice is Dictionary and raw_choice.get("choice_id", &"") == &"cards":
+			mixed_crafter_cards = raw_choice
+			break
+	_record(
+		report,
+		"crafter choice model supports optional card role",
+		not mixed_crafter_cards.is_empty()
+		and not bool(mixed_crafter_cards.get("enabled", true)),
+		"A future mixed-role crafter can route Cards through dialogue without restoring a separate C hotkey."
 	)
 
 

@@ -3,11 +3,22 @@ class_name FishingCardMakerNPC
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/card_maker.tres")
-const DIALOGUE_ID: StringName = &"card_maker_greeting"
-const ACTION_OPEN_CARD_MAKER: StringName = &"open_card_maker"
+const DIALOGUE_ID: StringName = &"card_maker_services"
+const EXPLANATION_DIALOGUE_ID: StringName = &"card_maker_about"
+const ACTION_CHOOSE_SERVICE: StringName = &"choose_card_maker_service"
+const ACTION_EXPLAIN: StringName = &"explain_card_maker"
+const CHOICE_MAKE: StringName = &"make_card"
+const CHOICE_ABOUT: StringName = &"about"
+const CHOICE_LEAVE: StringName = &"leave"
 
-@export var interaction_prompt: String = "K : Card Maker"
-@export var greeting_text: String = "Bring me a worthy fish, and I can turn its story into a card."
+@export var interaction_prompt: String = "K : Talk"
+@export var greeting_text: String = "What can I make for you?"
+@export var make_choice_text: String = "Make a Card"
+@export var about_choice_text: String = "How It Works"
+@export var leave_choice_text: String = "Leave"
+@export_multiline var explanation_line_1: String = "Bring me a fish tied to a card recipe. The workshop shows the exact specimen and zenny cost."
+@export_multiline var explanation_line_2: String = "The first print consumes that specimen. Once you own the card, duplicate prints no longer need another fish."
+@export_multiline var explanation_line_3: String = "Nothing is spent until the card-making transaction succeeds."
 
 @export_category("Beach Patrol")
 @export var patrol_enabled: bool = true
@@ -251,29 +262,109 @@ func _random_smoke_interval() -> float:
 
 
 func _start_interaction() -> bool:
-	if not _bind_card_maker():
-		return false
+	var make_available := _bind_card_maker()
 	_stop_patrol()
 	_play_idle(_facing)
+	var choices := build_service_choices(
+		make_available,
+		make_choice_text,
+		about_choice_text,
+		leave_choice_text
+	)
 	if (
 		_dialogue_bridge != null
-		and _dialogue_bridge.start_single_line(
+		and _dialogue_bridge.start_choice_prompt(
 			DIALOGUE_ID,
-			ACTION_OPEN_CARD_MAKER,
+			ACTION_CHOOSE_SERVICE,
 			&"card_maker",
 			"Card Maker",
 			greeting_text,
-			PORTRAIT
+			choices,
+			PORTRAIT,
+			true,
+			{"source": "card_maker"}
 		)
 	):
 		return true
-	return _open_card_maker_menu()
+
+	# Dialogue presentation must never block the existing workshop.
+	if make_available:
+		return _open_card_maker_menu()
+	_play_idle(_facing)
+	return false
+
+
+static func build_service_choices(
+	make_available: bool = true,
+	make_text: String = "Make a Card",
+	about_text: String = "How It Works",
+	leave_text: String = "Leave"
+) -> Array:
+	return [
+		{
+			"choice_id": CHOICE_MAKE,
+			"text": make_text,
+			"enabled": make_available,
+			"metadata": {"route": "card_maker"},
+		},
+		{
+			"choice_id": CHOICE_ABOUT,
+			"text": about_text,
+			"enabled": true,
+			"metadata": {"route": "explanation"},
+		},
+		{
+			"choice_id": CHOICE_LEAVE,
+			"text": leave_text,
+			"enabled": true,
+			"metadata": {"route": "leave"},
+		},
+	]
 
 
 func _open_card_maker_menu() -> bool:
 	if not _bind_card_maker():
+		_play_idle(_facing)
 		return false
-	return card_maker_menu.open_menu()
+	var opened := card_maker_menu.open_menu()
+	if not opened:
+		_play_idle(_facing)
+	return opened
+
+
+func _start_explanation() -> void:
+	if _dialogue_bridge == null:
+		_play_idle(_facing)
+		return
+	var lines: Array = [
+		{
+			"speaker_id": &"card_maker",
+			"speaker_name": "Card Maker",
+			"portrait": PORTRAIT,
+			"text": explanation_line_1,
+		},
+		{
+			"speaker_id": &"card_maker",
+			"speaker_name": "Card Maker",
+			"portrait": PORTRAIT,
+			"text": explanation_line_2,
+		},
+		{
+			"speaker_id": &"card_maker",
+			"speaker_name": "Card Maker",
+			"portrait": PORTRAIT,
+			"text": explanation_line_3,
+		},
+	]
+	if _dialogue_bridge.start_lines(
+		EXPLANATION_DIALOGUE_ID,
+		ACTION_EXPLAIN,
+		lines,
+		true,
+		{"source": "card_maker_help"}
+	):
+		return
+	_play_idle(_facing)
 
 
 func _create_dialogue_bridge() -> void:
@@ -282,16 +373,45 @@ func _create_dialogue_bridge() -> void:
 	_dialogue_bridge = DialogueNPCBridgeScript.new() as DialogueNPCBridge
 	_dialogue_bridge.name = "DialogueNPCBridge"
 	add_child(_dialogue_bridge)
+	_dialogue_bridge.choice_made.connect(_on_dialogue_choice_made)
 	_dialogue_bridge.interaction_finished.connect(_on_dialogue_interaction_finished)
 
 
-func _on_dialogue_interaction_finished(action_id: StringName, reason: StringName) -> void:
-	if action_id != ACTION_OPEN_CARD_MAKER:
+func _on_dialogue_choice_made(
+	action_id: StringName,
+	choice_id: StringName,
+	_choice_metadata: Dictionary
+) -> void:
+	if action_id != ACTION_CHOOSE_SERVICE:
 		return
-	if reason != &"completed":
-		_play_idle(_facing)
+	match choice_id:
+		CHOICE_MAKE:
+			call_deferred("_open_card_maker_menu")
+		CHOICE_ABOUT:
+			call_deferred("_start_explanation")
+		CHOICE_LEAVE:
+			_pause_remaining = _random_idle_pause()
+			_play_idle(_facing)
+		_:
+			_play_idle(_facing)
+
+
+func _on_dialogue_interaction_finished(
+	action_id: StringName,
+	reason: StringName
+) -> void:
+	if action_id == ACTION_CHOOSE_SERVICE:
+		if reason != &"choice_selected":
+			_pause_remaining = _random_idle_pause()
+			_play_idle(_facing)
 		return
-	call_deferred("_open_card_maker_menu")
+	if action_id != ACTION_EXPLAIN:
+		return
+	if reason == &"completed":
+		call_deferred("_start_interaction")
+		return
+	_pause_remaining = _random_idle_pause()
+	_play_idle(_facing)
 
 
 func _bind_card_maker() -> bool:
