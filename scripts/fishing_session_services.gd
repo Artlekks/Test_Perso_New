@@ -48,6 +48,7 @@ const DEBUG_QA_PATHS: Dictionary = {
 	"BeachCraftingQAScript": "res://scripts/beach_crafting_qa.gd",
 	"BeachCraftingFeelQAHUDScene": "res://actors/BeachCraftingFeelQAHUD.tscn",
 	"FishingSystemStabilityQAScript": "res://scripts/qa/fishing_system_stability_qa.gd",
+	"DialogueSystemQAScript": "res://scripts/dialogue/dialogue_system_qa.gd",
 	"FishingFreshSaveRehearsalQAScript": "res://scripts/qa/fishing_fresh_save_rehearsal_qa.gd",
 }
 
@@ -83,6 +84,12 @@ const PlayableCampaignPresentationControllerScript = preload(
 )
 const FishingCardMakerServiceScript = preload(
 	"res://scripts/economy/fishing_card_maker_service.gd"
+)
+const DialogueServiceScript = preload(
+	"res://scripts/dialogue/dialogue_service.gd"
+)
+const DialogueControllerScript = preload(
+	"res://scripts/dialogue/dialogue_controller.gd"
 )
 const FishingSaveIntegrityServiceScript = preload(
 	"res://scripts/fishing_save_integrity_service.gd"
@@ -217,6 +224,9 @@ const FishingEconomyConfigResource: FishingEconomyConfig = preload(
 const FishingCardMakerCatalogResource: FishingCardMakerCatalog = preload(
 	"res://data/economy/card_maker/card_maker_catalog_v1.tres"
 )
+const DialogueCatalogResource: DialogueCatalog = preload(
+	"res://data/dialogue/all_dialogues.tres"
+)
 const TripleTriadCardCatalogResource: Resource = preload(
 	"res://data/triple_triad/card_catalog.tres"
 )
@@ -260,14 +270,18 @@ var GameItemBackendQAScript = null
 var BeachCraftingQAScript = null
 var BeachCraftingFeelQAHUDScene = null
 var FishingSystemStabilityQAScript = null
+var DialogueSystemQAScript = null
 var FishingFreshSaveRehearsalQAScript = null
 
 var _debug_qa_load_attempted: bool = false
 var _debug_qa_scripts_ready: bool = false
 var _debug_qa_load_failures: PackedStringArray = PackedStringArray()
 var system_stability_qa_report: Dictionary = {}
+var dialogue_qa_report: Dictionary = {}
 var fresh_save_rehearsal_qa_report: Dictionary = {}
 
+var dialogue_service: DialogueService = null
+var dialogue_controller: DialogueController = null
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
 var catch_repository: FishingCatchRepository = null
@@ -363,6 +377,34 @@ func initialize() -> void:
 
 	if OS.is_debug_build():
 		_load_debug_qa_dependencies()
+
+	dialogue_service = DialogueServiceScript.new() as DialogueService
+	dialogue_service.name = "DialogueService"
+	add_child(dialogue_service)
+	dialogue_service.configure(DialogueCatalogResource)
+
+	dialogue_controller = DialogueControllerScript.new() as DialogueController
+	dialogue_controller.name = "DialogueController"
+	dialogue_controller.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(dialogue_controller)
+	dialogue_controller.configure(dialogue_service)
+
+	if _debug_qa_scripts_ready:
+		dialogue_qa_report = DialogueSystemQAScript.run(
+			DialogueCatalogResource
+		)
+		print(
+			"Dialogue System QA: %d/%d tests passed."
+			% [
+				int(dialogue_qa_report.get("passed_count", 0)),
+				int(dialogue_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in dialogue_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Dialogue System QA: %s" % str(failure))
 
 	progress = FishingProgressScript.new()
 	progress.name = "FishingProgress"
@@ -1393,6 +1435,7 @@ func _load_debug_qa_dependencies() -> bool:
 	BeachCraftingQAScript = loaded.get("BeachCraftingQAScript", null)
 	BeachCraftingFeelQAHUDScene = loaded.get("BeachCraftingFeelQAHUDScene", null)
 	FishingSystemStabilityQAScript = loaded.get("FishingSystemStabilityQAScript", null)
+	DialogueSystemQAScript = loaded.get("DialogueSystemQAScript", null)
 	FishingFreshSaveRehearsalQAScript = loaded.get("FishingFreshSaveRehearsalQAScript", null)
 
 	_debug_qa_scripts_ready = _debug_qa_load_failures.is_empty()
@@ -1418,6 +1461,69 @@ func get_debug_qa_dependency_health() -> Dictionary:
 
 func get_fishing_system_stability_qa_report() -> Dictionary:
 	return system_stability_qa_report.duplicate(true)
+
+
+func get_dialogue_system_qa_report() -> Dictionary:
+	return dialogue_qa_report.duplicate(true)
+
+
+func run_dialogue_system_qa() -> Dictionary:
+	if OS.is_debug_build() and not _debug_qa_scripts_ready:
+		_load_debug_qa_dependencies()
+	if not _debug_qa_scripts_ready:
+		return {
+			"available": false,
+			"reason": "debug_qa_unavailable",
+			"failures": _debug_qa_load_failures.duplicate(),
+		}
+	dialogue_qa_report = DialogueSystemQAScript.run(DialogueCatalogResource)
+	return dialogue_qa_report.duplicate(true)
+
+
+func get_dialogue_service() -> DialogueService:
+	return dialogue_service
+
+
+func get_dialogue_controller() -> DialogueController:
+	return dialogue_controller
+
+
+func is_dialogue_active() -> bool:
+	return dialogue_service != null and dialogue_service.is_active()
+
+
+func get_dialogue_snapshot() -> Dictionary:
+	if dialogue_service == null:
+		return {}
+	return dialogue_service.get_snapshot()
+
+
+func start_dialogue(
+	dialogue_id: StringName,
+	context: Dictionary = {},
+	metadata: Dictionary = {}
+) -> Dictionary:
+	if dialogue_service == null:
+		return {"success": false, "reason": "dialogue_service_unavailable"}
+	return dialogue_service.start_dialogue(dialogue_id, context, metadata)
+
+
+func start_inline_dialogue(
+	dialogue_id: StringName,
+	lines: Array,
+	allow_cancel: bool = true,
+	context: Dictionary = {},
+	metadata: Dictionary = {}
+) -> Dictionary:
+	if dialogue_service == null:
+		return {"success": false, "reason": "dialogue_service_unavailable"}
+	return dialogue_service.start_inline_dialogue(
+		dialogue_id,
+		lines,
+		allow_cancel,
+		context,
+		metadata
+	)
 
 
 func get_fishing_fresh_save_rehearsal_qa_report() -> Dictionary:
@@ -2102,6 +2208,8 @@ func save_all_fishing_state() -> Dictionary:
 func is_ready() -> bool:
 	return (
 		_initialized
+		and dialogue_service != null
+		and dialogue_controller != null
 		and progress != null
 		and inventory != null
 		and catch_repository != null

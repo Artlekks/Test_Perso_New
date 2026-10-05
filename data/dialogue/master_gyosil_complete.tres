@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DialogueDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_definition.gd" id="1_definition"]
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_line_definition.gd" id="2_line"]
+[ext_resource type="AtlasTexture" path="res://data/dialogue/portraits/master_gyosil.tres" id="3_portrait"]
+
+[sub_resource type="Resource" id="DialogueLine_1"]
+script = ExtResource("2_line")
+speaker_id = &"master_gyosil"
+speaker_name = "Master Gyosil"
+portrait = ExtResource("3_portrait")
+text = "You've claimed every point reward I can teach you toward."
+
+[sub_resource type="Resource" id="DialogueLine_2"]
+script = ExtResource("2_line")
+speaker_id = &"master_gyosil"
+speaker_name = "Master Gyosil"
+portrait = ExtResource("3_portrait")
+text = "Keep fishing for the water, not the number."
+
+[resource]
+script = ExtResource("1_definition")
+dialogue_id = &"master_gyosil_complete"
+allow_cancel = true
+lines = Array[ExtResource("2_line")]([SubResource("DialogueLine_1"), SubResource("DialogueLine_2")])

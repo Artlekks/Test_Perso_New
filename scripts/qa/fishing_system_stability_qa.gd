@@ -94,6 +94,12 @@ static func run(session: Node) -> Dictionary:
 		failures.append("campaign director/presentation stack is incomplete")
 
 	tests += 1
+	if _all_present(session, ["dialogue_service", "dialogue_controller"]):
+		passed += 1
+	else:
+		failures.append("dialogue service/controller stack is incomplete")
+
+	tests += 1
 	if _report_has_no_errors(session.get("progression_integrity_report")):
 		passed += 1
 	else:
@@ -158,6 +164,12 @@ static func run(session: Node) -> Dictionary:
 		passed += 1
 	else:
 		failures.append("Master Gyosil QA did not report a clean pass")
+
+	tests += 1
+	if _qa_report_passed(session.get("dialogue_qa_report")):
+		passed += 1
+	else:
+		failures.append("dialogue QA did not report a clean pass")
 
 	tests += 1
 	if _qa_report_passed(session.get("master_drift_angler_qa_report")):

@@ -1,0 +1,107 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_view.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BOF_Font_Refined.fnt" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
+bg_color = Color(0.709804, 0.678431, 0.54902, 0.985)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_portrait"]
+bg_color = Color(0.643137, 0.611765, 0.494118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.388235, 0.290196, 0.352941, 1)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[node name="DialogueView" type="CanvasLayer"]
+process_mode = 3
+layer = 110
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DialoguePanel" type="Panel" parent="Root"]
+layout_mode = 0
+offset_left = 64.0
+offset_top = 356.0
+offset_right = 576.0
+offset_bottom = 442.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
+mouse_filter = 2
+
+[node name="PortraitFrame" type="Panel" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 72.0
+offset_bottom = 73.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_portrait")
+mouse_filter = 2
+
+[node name="Portrait" type="TextureRect" parent="Root/DialoguePanel/PortraitFrame"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 3.0
+offset_right = 57.0
+offset_bottom = 57.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpeakerLabel" type="Label" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 9.0
+offset_right = 332.0
+offset_bottom = 25.0
+theme_override_colors/font_color = Color(0.239216, 0.160784, 0.2, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "Speaker"
+
+[node name="BodyLabel" type="Label" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 29.0
+offset_right = 492.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 9
+text = "Dialogue text"
+autowrap_mode = 2
+
+[node name="HintLabel" type="Label" parent="Root/DialoguePanel"]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 65.0
+offset_right = 492.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 7
+text = "K : Next    I : Back"
+horizontal_alignment = 2

@@ -1,9 +1,11 @@
 extends Node3D
 class_name BeachCrafterNPC
 
-const PRIMARY_INTERACTION_GROUP: StringName = &"beach_trade_craft_interactable"
+const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
+const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/beach_crafter.tres")
+const DIALOGUE_ID: StringName = &"beach_crafter_greeting"
+const ACTION_OPEN_CRAFTING: StringName = &"open_crafting"
 
-@export_range(0.2, 1.2, 0.02) var max_interaction_distance: float = 0.62
 @export var idle_animation: StringName = &"Bag_Search"
 @export var talk_animation: StringName = &"Stand_Interest"
 @export var interaction_prompt: String = "K : Craft"
@@ -17,20 +19,20 @@ const PRIMARY_INTERACTION_GROUP: StringName = &"beach_trade_craft_interactable"
 @onready var crafting_menu: BeachCraftingMenu = $BeachCraftingMenu
 
 var _player_in_range: bool = false
-var _player_body: CharacterBody3D = null
 var _crafting_service: BeachCraftingService = null
 var _inventory: BeachGatheringInventory = null
 var _cached_card_game: Node = null
+var _dialogue_bridge: DialogueNPCBridge = null
 
 
 func _ready() -> void:
-	add_to_group(PRIMARY_INTERACTION_GROUP)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_play_idle()
 	prompt_label.visible = false
 	prompt_label.text = interaction_prompt
 	interaction_area.body_entered.connect(_on_body_entered)
 	interaction_area.body_exited.connect(_on_body_exited)
+	_create_dialogue_bridge()
 	call_deferred("_bind_crafting")
 
 
@@ -38,8 +40,6 @@ func _input(event: InputEvent) -> void:
 	if crafting_menu != null and crafting_menu.is_open():
 		return
 	if not _player_in_range:
-		return
-	if not _can_player_interact_now():
 		return
 	var tree := get_tree()
 	if tree == null or tree.paused:
@@ -60,7 +60,43 @@ func _start_interaction() -> void:
 	if not _bind_crafting():
 		return
 	_play_talk()
+	if (
+		_dialogue_bridge != null
+		and _dialogue_bridge.start_single_line(
+			DIALOGUE_ID,
+			ACTION_OPEN_CRAFTING,
+			&"beach_crafter",
+			"Crafter",
+			greeting_text,
+			PORTRAIT
+		)
+	):
+		return
+	_open_crafting_menu()
+
+
+func _open_crafting_menu() -> void:
+	if not _bind_crafting():
+		return
 	crafting_menu.open_menu()
+
+
+func _create_dialogue_bridge() -> void:
+	if _dialogue_bridge != null:
+		return
+	_dialogue_bridge = DialogueNPCBridgeScript.new() as DialogueNPCBridge
+	_dialogue_bridge.name = "DialogueNPCBridge"
+	add_child(_dialogue_bridge)
+	_dialogue_bridge.interaction_finished.connect(_on_dialogue_interaction_finished)
+
+
+func _on_dialogue_interaction_finished(action_id: StringName, reason: StringName) -> void:
+	if action_id != ACTION_OPEN_CRAFTING:
+		return
+	if reason != &"completed":
+		_play_idle()
+		return
+	call_deferred("_open_crafting_menu")
 
 
 func _bind_crafting() -> bool:
@@ -122,7 +158,6 @@ func _on_body_entered(body: Node) -> void:
 	if not _is_player_body(body):
 		return
 	_player_in_range = true
-	_player_body = body as CharacterBody3D
 	prompt_label.visible = false
 
 
@@ -130,59 +165,9 @@ func _on_body_exited(body: Node) -> void:
 	if not _is_player_body(body):
 		return
 	_player_in_range = false
-	if body == _player_body:
-		_player_body = null
 	prompt_label.visible = false
 	if crafting_menu == null or not crafting_menu.is_open():
 		_play_idle()
-
-
-func _can_player_interact_now() -> bool:
-	if not is_instance_valid(_player_body):
-		return false
-	if get_player_interaction_distance() > max_interaction_distance:
-		return false
-	return _is_nearest_primary_interactable()
-
-
-func get_player_interaction_distance() -> float:
-	if not is_instance_valid(_player_body):
-		return INF
-	var npc_flat: Vector2 = Vector2(global_position.x, global_position.z)
-	var player_flat: Vector2 = Vector2(
-		_player_body.global_position.x,
-		_player_body.global_position.z
-	)
-	return npc_flat.distance_to(player_flat)
-
-
-func _is_nearest_primary_interactable() -> bool:
-	var tree: SceneTree = get_tree()
-	if tree == null:
-		return true
-
-	var my_distance: float = get_player_interaction_distance()
-	for candidate: Node in tree.get_nodes_in_group(PRIMARY_INTERACTION_GROUP):
-		if candidate == self:
-			continue
-		if not candidate.has_method("get_player_interaction_distance"):
-			continue
-
-		var other_distance: float = float(
-			candidate.call("get_player_interaction_distance")
-		)
-		var other_limit: float = max_interaction_distance
-		var raw_limit: Variant = candidate.get("max_interaction_distance")
-		if raw_limit is float or raw_limit is int:
-			other_limit = float(raw_limit)
-
-		if (
-			other_distance <= other_limit
-			and other_distance + 0.01 < my_distance
-		):
-			return false
-
-	return true
 
 
 func _is_player_body(body: Node) -> bool:

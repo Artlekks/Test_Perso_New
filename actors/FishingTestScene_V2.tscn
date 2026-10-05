@@ -327,7 +327,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0.07, -0.1)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0.07, -0.1)
 
 [node name="FishingMasterGyosilNPC" parent="World" unique_id=1642803515 instance=ExtResource("98_gyosil_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.65, 0.07, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9062995, 0.07, -0.1)
 
 [node name="BeachCritter" parent="World" unique_id=232758415 instance=ExtResource("81_beach_critter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, -0.055645004, 0.12)
