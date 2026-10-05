@@ -96,6 +96,9 @@ const FishingMasterLineFighterQAScript = preload(
 const FishingMasterDeepwaterVeteranQAScript = preload(
 	"res://scripts/mastery/fishing_master_deepwater_veteran_qa.gd"
 )
+const FishingMasterSurfaceAnglerQAScript = preload(
+	"res://scripts/mastery/fishing_master_surface_angler_qa.gd"
+)
 const FishingFightCombatQAScript = preload(
 	"res://scripts/fishing_fight_combat_qa.gd"
 )
@@ -284,6 +287,7 @@ var master_depth_reader_qa_report: Dictionary = {}
 var master_structure_hunter_qa_report: Dictionary = {}
 var master_line_fighter_qa_report: Dictionary = {}
 var master_deepwater_veteran_qa_report: Dictionary = {}
+var master_surface_angler_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
 var presentation_qa_report: Dictionary = {}
 var bite_timing_qa_report: Dictionary = {}
@@ -785,6 +789,22 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Master Deepwater Veteran QA: %s" % str(failure))
+
+		master_surface_angler_qa_report = FishingMasterSurfaceAnglerQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Surface Angler QA: %d/%d tests passed."
+			% [
+				int(master_surface_angler_qa_report.get("passed_count", 0)),
+				int(master_surface_angler_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_surface_angler_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Surface Angler QA: %s" % str(failure))
 
 		fight_combat_qa_report = FishingFightCombatQAScript.run()
 		print(
@@ -1420,6 +1440,10 @@ func get_fishing_master_line_fighter_qa_report() -> Dictionary:
 
 func get_fishing_master_deepwater_veteran_qa_report() -> Dictionary:
 	return master_deepwater_veteran_qa_report.duplicate(true)
+
+
+func get_fishing_master_surface_angler_qa_report() -> Dictionary:
+	return master_surface_angler_qa_report.duplicate(true)
 
 
 func get_fishing_fight_qa_report() -> Dictionary:
