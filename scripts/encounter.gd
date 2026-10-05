@@ -1301,6 +1301,62 @@ func get_landing_technique_snapshot() -> Dictionary:
 	)
 
 
+
+func apply_landing_training_success(
+	fish_lateral_snapshot: float = 0.0
+) -> Dictionary:
+	## Public bridge used only by the Landing Guide lesson.
+	##
+	## The lesson does not grant Landing Technique before the player succeeds.
+	## After the mastery is saved, this marks the CURRENT spent fish as already
+	## secured so Encounter does not immediately open the normal Landing Technique
+	## prompt a second time for the same demonstrated approach.
+	if (
+		not lifecycle.is_hooked()
+		or active_fish == null
+		or fight_state != FightState.SPENT
+		or final_surge_checked
+		or final_surge_active
+	):
+		return {
+			"success": false,
+			"reason": "landing_training_window_closed",
+		}
+
+	landing_technique_active = false
+	landing_technique_checked = true
+	landing_technique_secured = true
+	landing_technique_match_time = LandingTechniquePolicy.RESPONSE_HOLD_SECONDS
+	landing_technique_fish_lateral = clampf(
+		fish_lateral_snapshot,
+		-1.0,
+		1.0
+	)
+	landing_technique_expected_response = (
+		LandingTechniquePolicy.get_expected_response(
+			landing_technique_fish_lateral
+		)
+	)
+	landing_technique_window_left = 0.0
+	landing_technique_last_result = LandingTechniquePolicy.RESULT_SUCCESS
+	landing_technique_mastery_known = _has_mastery_capability(
+		&"landing_technique"
+	)
+	landing_technique_success_count += 1
+	if caster != null and caster.has_method("get_active_bait_distance_meters"):
+		landing_technique_distance_meters = maxf(
+			float(caster.get_active_bait_distance_meters()),
+			0.0
+		)
+
+	_set_landing_completion_blocked(false)
+	var snapshot := get_landing_technique_snapshot()
+	landing_technique_state_changed.emit(snapshot.duplicate(true))
+	return {
+		"success": true,
+		"snapshot": snapshot,
+	}
+
 func _update_final_surge_state() -> void:
 	if (
 		not final_surge_enabled
