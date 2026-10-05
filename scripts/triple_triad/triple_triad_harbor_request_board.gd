@@ -2,6 +2,7 @@ extends Node3D
 class_name TripleTriadHarborRequestBoard
 
 const WorldRequestStateScript = preload("res://scripts/quests/world_request_state.gd")
+const WorldRequestRegistryScript = preload("res://scripts/quests/world_request_registry.gd")
 const WorldObjectiveTrackerScene = preload("res://actors/WorldObjectiveTracker.tscn")
 
 signal request_accepted(request_id: StringName)
@@ -39,12 +40,36 @@ var _objective_tracker: Node = null
 
 
 func _ready() -> void:
+	_apply_catalog_definition()
 	prompt_label.visible = false
 	interaction_area.body_entered.connect(_on_body_entered)
 	interaction_area.body_exited.connect(_on_body_exited)
 	if dialogue_bridge != null:
 		dialogue_bridge.choice_made.connect(_on_dialogue_choice_made)
 	call_deferred("_refresh_state")
+
+
+func _apply_catalog_definition() -> void:
+	var definition := WorldRequestRegistryScript.definition_snapshot(request_id)
+	if definition.is_empty():
+		return
+	request_title = str(definition.get("title", request_title))
+	active_objective_text = str(definition.get("active_objective", active_objective_text))
+	ready_objective_text = str(definition.get("ready_objective", ready_objective_text))
+	completed_objective_text = str(definition.get("completed_objective", completed_objective_text))
+	var raw_objective_metadata = definition.get("objective_metadata", {})
+	if raw_objective_metadata is Dictionary:
+		var objective_metadata: Dictionary = raw_objective_metadata as Dictionary
+		var opponent_id := StringName(str(objective_metadata.get("opponent_id", required_opponent_id)))
+		if opponent_id != &"":
+			required_opponent_id = opponent_id
+	if reward_adapter != null:
+		var reward_source_id := StringName(str(definition.get("reward_source_id", &"")))
+		var reward_event_id := StringName(str(definition.get("reward_event_id", &"")))
+		if reward_source_id != &"":
+			reward_adapter.set("source_id", reward_source_id)
+		if reward_event_id != &"":
+			reward_adapter.set("quest_event_id", reward_event_id)
 
 
 func _exit_tree() -> void:
@@ -429,44 +454,48 @@ func _sync_request_presentation(state: int) -> void:
 	if state == WorldRequestStateScript.State.ACCEPTED:
 		var tracker := _ensure_objective_tracker()
 		if tracker != null:
-			tracker.call(
-				"register_request",
-				request_id,
-				request_title,
-				active_objective_text,
-				state_id,
-				{"source": "harbor_request_board"}
-			)
+			_register_tracker_snapshot(tracker, state_id, active_objective_text)
 		return
 
 	if state == WorldRequestStateScript.State.READY_TO_TURN_IN:
 		var tracker := _ensure_objective_tracker()
 		if tracker != null:
-			tracker.call(
-				"register_request",
-				request_id,
-				request_title,
-				ready_objective_text,
-				state_id,
-				{"source": "harbor_request_board"}
-			)
+			_register_tracker_snapshot(tracker, state_id, ready_objective_text)
 		return
 
 	if state == WorldRequestStateScript.State.COMPLETED:
 		var tracker := _ensure_objective_tracker()
 		if tracker != null:
-			tracker.call(
-				"register_request",
-				request_id,
-				request_title,
-				completed_objective_text,
-				state_id,
-				{"source": "harbor_request_board"}
-			)
+			_register_tracker_snapshot(tracker, state_id, completed_objective_text)
 		return
 
 	if is_instance_valid(_objective_tracker) and _objective_tracker.has_method("remove_request"):
 		_objective_tracker.call("remove_request", request_id)
+
+
+func _register_tracker_snapshot(
+	tracker: Node,
+	state_id: StringName,
+	objective_text: String
+) -> void:
+	var metadata := {"source": "harbor_request_board"}
+	if tracker.has_method("register_request_state"):
+		tracker.call(
+			"register_request_state",
+			request_id,
+			objective_text,
+			state_id,
+			metadata
+		)
+		return
+	tracker.call(
+		"register_request",
+		request_id,
+		request_title,
+		objective_text,
+		state_id,
+		metadata
+	)
 
 
 func _ensure_objective_tracker() -> Node:

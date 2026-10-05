@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="WorldRequestDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/world_request_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+request_id = &"beach_demo_crafter_sea_glass_01"
+title = "Sea Glass Survey"
+giver_id = &"beach_crafter"
+giver_name = "Crafter"
+objective_type = &"material_count"
+active_objective = "Find Sea Glass along the beach. %d/%d found."
+ready_objective = "Return to the Beach Crafter with your Sea Glass survey."
+completed_objective = "Sea Glass survey completed."
+objective_metadata = {
+"material_id": "sea_glass",
+"material_name": "Sea Glass",
+"required_count": 3
+}
+reward_source_id = &"town_requests"
+reward_event_id = &"beach_demo_crafter_sea_glass_01"
+sort_order = 20
+tags = Array[StringName]([&"gathering", &"crafting", &"beach", &"request"])

@@ -31,6 +31,8 @@ const WorldObjectiveTrackerScript = preload("res://scripts/quests/world_objectiv
 const WorldObjectiveTrackerScene = preload("res://actors/WorldObjectiveTracker.tscn")
 const WorldRequestJournalScript = preload("res://scripts/quests/world_request_journal.gd")
 const WorldRequestJournalScene = preload("res://actors/WorldRequestJournal.tscn")
+const WorldRequestRegistryScript = preload("res://scripts/quests/world_request_registry.gd")
+const WorldRequestCatalogResource = preload("res://data/requests/request_catalog.tres")
 
 
 static func run(catalog: DialogueCatalog) -> Dictionary:
@@ -1066,6 +1068,165 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	if journal_tracker_node != null:
 		journal_tracker_node.free()
 
+
+	# Request Registry / Catalog v1: canonical request identity and descriptive
+	# metadata live in data resources while objective/reward owners remain runtime
+	# systems. UI consumers discover metadata by request_id only.
+	var request_catalog_audit: Dictionary = WorldRequestRegistryScript.audit()
+	_record(
+		report,
+		"request catalog audit is clean",
+		request_catalog_audit.get("errors", PackedStringArray()).is_empty(),
+		"Canonical request definitions must be valid and uniquely identified before more request content is added."
+	)
+	_record(
+		report,
+		"request catalog contains current two request sources",
+		int(request_catalog_audit.get("definition_count", 0)) == 2,
+		"The registry milestone must canonicalize both Harbor Request and Sea Glass Survey before a third request is authored."
+	)
+	_record(
+		report,
+		"default request catalog resource exposes lookup API",
+		WorldRequestCatalogResource != null
+		and WorldRequestCatalogResource.has_method("get_definition")
+		and WorldRequestCatalogResource.has_method("audit"),
+		"Request discovery should be data-driven through one catalog instead of hard-wired UI knowledge."
+	)
+	var harbor_definition: Dictionary = WorldRequestRegistryScript.definition_snapshot(
+		&"beach_demo_harbor_errand_01"
+	)
+	_record(
+		report,
+		"harbor request has canonical registry definition",
+		str(harbor_definition.get("title", "")) == "Harbor Request"
+		and StringName(str(harbor_definition.get("giver_id", ""))) == &"harbor_request_board"
+		and StringName(str(harbor_definition.get("objective_type", ""))) == &"duel_result",
+		"Harbor presentation identity should come from the request catalog, not scattered source constants."
+	)
+	_record(
+		report,
+		"harbor registry preserves reward contract",
+		StringName(str(harbor_definition.get("reward_source_id", ""))) == &"harbor_errands"
+		and StringName(str(harbor_definition.get("reward_event_id", ""))) == &"beach_demo_harbor_errand_01",
+		"Catalog consolidation must not drift the existing one-shot card reward contract."
+	)
+	var harbor_objective_metadata: Dictionary = {}
+	var raw_harbor_objective_metadata = harbor_definition.get("objective_metadata", {})
+	if raw_harbor_objective_metadata is Dictionary:
+		harbor_objective_metadata = raw_harbor_objective_metadata as Dictionary
+	_record(
+		report,
+		"harbor registry preserves Beach Trader objective identity",
+		StringName(str(harbor_objective_metadata.get("opponent_id", ""))) == &"beach_trader",
+		"The catalog may describe an objective but must keep the existing encounter owner/id intact."
+	)
+	var glass_definition: Dictionary = WorldRequestRegistryScript.definition_snapshot(
+		&"beach_demo_crafter_sea_glass_01"
+	)
+	_record(
+		report,
+		"sea glass survey has canonical registry definition",
+		str(glass_definition.get("title", "")) == "Sea Glass Survey"
+		and StringName(str(glass_definition.get("giver_id", ""))) == &"beach_crafter"
+		and StringName(str(glass_definition.get("objective_type", ""))) == &"material_count",
+		"The gathering request should be discoverable through the same catalog as the duel request."
+	)
+	_record(
+		report,
+		"sea glass registry preserves Town Requests reward contract",
+		StringName(str(glass_definition.get("reward_source_id", ""))) == &"town_requests"
+		and StringName(str(glass_definition.get("reward_event_id", ""))) == &"beach_demo_crafter_sea_glass_01",
+		"Registry metadata must preserve the live Town Requests acquisition source and durable event id."
+	)
+	var glass_objective_metadata: Dictionary = {}
+	var raw_glass_objective_metadata = glass_definition.get("objective_metadata", {})
+	if raw_glass_objective_metadata is Dictionary:
+		glass_objective_metadata = raw_glass_objective_metadata as Dictionary
+	_record(
+		report,
+		"sea glass registry preserves material objective contract",
+		StringName(str(glass_objective_metadata.get("material_id", ""))) == &"sea_glass"
+		and int(glass_objective_metadata.get("required_count", 0)) == 3,
+		"Catalog consolidation must not change the gathering inventory id or target count."
+	)
+	var harbor_ready_presentation: Dictionary = WorldRequestRegistryScript.presentation_for(
+		&"beach_demo_harbor_errand_01",
+		&"ready_to_turn_in"
+	)
+	_record(
+		report,
+		"registry resolves default state objective copy",
+		str(harbor_ready_presentation.get("objective", "")) == "Return to the Harbor Request Board.",
+		"Tracker/journal presentation should resolve canonical copy from request_id + state without knowing the Harbor implementation."
+	)
+	var dynamic_glass_presentation: Dictionary = WorldRequestRegistryScript.presentation_for(
+		&"beach_demo_crafter_sea_glass_01",
+		&"accepted",
+		"Find Sea Glass along the beach. 2/3 found."
+	)
+	_record(
+		report,
+		"runtime objective progress overrides catalog template",
+		str(dynamic_glass_presentation.get("objective", "")) == "Find Sea Glass along the beach. 2/3 found.",
+		"The registry owns descriptive defaults but must never overwrite live objective truth/progress from its backend adapter."
+	)
+	_record(
+		report,
+		"request catalog owns deterministic authored ordering",
+		int(harbor_definition.get("sort_order", 1000)) < int(glass_definition.get("sort_order", 1000)),
+		"Journal/tracker tie-breaking should be authored as data rather than depending on request-id spelling."
+	)
+	_record(
+		report,
+		"unknown request id degrades safely",
+		WorldRequestRegistryScript.definition_snapshot(&"qa_missing_request").is_empty()
+		and str(WorldRequestRegistryScript.presentation_for(&"qa_missing_request", &"accepted", "QA objective").get("objective", "")) == "QA objective",
+		"Future/modded request sources must fail soft in presentation instead of crashing the tracker when catalog data is absent."
+	)
+	var registry_tracker_scene = WorldObjectiveTrackerScene.instantiate()
+	_record(
+		report,
+		"objective tracker exposes registry-first request API",
+		registry_tracker_scene != null
+		and registry_tracker_scene.has_method("register_request_state"),
+		"New request sources should register state/objective only and let the tracker resolve canonical metadata."
+	)
+	if registry_tracker_scene != null:
+		registry_tracker_scene.free()
+	var registry_tracker = WorldObjectiveTrackerScript.new()
+	registry_tracker.register_request(
+		&"beach_demo_harbor_errand_01",
+		"Incorrect Caller Title",
+		"",
+		&"accepted",
+		{}
+	)
+	var canonical_tracker_snapshot: Dictionary = registry_tracker.get_primary_snapshot()
+	_record(
+		report,
+		"tracker canonicalizes known request metadata",
+		str(canonical_tracker_snapshot.get("title", "")) == "Harbor Request"
+		and str(canonical_tracker_snapshot.get("objective", "")) == "Defeat Beach Trader in a card duel.",
+		"Known requests should resolve title/objective metadata from the catalog even when a caller supplies stale presentation copy."
+	)
+	registry_tracker.remove_request(&"beach_demo_harbor_errand_01")
+	registry_tracker.register_request(
+		&"qa_custom_request",
+		"Custom Request",
+		"Custom Objective",
+		&"accepted",
+		{}
+	)
+	var fallback_tracker_snapshot: Dictionary = registry_tracker.get_primary_snapshot()
+	_record(
+		report,
+		"legacy tracker API preserves unknown request fallback",
+		str(fallback_tracker_snapshot.get("title", "")) == "Custom Request"
+		and str(fallback_tracker_snapshot.get("objective", "")) == "Custom Objective",
+		"Catalog adoption must not break existing/modded request sources that have not been registered yet."
+	)
+	registry_tracker.free()
 
 	# Second Request Source v1: prove the request stack against a non-duel
 	# objective owned by the gathering inventory and surfaced through the Crafter.

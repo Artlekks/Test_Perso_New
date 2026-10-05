@@ -9,6 +9,7 @@ class_name BeachCrafterRequestSource
 ## inventory, and the reward still goes through the canonical quest-card adapter.
 
 const WorldRequestStateScript = preload("res://scripts/quests/world_request_state.gd")
+const WorldRequestRegistryScript = preload("res://scripts/quests/world_request_registry.gd")
 const WorldRequestProgressStoreScript = preload("res://scripts/quests/world_request_progress_store.gd")
 const WorldObjectiveTrackerScene = preload("res://actors/WorldObjectiveTracker.tscn")
 
@@ -63,10 +64,38 @@ var _claim_in_progress: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_apply_catalog_definition()
 	material_objective.material_id = required_material_id
 	material_objective.required_count = required_material_count
 	material_objective.progress_changed.connect(_on_objective_progress_changed)
 	call_deferred("_bind_dependencies")
+
+
+func _apply_catalog_definition() -> void:
+	var definition := WorldRequestRegistryScript.definition_snapshot(request_id)
+	if definition.is_empty():
+		return
+	request_title = str(definition.get("title", request_title))
+	active_objective_template = str(definition.get("active_objective", active_objective_template))
+	ready_objective_text = str(definition.get("ready_objective", ready_objective_text))
+	completed_objective_text = str(definition.get("completed_objective", completed_objective_text))
+	var raw_objective_metadata = definition.get("objective_metadata", {})
+	if raw_objective_metadata is Dictionary:
+		var objective_metadata: Dictionary = raw_objective_metadata as Dictionary
+		var material_id := StringName(str(objective_metadata.get("material_id", required_material_id)))
+		if material_id != &"":
+			required_material_id = material_id
+		var material_name := str(objective_metadata.get("material_name", required_material_name))
+		if not material_name.strip_edges().is_empty():
+			required_material_name = material_name
+		required_material_count = maxi(1, int(objective_metadata.get("required_count", required_material_count)))
+	if reward_adapter != null:
+		var reward_source_id := StringName(str(definition.get("reward_source_id", &"")))
+		var reward_event_id := StringName(str(definition.get("reward_event_id", &"")))
+		if reward_source_id != &"":
+			reward_adapter.set("source_id", reward_source_id)
+		if reward_event_id != &"":
+			reward_adapter.set("quest_event_id", reward_event_id)
 
 
 func configure(dialogue_bridge: DialogueNPCBridge, portrait: Texture2D) -> void:
@@ -573,19 +602,29 @@ func _register_tracker(
 	var tracker := _ensure_objective_tracker()
 	if tracker == null:
 		return
+	var metadata := {
+		"source": "beach_crafter",
+		"objective_type": "material_count",
+		"material_id": String(required_material_id),
+		"required_count": required_material_count,
+		"current_count": int(progress.get("current", 0)),
+	}
+	if tracker.has_method("register_request_state"):
+		tracker.call(
+			"register_request_state",
+			request_id,
+			objective_text,
+			state_id,
+			metadata
+		)
+		return
 	tracker.call(
 		"register_request",
 		request_id,
 		request_title,
 		objective_text,
 		state_id,
-		{
-			"source": "beach_crafter",
-			"objective_type": "material_count",
-			"material_id": String(required_material_id),
-			"required_count": required_material_count,
-			"current_count": int(progress.get("current", 0)),
-		}
+		metadata
 	)
 
 

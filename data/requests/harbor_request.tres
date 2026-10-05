@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WorldRequestDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/world_request_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+request_id = &"beach_demo_harbor_errand_01"
+title = "Harbor Request"
+giver_id = &"harbor_request_board"
+giver_name = "Harbor Request Board"
+objective_type = &"duel_result"
+active_objective = "Defeat Beach Trader in a card duel."
+ready_objective = "Return to the Harbor Request Board."
+completed_objective = "Request completed."
+objective_metadata = {
+"opponent_id": "beach_trader"
+}
+reward_source_id = &"harbor_errands"
+reward_event_id = &"beach_demo_harbor_errand_01"
+sort_order = 10
+tags = Array[StringName]([&"cards", &"harbor", &"request"])

@@ -9,6 +9,7 @@ class_name WorldObjectiveTracker
 ## It never accepts quests, completes objectives, grants rewards, or writes saves.
 
 const WorldRequestJournalScene = preload("res://actors/WorldRequestJournal.tscn")
+const WorldRequestRegistryScript = preload("res://scripts/quests/world_request_registry.gd")
 
 @export var game_mode_node_name: StringName = &"GameMode"
 
@@ -50,16 +51,59 @@ func register_request(
 		_refresh_primary()
 		return
 
+	var canonical := WorldRequestRegistryScript.presentation_for(
+		request_id,
+		state_id,
+		objective
+	)
+	var canonical_metadata: Dictionary = {}
+	var raw_canonical_metadata = canonical.get("metadata", {})
+	if raw_canonical_metadata is Dictionary:
+		canonical_metadata = (raw_canonical_metadata as Dictionary).duplicate(true)
+	for raw_key in metadata.keys():
+		canonical_metadata[raw_key] = metadata[raw_key]
+
+	var resolved_title := str(canonical.get("title", title))
+	if resolved_title.strip_edges().is_empty():
+		resolved_title = title
+	var resolved_objective := str(canonical.get("objective", objective))
+	if resolved_objective.strip_edges().is_empty():
+		resolved_objective = objective
+
 	_requests[key] = {
 		"request_id": request_id,
-		"title": title,
-		"objective": objective,
+		"title": resolved_title,
+		"objective": resolved_objective,
 		"state_id": state_id,
 		"priority": priority_for_state(state_id),
 		"journal_priority": journal_priority_for_state(state_id),
-		"metadata": metadata.duplicate(true),
+		"sort_order": int(canonical.get("sort_order", 1000)),
+		"metadata": canonical_metadata,
 	}
 	_refresh_primary()
+
+
+func register_request_state(
+	request_id: StringName,
+	objective: String,
+	state_id: StringName,
+	metadata: Dictionary = {}
+) -> void:
+	var canonical := WorldRequestRegistryScript.presentation_for(
+		request_id,
+		state_id,
+		objective
+	)
+	var resolved_title := str(canonical.get("title", ""))
+	if resolved_title.strip_edges().is_empty():
+		resolved_title = "Request"
+	register_request(
+		request_id,
+		resolved_title,
+		str(canonical.get("objective", objective)),
+		state_id,
+		metadata
+	)
 
 
 func remove_request(request_id: StringName) -> void:
@@ -235,8 +279,15 @@ static func select_primary(requests: Dictionary) -> Dictionary:
 		var priority := int(
 			snapshot.get("priority", priority_for_state(state_id))
 		)
+		var sort_order := int(snapshot.get("sort_order", 1000))
+		var best_sort_order := int(best.get("sort_order", 1000)) if not best.is_empty() else 1000
 		if priority > best_priority or (
-			priority == best_priority and (best_id.is_empty() or key < best_id)
+			priority == best_priority
+			and (
+				best_id.is_empty()
+				or sort_order < best_sort_order
+				or (sort_order == best_sort_order and key < best_id)
+			)
 		):
 			best = snapshot.duplicate(true)
 			best_priority = priority
@@ -282,6 +333,10 @@ static func _journal_snapshot_before(a: Dictionary, b: Dictionary) -> bool:
 	var b_priority := int(b.get("journal_priority", -1))
 	if a_priority != b_priority:
 		return a_priority > b_priority
+	var a_sort_order := int(a.get("sort_order", 1000))
+	var b_sort_order := int(b.get("sort_order", 1000))
+	if a_sort_order != b_sort_order:
+		return a_sort_order < b_sort_order
 	var a_title := str(a.get("title", ""))
 	var b_title := str(b.get("title", ""))
 	if a_title != b_title:

@@ -335,6 +335,12 @@ roam_half_width = 0.48
 roam_half_depth = 0.26
 move_speed = 0.19
 
+[node name="BeachCritter2" parent="World" unique_id=1473005735 instance=ExtResource("81_beach_critter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6136692, -0.055645004, 0.344522)
+roam_half_width = 0.48
+roam_half_depth = 0.26
+move_speed = 0.19
+
 [node name="NPCAnimationAutoplay" type="Node" parent="." unique_id=907469643]
 script = ExtResource("93_npc_anim_autoplay")
 
