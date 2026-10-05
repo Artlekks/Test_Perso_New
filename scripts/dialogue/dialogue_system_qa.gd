@@ -18,6 +18,11 @@ const BeachCrafterNPCScript = preload("res://scripts/beach_crafter_npc.gd")
 const BeachCrafterScene = preload("res://actors/BeachCrafterNPC.tscn")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
 const COMPLETE_DIALOGUE_ID: StringName = &"master_gyosil_complete"
+const WorldRequestStateScript = preload("res://scripts/quests/world_request_state.gd")
+const HarborRequestBoardScript = preload(
+	"res://scripts/triple_triad/triple_triad_harbor_request_board.gd"
+)
+const HarborRequestBoardScene = preload("res://actors/HarborRequestBoard.tscn")
 
 
 static func run(catalog: DialogueCatalog) -> Dictionary:
@@ -742,6 +747,101 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 		"master profile preserves authored display names",
 		MasterDialogueProfilesScript.get_speaker_name(&"master_deepwater_veteran") == "Deep-Water Veteran",
 		"Profile display names must preserve intentional punctuation instead of relying only on id humanization."
+	)
+
+
+	# First real progression-driven dialogue flow: the existing Harbor Request
+	# Board keeps objective/reward ownership outside dialogue and adds only a
+	# durable acceptance state plus presentation routing.
+	_record(
+		report,
+		"world request state keeps locked requests locked",
+		WorldRequestStateScript.resolve(false, false, false, false, false)
+		== WorldRequestStateScript.State.LOCKED,
+		"A request may not become available before its owning progression gate unlocks."
+	)
+	_record(
+		report,
+		"world request state exposes available before acceptance",
+		WorldRequestStateScript.resolve(true, false, false, false, false)
+		== WorldRequestStateScript.State.AVAILABLE,
+		"Unlocked but unaccepted requests need a stable AVAILABLE presentation state."
+	)
+	_record(
+		report,
+		"world request state exposes accepted while objective is open",
+		WorldRequestStateScript.resolve(true, true, false, false, false)
+		== WorldRequestStateScript.State.ACCEPTED,
+		"Acceptance must not pretend that the underlying gameplay objective is complete."
+	)
+	_record(
+		report,
+		"world request state exposes ready after objective completion",
+		WorldRequestStateScript.resolve(true, true, true, false, false)
+		== WorldRequestStateScript.State.READY_TO_TURN_IN,
+		"The request dialogue layer must distinguish objective completion from reward delivery."
+	)
+	_record(
+		report,
+		"world request state exposes completed after reward claim",
+		WorldRequestStateScript.resolve(true, true, true, true, false)
+		== WorldRequestStateScript.State.COMPLETED,
+		"A claimed reward is the durable terminal request state."
+	)
+	_record(
+		report,
+		"claimed request wins over source completion",
+		WorldRequestStateScript.resolve(true, true, true, true, true)
+		== WorldRequestStateScript.State.COMPLETED,
+		"A player's completed request history must remain true even if the entire source later becomes complete."
+	)
+
+	var request_scene_node = HarborRequestBoardScene.instantiate()
+	_record(
+		report,
+		"harbor request board has shared dialogue bridge",
+		request_scene_node != null
+		and request_scene_node.get_node_or_null("DialogueBridge") != null,
+		"The existing world request must use the reusable dialogue layer instead of a bespoke request UI."
+	)
+	_record(
+		report,
+		"harbor request keeps stable reward event id",
+		request_scene_node != null
+		and str(request_scene_node.get("request_id")) == "beach_demo_harbor_errand_01"
+		and str(request_scene_node.get_node("QuestRewardAdapter").get("quest_event_id"))
+		== "beach_demo_harbor_errand_01",
+		"Dialogue integration must not fork the one-shot reward identity used by the crash-safe ledger."
+	)
+	if request_scene_node != null:
+		request_scene_node.free()
+
+	var request_available_choices: Array = HarborRequestBoardScript.build_available_choices()
+	_record(
+		report,
+		"available request choices are accept and later",
+		request_available_choices.size() == 2
+		and request_available_choices[0].get("choice_id", &"") == &"accept"
+		and request_available_choices[1].get("choice_id", &"") == &"later",
+		"AVAILABLE requests should ask for explicit acceptance rather than silently starting."
+	)
+	var request_accepted_choices: Array = HarborRequestBoardScript.build_accepted_choices()
+	_record(
+		report,
+		"accepted request choices are review and leave",
+		request_accepted_choices.size() == 2
+		and request_accepted_choices[0].get("choice_id", &"") == &"review"
+		and request_accepted_choices[1].get("choice_id", &"") == &"leave",
+		"ACCEPTED requests need a reusable way to restate the objective without owning objective logic."
+	)
+	var request_ready_choices: Array = HarborRequestBoardScript.build_ready_choices()
+	_record(
+		report,
+		"ready request choices are turn in and not yet",
+		request_ready_choices.size() == 2
+		and request_ready_choices[0].get("choice_id", &"") == &"turn_in"
+		and request_ready_choices[1].get("choice_id", &"") == &"not_yet",
+		"READY requests must require an explicit turn-in before the gameplay reward adapter runs."
 	)
 
 	bridge.free()

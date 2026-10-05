@@ -1,7 +1,8 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_harbor_request_board.gd" id="1_board"]
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_quest_reward_adapter.gd" id="2_adapter"]
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_npc_bridge.gd" id="3_dialogue_bridge"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
 albedo_color = Color(0.30, 0.19, 0.11, 1)
@@ -28,12 +29,15 @@ radius = 0.55
 
 [node name="HarborRequestBoard" type="Node3D"]
 script = ExtResource("1_board")
+request_id = &"beach_demo_harbor_errand_01"
 required_opponent_id = &"beach_trader"
+speaker_name = "Harbor Request Board"
 locked_prompt = "Cards : Locked"
-objective_prompt = "Request : Beat Beach Trader"
+available_prompt = "K : Read Request"
+accepted_prompt = "K : Request"
 turn_in_prompt = "K : Turn In Request"
-complete_prompt = "Request : Complete"
-source_complete_prompt = "Cards : Complete"
+complete_prompt = "K : Request Complete"
+source_complete_prompt = "K : Request Complete"
 
 [node name="Post" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.44, 0)
@@ -50,7 +54,7 @@ mesh = SubResource("BoxMesh_notice")
 [node name="PromptLabel3D" type="Label3D" parent="."]
 visible = false
 position = Vector3(0, 1.28, 0)
-text = "Request : Beat Beach Trader"
+text = "K : Read Request"
 billboard = 1
 font_size = 24
 outline_size = 8
@@ -70,3 +74,6 @@ script = ExtResource("2_adapter")
 source_id = &"harbor_errands"
 quest_event_id = &"beach_demo_harbor_errand_01"
 source_context = &"beach_harbor_request"
+
+[node name="DialogueBridge" type="Node" parent="."]
+script = ExtResource("3_dialogue_bridge")
