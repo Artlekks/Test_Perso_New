@@ -2,6 +2,7 @@ extends Node3D
 class_name TripleTriadHarborRequestBoard
 
 const WorldRequestStateScript = preload("res://scripts/quests/world_request_state.gd")
+const WorldObjectiveTrackerScene = preload("res://actors/WorldObjectiveTracker.tscn")
 
 signal request_accepted(request_id: StringName)
 signal request_reward_claimed(result: Dictionary)
@@ -10,6 +11,11 @@ signal request_reward_unavailable(result: Dictionary)
 @export var request_id: StringName = &"beach_demo_harbor_errand_01"
 @export var required_opponent_id: StringName = &"beach_trader"
 @export var speaker_name: String = "Harbor Request Board"
+
+@export_category("Request Presentation")
+@export var request_title: String = "Harbor Request"
+@export var active_objective_text: String = "Defeat Beach Trader in a card duel."
+@export var ready_objective_text: String = "Return to the Harbor Request Board."
 
 @export_category("World Prompts")
 @export var locked_prompt: String = "Cards : Locked"
@@ -23,10 +29,12 @@ signal request_reward_unavailable(result: Dictionary)
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var reward_adapter: Node = $QuestRewardAdapter
 @onready var dialogue_bridge: DialogueNPCBridge = $DialogueBridge as DialogueNPCBridge
+@onready var request_marker: Node = $RequestMarker
 
 var _player_in_range: bool = false
 var _game: Node = null
 var _claim_in_progress: bool = false
+var _objective_tracker: Node = null
 
 
 func _ready() -> void:
@@ -36,6 +44,11 @@ func _ready() -> void:
 	if dialogue_bridge != null:
 		dialogue_bridge.choice_made.connect(_on_dialogue_choice_made)
 	call_deferred("_refresh_state")
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(_objective_tracker) and _objective_tracker.has_method("remove_request"):
+		_objective_tracker.call("remove_request", request_id)
 
 
 func _input(event: InputEvent) -> void:
@@ -396,6 +409,67 @@ func _refresh_state() -> void:
 		WorldRequestStateScript.State.SOURCE_COMPLETE:
 			prompt_label.text = source_complete_prompt
 
+	_sync_request_presentation(state)
+
+
+func _sync_request_presentation(state: int) -> void:
+	var state_id: StringName = WorldRequestStateScript.state_id(state)
+	if request_marker != null and request_marker.has_method("set_request_state"):
+		request_marker.call("set_request_state", state_id)
+
+	if state == WorldRequestStateScript.State.ACCEPTED:
+		var tracker := _ensure_objective_tracker()
+		if tracker != null:
+			tracker.call(
+				"register_request",
+				request_id,
+				request_title,
+				active_objective_text,
+				state_id
+			)
+		return
+
+	if state == WorldRequestStateScript.State.READY_TO_TURN_IN:
+		var tracker := _ensure_objective_tracker()
+		if tracker != null:
+			tracker.call(
+				"register_request",
+				request_id,
+				request_title,
+				ready_objective_text,
+				state_id
+			)
+		return
+
+	if is_instance_valid(_objective_tracker) and _objective_tracker.has_method("remove_request"):
+		_objective_tracker.call("remove_request", request_id)
+
+
+func _ensure_objective_tracker() -> Node:
+	if is_instance_valid(_objective_tracker):
+		return _objective_tracker
+	if not is_inside_tree():
+		return null
+	var tree := get_tree()
+	if tree == null or tree.current_scene == null:
+		return null
+
+	var existing := tree.current_scene.find_child(
+		"WorldObjectiveTracker",
+		true,
+		false
+	)
+	if existing != null and existing.has_method("register_request"):
+		_objective_tracker = existing
+		return _objective_tracker
+
+	var tracker = WorldObjectiveTrackerScene.instantiate()
+	if tracker == null:
+		return null
+	tree.current_scene.add_child(tracker)
+	_objective_tracker = tracker
+	return _objective_tracker
+
 
 func _find_game() -> Node:
 	if is_instance_valid(_game):
@@ -414,8 +488,9 @@ func _find_game() -> Node:
 
 
 func _on_backend_state_changed(_reason: String) -> void:
-	if _player_in_range:
-		_refresh_state()
+	# Request markers/objective tracking must update even when the player is not
+	# standing beside the board. The interaction prompt still remains range-bound.
+	_refresh_state()
 
 
 func _is_player_body(body: Node) -> bool:

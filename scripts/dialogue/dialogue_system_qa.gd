@@ -23,6 +23,9 @@ const HarborRequestBoardScript = preload(
 	"res://scripts/triple_triad/triple_triad_harbor_request_board.gd"
 )
 const HarborRequestBoardScene = preload("res://actors/HarborRequestBoard.tscn")
+const WorldRequestMarkerScript = preload("res://scripts/quests/world_request_marker.gd")
+const WorldObjectiveTrackerScript = preload("res://scripts/quests/world_objective_tracker.gd")
+const WorldObjectiveTrackerScene = preload("res://actors/WorldObjectiveTracker.tscn")
 
 
 static func run(catalog: DialogueCatalog) -> Dictionary:
@@ -843,6 +846,114 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 		and request_ready_choices[1].get("choice_id", &"") == &"not_yet",
 		"READY requests must require an explicit turn-in before the gameplay reward adapter runs."
 	)
+
+	# Request presentation: world markers and a lightweight exploration tracker
+	# consume already-resolved request state without becoming quest owners.
+	var available_marker: Dictionary = WorldRequestMarkerScript.presentation_for_state(&"available")
+	_record(
+		report,
+		"available request uses exclamation marker",
+		bool(available_marker.get("visible", false))
+		and str(available_marker.get("marker", "")) == "!",
+		"Unaccepted visible requests need a clear world-space discovery marker."
+	)
+	var accepted_marker: Dictionary = WorldRequestMarkerScript.presentation_for_state(&"accepted")
+	_record(
+		report,
+		"accepted request keeps a quieter active marker",
+		bool(accepted_marker.get("visible", false))
+		and str(accepted_marker.get("marker", "")) == "*",
+		"Active requests should remain identifiable without looking identical to new requests."
+	)
+	var ready_marker: Dictionary = WorldRequestMarkerScript.presentation_for_state(&"ready_to_turn_in")
+	_record(
+		report,
+		"ready request uses question marker",
+		bool(ready_marker.get("visible", false))
+		and str(ready_marker.get("marker", "")) == "?",
+		"Turn-in-ready requests need a distinct return-to-source marker."
+	)
+	_record(
+		report,
+		"terminal request states hide world marker",
+		not bool(WorldRequestMarkerScript.presentation_for_state(&"completed").get("visible", true))
+		and not bool(WorldRequestMarkerScript.presentation_for_state(&"locked").get("visible", true)),
+		"Completed or unavailable requests must stop advertising themselves in the world."
+	)
+
+	_record(
+		report,
+		"objective tracker tracks accepted requests",
+		WorldObjectiveTrackerScript.should_track_state(&"accepted")
+		and WorldObjectiveTrackerScript.status_text(&"accepted") == "ACTIVE",
+		"An accepted request should produce a persistent exploration objective."
+	)
+	_record(
+		report,
+		"objective tracker tracks ready requests",
+		WorldObjectiveTrackerScript.should_track_state(&"ready_to_turn_in")
+		and WorldObjectiveTrackerScript.status_text(&"ready_to_turn_in") == "READY",
+		"A completed objective must remain visible until its explicit turn-in."
+	)
+	_record(
+		report,
+		"objective tracker ignores available and completed requests",
+		not WorldObjectiveTrackerScript.should_track_state(&"available")
+		and not WorldObjectiveTrackerScript.should_track_state(&"completed"),
+		"The tracker should show current obligations, not every discoverable or historical request."
+	)
+	_record(
+		report,
+		"ready objective outranks ordinary active objective",
+		WorldObjectiveTrackerScript.priority_for_state(&"ready_to_turn_in")
+		> WorldObjectiveTrackerScript.priority_for_state(&"accepted"),
+		"When several requests exist later, a turn-in-ready request should be surfaced first."
+	)
+
+	var tracker_candidates := {
+		"alpha": {
+			"request_id": &"alpha",
+			"title": "Alpha",
+			"objective": "Keep working.",
+			"state_id": &"accepted",
+		},
+		"beta": {
+			"request_id": &"beta",
+			"title": "Beta",
+			"objective": "Return now.",
+			"state_id": &"ready_to_turn_in",
+		},
+	}
+	var primary_request: Dictionary = WorldObjectiveTrackerScript.select_primary(tracker_candidates)
+	_record(
+		report,
+		"objective tracker deterministically selects ready request",
+		str(primary_request.get("request_id", "")) == "beta",
+		"The reusable tracker must have deterministic primary-objective selection before multiple requests are added."
+	)
+
+	var marker_board = HarborRequestBoardScene.instantiate()
+	_record(
+		report,
+		"harbor request board includes reusable request marker",
+		marker_board != null and marker_board.get_node_or_null("RequestMarker") != null,
+		"The first request slice must prove world-marker integration through the reusable marker scene."
+	)
+	if marker_board != null:
+		marker_board.free()
+
+	var tracker_scene_node = WorldObjectiveTrackerScene.instantiate()
+	_record(
+		report,
+		"objective tracker scene exposes reusable request API",
+		tracker_scene_node != null
+		and tracker_scene_node.has_method("register_request")
+		and tracker_scene_node.has_method("remove_request")
+		and tracker_scene_node.has_method("get_primary_snapshot"),
+		"Future request sources must be able to share one tracker instead of authoring bespoke HUDs."
+	)
+	if tracker_scene_node != null:
+		tracker_scene_node.free()
 
 	bridge.free()
 
