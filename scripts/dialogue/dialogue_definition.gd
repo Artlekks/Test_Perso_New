@@ -1,11 +1,11 @@
 extends Resource
 class_name DialogueDefinition
 
-## Authored linear dialogue sequence.
+## Authored dialogue sequence.
 ##
-## v1 deliberately keeps flow linear. The runtime API is isolated from the
-## data shape so choices/branches can be layered on later without teaching NPC
-## scripts how to render or advance dialogue themselves.
+## Line order remains linear, while individual lines may now expose terminal
+## choices. A selected choice returns a stable id to the gameplay caller;
+## dialogue still does not own gameplay actions or progression branching.
 
 @export var dialogue_id: StringName = &""
 @export var allow_cancel: bool = true

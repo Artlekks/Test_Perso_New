@@ -94,9 +94,22 @@ theme_override_font_sizes/font_size = 9
 text = "Dialogue text"
 autowrap_mode = 2
 
+[node name="ChoiceLabel" type="Label" parent="Root/DialoguePanel"]
+visible = false
+layout_mode = 0
+offset_left = 84.0
+offset_top = 52.0
+offset_right = 492.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 8
+text = "> Choice"
+vertical_alignment = 1
+
 [node name="HintLabel" type="Label" parent="Root/DialoguePanel"]
 layout_mode = 0
-offset_left = 250.0
+offset_left = 230.0
 offset_top = 65.0
 offset_right = 492.0
 offset_bottom = 80.0

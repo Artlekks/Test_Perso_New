@@ -3,11 +3,16 @@ class_name DialogueNPCBridge
 
 ## Small reusable adapter between an NPC interaction and DialogueService.
 ##
-## The bridge owns no gameplay/menu logic. It starts one dialogue and reports
-## how that dialogue ended. The NPC remains responsible for what happens after
-## completion (open a shop, open crafting, start a card maker menu, etc.).
+## The bridge owns no gameplay/menu logic. It starts dialogue and reports how
+## that dialogue ended. For choice prompts it also reports the selected stable
+## choice id. The NPC remains responsible for what happens after completion.
 
 signal interaction_finished(action_id: StringName, reason: StringName)
+signal choice_made(
+	action_id: StringName,
+	choice_id: StringName,
+	choice_metadata: Dictionary
+)
 
 var _service: Node = null
 var _pending_dialogue_id: StringName = &""
@@ -46,7 +51,65 @@ func start_single_line(
 	allow_cancel: bool = true,
 	metadata: Dictionary = {}
 ) -> bool:
-	if dialogue_id == &"" or text.strip_edges().is_empty():
+	return _start_inline_interaction(
+		dialogue_id,
+		action_id,
+		[{
+			"speaker_id": speaker_id,
+			"speaker_name": speaker_name,
+			"portrait": portrait,
+			"text": text,
+		}],
+		allow_cancel,
+		metadata
+	)
+
+
+func start_choice_prompt(
+	dialogue_id: StringName,
+	action_id: StringName,
+	speaker_id: StringName,
+	speaker_name: String,
+	text: String,
+	choices: Array,
+	portrait: Texture2D = null,
+	allow_cancel: bool = true,
+	metadata: Dictionary = {}
+) -> bool:
+	if choices.is_empty():
+		return false
+	return _start_inline_interaction(
+		dialogue_id,
+		action_id,
+		[{
+			"speaker_id": speaker_id,
+			"speaker_name": speaker_name,
+			"portrait": portrait,
+			"text": text,
+			"choices": choices,
+		}],
+		allow_cancel,
+		metadata
+	)
+
+
+func cancel_pending() -> void:
+	_pending_dialogue_id = &""
+	_pending_action_id = &""
+
+
+func has_pending_interaction() -> bool:
+	return _pending_dialogue_id != &""
+
+
+func _start_inline_interaction(
+	dialogue_id: StringName,
+	action_id: StringName,
+	lines: Array,
+	allow_cancel: bool,
+	metadata: Dictionary
+) -> bool:
+	if dialogue_id == &"" or lines.is_empty():
 		return false
 	if not bind_from_session():
 		return false
@@ -60,12 +123,7 @@ func start_single_line(
 	var result = _service.call(
 		"start_inline_dialogue",
 		dialogue_id,
-		[{
-			"speaker_id": speaker_id,
-			"speaker_name": speaker_name,
-			"portrait": portrait,
-			"text": text,
-		}],
+		lines,
 		allow_cancel,
 		{},
 		payload
@@ -78,17 +136,17 @@ func start_single_line(
 	return true
 
 
-func cancel_pending() -> void:
-	_pending_dialogue_id = &""
-	_pending_action_id = &""
-
-
 func _connect_service() -> void:
-	if _service == null or not _service.has_signal("dialogue_finished"):
+	if _service == null:
 		return
-	var callback := Callable(self, "_on_dialogue_finished")
-	if not _service.is_connected("dialogue_finished", callback):
-		_service.connect("dialogue_finished", callback)
+	if _service.has_signal("dialogue_finished"):
+		var finished_callback := Callable(self, "_on_dialogue_finished")
+		if not _service.is_connected("dialogue_finished", finished_callback):
+			_service.connect("dialogue_finished", finished_callback)
+	if _service.has_signal("choice_selected"):
+		var choice_callback := Callable(self, "_on_choice_selected")
+		if not _service.is_connected("choice_selected", choice_callback):
+			_service.connect("choice_selected", choice_callback)
 
 
 func _disconnect_service() -> void:
@@ -96,19 +154,42 @@ func _disconnect_service() -> void:
 		_service = null
 		return
 	if _service.has_signal("dialogue_finished"):
-		var callback := Callable(self, "_on_dialogue_finished")
-		if _service.is_connected("dialogue_finished", callback):
-			_service.disconnect("dialogue_finished", callback)
+		var finished_callback := Callable(self, "_on_dialogue_finished")
+		if _service.is_connected("dialogue_finished", finished_callback):
+			_service.disconnect("dialogue_finished", finished_callback)
+	if _service.has_signal("choice_selected"):
+		var choice_callback := Callable(self, "_on_choice_selected")
+		if _service.is_connected("choice_selected", choice_callback):
+			_service.disconnect("choice_selected", choice_callback)
 	_service = null
 
 
 func _on_dialogue_finished(dialogue_id: StringName, reason: StringName) -> void:
 	if dialogue_id != _pending_dialogue_id:
 		return
+	# Choice selection emits dialogue_finished first so the controller can release
+	# pause ownership. Keep the pending ids until the following choice_selected
+	# signal reports which choice was actually picked.
+	if reason == &"choice_selected":
+		return
 	var action_id := _pending_action_id
 	_pending_dialogue_id = &""
 	_pending_action_id = &""
 	interaction_finished.emit(action_id, reason)
+
+
+func _on_choice_selected(
+	dialogue_id: StringName,
+	choice_id: StringName,
+	choice_metadata: Dictionary
+) -> void:
+	if dialogue_id != _pending_dialogue_id:
+		return
+	var action_id := _pending_action_id
+	_pending_dialogue_id = &""
+	_pending_action_id = &""
+	choice_made.emit(action_id, choice_id, choice_metadata.duplicate(true))
+	interaction_finished.emit(action_id, &"choice_selected")
 
 
 func _find_dialogue_service() -> Node:

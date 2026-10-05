@@ -52,9 +52,26 @@ func _input(event: InputEvent) -> void:
 	if Engine.get_process_frames() == _opened_process_frame:
 		return
 
+	var snapshot := _service.get_snapshot()
+	var has_choices := bool(snapshot.get("has_choices", false))
 	var handled := false
 	if _is_key(key_event, KEY_K) or _is_key(key_event, KEY_ENTER):
-		_service.advance()
+		if has_choices:
+			_service.select_choice()
+		else:
+			_service.advance()
+		handled = true
+	elif has_choices and (
+		_is_key(key_event, KEY_W)
+		or _is_key(key_event, KEY_UP)
+	):
+		_service.move_choice(-1)
+		handled = true
+	elif has_choices and (
+		_is_key(key_event, KEY_S)
+		or _is_key(key_event, KEY_DOWN)
+	):
+		_service.move_choice(1)
 		handled = true
 	elif _is_key(key_event, KEY_I) or _is_key(key_event, KEY_ESCAPE):
 		_service.cancel(&"cancelled")

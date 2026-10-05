@@ -2,6 +2,8 @@ extends RefCounted
 class_name DialogueSystemQA
 
 const DialogueServiceScript = preload("res://scripts/dialogue/dialogue_service.gd")
+const DialogueChoiceDefinitionScript = preload("res://scripts/dialogue/dialogue_choice_definition.gd")
+const DialogueLineDefinitionScript = preload("res://scripts/dialogue/dialogue_line_definition.gd")
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
@@ -222,6 +224,220 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 		not service.is_active(),
 		"One-line NPC conversations must close normally and release the pause/input layer."
 	)
+	# Choice foundation: presentation/result routing only. Existing NPC behavior
+	# remains unchanged until a caller explicitly opts into a choice prompt.
+	var choice_definition = DialogueChoiceDefinitionScript.new()
+	choice_definition.choice_id = &"trade"
+	choice_definition.text = "Trade"
+	_record(
+		report,
+		"choice resource validates stable id and text",
+		choice_definition.get_validation_errors().is_empty(),
+		"Authored choices need a stable result id and visible label."
+	)
+
+	var choice_line = DialogueLineDefinitionScript.new()
+	choice_line.text = "What do you need?"
+	choice_line.choices.append(choice_definition)
+	var runtime_choice_line: Dictionary = choice_line.to_runtime_line()
+	var authored_runtime_choices: Array = runtime_choice_line.get("choices", [])
+	_record(
+		report,
+		"authored line exports runtime choices",
+		authored_runtime_choices.size() == 1
+		and str(authored_runtime_choices[0].get("choice_id", "")) == "trade",
+		"Resource-authored choices must survive conversion without gameplay coupling."
+	)
+
+	var choice_started: Dictionary = service.start_inline_dialogue(
+		&"qa_choices",
+		[{
+			"speaker_name": "Merchant",
+			"text": "What do you need?",
+			"choices": [
+				{
+					"choice_id": &"locked",
+					"text": "Locked option",
+					"enabled": false,
+				},
+				{
+					"choice_id": &"trade",
+					"text": "Trade {currency}",
+					"metadata": {"menu": "economy"},
+				},
+				{
+					"choice_id": &"cards",
+					"text": "Play Cards",
+				},
+			],
+		}],
+		true,
+		{"currency": "z"}
+	)
+	_record(
+		report,
+		"inline choice prompt starts",
+		bool(choice_started.get("success", false)),
+		"Dynamic NPC choice prompts must use the same DialogueService."
+	)
+	var choice_snapshot := service.get_snapshot()
+	var choice_options: Array = choice_snapshot.get("choices", [])
+	_record(
+		report,
+		"choice snapshot exposes all options",
+		bool(choice_snapshot.get("has_choices", false)) and choice_options.size() == 3,
+		"DialogueView needs all available choices in the active snapshot."
+	)
+	_record(
+		report,
+		"first selection skips disabled choice",
+		int(choice_snapshot.get("selected_choice_index", -1)) == 1,
+		"Choice navigation must never land on a disabled entry."
+	)
+	_record(
+		report,
+		"choice labels resolve context tokens",
+		str(choice_options[1].get("text", "")) == "Trade z",
+		"Choice labels should support the same deterministic context tokens as dialogue text."
+	)
+	var blocked_advance := service.advance()
+	_record(
+		report,
+		"choice line cannot be bypassed by advance",
+		not bool(blocked_advance.get("success", true))
+		and str(blocked_advance.get("reason", "")) == "choice_required"
+		and service.is_active(),
+		"K/confirm must select a choice rather than silently advancing past it."
+	)
+	var moved_choice := service.move_choice(1)
+	var moved_snapshot := service.get_snapshot()
+	_record(
+		report,
+		"choice navigation moves to next enabled option",
+		bool(moved_choice.get("success", false))
+		and int(moved_snapshot.get("selected_choice_index", -1)) == 2,
+		"W/S choice navigation must move only among enabled options."
+	)
+	service.move_choice(1)
+	var wrapped_snapshot := service.get_snapshot()
+	_record(
+		report,
+		"choice navigation wraps safely",
+		int(wrapped_snapshot.get("selected_choice_index", -1)) == 1,
+		"Choice navigation should wrap without indexing outside the list."
+	)
+	var selected_choice := service.select_choice()
+	_record(
+		report,
+		"select choice returns stable id",
+		bool(selected_choice.get("success", false))
+		and selected_choice.get("choice_id", &"") == &"trade",
+		"Gameplay callers need the stable choice id rather than presentation text."
+	)
+	var selected_metadata: Dictionary = selected_choice.get("choice_metadata", {})
+	_record(
+		report,
+		"choice metadata survives selection",
+		str(selected_metadata.get("menu", "")) == "economy",
+		"Optional choice metadata must survive without being interpreted by dialogue."
+	)
+	_record(
+		report,
+		"choice selection closes dialogue",
+		not service.is_active(),
+		"A selected terminal choice must release dialogue/pause ownership cleanly."
+	)
+
+	var duplicate_choices := service.start_inline_dialogue(
+		&"qa_duplicate_choices",
+		[{
+			"text": "Duplicate test",
+			"choices": [
+				{"choice_id": &"same", "text": "One"},
+				{"choice_id": &"same", "text": "Two"},
+			],
+		}]
+	)
+	_record(
+		report,
+		"duplicate inline choice ids are rejected",
+		not bool(duplicate_choices.get("success", true))
+		and str(duplicate_choices.get("reason", "")) == "invalid_inline_line",
+		"One choice prompt may not expose ambiguous duplicate result ids."
+	)
+	var empty_choice_id := service.start_inline_dialogue(
+		&"qa_empty_choice_id",
+		[{
+			"text": "Bad choice",
+			"choices": [{"choice_id": &"", "text": "No id"}],
+		}]
+	)
+	_record(
+		report,
+		"empty inline choice id is rejected",
+		not bool(empty_choice_id.get("success", true)),
+		"Every selectable option must have a stable non-empty id."
+	)
+	var disabled_started := service.start_inline_dialogue(
+		&"qa_all_disabled",
+		[{
+			"text": "Nothing available.",
+			"choices": [
+				{"choice_id": &"a", "text": "A", "enabled": false},
+				{"choice_id": &"b", "text": "B", "enabled": false},
+			],
+		}]
+	)
+	_record(
+		report,
+		"all-disabled choice prompt can still render",
+		bool(disabled_started.get("success", false))
+		and int(service.get_snapshot().get("selected_choice_index", 0)) == -1,
+		"A conversation may explain unavailable options without forcing a selection."
+	)
+	var disabled_select := service.select_choice()
+	_record(
+		report,
+		"all-disabled choice prompt cannot select",
+		not bool(disabled_select.get("success", true))
+		and str(disabled_select.get("reason", "")) == "no_enabled_choices",
+		"Disabled choices must never dispatch an action id."
+	)
+	service.force_close(&"qa_disabled_cleanup")
+
+	var bridge_choice_started := bridge.start_choice_prompt(
+		&"qa_bridge_choices",
+		&"qa_menu_action",
+		&"qa_merchant",
+		"QA Merchant",
+		"Choose an action.",
+		[
+			{"choice_id": &"trade", "text": "Trade"},
+			{"choice_id": &"leave", "text": "Leave"},
+		],
+		null,
+		true,
+		{"source": "qa_choice_bridge"}
+	)
+	_record(
+		report,
+		"NPC bridge starts reusable choice prompt",
+		bridge_choice_started
+		and service.is_active()
+		and bridge.has_pending_interaction(),
+		"NPCs should be able to request choices without learning DialogueView internals."
+	)
+	service.move_choice(1)
+	var bridge_choice_result := service.select_choice()
+	_record(
+		report,
+		"NPC bridge clears pending choice after selection",
+		bool(bridge_choice_result.get("success", false))
+		and bridge_choice_result.get("choice_id", &"") == &"leave"
+		and not bridge.has_pending_interaction(),
+		"Choice completion must not leave an NPC bridge stuck waiting forever."
+	)
+
 	bridge.free()
 
 	service.free()
