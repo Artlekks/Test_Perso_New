@@ -18,6 +18,8 @@ const BeachCrafterNPCScript = preload("res://scripts/beach_crafter_npc.gd")
 const BeachCrafterScene = preload("res://actors/BeachCrafterNPC.tscn")
 const BeachCrafterRequestSourceScript = preload("res://scripts/quests/beach_crafter_request_source.gd")
 const MaterialCountRequestObjectiveScript = preload("res://scripts/quests/material_count_request_objective.gd")
+const CardMakerFishingRequestSourceScript = preload("res://scripts/quests/card_maker_fishing_request_source.gd")
+const FishingCatchCountRequestObjectiveScript = preload("res://scripts/quests/fishing_catch_count_request_objective.gd")
 const WorldRequestProgressStoreScript = preload("res://scripts/quests/world_request_progress_store.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
 const COMPLETE_DIALOGUE_ID: StringName = &"master_gyosil_complete"
@@ -1081,9 +1083,9 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	)
 	_record(
 		report,
-		"request catalog contains current two request sources",
-		int(request_catalog_audit.get("definition_count", 0)) == 2,
-		"The registry milestone must canonicalize both Harbor Request and Sea Glass Survey before a third request is authored."
+		"request catalog contains current three request sources",
+		int(request_catalog_audit.get("definition_count", 0)) == 3,
+		"The frozen request catalog must include duel, gathering, and fishing objective backends."
 	)
 	_record(
 		report,
@@ -1367,6 +1369,185 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	)
 	if crafter_request_scene != null:
 		crafter_request_scene.free()
+
+	# Fishing Request v1: third live objective backend, driven only by the
+	# canonical FishingJournalService record contract and composed under Card Maker.
+	var fishing_definition: Dictionary = WorldRequestRegistryScript.definition_snapshot(
+		&"beach_demo_card_maker_sea_bass_01"
+	)
+	_record(
+		report,
+		"coastal catch has canonical registry definition",
+		str(fishing_definition.get("title", "")) == "Coastal Catch"
+		and StringName(str(fishing_definition.get("giver_id", ""))) == &"card_maker"
+		and StringName(str(fishing_definition.get("objective_type", ""))) == &"fish_catch_count",
+		"The third request must be discoverable by id without tracker/journal knowledge of its fishing implementation."
+	)
+	_record(
+		report,
+		"coastal catch preserves Town Requests reward contract",
+		StringName(str(fishing_definition.get("reward_source_id", ""))) == &"town_requests"
+		and StringName(str(fishing_definition.get("reward_event_id", ""))) == &"beach_demo_card_maker_sea_bass_01",
+		"The fishing request should extend an authored early quest-card source with its own durable event id."
+	)
+	var fishing_objective_metadata: Dictionary = {}
+	var raw_fishing_objective_metadata = fishing_definition.get("objective_metadata", {})
+	if raw_fishing_objective_metadata is Dictionary:
+		fishing_objective_metadata = raw_fishing_objective_metadata as Dictionary
+	_record(
+		report,
+		"coastal catch registry preserves Sea Bass objective contract",
+		StringName(str(fishing_objective_metadata.get("species_id", ""))) == &"sea_bass"
+		and str(fishing_objective_metadata.get("species_name", "")) == "Sea Bass"
+		and int(fishing_objective_metadata.get("required_count", 0)) == 3,
+		"Fishing-request data must target the canonical Sea Bass species id and authored count."
+	)
+	var fishing_two: Dictionary = FishingCatchCountRequestObjectiveScript.progress_snapshot_for_count(2, 3)
+	_record(
+		report,
+		"fishing request progress stays incomplete below target",
+		int(fishing_two.get("current", -1)) == 2
+		and int(fishing_two.get("required", -1)) == 3
+		and not bool(fishing_two.get("complete", true))
+		and str(fishing_two.get("progress_text", "")) == "2/3",
+		"Fishing-journal-backed requests need deterministic catch-count progress."
+	)
+	var fishing_three: Dictionary = FishingCatchCountRequestObjectiveScript.progress_snapshot_for_count(3, 3)
+	_record(
+		report,
+		"fishing request completes exactly at target",
+		bool(fishing_three.get("complete", false))
+		and int(fishing_three.get("remaining", -1)) == 0
+		and str(fishing_three.get("progress_text", "")) == "3/3",
+		"The request must become turn-in-ready on the third canonical journal catch."
+	)
+	_record(
+		report,
+		"fishing request progress clamps negative counts",
+		int(FishingCatchCountRequestObjectiveScript.progress_snapshot_for_count(-4, 3).get("current", -1)) == 0,
+		"Malformed/legacy catch counts must never leak negative progress into request UI."
+	)
+	_record(
+		report,
+		"card maker request main labels reflect request state",
+		CardMakerFishingRequestSourceScript.main_choice_text_for_state(&"available") == "Coastal Catch"
+		and CardMakerFishingRequestSourceScript.main_choice_text_for_state(&"accepted") == "Review Coastal Catch"
+		and CardMakerFishingRequestSourceScript.main_choice_text_for_state(&"ready_to_turn_in") == "Turn In Coastal Catch"
+		and CardMakerFishingRequestSourceScript.main_choice_text_for_state(&"completed") == "Coastal Catch Complete",
+		"The Card Maker service menu must remain truthful as the fishing request advances."
+	)
+	_record(
+		report,
+		"locked card maker request stays out of service choices",
+		CardMakerFishingRequestSourceScript.main_choice_text_for_state(&"locked").is_empty(),
+		"Fishing request presentation must not advertise before reward/backend dependencies are ready."
+	)
+	var fishing_available_choices: Array = CardMakerFishingRequestSourceScript.build_available_choices()
+	_record(
+		report,
+		"card maker fishing request can be accepted or deferred",
+		fishing_available_choices.size() == 2
+		and fishing_available_choices[0].get("choice_id", &"") == &"accept"
+		and fishing_available_choices[1].get("choice_id", &"") == &"later",
+		"The third request must preserve explicit opt-in rather than silently activating from catch history."
+	)
+	var fishing_active_choices: Array = CardMakerFishingRequestSourceScript.build_accepted_choices()
+	_record(
+		report,
+		"card maker active fishing request can review or back out",
+		fishing_active_choices.size() == 2
+		and fishing_active_choices[0].get("choice_id", &"") == &"review"
+		and fishing_active_choices[1].get("choice_id", &"") == &"back",
+		"Active fishing progress should use the same reusable review flow as other objective backends."
+	)
+	var fishing_ready_choices: Array = CardMakerFishingRequestSourceScript.build_ready_choices()
+	_record(
+		report,
+		"card maker ready fishing request can claim or defer",
+		fishing_ready_choices.size() == 2
+		and fishing_ready_choices[0].get("choice_id", &"") == &"turn_in"
+		and fishing_ready_choices[1].get("choice_id", &"") == &"not_yet",
+		"Fishing completion must not bypass explicit request turn-in/reward routing."
+	)
+	_record(
+		report,
+		"fishing request acceptance key is stable",
+		WorldRequestProgressStoreScript.acceptance_key(&"beach_demo_card_maker_sea_bass_01")
+		== "world_request/accepted/beach_demo_card_maker_sea_bass_01",
+		"The third objective backend must reuse the same durable acceptance contract."
+	)
+	var card_maker_request_scene = FishingCardMakerScene.instantiate()
+	_record(
+		report,
+		"card maker scene contains modular fishing request source",
+		card_maker_request_scene != null and card_maker_request_scene.get_node_or_null("RequestSource") != null,
+		"Fishing request routing should be composed as a child rather than absorbed into the core Card Maker controller."
+	)
+	_record(
+		report,
+		"card maker scene contains request marker",
+		card_maker_request_scene != null and card_maker_request_scene.get_node_or_null("RequestMarker") != null,
+		"The fishing request must feed the same world-marker contract as duel and gathering requests."
+	)
+	var fishing_reward_adapter: Node = null
+	var fishing_catch_objective: Node = null
+	if card_maker_request_scene != null:
+		fishing_reward_adapter = card_maker_request_scene.get_node_or_null("RequestSource/QuestRewardAdapter")
+		fishing_catch_objective = card_maker_request_scene.get_node_or_null("RequestSource/CatchObjective")
+	_record(
+		report,
+		"coastal catch uses canonical Town Requests source",
+		fishing_reward_adapter != null
+		and StringName(str(fishing_reward_adapter.get("source_id"))) == &"town_requests",
+		"The fishing request reward must stay inside the authored card-acquisition map."
+	)
+	_record(
+		report,
+		"coastal catch has unique one-shot reward event",
+		fishing_reward_adapter != null
+		and StringName(str(fishing_reward_adapter.get("quest_event_id"))) == &"beach_demo_card_maker_sea_bass_01",
+		"Fishing turn-in must remain crash-safe/idempotent independently of the Sea Glass Survey."
+	)
+	_record(
+		report,
+		"coastal catch objective is three Sea Bass",
+		fishing_catch_objective != null
+		and StringName(str(fishing_catch_objective.get("species_id"))) == &"sea_bass"
+		and int(fishing_catch_objective.get("required_count")) == 3,
+		"The third scalability proof must read a real fishing species record, not a synthetic counter."
+	)
+	var three_backend_candidates := {
+		"beach_demo_harbor_errand_01": {
+			"request_id": &"beach_demo_harbor_errand_01",
+			"title": "Harbor Request",
+			"objective": "Defeat Beach Trader.",
+			"state_id": &"accepted",
+			"sort_order": 10,
+		},
+		"beach_demo_crafter_sea_glass_01": {
+			"request_id": &"beach_demo_crafter_sea_glass_01",
+			"title": "Sea Glass Survey",
+			"objective": "Find Sea Glass.",
+			"state_id": &"accepted",
+			"sort_order": 20,
+		},
+		"beach_demo_card_maker_sea_bass_01": {
+			"request_id": &"beach_demo_card_maker_sea_bass_01",
+			"title": "Coastal Catch",
+			"objective": "Return to the Card Maker.",
+			"state_id": &"ready_to_turn_in",
+			"sort_order": 30,
+		},
+	}
+	var three_backend_primary: Dictionary = WorldObjectiveTrackerScript.select_primary(three_backend_candidates)
+	_record(
+		report,
+		"tracker prioritizes fishing turn-in across three objective backends",
+		str(three_backend_primary.get("request_id", "")) == "beach_demo_card_maker_sea_bass_01",
+		"One shared tracker must prioritize actionable work across duel, gathering, and fishing sources."
+	)
+	if card_maker_request_scene != null:
+		card_maker_request_scene.free()
 
 	bridge.free()
 

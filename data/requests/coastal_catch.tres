@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="WorldRequestDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/world_request_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+request_id = &"beach_demo_card_maker_sea_bass_01"
+title = "Coastal Catch"
+giver_id = &"card_maker"
+giver_name = "Card Maker"
+objective_type = &"fish_catch_count"
+active_objective = "Catch Sea Bass along the coast. %d/%d recorded."
+ready_objective = "Return to the Card Maker after recording 3 Sea Bass catches."
+completed_objective = "Coastal Catch completed."
+objective_metadata = {
+"species_id": "sea_bass",
+"species_name": "Sea Bass",
+"required_count": 3
+}
+reward_source_id = &"town_requests"
+reward_event_id = &"beach_demo_card_maker_sea_bass_01"
+sort_order = 30
+tags = Array[StringName]([&"fishing", &"cards", &"coast", &"request"])

@@ -4,6 +4,10 @@
 [ext_resource type="SpriteFrames" path="res://assets/animations/fishing_captain_frames.tres" id="2_frames"]
 [ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
 [ext_resource type="PackedScene" path="res://actors/FishingCardMakerMenu.tscn" id="4_menu"]
+[ext_resource type="Script" path="res://scripts/quests/card_maker_fishing_request_source.gd" id="5_request_source"]
+[ext_resource type="Script" path="res://scripts/quests/fishing_catch_count_request_objective.gd" id="6_catch_objective"]
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_quest_reward_adapter.gd" id="7_reward_adapter"]
+[ext_resource type="PackedScene" path="res://actors/WorldRequestMarker.tscn" id="8_request_marker"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
 transparency = 1
@@ -69,3 +73,21 @@ font_size = 28
 outline_size = 8
 
 [node name="FishingCardMakerMenu" parent="." unique_id=1772912096 instance=ExtResource("4_menu")]
+
+[node name="RequestSource" type="Node" parent="."]
+process_mode = 3
+script = ExtResource("5_request_source")
+
+[node name="CatchObjective" type="Node" parent="RequestSource"]
+script = ExtResource("6_catch_objective")
+species_id = &"sea_bass"
+required_count = 3
+
+[node name="QuestRewardAdapter" type="Node" parent="RequestSource"]
+script = ExtResource("7_reward_adapter")
+source_id = &"town_requests"
+quest_event_id = &"beach_demo_card_maker_sea_bass_01"
+source_context = &"card_maker_coastal_catch"
+
+[node name="RequestMarker" parent="." instance=ExtResource("8_request_marker")]
+position = Vector3(0, 1.08, 0)

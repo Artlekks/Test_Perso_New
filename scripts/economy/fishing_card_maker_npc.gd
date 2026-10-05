@@ -10,6 +10,8 @@ const ACTION_EXPLAIN: StringName = &"explain_card_maker"
 const CHOICE_MAKE: StringName = &"make_card"
 const CHOICE_ABOUT: StringName = &"about"
 const CHOICE_LEAVE: StringName = &"leave"
+const CHOICE_REQUEST: StringName = &"request"
+const CHOICE_JOURNAL: StringName = &"journal"
 
 @export var interaction_prompt: String = "K : Talk"
 @export var greeting_text: String = "What can I make for you?"
@@ -32,6 +34,7 @@ const CHOICE_LEAVE: StringName = &"leave"
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var card_maker_menu: FishingCardMakerMenu = $FishingCardMakerMenu
+@onready var request_source: CardMakerFishingRequestSource = $RequestSource
 
 var _player_in_range: bool = false
 var _service: FishingCardMakerService = null
@@ -66,6 +69,7 @@ func _ready() -> void:
 	if animated_sprite != null:
 		animated_sprite.animation_finished.connect(_on_animation_finished)
 	_create_dialogue_bridge()
+	_configure_request_source()
 	call_deferred("_bind_card_maker")
 	call_deferred("_cache_player_body")
 
@@ -271,6 +275,9 @@ func _start_interaction() -> bool:
 		about_choice_text,
 		leave_choice_text
 	)
+	if request_source != null:
+		request_source.refresh()
+		choices = request_source.augment_service_choices(choices)
 	if (
 		_dialogue_bridge != null
 		and _dialogue_bridge.start_choice_prompt(
@@ -389,6 +396,10 @@ func _on_dialogue_choice_made(
 			call_deferred("_open_card_maker_menu")
 		CHOICE_ABOUT:
 			call_deferred("_start_explanation")
+		CHOICE_REQUEST, CHOICE_JOURNAL:
+			# CardMakerFishingRequestSource listens to the same bridge signal and
+			# owns request/journal routing. Keep request logic out of this NPC.
+			pass
 		CHOICE_LEAVE:
 			_pause_remaining = _random_idle_pause()
 			_play_idle(_facing)
@@ -410,6 +421,29 @@ func _on_dialogue_interaction_finished(
 	if reason == &"completed":
 		call_deferred("_start_interaction")
 		return
+	_pause_remaining = _random_idle_pause()
+	_play_idle(_facing)
+
+
+func _configure_request_source() -> void:
+	if request_source == null or _dialogue_bridge == null:
+		return
+	request_source.configure(_dialogue_bridge, PORTRAIT)
+	if not request_source.return_to_services_requested.is_connected(_on_request_return_to_services):
+		request_source.return_to_services_requested.connect(_on_request_return_to_services)
+	if not request_source.idle_requested.is_connected(_on_request_idle_requested):
+		request_source.idle_requested.connect(_on_request_idle_requested)
+
+
+func _on_request_return_to_services() -> void:
+	if not _player_in_range:
+		_pause_remaining = _random_idle_pause()
+		_play_idle(_facing)
+		return
+	call_deferred("_start_interaction")
+
+
+func _on_request_idle_requested() -> void:
 	_pause_remaining = _random_idle_pause()
 	_play_idle(_facing)
 

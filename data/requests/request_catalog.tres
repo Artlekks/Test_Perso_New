@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="WorldRequestCatalog" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WorldRequestCatalog" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/quests/world_request_catalog.gd" id="1_catalog"]
 [ext_resource type="Resource" path="res://data/requests/harbor_request.tres" id="2_harbor"]
 [ext_resource type="Resource" path="res://data/requests/sea_glass_survey.tres" id="3_glass"]
+[ext_resource type="Resource" path="res://data/requests/coastal_catch.tres" id="4_catch"]
 
 [resource]
 script = ExtResource("1_catalog")
-definitions = Array[Resource]([ExtResource("2_harbor"), ExtResource("3_glass")])
+definitions = Array[Resource]([ExtResource("2_harbor"), ExtResource("3_glass"), ExtResource("4_catch")])
