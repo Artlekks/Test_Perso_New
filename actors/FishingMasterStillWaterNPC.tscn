@@ -1,8 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://bvk23rw0i0b5b"]
 
-[ext_resource type="Script" path="res://scripts/mastery/fishing_master_still_water_npc.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="Texture2D" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
+[ext_resource type="Script" uid="uid://8mkyyuse8kjp" path="res://scripts/mastery/fishing_master_still_water_npc.gd" id="1_script"]
+[ext_resource type="SpriteFrames" uid="uid://ousie20omnqx" path="res://assets/animations/fishing_master_still_water_frames.tres" id="2_r1efr"]
+[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
 transparency = 1
@@ -19,22 +19,21 @@ height = 0.5
 [sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
 radius = 0.82
 
-[node name="FishingMasterStillWaterNPC" type="Node3D"]
+[node name="FishingMasterStillWaterNPC" type="Node3D" unique_id=152628930]
 process_mode = 3
 script = ExtResource("1_script")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=1816864478]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
 offset = Vector2(0, 11)
 billboard = 1
-texture_filter = 0
-sprite_frames = ExtResource("2_frames")
-animation = &"Stand_Interest"
-autoplay = "Stand_Interest"
 alpha_cut = 1
-alpha_scissor_threshold = 0.5
+texture_filter = 0
+sprite_frames = ExtResource("2_r1efr")
+animation = &"Idle"
+frame_progress = 0.87177056
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="."]
+[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=1186640]
 transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0, 0.006, 0)
 sorting_offset = -0.25
 material_override = SubResource("StandardMaterial3D_shadow")
@@ -44,27 +43,24 @@ alpha_cut = 2
 texture_filter = 0
 texture = ExtResource("3_shadow")
 
-[node name="BodyCollider" type="StaticBody3D" parent="."]
-collision_layer = 1
-collision_mask = 1
+[node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1717076062]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyCollider"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyCollider" unique_id=364606646]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 shape = SubResource("CapsuleShape3D_body")
 
-[node name="InteractionArea" type="Area3D" parent="."]
+[node name="InteractionArea" type="Area3D" parent="." unique_id=1335221118]
 collision_layer = 0
 collision_mask = 3
-monitoring = true
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=180755357]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.32, 0)
 shape = SubResource("SphereShape3D_interaction")
 
-[node name="PromptLabel3D" type="Label3D" parent="."]
-visible = false
+[node name="PromptLabel3D" type="Label3D" parent="." unique_id=775621670]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+visible = false
 billboard = 1
 modulate = Color(1, 0.964706, 0.709804, 1)
 text = "K : Listen"

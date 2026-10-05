@@ -102,6 +102,9 @@ const FishingMasterSurfaceAnglerQAScript = preload(
 const FishingMasterLandingGuideQAScript = preload(
 	"res://scripts/mastery/fishing_master_landing_guide_qa.gd"
 )
+const FishingMasterWeatherWatcherQAScript = preload(
+	"res://scripts/mastery/fishing_master_weather_watcher_qa.gd"
+)
 const FishingFightCombatQAScript = preload(
 	"res://scripts/fishing_fight_combat_qa.gd"
 )
@@ -292,6 +295,7 @@ var master_line_fighter_qa_report: Dictionary = {}
 var master_deepwater_veteran_qa_report: Dictionary = {}
 var master_surface_angler_qa_report: Dictionary = {}
 var master_landing_guide_qa_report: Dictionary = {}
+var master_weather_watcher_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
 var presentation_qa_report: Dictionary = {}
 var bite_timing_qa_report: Dictionary = {}
@@ -825,6 +829,22 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Master Landing Guide QA: %s" % str(failure))
+
+		master_weather_watcher_qa_report = FishingMasterWeatherWatcherQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Weather Watcher QA: %d/%d tests passed."
+			% [
+				int(master_weather_watcher_qa_report.get("passed_count", 0)),
+				int(master_weather_watcher_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_weather_watcher_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Weather Watcher QA: %s" % str(failure))
 
 		fight_combat_qa_report = FishingFightCombatQAScript.run()
 		print(
@@ -1469,6 +1489,10 @@ func get_fishing_master_landing_guide_qa_report() -> Dictionary:
 	return master_landing_guide_qa_report.duplicate(true)
 
 
+func get_fishing_master_weather_watcher_qa_report() -> Dictionary:
+	return master_weather_watcher_qa_report.duplicate(true)
+
+
 func get_fishing_fight_qa_report() -> Dictionary:
 	return fight_combat_qa_report.duplicate(true)
 
@@ -1495,6 +1519,10 @@ func get_fishing_aerial_control_qa_report() -> Dictionary:
 
 func get_fishing_weather_sense_qa_report() -> Dictionary:
 	return weather_sense_qa_report.duplicate(true)
+
+
+func get_fishing_environment_service() -> Node:
+	return environment_service
 
 
 func get_fishing_weather_sense_snapshot(
