@@ -6,6 +6,9 @@ const DialogueChoiceDefinitionScript = preload("res://scripts/dialogue/dialogue_
 const DialogueLineDefinitionScript = preload("res://scripts/dialogue/dialogue_line_definition.gd")
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
+const MasterDialogueProfilesScript = preload(
+	"res://scripts/mastery/fishing_master_dialogue_profiles.gd"
+)
 const BeachMerchantNPCScript = preload("res://scripts/beach_merchant_npc.gd")
 const BeachMerchantScene = preload("res://actors/BeachMerchantNPC.tscn")
 const FishingEconomyMenuScene = preload("res://actors/FishingEconomyMenu.tscn")
@@ -630,6 +633,116 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	)
 	if economy_menu_node != null:
 		economy_menu_node.free()
+
+	# State-aware master presentation. The profile layer owns only dialogue
+	# flavor/state labels; mastery scripts still own every lesson rule.
+	var master_profile_ids: Array[StringName] = [
+		&"master_still_water",
+		&"master_current_reader",
+		&"master_depth_reader",
+		&"master_structure_hunter",
+		&"master_line_fighter",
+		&"master_deepwater_veteran",
+		&"master_surface_angler",
+		&"master_landing_guide",
+		&"master_weather_watcher",
+		&"master_tide_reader",
+		&"master_sign_reader",
+		&"master_nature_guide",
+		&"master_drift_angler",
+	]
+	_record(
+		report,
+		"all current lesson masters have dialogue profiles",
+		MasterDialogueProfilesScript.get_profile_count() == master_profile_ids.size(),
+		"The shared state-aware dialogue table must cover every current lesson master exactly once."
+	)
+	for teacher_id in master_profile_ids:
+		var complete_profile := (
+			MasterDialogueProfilesScript.has_profile(teacher_id)
+			and not MasterDialogueProfilesScript.get_state_line(teacher_id, &"intro").is_empty()
+			and not MasterDialogueProfilesScript.get_state_line(teacher_id, &"active").is_empty()
+			and not MasterDialogueProfilesScript.get_state_line(teacher_id, &"learned").is_empty()
+			and not MasterDialogueProfilesScript.get_state_line(teacher_id, &"revisit").is_empty()
+		)
+		_record(
+			report,
+			"master profile covers %s" % str(teacher_id),
+			complete_profile,
+			"Every current master needs intro, active, learned and revisit presentation states."
+		)
+
+	_record(
+		report,
+		"master dialogue classifies untouched lesson as intro",
+		MasterDialogueProfilesScript.classify_state(false, 0, false) == &"intro",
+		"A lesson that has not started must present its introduction state."
+	)
+	_record(
+		report,
+		"master dialogue classifies running lesson as active",
+		MasterDialogueProfilesScript.classify_state(false, 1, false) == &"active",
+		"Any non-INACTIVE lesson phase must present active coaching when the player talks to the master."
+	)
+	_record(
+		report,
+		"master dialogue exposes one-time learned acknowledgement",
+		MasterDialogueProfilesScript.classify_state(true, 3, true) == &"learned",
+		"A technique learned in the current runtime should get one acknowledgement before ordinary revisits."
+	)
+	_record(
+		report,
+		"master dialogue classifies saved known technique as revisit",
+		MasterDialogueProfilesScript.classify_state(true, 0, false) == &"revisit",
+		"Techniques restored from save must not replay a fresh-learning acknowledgement."
+	)
+
+	var master_intro_lines: Array = MasterDialogueProfilesScript.build_runtime_lines(
+		&"master_current_reader",
+		&"intro",
+		"Current Reader: Cast, then let the lure drift.",
+		null
+	)
+	_record(
+		report,
+		"master state dialogue preserves original instruction first",
+		master_intro_lines.size() == 2
+		and str(master_intro_lines[0].get("text", "")) == "Cast, then let the lure drift.",
+		"Cancelling a richer conversation must never hide the instruction the old one-line interaction showed."
+	)
+	_record(
+		report,
+		"master state dialogue appends relationship flavor",
+		master_intro_lines.size() == 2
+		and not str(master_intro_lines[1].get("text", "")).is_empty(),
+		"State-aware master conversations should add personality without replacing gameplay instructions."
+	)
+	_record(
+		report,
+		"master state dialogue strips speaker prefix",
+		master_intro_lines.size() == 2
+		and str(master_intro_lines[0].get("speaker_name", "")) == "Current Reader",
+		"The portrait/name field should own the speaker identity instead of duplicating it in body text."
+	)
+
+	var unavailable_master_lines: Array = MasterDialogueProfilesScript.build_runtime_lines(
+		&"master_current_reader",
+		&"unavailable",
+		"Current Reader: The lesson needs live water.",
+		null
+	)
+	_record(
+		report,
+		"unavailable master dialogue stays concise",
+		unavailable_master_lines.size() == 1,
+		"Runtime/service failures should not be padded with normal lesson-state flavor."
+	)
+	_record(
+		report,
+		"master profile preserves authored display names",
+		MasterDialogueProfilesScript.get_speaker_name(&"master_deepwater_veteran") == "Deep-Water Veteran",
+		"Profile display names must preserve intentional punctuation instead of relying only on id humanization."
+	)
 
 	bridge.free()
 

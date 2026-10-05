@@ -114,11 +114,7 @@ func _try_report_sign() -> void:
 		)
 		return
 
-	var learned := _mastery_service.learn_technique(
-		TECHNIQUE_ID,
-		TEACHER_ID,
-		true
-	)
+	var learned := try_learn_technique(true)
 	if not bool(learned.get("success", false)):
 		_show_message(
 			"Sign Reader: Hold that thought. The lesson couldn't be recorded yet.",

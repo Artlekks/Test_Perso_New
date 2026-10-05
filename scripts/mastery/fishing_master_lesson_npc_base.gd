@@ -2,7 +2,9 @@ extends Node3D
 class_name FishingMasterLessonNPCBase
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
-const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
+const MasterDialogueProfilesScript = preload(
+	"res://scripts/mastery/fishing_master_dialogue_profiles.gd"
+)
 
 ## Shared runtime/interaction plumbing for fishing-master NPC lessons.
 ## Individual masters only own their lesson state and success condition.
@@ -21,6 +23,9 @@ var _mastery_service: FishingMasteryService = null
 var _info_view: FishingInfoView = null
 var _dialogue_bridge: Node = null
 var _interaction_dialogue_mode: bool = false
+var _interaction_dialogue_state: StringName = &""
+var _completion_ack_pending: bool = false
+var _process_was_enabled_before_dialogue: bool = false
 
 
 func _ready() -> void:
@@ -43,9 +48,11 @@ func _input(event: InputEvent) -> void:
 		return
 	if not _is_confirm(event):
 		return
+	_interaction_dialogue_state = _get_dialogue_state()
 	_interaction_dialogue_mode = true
 	_handle_interaction()
 	_interaction_dialogue_mode = false
+	_interaction_dialogue_state = &""
 	var viewport := get_viewport()
 	if viewport != null:
 		viewport.set_input_as_handled()
@@ -77,6 +84,7 @@ func _on_player_left_range() -> void:
 
 func _handle_interaction() -> void:
 	if not _bind_runtime():
+		_interaction_dialogue_state = MasterDialogueProfilesScript.STATE_UNAVAILABLE
 		_show_message(get_unavailable_message(), 2.2)
 		return
 	if is_technique_known():
@@ -134,11 +142,35 @@ func is_technique_known() -> bool:
 func try_learn_technique(persist: bool = true) -> Dictionary:
 	if _mastery_service == null:
 		return {"success": false, "reason": "mastery_unavailable"}
-	return _mastery_service.learn_technique(
+	var result: Dictionary = _mastery_service.learn_technique(
 		get_technique_id(),
 		get_teacher_id(),
 		persist
 	)
+	if bool(result.get("success", false)):
+		_completion_ack_pending = true
+	return result
+
+
+func _get_dialogue_state() -> StringName:
+	# Resolve the service first so a technique restored from save opens directly
+	# in revisit dialogue instead of briefly presenting an intro state.
+	_bind_runtime()
+	return MasterDialogueProfilesScript.classify_state(
+		is_technique_known(),
+		_get_lesson_phase_value_for_dialogue(),
+		_completion_ack_pending
+	)
+
+
+func _get_lesson_phase_value_for_dialogue() -> int:
+	# Every fishing-master lesson enum deliberately uses INACTIVE = 0. Keeping
+	# this lookup here lets new master scripts inherit the state-aware dialogue
+	# convention without another UI-specific override.
+	var raw_phase: Variant = get("_phase")
+	if typeof(raw_phase) == TYPE_INT:
+		return int(raw_phase)
+	return 0
 
 
 func _find_player() -> Node:
@@ -183,37 +215,78 @@ func _show_message(text: String, duration: float = 3.0) -> void:
 
 func _show_npc_dialogue(text: String) -> bool:
 	var bridge := _ensure_dialogue_bridge()
-	if bridge == null:
+	if bridge == null or not bridge.has_method("start_lines"):
 		return false
 	var teacher_id := get_teacher_id()
 	var dialogue_key := str(teacher_id)
 	if dialogue_key.is_empty():
 		dialogue_key = str(name).to_snake_case()
-	var fallback_name: String = NPCDialogueRouterScript.humanize_id(
+	var state := _interaction_dialogue_state
+	if state == &"":
+		state = _get_dialogue_state()
+	if text == get_unavailable_message():
+		state = MasterDialogueProfilesScript.STATE_UNAVAILABLE
+
+	var lines: Array = MasterDialogueProfilesScript.build_runtime_lines(
 		teacher_id,
-		"master_",
-		"Fishing Master"
-	)
-	return NPCDialogueRouterScript.start_spoken_line(
-		bridge,
-		StringName("master_talk_%s" % dialogue_key),
-		&"",
-		teacher_id,
-		fallback_name,
+		state,
 		text,
-		animated_sprite,
-		true,
-		{"source": "fishing_master"}
+		animated_sprite
 	)
+	if lines.is_empty():
+		return false
+	var started := bool(bridge.call(
+		"start_lines",
+		StringName("master_talk_%s_%s" % [dialogue_key, str(state)]),
+		&"",
+		lines,
+		true,
+		{
+			"source": "fishing_master",
+			"teacher_id": teacher_id,
+			"master_dialogue_state": state,
+		}
+	))
+	if not started:
+		return false
+	_suspend_lesson_process_for_dialogue()
+	if state == MasterDialogueProfilesScript.STATE_LEARNED:
+		_completion_ack_pending = false
+	return true
 
 
 func _ensure_dialogue_bridge() -> Node:
-	if is_instance_valid(_dialogue_bridge):
-		return _dialogue_bridge
-	_dialogue_bridge = DialogueNPCBridgeScript.new()
-	_dialogue_bridge.name = "DialogueNPCBridge"
-	add_child(_dialogue_bridge)
+	if not is_instance_valid(_dialogue_bridge):
+		_dialogue_bridge = DialogueNPCBridgeScript.new()
+		_dialogue_bridge.name = "DialogueNPCBridge"
+		add_child(_dialogue_bridge)
+	_connect_dialogue_bridge_signals()
 	return _dialogue_bridge
+
+
+func _connect_dialogue_bridge_signals() -> void:
+	if not is_instance_valid(_dialogue_bridge):
+		return
+	if not _dialogue_bridge.has_signal("interaction_finished"):
+		return
+	var callback := Callable(self, "_on_dialogue_interaction_finished")
+	if not _dialogue_bridge.is_connected("interaction_finished", callback):
+		_dialogue_bridge.connect("interaction_finished", callback)
+
+
+func _suspend_lesson_process_for_dialogue() -> void:
+	_process_was_enabled_before_dialogue = is_processing()
+	if _process_was_enabled_before_dialogue:
+		set_process(false)
+
+
+func _on_dialogue_interaction_finished(
+	_action_id: StringName,
+	_reason: StringName
+) -> void:
+	if _process_was_enabled_before_dialogue:
+		set_process(true)
+	_process_was_enabled_before_dialogue = false
 
 
 func _play_animation(animation_name: StringName) -> void:
