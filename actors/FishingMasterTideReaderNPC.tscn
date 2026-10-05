@@ -1,0 +1,73 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/mastery/fishing_master_tide_reader_npc.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
+[ext_resource type="Texture2D" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+albedo_texture = ExtResource("3_shadow")
+proximity_fade_distance = 0.01
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.16
+height = 0.5
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
+radius = 0.82
+
+[node name="FishingMasterTideReaderNPC" type="Node3D"]
+process_mode = 3
+script = ExtResource("1_script")
+interaction_prompt = "K : Listen"
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
+offset = Vector2(0, 11)
+billboard = 1
+texture_filter = 0
+sprite_frames = ExtResource("2_frames")
+animation = &"Stand_Interest"
+autoplay = "Stand_Interest"
+alpha_cut = 1
+flip_h = false
+alpha_scissor_threshold = 0.5
+
+[node name="ShadowSprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0, 0.006, 0)
+sorting_offset = -0.25
+material_override = SubResource("StandardMaterial3D_shadow")
+cast_shadow = 0
+alpha_cut = 2
+texture_filter = 0
+texture = ExtResource("3_shadow")
+
+[node name="BodyCollider" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyCollider"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 3
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.32, 0)
+shape = SubResource("SphereShape3D_interaction")
+
+[node name="PromptLabel3D" type="Label3D" parent="."]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+billboard = 1
+modulate = Color(0.55, 0.90, 0.88, 1)
+text = "K : Listen"
+font_size = 28
+outline_size = 8

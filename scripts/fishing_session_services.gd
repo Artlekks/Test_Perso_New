@@ -105,6 +105,15 @@ const FishingMasterLandingGuideQAScript = preload(
 const FishingMasterWeatherWatcherQAScript = preload(
 	"res://scripts/mastery/fishing_master_weather_watcher_qa.gd"
 )
+const FishingMasterTideReaderQAScript = preload(
+	"res://scripts/mastery/fishing_master_tide_reader_qa.gd"
+)
+const FishingMasterSignReaderQAScript = preload(
+	"res://scripts/mastery/fishing_master_sign_reader_qa.gd"
+)
+const FishingMasterNatureGuideQAScript = preload(
+	"res://scripts/mastery/fishing_master_nature_guide_qa.gd"
+)
 const FishingFightCombatQAScript = preload(
 	"res://scripts/fishing_fight_combat_qa.gd"
 )
@@ -296,6 +305,9 @@ var master_deepwater_veteran_qa_report: Dictionary = {}
 var master_surface_angler_qa_report: Dictionary = {}
 var master_landing_guide_qa_report: Dictionary = {}
 var master_weather_watcher_qa_report: Dictionary = {}
+var master_tide_reader_qa_report: Dictionary = {}
+var master_sign_reader_qa_report: Dictionary = {}
+var master_nature_guide_qa_report: Dictionary = {}
 var fight_combat_qa_report: Dictionary = {}
 var presentation_qa_report: Dictionary = {}
 var bite_timing_qa_report: Dictionary = {}
@@ -845,6 +857,54 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Master Weather Watcher QA: %s" % str(failure))
+
+		master_tide_reader_qa_report = FishingMasterTideReaderQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Tide Reader QA: %d/%d tests passed."
+			% [
+				int(master_tide_reader_qa_report.get("passed_count", 0)),
+				int(master_tide_reader_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_tide_reader_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Tide Reader QA: %s" % str(failure))
+
+		master_sign_reader_qa_report = FishingMasterSignReaderQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Sign Reader QA: %d/%d tests passed."
+			% [
+				int(master_sign_reader_qa_report.get("passed_count", 0)),
+				int(master_sign_reader_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_sign_reader_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Sign Reader QA: %s" % str(failure))
+
+		master_nature_guide_qa_report = FishingMasterNatureGuideQAScript.run(
+			FishingMasteryTechniqueCatalogResource
+		)
+		print(
+			"Fishing Master Nature Guide QA: %d/%d tests passed."
+			% [
+				int(master_nature_guide_qa_report.get("passed_count", 0)),
+				int(master_nature_guide_qa_report.get("test_count", 0)),
+			]
+		)
+		for failure in master_nature_guide_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error("Fishing Master Nature Guide QA: %s" % str(failure))
 
 		fight_combat_qa_report = FishingFightCombatQAScript.run()
 		print(
@@ -1491,6 +1551,17 @@ func get_fishing_master_landing_guide_qa_report() -> Dictionary:
 
 func get_fishing_master_weather_watcher_qa_report() -> Dictionary:
 	return master_weather_watcher_qa_report.duplicate(true)
+
+
+func get_fishing_master_tide_reader_qa_report() -> Dictionary:
+	return master_tide_reader_qa_report.duplicate(true)
+
+
+func get_fishing_master_sign_reader_qa_report() -> Dictionary:
+	return master_sign_reader_qa_report.duplicate(true)
+
+func get_fishing_master_nature_guide_qa_report() -> Dictionary:
+	return master_nature_guide_qa_report.duplicate(true)
 
 
 func get_fishing_fight_qa_report() -> Dictionary:

@@ -34,7 +34,7 @@ animation = &"Idle"
 frame_progress = 0.87177056
 
 [node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=1186640]
-transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0, 0.006, 0)
+transform = Transform3D(1.2453501, -1.0045413, -4.3909893e-08, 0, -6.9938224e-08, 1.6, -1.0045413, -1.2453501, -5.4435983e-08, -0.04924497, -0.16133015, 0.030231059)
 sorting_offset = -0.25
 material_override = SubResource("StandardMaterial3D_shadow")
 cast_shadow = 0

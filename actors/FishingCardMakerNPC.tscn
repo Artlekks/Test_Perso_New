@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c70ynexh6blra"]
 
 [ext_resource type="Script" uid="uid://s5w6p0vupyfr" path="res://scripts/economy/fishing_card_maker_npc.gd" id="1_script"]
-[ext_resource type="SpriteFrames" path="res://assets/animations/fishing_captain_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" uid="uid://bdh0vfoiqp6fq" path="res://assets/animations/fishing_captain_frames.tres" id="2_frames"]
 [ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
 [ext_resource type="PackedScene" path="res://actors/FishingCardMakerMenu.tscn" id="4_menu"]
 
@@ -30,12 +30,13 @@ offset = Vector2(0, -2)
 billboard = 1
 texture_filter = 0
 sprite_frames = ExtResource("2_frames")
-animation = &"idle_se"
+animation = &"smoke"
 autoplay = "idle_se"
-frame_progress = 0.49772128
+frame = 33
+frame_progress = 1.0
 
 [node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=592782175]
-transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0, 0.03202449, 0)
+transform = Transform3D(0.89988035, -1.2173047, -3.735295e-08, 0, -6.538131e-08, 1.0499998, -1.2603351, -0.8691568, -2.6670042e-08, 0.047441363, 0.03202449, 0.060965806)
 sorting_offset = -0.25
 material_override = SubResource("StandardMaterial3D_shadow")
 cast_shadow = 0

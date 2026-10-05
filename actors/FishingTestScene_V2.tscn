@@ -70,24 +70,29 @@
 [ext_resource type="Texture2D" uid="uid://m06dq1n502h7" path="res://assets/models/fbx/beach_texpage-P8-EE4D3D823035F839-79597399A405481F-128x256-0-0-256x256-P1-199.png" id="70_sea_static_tex"]
 [ext_resource type="Script" uid="uid://dmr43e6bpymb0" path="res://scripts/fishing_shore_boundary.gd" id="71_shore_boundary"]
 [ext_resource type="PackedScene" uid="uid://dhj5u200srrux" path="res://actors/BeachMerchantNPC.tscn" id="72_merchant_npc"]
-[ext_resource type="PackedScene" path="res://actors/TripleTriadOpponentNPC.tscn" id="73_triad_npc"]
+[ext_resource type="PackedScene" uid="uid://ddsjolq3vgpyb" path="res://actors/TripleTriadOpponentNPC.tscn" id="73_triad_npc"]
 [ext_resource type="PackedScene" uid="uid://kp64wcreffsh" path="res://actors/TripleTriadGame.tscn" id="74_triad_game"]
-[ext_resource type="PackedScene" path="res://actors/BeachCrafterNPC.tscn" id="75_crafter_npc"]
+[ext_resource type="PackedScene" uid="uid://5qblu0ytcf2" path="res://actors/BeachCrafterNPC.tscn" id="75_crafter_npc"]
 [ext_resource type="PackedScene" path="res://actors/BeachGatheringCircuit.tscn" id="76_gathering_circuit"]
 [ext_resource type="PackedScene" uid="uid://c70ynexh6blra" path="res://actors/FishingCardMakerNPC.tscn" id="77_card_maker_npc"]
 [ext_resource type="PackedScene" path="res://actors/HarborLockbox.tscn" id="78_harbor_lockbox"]
 [ext_resource type="PackedScene" path="res://actors/HarborRequestBoard.tscn" id="79_harbor_request"]
 [ext_resource type="PackedScene" path="res://actors/RegionalChampionshipRegistrar.tscn" id="80_regional_championship"]
-[ext_resource type="PackedScene" path="res://actors/BeachFishingCritter.tscn" id="81_beach_critter"]
-[ext_resource type="PackedScene" path="res://actors/FishingMasterStillWaterNPC.tscn" id="82_still_water_master"]
+[ext_resource type="PackedScene" uid="uid://k3mlp7ml5k0f" path="res://actors/BeachFishingCritter.tscn" id="81_beach_critter"]
+[ext_resource type="PackedScene" uid="uid://bvk23rw0i0b5b" path="res://actors/FishingMasterStillWaterNPC.tscn" id="82_still_water_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterCurrentReaderNPC.tscn" id="83_current_reader_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterDepthReaderNPC.tscn" id="84_depth_reader_master"]
-[ext_resource type="PackedScene" path="res://actors/FishingMasterStructureHunterNPC.tscn" id="85_structure_hunter_master"]
+[ext_resource type="PackedScene" uid="uid://v8fe5qnpsl7j" path="res://actors/FishingMasterStructureHunterNPC.tscn" id="85_structure_hunter_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterLineFighterNPC.tscn" id="86_line_fighter_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterDeepwaterVeteranNPC.tscn" id="87_deepwater_veteran_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterSurfaceAnglerNPC.tscn" id="88_surface_angler_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterLandingGuideNPC.tscn" id="89_landing_guide_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterWeatherWatcherNPC.tscn" id="90_weather_watcher_master"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterTideReaderNPC.tscn" id="91_tide_reader_master"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterSignReaderNPC.tscn" id="92_sign_reader_master"]
+[ext_resource type="Script" uid="uid://d1khgllba40fp" path="res://scripts/npc_animation_autoplay.gd" id="93_npc_anim_autoplay"]
+[ext_resource type="PackedScene" path="res://actors/FishingMasterNatureGuideNPC.tscn" id="94_nature_guide_master"]
+[ext_resource type="PackedScene" path="res://actors/FishThrashVisual.tscn" id="95_fish_thrash_visual"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -257,13 +262,13 @@ shape = SubResource("BoxShape3D_shore_blocker")
 debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
 [node name="BeachMerchantNPC" parent="World" unique_id=1429238293 instance=ExtResource("72_merchant_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.326166, 0.06284177, 0.42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9486763, 0.06284177, 0.60926473)
 
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
 
 [node name="BeachCrafterNPC" parent="World" unique_id=1235902304 instance=ExtResource("75_crafter_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.07, 0.42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.07, 0.6531534)
 
 [node name="FishingCardMakerNPC" parent="World" unique_id=907071164 instance=ExtResource("77_card_maker_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0201495, -0.12453979, 0.50029546)
@@ -279,41 +284,50 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.08, 0.07, 0.5)
 
 [node name="BeachGatheringCircuit" parent="World" unique_id=1174588029 instance=ExtResource("76_gathering_circuit")]
 
-[node name="FishingMasterStillWaterNPC" parent="World" instance=ExtResource("82_still_water_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0, 0.07, -0.10)
+[node name="FishingMasterStillWaterNPC" parent="World" unique_id=954943286 instance=ExtResource("82_still_water_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.468474, 0.07, -0.07606385)
 
-[node name="FishingMasterCurrentReaderNPC" parent="World" instance=ExtResource("83_current_reader_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 0.07, -0.10)
+[node name="FishingMasterCurrentReaderNPC" parent="World" unique_id=488993862 instance=ExtResource("83_current_reader_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.07, -0.1)
 
-[node name="FishingMasterDepthReaderNPC" parent="World" instance=ExtResource("84_depth_reader_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0.07, -0.10)
+[node name="FishingMasterDepthReaderNPC" parent="World" unique_id=367342925 instance=ExtResource("84_depth_reader_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0.07, -0.1)
 
-[node name="FishingMasterStructureHunterNPC" parent="World" instance=ExtResource("85_structure_hunter_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0.07, -0.10)
+[node name="FishingMasterStructureHunterNPC" parent="World" unique_id=854136164 instance=ExtResource("85_structure_hunter_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0.07, -0.1)
 
-[node name="FishingMasterLineFighterNPC" parent="World" instance=ExtResource("86_line_fighter_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.70, 0.07, -0.10)
+[node name="FishingMasterLineFighterNPC" parent="World" unique_id=1261999496 instance=ExtResource("86_line_fighter_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0.07, -0.1)
 
-[node name="FishingMasterDeepwaterVeteranNPC" parent="World" instance=ExtResource("87_deepwater_veteran_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0.07, -0.10)
+[node name="FishingMasterDeepwaterVeteranNPC" parent="World" unique_id=2139456398 instance=ExtResource("87_deepwater_veteran_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0.07, -0.1)
 
-[node name="FishingMasterSurfaceAnglerNPC" parent="World" instance=ExtResource("88_surface_angler_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.80, 0.07, -0.10)
+[node name="FishingMasterSurfaceAnglerNPC" parent="World" unique_id=1356287476 instance=ExtResource("88_surface_angler_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0.07, -0.1)
 
-[node name="FishingMasterLandingGuideNPC" parent="World" instance=ExtResource("89_landing_guide_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0.07, -0.10)
+[node name="FishingMasterLandingGuideNPC" parent="World" unique_id=1755332562 instance=ExtResource("89_landing_guide_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0.07, -0.1)
 
-[node name="FishingMasterWeatherWatcherNPC" parent="World" instance=ExtResource("90_weather_watcher_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.90, 0.07, -0.10)
+[node name="FishingMasterWeatherWatcherNPC" parent="World" unique_id=1605666736 instance=ExtResource("90_weather_watcher_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.9, 0.07, -0.1)
 
-[node name="BeachCritter" parent="World" instance=ExtResource("81_beach_critter")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, 0.34, 0.12)
-color_variant = "green"
+[node name="FishingMasterTideReaderNPC" parent="World" unique_id=1179926240 instance=ExtResource("91_tide_reader_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.45, 0.07, -0.1)
+
+[node name="FishingMasterSignReaderNPC" parent="World" unique_id=1207016313 instance=ExtResource("92_sign_reader_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.07, -0.1)
+
+[node name="FishingMasterNatureGuideNPC" parent="World" unique_id=2033202793 instance=ExtResource("94_nature_guide_master")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0.07, -0.1)
+
+[node name="BeachCritter" parent="World" unique_id=232758415 instance=ExtResource("81_beach_critter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, -0.055645004, 0.12)
 roam_half_width = 0.48
 roam_half_depth = 0.26
 move_speed = 0.19
 
-
+[node name="NPCAnimationAutoplay" type="Node" parent="." unique_id=907469643]
+script = ExtResource("93_npc_anim_autoplay")
 
 [node name="Player" type="Node" parent="." unique_id=1284942496]
 
@@ -886,6 +900,11 @@ distance_meter_scale = 4.0
 script = ExtResource("64_fishing_line")
 caster = NodePath("../Caster")
 rod_tip = NodePath("../../../Player/CharacterBody3D/RodTipTracker")
+
+[node name="FishThrashVisual" parent="Game/Fishing" unique_id=149361548 instance=ExtResource("95_fish_thrash_visual")]
+encounter = NodePath("../Encounter")
+fishing_line_view = NodePath("../FishingLineView")
+caster = NodePath("../Caster")
 
 [node name="Encounter" type="Node" parent="Game/Fishing" unique_id=105265296 node_paths=PackedStringArray("caster")]
 script = ExtResource("24_cybga")

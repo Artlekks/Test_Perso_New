@@ -1,0 +1,168 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://d3tlnkuq4dbel"]
+
+[ext_resource type="Texture2D" uid="uid://qbm6py1o7tlk" path="res://assets/sprites/npcs/beach_critters/crab_directional_atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="IdleE"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleN"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleNE"]
+atlas = ExtResource("1_atlas")
+region = Rect2(32, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleNW"]
+atlas = ExtResource("1_atlas")
+region = Rect2(224, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleS"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleSE"]
+atlas = ExtResource("1_atlas")
+region = Rect2(96, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleSW"]
+atlas = ExtResource("1_atlas")
+region = Rect2(160, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="IdleW"]
+atlas = ExtResource("1_atlas")
+region = Rect2(192, 0, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkNW0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkNW1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(32, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkNW2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkNW3"]
+atlas = ExtResource("1_atlas")
+region = Rect2(96, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkSW0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkSW1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(160, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkSW2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(192, 24, 32, 24)
+
+[sub_resource type="AtlasTexture" id="WalkSW3"]
+atlas = ExtResource("1_atlas")
+region = Rect2(224, 24, 32, 24)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleE")
+}],
+"loop": 1,
+"name": &"idle_e",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleN")
+}],
+"loop": 1,
+"name": &"idle_n",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleNE")
+}],
+"loop": 1,
+"name": &"idle_ne",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleNW")
+}],
+"loop": 1,
+"name": &"idle_nw",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleS")
+}],
+"loop": 1,
+"name": &"idle_s",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleSE")
+}],
+"loop": 1,
+"name": &"idle_se",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleSW")
+}],
+"loop": 1,
+"name": &"idle_sw",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("IdleW")
+}],
+"loop": 1,
+"name": &"idle_w",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("WalkNW0")
+}, {
+"duration": 1.0,
+"texture": SubResource("WalkNW1")
+}, {
+"duration": 1.0,
+"texture": SubResource("WalkNW2")
+}, {
+"duration": 1.0,
+"texture": SubResource("WalkNW3")
+}],
+"loop": 1,
+"name": &"walk_nw",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("WalkSW0")
+}, {
+"duration": 1.0,
+"texture": SubResource("WalkSW1")
+}, {
+"duration": 1.0,
+"texture": SubResource("WalkSW2")
+}, {
+"duration": 1.0,
+"texture": SubResource("WalkSW3")
+}],
+"loop": 1,
+"name": &"walk_sw",
+"speed": 8.0
+}]
