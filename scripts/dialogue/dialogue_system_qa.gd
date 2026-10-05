@@ -6,6 +6,9 @@ const DialogueChoiceDefinitionScript = preload("res://scripts/dialogue/dialogue_
 const DialogueLineDefinitionScript = preload("res://scripts/dialogue/dialogue_line_definition.gd")
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
+const BeachMerchantNPCScript = preload("res://scripts/beach_merchant_npc.gd")
+const BeachMerchantScene = preload("res://actors/BeachMerchantNPC.tscn")
+const FishingEconomyMenuScene = preload("res://actors/FishingEconomyMenu.tscn")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
 const COMPLETE_DIALOGUE_ID: StringName = &"master_gyosil_complete"
 
@@ -437,6 +440,77 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 		and not bridge.has_pending_interaction(),
 		"Choice completion must not leave an NPC bridge stuck waiting forever."
 	)
+
+
+	# First live choice integration: the beach merchant now uses one K dialogue
+	# interaction and routes stable choice ids back to its existing economy owner.
+	var merchant_scene_node = BeachMerchantScene.instantiate()
+	_record(
+		report,
+		"merchant world prompt is unified under K talk",
+		merchant_scene_node != null
+		and str(merchant_scene_node.get("interaction_prompt")) == "K : Talk",
+		"A choice-driven NPC should advertise one conversation key rather than separate service hotkeys."
+	)
+	if merchant_scene_node != null:
+		merchant_scene_node.free()
+
+	var merchant_choices: Array = BeachMerchantNPCScript.build_service_choices(
+		true,
+		true,
+		false,
+		false
+	)
+	_record(
+		report,
+		"merchant base choices are buy sell leave",
+		merchant_choices.size() == 3
+		and merchant_choices[0].get("choice_id", &"") == &"buy"
+		and merchant_choices[1].get("choice_id", &"") == &"sell"
+		and merchant_choices[2].get("choice_id", &"") == &"leave",
+		"The live merchant must route economy actions through stable choice ids."
+	)
+	var merchant_has_cards_choice := false
+	for raw_choice in merchant_choices:
+		if raw_choice is Dictionary and raw_choice.get("choice_id", &"") == &"cards":
+			merchant_has_cards_choice = true
+			break
+	_record(
+		report,
+		"merchant does not invent a card role",
+		not merchant_has_cards_choice,
+		"The current beach merchant is not the beach_trader card opponent and should not expose a fake Cards action."
+	)
+
+	var mixed_role_choices: Array = BeachMerchantNPCScript.build_service_choices(
+		true,
+		true,
+		true,
+		false
+	)
+	var cards_choice: Dictionary = {}
+	for raw_choice in mixed_role_choices:
+		if raw_choice is Dictionary and raw_choice.get("choice_id", &"") == &"cards":
+			cards_choice = raw_choice
+			break
+	_record(
+		report,
+		"merchant choice model supports optional card role",
+		not cards_choice.is_empty() and not bool(cards_choice.get("enabled", true)),
+		"A future mixed-role merchant may advertise Cards without moving card availability logic into dialogue."
+	)
+
+	var economy_menu_node = FishingEconomyMenuScene.instantiate()
+	_record(
+		report,
+		"economy menu exposes direct buy and sell entry points",
+		economy_menu_node != null
+		and economy_menu_node.has_method("open_buy_menu")
+		and economy_menu_node.has_method("open_sell_menu"),
+		"Merchant choices need public mode entry points instead of mutating the economy menu's private state."
+	)
+	if economy_menu_node != null:
+		economy_menu_node.free()
 
 	bridge.free()
 

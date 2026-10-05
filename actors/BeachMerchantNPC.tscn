@@ -67,6 +67,6 @@ visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
 billboard = 1
 modulate = Color(1, 0.964706, 0.709804, 1)
-text = "K : Trade"
+text = "K : Talk"
 font_size = 28
 outline_size = 8

@@ -96,6 +96,18 @@ func is_open() -> bool:
 
 
 func open_menu() -> void:
+	_open_menu_in_mode(MODE_BUY)
+
+
+func open_buy_menu() -> void:
+	_open_menu_in_mode(MODE_BUY)
+
+
+func open_sell_menu() -> void:
+	_open_menu_in_mode(MODE_SELL)
+
+
+func _open_menu_in_mode(mode: int) -> void:
 	if _open or _access == null or not _can_open():
 		return
 
@@ -107,7 +119,7 @@ func open_menu() -> void:
 	_open = true
 	_input_ready = false
 
-	_mode = MODE_BUY
+	_mode = MODE_SELL if mode == MODE_SELL else MODE_BUY
 	_category_index = 0
 	_page_index = 0
 	_row_index = 0
