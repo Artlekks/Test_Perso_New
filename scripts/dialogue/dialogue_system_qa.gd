@@ -2,6 +2,8 @@ extends RefCounted
 class_name DialogueSystemQA
 
 const DialogueServiceScript = preload("res://scripts/dialogue/dialogue_service.gd")
+const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
+const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/master_gyosil.tres")
 const COMPLETE_DIALOGUE_ID: StringName = &"master_gyosil_complete"
 
@@ -142,6 +144,85 @@ static func run(catalog: DialogueCatalog) -> Dictionary:
 	_record(report, "cancel lock is respected", not bool(locked_cancel.get("success", true)) and service.is_active(), "Cancel-disabled dialogue must remain active.")
 	var forced: Dictionary = service.force_close(&"qa_cleanup")
 	_record(report, "force close always cleans up", bool(forced.get("success", false)) and not service.is_active(), "Scene/system cleanup needs an unconditional escape hatch.")
+
+	var prefixed: Dictionary = NPCDialogueRouterScript.split_speaker_prefix(
+		"Current Reader: Let the water move it.",
+		"Fishing Master"
+	)
+	_record(
+		report,
+		"NPC speech prefix becomes speaker name",
+		str(prefixed.get("speaker_name", "")) == "Current Reader",
+		"Master-authored 'Name: line' text should populate the dialogue speaker field."
+	)
+	_record(
+		report,
+		"NPC speech prefix is removed from body",
+		str(prefixed.get("text", "")) == "Let the water move it.",
+		"Dialogue body should not repeat the speaker name."
+	)
+	var fallback_speech: Dictionary = NPCDialogueRouterScript.split_speaker_prefix(
+		"Technique learned — Read the Current.",
+		"Current Reader"
+	)
+	_record(
+		report,
+		"NPC speech without prefix keeps fallback speaker",
+		str(fallback_speech.get("speaker_name", "")) == "Current Reader",
+		"Technique/system-style master lines need a stable speaker when no prefix is authored."
+	)
+	_record(
+		report,
+		"master id humanizes for dialogue",
+		NPCDialogueRouterScript.humanize_id(
+			&"master_deepwater_veteran",
+			"master_",
+			"Fishing Master"
+		) == "Deepwater Veteran",
+		"Master ids must produce readable fallback names without per-master UI code."
+	)
+	_record(
+		report,
+		"missing sprite portrait is safe",
+		NPCDialogueRouterScript.portrait_from_sprite(null) == null,
+		"NPCs without portrait art must still be able to speak."
+	)
+
+	var bridge = DialogueNPCBridgeScript.new()
+	bridge.configure_service(service)
+	var routed_started: bool = NPCDialogueRouterScript.start_spoken_line(
+		bridge,
+		&"qa_npc_routed",
+		&"qa_action",
+		&"qa_master",
+		"QA Master",
+		"QA Master: Routed through the shared dialogue box.",
+		null,
+		true,
+		{"source": "qa"}
+	)
+	_record(
+		report,
+		"shared NPC router starts dialogue",
+		routed_started and service.is_active(),
+		"Direct NPC speech should enter the same DialogueService used by Gyosil and menu NPCs."
+	)
+	var routed_snapshot := service.get_snapshot()
+	_record(
+		report,
+		"shared NPC router preserves speaker and body",
+		str(routed_snapshot.get("speaker_name", "")) == "QA Master"
+		and str(routed_snapshot.get("text", "")) == "Routed through the shared dialogue box.",
+		"The router must present clean speaker metadata instead of a top-HUD notification."
+	)
+	service.advance()
+	_record(
+		report,
+		"routed NPC dialogue releases cleanly",
+		not service.is_active(),
+		"One-line NPC conversations must close normally and release the pause/input layer."
+	)
+	bridge.free()
 
 	service.free()
 	return report

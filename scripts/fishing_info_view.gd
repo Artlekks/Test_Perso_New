@@ -17,16 +17,34 @@ enum Priority {
 @export var slide_time: float = 0.25
 @export var slide_padding_px: float = 30.0
 
+@export_category("Context Layout")
+## Fishing keeps the scene-authored top position. Exploration moves the same
+## compact HUD notice beside the bottom-left exploration Menu panel.
+@export var exploration_position: Vector2 = Vector2(170.0, 430.0)
+@export var game_mode_node_name: StringName = &"GameMode"
+
 var _message_queue: Array[Dictionary] = []
 var _current_priority: int = -1
 var _message_tween: Tween = null
 var _showing_message: bool = false
 var _rest_position: Vector2 = Vector2.ZERO
+var _fishing_rest_position: Vector2 = Vector2.ZERO
+var _game_mode: Node = null
+var _using_fishing_layout: bool = false
+
 
 func _ready() -> void:
-	_rest_position = root.position
+	_fishing_rest_position = root.position
+	_rest_position = _fishing_rest_position
 	root.visible = false
-	
+
+	_bind_game_mode()
+	_apply_layout_from_game_mode(false)
+
+	if _game_mode == null:
+		call_deferred("_late_bind_game_mode")
+
+
 func show_message(
 	text: String,
 	duration: float = -1.0,
@@ -73,7 +91,6 @@ func _show_next_message() -> void:
 		return
 
 	var message: Dictionary = _message_queue.pop_front()
-
 	_display_message(message)
 
 
@@ -82,17 +99,15 @@ func _display_message(message: Dictionary) -> void:
 
 	_showing_message = true
 	_current_priority = message["priority"]
-
 	message_label.text = message["text"]
 
-	# Start above the screen.
-	root.position = _get_offscreen_top_position()
+	root.position = _get_hidden_position()
 	root.visible = true
 
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 
-	# Above → resting position.
+	# Hidden edge -> contextual resting position.
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(
 		root,
@@ -104,19 +119,19 @@ func _display_message(message: Dictionary) -> void:
 	# Stay visible.
 	tween.tween_interval(message["duration"])
 
-	# Resting position → above.
+	# Contextual resting position -> hidden edge.
 	tween.set_ease(Tween.EASE_IN)
 	tween.tween_property(
 		root,
 		"position",
-		_get_offscreen_top_position(),
+		_get_hidden_position(),
 		slide_time
 	)
 
 	tween.tween_callback(_on_message_finished)
-
 	_message_tween = tween
-	
+
+
 func _interrupt_with_message(message: Dictionary) -> void:
 	_kill_message_tween()
 	_display_message(message)
@@ -129,18 +144,77 @@ func _on_message_finished() -> void:
 
 	root.visible = false
 	root.position = _rest_position
-
 	_show_next_message()
 
 
 func _kill_message_tween() -> void:
 	if _message_tween != null and _message_tween.is_valid():
 		_message_tween.kill()
-
 	_message_tween = null
 
-func _get_offscreen_top_position() -> Vector2:
+
+func _get_hidden_position() -> Vector2:
+	if _using_fishing_layout:
+		return Vector2(
+			_rest_position.x,
+			-root.size.y - slide_padding_px
+		)
+
+	# Exploration HUD lives along the top and bottom-left. The info strip rests
+	# beside the Menu panel and enters/exits through the bottom edge so it never
+	# travels through the compass/location banner.
+	var viewport_height := get_viewport().get_visible_rect().size.y
 	return Vector2(
 		_rest_position.x,
-		-root.size.y - slide_padding_px
+		viewport_height + root.size.y + slide_padding_px
 	)
+
+
+func _late_bind_game_mode() -> void:
+	_bind_game_mode()
+	_apply_layout_from_game_mode(false)
+
+
+func _bind_game_mode() -> void:
+	if is_instance_valid(_game_mode):
+		return
+
+	var tree := get_tree()
+	if tree == null or tree.current_scene == null:
+		return
+
+	_game_mode = tree.current_scene.find_child(
+		String(game_mode_node_name),
+		true,
+		false
+	)
+	if _game_mode == null:
+		return
+
+	if _game_mode.has_signal("mode_changed"):
+		var callback := Callable(self, "_on_game_mode_changed")
+		if not _game_mode.is_connected("mode_changed", callback):
+			_game_mode.connect("mode_changed", callback)
+
+
+func _on_game_mode_changed(_new_mode: int) -> void:
+	# Messages from the previous context should not cross the camera/mode
+	# transition. This also prevents a tween from finishing at the old layout.
+	clear()
+	_apply_layout_from_game_mode(false)
+
+
+func _apply_layout_from_game_mode(reposition_visible: bool = true) -> void:
+	var fishing := false
+	if is_instance_valid(_game_mode) and _game_mode.has_method("is_fishing"):
+		fishing = bool(_game_mode.call("is_fishing"))
+
+	_using_fishing_layout = fishing
+	_rest_position = (
+		_fishing_rest_position
+		if _using_fishing_layout
+		else exploration_position
+	)
+
+	if reposition_visible or not root.visible:
+		root.position = _rest_position

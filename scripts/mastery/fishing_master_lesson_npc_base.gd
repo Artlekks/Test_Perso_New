@@ -1,6 +1,9 @@
 extends Node3D
 class_name FishingMasterLessonNPCBase
 
+const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
+const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
+
 ## Shared runtime/interaction plumbing for fishing-master NPC lessons.
 ## Individual masters only own their lesson state and success condition.
 
@@ -16,6 +19,8 @@ var _player_in_range: bool = false
 var _player: Node = null
 var _mastery_service: FishingMasteryService = null
 var _info_view: FishingInfoView = null
+var _dialogue_bridge: Node = null
+var _interaction_dialogue_mode: bool = false
 
 
 func _ready() -> void:
@@ -38,7 +43,9 @@ func _input(event: InputEvent) -> void:
 		return
 	if not _is_confirm(event):
 		return
+	_interaction_dialogue_mode = true
 	_handle_interaction()
+	_interaction_dialogue_mode = false
 	var viewport := get_viewport()
 	if viewport != null:
 		viewport.set_input_as_handled()
@@ -163,10 +170,50 @@ func _find_fishing_root() -> Node:
 
 
 func _show_message(text: String, duration: float = 3.0) -> void:
+	# Direct player-to-master speech belongs in the dialogue box. Messages that
+	# happen later during the live lesson remain HUD coaching so they never pause
+	# a cast/fight just to display feedback.
+	if _interaction_dialogue_mode and _show_npc_dialogue(text):
+		return
 	if not is_instance_valid(_info_view):
 		_info_view = _find_info_view()
 	if _info_view != null:
 		_info_view.show_message(text, duration, FishingInfoView.Priority.IMPORTANT)
+
+
+func _show_npc_dialogue(text: String) -> bool:
+	var bridge := _ensure_dialogue_bridge()
+	if bridge == null:
+		return false
+	var teacher_id := get_teacher_id()
+	var dialogue_key := str(teacher_id)
+	if dialogue_key.is_empty():
+		dialogue_key = str(name).to_snake_case()
+	var fallback_name: String = NPCDialogueRouterScript.humanize_id(
+		teacher_id,
+		"master_",
+		"Fishing Master"
+	)
+	return NPCDialogueRouterScript.start_spoken_line(
+		bridge,
+		StringName("master_talk_%s" % dialogue_key),
+		&"",
+		teacher_id,
+		fallback_name,
+		text,
+		animated_sprite,
+		true,
+		{"source": "fishing_master"}
+	)
+
+
+func _ensure_dialogue_bridge() -> Node:
+	if is_instance_valid(_dialogue_bridge):
+		return _dialogue_bridge
+	_dialogue_bridge = DialogueNPCBridgeScript.new()
+	_dialogue_bridge.name = "DialogueNPCBridge"
+	add_child(_dialogue_bridge)
+	return _dialogue_bridge
 
 
 func _play_animation(animation_name: StringName) -> void:

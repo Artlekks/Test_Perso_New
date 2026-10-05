@@ -4,11 +4,14 @@ const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bri
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/beach_merchant.tres")
 const DIALOGUE_ID: StringName = &"beach_merchant_greeting"
 const ACTION_OPEN_TRADE: StringName = &"open_trade"
+const CARD_DIALOGUE_ID: StringName = &"beach_merchant_cards"
+const ACTION_OPEN_CARDS: StringName = &"open_cards"
 
 @export var idle_animation: StringName = &"Bag_Search"
 @export var talk_animation: StringName = &"Stand_Interest"
 @export var interaction_prompt: String = "K : Trade"
 @export var greeting_text: String = "Take a look."
+@export var card_greeting_text: String = "Care for a game of cards?"
 @export var card_opponent_id: StringName = &""
 @export var card_opponent_profile: Resource
 
@@ -82,12 +85,17 @@ func _create_dialogue_bridge() -> void:
 
 
 func _on_dialogue_interaction_finished(action_id: StringName, reason: StringName) -> void:
-	if action_id != ACTION_OPEN_TRADE:
+	if action_id == ACTION_OPEN_TRADE:
+		if reason != &"completed":
+			_play_idle()
+			return
+		call_deferred("_open_trade_menu")
 		return
-	if reason != &"completed":
-		_play_idle()
-		return
-	call_deferred("_open_trade_menu")
+	if action_id == ACTION_OPEN_CARDS:
+		if reason != &"completed":
+			_play_idle()
+			return
+		call_deferred("_open_card_game")
 
 
 func _play_idle() -> void:
@@ -142,23 +150,39 @@ func _start_card_interaction() -> bool:
 		and card_opponent_profile == null
 	):
 		return false
-
-	var game: Node = _find_card_game()
-	if game == null:
+	if _find_card_game() == null:
 		return false
 
+	_play_talk()
+	if (
+		_dialogue_bridge != null
+		and _dialogue_bridge.start_single_line(
+			CARD_DIALOGUE_ID,
+			ACTION_OPEN_CARDS,
+			&"beach_merchant",
+			"Merchant",
+			card_greeting_text,
+			PORTRAIT
+		)
+	):
+		return true
+
+	_open_card_game()
+	return true
+
+
+func _open_card_game() -> void:
+	var game: Node = _find_card_game()
+	if game == null:
+		return
 	if (
 		card_opponent_id != &""
 		and game.has_method("open_game_by_id")
 	):
 		game.call("open_game_by_id", card_opponent_id)
-		return true
-
+		return
 	if game.has_method("open_game"):
 		game.call("open_game", card_opponent_profile)
-		return true
-
-	return false
 
 
 func _find_card_game() -> Node:

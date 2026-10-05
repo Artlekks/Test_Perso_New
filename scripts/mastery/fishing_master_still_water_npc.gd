@@ -1,6 +1,9 @@
 extends Node3D
 class_name FishingMasterStillWaterNPC
 
+const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
+const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
+
 const LessonPolicy = preload(
 	"res://scripts/mastery/fishing_master_lesson_policy.gd"
 )
@@ -28,6 +31,8 @@ var _player: Node = null
 var _mastery_service: FishingMasteryService = null
 var _catch_repository: FishingCatchRepository = null
 var _info_view: FishingInfoView = null
+var _dialogue_bridge: Node = null
+var _interaction_dialogue_mode: bool = false
 var _phase: LessonPhase = LessonPhase.INACTIVE
 var _stillness_progress: float = 0.0
 var _was_disturbed_last_frame: bool = false
@@ -89,7 +94,9 @@ func _input(event: InputEvent) -> void:
 		return
 	if not _is_confirm(event):
 		return
+	_interaction_dialogue_mode = true
 	_handle_interaction()
+	_interaction_dialogue_mode = false
 	get_viewport().set_input_as_handled()
 
 
@@ -225,10 +232,38 @@ func _find_info_view() -> FishingInfoView:
 
 
 func _show_message(text: String, duration: float) -> void:
+	if _interaction_dialogue_mode and _show_npc_dialogue(text):
+		return
 	if not is_instance_valid(_info_view):
 		_info_view = _find_info_view()
 	if _info_view != null:
 		_info_view.show_message(text, duration, FishingInfoView.Priority.IMPORTANT)
+
+
+func _show_npc_dialogue(text: String) -> bool:
+	var bridge := _ensure_dialogue_bridge()
+	if bridge == null:
+		return false
+	return NPCDialogueRouterScript.start_spoken_line(
+		bridge,
+		&"master_talk_still_water",
+		&"",
+		TEACHER_ID,
+		"Still Water",
+		text,
+		animated_sprite,
+		true,
+		{"source": "fishing_master"}
+	)
+
+
+func _ensure_dialogue_bridge() -> Node:
+	if is_instance_valid(_dialogue_bridge):
+		return _dialogue_bridge
+	_dialogue_bridge = DialogueNPCBridgeScript.new()
+	_dialogue_bridge.name = "DialogueNPCBridge"
+	add_child(_dialogue_bridge)
+	return _dialogue_bridge
 
 
 func _on_body_entered(body: Node) -> void:
