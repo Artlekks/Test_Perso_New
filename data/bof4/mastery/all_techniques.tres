@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://scripts/mastery/fishing_mastery_technique_definition.gd" id="2_definition"]
+
 [ext_resource type="Resource" path="res://data/bof4/mastery/read_current.tres" id="3_read_current"]
 [ext_resource type="Resource" path="res://data/bof4/mastery/quiet_approach.tres" id="4_quiet"]
 [ext_resource type="Resource" path="res://data/bof4/mastery/drift_casting.tres" id="5_drift"]
@@ -13,6 +14,28 @@
 [ext_resource type="Resource" path="res://data/bof4/mastery/structure_fighting.tres" id="11_structure_fighting"]
 [ext_resource type="Resource" path="res://data/bof4/mastery/snag_escape.tres" id="12_snag_escape"]
 
+[ext_resource type="Resource" path="res://data/bof4/mastery/tide_sense.tres" id="13_tide"]
+[ext_resource type="Resource" path="res://data/bof4/mastery/surface_control.tres" id="14_surface"]
+[ext_resource type="Resource" path="res://data/bof4/mastery/landing_technique.tres" id="15_landing"]
+[ext_resource type="Resource" path="res://data/bof4/mastery/read_fish_sign.tres" id="16_sign"]
+[ext_resource type="Resource" path="res://data/bof4/mastery/one_with_nature.tres" id="17_nature"]
+
 [resource]
 script = ExtResource("1_catalog")
-techniques = Array[ExtResource("2_definition")]([ExtResource("3_read_current"), ExtResource("4_quiet"), ExtResource("5_drift"), ExtResource("6_depth"), ExtResource("7_structure"), ExtResource("8_line"), ExtResource("9_weather"), ExtResource("10_deep"), ExtResource("11_structure_fighting"), ExtResource("12_snag_escape")])
+techniques = Array[ExtResource("2_definition")]([
+	ExtResource("3_read_current"),
+	ExtResource("4_quiet"),
+	ExtResource("5_drift"),
+	ExtResource("6_depth"),
+	ExtResource("7_structure"),
+	ExtResource("8_line"),
+	ExtResource("9_weather"),
+	ExtResource("10_deep"),
+	ExtResource("11_structure_fighting"),
+	ExtResource("12_snag_escape"),
+	ExtResource("13_tide"),
+	ExtResource("14_surface"),
+	ExtResource("15_landing"),
+	ExtResource("16_sign"),
+	ExtResource("17_nature")
+])

@@ -191,24 +191,6 @@ const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 const FishingMasteryTechniqueCatalogResource: FishingMasteryTechniqueCatalog = preload(
 	"res://data/bof4/mastery/all_techniques.tres"
 )
-const FishingTideSenseTechniqueResource: FishingMasteryTechniqueDefinition = preload(
-	"res://data/bof4/mastery/tide_sense.tres"
-)
-const FishingDeepWaterControlTechniqueResource: FishingMasteryTechniqueDefinition = preload(
-	"res://data/bof4/mastery/deep_water_control.tres"
-)
-const FishingSurfaceControlTechniqueResource: FishingMasteryTechniqueDefinition = preload(
-	"res://data/bof4/mastery/surface_control.tres"
-)
-const FishingLandingTechniqueResource: FishingMasteryTechniqueDefinition = preload(
-	"res://data/bof4/mastery/landing_technique.tres"
-)
-const FishingReadFishSignTechniqueResource: FishingMasteryTechniqueDefinition = preload(
-	"res://data/bof4/mastery/read_fish_sign.tres"
-)
-const FishingOneWithNatureTechniqueResource: FishingMasteryTechniqueDefinition = preload(
-	"res://data/bof4/mastery/one_with_nature.tres"
-)
 const FishingMasteryQASpotResource: FishingSpotData = preload(
 	"res://data/bof4/spots/ocean_2.tres"
 )
@@ -710,25 +692,6 @@ func initialize() -> void:
 	add_child(unlock_state)
 	unlock_state.initialize()
 
-	if FishingMasteryTechniqueCatalogResource.has_method("ensure_technique"):
-		FishingMasteryTechniqueCatalogResource.ensure_technique(
-			FishingTideSenseTechniqueResource
-		)
-		FishingMasteryTechniqueCatalogResource.ensure_technique(
-			FishingDeepWaterControlTechniqueResource
-		)
-		FishingMasteryTechniqueCatalogResource.ensure_technique(
-			FishingSurfaceControlTechniqueResource
-		)
-		FishingMasteryTechniqueCatalogResource.ensure_technique(
-			FishingLandingTechniqueResource
-		)
-		FishingMasteryTechniqueCatalogResource.ensure_technique(
-			FishingReadFishSignTechniqueResource
-		)
-		FishingMasteryTechniqueCatalogResource.ensure_technique(
-			FishingOneWithNatureTechniqueResource
-		)
 
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
 	mastery_service.name = "FishingMasteryService"
