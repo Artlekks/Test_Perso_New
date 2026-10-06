@@ -21,7 +21,7 @@ const SessionControllerScript = preload("res://scripts/triple_triad/triple_triad
 const InputControllerScript = preload("res://scripts/triple_triad/triple_triad_input_controller.gd")
 const CompositionRootScript = preload("res://scripts/triple_triad/triple_triad_composition_root.gd")
 
-const BACKEND_VERSION := "2.18.0"
+const BACKEND_VERSION := "2.18.1"
 
 const OWNER_NONE := 0
 const OWNER_PLAYER := 1
@@ -265,6 +265,15 @@ func _install_composition_result(result: Dictionary) -> void:
 
 
 func run_backend_qa() -> Dictionary:
+	if _developer_tools == null:
+		return {
+			"passed": false,
+			"test_count": 0,
+			"passed_count": 0,
+			"failed_count": 1,
+			"failures": ["backend_not_ready"],
+			"reason": "backend_not_ready",
+		}
 	return _developer_tools.run_backend_qa()
 
 
@@ -272,6 +281,12 @@ func run_balance_simulation(
 	games_per_matchup: int = 40,
 	simulation_seed: int = 1337
 ) -> Dictionary:
+	if _developer_tools == null:
+		return {
+			"valid": false,
+			"reason": "backend_not_ready",
+			"errors": ["backend_not_ready"],
+		}
 	return _developer_tools.run_balance_simulation(
 		games_per_matchup,
 		simulation_seed
@@ -282,19 +297,42 @@ func is_backend_ready() -> bool:
 	return _backend_ready
 
 
+func _backend_not_ready_result() -> Dictionary:
+	return {
+		"success": false,
+		"reason": "backend_not_ready",
+	}
+
+
 func get_backend_health() -> Dictionary:
-	return _runtime_state.get_backend_health(_backend_ready, _backend_errors)
+	if _runtime_state == null:
+		return {
+			"backend_version": BACKEND_VERSION,
+			"ready": false,
+			"errors": _backend_errors.duplicate(),
+			"save_integrity": {},
+		}
+	return _runtime_state.get_backend_health(
+		_backend_ready,
+		_backend_errors
+	)
 
 
 func get_pending_gameplay_events() -> Array:
+	if _runtime_state == null:
+		return []
 	return _runtime_state.get_pending_gameplay_events()
 
 
 func pop_next_gameplay_event() -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.pop_next_gameplay_event()
 
 
 func clear_gameplay_events() -> void:
+	if _runtime_state == null:
+		return
 	_runtime_state.clear_gameplay_events()
 
 
@@ -305,6 +343,8 @@ func _queue_gameplay_event(
 	payload: Dictionary = {},
 	priority: int = 0
 ) -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.queue_gameplay_event(
 		event_type,
 		title,
@@ -315,25 +355,37 @@ func _queue_gameplay_event(
 
 
 func get_state_api():
+	if _runtime_state == null:
+		return null
 	return _runtime_state.get_state_api()
 
 
 func get_player_snapshot() -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.get_player_snapshot()
 
 
 func get_collection_snapshot() -> Array:
+	if _runtime_state == null:
+		return []
 	return _runtime_state.get_collection_snapshot()
 
 
 func get_card_snapshot(card_id: StringName) -> Dictionary:
 	var state_api = get_state_api()
-	if state_api == null or not state_api.has_method("get_card_snapshot"):
+	if state_api == null or not state_api.has_method(
+		"get_card_snapshot"
+	):
 		return {}
 	return state_api.call("get_card_snapshot", card_id)
 
 
-func get_card_acquisition_sources(card_id: StringName) -> Array:
+func get_card_acquisition_sources(
+	card_id: StringName
+) -> Array:
+	if _world_gateway == null:
+		return []
 	return _world_gateway.get_card_acquisition_sources(card_id)
 
 
@@ -341,6 +393,8 @@ func get_acquisition_source_snapshot(
 	source_type: StringName,
 	source_id: StringName
 ) -> Dictionary:
+	if _world_gateway == null:
+		return {}
 	return _world_gateway.get_acquisition_source_snapshot(
 		source_type,
 		source_id
@@ -348,6 +402,8 @@ func get_acquisition_source_snapshot(
 
 
 func get_world_acquisition_sources() -> Array:
+	if _world_gateway == null:
+		return []
 	return _world_gateway.get_world_acquisition_sources()
 
 
@@ -357,6 +413,8 @@ func claim_world_source_card(
 	card_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_world_source_card(
 		source_type,
 		source_id,
@@ -372,6 +430,8 @@ func claim_world_source_reward(
 	event_id: StringName = &"",
 	one_shot: bool = false
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_world_source_reward(
 		source_type,
 		source_id,
@@ -385,6 +445,8 @@ func claim_fishing_salvage_reward(
 	source_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_fishing_salvage_reward(
 		source_id,
 		source_context
@@ -396,6 +458,8 @@ func claim_treasure_cache_reward(
 	cache_event_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_treasure_cache_reward(
 		source_id,
 		cache_event_id,
@@ -408,6 +472,8 @@ func claim_quest_card_reward(
 	quest_event_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_quest_card_reward(
 		source_id,
 		quest_event_id,
@@ -421,6 +487,8 @@ func claim_tournament_card_reward(
 	source_context: StringName = &"",
 	one_shot: bool = true
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_tournament_card_reward(
 		source_id,
 		tournament_event_id,
@@ -429,51 +497,81 @@ func claim_tournament_card_reward(
 	)
 
 
-func advance_world_reward_counter(counter_id: StringName) -> int:
+func advance_world_reward_counter(
+	counter_id: StringName
+) -> int:
+	if _world_gateway == null:
+		return 0
 	return _world_gateway.advance_world_reward_counter(counter_id)
 
 
 func get_world_reward_delivery_snapshot() -> Dictionary:
+	if _world_gateway == null:
+		return {}
 	return _world_gateway.get_world_reward_delivery_snapshot()
 
 
-func has_world_reward_event_claimed(event_id: StringName) -> bool:
+func has_world_reward_event_claimed(
+	event_id: StringName
+) -> bool:
+	if _world_gateway == null:
+		return false
 	return _world_gateway.has_world_reward_event_claimed(event_id)
 
 
 func get_deck_profiles_snapshot() -> Array:
+	if _runtime_state == null:
+		return []
 	return _runtime_state.get_deck_profiles_snapshot()
 
 
-func get_opponent_snapshot(opponent_id: StringName) -> Dictionary:
+func get_opponent_snapshot(
+	opponent_id: StringName
+) -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.get_opponent_snapshot(opponent_id)
 
 
 func get_opponents_snapshot() -> Array:
+	if _runtime_state == null:
+		return []
 	return _runtime_state.get_opponents_snapshot()
 
 
 func get_collection_completion_snapshot() -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.get_collection_completion_snapshot()
 
 
 func get_missing_card_diagnostics() -> Array:
+	if _runtime_state == null:
+		return []
 	return _runtime_state.get_missing_card_diagnostics()
 
 
 func get_source_completion_snapshot() -> Array:
+	if _runtime_state == null:
+		return []
 	return _runtime_state.get_source_completion_snapshot()
 
 
 func get_global_triple_triad_snapshot() -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.get_global_snapshot()
 
 
 func get_world_progression_snapshot() -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.get_world_progression_snapshot()
 
 
 func get_runtime_ui_snapshot() -> Dictionary:
+	if _runtime_state == null or _live_match == null:
+		return {}
 	return _runtime_state.get_runtime_ui_snapshot(
 		_match,
 		_live_match.selected_hand_index,
@@ -481,23 +579,35 @@ func get_runtime_ui_snapshot() -> Dictionary:
 	)
 
 
-func _invalidate_state_api(reason: String = "") -> void:
+func _invalidate_state_api(
+	reason: String = ""
+) -> void:
+	if _runtime_state == null:
+		return
 	_runtime_state.invalidate_state_api(reason)
 
 
-func _publish_backend_state_change(reason: String) -> void:
+func _publish_backend_state_change(
+	reason: String
+) -> void:
+	if _runtime_state == null:
+		return
 	_runtime_state.publish_backend_state_change(reason)
 
 
 func is_open() -> bool:
-	return _session.is_open()
+	return _session != null and _session.is_open()
 
 
 func is_card_game_unlocked() -> bool:
+	if _world_gateway == null:
+		return false
 	return _world_gateway.is_card_game_unlocked()
 
 
 func get_acquisition_snapshot() -> Dictionary:
+	if _world_gateway == null:
+		return {}
 	return _world_gateway.get_acquisition_snapshot()
 
 
@@ -505,25 +615,33 @@ func claim_acquisition_bundle(
 	bundle_id: StringName,
 	source_context: StringName = &""
 ) -> Dictionary:
+	if _world_gateway == null:
+		return _backend_not_ready_result()
 	return _world_gateway.claim_acquisition_bundle(
 		bundle_id,
 		source_context
 	)
 
 
-## Stable bridge for the fishing/exploration layer. Triple Triad owns bundle
-## contents, one-shot persistence, collection writes, and unlock state.
 func claim_salvaged_card_case(
 	source_context: StringName = &"sea_salvage"
 ) -> Dictionary:
-	return _world_gateway.claim_salvaged_card_case(source_context)
+	if _world_gateway == null:
+		return _backend_not_ready_result()
+	return _world_gateway.claim_salvaged_card_case(
+		source_context
+	)
 
 
 func get_onboarding_snapshot() -> Dictionary:
+	if _world_gateway == null:
+		return {}
 	return _world_gateway.get_onboarding_snapshot()
 
 
 func _install_fishing_salvage_bridge() -> void:
+	if _world_gateway == null:
+		return
 	if is_instance_valid(_fishing_salvage_bridge):
 		return
 
@@ -543,41 +661,72 @@ func _install_fishing_salvage_bridge() -> void:
 
 
 func get_competitive_snapshot() -> Dictionary:
+	if _competition == null:
+		return {}
 	return _competition.get_competitive_snapshot()
 
 
-func get_circuit_snapshot(circuit_id: StringName) -> Dictionary:
+func get_circuit_snapshot(
+	circuit_id: StringName
+) -> Dictionary:
+	if _competition == null:
+		return {}
 	return _competition.get_circuit_snapshot(circuit_id)
 
 
-func get_competition_snapshot(competition_id: StringName) -> Dictionary:
-	return _competition.get_competition_snapshot(competition_id)
+func get_competition_snapshot(
+	competition_id: StringName
+) -> Dictionary:
+	if _competition == null:
+		return {}
+	return _competition.get_competition_snapshot(
+		competition_id
+	)
 
 
-func start_competition(competition_id: StringName) -> Dictionary:
-	if not _backend_ready:
-		return {"success": false, "reason": "backend_not_ready"}
+func start_competition(
+	competition_id: StringName
+) -> Dictionary:
+	if not _backend_ready or _competition == null:
+		return _backend_not_ready_result()
 	if not is_card_game_unlocked():
-		return {"success": false, "reason": "card_game_locked"}
+		return {
+			"success": false,
+			"reason": "card_game_locked",
+		}
 	return _competition.start_competition(competition_id)
 
 
-func start_competition_and_open(competition_id: StringName) -> bool:
-	var result: Dictionary = start_competition(competition_id)
+func start_competition_and_open(
+	competition_id: StringName
+) -> bool:
+	var result: Dictionary = start_competition(
+		competition_id
+	)
 	if not bool(result.get("success", false)):
 		return false
 	return open_active_competition_match()
 
 
 func open_active_competition_match() -> bool:
+	if not _backend_ready or _competition == null:
+		return false
 	if is_open():
 		return false
-	var open_request: Dictionary = _competition.prepare_active_match_open()
+
+	var open_request: Dictionary = (
+		_competition.prepare_active_match_open()
+	)
 	if not bool(open_request.get("success", false)):
 		return false
 
-	var opponent_id := StringName(str(open_request.get("opponent_id", "")))
-	var locked_cards: Array = open_request.get("locked_cards", [])
+	var opponent_id := StringName(
+		str(open_request.get("opponent_id", ""))
+	)
+	var locked_cards: Array = open_request.get(
+		"locked_cards",
+		[]
+	)
 	if not open_game_by_id(opponent_id):
 		return false
 
@@ -585,11 +734,15 @@ func open_active_competition_match() -> bool:
 	if locked_cards.size() == 5:
 		_live_match.set_active_player_deck(locked_cards)
 		_ui_flow.close_deck_setup()
-		_start_new_match(_live_match.get_active_player_deck())
+		_start_new_match(
+			_live_match.get_active_player_deck()
+		)
 	return true
 
 
 func abandon_active_competition() -> Dictionary:
+	if _competition == null:
+		return _backend_not_ready_result()
 	return _competition.abandon_active_competition()
 
 
@@ -597,28 +750,46 @@ func get_opponent_evolution_snapshot(
 	opponent_id: StringName
 ) -> Dictionary:
 	if (
-		opponent_registry == null
+		_match_context == null
+		or opponent_registry == null
 		or not opponent_registry.has_method("get_opponent")
 	):
 		return {}
-	var profile = opponent_registry.call("get_opponent", opponent_id)
+
+	var profile = opponent_registry.call(
+		"get_opponent",
+		opponent_id
+	)
 	if profile == null:
 		return {}
-	return _match_context.build_opponent_evolution_snapshot(profile)
+
+	return _match_context.build_opponent_evolution_snapshot(
+		profile
+	)
 
 
 func get_active_opponent_evolution_snapshot() -> Dictionary:
+	if _match_context == null:
+		return {}
 	return _match_context.get_active_evolution_snapshot()
 
 
-func get_opponent_availability(opponent_id: StringName) -> Dictionary:
-	return _world_gateway.get_opponent_availability(opponent_id)
+func get_opponent_availability(
+	opponent_id: StringName
+) -> Dictionary:
+	if _world_gateway == null:
+		return {}
+	return _world_gateway.get_opponent_availability(
+		opponent_id
+	)
 
 
 func get_available_card_player_ids(
 	region_id: StringName = &"",
 	required_tag: StringName = &""
 ) -> PackedStringArray:
+	if _world_gateway == null:
+		return PackedStringArray()
 	return _world_gateway.get_available_card_player_ids(
 		region_id,
 		required_tag
@@ -776,6 +947,8 @@ func close_game() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if not _backend_ready or _input_controller == null:
+		return
 	var action: StringName = _input_controller.action_for_event(event, OS.is_debug_build())
 	if action == InputControllerScript.ACTION_CAMPAIGN_QA:
 		_developer_tools.toggle_campaign_qa_menu()
@@ -821,6 +994,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not _backend_ready or _input_controller == null:
+		return
 	var action: StringName = _input_controller.action_for_event(
 		event,
 		OS.is_debug_build()
@@ -950,10 +1125,17 @@ func _begin_result_transition() -> void:
 
 
 func get_runtime_recovery_snapshot() -> Dictionary:
+	if _runtime_recovery == null:
+			return {}
 	return _runtime_recovery.get_runtime_snapshot()
 
 
 func reconcile_runtime_state() -> Dictionary:
+	if _runtime_recovery == null:
+		return {
+			"success": false,
+			"reason": "backend_not_ready",
+		}
 	return _runtime_recovery.reconcile_runtime_state()
 
 
@@ -1018,6 +1200,8 @@ func _resume_pending_match_resolution() -> void:
 
 
 func get_card_economy_snapshot() -> Dictionary:
+	if _runtime_state == null:
+		return {}
 	return _runtime_state.get_card_economy_snapshot()
 
 

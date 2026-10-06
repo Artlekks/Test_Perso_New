@@ -726,6 +726,10 @@ func run_all() -> Dictionary:
 	_run("UI flow owns result copy", _test_ui_flow_result_copy)
 	_run("UI flow maps phases to HUD turn state", _test_ui_flow_turn_text)
 	_run("UI flow limits player selection markers to player phases", _test_ui_flow_selection_phase)
+	_run(
+		"Public facade survives pre-composition calls",
+		_test_public_facade_precomposition_guard
+	)
 	_run("World gateway rejects writes before backend readiness", _test_world_gateway_backend_guard)
 	_run("World gateway blocks direct rewards before card discovery", _test_world_gateway_discovery_gate)
 	_run("World gateway preserves one-shot reward delivery", _test_world_gateway_one_shot_reward)
@@ -3312,6 +3316,155 @@ func _test_ui_flow_selection_phase() -> Dictionary:
 	)
 
 
+func _test_public_facade_precomposition_guard() -> Dictionary:
+	var game_script = load(
+		"res://scripts/triple_triad/triple_triad_game.gd"
+	)
+
+	if game_script == null:
+		return _ok(
+			false,
+			"Could not load TripleTriadGame for pre-composition QA."
+		)
+
+	var game = game_script.new()
+
+	if game == null:
+		return _ok(
+			false,
+			"Could not instantiate TripleTriadGame for pre-composition QA."
+		)
+
+	var health: Dictionary = game.get_backend_health()
+	var pending_events: Array = game.get_pending_gameplay_events()
+	var collection: Array = game.get_collection_snapshot()
+	var acquisition_sources: Array = game.get_world_acquisition_sources()
+	var deck_profiles: Array = game.get_deck_profiles_snapshot()
+	var opponents: Array = game.get_opponents_snapshot()
+	var missing_cards: Array = game.get_missing_card_diagnostics()
+	var source_completion: Array = game.get_source_completion_snapshot()
+	var card_players: PackedStringArray = game.get_available_card_player_ids()
+
+	var read_contract_ok: bool = (
+		not game.is_backend_ready()
+		and not bool(health.get("ready", true))
+		and not game.is_open()
+		and not game.is_card_game_unlocked()
+		and pending_events.is_empty()
+		and game.pop_next_gameplay_event().is_empty()
+		and game.get_state_api() == null
+		and game.get_player_snapshot().is_empty()
+		and collection.is_empty()
+		and game.get_card_snapshot(&"qa_card").is_empty()
+		and game.get_card_acquisition_sources(&"qa_card").is_empty()
+		and game.get_acquisition_source_snapshot(
+			&"quest_reward",
+			&"qa_source"
+		).is_empty()
+		and acquisition_sources.is_empty()
+		and game.get_world_reward_delivery_snapshot().is_empty()
+		and not game.has_world_reward_event_claimed(&"qa_event")
+		and deck_profiles.is_empty()
+		and game.get_opponent_snapshot(&"qa_opponent").is_empty()
+		and opponents.is_empty()
+		and game.get_collection_completion_snapshot().is_empty()
+		and missing_cards.is_empty()
+		and source_completion.is_empty()
+		and game.get_global_triple_triad_snapshot().is_empty()
+		and game.get_world_progression_snapshot().is_empty()
+		and game.get_runtime_ui_snapshot().is_empty()
+		and game.get_acquisition_snapshot().is_empty()
+		and game.get_onboarding_snapshot().is_empty()
+		and game.get_competitive_snapshot().is_empty()
+		and game.get_circuit_snapshot(&"qa_circuit").is_empty()
+		and game.get_competition_snapshot(&"qa_competition").is_empty()
+		and game.get_opponent_evolution_snapshot(&"qa_opponent").is_empty()
+		and game.get_active_opponent_evolution_snapshot().is_empty()
+		and game.get_opponent_availability(&"qa_opponent").is_empty()
+		and card_players.is_empty()
+		and game.get_runtime_recovery_snapshot().is_empty()
+		and game.get_card_economy_snapshot().is_empty()
+		and game.advance_world_reward_counter(&"qa_counter") == 0
+	)
+
+	var write_results: Array = [
+		game.claim_world_source_card(
+			&"quest_reward",
+			&"qa_source",
+			&"qa_card",
+			&"qa"
+		),
+		game.claim_world_source_reward(
+			&"quest_reward",
+			&"qa_source",
+			&"qa",
+			&"qa_event",
+			true
+		),
+		game.claim_fishing_salvage_reward(
+			&"qa_source",
+			&"qa"
+		),
+		game.claim_treasure_cache_reward(
+			&"qa_source",
+			&"qa_event",
+			&"qa"
+		),
+		game.claim_quest_card_reward(
+			&"qa_source",
+			&"qa_event",
+			&"qa"
+		),
+		game.claim_tournament_card_reward(
+			&"qa_source",
+			&"qa_event",
+			&"qa",
+			true
+		),
+		game.claim_acquisition_bundle(
+			&"qa_bundle",
+			&"qa"
+		),
+		game.claim_salvaged_card_case(&"qa"),
+		game.start_competition(&"qa_competition"),
+		game.abandon_active_competition(),
+	]
+
+	var writes_closed: bool = true
+
+	for raw_result in write_results:
+		if not (raw_result is Dictionary):
+			writes_closed = false
+			break
+
+		var result: Dictionary = raw_result
+
+		if (
+			bool(result.get("success", true))
+			or str(result.get("reason", "")) != "backend_not_ready"
+		):
+			writes_closed = false
+			break
+
+	var action_contract_ok: bool = (
+		not game.start_competition_and_open(&"qa_competition")
+		and not game.open_active_competition_match()
+		and not game.open_game_by_id(&"qa_opponent")
+	)
+
+	game.clear_gameplay_events()
+	game.open_game()
+	game.close_game()
+
+	game.free()
+
+	return _ok(
+		read_contract_ok
+		and writes_closed
+		and action_contract_ok,
+		"TripleTriadGame public APIs must be safe before composition: reads return neutral values and writes fail with backend_not_ready."
+	)
+
 
 func _test_world_gateway_backend_guard() -> Dictionary:
 	var gateway = WorldGatewayScript.new()
@@ -4433,4 +4586,3 @@ func _test_composition_activation_phase() -> Dictionary:
 		and bool(activation_report.get("valid", false)),
 		"Composition must not run effectful boot work until the host has installed the composed controller graph."
 	)
-
