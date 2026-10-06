@@ -50,6 +50,7 @@ const DEBUG_QA_PATHS: Dictionary = {
 	"FishingSystemStabilityQAScript": "res://scripts/qa/fishing_system_stability_qa.gd",
 	"DialogueSystemQAScript": "res://scripts/dialogue/dialogue_system_qa.gd",
 	"FishingFreshSaveRehearsalQAScript": "res://scripts/qa/fishing_fresh_save_rehearsal_qa.gd",
+	"FishingTortureQAScript": "res://scripts/qa/fishing_torture_qa.gd",
 }
 
 const FishingProgressScript = preload(
@@ -254,6 +255,7 @@ var BeachCraftingFeelQAHUDScene = null
 var FishingSystemStabilityQAScript = null
 var DialogueSystemQAScript = null
 var FishingFreshSaveRehearsalQAScript = null
+var FishingTortureQAScript = null
 
 var _debug_qa_load_attempted: bool = false
 var _debug_qa_scripts_ready: bool = false
@@ -261,6 +263,7 @@ var _debug_qa_load_failures: PackedStringArray = PackedStringArray()
 var system_stability_qa_report: Dictionary = {}
 var dialogue_qa_report: Dictionary = {}
 var fresh_save_rehearsal_qa_report: Dictionary = {}
+var torture_qa_report: Dictionary = {}
 
 var dialogue_service: DialogueService = null
 var dialogue_controller: DialogueController = null
@@ -1341,6 +1344,34 @@ func initialize() -> void:
 		):
 			push_error("Fishing Fresh Save Rehearsal QA: %s" % str(failure))
 
+		torture_qa_report = FishingTortureQAScript.run(self)
+
+		print(
+			"Fishing Torture QA v1: %d/%d tests passed."
+			% [
+				int(
+					torture_qa_report.get(
+						"passed_count",
+						0
+					)
+				),
+				int(
+					torture_qa_report.get(
+						"test_count",
+						0
+					)
+				),
+			]
+		)
+
+		for failure in torture_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error(
+				"Fishing Torture QA v1: %s"
+				% str(failure)
+			)
 
 func _load_debug_qa_dependencies() -> bool:
 	if _debug_qa_load_attempted:
@@ -1400,7 +1431,8 @@ func _load_debug_qa_dependencies() -> bool:
 	FishingSystemStabilityQAScript = loaded.get("FishingSystemStabilityQAScript", null)
 	DialogueSystemQAScript = loaded.get("DialogueSystemQAScript", null)
 	FishingFreshSaveRehearsalQAScript = loaded.get("FishingFreshSaveRehearsalQAScript", null)
-
+	FishingTortureQAScript = loaded.get("FishingTortureQAScript", null)
+	
 	_debug_qa_scripts_ready = _debug_qa_load_failures.is_empty()
 	if not _debug_qa_scripts_ready:
 		push_warning(
@@ -1425,11 +1457,12 @@ func get_debug_qa_dependency_health() -> Dictionary:
 func get_fishing_system_stability_qa_report() -> Dictionary:
 	return system_stability_qa_report.duplicate(true)
 
-
 func get_dialogue_system_qa_report() -> Dictionary:
 	return dialogue_qa_report.duplicate(true)
 
-
+func get_fishing_torture_qa_report() -> Dictionary:
+	return torture_qa_report.duplicate(true)
+	
 func run_dialogue_system_qa() -> Dictionary:
 	if OS.is_debug_build() and not _debug_qa_scripts_ready:
 		_load_debug_qa_dependencies()
