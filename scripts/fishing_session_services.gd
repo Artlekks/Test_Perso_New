@@ -51,6 +51,7 @@ const DEBUG_QA_PATHS: Dictionary = {
 	"DialogueSystemQAScript": "res://scripts/dialogue/dialogue_system_qa.gd",
 	"FishingFreshSaveRehearsalQAScript": "res://scripts/qa/fishing_fresh_save_rehearsal_qa.gd",
 	"FishingTortureQAScript": "res://scripts/qa/fishing_torture_qa.gd",
+	"FishingSaveRecoveryInterruptionQAScript": "res://scripts/qa/fishing_save_recovery_interruption_qa.gd",
 }
 
 const FishingProgressScript = preload(
@@ -256,6 +257,7 @@ var FishingSystemStabilityQAScript = null
 var DialogueSystemQAScript = null
 var FishingFreshSaveRehearsalQAScript = null
 var FishingTortureQAScript = null
+var FishingSaveRecoveryInterruptionQAScript = null
 
 var _debug_qa_load_attempted: bool = false
 var _debug_qa_scripts_ready: bool = false
@@ -264,6 +266,7 @@ var system_stability_qa_report: Dictionary = {}
 var dialogue_qa_report: Dictionary = {}
 var fresh_save_rehearsal_qa_report: Dictionary = {}
 var torture_qa_report: Dictionary = {}
+var save_recovery_interruption_qa_report: Dictionary = {}
 
 var dialogue_service: DialogueService = null
 var dialogue_controller: DialogueController = null
@@ -1363,7 +1366,39 @@ func initialize() -> void:
 				),
 			]
 		)
+		save_recovery_interruption_qa_report = (
+			FishingSaveRecoveryInterruptionQAScript.run(
+				self
+			)
+		)
 
+		print(
+			"Fishing Save/Recovery Interruption QA v1: %d/%d tests passed."
+			% [
+				int(
+					save_recovery_interruption_qa_report.get(
+						"passed_count",
+						0
+					)
+				),
+				int(
+					save_recovery_interruption_qa_report.get(
+						"test_count",
+						0
+					)
+				),
+			]
+		)
+
+		for failure in save_recovery_interruption_qa_report.get(
+			"failures",
+			PackedStringArray()
+		):
+			push_error(
+				"Fishing Save/Recovery Interruption QA v1: %s"
+				% str(failure)
+			)
+		
 		for failure in torture_qa_report.get(
 			"failures",
 			PackedStringArray()
@@ -1432,6 +1467,10 @@ func _load_debug_qa_dependencies() -> bool:
 	DialogueSystemQAScript = loaded.get("DialogueSystemQAScript", null)
 	FishingFreshSaveRehearsalQAScript = loaded.get("FishingFreshSaveRehearsalQAScript", null)
 	FishingTortureQAScript = loaded.get("FishingTortureQAScript", null)
+	FishingSaveRecoveryInterruptionQAScript = loaded.get(
+		"FishingSaveRecoveryInterruptionQAScript",
+		null
+	)
 	
 	_debug_qa_scripts_ready = _debug_qa_load_failures.is_empty()
 	if not _debug_qa_scripts_ready:
@@ -1462,6 +1501,9 @@ func get_dialogue_system_qa_report() -> Dictionary:
 
 func get_fishing_torture_qa_report() -> Dictionary:
 	return torture_qa_report.duplicate(true)
+
+func get_fishing_save_recovery_interruption_qa_report() -> Dictionary:
+	return save_recovery_interruption_qa_report.duplicate(true)
 	
 func run_dialogue_system_qa() -> Dictionary:
 	if OS.is_debug_build() and not _debug_qa_scripts_ready:
