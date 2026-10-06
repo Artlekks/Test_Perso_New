@@ -39,8 +39,8 @@ var _fight_variant: bool = false
 var _follow_target: Node3D = null
 var _follow_surface_y: float = 0.0
 var _sprite: AnimatedSprite3D = null
-var _landing_frames: SpriteFrames = null
-var _fight_frames: SpriteFrames = null
+
+static var _shared_frame_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -125,14 +125,67 @@ func _get_strength_scale(strength: float) -> float:
 
 
 func _get_frames_for_current_variant() -> SpriteFrames:
-	if _fight_variant:
-		if _fight_frames == null:
-			_fight_frames = _build_frames(fight_sheet, fight_animation_fps, false)
-		return _fight_frames
+	var sheet: Texture2D = (
+		fight_sheet
+		if _fight_variant
+		else landing_sheet
+	)
+	var fps: float = (
+		fight_animation_fps
+		if _fight_variant
+		else landing_animation_fps
+	)
 
-	if _landing_frames == null:
-		_landing_frames = _build_frames(landing_sheet, landing_animation_fps, false)
-	return _landing_frames
+	if sheet == null:
+		return null
+
+	var cache_key := _frame_cache_key(
+		sheet,
+		fps,
+		false
+	)
+
+	var cached := (
+		_shared_frame_cache.get(cache_key, null)
+		as SpriteFrames
+	)
+
+	if cached != null:
+		return cached
+
+	var frames := _build_frames(
+		sheet,
+		fps,
+		false
+	)
+
+	if frames != null:
+		_shared_frame_cache[cache_key] = frames
+
+	return frames
+
+
+func _frame_cache_key(
+	sheet: Texture2D,
+	fps: float,
+	looping: bool
+) -> String:
+	if sheet == null:
+		return ""
+
+	var sheet_id: String = sheet.resource_path
+
+	if sheet_id.is_empty():
+		sheet_id = "instance:%d" % sheet.get_instance_id()
+
+	return "%s|%.4f|%s|%s|%.4f|%.4f" % [
+		sheet_id,
+		fps,
+		str(looping),
+		str(separator_color),
+		separator_threshold,
+		separator_tolerance,
+	]
 
 
 func _build_frames(
