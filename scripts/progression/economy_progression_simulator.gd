@@ -3,6 +3,12 @@ class_name EconomyProgressionSimulator
 const EconomyConfigResource = preload(
 	"res://data/economy/economy_foundation_v1.tres"
 )
+const ShopCatalogResource = preload(
+	"res://data/bof4/shops/all_shops.tres"
+)
+const TradeCatalogResource = preload(
+	"res://data/bof4/trades/all_trades.tres"
+)
 ## Deterministic 0-12 hour economy/progression design simulator.
 ##
 ## This is a QA/design tool only. It never reads or writes save data and it does
@@ -43,14 +49,25 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 		var profile_id: String = str(profile.get("id", "UNKNOWN"))
 		profile_reports[profile_id] = _simulate_profile(profile)
 
+	var source_truth: Dictionary = _audit_purchase_plan_sources()
 	var checks: Array = _evaluate_suite(profile_reports)
+	checks.append({
+		"label": "First-10h acquisition plan resolves to authored economy sources",
+		"passed": bool(source_truth.get("ok", false)),
+		"value": (
+			"YES"
+			if bool(source_truth.get("ok", false))
+			else "NO"
+		),
+		"target": "all planned buys/trades resolve exactly",
+	})
 	var passed: int = 0
 	for check in checks:
 		if bool(check.get("passed", false)):
 			passed += 1
 
 	var report := {
-		"version": "0.4",
+		"version": "0.5",
 		"hours_simulated": 12.0,
 		"step_hours": STEP_HOURS,
 		"profiles": profile_reports,
@@ -58,6 +75,7 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 		"checks_passed": passed,
 		"checks_total": checks.size(),
 		"summary": "%d/%d economy checks healthy" % [passed, checks.size()],
+		"source_truth": source_truth,
 		"assumptions": _get_assumption_snapshot(),
 	}
 
@@ -516,6 +534,153 @@ func _run_card_maker(
 	)
 
 
+
+func _audit_purchase_plan_sources() -> Dictionary:
+	var errors := PackedStringArray()
+	var sources: Array[Dictionary] = []
+
+	for purchase in _build_purchase_plan():
+		var purchase_id: String = str(purchase.get("id", ""))
+		var source_type: String = str(purchase.get("source_type", ""))
+		var source_id: StringName = StringName(
+			str(purchase.get("source_id", ""))
+		)
+		var valid: bool = _purchase_source_is_valid(purchase)
+		var source_snapshot := {
+			"purchase_id": purchase_id,
+			"source_type": source_type,
+			"source_id": str(source_id),
+			"valid": valid,
+		}
+
+		if source_type == "shop_offer":
+			var offer = ShopCatalogResource.get_offer_by_id(source_id)
+			if offer != null:
+				source_snapshot["shop_id"] = str(offer.shop_id)
+				source_snapshot["availability_tag"] = str(
+					offer.availability_tag
+				)
+
+		elif source_type == "manillo_trade":
+			var recipe = TradeCatalogResource.get_recipe_by_id(source_id)
+			if recipe != null:
+				source_snapshot["shop_id"] = str(recipe.shop_id)
+				source_snapshot["fish_requirements"] = (
+					recipe.get_cost_dictionary().duplicate(true)
+				)
+
+		sources.append(source_snapshot)
+
+		if not valid:
+			errors.append(
+				"%s -> %s:%s does not match the planned acquisition"
+				% [
+					purchase_id,
+					source_type,
+					str(source_id),
+				]
+			)
+
+	return {
+		"ok": errors.is_empty(),
+		"errors": errors,
+		"sources": sources,
+	}
+
+
+func _purchase_source_is_valid(purchase: Dictionary) -> bool:
+	var source_type: String = str(
+		purchase.get(
+			"source_type",
+			""
+		)
+	)
+	var source_id := StringName(
+		str(
+			purchase.get(
+				"source_id",
+				""
+			)
+		)
+	)
+	var item_id := StringName(
+		str(
+			purchase.get(
+				"item_id",
+				purchase.get(
+					"id",
+					""
+				)
+			)
+		)
+	)
+	var kind: String = str(purchase.get("kind", ""))
+	var acquisition: String = str(
+		purchase.get(
+			"acquisition",
+			"buy"
+		)
+	)
+
+	if source_id == &"" or item_id == &"":
+		return false
+
+	match source_type:
+		"shop_offer":
+			if acquisition != "buy":
+				return false
+			var offer = ShopCatalogResource.get_offer_by_id(source_id)
+			if offer == null or offer.item_id != item_id:
+				return false
+			var expected_item_type: int = 1 if kind == "rod" else 0
+			return int(offer.item_type) == expected_item_type
+
+		"manillo_trade":
+			if acquisition != "fish_trade":
+				return false
+			var recipe = TradeCatalogResource.get_recipe_by_id(source_id)
+			if recipe == null or recipe.reward_id != item_id:
+				return false
+			var requirements: Dictionary = purchase.get(
+				"fish_requirements",
+				{}
+			)
+			return _fish_requirements_match(
+				requirements,
+				recipe.get_cost_dictionary()
+			)
+
+		_:
+			return false
+
+
+func _fish_requirements_match(
+	planned: Dictionary,
+	authored: Dictionary
+) -> bool:
+	if planned.size() != authored.size():
+		return false
+
+	for raw_species_id in planned.keys():
+		var species_id: String = str(raw_species_id)
+		if not authored.has(raw_species_id) and not authored.has(species_id):
+			return false
+
+		var authored_count: int = int(
+			authored.get(
+				raw_species_id,
+				authored.get(
+					species_id,
+					-1
+				)
+			)
+		)
+		if authored_count != int(planned.get(raw_species_id, 0)):
+			return false
+
+	return true
+
+
 func _attempt_due_purchases(
 	state: Dictionary,
 	profile: Dictionary,
@@ -555,6 +720,9 @@ func _attempt_due_purchases(
 				)
 			)
 		):
+			continue
+
+		if not _purchase_source_is_valid(purchase):
 			continue
 
 		var acquisition: String = str(
@@ -1155,6 +1323,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "buy",
+			"source_type": "shop_offer",
+			"source_id": "sarai_baby_frog",
 		},
 		{
 			"id": "bamboo_rod",
@@ -1164,6 +1334,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "rod",
 			"count": 1,
 			"acquisition": "buy",
+			"source_type": "shop_offer",
+			"source_id": "faerie_bamboo_rod",
 		},
 		{
 			"id": "tail",
@@ -1173,6 +1345,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "fish_trade",
+			"source_type": "manillo_trade",
+			"source_id": "wyndia_tail",
 			"fish_requirements": {
 				"flying_fish": 3,
 			},
@@ -1186,6 +1360,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "fish_trade",
+			"source_type": "manillo_trade",
+			"source_id": "lyp_crab",
 			"fish_requirements": {
 				"black_bass": 1,
 				"blue_gill": 1,
@@ -1205,6 +1381,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "buy",
+			"source_type": "shop_offer",
+			"source_id": "shyde_floater",
 		},
 		{
 			"id": "popper",
@@ -1214,6 +1392,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "buy",
+			"source_type": "shop_offer",
+			"source_id": "lyp_popper",
 		},
 		{
 			"id": "angling_rod",
@@ -1223,6 +1403,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "rod",
 			"count": 1,
 			"acquisition": "fish_trade",
+			"source_type": "manillo_trade",
+			"source_id": "lyp_angling_rod",
 			"fish_requirements": {
 				"salmon": 2,
 				"dorado": 2,
@@ -1242,6 +1424,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "buy",
+			"source_type": "shop_offer",
+			"source_id": "lyp_silver_top",
 		},
 		{
 			"id": "hanger",
@@ -1251,6 +1435,8 @@ func _build_purchase_plan() -> Array:
 			"kind": "lure",
 			"count": 1,
 			"acquisition": "buy",
+			"source_type": "shop_offer",
+			"source_id": "chiqua_hanger",
 		},
 	]
 	
@@ -1266,6 +1452,7 @@ func _get_assumption_snapshot() -> Dictionary:
 		"bait_cooking_unlock_hour": BAIT_COOKING_UNLOCK_HOUR,
 		"card_maker_unlock_hour": CARD_MAKER_UNLOCK_HOUR,
 		"fish_trade_model": "species-aware expected catch mix; trade targets reserve exact species before discretionary use",
+		"acquisition_source_model": "every planned item resolves to an authored shop offer or Manillo recipe; world/NPC access timing remains a separate runtime wiring step",
 		"stages": _build_stages(),
 		"purchase_plan": _build_purchase_plan(),
 	}
