@@ -13,8 +13,44 @@ var recipe_catalog: FishingCardMakerCatalog = null
 var fishing_inventory: FishingInventory = null
 var content_catalog: FishingContentCatalog = null
 var _cached_game: Node = null
+
+var _pending_path: String = PENDING_PATH
+var _pending_temp_path: String = PENDING_TEMP_PATH
+
 var _transaction_counter: int = 0
 
+func configure_pending_journal_paths(
+	pending_path: String,
+	pending_temp_path: String
+) -> void:
+	if (
+		recipe_catalog != null
+		or fishing_inventory != null
+		or content_catalog != null
+	):
+		return
+
+	var clean_pending: String = pending_path.strip_edges()
+	var clean_temp: String = pending_temp_path.strip_edges()
+
+	_pending_path = (
+		clean_pending
+		if not clean_pending.is_empty()
+		else PENDING_PATH
+	)
+
+	_pending_temp_path = (
+		clean_temp
+		if not clean_temp.is_empty()
+		else PENDING_TEMP_PATH
+	)
+
+
+func get_pending_journal_paths() -> Dictionary:
+	return {
+		"pending_path": _pending_path,
+		"pending_temp_path": _pending_temp_path,
+	}
 
 func configure(
 	new_recipe_catalog: FishingCardMakerCatalog,
@@ -276,7 +312,9 @@ func recover_pending_transaction() -> Dictionary:
 
 
 func has_pending_transaction() -> bool:
-	return FileAccess.file_exists(PENDING_PATH)
+	return FileAccess.file_exists(
+		_pending_path
+	)
 
 
 func _find_game() -> Node:
@@ -334,36 +372,100 @@ func _restore_inventory_snapshot(snapshot: Dictionary, persist: bool) -> bool:
 	return fishing_inventory.save_to_disk()
 
 
-func _write_pending(payload: Dictionary) -> bool:
-	var file := FileAccess.open(PENDING_TEMP_PATH, FileAccess.WRITE)
+func _write_pending(
+	payload: Dictionary
+) -> bool:
+	var file := FileAccess.open(
+		_pending_temp_path,
+		FileAccess.WRITE
+	)
+
 	if file == null:
 		return false
-	file.store_string(JSON.stringify(payload, "\t"))
-	file.close()
-	var temp_absolute: String = ProjectSettings.globalize_path(PENDING_TEMP_PATH)
-	var final_absolute: String = ProjectSettings.globalize_path(PENDING_PATH)
-	if FileAccess.file_exists(PENDING_PATH):
-		DirAccess.remove_absolute(final_absolute)
-	return DirAccess.rename_absolute(temp_absolute, final_absolute) == OK
 
+	file.store_string(
+		JSON.stringify(
+			payload,
+			"\t"
+		)
+	)
+
+	file.close()
+
+	var temp_absolute: String = (
+		ProjectSettings.globalize_path(
+			_pending_temp_path
+		)
+	)
+
+	var final_absolute: String = (
+		ProjectSettings.globalize_path(
+			_pending_path
+		)
+	)
+
+	if FileAccess.file_exists(
+		_pending_path
+	):
+		DirAccess.remove_absolute(
+			final_absolute
+		)
+
+	return (
+		DirAccess.rename_absolute(
+			temp_absolute,
+			final_absolute
+		)
+		== OK
+	)
 
 func _read_pending() -> Dictionary:
-	if not FileAccess.file_exists(PENDING_PATH):
+	if not FileAccess.file_exists(
+		_pending_path
+	):
 		return {}
-	var file := FileAccess.open(PENDING_PATH, FileAccess.READ)
+
+	var file := FileAccess.open(
+		_pending_path,
+		FileAccess.READ
+	)
+
 	if file == null:
 		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
+
+	var parsed = JSON.parse_string(
+		file.get_as_text()
+	)
+
 	file.close()
+
 	if not (parsed is Dictionary):
 		return {}
+
 	var payload: Dictionary = parsed
-	if int(payload.get("version", 0)) != JOURNAL_VERSION:
+
+	if int(
+		payload.get(
+			"version",
+			0
+		)
+	) != JOURNAL_VERSION:
 		return {}
+
 	return payload
 
-
 func _clear_pending() -> void:
-	if not FileAccess.file_exists(PENDING_PATH):
-		return
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(PENDING_PATH))
+	for path in [
+		_pending_path,
+		_pending_temp_path,
+	]:
+		if not FileAccess.file_exists(
+			path
+		):
+			continue
+
+		DirAccess.remove_absolute(
+			ProjectSettings.globalize_path(
+				path
+			)
+		)

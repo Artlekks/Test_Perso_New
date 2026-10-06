@@ -39,6 +39,7 @@ var manillo_stamp_cards: int = 0
 var zenny_balance: int = 0
 
 var _initialized: bool = false
+var _save_path: String = SAVE_PATH
 var _progress_migrated: bool = false
 var _bound_progress: FishingProgress = null
 var _dirty: bool = false
@@ -46,6 +47,22 @@ var _next_specimen_id: int = 1
 var _notification_frames: Array[Dictionary] = []
 var _loaded_existing_save: bool = false
 
+func configure_save_path(save_path: String) -> void:
+	if _initialized:
+		return
+
+	var clean_path: String = save_path.strip_edges()
+
+	_save_path = (
+		clean_path
+		if not clean_path.is_empty()
+		else SAVE_PATH
+	)
+
+
+func get_save_path() -> String:
+	return _save_path
+	
 
 func _ready() -> void:
 	initialize()
@@ -1048,7 +1065,7 @@ func save_to_disk() -> bool:
 		"manillo_stamp_cards": manillo_stamp_cards,
 	}
 
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(_save_path, FileAccess.WRITE)
 	if file == null:
 		push_warning("FishingInventory: could not open save file for writing.")
 		return false
@@ -1062,10 +1079,10 @@ func load_from_disk() -> bool:
 	_reset_runtime_state()
 	_loaded_existing_save = false
 
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(_save_path):
 		return true
 
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file := FileAccess.open(_save_path, FileAccess.READ)
 	if file == null:
 		push_warning("FishingInventory: could not open save file for reading.")
 		return false
@@ -1129,7 +1146,7 @@ func reset_inventory(delete_save: bool = true) -> void:
 	lure_counts[str(STARTER_LURE_ID)] = 1
 	rod_counts[str(STARTER_ROD_ID)] = 1
 
-	if delete_save and FileAccess.file_exists(SAVE_PATH):
+	if delete_save and FileAccess.file_exists(_save_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
 	_dirty = true

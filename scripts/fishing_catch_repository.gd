@@ -14,8 +14,40 @@ const JOURNAL_VERSION: int = 1
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
+
+var _pending_path: String = PENDING_PATH
+var _pending_temp_path: String = PENDING_TEMP_PATH
+
 var _transaction_counter: int = 0
 
+func configure_pending_journal_paths(
+	pending_path: String,
+	pending_temp_path: String
+) -> void:
+	if progress != null or inventory != null:
+		return
+
+	var clean_pending: String = pending_path.strip_edges()
+	var clean_temp: String = pending_temp_path.strip_edges()
+
+	_pending_path = (
+		clean_pending
+		if not clean_pending.is_empty()
+		else PENDING_PATH
+	)
+
+	_pending_temp_path = (
+		clean_temp
+		if not clean_temp.is_empty()
+		else PENDING_TEMP_PATH
+	)
+
+
+func get_pending_journal_paths() -> Dictionary:
+	return {
+		"pending_path": _pending_path,
+		"pending_temp_path": _pending_temp_path,
+	}
 
 func configure(
 	new_progress: FishingProgress,
@@ -241,7 +273,7 @@ func recover_pending_transaction() -> Dictionary:
 
 
 func has_pending_transaction() -> bool:
-	return FileAccess.file_exists(PENDING_PATH)
+	return FileAccess.file_exists(_pending_path)
 
 
 func get_pending_debug_snapshot() -> Dictionary:
@@ -292,38 +324,58 @@ func _create_transaction_id() -> String:
 	]
 
 
-func _write_pending_snapshot(snapshot: Dictionary) -> bool:
+func _write_pending_snapshot(
+	snapshot: Dictionary
+) -> bool:
 	var payload: Dictionary = {
 		"version": JOURNAL_VERSION,
 		"snapshot": snapshot,
 	}
 
 	var file := FileAccess.open(
-		PENDING_TEMP_PATH,
+		_pending_temp_path,
 		FileAccess.WRITE
 	)
+
 	if file == null:
 		push_warning(
 			"FishingCatchRepository: could not open pending temp journal."
 		)
 		return false
 
-	file.store_string(JSON.stringify(payload, "\t"))
+	file.store_string(
+		JSON.stringify(
+			payload,
+			"\t"
+		)
+	)
+
 	file.close()
 
-	var temp_absolute: String = ProjectSettings.globalize_path(
-		PENDING_TEMP_PATH
-	)
-	var final_absolute: String = ProjectSettings.globalize_path(
-		PENDING_PATH
+	var temp_absolute: String = (
+		ProjectSettings.globalize_path(
+			_pending_temp_path
+		)
 	)
 
-	if FileAccess.file_exists(PENDING_PATH):
-		DirAccess.remove_absolute(final_absolute)
+	var final_absolute: String = (
+		ProjectSettings.globalize_path(
+			_pending_path
+		)
+	)
 
-	var rename_error: Error = DirAccess.rename_absolute(
-		temp_absolute,
-		final_absolute
+	if FileAccess.file_exists(
+		_pending_path
+	):
+		DirAccess.remove_absolute(
+			final_absolute
+		)
+
+	var rename_error: Error = (
+		DirAccess.rename_absolute(
+			temp_absolute,
+			final_absolute
+		)
 	)
 
 	if rename_error != OK:
@@ -334,40 +386,65 @@ func _write_pending_snapshot(snapshot: Dictionary) -> bool:
 
 	return true
 
-
 func _read_pending_snapshot() -> Dictionary:
-	if not FileAccess.file_exists(PENDING_PATH):
+	if not FileAccess.file_exists(
+		_pending_path
+	):
 		return {}
 
 	var file := FileAccess.open(
-		PENDING_PATH,
+		_pending_path,
 		FileAccess.READ
 	)
+
 	if file == null:
 		return {}
 
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(
+		file.get_as_text()
+	)
+
 	file.close()
 
 	if not (parsed is Dictionary):
 		return {}
 
 	var payload: Dictionary = parsed
-	if int(payload.get("version", 0)) > JOURNAL_VERSION:
+
+	if int(
+		payload.get(
+			"version",
+			0
+		)
+	) > JOURNAL_VERSION:
 		return {}
 
-	var raw_snapshot: Variant = payload.get("snapshot", {})
+	var raw_snapshot: Variant = (
+		payload.get(
+			"snapshot",
+			{}
+		)
+	)
+
 	if not (raw_snapshot is Dictionary):
 		return {}
 
-	return (raw_snapshot as Dictionary).duplicate(true)
-
-
+	return (
+		raw_snapshot as Dictionary
+	).duplicate(true)
+	
 func _clear_pending_file() -> void:
-	for path in [PENDING_PATH, PENDING_TEMP_PATH]:
-		if not FileAccess.file_exists(path):
+	for path in [
+		_pending_path,
+		_pending_temp_path,
+	]:
+		if not FileAccess.file_exists(
+			path
+		):
 			continue
 
 		DirAccess.remove_absolute(
-			ProjectSettings.globalize_path(path)
+			ProjectSettings.globalize_path(
+				path
+			)
 		)

@@ -42,6 +42,8 @@ var progression_catalog: FishingProgressionCatalog = (
 var record_mercy_policy = DefaultRecordMercyPolicy
 
 var _initialized: bool = false
+var _save_path: String = SAVE_PATH
+
 
 
 func _ready() -> void:
@@ -615,7 +617,7 @@ func save_to_disk() -> bool:
 	}
 
 	var file := FileAccess.open(
-		SAVE_PATH,
+		_save_path,
 		FileAccess.WRITE
 	)
 
@@ -642,7 +644,7 @@ func load_from_disk() -> bool:
 		return true
 
 	var file := FileAccess.open(
-		SAVE_PATH,
+		_save_path,
 		FileAccess.READ
 	)
 
@@ -817,7 +819,7 @@ func reset_all_progress(delete_save: bool = true) -> void:
 
 	if delete_save and FileAccess.file_exists(SAVE_PATH):
 		var absolute_path := ProjectSettings.globalize_path(
-			SAVE_PATH
+			_save_path
 		)
 		DirAccess.remove_absolute(absolute_path)
 
