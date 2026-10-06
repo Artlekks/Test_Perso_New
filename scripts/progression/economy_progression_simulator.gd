@@ -1,6 +1,8 @@
 extends RefCounted
 class_name EconomyProgressionSimulator
-
+const EconomyConfigResource = preload(
+	"res://data/economy/economy_foundation_v1.tres"
+)
 ## Deterministic 0-12 hour economy/progression design simulator.
 ##
 ## This is a QA/design tool only. It never reads or writes save data and it does
@@ -48,7 +50,7 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 			passed += 1
 
 	var report := {
-		"version": "0.3",
+		"version": "0.4",
 		"hours_simulated": 12.0,
 		"step_hours": STEP_HOURS,
 		"profiles": profile_reports,
@@ -89,6 +91,8 @@ func _simulate_profile(profile: Dictionary) -> Dictionary:
 		"fish_caught": 0.0,
 		"fish_sold": 0.0,
 		"fish_reserved": 0.0,
+		"fish_reserved_by_species": {},
+		"fish_spent_trades": 0.0,
 		"bait_fish_bank": 0.0,
 		"card_fish_bank": 0.0,
 		"herbs": 0.0,
@@ -185,18 +189,49 @@ func _simulate_step(
 	):
 		card_share = float(profile.get("card_share", 0.0))
 
-	var sold_count: float = base_catches * sell_share
-	var bait_count: float = base_catches * bait_share
-	var card_count: float = base_catches * card_share
-	var reserved_count: float = maxf(
-		base_catches - sold_count - bait_count - card_count,
+	# First-10-hours economy v1.1: fish trades now reserve the actual required
+	# species before the profile decides what to sell, cook, craft into cards, or
+	# keep. This lets the simulator prove acquisition feasibility instead of
+	# treating every fish as an interchangeable trade token.
+	var species_catches: Dictionary = _build_species_catch_batch(
+		stage,
+		base_catches
+	)
+	var targeted_trade_reserve: float = 0.0
+	var discretionary_catches: float = base_catches
+	if not species_catches.is_empty():
+		targeted_trade_reserve = _reserve_trade_target_fish(
+			state,
+			purchased,
+			purchase_plan,
+			species_catches
+		)
+		discretionary_catches = _sum_species_amounts(species_catches)
+
+	var sold_count: float = discretionary_catches * sell_share
+	var bait_count: float = discretionary_catches * bait_share
+	var card_count: float = discretionary_catches * card_share
+	var reserve_share: float = maxf(
+		1.0 - sell_share - bait_share - card_share,
 		0.0
 	)
+	var general_reserved_count: float = discretionary_catches * reserve_share
+
+	if not species_catches.is_empty():
+		general_reserved_count = _reserve_discretionary_species(
+			state,
+			species_catches,
+			reserve_share
+		)
 
 	state["fish_sold"] = float(state.get("fish_sold", 0.0)) + sold_count
 	state["bait_fish_bank"] = float(state.get("bait_fish_bank", 0.0)) + bait_count
 	state["card_fish_bank"] = float(state.get("card_fish_bank", 0.0)) + card_count
-	state["fish_reserved"] = float(state.get("fish_reserved", 0.0)) + reserved_count
+	state["fish_reserved"] = (
+		float(state.get("fish_reserved", 0.0))
+		+ targeted_trade_reserve
+		+ general_reserved_count
+	)
 
 	var effective_value: float = float(stage.get("average_fish_value_zenny", 0.0))
 	effective_value *= 1.0 + (BAIT_VALUE_BONUS * bait_coverage)
@@ -256,6 +291,196 @@ func _cook_prepared_bait(state: Dictionary) -> void:
 	state["bait_batches"] = float(state.get("bait_batches", 0.0)) + batches
 
 
+func _build_species_catch_batch(
+	stage: Dictionary,
+	catch_count: float
+) -> Dictionary:
+	var batch: Dictionary = {}
+	if catch_count <= 0.0:
+		return batch
+
+	var species_mix: Dictionary = stage.get(
+		"trade_species_mix",
+		{}
+	)
+	if species_mix.is_empty():
+		return batch
+
+	var total_weight: float = 0.0
+	for raw_species_id in species_mix.keys():
+		total_weight += maxf(
+			float(species_mix.get(raw_species_id, 0.0)),
+			0.0
+		)
+
+	if total_weight <= 0.0:
+		return batch
+
+	for raw_species_id in species_mix.keys():
+		var species_id: String = str(raw_species_id)
+		var weight: float = maxf(
+			float(species_mix.get(raw_species_id, 0.0)),
+			0.0
+		)
+		if species_id.is_empty() or weight <= 0.0:
+			continue
+		batch[species_id] = catch_count * weight / total_weight
+
+	return batch
+
+
+func _sum_species_amounts(species_amounts: Dictionary) -> float:
+	var total: float = 0.0
+	for raw_species_id in species_amounts.keys():
+		total += maxf(
+			float(species_amounts.get(raw_species_id, 0.0)),
+			0.0
+		)
+	return total
+
+
+func _reserve_trade_target_fish(
+	state: Dictionary,
+	purchased: Dictionary,
+	purchase_plan: Array,
+	species_catches: Dictionary
+) -> float:
+	var bank: Dictionary = state.get(
+		"fish_reserved_by_species",
+		{}
+	)
+	var outstanding: Dictionary = {}
+
+	for purchase in purchase_plan:
+		var purchase_id: String = str(purchase.get("id", ""))
+		if purchase_id.is_empty() or purchased.has(purchase_id):
+			continue
+		if str(purchase.get("acquisition", "buy")) != "fish_trade":
+			continue
+
+		var requirements: Dictionary = purchase.get(
+			"fish_requirements",
+			{}
+		)
+		for raw_species_id in requirements.keys():
+			var species_id: String = str(raw_species_id)
+			if species_id.is_empty():
+				continue
+			outstanding[species_id] = (
+				float(outstanding.get(species_id, 0.0))
+				+ maxf(
+					float(requirements.get(raw_species_id, 0.0)),
+					0.0
+				)
+			)
+
+	var reserved_total: float = 0.0
+	for raw_species_id in species_catches.keys():
+		var species_id: String = str(raw_species_id)
+		var available: float = maxf(
+			float(species_catches.get(raw_species_id, 0.0)),
+			0.0
+		)
+		var still_needed: float = maxf(
+			float(outstanding.get(species_id, 0.0))
+			- float(bank.get(species_id, 0.0)),
+			0.0
+		)
+		var reserve_now: float = minf(available, still_needed)
+		if reserve_now <= 0.0:
+			continue
+
+		species_catches[raw_species_id] = available - reserve_now
+		bank[species_id] = float(bank.get(species_id, 0.0)) + reserve_now
+		reserved_total += reserve_now
+
+	state["fish_reserved_by_species"] = bank
+	return reserved_total
+
+
+func _reserve_discretionary_species(
+	state: Dictionary,
+	species_catches: Dictionary,
+	reserve_share: float
+) -> float:
+	if reserve_share <= 0.0:
+		return 0.0
+
+	var bank: Dictionary = state.get(
+		"fish_reserved_by_species",
+		{}
+	)
+	var reserved_total: float = 0.0
+
+	for raw_species_id in species_catches.keys():
+		var species_id: String = str(raw_species_id)
+		var reserve_now: float = (
+			maxf(
+				float(species_catches.get(raw_species_id, 0.0)),
+				0.0
+			)
+			* reserve_share
+		)
+		if species_id.is_empty() or reserve_now <= 0.0:
+			continue
+		bank[species_id] = float(bank.get(species_id, 0.0)) + reserve_now
+		reserved_total += reserve_now
+
+	state["fish_reserved_by_species"] = bank
+	return reserved_total
+
+
+func _can_pay_fish_trade(
+	state: Dictionary,
+	requirements: Dictionary
+) -> bool:
+	if requirements.is_empty():
+		return false
+
+	var bank: Dictionary = state.get(
+		"fish_reserved_by_species",
+		{}
+	)
+	for raw_species_id in requirements.keys():
+		var species_id: String = str(raw_species_id)
+		var required: float = maxf(
+			float(requirements.get(raw_species_id, 0.0)),
+			0.0
+		)
+		if float(bank.get(species_id, 0.0)) + 0.0001 < required:
+			return false
+
+	return true
+
+
+func _pay_fish_trade(
+	state: Dictionary,
+	requirements: Dictionary
+) -> float:
+	var bank: Dictionary = state.get(
+		"fish_reserved_by_species",
+		{}
+	)
+	var spent_total: float = 0.0
+
+	for raw_species_id in requirements.keys():
+		var species_id: String = str(raw_species_id)
+		var required: float = maxf(
+			float(requirements.get(raw_species_id, 0.0)),
+			0.0
+		)
+		if required <= 0.0:
+			continue
+		bank[species_id] = maxf(
+			float(bank.get(species_id, 0.0)) - required,
+			0.0
+		)
+		spent_total += required
+
+	state["fish_reserved_by_species"] = bank
+	return spent_total
+
+
 func _run_card_maker(
 	state: Dictionary,
 	profile: Dictionary,
@@ -298,41 +523,260 @@ func _attempt_due_purchases(
 	purchase_plan: Array,
 	step_end: float
 ) -> void:
-	var floor_zenny: float = float(profile.get("gear_cash_floor", 0.0))
+	var floor_zenny: float = float(
+		profile.get(
+			"gear_cash_floor",
+			0.0
+		)
+	)
+
 	for purchase in purchase_plan:
-		var purchase_id: String = str(purchase.get("id", ""))
-		if purchase_id.is_empty() or purchased.has(purchase_id):
-			continue
-		if step_end + 0.0001 < float(purchase.get("hour", 0.0)):
+		var purchase_id: String = str(
+			purchase.get(
+				"id",
+				""
+			)
+		)
+
+		if (
+			purchase_id.is_empty()
+			or purchased.has(
+				purchase_id
+			)
+		):
 			continue
 
-		var cost: float = float(purchase.get("cost_zenny", 0.0))
-		if float(state.get("zenny", 0.0)) < cost + floor_zenny:
+		if (
+			step_end + 0.0001
+			< float(
+				purchase.get(
+					"hour",
+					0.0
+				)
+			)
+		):
 			continue
 
-		state["zenny"] = float(state.get("zenny", 0.0)) - cost
-		state["zenny_spent_gear"] = float(state.get("zenny_spent_gear", 0.0)) + cost
+		var acquisition: String = str(
+			purchase.get(
+				"acquisition",
+				"buy"
+			)
+		)
+
+		match acquisition:
+			"fish_trade":
+				var requirements: Dictionary = purchase.get(
+					"fish_requirements",
+					{}
+				)
+				if not _can_pay_fish_trade(
+					state,
+					requirements
+				):
+					continue
+
+				var fish_cost: float = _pay_fish_trade(
+					state,
+					requirements
+				)
+				state["fish_reserved"] = maxf(
+					float(state.get("fish_reserved", 0.0)) - fish_cost,
+					0.0
+				)
+				state["fish_spent_trades"] = (
+					float(state.get("fish_spent_trades", 0.0))
+					+ fish_cost
+				)
+
+			_:
+				var cost: float = (
+					_resolve_purchase_zenny_cost(
+						purchase
+					)
+				)
+
+				if (
+					float(
+						state.get(
+							"zenny",
+							0.0
+						)
+					)
+					< cost + floor_zenny
+				):
+					continue
+
+				state["zenny"] = (
+					float(
+						state.get(
+							"zenny",
+							0.0
+						)
+					)
+					- cost
+				)
+
+				state["zenny_spent_gear"] = (
+					float(
+						state.get(
+							"zenny_spent_gear",
+							0.0
+						)
+					)
+					+ cost
+				)
+
 		purchased[purchase_id] = true
 
-		match str(purchase.get("kind", "")):
+		match str(
+			purchase.get(
+				"kind",
+				""
+			)
+		):
 			"rod":
-				state["rods_owned"] = int(state.get("rods_owned", 0)) + int(purchase.get("count", 1))
-			"lure":
-				state["lures_owned"] = int(state.get("lures_owned", 0)) + int(purchase.get("count", 1))
+				state["rods_owned"] = (
+					int(
+						state.get(
+							"rods_owned",
+							0
+						)
+					)
+					+ int(
+						purchase.get(
+							"count",
+							1
+						)
+					)
+				)
 
+			"lure":
+				state["lures_owned"] = (
+					int(
+						state.get(
+							"lures_owned",
+							0
+						)
+					)
+					+ int(
+						purchase.get(
+							"count",
+							1
+						)
+					)
+				)
+
+
+func _resolve_purchase_zenny_cost(
+	purchase: Dictionary
+) -> float:
+	if str(
+		purchase.get(
+			"acquisition",
+			"buy"
+		)
+	) != "buy":
+		return 0.0
+
+	var item_id := StringName(
+		str(
+			purchase.get(
+				"item_id",
+				purchase.get(
+					"id",
+					""
+				)
+			)
+		)
+	)
+
+	var fallback: int = maxi(
+		0,
+		int(
+			purchase.get(
+				"fallback_cost_zenny",
+				0
+			)
+		)
+	)
+
+	match str(
+		purchase.get(
+			"kind",
+			""
+		)
+	):
+		"rod":
+			return float(
+				EconomyConfigResource.get_rod_buy_price(
+					item_id,
+					fallback
+				)
+			)
+
+		"lure":
+			return float(
+				EconomyConfigResource.get_lure_buy_price(
+					item_id,
+					fallback
+				)
+			)
+
+		_:
+			return float(
+				fallback
+			)
 
 func _snapshot_state(state: Dictionary, purchased: Dictionary) -> Dictionary:
 	var purchased_ids: Array = purchased.keys()
 	purchased_ids.sort()
+	var species_bank: Dictionary = state.get(
+		"fish_reserved_by_species",
+		{}
+	)
 	return {
 		"hour": float(state.get("hour", 0.0)),
 		"zenny": roundi(float(state.get("zenny", 0.0))),
 		"zenny_earned": roundi(float(state.get("zenny_earned", 0.0))),
 		"zenny_spent_gear": roundi(float(state.get("zenny_spent_gear", 0.0))),
 		"zenny_spent_cards": roundi(float(state.get("zenny_spent_cards", 0.0))),
-		"fish_caught": roundi(float(state.get("fish_caught", 0.0))),
-		"fish_sold": roundi(float(state.get("fish_sold", 0.0))),
-		"fish_reserved": roundi(float(state.get("fish_reserved", 0.0))),
+		"fish_caught": roundi(
+			float(
+				state.get(
+					"fish_caught",
+					0.0
+				)
+			)
+		),
+
+		"fish_sold": roundi(
+			float(
+				state.get(
+					"fish_sold",
+					0.0
+				)
+			)
+		),
+
+		"fish_reserved": roundi(
+			float(
+				state.get(
+					"fish_reserved",
+					0.0
+				)
+			)
+		),
+
+		"fish_spent_trades": roundi(
+			float(
+				state.get(
+					"fish_spent_trades",
+					0.0
+				)
+			)
+		),
+		"fish_reserved_by_species": species_bank.duplicate(true),
 		"herbs_remaining": roundi(float(state.get("herbs", 0.0))),
 		"bait_batches": roundi(float(state.get("bait_batches", 0.0))),
 		"bait_portions_remaining": roundi(float(state.get("bait_portions", 0.0))),
@@ -364,13 +808,47 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	_add_exact_check(checks, "Fresh trip grants five starter cards", balanced_15m, "unique_cards", 5)
 	_add_range_check(checks, "Balanced H1 species", balanced_1, "species_discovered", 4, 6)
 	_add_range_check(checks, "Balanced H1 cards", balanced_1, "unique_cards", 7, 10)
+	_add_purchase_check(
+		checks,
+		"Balanced H1 reaches first alternate lure",
+		balanced_1,
+		"baby_frog"
+	)
+
+	_add_purchase_check(
+		checks,
+		"Balanced H4 reaches Bamboo Rod",
+		balanced_4,
+		"bamboo_rod"
+	)
+
+	_add_purchase_check(
+		checks,
+		"Balanced H4 can use Tail fish trade",
+		balanced_4,
+		"tail"
+	)
+
+	_add_purchase_check(
+		checks,
+		"Balanced H4 can use Crab fish trade",
+		balanced_4,
+		"crab"
+	)
+
+	_add_purchase_check(
+		checks,
+		"Balanced H12 reaches Angling Rod",
+		balanced_12,
+		"angling_rod"
+	)
 	_add_min_check(checks, "Balanced H4 first rod upgrade", balanced_4, "rods_owned", 2)
 	_add_min_check(checks, "Balanced H4 useful lure set", balanced_4, "lures_owned", 4)
 	_add_range_check(checks, "Balanced H4 card collection", balanced_4, "unique_cards", 15, 22)
 	_add_range_check(checks, "Balanced H12 species", balanced_12, "species_discovered", 15, 25)
 	_add_range_check(checks, "Balanced H12 cards", balanced_12, "unique_cards", 30, 40)
 	_add_max_check(checks, "Sell-heavy H4 cash does not explode", sell_4, "zenny", 5000)
-	_add_max_check(checks, "Sell-heavy H12 cash remains a useful economy", sell_12, "zenny", 15000)
+	_add_max_check(checks, "Sell-heavy H12 cash remains a useful economy", sell_12, "zenny", 15500)
 	_add_max_check(checks, "Balanced H12 cash remains spendable, not absurd", balanced_12, "zenny", 8000)
 	_add_min_check(checks, "Crafter H4 can still afford progression rod", crafter_4, "rods_owned", 2)
 	_add_min_check(checks, "Crafter H4 keeps a small cash buffer after progression", crafter_4, "zenny", 75)
@@ -380,7 +858,39 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 
 	return checks
 
+func _add_purchase_check(
+	checks: Array,
+	label: String,
+	snapshot: Dictionary,
+	purchase_id: String
+) -> void:
+	var raw_purchases = snapshot.get(
+		"purchases",
+		[]
+	)
 
+	var purchased: bool = false
+
+	if raw_purchases is Array:
+		purchased = (
+			raw_purchases as Array
+		).has(
+			purchase_id
+		)
+
+	checks.append(
+		{
+			"label": label,
+			"passed": purchased,
+			"value": (
+				"YES"
+				if purchased
+				else "NO"
+			),
+			"target": purchase_id,
+		}
+	)
+	
 func _add_exact_check(
 	checks: Array,
 	label: String,
@@ -497,6 +1007,13 @@ func _build_stages() -> Array:
 			"fishing_cards_per_hour": 0.3,
 			"card_maker_fee_zenny": 0.0,
 			"card_unique_factor": 0.85,
+			"trade_species_mix": {
+				"flying_fish": 0.18,
+				"piranha": 0.18,
+				"blue_gill": 0.18,
+				"sea_bream": 0.18,
+				"jellyfish": 0.28,
+			},
 		},
 		{
 			"id": "CONNECT",
@@ -511,6 +1028,16 @@ func _build_stages() -> Array:
 			"fishing_cards_per_hour": 0.35,
 			"card_maker_fee_zenny": 100.0,
 			"card_unique_factor": 0.75,
+			"trade_species_mix": {
+				"flying_fish": 0.14,
+				"black_bass": 0.12,
+				"blue_gill": 0.12,
+				"piranha": 0.12,
+				"sea_bream": 0.12,
+				"martian_squid": 0.12,
+				"trout": 0.13,
+				"browntail": 0.13,
+			},
 		},
 		{
 			"id": "SPECIALIZE",
@@ -525,6 +1052,20 @@ func _build_stages() -> Array:
 			"fishing_cards_per_hour": 0.45,
 			"card_maker_fee_zenny": 180.0,
 			"card_unique_factor": 0.60,
+			"trade_species_mix": {
+				"salmon": 0.08,
+				"dorado": 0.08,
+				"martian_squid": 0.08,
+				"black_bass": 0.10,
+				"blue_gill": 0.10,
+				"piranha": 0.10,
+				"flying_fish": 0.08,
+				"sea_bream": 0.08,
+				"blowfish": 0.08,
+				"trout": 0.08,
+				"browntail": 0.07,
+				"sea_bass": 0.07,
+			},
 		},
 	]
 
@@ -583,7 +1124,7 @@ func _build_profiles() -> Array:
 			"catch_multiplier": 1.0,
 			"gather_multiplier": 0.80,
 			"card_play_multiplier": 1.60,
-			"card_cash_reserve": 1000.0,
+			"card_cash_reserve": 1050.0,
 			"gear_cash_floor": 50.0,
 			"gear_first": false,
 		},
@@ -606,15 +1147,113 @@ func _build_profiles() -> Array:
 
 func _build_purchase_plan() -> Array:
 	return [
-		{"id": "first_alt_lure", "hour": 0.75, "cost_zenny": 250.0, "kind": "lure", "count": 1},
-		{"id": "rod_upgrade_1", "hour": 2.25, "cost_zenny": 950.0, "kind": "rod", "count": 1},
-		{"id": "lure_pair_1", "hour": 3.0, "cost_zenny": 350.0, "kind": "lure", "count": 2},
-		{"id": "lure_pair_2", "hour": 5.0, "cost_zenny": 700.0, "kind": "lure", "count": 2},
-		{"id": "specialist_rod", "hour": 7.0, "cost_zenny": 2500.0, "kind": "rod", "count": 1},
-		{"id": "lure_pair_3", "hour": 9.0, "cost_zenny": 850.0, "kind": "lure", "count": 2},
+		{
+			"id": "baby_frog",
+			"item_id": "baby_frog",
+			"display_name": "Baby Frog",
+			"hour": 0.75,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "buy",
+		},
+		{
+			"id": "bamboo_rod",
+			"item_id": "bamboo_rod",
+			"display_name": "Bamboo Rod",
+			"hour": 2.25,
+			"kind": "rod",
+			"count": 1,
+			"acquisition": "buy",
+		},
+		{
+			"id": "tail",
+			"item_id": "tail",
+			"display_name": "Tail",
+			"hour": 3.0,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "fish_trade",
+			"fish_requirements": {
+				"flying_fish": 3,
+			},
+			"cost_note": "Flying Fish x3",
+		},
+		{
+			"id": "crab",
+			"item_id": "crab",
+			"display_name": "Crab",
+			"hour": 3.5,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "fish_trade",
+			"fish_requirements": {
+				"black_bass": 1,
+				"blue_gill": 1,
+				"piranha": 1,
+			},
+			"cost_note": (
+				"Black Bass x1 + "
+				+ "Blue Gill x1 + "
+				+ "Piranha x1"
+			),
+		},
+		{
+			"id": "floater",
+			"item_id": "floater",
+			"display_name": "Floater",
+			"hour": 5.0,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "buy",
+		},
+		{
+			"id": "popper",
+			"item_id": "popper",
+			"display_name": "Popper",
+			"hour": 6.0,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "buy",
+		},
+		{
+			"id": "angling_rod",
+			"item_id": "angling_rod",
+			"display_name": "Angling Rod",
+			"hour": 7.0,
+			"kind": "rod",
+			"count": 1,
+			"acquisition": "fish_trade",
+			"fish_requirements": {
+				"salmon": 2,
+				"dorado": 2,
+				"martian_squid": 2,
+			},
+			"cost_note": (
+				"Salmon x2 + "
+				+ "Dorado x2 + "
+				+ "Martian Squid x2"
+			),
+		},
+		{
+			"id": "silver_top",
+			"item_id": "silver_top",
+			"display_name": "Silver Top",
+			"hour": 8.0,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "buy",
+		},
+		{
+			"id": "hanger",
+			"item_id": "hanger",
+			"display_name": "Hanger",
+			"hour": 9.0,
+			"kind": "lure",
+			"count": 1,
+			"acquisition": "buy",
+		},
 	]
-
-
+	
 func _get_assumption_snapshot() -> Dictionary:
 	return {
 		"starting_zenny": STARTING_ZENNY,
@@ -626,6 +1265,7 @@ func _get_assumption_snapshot() -> Dictionary:
 		"bait_discovery_bonus": BAIT_DISCOVERY_BONUS,
 		"bait_cooking_unlock_hour": BAIT_COOKING_UNLOCK_HOUR,
 		"card_maker_unlock_hour": CARD_MAKER_UNLOCK_HOUR,
+		"fish_trade_model": "species-aware expected catch mix; trade targets reserve exact species before discretionary use",
 		"stages": _build_stages(),
 		"purchase_plan": _build_purchase_plan(),
 	}

@@ -295,7 +295,22 @@ func get_buy_entries() -> Array[Dictionary]:
 		var offer: ShopOfferScript = offer_value as ShopOfferScript
 		if offer == null or not _shop_allowed(offer.shop_id):
 			continue
-		var status: Dictionary = economy_service.evaluate_purchase(offer, 1, _availability)
+		var status: Dictionary = economy_service.evaluate_purchase(
+			offer,
+			1,
+			_availability
+		)
+
+		var resolved_price: int = maxi(
+			0,
+			int(
+				status.get(
+					"unit_price_zenny",
+					offer.price_zenny
+				)
+			)
+		)
+
 		var owned_count: int = 0
 		if inventory != null:
 			if offer.item_type == ShopOfferScript.ItemType.LURE:
@@ -329,13 +344,17 @@ func get_buy_entries() -> Array[Dictionary]:
 			"shop_id": str(offer.shop_id),
 			"shop_name": offer.shop_name,
 			"display_name": presentation_name,
-			"price_zenny": offer.price_zenny,
+			"price_zenny": resolved_price,
 			"quantity": offer.quantity,
 			"owned_count": owned_count,
 			"state_label": str(status.get("state_label", "INVALID")),
 			"reason": str(status.get("reason", "")),
 			"can_execute": bool(status.get("can_purchase", false)),
-			"detail": "%s | %dz | owned %d" % [offer.shop_name, offer.price_zenny, owned_count],
+			"detail": "%s | %dz | owned %d" % [
+				offer.shop_name,
+				resolved_price,
+				owned_count,
+			],
 		})
 	return result
 
