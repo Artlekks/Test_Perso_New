@@ -266,6 +266,8 @@ debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
 [node name="BeachMerchantNPC" parent="World" unique_id=1429238293 instance=ExtResource("72_merchant_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9486763, 0.06284177, 0.60926473)
+economy_shop_ids = PackedStringArray("shyde")
+economy_trade_shop_ids = PackedStringArray()
 
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
@@ -274,7 +276,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.0332
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.07, 0.6531534)
 
 [node name="FishingCardMakerNPC" parent="World" unique_id=907071164 instance=ExtResource("77_card_maker_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0201495, -0.12453979, 0.50029546)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.78892124, -0.12453979, 0.51951283)
 
 [node name="HarborLockbox" parent="World" unique_id=447281446 instance=ExtResource("78_harbor_lockbox")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.62, 0.07, 0.5)
@@ -286,6 +288,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.72, 0.07, 0.5)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.08, 0.07, 0.5)
 
 [node name="BeachGatheringCircuit" parent="World" unique_id=1174588029 instance=ExtResource("76_gathering_circuit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033720568, 0)
 
 [node name="FishingMasterStillWaterNPC" parent="World" unique_id=954943286 instance=ExtResource("82_still_water_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.468474, 0.07, -0.07606385)

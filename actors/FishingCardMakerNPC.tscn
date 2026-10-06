@@ -22,7 +22,7 @@ radius = 0.16
 height = 0.5
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
-radius = 0.55
+radius = 0.48
 
 [node name="FishingCardMakerNPC" type="Node3D" unique_id=184826688]
 process_mode = 3

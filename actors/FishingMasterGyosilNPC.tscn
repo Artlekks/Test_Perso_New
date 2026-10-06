@@ -17,7 +17,7 @@ radius = 0.18
 height = 0.54
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
-radius = 0.72
+radius = 0.48
 
 [node name="FishingMasterGyosilNPC" type="Node3D"]
 process_mode = 3

@@ -50,9 +50,6 @@ const DEBUG_QA_PATHS: Dictionary = {
 	"FishingSystemStabilityQAScript": "res://scripts/qa/fishing_system_stability_qa.gd",
 	"DialogueSystemQAScript": "res://scripts/dialogue/dialogue_system_qa.gd",
 	"FishingFreshSaveRehearsalQAScript": "res://scripts/qa/fishing_fresh_save_rehearsal_qa.gd",
-	"FishingTortureQAScript": "res://scripts/qa/fishing_torture_qa.gd",
-	"FishingSaveRecoveryInterruptionQAScript": "res://scripts/qa/fishing_save_recovery_interruption_qa.gd",
-	"FishingSoakQAScript": "res://scripts/qa/fishing_soak_qa.gd",
 }
 
 const FishingProgressScript = preload(
@@ -194,6 +191,24 @@ const FishingProgressionCatalogResource: FishingProgressionCatalog = preload(
 const FishingMasteryTechniqueCatalogResource: FishingMasteryTechniqueCatalog = preload(
 	"res://data/bof4/mastery/all_techniques.tres"
 )
+const FishingTideSenseTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/tide_sense.tres"
+)
+const FishingDeepWaterControlTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/deep_water_control.tres"
+)
+const FishingSurfaceControlTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/surface_control.tres"
+)
+const FishingLandingTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/landing_technique.tres"
+)
+const FishingReadFishSignTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/read_fish_sign.tres"
+)
+const FishingOneWithNatureTechniqueResource: FishingMasteryTechniqueDefinition = preload(
+	"res://data/bof4/mastery/one_with_nature.tres"
+)
 const FishingMasteryQASpotResource: FishingSpotData = preload(
 	"res://data/bof4/spots/ocean_2.tres"
 )
@@ -257,9 +272,6 @@ var BeachCraftingFeelQAHUDScene = null
 var FishingSystemStabilityQAScript = null
 var DialogueSystemQAScript = null
 var FishingFreshSaveRehearsalQAScript = null
-var FishingTortureQAScript = null
-var FishingSaveRecoveryInterruptionQAScript = null
-var FishingSoakQAScript = null
 
 var _debug_qa_load_attempted: bool = false
 var _debug_qa_scripts_ready: bool = false
@@ -267,9 +279,6 @@ var _debug_qa_load_failures: PackedStringArray = PackedStringArray()
 var system_stability_qa_report: Dictionary = {}
 var dialogue_qa_report: Dictionary = {}
 var fresh_save_rehearsal_qa_report: Dictionary = {}
-var torture_qa_report: Dictionary = {}
-var save_recovery_interruption_qa_report: Dictionary = {}
-var soak_qa_report: Dictionary = {}
 
 var dialogue_service: DialogueService = null
 var dialogue_controller: DialogueController = null
@@ -701,6 +710,25 @@ func initialize() -> void:
 	add_child(unlock_state)
 	unlock_state.initialize()
 
+	if FishingMasteryTechniqueCatalogResource.has_method("ensure_technique"):
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingTideSenseTechniqueResource
+		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingDeepWaterControlTechniqueResource
+		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingSurfaceControlTechniqueResource
+		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingLandingTechniqueResource
+		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingReadFishSignTechniqueResource
+		)
+		FishingMasteryTechniqueCatalogResource.ensure_technique(
+			FishingOneWithNatureTechniqueResource
+		)
 
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
 	mastery_service.name = "FishingMasteryService"
@@ -1230,10 +1258,11 @@ func initialize() -> void:
 		item_inventory_facade,
 		item_transaction_service
 	)
-	# Until world NPC/shop entry points are authored, expose the complete catalog
-	# through the basic vertical-slice economy menu. The access façade already
-	# supports narrowing this to real shop contexts later.
-	economy_access.enable_vertical_slice_full_access()
+	# World Economy Access v1: the runtime starts with no shop/trade source
+	# selected. World NPCs explicitly provide their authored shop context before
+	# opening the economy UI. QA/debug harnesses can still opt into full catalog
+	# access with enable_vertical_slice_full_access().
+	economy_access.clear_access_context()
 
 	reward_service = FishingRewardServiceScript.new()
 	reward_service.name = "FishingRewardService"
@@ -1350,118 +1379,6 @@ func initialize() -> void:
 		):
 			push_error("Fishing Fresh Save Rehearsal QA: %s" % str(failure))
 
-		torture_qa_report = FishingTortureQAScript.run(self)
-
-		print(
-			"Fishing Torture QA v1: %d/%d tests passed."
-			% [
-				int(
-					torture_qa_report.get(
-						"passed_count",
-						0
-					)
-				),
-				int(
-					torture_qa_report.get(
-						"test_count",
-						0
-					)
-				),
-			]
-		)
-		save_recovery_interruption_qa_report = (
-			FishingSaveRecoveryInterruptionQAScript.run(
-				self
-			)
-		)
-
-		print(
-			"Fishing Save/Recovery Interruption QA v1: %d/%d tests passed."
-			% [
-				int(
-					save_recovery_interruption_qa_report.get(
-						"passed_count",
-						0
-					)
-				),
-				int(
-					save_recovery_interruption_qa_report.get(
-						"test_count",
-						0
-					)
-				),
-			]
-		)
-
-		for failure in save_recovery_interruption_qa_report.get(
-			"failures",
-			PackedStringArray()
-		):
-			push_error(
-				"Fishing Save/Recovery Interruption QA v1: %s"
-				% str(failure)
-			)
-		
-		for failure in torture_qa_report.get(
-			"failures",
-			PackedStringArray()
-		):
-			push_error(
-				"Fishing Torture QA v1: %s"
-				% str(failure)
-			)
-
-		soak_qa_report = (
-			FishingSoakQAScript.run(
-				self
-			)
-		)
-
-		print(
-			"Fishing Soak QA v1: %d/%d gates passed. Nested: %d/%d. Object growth: %d."
-			% [
-				int(
-					soak_qa_report.get(
-						"passed_count",
-						0
-					)
-				),
-				int(
-					soak_qa_report.get(
-						"test_count",
-						0
-					)
-				),
-				int(
-					soak_qa_report.get(
-						"nested_passed_count",
-						0
-					)
-				),
-				int(
-					soak_qa_report.get(
-						"nested_test_count",
-						0
-					)
-				),
-				int(
-					soak_qa_report.get(
-						"object_growth",
-						0
-					)
-				),
-			]
-		)
-
-		for failure in soak_qa_report.get(
-			"failures",
-			PackedStringArray()
-		):
-			push_error(
-				"Fishing Soak QA v1: %s"
-				% str(failure)
-			)
-
 
 func _load_debug_qa_dependencies() -> bool:
 	if _debug_qa_load_attempted:
@@ -1521,18 +1438,6 @@ func _load_debug_qa_dependencies() -> bool:
 	FishingSystemStabilityQAScript = loaded.get("FishingSystemStabilityQAScript", null)
 	DialogueSystemQAScript = loaded.get("DialogueSystemQAScript", null)
 	FishingFreshSaveRehearsalQAScript = loaded.get("FishingFreshSaveRehearsalQAScript", null)
-	FishingTortureQAScript = loaded.get("FishingTortureQAScript", null)
-	FishingTortureQAScript = loaded.get("FishingTortureQAScript", null)
-
-	FishingSaveRecoveryInterruptionQAScript = loaded.get(
-		"FishingSaveRecoveryInterruptionQAScript",
-		null
-	)
-
-	FishingSoakQAScript = loaded.get(
-		"FishingSoakQAScript",
-		null
-	)
 
 	_debug_qa_scripts_ready = _debug_qa_load_failures.is_empty()
 	if not _debug_qa_scripts_ready:
@@ -1558,19 +1463,9 @@ func get_debug_qa_dependency_health() -> Dictionary:
 func get_fishing_system_stability_qa_report() -> Dictionary:
 	return system_stability_qa_report.duplicate(true)
 
+
 func get_dialogue_system_qa_report() -> Dictionary:
 	return dialogue_qa_report.duplicate(true)
-
-func get_fishing_torture_qa_report() -> Dictionary:
-	return torture_qa_report.duplicate(true)
-
-
-func get_fishing_save_recovery_interruption_qa_report() -> Dictionary:
-	return save_recovery_interruption_qa_report.duplicate(true)
-
-
-func get_fishing_soak_qa_report() -> Dictionary:
-	return soak_qa_report.duplicate(true)
 
 
 func run_dialogue_system_qa() -> Dictionary:

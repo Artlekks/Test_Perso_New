@@ -94,6 +94,19 @@ func enable_vertical_slice_full_access() -> void:
 	changed.emit()
 
 
+func clear_access_context() -> void:
+	set_access_context()
+
+
+func get_access_context_snapshot() -> Dictionary:
+	return {
+		"full_catalog_access": _full_catalog_access,
+		"shop_ids": _allowed_shop_ids.duplicate(),
+		"trade_shop_ids": _allowed_trade_shop_ids.duplicate(),
+		"availability": _availability.duplicate(true),
+	}
+
+
 func get_wallet_snapshot() -> Dictionary:
 	if inventory == null:
 		return {
@@ -295,22 +308,7 @@ func get_buy_entries() -> Array[Dictionary]:
 		var offer: ShopOfferScript = offer_value as ShopOfferScript
 		if offer == null or not _shop_allowed(offer.shop_id):
 			continue
-		var status: Dictionary = economy_service.evaluate_purchase(
-			offer,
-			1,
-			_availability
-		)
-
-		var resolved_price: int = maxi(
-			0,
-			int(
-				status.get(
-					"unit_price_zenny",
-					offer.price_zenny
-				)
-			)
-		)
-
+		var status: Dictionary = economy_service.evaluate_purchase(offer, 1, _availability)
 		var owned_count: int = 0
 		if inventory != null:
 			if offer.item_type == ShopOfferScript.ItemType.LURE:
@@ -344,17 +342,13 @@ func get_buy_entries() -> Array[Dictionary]:
 			"shop_id": str(offer.shop_id),
 			"shop_name": offer.shop_name,
 			"display_name": presentation_name,
-			"price_zenny": resolved_price,
+			"price_zenny": offer.price_zenny,
 			"quantity": offer.quantity,
 			"owned_count": owned_count,
 			"state_label": str(status.get("state_label", "INVALID")),
 			"reason": str(status.get("reason", "")),
 			"can_execute": bool(status.get("can_purchase", false)),
-			"detail": "%s | %dz | owned %d" % [
-				offer.shop_name,
-				resolved_price,
-				owned_count,
-			],
+			"detail": "%s | %dz | owned %d" % [offer.shop_name, offer.price_zenny, owned_count],
 		})
 	return result
 

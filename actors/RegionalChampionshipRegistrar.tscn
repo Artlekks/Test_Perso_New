@@ -28,7 +28,7 @@ material = SubResource("StandardMaterial3D_cloth")
 size = Vector3(0.58, 0.42, 0.035)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
-radius = 0.62
+radius = 0.48
 
 [node name="RegionalChampionshipRegistrar" type="Node3D"]
 script = ExtResource("1_competition")

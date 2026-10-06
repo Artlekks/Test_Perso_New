@@ -15,9 +15,16 @@ signal gathered(
 @export var circuit_id: StringName = &""
 @export var circuit_node_key: StringName = &""
 
+@export_category("Presentation")
+@export var presentation_texture: Texture2D
+@export_range(0.001, 0.03, 0.0005) var presentation_pixel_size: float = 0.008
+@export_range(-0.03, 0.03, 0.001) var presentation_ground_offset: float = -0.004
+@export_range(-180.0, 180.0, 1.0) var presentation_yaw_degrees: float = 0.0
+
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var placeholder_mesh: MeshInstance3D = $PlaceholderMesh
+@onready var gather_sprite: Sprite3D = get_node_or_null("GatherSprite3D") as Sprite3D
 
 var _player_in_range: bool = false
 var _depleted: bool = false
@@ -112,12 +119,42 @@ func _refresh_presentation() -> void:
 			display_name = material.display_name
 			_apply_placeholder_tint(material.visual_tint)
 
+	_apply_authored_sprite()
+	var has_authored_sprite: bool = (
+		gather_sprite != null
+		and gather_sprite.texture != null
+	)
 	if placeholder_mesh != null:
-		placeholder_mesh.visible = not _depleted
+		placeholder_mesh.visible = (
+			not _depleted
+			and not has_authored_sprite
+		)
+	if gather_sprite != null:
+		gather_sprite.visible = (
+			not _depleted
+			and has_authored_sprite
+		)
 
 	# Old-school interaction: the resource itself is the affordance.
 	# Never display a floating "Press K / Gather" prompt.
 	prompt_label.visible = false
+
+
+func _apply_authored_sprite() -> void:
+	if gather_sprite == null:
+		return
+	gather_sprite.texture = presentation_texture
+	gather_sprite.pixel_size = presentation_pixel_size
+	# Ground pickups are decals/objects on the beach plane, never upright
+	# billboards. Keep them a few millimetres above the authored node origin
+	# to avoid z-fighting while still reading as physically on the sand.
+	gather_sprite.billboard = 0
+	gather_sprite.position = Vector3(0.0, presentation_ground_offset, 0.0)
+	gather_sprite.rotation_degrees = Vector3(
+		-90.0,
+		presentation_yaw_degrees,
+		0.0
+	)
 
 
 func configure_circuit(

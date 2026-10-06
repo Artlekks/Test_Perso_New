@@ -2,6 +2,7 @@ extends RefCounted
 class_name FishingEconomyFoundationQA
 
 const EconomyServiceScript = preload("res://scripts/fishing_economy_service.gd")
+const EconomyAccessScript = preload("res://scripts/fishing_economy_access.gd")
 const CookingServiceScript = preload("res://scripts/economy/fishing_cooking_service.gd")
 const PlayerInventoryScript = preload("res://scripts/items/player_item_inventory.gd")
 const FishingInventoryScript = preload("res://scripts/fishing_inventory.gd")
@@ -30,6 +31,7 @@ static func run(
 	_test_prepared_bait_registration(report, config, catalog)
 	_test_herb_registration(report, config, catalog)
 	_test_runtime_price_resolution(report, config, content, tackle, shop_catalog)
+	_test_world_shop_context_filtering(report, config, content, tackle, shop_catalog)
 	_test_prepared_bait_cooking(report, config, catalog)
 	_test_unsuitable_fish_rejected(report, config, catalog)
 	_test_prepared_bait_gameplay_tuning(report, config)
@@ -176,6 +178,69 @@ static func _test_runtime_price_resolution(
 		valid,
 		"Sea Bass should resolve to 40z and Bamboo Rod to 1000z in the current baseline."
 	)
+	service.queue_free()
+	fishing.queue_free()
+
+
+static func _test_world_shop_context_filtering(
+	report: Dictionary,
+	config: FishingEconomyConfig,
+	content: FishingContentCatalog,
+	tackle: FishingTackleCatalog,
+	shop_catalog
+) -> void:
+	var fishing := FishingInventoryScript.new() as FishingInventory
+	fishing.set_zenny(99999, false)
+	var service := EconomyServiceScript.new() as FishingEconomyService
+	service.configure(
+		fishing,
+		content,
+		tackle,
+		shop_catalog,
+		null,
+		config
+	)
+	var access = EconomyAccessScript.new()
+	access.configure(
+		fishing,
+		service,
+		null,
+		null,
+		null,
+		content,
+		shop_catalog,
+		null
+	)
+	access.set_access_context(
+		PackedStringArray(["shyde"]),
+		PackedStringArray(),
+		{},
+		false
+	)
+	var entries: Array[Dictionary] = access.get_buy_entries()
+	var only_shyde: bool = not entries.is_empty()
+	var has_baby_frog: bool = false
+	var has_floater: bool = false
+	var leaked_lyp: bool = false
+	for entry in entries:
+		only_shyde = only_shyde and str(entry.get("shop_id", "")) == "shyde"
+		var offer_id := str(entry.get("id", ""))
+		has_baby_frog = has_baby_frog or offer_id == "shyde_baby_frog"
+		has_floater = has_floater or offer_id == "shyde_floater"
+		leaked_lyp = leaked_lyp or offer_id == "lyp_popper"
+	access.clear_access_context()
+	var closes_when_context_clears: bool = access.get_buy_entries().is_empty()
+	_record(
+		report,
+		"World economy access filters Buy inventory to the active authored shop",
+		only_shyde
+		and has_baby_frog
+		and has_floater
+		and not leaked_lyp
+		and closes_when_context_clears,
+		"A world merchant must not expose remote shops once full-catalog debug access is disabled."
+	)
+	access.queue_free()
 	service.queue_free()
 	fishing.queue_free()
 

@@ -1,6 +1,10 @@
 extends Node3D
 class_name TripleTriadSalvageSparkle
 
+const SALVAGE_BOTTLE_TEXTURE: Texture2D = preload(
+	"res://assets/sprites/triple_triad/salvage_bottle_orange.png"
+)
+
 ## Lightweight prototype marker for an authored fishing-salvage target.
 ## It owns presentation only. The fishing salvage bridge decides when it appears
 ## and whether the player's cast is close enough to arm the recovery.
@@ -56,40 +60,28 @@ func _build_visual() -> void:
 		return
 
 	_visual_root = Node3D.new()
-	_visual_root.name = "SparkleVisual"
+	_visual_root.name = "SalvageBottleVisual"
 	add_child(_visual_root)
 
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = Color(1.0, 0.93, 0.58, 0.95)
-	material.emission_enabled = true
-	material.emission = Color(1.0, 0.88, 0.38, 1.0)
-	material.emission_energy_multiplier = 3.0
+	var bottle := Sprite3D.new()
+	bottle.name = "OrangeSalvageBottle"
+	bottle.texture = SALVAGE_BOTTLE_TEXTURE
+	bottle.pixel_size = 0.009
+	bottle.billboard = 1
+	bottle.texture_filter = 0
+	bottle.alpha_cut = 1
+	bottle.alpha_scissor_threshold = 0.5
+	bottle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bottle.position = Vector3(0.0, 0.035, 0.0)
+	_visual_root.add_child(bottle)
 
-	var offsets := [
-		Vector3.ZERO,
-		Vector3(0.11, 0.02, 0.0),
-		Vector3(-0.11, -0.01, 0.0),
-		Vector3(0.0, 0.04, 0.11),
-		Vector3(0.0, -0.02, -0.11),
-	]
-	for index in range(offsets.size()):
-		var mesh_instance := MeshInstance3D.new()
-		mesh_instance.name = "Spark%d" % index
-		var sphere := SphereMesh.new()
-		sphere.radius = 0.045 if index > 0 else 0.07
-		sphere.height = 0.09 if index > 0 else 0.14
-		mesh_instance.mesh = sphere
-		mesh_instance.material_override = material
-		mesh_instance.position = offsets[index]
-		mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_visual_root.add_child(mesh_instance)
-
+	# Keep a restrained warm glint so the bottle still reads as the intentional
+	# fishing-salvage target from a distance without reverting to placeholder
+	# geometry.
 	var light := OmniLight3D.new()
-	light.name = "SparkleLight"
-	light.light_color = Color(1.0, 0.86, 0.42, 1.0)
-	light.light_energy = 1.15
-	light.omni_range = 1.6
+	light.name = "BottleGlint"
+	light.light_color = Color(1.0, 0.72, 0.34, 1.0)
+	light.light_energy = 0.85
+	light.omni_range = 1.15
 	light.shadow_enabled = false
 	_visual_root.add_child(light)

@@ -22,6 +22,16 @@ position = Vector3(0, 0.065, 0)
 material_override = SubResource("StandardMaterial3D_placeholder")
 mesh = SubResource("SphereMesh_placeholder")
 
+[node name="GatherSprite3D" type="Sprite3D" parent="."]
+visible = false
+position = Vector3(0, -0.004, 0)
+rotation = Vector3(-1.5707964, 0, 0)
+billboard = 0
+texture_filter = 0
+alpha_cut = 1
+alpha_scissor_threshold = 0.5
+cast_shadow = 0
+
 [node name="InteractionArea" type="Area3D" parent="."]
 collision_layer = 0
 collision_mask = 3

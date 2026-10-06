@@ -18,6 +18,15 @@ const CHOICE_LEAVE: StringName = &"leave"
 @export var sell_choice_text: String = "Sell"
 @export var cards_choice_text: String = "Play Cards"
 @export var leave_choice_text: String = "Leave"
+
+@export_category("Economy Access")
+## Stable authored shop ids exposed by this world merchant. Empty means no buy
+## inventory; selling remains available through the common economy service.
+@export var economy_shop_ids: PackedStringArray = PackedStringArray()
+## Stable Manillo/trade shop ids exposed by this world merchant.
+@export var economy_trade_shop_ids: PackedStringArray = PackedStringArray()
+@export var economy_availability: Dictionary = {}
+@export var economy_full_catalog_access: bool = false
 ## Optional mixed-role support. The current beach merchant does not use these;
 ## the separate TripleTriadOpponentNPC owns the beach_trader duel.
 @export var card_opponent_id: StringName = &""
@@ -151,8 +160,10 @@ func _on_dialogue_choice_made(
 		CHOICE_SELL:
 			call_deferred("_open_sell_menu")
 		CHOICE_CARDS:
+			_clear_economy_access_context()
 			call_deferred("_open_card_game")
 		CHOICE_LEAVE:
+			_clear_economy_access_context()
 			_play_idle()
 		_:
 			_play_idle()
@@ -167,12 +178,17 @@ func _on_dialogue_interaction_finished(
 	# A valid selection is already routed by choice_made. Cancellation or any
 	# abnormal finish simply restores the NPC's idle presentation.
 	if reason != &"choice_selected":
+		_clear_economy_access_context()
 		_play_idle()
 
 
 func _open_buy_menu() -> void:
+	if not _apply_economy_access_context():
+		_play_idle()
+		return
 	var target_menu := _find_economy_menu()
 	if target_menu == null:
+		_clear_economy_access_context()
 		_play_idle()
 		return
 	if target_menu.has_method("open_buy_menu"):
@@ -183,8 +199,12 @@ func _open_buy_menu() -> void:
 
 
 func _open_sell_menu() -> void:
+	if not _apply_economy_access_context():
+		_play_idle()
+		return
 	var target_menu := _find_economy_menu()
 	if target_menu == null:
+		_clear_economy_access_context()
 		_play_idle()
 		return
 	if target_menu.has_method("open_sell_menu"):
@@ -252,6 +272,51 @@ func _play_animation_if_available(animation_name: StringName) -> void:
 	animated_sprite.play(animation_name)
 
 
+func _find_economy_access() -> Node:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	var direct := tree.root.get_node_or_null(
+		"FishingSessionServices/FishingEconomyAccess"
+	)
+	if direct != null:
+		return direct
+	var scene := tree.current_scene
+	if scene == null:
+		return null
+	var fishing := scene.find_child("Fishing", true, false)
+	if fishing == null:
+		return null
+	var services = fishing.get("session_services")
+	if services is Node:
+		var candidate = (services as Node).get_node_or_null(
+			"FishingEconomyAccess"
+		)
+		if candidate != null:
+			return candidate
+	return null
+
+
+func _apply_economy_access_context() -> bool:
+	var access := _find_economy_access()
+	if access == null or not access.has_method("set_access_context"):
+		return false
+	access.call(
+		"set_access_context",
+		economy_shop_ids,
+		economy_trade_shop_ids,
+		economy_availability,
+		economy_full_catalog_access
+	)
+	return true
+
+
+func _clear_economy_access_context() -> void:
+	var access := _find_economy_access()
+	if access != null and access.has_method("clear_access_context"):
+		access.call("clear_access_context")
+
+
 func _find_economy_menu() -> Node:
 	if is_instance_valid(_cached_menu):
 		_bind_menu_signals(_cached_menu)
@@ -273,6 +338,7 @@ func _bind_menu_signals(menu: Node) -> void:
 
 
 func _on_economy_menu_closed() -> void:
+	_clear_economy_access_context()
 	_play_idle()
 
 
@@ -312,6 +378,7 @@ func _on_body_exited(body: Node) -> void:
 		return
 	_player_in_range = false
 	prompt_label.visible = false
+	_clear_economy_access_context()
 	_play_idle()
 
 
