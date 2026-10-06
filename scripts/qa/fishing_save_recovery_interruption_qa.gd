@@ -33,6 +33,34 @@ const TransactionServiceScript = preload(
 	"res://scripts/items/game_item_transaction_service.gd"
 )
 
+const FishingProgressScript = preload(
+	"res://scripts/fishing_progress.gd"
+)
+
+const FishingInventoryScript = preload(
+	"res://scripts/fishing_inventory.gd"
+)
+
+const CatchRepositoryScript = preload(
+	"res://scripts/fishing_catch_repository.gd"
+)
+
+const CatchEvaluatorScript = preload(
+	"res://scripts/fishing_catch_evaluator.gd"
+)
+
+const CardMakerServiceScript = preload(
+	"res://scripts/economy/fishing_card_maker_service.gd"
+)
+
+const CardMakerCatalogResource = preload(
+	"res://data/economy/card_maker/card_maker_catalog_v1.tres"
+)
+
+const FishingContentCatalogResource = preload(
+	"res://data/bof4/catalogs/all_content.tres"
+)
+
 const ItemCatalogServiceScript = preload(
 	"res://scripts/items/game_item_catalog_service.gd"
 )
@@ -68,6 +96,50 @@ const SAVE_FAILURE_PATH := (
 	+ "/inventory.json"
 )
 
+const CATCH_PROGRESS_PATH := (
+	QA_ROOT
+	+ "/catch_progress.json"
+)
+
+const CATCH_INVENTORY_PATH := (
+	QA_ROOT
+	+ "/catch_inventory.json"
+)
+
+const CATCH_PENDING_PATH := (
+	QA_ROOT
+	+ "/catch_pending.json"
+)
+
+const CATCH_PENDING_TEMP_PATH := (
+	QA_ROOT
+	+ "/catch_pending.tmp"
+)
+
+const CATCH_FAILURE_BLOCKER_PATH := (
+	QA_ROOT
+	+ "/catch_inventory_blocker"
+)
+
+const CATCH_FAILURE_SAVE_PATH := (
+	CATCH_FAILURE_BLOCKER_PATH
+	+ "/inventory.json"
+)
+
+const CARD_MAKER_INVENTORY_PATH := (
+	QA_ROOT
+	+ "/card_maker_inventory.json"
+)
+
+const CARD_MAKER_PENDING_PATH := (
+	QA_ROOT
+	+ "/card_maker_pending.json"
+)
+
+const CARD_MAKER_PENDING_TEMP_PATH := (
+	QA_ROOT
+	+ "/card_maker_pending.tmp"
+)
 
 class SignalProbe:
 	extends RefCounted
@@ -79,6 +151,42 @@ class SignalProbe:
 	) -> void:
 		transaction_completed_count += 1
 
+class MockCardGame:
+	extends Node
+
+	var quantities: Dictionary = {}
+
+	func set_quantity(
+		card_id: StringName,
+		quantity: int
+	) -> void:
+		quantities[String(card_id)] = maxi(
+			0,
+			quantity
+		)
+
+	func get_card_snapshot(
+		card_id: StringName
+	) -> Dictionary:
+		return {
+			"card_id": String(card_id),
+			"display_name": "QA Card",
+			"quantity": maxi(
+				0,
+				int(
+					quantities.get(
+						String(card_id),
+						0
+					)
+				)
+			),
+		}
+
+	func get_player_snapshot() -> Dictionary:
+		return {
+			"duel_rank": 10,
+			"card_game_unlocked": true,
+		}
 
 static func run(
 	session: Node
@@ -118,6 +226,14 @@ static func run(
 	_test_transaction_save_failure(
 		report,
 		session
+	)
+
+	_test_catch_repository_recovery(
+		report
+	)
+
+	_test_card_maker_recovery(
+		report
 	)
 
 	_cleanup_test_files()
@@ -820,7 +936,847 @@ static func _test_transaction_save_failure(
 		SAVE_FAILURE_BLOCKER_PATH
 	)
 
+static func _test_catch_repository_recovery(
+	report: Dictionary
+) -> void:
+	_remove_path(
+		CATCH_PROGRESS_PATH
+	)
 
+	_remove_path(
+		CATCH_INVENTORY_PATH
+	)
+
+	_remove_path(
+		CATCH_PENDING_PATH
+	)
+
+	_remove_path(
+		CATCH_PENDING_TEMP_PATH
+	)
+
+	_remove_path(
+		CATCH_FAILURE_BLOCKER_PATH
+	)
+
+	var blocker := FileAccess.open(
+		CATCH_FAILURE_BLOCKER_PATH,
+		FileAccess.WRITE
+	)
+
+	if blocker == null:
+		_record(
+			report,
+			"Interrupted catch leaves a durable recovery journal",
+			false,
+			"Could not create the deliberate catch-inventory save blocker."
+		)
+
+		_record(
+			report,
+			"Catch recovery repairs the missing durable side exactly once",
+			false,
+			"Catch interruption fixture could not be created."
+		)
+
+		_record(
+			report,
+			"Repeated catch recovery cannot duplicate the catch",
+			false,
+			"Catch interruption fixture could not be created."
+		)
+
+		return
+
+	blocker.store_string(
+		"THIS FILE DELIBERATELY BLOCKS THE CATCH INVENTORY SAVE"
+	)
+
+	blocker.close()
+
+	var fish = _get_qa_fish()
+
+	if fish == null:
+		_record(
+			report,
+			"Interrupted catch leaves a durable recovery journal",
+			false,
+			"No authored fish was available for catch recovery QA."
+		)
+
+		_record(
+			report,
+			"Catch recovery repairs the missing durable side exactly once",
+			false,
+			"No authored fish was available for catch recovery QA."
+		)
+
+		_record(
+			report,
+			"Repeated catch recovery cannot duplicate the catch",
+			false,
+			"No authored fish was available for catch recovery QA."
+		)
+
+		_remove_path(
+			CATCH_FAILURE_BLOCKER_PATH
+		)
+
+		return
+
+	var progress = (
+		FishingProgressScript.new()
+	)
+
+	progress.configure_save_path(
+		CATCH_PROGRESS_PATH
+	)
+
+	progress.initialize()
+
+	var inventory = (
+		FishingInventoryScript.new()
+	)
+
+	inventory.configure_save_path(
+		CATCH_FAILURE_SAVE_PATH
+	)
+
+	var repository = (
+		CatchRepositoryScript.new()
+	)
+
+	repository.configure_pending_journal_paths(
+		CATCH_PENDING_PATH,
+		CATCH_PENDING_TEMP_PATH
+	)
+
+	repository.configure(
+		progress,
+		inventory
+	)
+
+	var snapshot: Dictionary = (
+		CatchEvaluatorScript.create_snapshot_from_values(
+			fish,
+			maxf(
+				float(fish.average_size),
+				1.0
+			),
+			{
+				"spot_id": "qa_recovery_spot",
+				"spot_name": "QA Recovery Spot",
+				"lure_id": "qa_lure",
+				"lure_name": "QA Lure",
+			}
+		)
+	)
+
+	snapshot["transaction_id"] = (
+		"qa-catch-interruption-001"
+	)
+
+	var transaction_id: String = str(
+		snapshot.get(
+			"transaction_id",
+			""
+		)
+	)
+
+	var species_id: String = str(
+		snapshot.get(
+			"species_id",
+			""
+		)
+	)
+
+	var result: Dictionary = (
+		repository.commit_snapshot(
+			snapshot
+		)
+	)
+
+	var interruption_created: bool = (
+		bool(
+			result.get(
+				"committed",
+				false
+			)
+		)
+		and not bool(
+			result.get(
+				"durable",
+				true
+			)
+		)
+		and bool(
+			result.get(
+				"pending_recovery",
+				false
+			)
+		)
+		and repository.has_pending_transaction()
+		and progress.has_catch_transaction(
+			transaction_id
+		)
+	)
+
+	_record(
+		report,
+		"Interrupted catch leaves a durable recovery journal",
+		interruption_created,
+		"When progress saves but physical inventory cannot, the catch journal must remain pending for recovery."
+	)
+
+	repository.free()
+	progress.free()
+	inventory.free()
+
+	_remove_path(
+		CATCH_FAILURE_BLOCKER_PATH
+	)
+
+	var restarted_progress = (
+		FishingProgressScript.new()
+	)
+
+	restarted_progress.configure_save_path(
+		CATCH_PROGRESS_PATH
+	)
+
+	restarted_progress.initialize()
+
+	var restarted_inventory = (
+		FishingInventoryScript.new()
+	)
+
+	restarted_inventory.configure_save_path(
+		CATCH_INVENTORY_PATH
+	)
+
+	restarted_inventory.initialize()
+
+	var restarted_repository = (
+		CatchRepositoryScript.new()
+	)
+
+	restarted_repository.configure_pending_journal_paths(
+		CATCH_PENDING_PATH,
+		CATCH_PENDING_TEMP_PATH
+	)
+
+	restarted_repository.configure(
+		restarted_progress,
+		restarted_inventory
+	)
+
+	var recovered_exactly_once: bool = (
+		not restarted_repository.has_pending_transaction()
+		and restarted_progress.has_catch_transaction(
+			transaction_id
+		)
+		and restarted_inventory.has_catch_transaction(
+			transaction_id
+		)
+		and restarted_progress.get_total_catches()
+		== 1
+		and restarted_inventory.get_fish_count(
+			species_id
+		) == 1
+	)
+
+	_record(
+		report,
+		"Catch recovery repairs the missing durable side exactly once",
+		recovered_exactly_once,
+		"After restart, recovery must fill only the missing inventory side and preserve the already-saved progress side."
+	)
+
+	var catches_before_repeat: int = (
+		restarted_progress.get_total_catches()
+	)
+
+	var fish_before_repeat: int = (
+		restarted_inventory.get_fish_count(
+			species_id
+		)
+	)
+
+	var repeat_recovery: Dictionary = (
+		restarted_repository.recover_pending_transaction()
+	)
+
+	_record(
+		report,
+		"Repeated catch recovery cannot duplicate the catch",
+		str(
+			repeat_recovery.get(
+				"reason",
+				""
+			)
+		) == "nothing_pending"
+		and restarted_progress.get_total_catches()
+		== catches_before_repeat
+		and restarted_inventory.get_fish_count(
+			species_id
+		) == fish_before_repeat,
+		"Once the journal is resolved, another recovery attempt must be a no-op."
+	)
+
+	restarted_repository.free()
+	restarted_progress.free()
+	restarted_inventory.free()
+
+static func _test_card_maker_recovery(
+	report: Dictionary
+) -> void:
+	var recipe = _get_qa_card_maker_recipe()
+
+	if recipe == null:
+		for label in [
+			"Interrupted Card Maker transaction is durably staged",
+			"Card Maker restart rolls back unfinished transaction",
+			"Repeated Card Maker recovery cannot refund twice",
+			"Completed Card Maker transaction is not incorrectly refunded",
+		]:
+			_record(
+				report,
+				label,
+				false,
+				"No suitable authored first-print Card Maker recipe was available."
+			)
+
+		return
+
+	var fish_required: int = maxi(
+		1,
+		int(
+			recipe.first_time_fish_count
+		)
+	)
+
+	var zenny_required: int = maxi(
+		0,
+		int(
+			recipe.first_time_zenny
+		)
+	)
+
+	var baseline_fish: int = (
+		fish_required + 1
+	)
+
+	var baseline_zenny: int = (
+		zenny_required + 200
+	)
+
+	_cleanup_card_maker_recovery_files()
+
+	var inventory = (
+		_create_card_maker_inventory(
+			CARD_MAKER_INVENTORY_PATH,
+			recipe,
+			baseline_fish,
+			baseline_zenny
+		)
+	)
+
+	if inventory == null:
+		for label in [
+			"Interrupted Card Maker transaction is durably staged",
+			"Card Maker restart rolls back unfinished transaction",
+			"Repeated Card Maker recovery cannot refund twice",
+			"Completed Card Maker transaction is not incorrectly refunded",
+		]:
+			_record(
+				report,
+				label,
+				false,
+				"Could not create the isolated Card Maker inventory."
+			)
+
+		return
+
+	var before_snapshot: Dictionary = (
+		inventory.create_transaction_snapshot()
+	)
+
+	var fish_consumed: Dictionary = (
+		inventory.consume_fish_costs(
+			PackedStringArray([
+				String(
+					recipe.fish_species_id
+				),
+			]),
+			PackedInt32Array([
+				fish_required,
+			]),
+			false
+		)
+	)
+
+	var zenny_spent: bool = (
+		inventory.spend_zenny(
+			zenny_required,
+			false
+		)
+	)
+
+	var spent_saved: bool = (
+		bool(
+			fish_consumed.get(
+				"success",
+				false
+			)
+		)
+		and zenny_spent
+		and inventory.commit_changes()
+	)
+
+	var game := MockCardGame.new()
+
+	game.set_quantity(
+		recipe.card_id,
+		0
+	)
+
+	var service = (
+		CardMakerServiceScript.new()
+	)
+
+	service.configure_pending_journal_paths(
+		CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH
+	)
+
+	service.configure(
+		CardMakerCatalogResource,
+		inventory,
+		FishingContentCatalogResource
+	)
+
+	service.bind_triple_triad_game(
+		game
+	)
+
+	var pending_payload := {
+		"version": 1,
+		"transaction_id": "qa-card-maker-interruption-001",
+		"recipe_id": String(
+			recipe.recipe_id
+		),
+		"card_id": String(
+			recipe.card_id
+		),
+		"card_quantity_before": 0,
+		"inventory_snapshot": (
+			before_snapshot.duplicate(true)
+		),
+	}
+
+	var pending_written: bool = bool(
+		service.call(
+			"_write_pending",
+			pending_payload
+		)
+	)
+
+	_record(
+		report,
+		"Interrupted Card Maker transaction is durably staged",
+		spent_saved
+		and pending_written
+		and service.has_pending_transaction()
+		and inventory.get_fish_count(
+			String(
+				recipe.fish_species_id
+			)
+		) == baseline_fish - fish_required
+		and inventory.get_zenny()
+		== baseline_zenny - zenny_required,
+		"An interruption after paying Card Maker costs must preserve both the spent inventory and the pre-transaction rollback snapshot."
+	)
+
+	service.free()
+	inventory.free()
+
+	var restarted_inventory = (
+		FishingInventoryScript.new()
+	)
+
+	restarted_inventory.configure_save_path(
+		CARD_MAKER_INVENTORY_PATH
+	)
+
+	restarted_inventory.initialize()
+
+	var restarted_service = (
+		CardMakerServiceScript.new()
+	)
+
+	restarted_service.configure_pending_journal_paths(
+		CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH
+	)
+
+	restarted_service.configure(
+		CardMakerCatalogResource,
+		restarted_inventory,
+		FishingContentCatalogResource
+	)
+
+	restarted_service.bind_triple_triad_game(
+		game
+	)
+
+	var rollback_result: Dictionary = (
+		restarted_service.recover_pending_transaction()
+	)
+
+	_record(
+		report,
+		"Card Maker restart rolls back unfinished transaction",
+		bool(
+			rollback_result.get(
+				"recovered",
+				false
+			)
+		)
+		and str(
+			rollback_result.get(
+				"reason",
+				""
+			)
+		) == "rolled_back_unfinished_transaction"
+		and not restarted_service.has_pending_transaction()
+		and restarted_inventory.get_fish_count(
+			String(
+				recipe.fish_species_id
+			)
+		) == baseline_fish
+		and restarted_inventory.get_zenny()
+		== baseline_zenny,
+		"If the card quantity never increased, startup recovery must restore the exact pre-payment fishing inventory."
+	)
+
+	var repeat_fish: int = (
+		restarted_inventory.get_fish_count(
+			String(
+				recipe.fish_species_id
+			)
+		)
+	)
+
+	var repeat_zenny: int = (
+		restarted_inventory.get_zenny()
+	)
+
+	var second_recovery: Dictionary = (
+		restarted_service.recover_pending_transaction()
+	)
+
+	_record(
+		report,
+		"Repeated Card Maker recovery cannot refund twice",
+		str(
+			second_recovery.get(
+				"reason",
+				""
+			)
+		) == "nothing_pending"
+		and restarted_inventory.get_fish_count(
+			String(
+				recipe.fish_species_id
+			)
+		) == repeat_fish
+		and restarted_inventory.get_zenny()
+		== repeat_zenny,
+		"Once rollback completes, the same interrupted transaction must never refund costs again."
+	)
+
+	restarted_service.free()
+	restarted_inventory.free()
+
+	_cleanup_card_maker_recovery_files()
+
+	var committed_inventory = (
+		_create_card_maker_inventory(
+			CARD_MAKER_INVENTORY_PATH,
+			recipe,
+			baseline_fish,
+			baseline_zenny
+		)
+	)
+
+	if committed_inventory == null:
+		_record(
+			report,
+			"Completed Card Maker transaction is not incorrectly refunded",
+			false,
+			"Could not create the committed-transaction fixture."
+		)
+
+		game.free()
+		return
+
+	var committed_before: Dictionary = (
+		committed_inventory.create_transaction_snapshot()
+	)
+
+	var committed_fish_result: Dictionary = (
+		committed_inventory.consume_fish_costs(
+			PackedStringArray([
+				String(
+					recipe.fish_species_id
+				),
+			]),
+			PackedInt32Array([
+				fish_required,
+			]),
+			false
+		)
+	)
+
+	var committed_zenny_spent: bool = (
+		committed_inventory.spend_zenny(
+			zenny_required,
+			false
+		)
+	)
+
+	var committed_spent_saved: bool = (
+		bool(
+			committed_fish_result.get(
+				"success",
+				false
+			)
+		)
+		and committed_zenny_spent
+		and committed_inventory.commit_changes()
+	)
+
+	var committed_service = (
+		CardMakerServiceScript.new()
+	)
+
+	committed_service.configure_pending_journal_paths(
+		CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH
+	)
+
+	committed_service.configure(
+		CardMakerCatalogResource,
+		committed_inventory,
+		FishingContentCatalogResource
+	)
+
+	committed_service.bind_triple_triad_game(
+		game
+	)
+
+	var committed_pending := {
+		"version": 1,
+		"transaction_id": "qa-card-maker-interruption-002",
+		"recipe_id": String(
+			recipe.recipe_id
+		),
+		"card_id": String(
+			recipe.card_id
+		),
+		"card_quantity_before": 0,
+		"inventory_snapshot": (
+			committed_before.duplicate(true)
+		),
+	}
+
+	var committed_pending_written: bool = bool(
+		committed_service.call(
+			"_write_pending",
+			committed_pending
+		)
+	)
+
+	committed_service.free()
+	committed_inventory.free()
+
+	game.set_quantity(
+		recipe.card_id,
+		1
+	)
+
+	var completed_inventory = (
+		FishingInventoryScript.new()
+	)
+
+	completed_inventory.configure_save_path(
+		CARD_MAKER_INVENTORY_PATH
+	)
+
+	completed_inventory.initialize()
+
+	var completed_service = (
+		CardMakerServiceScript.new()
+	)
+
+	completed_service.configure_pending_journal_paths(
+		CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH
+	)
+
+	completed_service.configure(
+		CardMakerCatalogResource,
+		completed_inventory,
+		FishingContentCatalogResource
+	)
+
+	completed_service.bind_triple_triad_game(
+		game
+	)
+
+	var completed_recovery: Dictionary = (
+		completed_service.recover_pending_transaction()
+	)
+
+	_record(
+		report,
+		"Completed Card Maker transaction is not incorrectly refunded",
+		committed_spent_saved
+		and committed_pending_written
+		and bool(
+			completed_recovery.get(
+				"recovered",
+				false
+			)
+		)
+		and str(
+			completed_recovery.get(
+				"reason",
+				""
+			)
+		) == "commit_already_completed"
+		and not completed_service.has_pending_transaction()
+		and completed_inventory.get_fish_count(
+			String(
+				recipe.fish_species_id
+			)
+		) == baseline_fish - fish_required
+		and completed_inventory.get_zenny()
+		== baseline_zenny - zenny_required,
+		"If the card already exists after restart, recovery must finalize the journal without refunding costs."
+	)
+
+	completed_service.free()
+	completed_inventory.free()
+	game.free()
+
+	_cleanup_card_maker_recovery_files()
+	
+static func _get_qa_fish():
+	for fish in FishingContentCatalogResource.fish:
+		if fish == null:
+			continue
+
+		if String(
+			fish.get_stable_species_id()
+		).strip_edges().is_empty():
+			continue
+
+		return fish
+
+	return null
+
+
+static func _get_qa_card_maker_recipe():
+	for recipe in CardMakerCatalogResource.get_all_recipes():
+		if recipe == null:
+			continue
+
+		if not recipe.enabled:
+			continue
+
+		if int(
+			recipe.first_time_fish_count
+		) <= 0:
+			continue
+
+		if String(
+			recipe.card_id
+		).strip_edges().is_empty():
+			continue
+
+		return recipe
+
+	return null
+
+
+static func _create_card_maker_inventory(
+	save_path: String,
+	recipe,
+	fish_count: int,
+	zenny: int
+):
+	var inventory = (
+		FishingInventoryScript.new()
+	)
+
+	inventory.configure_save_path(
+		save_path
+	)
+
+	inventory.initialize()
+
+	for _index in range(
+		maxi(
+			0,
+			fish_count
+		)
+	):
+		var specimen = (
+			inventory.add_fish_specimen(
+				String(
+					recipe.fish_species_id
+				),
+				"QA Card Maker Fish",
+				10.0,
+				1,
+				false,
+				false,
+				false,
+				{},
+				"",
+				false
+			)
+		)
+
+		if specimen == null:
+			inventory.free()
+			return null
+
+	inventory.set_zenny(
+		maxi(
+			0,
+			zenny
+		),
+		false
+	)
+
+	if not inventory.commit_changes():
+		inventory.free()
+		return null
+
+	return inventory
+
+
+static func _cleanup_card_maker_recovery_files() -> void:
+	for path in [
+		CARD_MAKER_INVENTORY_PATH,
+		CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH,
+	]:
+		_remove_path(
+			path
+		)
+		
 static func _item_catalog(
 	session: Node
 ):
@@ -851,6 +1807,15 @@ static func _cleanup_test_files() -> void:
 		PLAYER_ITEM_PATH,
 		SAVE_FAILURE_PATH,
 		SAVE_FAILURE_BLOCKER_PATH,
+		CATCH_PROGRESS_PATH,
+		CATCH_INVENTORY_PATH,
+		CATCH_PENDING_PATH,
+		CATCH_PENDING_TEMP_PATH,
+		CATCH_FAILURE_SAVE_PATH,
+		CATCH_FAILURE_BLOCKER_PATH,
+		CARD_MAKER_INVENTORY_PATH,
+		CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH,
 	]:
 		_remove_path(path)
 

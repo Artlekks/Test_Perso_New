@@ -41,10 +41,24 @@ var progression_catalog: FishingProgressionCatalog = (
 )
 var record_mercy_policy = DefaultRecordMercyPolicy
 
-var _initialized: bool = false
 var _save_path: String = SAVE_PATH
+var _initialized: bool = false
+
+func configure_save_path(save_path: String) -> void:
+	if _initialized:
+		return
+
+	var clean_path: String = save_path.strip_edges()
+
+	_save_path = (
+		clean_path
+		if not clean_path.is_empty()
+		else SAVE_PATH
+	)
 
 
+func get_save_path() -> String:
+	return _save_path
 
 func _ready() -> void:
 	initialize()
@@ -640,7 +654,7 @@ func save_to_disk() -> bool:
 func load_from_disk() -> bool:
 	_reset_runtime_state()
 
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(_save_path):
 		return true
 
 	var file := FileAccess.open(
