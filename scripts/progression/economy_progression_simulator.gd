@@ -20,9 +20,8 @@ const TradeCatalogResource = preload(
 ## Prepared bait is intentionally modelled as a cross-system loop:
 ##   1 cheap/common fish + 2 gathered herb units -> 3 prepared bait portions.
 ## A baited catch shifts the expected catch mix toward better/bigger fish and
-## improves discovery pace. BAIT_VALUE_BONUS models expected catch quality, not
-## a literal +30% vendor price multiplier on an individual fish.
-## The exact recipe/bonuses are assumptions for tuning, not shipped gameplay.
+## improves discovery pace. Recipe/discovery rates remain design assumptions;
+## sale income now uses canonical per-species prices without a bait price bonus.
 
 const STEP_HOURS: float = 0.25
 const STARTING_ZENNY: float = 100.0
@@ -37,10 +36,11 @@ const CARD_MAKER_UNLOCK_HOUR: float = 1.5
 const BAIT_FISH_PER_BATCH: float = 1.0
 const BAIT_HERBS_PER_BATCH: float = 2.0
 const BAIT_PORTIONS_PER_BATCH: float = 3.0
-const BAIT_VALUE_BONUS: float = 0.30
 const BAIT_DISCOVERY_BONUS: float = 0.25
 
-const CHECKPOINT_HOURS := [0.25, 1.0, 4.0, 12.0]
+const CHECKPOINT_HOURS := [0.25, 1.0, 4.0, 10.0, 12.0]
+const RuntimeRoute = preload("res://scripts/progression/economy_runtime_route.gd")
+var runtime_route := RuntimeRoute.new()
 
 
 func run_default_suite(print_to_output: bool = true) -> Dictionary:
@@ -67,7 +67,7 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 			passed += 1
 
 	var report := {
-		"version": "0.5",
+		"version": "1.0-runtime-reconciliation",
 		"hours_simulated": 12.0,
 		"step_hours": STEP_HOURS,
 		"profiles": profile_reports,
@@ -76,6 +76,8 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 		"checks_total": checks.size(),
 		"summary": "%d/%d economy checks healthy" % [passed, checks.size()],
 		"source_truth": source_truth,
+		"runtime_route": runtime_route.audit(),
+		"runtime_viability": {"passed": profile_reports.BALANCED.final.purchases.size() == _build_purchase_plan().size(), "acquired": profile_reports.BALANCED.final.purchases, "required_count": _build_purchase_plan().size()},
 		"assumptions": _get_assumption_snapshot(),
 	}
 
@@ -123,6 +125,13 @@ func _simulate_profile(profile: Dictionary) -> Dictionary:
 		"species_discovered": 0.0,
 		"rods_owned": STARTING_RODS,
 		"lures_owned": STARTING_LURES,
+		"acquisition_events": [],
+		"caught_by_species": {},
+		"sold_by_species": {},
+		"traded_by_species": {},
+		"fish_spent_cards": 0.0,
+		"population": {},
+		"current_location_id": "beach",
 	}
 	var purchased: Dictionary = {}
 	var checkpoints: Dictionary = {}
@@ -211,10 +220,18 @@ func _simulate_step(
 	# species before the profile decides what to sell, cook, craft into cards, or
 	# keep. This lets the simulator prove acquisition feasibility instead of
 	# treating every fish as an interchangeable trade token.
+	var population := _population_for_step(state, purchased, purchase_plan)
+	state.population = population
+	if not population.location_id.is_empty():
+		state.current_location_id = population.location_id
+	var catch_stage := stage.duplicate(true)
+	catch_stage.trade_species_mix = population.weights
 	var species_catches: Dictionary = _build_species_catch_batch(
-		stage,
+		catch_stage,
 		base_catches
 	)
+	for species in species_catches:
+		state.caught_by_species[species] = float(state.caught_by_species.get(species, 0.0)) + float(species_catches[species])
 	var targeted_trade_reserve: float = 0.0
 	var discretionary_catches: float = base_catches
 	if not species_catches.is_empty():
@@ -251,9 +268,9 @@ func _simulate_step(
 		+ general_reserved_count
 	)
 
-	var effective_value: float = float(stage.get("average_fish_value_zenny", 0.0))
-	effective_value *= 1.0 + (BAIT_VALUE_BONUS * bait_coverage)
-	var revenue: float = sold_count * effective_value
+	# Canonical vendors pay per species, not the old hypothetical stage average
+	# or a prepared-bait price multiplier. Reserved fish have already been removed.
+	var revenue := _sale_revenue(species_catches, sell_share, state)
 	state["zenny"] = float(state.get("zenny", 0.0)) + revenue
 	state["zenny_earned"] = float(state.get("zenny_earned", 0.0)) + revenue
 
@@ -275,7 +292,7 @@ func _simulate_step(
 		* STEP_HOURS
 	)
 	state["species_discovered"] = minf(
-		float(stage.get("max_species_pool", 0.0)),
+		float(state.caught_by_species.size()),
 		float(state.get("species_discovered", 0.0)) + discovery_gain
 	)
 
@@ -307,6 +324,23 @@ func _cook_prepared_bait(state: Dictionary) -> void:
 		+ batches * BAIT_PORTIONS_PER_BATCH
 	)
 	state["bait_batches"] = float(state.get("bait_batches", 0.0)) + batches
+
+
+func _population_for_step(state: Dictionary, purchased: Dictionary, plan: Array) -> Dictionary:
+	for purchase in plan:
+		if not purchased.has(purchase.id):
+			return runtime_route.population(purchase, purchased, state.fish_reserved_by_species, StringName(state.current_location_id))
+	return runtime_route.population({}, purchased, {}, StringName(state.current_location_id))
+
+
+func _sale_revenue(batch: Dictionary, share: float, state: Dictionary) -> float:
+	var revenue := 0.0
+	for species in batch:
+		var sold := float(batch[species]) * share
+		state.sold_by_species[species] = float(state.sold_by_species.get(species, 0.0)) + sold
+		var fish = RuntimeRoute.Content.get_fish_by_id(StringName(species))
+		revenue += sold * float(EconomyConfigResource.get_fish_sell_price(StringName(species), fish.get_sell_value_zenny()))
+	return revenue
 
 
 func _build_species_catch_batch(
@@ -493,6 +527,9 @@ func _pay_fish_trade(
 			float(bank.get(species_id, 0.0)) - required,
 			0.0
 		)
+		var ledger: Dictionary = state.get("traded_by_species", {})
+		ledger[species_id] = float(ledger.get(species_id, 0.0)) + required
+		state.traded_by_species = ledger
 		spent_total += required
 
 	state["fish_reserved_by_species"] = bank
@@ -526,6 +563,7 @@ func _run_card_maker(
 
 	var cost: float = craft_count * fee
 	state["card_fish_bank"] = card_bank - craft_count
+	state["fish_spent_cards"] = float(state.get("fish_spent_cards", 0.0)) + craft_count
 	state["zenny"] = float(state.get("zenny", 0.0)) - cost
 	state["zenny_spent_cards"] = float(state.get("zenny_spent_cards", 0.0)) + cost
 	state["unique_cards"] = (
@@ -724,6 +762,12 @@ func _attempt_due_purchases(
 
 		if not _purchase_source_is_valid(purchase):
 			continue
+		# The real ownership ladder is sequential; money or a debug catalog must
+		# not bypass a missing provider or inaccessible world route.
+		var merchant_location: StringName = runtime_route.source_location(purchase, purchased, StringName(state.current_location_id))
+		if merchant_location == &"":
+			break
+		var cash_before: float = state.zenny
 
 		var acquisition: String = str(
 			purchase.get(
@@ -742,7 +786,7 @@ func _attempt_due_purchases(
 					state,
 					requirements
 				):
-					continue
+					break
 
 				var fish_cost: float = _pay_fish_trade(
 					state,
@@ -773,7 +817,7 @@ func _attempt_due_purchases(
 					)
 					< cost + floor_zenny
 				):
-					continue
+					break
 
 				state["zenny"] = (
 					float(
@@ -796,6 +840,8 @@ func _attempt_due_purchases(
 				)
 
 		purchased[purchase_id] = true
+		state.current_location_id = String(merchant_location)
+		state.acquisition_events.append({"item_id": purchase_id, "hour": step_end, "source_id": purchase.source_id, "zenny_before": cash_before, "zenny_after": state.zenny, "reserved_after": state.fish_reserved_by_species.duplicate(true)})
 
 		match str(
 			purchase.get(
@@ -836,65 +882,10 @@ func _attempt_due_purchases(
 				)
 
 
-func _resolve_purchase_zenny_cost(
-	purchase: Dictionary
-) -> float:
-	if str(
-		purchase.get(
-			"acquisition",
-			"buy"
-		)
-	) != "buy":
+func _resolve_purchase_zenny_cost(purchase: Dictionary) -> float:
+	if str(purchase.get("acquisition", "buy")) != "buy":
 		return 0.0
-
-	var item_id := StringName(
-		str(
-			purchase.get(
-				"item_id",
-				purchase.get(
-					"id",
-					""
-				)
-			)
-		)
-	)
-
-	var fallback: int = maxi(
-		0,
-		int(
-			purchase.get(
-				"fallback_cost_zenny",
-				0
-			)
-		)
-	)
-
-	match str(
-		purchase.get(
-			"kind",
-			""
-		)
-	):
-		"rod":
-			return float(
-				EconomyConfigResource.get_rod_buy_price(
-					item_id,
-					fallback
-				)
-			)
-
-		"lure":
-			return float(
-				EconomyConfigResource.get_lure_buy_price(
-					item_id,
-					fallback
-				)
-			)
-
-		_:
-			return float(
-				fallback
-			)
+	return float(runtime_route.price(StringName(purchase.source_id)))
 
 func _snapshot_state(state: Dictionary, purchased: Dictionary) -> Dictionary:
 	var purchased_ids: Array = purchased.keys()
@@ -956,7 +947,25 @@ func _snapshot_state(state: Dictionary, purchased: Dictionary) -> Dictionary:
 		"rods_owned": int(state.get("rods_owned", 0)),
 		"lures_owned": int(state.get("lures_owned", 0)),
 		"purchases": purchased_ids,
+		"acquisition_events": state.get("acquisition_events", []).duplicate(true),
+		"caught_by_species": state.get("caught_by_species", {}).duplicate(true),
+		"sold_by_species": state.get("sold_by_species", {}).duplicate(true),
+		"traded_by_species": state.get("traded_by_species", {}).duplicate(true),
+		"progression_fish_reserved": _outstanding_reservations(state, purchased),
+		"population": state.get("population", {}).duplicate(true),
+		"current_location_id": state.get("current_location_id", ""),
+		"fish_accounting_error": float(state.fish_caught) - (float(state.fish_sold) + float(state.fish_reserved) + float(state.fish_spent_trades) + float(state.bait_fish_bank) + float(state.card_fish_bank) + float(state.bait_batches) * BAIT_FISH_PER_BATCH + float(state.get("fish_spent_cards", 0.0))),
 	}
+
+
+func _outstanding_reservations(state: Dictionary, purchased: Dictionary) -> Dictionary:
+	var result := {}
+	for row in _build_purchase_plan():
+		if purchased.has(row.id):
+			continue
+		for species in row.get("fish_requirements", {}):
+			result[species] = minf(float(state.fish_reserved_by_species.get(species, 0.0)), float(row.fish_requirements[species]))
+	return result
 
 
 func _evaluate_suite(profile_reports: Dictionary) -> Array:
@@ -1167,7 +1176,6 @@ func _build_stages() -> Array:
 			"start_hour": 0.0,
 			"end_hour": 1.0,
 			"catches_per_hour": 20.0,
-			"average_fish_value_zenny": 45.0,
 			"herbs_per_hour": 2.0,
 			"species_discovery_per_hour": 4.5,
 			"max_species_pool": 6.0,
@@ -1175,20 +1183,12 @@ func _build_stages() -> Array:
 			"fishing_cards_per_hour": 0.3,
 			"card_maker_fee_zenny": 0.0,
 			"card_unique_factor": 0.85,
-			"trade_species_mix": {
-				"flying_fish": 0.18,
-				"piranha": 0.18,
-				"blue_gill": 0.18,
-				"sea_bream": 0.18,
-				"jellyfish": 0.28,
-			},
 		},
 		{
 			"id": "CONNECT",
 			"start_hour": 1.0,
 			"end_hour": 4.0,
 			"catches_per_hour": 12.0,
-			"average_fish_value_zenny": 90.0,
 			"herbs_per_hour": 6.0,
 			"species_discovery_per_hour": 2.2,
 			"max_species_pool": 12.0,
@@ -1196,23 +1196,12 @@ func _build_stages() -> Array:
 			"fishing_cards_per_hour": 0.35,
 			"card_maker_fee_zenny": 100.0,
 			"card_unique_factor": 0.75,
-			"trade_species_mix": {
-				"flying_fish": 0.14,
-				"black_bass": 0.12,
-				"blue_gill": 0.12,
-				"piranha": 0.12,
-				"sea_bream": 0.12,
-				"martian_squid": 0.12,
-				"trout": 0.13,
-				"browntail": 0.13,
-			},
 		},
 		{
 			"id": "SPECIALIZE",
 			"start_hour": 4.0,
 			"end_hour": 12.0,
 			"catches_per_hour": 13.0,
-			"average_fish_value_zenny": 180.0,
 			"herbs_per_hour": 7.0,
 			"species_discovery_per_hour": 1.3,
 			"max_species_pool": 25.0,
@@ -1220,20 +1209,6 @@ func _build_stages() -> Array:
 			"fishing_cards_per_hour": 0.45,
 			"card_maker_fee_zenny": 180.0,
 			"card_unique_factor": 0.60,
-			"trade_species_mix": {
-				"salmon": 0.08,
-				"dorado": 0.08,
-				"martian_squid": 0.08,
-				"black_bass": 0.10,
-				"blue_gill": 0.10,
-				"piranha": 0.10,
-				"flying_fish": 0.08,
-				"sea_bream": 0.08,
-				"blowfish": 0.08,
-				"trout": 0.08,
-				"browntail": 0.07,
-				"sea_bass": 0.07,
-			},
 		},
 	]
 
@@ -1314,132 +1289,25 @@ func _build_profiles() -> Array:
 
 
 func _build_purchase_plan() -> Array:
-	return [
-		{
-			"id": "baby_frog",
-			"item_id": "baby_frog",
-			"display_name": "Baby Frog",
-			"hour": 0.75,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "buy",
-			"source_type": "shop_offer",
-			"source_id": "sarai_baby_frog",
-		},
-		{
-			"id": "bamboo_rod",
-			"item_id": "bamboo_rod",
-			"display_name": "Bamboo Rod",
-			"hour": 2.25,
-			"kind": "rod",
-			"count": 1,
-			"acquisition": "buy",
-			"source_type": "shop_offer",
-			"source_id": "faerie_bamboo_rod",
-		},
-		{
-			"id": "tail",
-			"item_id": "tail",
-			"display_name": "Tail",
-			"hour": 3.0,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "fish_trade",
-			"source_type": "manillo_trade",
-			"source_id": "wyndia_tail",
-			"fish_requirements": {
-				"flying_fish": 3,
-			},
-			"cost_note": "Flying Fish x3",
-		},
-		{
-			"id": "crab",
-			"item_id": "crab",
-			"display_name": "Crab",
-			"hour": 3.5,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "fish_trade",
-			"source_type": "manillo_trade",
-			"source_id": "lyp_crab",
-			"fish_requirements": {
-				"black_bass": 1,
-				"blue_gill": 1,
-				"piranha": 1,
-			},
-			"cost_note": (
-				"Black Bass x1 + "
-				+ "Blue Gill x1 + "
-				+ "Piranha x1"
-			),
-		},
-		{
-			"id": "floater",
-			"item_id": "floater",
-			"display_name": "Floater",
-			"hour": 5.0,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "buy",
-			"source_type": "shop_offer",
-			"source_id": "shyde_floater",
-		},
-		{
-			"id": "popper",
-			"item_id": "popper",
-			"display_name": "Popper",
-			"hour": 6.0,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "buy",
-			"source_type": "shop_offer",
-			"source_id": "lyp_popper",
-		},
-		{
-			"id": "angling_rod",
-			"item_id": "angling_rod",
-			"display_name": "Angling Rod",
-			"hour": 7.0,
-			"kind": "rod",
-			"count": 1,
-			"acquisition": "fish_trade",
-			"source_type": "manillo_trade",
-			"source_id": "lyp_angling_rod",
-			"fish_requirements": {
-				"salmon": 2,
-				"dorado": 2,
-				"martian_squid": 2,
-			},
-			"cost_note": (
-				"Salmon x2 + "
-				+ "Dorado x2 + "
-				+ "Martian Squid x2"
-			),
-		},
-		{
-			"id": "silver_top",
-			"item_id": "silver_top",
-			"display_name": "Silver Top",
-			"hour": 8.0,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "buy",
-			"source_type": "shop_offer",
-			"source_id": "lyp_silver_top",
-		},
-		{
-			"id": "hanger",
-			"item_id": "hanger",
-			"display_name": "Hanger",
-			"hour": 9.0,
-			"kind": "lure",
-			"count": 1,
-			"acquisition": "buy",
-			"source_type": "shop_offer",
-			"source_id": "chiqua_hanger",
-		},
-	]
-	
+	var plan: Array = []
+	# Hours are retained design goals, not runtime unlocks. Source/order/costs
+	# come exclusively from the ownership ladder and authored catalogs.
+	var hours := [0.75, 2.25, 3.0, 3.5, 5.0, 6.0, 7.0, 8.0, 9.0]
+	for definition in runtime_route.targets():
+		if plan.size() >= hours.size():
+			push_error("Economy simulator: new ownership target requires an explicit timing goal")
+			break
+		var row: Dictionary = definition.duplicate(true)
+		row.id = row.item_id
+		row.display_name = row.target
+		row.hour = hours[plan.size()]
+		row.count = 1
+		row.acquisition = "buy" if row.source_type == "shop_offer" else "fish_trade"
+		if row.acquisition == "fish_trade":
+			row.fish_requirements = TradeCatalogResource.get_recipe_by_id(StringName(row.source_id)).get_cost_dictionary().duplicate(true)
+		plan.append(row)
+	return plan
+
 func _get_assumption_snapshot() -> Dictionary:
 	return {
 		"starting_zenny": STARTING_ZENNY,
@@ -1447,12 +1315,14 @@ func _get_assumption_snapshot() -> Dictionary:
 		"starter_case_target_catches": STARTER_CASE_TARGET_CATCHES,
 		"starter_case_cards": STARTER_CASE_CARDS,
 		"bait_recipe": "1 common fish + 2 herbs -> 3 prepared bait portions",
-		"bait_expected_catch_value_uplift": BAIT_VALUE_BONUS,
+		"bait_expected_catch_value_uplift": 0.0,
 		"bait_discovery_bonus": BAIT_DISCOVERY_BONUS,
 		"bait_cooking_unlock_hour": BAIT_COOKING_UNLOCK_HOUR,
 		"card_maker_unlock_hour": CARD_MAKER_UNLOCK_HOUR,
 		"fish_trade_model": "species-aware expected catch mix; trade targets reserve exact species before discretionary use",
-		"acquisition_source_model": "every planned item resolves to an authored shop offer or Manillo recipe; world/NPC access timing remains a separate runtime wiring step",
+		"acquisition_source_model": "ownership ladder sources/recipes, runtime location graph and contextual providers; no debug/fake route fallback",
+		"population_model": "target missing trade species using the best owned lure at its preferred midpoint depth, reeling, neutral environment; normalized actual bite weights, fractional expected successful catches",
+		"remaining_abstractions": "hour goals/catch throughput, travel time zero, no failed catches/lure losses, herb supply, prepared bait recipe/discovery boost and card throughput remain design assumptions; not a rendered playthrough",
 		"stages": _build_stages(),
 		"purchase_plan": _build_purchase_plan(),
 	}
@@ -1463,7 +1333,7 @@ func _print_report(report: Dictionary) -> void:
 	print("=== ECONOMY / PROGRESSION SIMULATOR 0-12H ===")
 	print("Fresh save: 0 cards / card game locked; after roughly 3-5 catches a visible water glint leads to the five-card Saltworn Card Case.")
 	print("Prepared bait assumption: 1 common fish + 2 herbs -> 3 portions")
-	print("Baited catches model a +30% expected quality/value mix, not a direct fish-price buff.")
+	print("Sale prices and bite weights come from runtime data; prepared bait does not multiply vendor prices.")
 	print("Profiles are deterministic design stress tests; no save/runtime state is touched.")
 
 	var profiles: Dictionary = report.get("profiles", {})
@@ -1472,7 +1342,7 @@ func _print_report(report: Dictionary) -> void:
 		print("")
 		print("-- %s --" % str(profile.get("display_name", profile_id)))
 		var checkpoints: Dictionary = profile.get("checkpoints", {})
-		for checkpoint_key in ["M15", "H1", "H4", "H12"]:
+		for checkpoint_key in ["M15", "H1", "H4", "H10", "H12"]:
 			var snapshot: Dictionary = checkpoints.get(checkpoint_key, {})
 			print(
 				"%s | %dz | fish %d | species %d | cards %d | cards unlocked %s | rods %d | lures %d | bait batches %d" % [

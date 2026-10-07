@@ -4,6 +4,5 @@
 
 [resource]
 script = ExtResource("1")
-shop_ids = null
 trade_shop_ids = PackedStringArray("lyp")
 trade_recipe_ids = PackedStringArray("lyp_crab", "lyp_angling_rod")

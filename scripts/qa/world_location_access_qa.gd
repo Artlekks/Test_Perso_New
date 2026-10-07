@@ -54,7 +54,8 @@ func travel(point_name: String, expected: StringName) -> void:
 	check(router.handle_event(key()), "explicit routed K claims travel " + point_name)
 	check(locations.transitioning, "transition marked busy before next input")
 	check(not locations.request_travel(expected).success, "duplicate travel is rejected")
-	await frames(8)
+	await scene_changed
+	await frames(2)
 	check(locations.current_location != null and locations.current_location.location_id == expected, "arrives at " + String(expected))
 	check(locations.get_reachable_world_data().source_issues.is_empty(), "arrival route graph has complete provider metadata")
 	check(not session.economy_access.get_access_context_snapshot().full_catalog_access and session.economy_access.get_trade_entries().is_empty(), "arrival clears trade/debug access")
@@ -73,6 +74,13 @@ func _run() -> void:
 	check(not locations.get_access_snapshot(&"wyndia_ocean_outpost").unlocked, "ocean locked before Baby Frog")
 	check(not locations.get_access_snapshot(&"lyp_lake_outpost").unlocked, "lake locked before rod and Tail")
 	_test_route_regressions()
+	_test_authored_route_integrity()
+	if not failures.is_empty():
+		# Failed gates make later negative travel probes perform REAL travel.
+		# Stop before those probes can remove current_scene synchronously.
+		print("WORLD/LOCATION ARCHITECTURE FAILED: stopping before gameplay probes")
+		await _finish()
+		return
 	var debug_zone = scene.get_node("World/FishZone_V2")
 	debug_zone.set_fishing_spot(load("res://data/bof4/spots/river_2.tres"))
 	check(not session.get_campaign_progression_snapshot().tackle_acquisition.targets[6].requirements[0].available_in_reachable_spots, "debug Salmon population is not normal acquisition reachability")
@@ -130,7 +138,8 @@ func _run() -> void:
 	menu.close_menu()
 	var old_scene := current_scene
 	check(reload_current_scene() == OK, "reload location request")
-	await frames(8)
+	await scene_changed
+	await frames(2)
 	check(current_scene != old_scene and locations.current_location.location_id == &"lyp_lake_outpost", "reload reconstructs location authority")
 	check(session.economy_access.get_trade_entries().is_empty(), "reload grants no open merchant context")
 	await _run_extended_spine()
@@ -159,7 +168,12 @@ func _run() -> void:
 	saved_unlocks.load_from_disk()
 	check(saved_unlocks.has_flag(&"world.location.wyndia_ocean_outpost") and saved_unlocks.has_flag(&"world.location.lyp_lake_outpost"), "existing unlock save preserves latched location capabilities")
 	saved_unlocks.free()
-	_run_regressions()
+	print("WORLD/LOCATION ARCHITECTURE: %d checks, %d failures" % [checks, failures.size()])
+	if not OS.get_cmdline_user_args().has("--architecture-only"):
+		_run_regressions()
+	await _finish()
+
+func _finish() -> void:
 	current_scene.queue_free()
 	session.queue_free()
 	await frames(3)
@@ -334,6 +348,58 @@ func _test_route_regressions() -> void:
 	inventory.free()
 
 
+func _test_authored_route_integrity() -> void:
+	# Pin the established ownership route so a partial resource resave cannot
+	# silently remove gates, merchant bindings or the return journey again.
+	var expected := {
+		&"beach": [[], [], ["wyndia_ocean_outpost"], ["World/BeachMerchantNPC"]],
+		&"wyndia_ocean_outpost": [["baby_frog"], [], ["beach", "lyp_lake_outpost"], ["World/ManilloTrader"]],
+		&"lyp_lake_outpost": [["tail"], ["bamboo_rod"], ["wyndia_ocean_outpost", "river_fishing_outpost"], ["World/ManilloTrader", "World/LypItemShop"]],
+		&"river_fishing_outpost": [["crab", "floater", "popper"], [], ["lyp_lake_outpost", "chiqua_supply_outpost"], []],
+		&"chiqua_supply_outpost": [["silver_top"], ["angling_rod"], ["river_fishing_outpost"], ["World/ManilloTrader"]],
+	}
+	var references := RegEx.new()
+	references.compile('\\[ext_resource[^\\n]*?(?:uid="([^"]+)" )?path="([^"]+)"')
+	for id in expected:
+		var location = locations.get_location(id)
+		var row: Array = expected[id]
+		check(location.required_lure_ids == PackedStringArray(row[0]) and location.required_rod_ids == PackedStringArray(row[1]), "exact authored ownership prerequisites " + String(id))
+		check(location.destinations == PackedStringArray(row[2]) and location.economy_provider_paths == PackedStringArray(row[3]), "exact directed routes and provider order " + String(id))
+		if id != &"beach":
+			check(location.unlock_flag == StringName("world.location." + String(id)), "existing persistent capability ID " + String(id))
+		check(ResourceLoader.load(location.resource_path) == location, "location service uses canonical cached resource " + String(id))
+		var packed = ResourceLoader.load(location.scene_path)
+		check(packed is PackedScene and packed.can_instantiate(), "authored playable scene resolves " + String(id))
+		if not (packed is PackedScene) or not packed.can_instantiate():
+			continue
+		var fixture = packed.instantiate() # Detached: never enters gameplay or writes saves.
+		check(fixture.location_context == location, "scene binds canonical location identity " + String(id))
+		var signs := PackedStringArray()
+		for node in fixture.get_node("World").get_children():
+			if node.get_script() == preload("res://scripts/world/location_travel_point.gd"):
+				signs.append(String(node.destination_id))
+				check(locations.get_location(node.destination_id) != null and location.destinations.has(String(node.destination_id)), "travel sign has valid authored destination " + String(id) + ":" + node.name)
+		for destination in location.destinations:
+			check(signs.has(destination) and locations.get_location(StringName(destination)).destinations.has(String(id)), "normal forward/return sign and reciprocal route " + String(id) + ":" + destination)
+		var files: Array[String] = [location.resource_path, location.scene_path]
+		for index in range(location.economy_contexts.size()):
+			var context = location.economy_contexts[index]
+			files.append(context.resource_path)
+			if index >= location.economy_provider_paths.size():
+				continue
+			var provider = fixture.get_node_or_null(location.economy_provider_paths[index])
+			check(provider != null and provider.economy_context == context, "actual provider binds exact declared context " + String(id) + ":" + str(index))
+		fixture.free()
+		for file in files:
+			for match in references.search_all(FileAccess.get_file_as_string(file)):
+				var path := match.get_string(2)
+				check(ResourceLoader.exists(path), "authored external resource path resolves " + path)
+				var uid := match.get_string(1)
+				if not uid.is_empty():
+					var number := ResourceUID.text_to_id(uid)
+					check(ResourceUID.has_id(number) and ResourceUID.get_id_path(number) == path, "UID resolves to authored path " + path)
+
+
 func _run_extended_spine() -> void:
 	var inventory: FishingInventory = session.inventory
 	check(not locations.get_access_snapshot(&"river_fishing_outpost").unlocked and not locations.get_access_snapshot(&"chiqua_supply_outpost").unlocked, "Crab alone unlocks neither new destination")
@@ -412,7 +478,8 @@ func _run_extended_spine() -> void:
 	menu = current_scene.find_child("FishingEconomyMenu", true, false)
 	menu.close_menu()
 	check(reload_current_scene() == OK, "Chiqua reload request")
-	await frames(8)
+	await scene_changed
+	await frames(2)
 	check(locations.current_location.location_id == &"chiqua_supply_outpost" and session.economy_access.get_buy_entries().is_empty(), "Chiqua reload reconstructs identity without shop access leak")
 	var loaded := FishingInventory.new()
 	loaded.load_from_disk()
