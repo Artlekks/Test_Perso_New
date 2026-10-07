@@ -2,15 +2,7 @@
 
 [ext_resource type="Script" uid="uid://8mkyyuse8kjp" path="res://scripts/mastery/fishing_master_still_water_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://ousie20omnqx" path="res://assets/animations/fishing_master_still_water_frames.tres" id="2_r1efr"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
-transparency = 1
-cull_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("3_shadow")
-proximity_fade_distance = 0.01
+[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -33,15 +25,9 @@ sprite_frames = ExtResource("2_r1efr")
 animation = &"Idle"
 frame_progress = 0.87177056
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=1186640]
-transform = Transform3D(1.2453501, -1.0045413, -4.3909893e-08, 0, -6.9938224e-08, 1.6, -1.0045413, -1.2453501, -5.4435983e-08, -0.04924497, -0.16133015, 0.030231059)
-sorting_offset = -0.25
-material_override = SubResource("StandardMaterial3D_shadow")
-cast_shadow = 0
-flip_h = true
-alpha_cut = 2
-texture_filter = 0
-texture = ExtResource("3_shadow")
+[node name="ShadowAnchor" type="Node3D" parent="."]
+
+[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1717076062]
 

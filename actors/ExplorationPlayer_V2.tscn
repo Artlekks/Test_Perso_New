@@ -2,22 +2,36 @@
 
 [ext_resource type="Script" uid="uid://br1iuj7c02amn" path="res://scripts/exploration_player_v2.gd" id="1_kavdw"]
 [ext_resource type="SpriteFrames" uid="uid://dsfp4gvdeeesr" path="res://assets/animations/player_frames.tres" id="2_g2awu"]
+[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="4_m1dlh"]
 [ext_resource type="Script" uid="uid://qeewigw0xrig" path="res://scripts/sprite_director.gd" id="29_5cnmj"]
 [ext_resource type="Script" uid="uid://c1nagc5sqiw7x" path="res://scripts/screen_space_marker.gd" id="30_wma1f"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="32_ny21r"]
+[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="32_ny21r"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jpo3w"]
 radius = 0.0972981
 height = 0.450552
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ajpwy"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_11v8u"]
+render_priority = -120
 transparency = 1
 cull_mode = 2
+depth_draw_mode = 2
 shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("32_ny21r")
-proximity_fade_distance = 0.01
+albedo_color = Color(0, 0, 0, 0.65)
+albedo_texture = ExtResource("4_m1dlh")
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
+render_priority = -120
+transparency = 1
+cull_mode = 2
+depth_draw_mode = 2
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.38)
+albedo_texture = ExtResource("4_m1dlh")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_do2li"]
+material = SubResource("StandardMaterial3D_blob")
+size = Vector2(0.24, 0.28)
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=363575400]
 collision_layer = 2
@@ -35,15 +49,16 @@ texture_filter = 0
 sprite_frames = ExtResource("2_g2awu")
 animation = &"Fishing_Idle"
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=1206580126]
-transform = Transform3D(1.125, 0, 0, 0, -4.91753e-08, 1.125, 0, -1.125, -4.91753e-08, 0, 0.008, 0)
-sorting_offset = -0.25
-material_override = SubResource("StandardMaterial3D_ajpwy")
-cast_shadow = 0
-flip_h = true
-alpha_cut = 2
-texture_filter = 0
-texture = ExtResource("32_ny21r")
+[node name="ShadowAnchor" type="Node3D" parent="." unique_id=1856703931]
+
+[node name="WorldBlobShadow" parent="ShadowAnchor" unique_id=1933139612 instance=ExtResource("32_ny21r")]
+process_mode = 3
+process_priority = 250
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+material_override = SubResource("StandardMaterial3D_11v8u")
+mesh = SubResource("PlaneMesh_do2li")
+width = 0.24
+depth = 0.28
 
 [node name="SpriteDirector" type="Node" parent="." unique_id=1803301219 node_paths=PackedStringArray("sprite")]
 script = ExtResource("29_5cnmj")

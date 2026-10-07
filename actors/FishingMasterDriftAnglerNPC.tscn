@@ -1,16 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/mastery/fishing_master_drift_angler_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="Texture2D" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
-transparency = 1
-cull_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("3_shadow")
-proximity_fade_distance = 0.01
+[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -36,15 +28,9 @@ alpha_cut = 1
 flip_h = true
 alpha_scissor_threshold = 0.5
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="."]
-transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0, 0.006, 0)
-sorting_offset = -0.25
-material_override = SubResource("StandardMaterial3D_shadow")
-cast_shadow = 0
-flip_h = true
-alpha_cut = 2
-texture_filter = 0
-texture = ExtResource("3_shadow")
+[node name="ShadowAnchor" type="Node3D" parent="."]
+
+[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="StaticBody3D" parent="."]
 collision_layer = 1

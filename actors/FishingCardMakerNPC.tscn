@@ -2,20 +2,12 @@
 
 [ext_resource type="Script" uid="uid://s5w6p0vupyfr" path="res://scripts/economy/fishing_card_maker_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bdh0vfoiqp6fq" path="res://assets/animations/fishing_captain_frames.tres" id="2_frames"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
+[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="PackedScene" path="res://actors/FishingCardMakerMenu.tscn" id="4_menu"]
 [ext_resource type="Script" uid="uid://d3ehdk8xkgd2r" path="res://scripts/quests/card_maker_fishing_request_source.gd" id="5_request_source"]
 [ext_resource type="Script" uid="uid://6lq2vslx0crb" path="res://scripts/quests/fishing_catch_count_request_objective.gd" id="6_catch_objective"]
 [ext_resource type="Script" uid="uid://c5u7clg61553w" path="res://scripts/triple_triad/triple_triad_quest_reward_adapter.gd" id="7_reward_adapter"]
 [ext_resource type="PackedScene" path="res://actors/WorldRequestMarker.tscn" id="8_request_marker"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
-transparency = 1
-cull_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("3_shadow")
-proximity_fade_distance = 0.01
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -38,15 +30,9 @@ animation = &"idle_se"
 autoplay = "idle_se"
 frame_progress = 0.49772128
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=592782175]
-transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0, 0.03202449, 0)
-sorting_offset = -0.25
-material_override = SubResource("StandardMaterial3D_shadow")
-cast_shadow = 0
-flip_h = true
-alpha_cut = 2
-texture_filter = 0
-texture = ExtResource("3_shadow")
+[node name="ShadowAnchor" type="Node3D" parent="."]
+
+[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="AnimatableBody3D" parent="." unique_id=1500292232]
 sync_to_physics = false

@@ -2,16 +2,8 @@
 
 [ext_resource type="Script" uid="uid://df2co5hd6wn06" path="res://scripts/triple_triad/triple_triad_opponent_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="3_shadow"]
+[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="Resource" uid="uid://duxb3uhvvld7y" path="res://data/triple_triad/opponents/beach_trader.tres" id="4_profile"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
-transparency = 1
-cull_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("3_shadow")
-proximity_fade_distance = 0.01
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -35,15 +27,9 @@ sprite_frames = ExtResource("2_frames")
 animation = &"Stand_Interest"
 autoplay = "Stand_Interest"
 
-[node name="ShadowSprite3D" type="Sprite3D" parent="." unique_id=2017261007]
-transform = Transform3D(1.05, 0, 0, 0, -4.5897e-08, 1.05, 0, -1.05, -4.5897e-08, 0.017338753, 0.006, 0.057198018)
-sorting_offset = -0.25
-material_override = SubResource("StandardMaterial3D_shadow")
-cast_shadow = 0
-flip_h = true
-alpha_cut = 2
-texture_filter = 0
-texture = ExtResource("3_shadow")
+[node name="ShadowAnchor" type="Node3D" parent="."]
+
+[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1090408400]
 

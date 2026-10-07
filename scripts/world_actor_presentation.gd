@@ -3,12 +3,9 @@ class_name WorldActorPresentation
 
 ## Runtime presentation/collision polish for billboard-style world actors.
 ##
-## v2 shadow rule:
-## - Actor sprites keep the existing screen-feet render ordering.
-## - Old per-sprite ShadowSprite3D nodes are hidden.
-## - Every actor receives one horizontal blob shadow locked to the BEACH GROUND,
-##   following X/Z only. The shadow therefore never rotates, flips, or drifts when
-##   the AnimatedSprite3D changes animation/direction.
+## Actor scenes own ActorRoot/ShadowAnchor/WorldBlobShadow. This controller
+## supplies the beach ground reference; the reusable shadow owns its transform.
+## Sprite ordering and existing collision-footprint behavior stay separate.
 
 @export var world_root: Node3D
 @export var player: CharacterBody3D
@@ -22,13 +19,7 @@ class_name WorldActorPresentation
 @export_range(0.12, 0.40, 0.01) var minimum_npc_radius: float = 0.24
 @export_range(0.30, 0.80, 0.01) var minimum_npc_height: float = 0.52
 
-@export_category("Ground Blob Shadows")
-@export var player_shadow_size: Vector2 = Vector2(0.36, 0.17)
-@export var npc_shadow_size: Vector2 = Vector2(0.40, 0.18)
-@export var critter_shadow_size: Vector2 = Vector2(0.22, 0.10)
-@export_range(0.001, 0.03, 0.001) var shadow_ground_lift: float = 0.006
-
-const BLOB_SHADOW_SCENE: PackedScene = preload("res://actors/WorldBlobShadow.tscn")
+const BlobShadowScript = preload("res://scripts/world/world_blob_shadow.gd")
 const IGNORED_WORLD_ROOTS: Array[StringName] = [
 	&"FishZone_V2",
 	&"beach",
@@ -38,8 +29,6 @@ const IGNORED_WORLD_ROOTS: Array[StringName] = [
 ]
 
 var _sort_entries: Array[Dictionary] = []
-var _shadow_entries: Array[Dictionary] = []
-var _shadow_ground_y: float = 0.0
 
 
 func _ready() -> void:
@@ -49,13 +38,10 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_update_render_priorities()
-	_update_blob_shadows()
 
 
 func _setup_actor_presentation() -> void:
 	_sort_entries.clear()
-	_clear_blob_shadows()
-	_shadow_ground_y = _resolve_shadow_ground_y()
 
 	if is_instance_valid(world_root):
 		for child: Node in world_root.get_children():
@@ -71,15 +57,12 @@ func _setup_actor_presentation() -> void:
 		_register_actor(player)
 
 	_update_render_priorities()
-	_update_blob_shadows()
 
 
 func _register_actor(anchor: Node3D) -> void:
 	var sprites: Array[Node] = anchor.find_children("*", "AnimatedSprite3D", true, false)
 	if sprites.is_empty():
 		return
-
-	_disable_authored_shadows(anchor)
 
 	for node: Node in sprites:
 		var sprite := node as AnimatedSprite3D
@@ -90,68 +73,10 @@ func _register_actor(anchor: Node3D) -> void:
 		sprite.no_depth_test = false
 		_sort_entries.append({"anchor": anchor, "sprite": sprite})
 
-	_create_blob_shadow(anchor)
-
-
-func _disable_authored_shadows(anchor: Node3D) -> void:
-	for node: Node in anchor.find_children("*", "Sprite3D", true, false):
-		var sprite := node as Sprite3D
-		if sprite == null:
-			continue
-		if String(sprite.name).to_lower().contains("shadow"):
-			sprite.visible = false
-
-
-func _create_blob_shadow(anchor: Node3D) -> void:
-	if not is_instance_valid(world_root) or BLOB_SHADOW_SCENE == null:
-		return
-	var shadow := BLOB_SHADOW_SCENE.instantiate() as MeshInstance3D
-	if shadow == null:
-		return
-	shadow.name = "%sBlobShadow" % String(anchor.name)
-	world_root.add_child(shadow)
-
-	var shadow_size: Vector2 = npc_shadow_size
-	if anchor == player:
-		shadow_size = player_shadow_size
-	elif anchor.name == &"BeachCritter":
-		shadow_size = critter_shadow_size
-	shadow.scale = Vector3(shadow_size.x, 1.0, shadow_size.y)
-
-	_shadow_entries.append({"anchor": anchor, "shadow": shadow})
-
-
-func _resolve_shadow_ground_y() -> float:
-	if is_instance_valid(world_root):
-		var beach_surface := world_root.get_node_or_null("beach/Beach") as Node3D
-		if beach_surface != null:
-			return beach_surface.global_position.y + shadow_ground_lift
-	# Fallback is intentionally conservative. In the current Ocean Spot scene,
-	# beach/Beach exists, so this path is only for future test scenes.
-	if is_instance_valid(player):
-		return player.global_position.y - 0.08 + shadow_ground_lift
-	return shadow_ground_lift
-
-
-func _update_blob_shadows() -> void:
-	for entry: Dictionary in _shadow_entries:
-		var anchor := entry.get("anchor") as Node3D
-		var shadow := entry.get("shadow") as MeshInstance3D
-		if not is_instance_valid(shadow):
-			continue
-		if not is_instance_valid(anchor):
-			shadow.queue_free()
-			continue
-		var actor_position: Vector3 = anchor.global_position
-		shadow.global_position = Vector3(actor_position.x, _shadow_ground_y, actor_position.z)
-
-
-func _clear_blob_shadows() -> void:
-	for entry: Dictionary in _shadow_entries:
-		var shadow := entry.get("shadow") as MeshInstance3D
-		if is_instance_valid(shadow):
-			shadow.queue_free()
-	_shadow_entries.clear()
+	var shadow := anchor.get_node_or_null("ShadowAnchor/WorldBlobShadow") as BlobShadowScript
+	if shadow != null and is_instance_valid(world_root):
+		shadow.ground_reference = world_root.get_node_or_null("beach/Beach") as Node3D
+		shadow.update_ground_transform()
 
 
 func _update_render_priorities() -> void:
@@ -163,10 +88,12 @@ func _update_render_priorities() -> void:
 	var viewport_height: float = maxf(float(viewport.get_visible_rect().size.y), 1.0)
 
 	for entry: Dictionary in _sort_entries:
-		var anchor := entry.get("anchor") as Node3D
-		var sprite := entry.get("sprite") as AnimatedSprite3D
-		if not is_instance_valid(anchor) or not is_instance_valid(sprite):
+		var anchor_ref = entry.get("anchor")
+		var sprite_ref = entry.get("sprite")
+		if not is_instance_valid(anchor_ref) or not is_instance_valid(sprite_ref):
 			continue
+		var anchor := anchor_ref as Node3D
+		var sprite := sprite_ref as AnimatedSprite3D
 		var screen_position: Vector2 = camera.unproject_position(anchor.global_position)
 		var normalized_y: float = clampf(screen_position.y / viewport_height, 0.0, 1.0)
 		sprite.render_priority = int(round(lerpf(
