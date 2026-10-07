@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="MerchantEconomyContext" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/merchant_economy_context.gd" id="1_context"]
+
+[resource]
+script = ExtResource("1_context")
+shop_ids = PackedStringArray("shyde")
+trade_shop_ids = PackedStringArray()
+availability = {}
+full_catalog_access = false

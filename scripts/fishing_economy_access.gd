@@ -27,7 +27,7 @@ var item_transaction_service: GameItemTransactionService = null
 var _availability: Dictionary = {}
 var _allowed_shop_ids: PackedStringArray = PackedStringArray()
 var _allowed_trade_shop_ids: PackedStringArray = PackedStringArray()
-var _full_catalog_access: bool = true
+var _full_catalog_access: bool = false
 
 
 func configure(
@@ -88,10 +88,8 @@ func set_access_context(
 
 
 func enable_vertical_slice_full_access() -> void:
-	_full_catalog_access = true
-	_allowed_shop_ids.clear()
-	_allowed_trade_shop_ids.clear()
-	changed.emit()
+	# Explicit QA/debug mode never inherits a previous merchant's tag grants.
+	set_access_context(PackedStringArray(), PackedStringArray(), {}, true)
 
 
 func clear_access_context() -> void:
@@ -309,6 +307,7 @@ func get_buy_entries() -> Array[Dictionary]:
 		if offer == null or not _shop_allowed(offer.shop_id):
 			continue
 		var status: Dictionary = economy_service.evaluate_purchase(offer, 1, _availability)
+		var live_price: int = int(status.get("unit_price_zenny", 0))
 		var owned_count: int = 0
 		if inventory != null:
 			if offer.item_type == ShopOfferScript.ItemType.LURE:
@@ -342,13 +341,13 @@ func get_buy_entries() -> Array[Dictionary]:
 			"shop_id": str(offer.shop_id),
 			"shop_name": offer.shop_name,
 			"display_name": presentation_name,
-			"price_zenny": offer.price_zenny,
+			"price_zenny": live_price,
 			"quantity": offer.quantity,
 			"owned_count": owned_count,
 			"state_label": str(status.get("state_label", "INVALID")),
 			"reason": str(status.get("reason", "")),
 			"can_execute": bool(status.get("can_purchase", false)),
-			"detail": "%s | %dz | owned %d" % [offer.shop_name, offer.price_zenny, owned_count],
+			"detail": "%s | %dz | owned %d" % [offer.shop_name, live_price, owned_count],
 		})
 	return result
 

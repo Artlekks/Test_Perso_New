@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://d15mvk8kx347x" path="res://scripts/beach_merchant_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
 [ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
+[ext_resource type="Resource" path="res://data/economy/contexts/beach_merchant.tres" id="4_context"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -14,6 +15,7 @@ radius = 0.48
 [node name="BeachMerchantNPC" type="Node3D"]
 process_mode = 3
 script = ExtResource("1_script")
+economy_context = ExtResource("4_context")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)

@@ -1,6 +1,7 @@
 extends Node3D
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
+const EconomyContextScript = preload("res://scripts/economy/merchant_economy_context.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/beach_merchant.tres")
 
 const DIALOGUE_ID: StringName = &"beach_merchant_services"
@@ -20,13 +21,7 @@ const CHOICE_LEAVE: StringName = &"leave"
 @export var leave_choice_text: String = "Leave"
 
 @export_category("Economy Access")
-## Stable authored shop ids exposed by this world merchant. Empty means no buy
-## inventory; selling remains available through the common economy service.
-@export var economy_shop_ids: PackedStringArray = PackedStringArray()
-## Stable Manillo/trade shop ids exposed by this world merchant.
-@export var economy_trade_shop_ids: PackedStringArray = PackedStringArray()
-@export var economy_availability: Dictionary = {}
-@export var economy_full_catalog_access: bool = false
+@export var economy_context: EconomyContextScript
 ## Optional mixed-role support. The current beach merchant does not use these;
 ## the separate TripleTriadOpponentNPC owns the beach_trader duel.
 @export var card_opponent_id: StringName = &""
@@ -188,37 +183,23 @@ func _on_dialogue_interaction_finished(
 
 
 func _open_buy_menu() -> void:
-	if not _apply_economy_access_context():
-		_play_idle()
-		return
-	var target_menu := _find_economy_menu()
-	if target_menu == null:
-		_clear_economy_access_context()
-		_play_idle()
-		return
-	if target_menu.has_method("open_buy_menu"):
-		target_menu.call("open_buy_menu")
-		return
-	if target_menu.has_method("open_menu"):
-		target_menu.call("open_menu")
+	_open_economy_menu(0)
 
 
 func _open_sell_menu() -> void:
-	if not _apply_economy_access_context():
-		_play_idle()
+	_open_economy_menu(1)
+
+
+func _open_economy_menu(mode: int) -> void:
+	# A deferred dialogue choice must not reopen a merchant already left.
+	if not _player_in_range or is_queued_for_deletion():
 		return
 	var target_menu := _find_economy_menu()
-	if target_menu == null:
-		_clear_economy_access_context()
+	if target_menu == null or economy_context == null:
 		_play_idle()
 		return
-	if target_menu.has_method("open_sell_menu"):
-		target_menu.call("open_sell_menu")
-		return
-	# Compatibility fallback for projects that have the dialogue patch but not
-	# yet the economy-menu mode entry points.
-	if target_menu.has_method("open_menu"):
-		target_menu.call("open_menu")
+	if not bool(target_menu.call("open_merchant_menu", economy_context, self, mode)):
+		_play_idle()
 
 
 func _open_card_game() -> void:
@@ -277,49 +258,15 @@ func _play_animation_if_available(animation_name: StringName) -> void:
 	animated_sprite.play(animation_name)
 
 
-func _find_economy_access() -> Node:
-	var tree := get_tree()
-	if tree == null:
-		return null
-	var direct := tree.root.get_node_or_null(
-		"FishingSessionServices/FishingEconomyAccess"
-	)
-	if direct != null:
-		return direct
-	var scene := tree.current_scene
-	if scene == null:
-		return null
-	var fishing := scene.find_child("Fishing", true, false)
-	if fishing == null:
-		return null
-	var services = fishing.get("session_services")
-	if services is Node:
-		var candidate = (services as Node).get_node_or_null(
-			"FishingEconomyAccess"
-		)
-		if candidate != null:
-			return candidate
-	return null
-
-
-func _apply_economy_access_context() -> bool:
-	var access := _find_economy_access()
-	if access == null or not access.has_method("set_access_context"):
-		return false
-	access.call(
-		"set_access_context",
-		economy_shop_ids,
-		economy_trade_shop_ids,
-		economy_availability,
-		economy_full_catalog_access
-	)
-	return true
-
-
 func _clear_economy_access_context() -> void:
-	var access := _find_economy_access()
-	if access != null and access.has_method("clear_access_context"):
-		access.call("clear_access_context")
+	# Only this merchant's active menu may be closed. Nearby NPC callbacks
+	# must never clear another merchant's or debug tool's access context.
+	if is_instance_valid(_cached_menu):
+		_cached_menu.call("close_for_merchant", self)
+
+
+func _exit_tree() -> void:
+	_clear_economy_access_context()
 
 
 func _find_economy_menu() -> Node:

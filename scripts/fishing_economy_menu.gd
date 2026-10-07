@@ -5,6 +5,7 @@ signal closed
 
 const MODE_BUY := 0
 const MODE_SELL := 1
+const ContextScript = preload("res://scripts/economy/merchant_economy_context.gd")
 
 const PAGE_SIZE := 5
 
@@ -62,6 +63,7 @@ var _access = null
 var _open: bool = false
 var _previous_pause: bool = false
 var _input_ready: bool = false
+var _context_owner: WeakRef = null
 
 var _mode: int = MODE_BUY
 var _category_index: int = 0
@@ -82,6 +84,12 @@ func _ready() -> void:
 
 
 func configure(game_mode: Node, access) -> void:
+	if _access != null and _access != access:
+		if _open:
+			close_menu()
+		var old_callback := Callable(self, "_on_access_changed")
+		if _access.is_connected("changed", old_callback):
+			_access.disconnect("changed", old_callback)
 	_game_mode = game_mode
 	_access = access
 	if _access != null and _access.has_signal("changed"):
@@ -107,13 +115,38 @@ func open_sell_menu() -> void:
 	_open_menu_in_mode(MODE_SELL)
 
 
-func _open_menu_in_mode(mode: int) -> void:
+func open_merchant_menu(context: ContextScript, owner: Node, mode: int = MODE_BUY) -> bool:
+	if context == null or owner == null:
+		return false
+	return _open_menu_in_mode(mode, context, owner)
+
+
+func open_debug_full_catalog_menu() -> bool:
+	# Deliberate separate entry point; availability requirements still apply.
+	return _open_menu_in_mode(MODE_BUY, null, null, true)
+
+
+func close_for_merchant(owner: Node) -> void:
+	if _context_owner != null and _context_owner.get_ref() == owner:
+		close_menu()
+
+
+func _open_menu_in_mode(mode: int, context: ContextScript = null, owner: Node = null, debug_full: bool = false) -> bool:
 	if _open or _access == null or not _can_open():
-		return
+		return false
 
 	var tree := get_tree()
 	if tree == null or tree.paused:
-		return
+		return false
+
+	# Validate first; failed opens cannot replace another interaction's context.
+	if context != null:
+		context.apply_to(_access)
+	elif debug_full:
+		_access.enable_vertical_slice_full_access()
+	else:
+		_access.clear_access_context()
+	_context_owner = weakref(owner) if owner != null else null
 
 	_previous_pause = tree.paused
 	_open = true
@@ -134,6 +167,7 @@ func _open_menu_in_mode(mode: int) -> void:
 	tree.paused = true
 	call_deferred("_arm_input")
 	opened.emit()
+	return true
 
 
 func close_menu() -> void:
@@ -145,12 +179,20 @@ func close_menu() -> void:
 	_confirm_active = false
 	confirm_panel.visible = false
 	root.visible = false
+	_context_owner = null
+	if _access != null:
+		_access.clear_access_context()
 
 	var tree := get_tree()
 	if tree != null:
 		tree.paused = _previous_pause
 
 	closed.emit()
+
+
+func _exit_tree() -> void:
+	if _open:
+		close_menu()
 
 
 func _arm_input() -> void:
@@ -627,6 +669,9 @@ func _message(value: String) -> void:
 
 func _on_access_changed() -> void:
 	if _open:
+		# A context change invalidates a pending confirmation's selected row.
+		_confirm_active = false
+		confirm_panel.visible = false
 		_refresh()
 
 

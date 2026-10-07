@@ -141,6 +141,28 @@ albedo_color = Color(0.33489877, 0.20385107, 0.09913743, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_shore_blocker"]
 size = Vector3(19, 4, 0.35)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c734g"]
+render_priority = -120
+transparency = 1
+cull_mode = 2
+depth_draw_mode = 2
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.65)
+albedo_texture = ExtResource("23_30w2a")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
+render_priority = -120
+transparency = 1
+cull_mode = 2
+depth_draw_mode = 2
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.38)
+albedo_texture = ExtResource("23_30w2a")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_e3rjn"]
+material = SubResource("StandardMaterial3D_blob")
+size = Vector2(0.24, 0.28)
+
 [sub_resource type="Animation" id="Animation_lu0sf"]
 length = 0.001
 tracks/0/type = "value"
@@ -266,8 +288,6 @@ debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
 [node name="BeachMerchantNPC" parent="World" unique_id=1429238293 instance=ExtResource("72_merchant_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9486763, 0.06284177, 0.60926473)
-economy_shop_ids = PackedStringArray("shyde")
-economy_trade_shop_ids = PackedStringArray()
 
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
@@ -357,6 +377,10 @@ camera = NodePath("../CameraRig/Camera3D")
 
 [node name="CharacterBody3D" parent="Player" unique_id=363575400 instance=ExtResource("1_43krk")]
 collision_layer = 1
+
+[node name="WorldBlobShadow" parent="Player/CharacterBody3D/ShadowAnchor" parent_id_path=PackedInt32Array(363575400, 1856703931) index="0" unique_id=1933139612]
+material_override = SubResource("StandardMaterial3D_c734g")
+mesh = SubResource("PlaneMesh_e3rjn")
 
 [node name="BaitSpawner" parent="Player/CharacterBody3D" index="4" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
