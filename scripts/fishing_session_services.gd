@@ -361,6 +361,7 @@ var active_loadout = null
 var _beach_circuit_progress: Dictionary = {}
 
 var _initialized: bool = false
+var economy_playtest_telemetry: Node = null
 
 
 func _ready() -> void:
@@ -632,6 +633,10 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Campaign Loop QA: %s" % str(failure))
+		var economy_health: Dictionary = campaign_loop_qa_report.get("simulator_structural_health", {})
+		print("Structural economy health: %s; %d provisional balance alerts" % ["PASS" if economy_health.get("structural_passed", false) else "FAIL", economy_health.get("balance_alerts", []).size()])
+		for alert in campaign_loop_qa_report.get("balance_alerts", []):
+			push_warning("Economy balance [%s]: %s | value %s | target %s" % [alert.check_id, alert.label, alert.value, alert.target])
 
 		campaign_progression_director_qa_report = (
 			PlayableCampaignProgressionDirectorQAScript.run()
@@ -1384,6 +1389,21 @@ func initialize() -> void:
 			PackedStringArray()
 		):
 			push_error("Fishing Fresh Save Rehearsal QA: %s" % str(failure))
+
+
+func get_economy_playtest_telemetry() -> Node:
+	if not OS.is_debug_build():
+		return null
+	if economy_playtest_telemetry == null:
+		var telemetry_script = load("res://scripts/telemetry/runtime_economy_telemetry.gd")
+		if telemetry_script == null:
+			push_warning("Economy telemetry tooling is unavailable")
+			return null
+		economy_playtest_telemetry = telemetry_script.new()
+		economy_playtest_telemetry.name = "RuntimeEconomyTelemetry"
+		add_child(economy_playtest_telemetry)
+		economy_playtest_telemetry.configure(self)
+	return economy_playtest_telemetry
 
 
 func _load_debug_qa_dependencies() -> bool:

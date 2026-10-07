@@ -19,9 +19,9 @@ const TradeCatalogResource = preload(
 ##
 ## Prepared bait is intentionally modelled as a cross-system loop:
 ##   1 cheap/common fish + 2 gathered herb units -> 3 prepared bait portions.
-## A baited catch shifts the expected catch mix toward better/bigger fish and
-## improves discovery pace. Recipe/discovery rates remain design assumptions;
-## sale income now uses canonical per-species prices without a bait price bonus.
+## This model gives bait a discovery bonus only; runtime attraction and quality
+## rolls are not simulated. Recipe/discovery rates remain design assumptions;
+## sale income uses canonical per-species prices without a bait price bonus.
 
 const STEP_HOURS: float = 0.25
 const STARTING_ZENNY: float = 100.0
@@ -40,6 +40,7 @@ const BAIT_DISCOVERY_BONUS: float = 0.25
 
 const CHECKPOINT_HOURS := [0.25, 1.0, 4.0, 10.0, 12.0]
 const RuntimeRoute = preload("res://scripts/progression/economy_runtime_route.gd")
+const PROVISIONAL_BALANCE_CHECK_IDS := ["balanced_h12_cash_ceiling", "sell_heavy_h12_cash_ceiling"]
 var runtime_route := RuntimeRoute.new()
 
 
@@ -63,6 +64,8 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 	})
 	var passed: int = 0
 	for check in checks:
+		if not check.has("category"):
+			check.category = "structural_contract"
 		if bool(check.get("passed", false)):
 			passed += 1
 
@@ -81,9 +84,67 @@ func run_default_suite(print_to_output: bool = true) -> Dictionary:
 		"assumptions": _get_assumption_snapshot(),
 	}
 
+	report.health = classify_health(report)
 	if print_to_output:
 		_print_report(report)
 	return report
+
+
+static func classify_health(simulation: Dictionary) -> Dictionary:
+	# Only explicitly authored provisional checks may be warnings. Missing or
+	# unknown classifications fail closed; labels and current numeric values
+	# never determine severity. The original guardrail totals stay untouched.
+	var failures := PackedStringArray()
+	var alerts: Array = []
+	var checks = simulation.get("checks", [])
+	if not (checks is Array) or checks.is_empty():
+		failures.append("Missing economy guardrail results")
+	else:
+		for check in checks:
+			if not (check is Dictionary) or not check.has("passed"):
+				failures.append("Malformed economy guardrail result")
+				continue
+			var category := str(check.get("category", ""))
+			if category not in ["structural_contract", "provisional_balance"]:
+				failures.append("Unknown economy check classification: " + str(check.get("label", "unknown")))
+			elif category == "provisional_balance" and str(check.get("check_id", "")) not in PROVISIONAL_BALANCE_CHECK_IDS:
+				failures.append("Unrecognized provisional balance check: " + str(check.get("check_id", "")))
+			elif not bool(check.passed):
+				if category == "provisional_balance":
+					alerts.append(check.duplicate(true))
+				else:
+					failures.append(str(check.get("label", "Unnamed structural economy failure")))
+	if not bool(simulation.get("source_truth", {}).get("ok", false)):
+		failures.append("Invalid authored economy acquisition source")
+	var route = simulation.get("runtime_route", {})
+	if not route.has("issues") or not route.issues.is_empty():
+		failures.append("Broken world route or contextual provider metadata")
+	var viability = simulation.get("runtime_viability", {})
+	var required := int(viability.get("required_count", 0))
+	if not bool(viability.get("passed", false)) or required <= 0:
+		failures.append("Acquisition spine is inaccessible or deadlocked")
+	var profiles = simulation.get("profiles", {})
+	if not (profiles is Dictionary) or profiles.is_empty():
+		failures.append("Missing simulated runtime states")
+	else:
+		for id in profiles:
+			var profile: Dictionary = profiles[id]
+			if profile.get("final", {}).get("purchases", []).size() != required:
+				failures.append("Incomplete acquisition spine: " + str(id))
+			var snapshots: Dictionary = profile.get("checkpoints", {})
+			if snapshots.is_empty():
+				failures.append("Missing economy checkpoints: " + str(id))
+			for key in snapshots:
+				var snapshot: Dictionary = snapshots[key]
+				var valid := true
+				for field in ["zenny", "fish_caught", "fish_sold", "rods_owned", "lures_owned"]:
+					var value := float(snapshot.get(field, -1.0))
+					valid = valid and is_finite(value) and value >= 0.0
+				for error in [snapshot.get("fish_accounting_error", INF), snapshot.get("cash_flow", {}).get("cash_accounting_error", INF)]:
+					valid = valid and is_finite(float(error)) and absf(float(error)) < 0.000001
+				if not valid:
+					failures.append("Impossible state/accounting: %s %s" % [id, key])
+	return {"structural_passed": failures.is_empty(), "structural_failures": failures, "balance_alerts": alerts, "guardrail_summary": simulation.get("summary", "NO RESULT")}
 
 
 func simulate_profile(profile_id: StringName) -> Dictionary:
@@ -129,6 +190,8 @@ func _simulate_profile(profile: Dictionary) -> Dictionary:
 		"caught_by_species": {},
 		"sold_by_species": {},
 		"traded_by_species": {},
+		"bait_allocated_by_species": {},
+		"card_allocated_by_species": {},
 		"fish_spent_cards": 0.0,
 		"population": {},
 		"current_location_id": "beach",
@@ -251,6 +314,12 @@ func _simulate_step(
 		0.0
 	)
 	var general_reserved_count: float = discretionary_catches * reserve_share
+	# Reporting provenance only: do not change the existing allocation policy.
+	# Pooled cooking/card banks remain explicit model limitations, not live recipes.
+	for species in species_catches:
+		var amount := float(species_catches[species])
+		state.bait_allocated_by_species[species] = float(state.bait_allocated_by_species.get(species, 0.0)) + amount * bait_share
+		state.card_allocated_by_species[species] = float(state.card_allocated_by_species.get(species, 0.0)) + amount * card_share
 
 	if not species_catches.is_empty():
 		general_reserved_count = _reserve_discretionary_species(
@@ -954,8 +1023,68 @@ func _snapshot_state(state: Dictionary, purchased: Dictionary) -> Dictionary:
 		"progression_fish_reserved": _outstanding_reservations(state, purchased),
 		"population": state.get("population", {}).duplicate(true),
 		"current_location_id": state.get("current_location_id", ""),
+		"cash_flow": _cash_flow_snapshot(state),
+		"species_value_ledger": _species_value_snapshot(state),
 		"fish_accounting_error": float(state.fish_caught) - (float(state.fish_sold) + float(state.fish_reserved) + float(state.fish_spent_trades) + float(state.bait_fish_bank) + float(state.card_fish_bank) + float(state.bait_batches) * BAIT_FISH_PER_BATCH + float(state.get("fish_spent_cards", 0.0))),
 	}
+
+
+func _cash_flow_snapshot(state: Dictionary) -> Dictionary:
+	var sales := float(state.zenny_earned)
+	var progression := float(state.zenny_spent_gear)
+	var cards := float(state.zenny_spent_cards)
+	var ending := float(state.zenny)
+	return {
+		"starting_zenny": STARTING_ZENNY,
+		"fish_sale_income": sales,
+		"other_income": 0.0,
+		"progression_purchase_spending": progression,
+		"card_maker_spending": cards,
+		"other_cash_spending": 0.0,
+		"total_purchase_spending": progression + cards,
+		"ending_zenny": ending,
+		"cash_accounting_error": STARTING_ZENNY + sales - progression - cards - ending,
+		"bait_fish_allocated": _sum_species_amounts(state.bait_allocated_by_species),
+		"card_fish_allocated": _sum_species_amounts(state.card_allocated_by_species),
+		"bait_fish_consumed": float(state.bait_batches) * BAIT_FISH_PER_BATCH,
+		"card_fish_consumed": float(state.fish_spent_cards),
+		"fish_kept_or_trade_reserved": float(state.fish_reserved),
+		"bait_fish_bank": float(state.bait_fish_bank),
+		"card_fish_bank": float(state.card_fish_bank),
+		"trade_fish_consumed": float(state.fish_spent_trades),
+		"note": "Material opportunity costs are reported separately; they are not additional wallet debits. Cooking/card allocations are pooled design assumptions, not recipe-valid runtime transactions.",
+	}
+
+
+func _species_value_snapshot(state: Dictionary) -> Array:
+	var rows: Array = []
+	for species in state.caught_by_species:
+		var fish = RuntimeRoute.Content.get_fish_by_id(StringName(species))
+		var price := EconomyConfigResource.get_fish_sell_price(StringName(species), fish.get_sell_value_zenny())
+		var caught := float(state.caught_by_species[species])
+		var sold := float(state.sold_by_species.get(species, 0.0))
+		var traded := float(state.traded_by_species.get(species, 0.0))
+		var bait := float(state.bait_allocated_by_species.get(species, 0.0))
+		var cards := float(state.card_allocated_by_species.get(species, 0.0))
+		var kept := float(state.fish_reserved_by_species.get(species, 0.0))
+		rows.append({
+			"species_id": String(species), "sell_price_zenny": price,
+			"caught": caught, "sold": sold, "sale_income_zenny": sold * price,
+			"sale_income_share": sold * price / float(state.zenny_earned) if state.zenny_earned > 0.0 else 0.0,
+			"sale_income_per_catch": sold * price / caught if caught > 0.0 else 0.0,
+			"potential_catch_value_zenny": caught * price,
+			"trade_consumed": traded, "trade_opportunity_cost_zenny": traded * price,
+			"kept_or_trade_reserved": kept, "kept_opportunity_cost_zenny": kept * price,
+			"bait_allocated": bait, "bait_allocation_opportunity_cost_zenny": bait * price,
+			"card_allocated": cards, "card_allocation_opportunity_cost_zenny": cards * price,
+			"species_accounting_error": caught - sold - traded - kept - bait - cards,
+		})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if not is_equal_approx(a.sale_income_zenny, b.sale_income_zenny):
+			return a.sale_income_zenny > b.sale_income_zenny
+		return a.species_id < b.species_id
+	)
+	return rows
 
 
 func _outstanding_reservations(state: Dictionary, purchased: Dictionary) -> Dictionary:
@@ -1025,8 +1154,8 @@ func _evaluate_suite(profile_reports: Dictionary) -> Array:
 	_add_range_check(checks, "Balanced H12 species", balanced_12, "species_discovered", 15, 25)
 	_add_range_check(checks, "Balanced H12 cards", balanced_12, "unique_cards", 30, 40)
 	_add_max_check(checks, "Sell-heavy H4 cash does not explode", sell_4, "zenny", 5000)
-	_add_max_check(checks, "Sell-heavy H12 cash remains a useful economy", sell_12, "zenny", 15500)
-	_add_max_check(checks, "Balanced H12 cash remains spendable, not absurd", balanced_12, "zenny", 8000)
+	_add_max_check(checks, "Sell-heavy H12 cash remains a useful economy", sell_12, "zenny", 15500, "provisional_balance", "sell_heavy_h12_cash_ceiling")
+	_add_max_check(checks, "Balanced H12 cash remains spendable, not absurd", balanced_12, "zenny", 8000, "provisional_balance", "balanced_h12_cash_ceiling")
 	_add_min_check(checks, "Crafter H4 can still afford progression rod", crafter_4, "rods_owned", 2)
 	_add_min_check(checks, "Crafter H4 keeps a small cash buffer after progression", crafter_4, "zenny", 75)
 	_add_min_check(checks, "Crafter actually uses cooked bait", crafter_12, "bait_batches", 20)
@@ -1138,12 +1267,16 @@ func _add_max_check(
 	label: String,
 	snapshot: Dictionary,
 	field: String,
-	maximum: int
+	maximum: int,
+	category: String = "structural_contract",
+	check_id: String = ""
 ) -> void:
 	var value: int = int(snapshot.get(field, 0))
 	checks.append({
 		"label": label,
 		"passed": value <= maximum,
+		"category": category,
+		"check_id": check_id,
 		"value": value,
 		"target": "<= %d" % maximum,
 	})
@@ -1322,6 +1455,8 @@ func _get_assumption_snapshot() -> Dictionary:
 		"fish_trade_model": "species-aware expected catch mix; trade targets reserve exact species before discretionary use",
 		"acquisition_source_model": "ownership ladder sources/recipes, runtime location graph and contextual providers; no debug/fake route fallback",
 		"population_model": "target missing trade species using the best owned lure at its preferred midpoint depth, reeling, neutral environment; normalized actual bite weights, fractional expected successful catches",
+		"card_maker_model": "pooled fractional fish of any species, stage fees 100/180z, automatic access regardless of location; differs from five live recipes with 75z first prints and 150z cash-only duplicates",
+		"prepared_bait_model": "pooled fractional fish of any species, one portion per successful catch rather than per cast; no attraction/quality/failed-cast simulation",
 		"remaining_abstractions": "hour goals/catch throughput, travel time zero, no failed catches/lure losses, herb supply, prepared bait recipe/discovery boost and card throughput remain design assumptions; not a rendered playthrough",
 		"stages": _build_stages(),
 		"purchase_plan": _build_purchase_plan(),

@@ -198,7 +198,12 @@ func _run() -> void:
 				orphan.free()
 	var simulation: Dictionary = Simulator.new().run_default_suite(false)
 	print("Existing First-10h source/economy simulator: %d/%d" % [simulation.checks_passed, simulation.checks_total])
-	_check(simulation.checks_passed == simulation.checks_total, "First-10h simulator remains green")
+	for alert in simulation.health.balance_alerts:
+		print("PROVISIONAL BALANCE ALERT: %s | value %s | target %s" % [alert.label, alert.value, alert.target])
+	if OS.get_cmdline_user_args().has("--structural-only"):
+		_check(simulation.health.structural_passed, "structural economy/source/acquisition contracts remain green")
+	else:
+		_check(simulation.checks_passed == simulation.checks_total, "First-10h simulator remains green")
 	print("World Economy Access QA: %d checks, %d failures" % [_checks, _failures.size()])
 	fixture.queue_free()
 	await process_frame

@@ -62,10 +62,44 @@ func run() -> void:
 	check(first == simulator.run_default_suite(false), "all profiles and guardrails deterministic")
 	for profile in first.profiles.values():
 		for snapshot in profile.checkpoints.values():
+			var flow: Dictionary = snapshot.cash_flow
+			check(absf(flow.cash_accounting_error) < 0.000001, "exact cash ledger reconciles: " + profile.profile_id + " H" + str(snapshot.hour))
+			check(roundi(flow.ending_zenny) == snapshot.zenny and flow.other_income == 0.0 and flow.other_cash_spending == 0.0, "cash ledger has no invented income or sink: " + profile.profile_id + " H" + str(snapshot.hour))
+			var sales := 0.0
+			var traded := 0.0
+			for row: Dictionary in snapshot.species_value_ledger:
+				var fish = Route.Content.get_fish_by_id(StringName(row.species_id))
+				check(row.sell_price_zenny == Route.Config.get_fish_sell_price(StringName(row.species_id), fish.get_sell_value_zenny()) and absf(row.sale_income_zenny - row.sold * row.sell_price_zenny) < 0.000001, "species revenue uses canonical price: " + row.species_id)
+				check(absf(row.species_accounting_error) < 0.000001, "per-species sale/trade/side-use/retained allocation conserved: " + row.species_id)
+				sales += row.sale_income_zenny
+				traded += row.trade_consumed
+			check(absf(sales - flow.fish_sale_income) < 0.000001 and absf(traded - flow.trade_fish_consumed) < 0.000001, "species ledgers sum to unrounded cash/trade totals")
 			check(absf(snapshot.fish_accounting_error) < 0.000001, "catches conserved across sale/trade/bait/cards/reserve: " + profile.profile_id + " H" + str(snapshot.hour))
 			for species in snapshot.traded_by_species:
 				check(float(snapshot.sold_by_species.get(species, 0.0)) + float(snapshot.traded_by_species[species]) <= float(snapshot.caught_by_species.get(species, 0.0)) + 0.000001, "no sold/traded double counting: " + species)
 	print("SIMULATOR GUARDRAILS: ", first.summary)
+	# An optional captured pre-pass report proves reporting additions did not
+	# silently tune any existing checkpoint, acquisition timing or guardrail.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--baseline="):
+			var baseline = JSON.parse_string(FileAccess.get_file_as_string(arg.trim_prefix("--baseline=")))
+			check(baseline is Dictionary, "pre-pass baseline is readable")
+			if baseline is Dictionary:
+				var current_checks: Array = JSON.parse_string(JSON.stringify(first.checks))
+				var baseline_checks: Array = baseline.checks.duplicate(true)
+				for guardrails in [current_checks, baseline_checks]:
+					for guardrail in guardrails:
+						guardrail.erase("category")
+						guardrail.erase("check_id")
+				check(current_checks == baseline_checks, "all 24 guardrails and their observed values remain unchanged")
+				for id in first.profiles:
+					for checkpoint in first.profiles[id].checkpoints:
+						var old = baseline.profiles[id].checkpoints[checkpoint]
+						var current = JSON.parse_string(JSON.stringify(first.profiles[id].checkpoints[checkpoint]))
+						var unchanged := true
+						for field in old:
+							unchanged = unchanged and current.get(field) == old[field]
+						check(unchanged, "every pre-pass checkpoint field preserved: " + id + " " + checkpoint)
 	for guardrail in first.checks:
 		if not guardrail.passed:
 			print("UNMET GUARDRAIL: ", guardrail.label, " value=", guardrail.value, " target=", guardrail.target)

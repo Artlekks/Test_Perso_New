@@ -37,9 +37,10 @@ enum Row {
 	ROD,
 	TECH,
 	SAVE_DEBUG,
+	TELEMETRY,
 }
 
-const ROW_COUNT := 10
+const ROW_COUNT := 11
 
 @onready var root: Control = $Root
 @onready var profile_label: Label = $Root/Panel/ProfileLabel
@@ -68,10 +69,45 @@ var _profile_index: int = 0
 var _profile_database: Array[FishingQAProfile] = []
 var _spot_index: int = -1
 var _fish_index: int = 0
+var _economy_telemetry: Node = null
+var _telemetry_button: Button
+var _telemetry_status := ""
 
 
 func _ready() -> void:
 	root.hide()
+	_telemetry_button = Button.new()
+	_telemetry_button.position = Vector2(28, 372)
+	_telemetry_button.size = Vector2(564, 28)
+	_telemetry_button.focus_mode = Control.FOCUS_NONE
+	_telemetry_button.pressed.connect(_toggle_economy_recording)
+	$Root/Panel.add_child(_telemetry_button)
+	$Root/Panel/DividerLabel2.hide()
+	_update_telemetry_button()
+
+
+func configure_economy_telemetry(telemetry: Node) -> void:
+	_economy_telemetry = telemetry
+	_update_telemetry_button()
+
+
+func _update_telemetry_button() -> void:
+	if _telemetry_button != null:
+		_telemetry_button.disabled = _economy_telemetry == null
+		_telemetry_button.text = ("> " if _selected_row == Row.TELEMETRY else "") + ("Stop Recording & Save Report" if _economy_telemetry != null and _economy_telemetry.recorder.active else "Start Economy Playtest Recording")
+		_telemetry_button.tooltip_text = _telemetry_status
+
+
+func _toggle_economy_recording() -> void:
+	if _economy_telemetry == null:
+		return
+	if _economy_telemetry.recorder.active:
+		var output: Dictionary = _economy_telemetry.stop_recording()
+		_telemetry_status = "Saved: " + str(output.get("raw_path", "")) if output.get("ok", false) else "Save failed; report retained in memory"
+	else:
+		_telemetry_status = "Recording started" if _economy_telemetry.start_recording() else "Recording could not start"
+	_update_telemetry_button()
+	_refresh()
 
 
 func configure(
@@ -104,6 +140,7 @@ func set_fish_zone(zone: Node) -> void:
 
 
 func open_menu() -> bool:
+	_update_telemetry_button()
 	if _loadout == null or _settings == null:
 		return false
 
@@ -124,6 +161,8 @@ func is_open() -> bool:
 ## Returns true when the menu requests to close.
 func handle_input(event: InputEvent) -> bool:
 	if not is_open():
+		return false
+	if _selected_row == Row.TELEMETRY and event is InputEventKey and event.echo:
 		return false
 
 	if _is_key_press(event, KEY_F7):
@@ -193,6 +232,8 @@ func _change_value(step: int) -> void:
 			_change_tech(step)
 		Row.SAVE_DEBUG:
 			_change_save_debug()
+		Row.TELEMETRY:
+			_toggle_economy_recording()
 
 	_refresh()
 
@@ -422,6 +463,7 @@ func _sync_spot_from_runtime() -> void:
 
 
 func _refresh() -> void:
+	_update_telemetry_button()
 	if _loadout == null or _settings == null:
 		return
 

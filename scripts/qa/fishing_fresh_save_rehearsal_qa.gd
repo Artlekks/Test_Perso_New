@@ -126,11 +126,14 @@ static func _test_preconditions(
 		_report_passed(session.get("system_stability_qa_report")),
 		"The fresh-save rehearsal should only run on top of a stable integrated stack."
 	)
+	var campaign_contract: Dictionary = session.get("campaign_loop_qa_report")
+	var economy_health: Dictionary = campaign_contract.get("simulator_structural_health", {})
+	report["balance_alerts"] = campaign_contract.get("balance_alerts", []).duplicate(true)
 	_record(
 		report,
-		"Campaign-loop contract QA is green",
-		_report_passed(session.get("campaign_loop_qa_report")),
-		"The authored 0-12h plan must already validate."
+		"Campaign-loop runtime/structural contract QA is green",
+		_report_passed(campaign_contract) and bool(economy_health.get("structural_passed", false)),
+		"Fresh saves require valid campaign and structural economy contracts; provisional balance alerts are reported separately."
 	)
 	_record(
 		report,

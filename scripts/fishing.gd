@@ -362,6 +362,13 @@ func _ready() -> void:
 
 		_on_rod_changed(loadout.get_selected_rod())
 
+	if OS.is_debug_build():
+		var telemetry := session_services.get_economy_playtest_telemetry()
+		if telemetry != null:
+			telemetry.bind_runtime(self)
+			debug_controller.debug_menu.configure_economy_telemetry(telemetry)
+
+
 func _setup_fishing_menu() -> void:
 	if fishing_menu != null:
 		return
@@ -2138,4 +2145,6 @@ func _commit_curved_cast() -> void:
 	bait_landed_during_throw = false
 
 	phase = Phase.THROW
+	if is_instance_valid(session_services) and session_services.economy_playtest_telemetry != null:
+		session_services.economy_playtest_telemetry.cast_started()
 	sprite_director.play(&"Throw")
