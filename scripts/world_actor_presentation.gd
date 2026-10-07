@@ -177,7 +177,8 @@ func _update_render_priorities() -> void:
 
 
 func _expand_actor_footprint(actor: Node3D) -> void:
-	if actor.name == &"BeachCritter":
+	# Every instance keeps its authored crab-sized body, including renamed ones.
+	if actor is BeachFishingCritter:
 		return
 
 	var collision_shape: CollisionShape3D = _find_primary_body_shape(actor)

@@ -49,6 +49,7 @@ texture_filter = 0
 texture = ExtResource("3_shadow")
 
 [node name="BodyCollider" type="AnimatableBody3D" parent="." unique_id=1500292232]
+sync_to_physics = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="BodyCollider" unique_id=1054673134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)

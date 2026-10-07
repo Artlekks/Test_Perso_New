@@ -80,8 +80,13 @@ func _ready() -> void:
 	call_deferred("_cache_player_body")
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	_update_depth_sort()
+
+
+func _physics_process(delta: float) -> void:
+	# Move the common actor root on physics ticks. BodyCollider opts out of
+	# sync_to_physics so inherited transforms reach the physics server too.
 	var tree := get_tree()
 	if tree == null or tree.paused:
 		return

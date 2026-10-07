@@ -33,7 +33,7 @@ func _ready() -> void:
 	_start_idle()
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.paused:
 		return
