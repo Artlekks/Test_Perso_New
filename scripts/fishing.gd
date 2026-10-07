@@ -83,9 +83,6 @@ enum Phase {
 @export var fishing_catch_view: Node
 @export var loadout: FishingLoadout
 @export var lure_selector_view: Node
-@export_category("Fight Diagnostics")
-## Debug observer only; no gameplay/camera changes. F12 bookmarks live frames.
-@export var debug_fight_telemetry: bool = false
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
 
@@ -169,11 +166,6 @@ var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
 
 func _ready() -> void:
-	if OS.is_debug_build() and (debug_fight_telemetry or OS.get_cmdline_user_args().has("--fight-telemetry")):
-		var telemetry = load("res://scripts/diagnostics/fishing_fight_telemetry.gd").new()
-		telemetry.name = "FightTelemetry"
-		telemetry.fishing = self
-		add_child(telemetry)
 	var pause_controller := FishingPauseControllerScript.new()
 	pause_controller.name = "FishingPauseController"
 	add_child(pause_controller)
