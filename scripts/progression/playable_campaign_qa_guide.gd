@@ -140,14 +140,19 @@ func _refresh() -> void:
 		str(objective.get("title", "No objective available.")),
 		str(objective.get("detail", "")),
 	]
+	var acquisition: Dictionary = _dict(_snapshot.get("tackle_acquisition", {}))
+	var tackle: Dictionary = _dict(acquisition.get("next_target", {}))
 
 	var selected: Dictionary = (
 		_presets[_index] if not _presets.is_empty() else {}
 	)
+	var tutorial: String = str(selected.get("tutorial", ""))
+	if str(selected.get("id", "")) == "live" and not tackle.is_empty():
+		tutorial = "NEXT TACKLE: " + str(tackle.get("hint", ""))
 	guide_label.text = "%s\n%s\n\n%s" % [
 		str(selected.get("name", "")),
 		str(selected.get("summary", "")),
-		str(selected.get("tutorial", "")),
+		tutorial,
 	]
 	var checks := PackedStringArray()
 	for raw_check in selected.get("checklist", []):

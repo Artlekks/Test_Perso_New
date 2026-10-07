@@ -1,0 +1,9 @@
+{
+  "plan_id": "early_tackle_acquisition_v1",
+  "targets": [
+    {"item_id": "baby_frog", "kind": "lure", "target": "Baby Frog", "source_type": "shop_offer", "source_id": "shyde_baby_frog", "source_label": "Beach Merchant"},
+    {"item_id": "bamboo_rod", "kind": "rod", "target": "Bamboo Rod", "source_type": "manillo_trade", "source_id": "wyndia_bamboo_rod", "source_label": "Wyndia Manillo"},
+    {"item_id": "tail", "kind": "lure", "target": "Tail", "source_type": "manillo_trade", "source_id": "wyndia_tail", "source_label": "Wyndia Manillo"},
+    {"item_id": "crab", "kind": "lure", "target": "Crab", "source_type": "manillo_trade", "source_id": "lyp_crab", "source_label": "Lyp Manillo"}
+  ]
+}

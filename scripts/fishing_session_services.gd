@@ -1315,6 +1315,9 @@ func initialize() -> void:
 		prepared_bait_service,
 		card_maker_service
 	)
+	campaign_progression_director.configure_tackle_acquisition(
+		economy_service, FishingContentCatalogResource, FishingShopCatalogResource, FishingTradeCatalogResource
+	)
 
 	campaign_presentation_controller = (
 		PlayableCampaignPresentationControllerScript.new()

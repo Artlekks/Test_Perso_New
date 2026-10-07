@@ -12,6 +12,8 @@ const ProgressionPolicyScript = preload(
 )
 
 const PLAN_PATH := "res://data/progression/playable_campaign_loop_v1.json"
+const AcquisitionScript = preload("res://scripts/progression/early_tackle_acquisition.gd")
+var _acquisition = null
 const STARTER_BUNDLE_ID := "salvaged_card_case"
 const HARBOR_LOCKBOX_EVENT_ID := "beach_demo_harbor_lockbox_01"
 const HARBOR_REQUEST_EVENT_ID := "beach_demo_harbor_errand_01"
@@ -45,16 +47,40 @@ func configure(
 	fishing_unlock_state = new_fishing_unlock_state
 	prepared_bait_service = new_prepared_bait_service
 	card_maker_service = new_card_maker_service
+	_acquisition = null
 	_plan = _load_json(PLAN_PATH)
 
 
 func get_snapshot() -> Dictionary:
 	if _plan.is_empty():
 		_plan = _load_json(PLAN_PATH)
-	return build_snapshot_from_state(
+	var snapshot := build_snapshot_from_state(
 		_plan,
 		_collect_runtime_state()
 	)
+	snapshot["tackle_acquisition"] = get_tackle_acquisition_snapshot()
+	return snapshot
+
+
+func configure_tackle_acquisition(economy, content, shops, trades) -> void:
+	_acquisition = AcquisitionScript.new()
+	_acquisition.configure(fishing_inventory, economy, content, shops, trades)
+
+
+func get_tackle_acquisition_snapshot() -> Dictionary:
+	if _acquisition == null:
+		return {}
+	var sources: Array = []
+	var spots: Array = []
+	if is_inside_tree() and get_tree().current_scene != null:
+		var scene := get_tree().current_scene
+		for provider in get_tree().get_nodes_in_group(&"world_economy_sources"):
+			if not provider.is_queued_for_deletion() and (provider == scene or scene.is_ancestor_of(provider)):
+				sources.append({"context": provider.get("economy_context"), "path": str(provider.get_path())})
+		for node in get_tree().get_nodes_in_group(&"world_fishing_spots"):
+			if not node.is_queued_for_deletion() and (node == scene or scene.is_ancestor_of(node)) and node.has_method("get_fishing_spot"):
+				spots.append(node.call("get_fishing_spot"))
+	return _acquisition.get_snapshot(sources, spots)
 
 
 func get_plan_snapshot() -> Dictionary:

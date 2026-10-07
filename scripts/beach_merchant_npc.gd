@@ -38,6 +38,7 @@ var _dialogue_bridge: DialogueNPCBridge = null
 
 
 func _ready() -> void:
+	add_to_group(&"world_economy_sources")
 	add_to_group(&"world_interaction_targets")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_play_idle()

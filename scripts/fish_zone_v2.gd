@@ -22,6 +22,7 @@ var concentration_field: FishingConcentrationField = (
 
 
 func _ready() -> void:
+	add_to_group(&"world_fishing_spots")
 	_rebuild_concentration_field()
 
 
