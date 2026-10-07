@@ -1,6 +1,8 @@
 extends Node
 signal cast_availability_changed(available: bool)
 
+const WorldInteractionRouterScript = preload("res://scripts/world_interaction_router.gd")
+
 @export var game_mode: Node
 @export var player: CharacterBody3D
 @export var exploration_camera: Camera3D
@@ -13,6 +15,10 @@ func _ready() -> void:
 	player.camera_reference = exploration_camera
 	game_mode.mode_changed.connect(_on_mode_changed)
 	_on_mode_changed(game_mode.current_mode)
+	var interaction_router := WorldInteractionRouterScript.new()
+	interaction_router.name = "WorldInteractionRouter"
+	interaction_router.configure(player, game_mode)
+	add_child(interaction_router)
 
 func _on_mode_changed(new_mode) -> void:
 	set_active(new_mode == game_mode.Mode.EXPLORATION)

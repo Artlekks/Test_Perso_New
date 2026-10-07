@@ -23,6 +23,7 @@ var _disabled: bool = false
 
 
 func _ready() -> void:
+	add_to_group(&"world_interaction_targets")
 	prompt_label.visible = false
 	interaction_area.body_entered.connect(_on_body_entered)
 	interaction_area.body_exited.connect(_on_body_exited)
@@ -69,7 +70,11 @@ func claim() -> Dictionary:
 	return result
 
 
-func _input(event: InputEvent) -> void:
+func is_world_interaction_available(event: InputEvent) -> bool:
+	return _player_in_range and not _disabled and _is_confirm(event)
+
+
+func interact_from_world(event: InputEvent) -> void:
 	if not _player_in_range or _disabled:
 		return
 	var tree: SceneTree = get_tree()

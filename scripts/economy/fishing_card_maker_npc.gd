@@ -24,7 +24,12 @@ const CHOICE_JOURNAL: StringName = &"journal"
 
 @export_category("Beach Patrol")
 @export var patrol_enabled: bool = true
-@export_range(0.05, 1.0, 0.01) var patrol_speed: float = 0.18
+## Six frames at 8 FPS: 0.0675 world units/frame at the default 0.01
+## pixel size, instead of 0.0225. Keep the authored walk animation cadence.
+@export_range(0.05, 1.0, 0.01) var patrol_speed: float = 0.54
+## Smoke atlas cells contain neighboring plume pixels and use a different
+## canvas/foot baseline. Keep disabled until the source frames are repacked.
+@export var smoke_enabled: bool = false
 @export_range(0.25, 20.0, 0.25) var idle_pause_min: float = 1.75
 @export_range(0.25, 20.0, 0.25) var idle_pause_max: float = 4.25
 @export_range(1.0, 60.0, 0.5) var smoke_interval_min: float = 7.0
@@ -54,6 +59,7 @@ var _dialogue_bridge: DialogueNPCBridge = null
 
 
 func _ready() -> void:
+	add_to_group(&"world_interaction_targets")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
 	_home_position = position
@@ -79,13 +85,14 @@ func _process(delta: float) -> void:
 	var tree := get_tree()
 	if tree == null or tree.paused:
 		return
-	if _player_in_range or (card_maker_menu != null and card_maker_menu.is_open()):
+	if card_maker_menu != null and card_maker_menu.is_open():
 		return
 	if _special_playing:
 		return
 
-	_smoke_remaining -= delta
-	if _smoke_remaining <= 0.0:
+	if smoke_enabled:
+		_smoke_remaining -= delta
+	if smoke_enabled and _smoke_remaining <= 0.0:
 		if _moving:
 			_smoke_pending = true
 		else:
@@ -105,7 +112,11 @@ func _process(delta: float) -> void:
 		_begin_next_patrol_leg()
 
 
-func _input(event: InputEvent) -> void:
+func is_world_interaction_available(event: InputEvent) -> bool:
+	return _player_in_range and _is_confirm(event)
+
+
+func interact_from_world(event: InputEvent) -> void:
 	if card_maker_menu != null and card_maker_menu.is_open():
 		return
 	if not _player_in_range:
@@ -232,6 +243,8 @@ func _play_walk(direction: StringName) -> void:
 
 
 func _play_smoke() -> void:
+	if not smoke_enabled:
+		return
 	if animated_sprite == null or animated_sprite.sprite_frames == null:
 		return
 	if not animated_sprite.sprite_frames.has_animation(&"smoke"):
@@ -267,8 +280,6 @@ func _random_smoke_interval() -> float:
 
 func _start_interaction() -> bool:
 	var make_available := _bind_card_maker()
-	_stop_patrol()
-	_play_idle(_facing)
 	var choices := build_service_choices(
 		make_available,
 		make_choice_text,
@@ -292,12 +303,16 @@ func _start_interaction() -> bool:
 			{"source": "card_maker"}
 		)
 	):
+		_stop_patrol()
+		_play_idle(_facing)
 		return true
 
 	# Dialogue presentation must never block the existing workshop.
 	if make_available:
-		return _open_card_maker_menu()
-	_play_idle(_facing)
+		if _open_card_maker_menu():
+			_stop_patrol()
+			_play_idle(_facing)
+			return true
 	return false
 
 
@@ -501,8 +516,6 @@ func _on_body_entered(body: Node) -> void:
 		return
 	_player_body = body as Node3D
 	_player_in_range = true
-	_stop_patrol()
-	_play_idle(_facing)
 	prompt_label.visible = false
 
 
@@ -511,9 +524,6 @@ func _on_body_exited(body: Node) -> void:
 		return
 	_player_in_range = false
 	prompt_label.visible = false
-	if card_maker_menu == null or not card_maker_menu.is_open():
-		_pause_remaining = _random_idle_pause()
-		_play_idle(_facing)
 
 
 func _on_menu_closed() -> void:

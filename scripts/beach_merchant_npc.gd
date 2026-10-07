@@ -43,6 +43,7 @@ var _dialogue_bridge: DialogueNPCBridge = null
 
 
 func _ready() -> void:
+	add_to_group(&"world_interaction_targets")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_play_idle()
 	prompt_label.visible = false
@@ -52,7 +53,11 @@ func _ready() -> void:
 	_create_dialogue_bridge()
 
 
-func _input(event: InputEvent) -> void:
+func is_world_interaction_available(event: InputEvent) -> bool:
+	return _player_in_range and _is_confirm(event)
+
+
+func interact_from_world(event: InputEvent) -> void:
 	if not _player_in_range:
 		return
 	if get_tree() == null or get_tree().paused:

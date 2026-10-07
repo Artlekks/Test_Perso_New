@@ -28,7 +28,7 @@ position = Vector3(0, -0.004, 0)
 rotation = Vector3(-1.5707964, 0, 0)
 billboard = 0
 texture_filter = 0
-alpha_cut = 1
+render_priority = -110
 alpha_scissor_threshold = 0.5
 cast_shadow = 0
 

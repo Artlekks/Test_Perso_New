@@ -40,6 +40,7 @@ var _objective_tracker: Node = null
 
 
 func _ready() -> void:
+	add_to_group(&"world_interaction_targets")
 	_apply_catalog_definition()
 	prompt_label.visible = false
 	interaction_area.body_entered.connect(_on_body_entered)
@@ -77,7 +78,15 @@ func _exit_tree() -> void:
 		_objective_tracker.call("remove_request", request_id)
 
 
-func _input(event: InputEvent) -> void:
+func is_world_interaction_available(event: InputEvent) -> bool:
+	if not _player_in_range or _claim_in_progress or not _is_confirm(event):
+		return false
+	if dialogue_bridge != null and dialogue_bridge.has_pending_interaction():
+		return false
+	return _resolve_request_state(_find_game()) != WorldRequestStateScript.State.LOCKED
+
+
+func interact_from_world(event: InputEvent) -> void:
 	if not _player_in_range or _claim_in_progress:
 		return
 	var tree: SceneTree = get_tree()
