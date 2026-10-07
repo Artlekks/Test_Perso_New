@@ -56,6 +56,7 @@ func travel(point_name: String, expected: StringName) -> void:
 	check(not locations.request_travel(expected).success, "duplicate travel is rejected")
 	await frames(8)
 	check(locations.current_location != null and locations.current_location.location_id == expected, "arrives at " + String(expected))
+	check(locations.get_reachable_world_data().source_issues.is_empty(), "arrival route graph has complete provider metadata")
 	check(not session.economy_access.get_access_context_snapshot().full_catalog_access and session.economy_access.get_trade_entries().is_empty(), "arrival clears trade/debug access")
 
 func _run() -> void:
@@ -71,6 +72,7 @@ func _run() -> void:
 	check(scene.get_node("World/FishZone_V2").get_fishing_spot().spot_id == &"ocean_2", "original beach population")
 	check(not locations.get_access_snapshot(&"wyndia_ocean_outpost").unlocked, "ocean locked before Baby Frog")
 	check(not locations.get_access_snapshot(&"lyp_lake_outpost").unlocked, "lake locked before rod and Tail")
+	_test_route_regressions()
 	var debug_zone = scene.get_node("World/FishZone_V2")
 	debug_zone.set_fishing_spot(load("res://data/bof4/spots/river_2.tres"))
 	check(not session.get_campaign_progression_snapshot().tackle_acquisition.targets[6].requirements[0].available_in_reachable_spots, "debug Salmon population is not normal acquisition reachability")
@@ -89,6 +91,7 @@ func _run() -> void:
 	check(session.economy_access.buy_one(&"shyde_baby_frog").get("can_purchase", false) and inventory.owns_lure(&"baby_frog"), "normal contextual Baby Frog purchase")
 	session.economy_access.clear_access_context()
 	check(locations.get_access_snapshot(&"wyndia_ocean_outpost").unlocked, "ownership unlocks ocean without time")
+	check(current_scene.get_node("World/OceanTravel").label.text.begins_with("K: Travel"), "sign refreshes immediately after Baby Frog unlock")
 	snapshot = session.get_campaign_progression_snapshot().tackle_acquisition
 	check(snapshot.targets[1].accessible and snapshot.targets[2].accessible and not snapshot.targets[3].accessible, "reachable ocean source and population unlock guidance")
 	check(not snapshot.targets[1].requirements[0].available_in_current_spots and snapshot.targets[1].requirements[0].available_in_reachable_spots, "guidance distinguishes current beach from reachable Sea Bream water")
@@ -263,6 +266,72 @@ func _run_regressions() -> void:
 		var report: Dictionary = session.get(property)
 		print(property, ": ", report.passed_count, "/", report.test_count)
 		check(report.passed_count == report.test_count, property)
+
+
+func _test_route_regressions() -> void:
+	var inventory := FishingInventory.new() # Detached, no disk initialization.
+	var beach_sign = current_scene.get_node("World/OceanTravel")
+	check(locations.get_unlocked_destinations(&"beach", inventory).is_empty(), "fresh Beach has zero unlocked outbound destinations")
+	var world: Dictionary = locations.get_reachable_world_data(inventory)
+	check(world.destination_ids.is_empty() and world.location_ids == PackedStringArray(["beach"]), "restricted snapshot retains current Beach without inventing outbound travel")
+	check(world.sources.size() == 1 and world.source_issues.is_empty(), "zero outbound routes retain legitimate Beach economy")
+	check(beach_sign.label.text.begins_with("Locked:") and not beach_sign.label.text.contains("K: Travel"), "locked sign offers no travel destination")
+	check(not beach_sign.is_world_interaction_available(key()), "locked sign is ineligible for interaction")
+	inventory.grant_lure(&"baby_frog", 1, false)
+	check(locations.get_unlocked_destinations(&"beach", inventory) == PackedStringArray(["wyndia_ocean_outpost"]), "Baby Frog makes Ocean the sole Beach outbound route")
+	world = locations.get_reachable_world_data(inventory)
+	check(world.location_ids == PackedStringArray(["beach", "wyndia_ocean_outpost"]), "Baby Frog graph cannot bypass restored Lake prerequisites")
+	inventory.grant_rod(&"bamboo_rod", 1, false)
+	inventory.grant_lure(&"tail", 1, false)
+	world = locations.get_reachable_world_data(inventory)
+	check(world.location_ids.has("lyp_lake_outpost") and world.source_issues.is_empty(), "Ocean/Lake routes and provider mappings resolve")
+	for lure_id in [&"crab", &"floater", &"popper"]:
+		inventory.grant_lure(lure_id, 1, false)
+	check(locations.get_reachable_world_data(inventory).location_ids.has("river_fishing_outpost"), "prior milestones resolve River route")
+	inventory.grant_rod(&"angling_rod", 1, false)
+	inventory.grant_lure(&"silver_top", 1, false)
+	check(locations.get_reachable_world_data(inventory).location_ids.size() == 5, "all five locations resolve after their milestones")
+	var lake = locations.get_location(&"lyp_lake_outpost")
+	var paths: PackedStringArray = lake.economy_provider_paths.duplicate()
+	lake.economy_provider_paths = PackedStringArray()
+	world = locations.get_reachable_world_data(inventory)
+	check(world.source_issues.size() == lake.economy_contexts.size(), "original empty Lyp provider-path regression fails closed without indexing")
+	var has_lake_source := false
+	for source: Dictionary in world.sources:
+		has_lake_source = has_lake_source or String(source.path).begins_with("lyp_lake_outpost:")
+	check(not has_lake_source, "missing mappings invent no Lyp provider or first-path fallback")
+	lake.economy_provider_paths = paths
+	var beach = locations.get_location(&"beach")
+	var beach_paths: PackedStringArray = beach.economy_provider_paths.duplicate()
+	beach.economy_provider_paths = PackedStringArray()
+	var merchant = current_scene.get_node("World/BeachMerchantNPC")
+	check(not locations.context_belongs_here(merchant.economy_context, merchant), "missing provider metadata also denies live merchant context without fallback")
+	beach.economy_provider_paths = beach_paths
+	check(locations.context_belongs_here(merchant.economy_context, merchant), "restored actual provider remains valid")
+	var routes: PackedStringArray = beach.destinations.duplicate()
+	beach.destinations = PackedStringArray()
+	world = locations.get_reachable_world_data(inventory)
+	check(world.destination_ids.is_empty() and world.location_ids == PackedStringArray(["beach"]), "empty authored route list is valid and safe")
+	beach.destinations = PackedStringArray(["debug_only_unknown_location"])
+	world = locations.get_reachable_world_data(inventory)
+	check(world.destination_ids.is_empty() and world.location_ids == PackedStringArray(["beach"]), "zero valid filtered routes select no debug/fake fallback")
+	beach_sign._refresh_label()
+	check(beach_sign.label.text == "Route unavailable", "sign gracefully handles removed/invalid route")
+	beach.destinations = routes
+	beach_sign._refresh_label()
+	var authority = locations.current_location
+	locations.current_location = null
+	world = locations.get_reachable_world_data(inventory)
+	check(world.location_ids.is_empty() and world.destination_ids.is_empty() and world.sources.is_empty() and world.spots.is_empty(), "unbound authority returns entirely empty snapshot without Beach fallback")
+	locations.current_location = authority
+	for id in [&"beach", &"wyndia_ocean_outpost", &"lyp_lake_outpost", &"river_fishing_outpost", &"chiqua_supply_outpost"]:
+		var location = locations.get_location(id)
+		check(location.economy_contexts.size() == location.economy_provider_paths.size(), "authored source mapping lengths match " + String(id))
+		var file := "user://route_roundtrip_%s.tres" % id
+		check(ResourceSaver.save(location.duplicate(true), file) == OK, "location resource serializes " + String(id))
+		var loaded = ResourceLoader.load(file, "", ResourceLoader.CACHE_MODE_IGNORE)
+		check(loaded != null and loaded.economy_provider_paths == location.economy_provider_paths and loaded.destinations == location.destinations and loaded.required_lure_ids == location.required_lure_ids and loaded.required_rod_ids == location.required_rod_ids, "provider/routes/unlock arrays survive save/reload " + String(id))
+	inventory.free()
 
 
 func _run_extended_spine() -> void:

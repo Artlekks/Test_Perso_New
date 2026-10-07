@@ -1,5 +1,7 @@
 extends Node3D
 
+const FightCameraTracking = preload("res://scripts/fishing_fight_camera_tracking.gd")
+
 signal fishing_view_ready
 signal exploration_view_ready
 signal heading_changed(yaw: float)
@@ -41,6 +43,23 @@ var fishing_follow_right_x_ratio: float = 0.76
 var fishing_follow_top_y_ratio: float = 0.28
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
+
+@export_category("Fight Camera Tracking")
+@export_range(0.0, 0.9, 0.01) var fight_safe_left: float = 0.20
+@export_range(0.1, 1.0, 0.01) var fight_safe_right: float = 0.85
+@export_range(0.0, 0.9, 0.01) var fight_safe_top: float = 0.08
+## HUD begins around y=405/480; leave clearance for the fish sprite above it.
+@export_range(0.1, 1.0, 0.01) var fight_safe_bottom: float = 0.75
+@export_range(0.0, 0.1, 0.005) var fight_tracking_hysteresis: float = 0.025
+@export_range(0.1, 20.0, 0.1) var fight_yaw_response: float = 6.0
+@export_range(0.1, 20.0, 0.1) var fight_yaw_return_response: float = 2.0
+@export_range(0.0, 90.0, 1.0) var fight_max_yaw_degrees: float = 55.0
+
+var fight_camera_tracking = FightCameraTracking.new()
+var _fight_tracking_active := false
+var _fight_tracking_target: Node3D
+var _fight_base_valid := false
+var _fight_base_camera_transform: Transform3D
 
 ## Once real Ryu re-enters the frame, stop fish-centric screen corrections.
 ## From then on, camera progress is driven by the remaining lure/fish distance.
@@ -110,6 +129,11 @@ func _process(_delta: float) -> void:
 	if target == null:
 		return
 
+	# The original cast/return controller always evaluates its original shot.
+	# A child-camera overlay cannot change the rig's heading or movement rail.
+	if _fight_base_valid and _fight_tracking_active:
+		$Camera3D.transform = _fight_base_camera_transform
+
 	var follow_controls_position := _update_fishing_follow()
 
 	# A quick-cancel return tween owns the rig position until it finishes.
@@ -131,6 +155,95 @@ func _process(_delta: float) -> void:
 	if not is_equal_approx(rotation.y, _last_heading_yaw):
 		_last_heading_yaw = rotation.y
 		heading_changed.emit(rotation.y)
+
+	_update_fight_camera_tracking(_delta)
+
+
+func set_fishing_fight_tracking(active: bool, hooked_target: Node3D = null) -> void:
+	_fight_tracking_active = active and is_instance_valid(hooked_target)
+	_fight_tracking_target = hooked_target if _fight_tracking_active else null
+	if _fight_tracking_active and not _fight_base_valid:
+		var camera := get_node_or_null("Camera3D") as Camera3D
+		if camera == null:
+			_fight_tracking_active = false
+			return
+		_fight_base_camera_transform = camera.transform
+		_fight_base_valid = true
+		fight_camera_tracking.reset()
+		# Hooked mechanics, not any sprite/notifier, own the entire fight.
+		# Retain the existing distance-driven return rail, but prevent the cast
+		# controller from translating the rig until Ryu happens to be visible.
+		begin_fishing_player_return()
+	# Inactive means hold the last shot for landing/result animations. Reset
+	# belongs exclusively to the existing follow reset / exploration exit.
+
+
+func _fight_orbit_transform(base: Transform3D, pivot: Vector3, yaw: float) -> Transform3D:
+	var orbit := Basis(Vector3.UP, yaw)
+	return Transform3D(orbit * base.basis, pivot + orbit * (base.origin - pivot))
+
+
+func _project_fight_orbit(yaw: float, view_base: Transform3D, projection: Projection,
+		pivot: Vector3, fish_position: Vector3) -> Vector2:
+	# Equivalent to Camera3D.unproject_position(), using its active projection
+	# and camera transform (including h/v offsets), without mutating the live
+	# camera for every candidate orbit tested by the dead-zone solver.
+	var view := _fight_orbit_transform(view_base, pivot, yaw)
+	var local := view.affine_inverse() * fish_position
+	# Ordinary off-viewport points retain their exact projected coordinates.
+	# Across the camera plane perspective becomes singular, then mirrors the
+	# left/right sign behind the camera. Extend it with signed bearing instead
+	# of discarding both sides into the same sentinel or a visibility gate.
+	# The tangent extension is continuous and monotonic, so a hidden target
+	# still requests the orbit that turns toward its physical world position.
+	var bearing := atan2(local.x, -local.z)
+	const MAX_PROJECTION_TANGENT := 4.0
+	var tangent_limit := atan(MAX_PROJECTION_TANGENT)
+	if absf(bearing) > tangent_limit:
+		var tangent_slope := 1.0 + MAX_PROJECTION_TANGENT * MAX_PROJECTION_TANGENT
+		var extended_x := signf(bearing) * (MAX_PROJECTION_TANGENT + (absf(bearing) - tangent_limit) * tangent_slope)
+		var forward_depth := maxf(Vector2(local.x, local.z).length() * cos(tangent_limit), 0.000001)
+		return Vector2(0.5 + extended_x * projection.x.x * 0.5,
+			0.5 - local.y / forward_depth * projection.y.y * 0.5)
+	var clip: Vector4 = projection * Vector4(local.x, local.y, local.z, 1.0)
+	if absf(clip.w) <= 0.000001:
+		# Coincident with the optical origin: no useful lateral bearing exists.
+		return Vector2(0.5, 0.5)
+	return Vector2(clip.x / clip.w * 0.5 + 0.5, -clip.y / clip.w * 0.5 + 0.5)
+
+
+func _update_fight_camera_tracking(delta: float) -> void:
+	if not _fight_tracking_active or not is_instance_valid(_fight_tracking_target):
+		return
+	var camera := get_node_or_null("Camera3D") as Camera3D
+	if camera == null or not camera.current or not _fight_base_valid:
+		return
+	var viewport_size := camera.get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var base := global_transform * _fight_base_camera_transform
+	var pivot := target.global_position
+	# The fight shadow projects through this exact bait position onto water;
+	# projecting its raw water-plane X/Z instead would measure the wrong pixel.
+	var project := _project_fight_orbit.bind(camera.get_camera_transform(),
+		camera.get_camera_projection(), pivot, _fight_tracking_target.global_position)
+	var region := Rect2(Vector2(fight_safe_left, fight_safe_top),
+		Vector2(maxf(0.01, fight_safe_right - fight_safe_left),
+		maxf(0.01, fight_safe_bottom - fight_safe_top)))
+	var yaw: float = fight_camera_tracking.step(delta, project, region,
+		fight_tracking_hysteresis, deg_to_rad(fight_max_yaw_degrees),
+		fight_yaw_response, fight_yaw_return_response)
+	camera.global_transform = _fight_orbit_transform(base, pivot, yaw)
+
+
+func _clear_fight_camera_tracking(restore_pose: bool = true) -> void:
+	var camera := get_node_or_null("Camera3D") as Camera3D
+	if restore_pose and _fight_base_valid and camera != null:
+		camera.transform = _fight_base_camera_transform
+	_fight_base_valid = false
+	_fight_tracking_active = false
+	_fight_tracking_target = null
+	fight_camera_tracking.reset()
 
 func arm_fishing_follow(
 	track_target: Node3D,
@@ -222,6 +335,7 @@ func begin_fishing_player_return() -> void:
 
 
 func reset_fishing_follow() -> void:
+	_clear_fight_camera_tracking()
 	fishing_player_camera_locked = false
 	_stop_fishing_follow_return(false)
 	_clear_fishing_follow_state()
@@ -231,6 +345,7 @@ func reset_fishing_follow() -> void:
 
 
 func return_fishing_follow_to_target() -> void:
+	_clear_fight_camera_tracking()
 	fishing_player_camera_locked = false
 
 	# Quick-cancel path: stop tracking the discarded lure, but preserve the
@@ -1037,6 +1152,8 @@ func enter_fishing_view() -> void:
 
 
 func exit_fishing_view() -> void:
+	# Keep the current tracked pose as the start of the existing exit tween.
+	_clear_fight_camera_tracking(false)
 	var camera: Camera3D = $Camera3D
 
 	exploration_view_started.emit()

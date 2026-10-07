@@ -1,6 +1,9 @@
-[gd_resource type="Resource" script_class="MerchantEconomyContext" load_steps=2 format=3]
-[ext_resource type="Script" path="res://scripts/economy/merchant_economy_context.gd" id="1"]
+[gd_resource type="Resource" script_class="MerchantEconomyContext" format=3 uid="uid://46s7caaqg333"]
+
+[ext_resource type="Script" uid="uid://crjqdrv0vvcje" path="res://scripts/economy/merchant_economy_context.gd" id="1"]
+
 [resource]
 script = ExtResource("1")
+shop_ids = null
 trade_shop_ids = PackedStringArray("lyp")
 trade_recipe_ids = PackedStringArray("lyp_crab", "lyp_angling_rod")

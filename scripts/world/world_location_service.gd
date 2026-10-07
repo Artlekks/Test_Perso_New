@@ -1,6 +1,7 @@
 extends Node
 
 signal location_changed(location: Resource)
+signal access_changed
 const ContextScript = preload("res://scripts/world/playable_location_context.gd")
 const LOCATIONS = [
 	preload("res://data/world/locations/beach.tres"),
@@ -29,6 +30,7 @@ func _refresh_unlocks() -> void:
 	for location in LOCATIONS:
 		if location.unlock_flag != &"" and get_access_snapshot(location.location_id, _progress_inventory).unlocked:
 			_unlocks.grant_flag(location.unlock_flag)
+	access_changed.emit()
 
 func get_location(id: StringName) -> ContextScript:
 	for location in LOCATIONS:
@@ -81,25 +83,55 @@ func context_belongs_here(context: MerchantEconomyContext, provider: Node) -> bo
 	var scene = _scene_ref.get_ref()
 	if not is_instance_valid(scene) or not scene.is_ancestor_of(provider):
 		return false
-	return current_location.economy_contexts.has(context)
+	for index in range(current_location.economy_contexts.size()):
+		if current_location.economy_contexts[index] == context and index < current_location.economy_provider_paths.size():
+			var path: String = current_location.economy_provider_paths[index].strip_edges()
+			if not path.is_empty() and scene.get_node_or_null(NodePath(path)) == provider:
+				return true
+	return false
+
+func get_unlocked_destinations(location_id: StringName = &"", inventory = null) -> PackedStringArray:
+	var destinations := PackedStringArray()
+	var location = current_location if location_id == &"" else get_location(location_id)
+	if location == null:
+		return destinations
+	for destination in location.destinations:
+		var target := get_location(StringName(destination))
+		if target != null and not target.scene_path.is_empty() and not destinations.has(destination) and get_access_snapshot(target.location_id, inventory).get("unlocked", false):
+			destinations.append(destination)
+	return destinations
+
 
 func get_reachable_world_data(inventory = null) -> Dictionary:
 	var sources: Array = []
 	var spots: Array = []
 	var visited := PackedStringArray()
-	var pending: Array[StringName] = [&"beach"]
+	var source_issues: Array[Dictionary] = []
+	var snapshot := {"sources": sources, "spots": spots, "location_ids": visited, "destination_ids": PackedStringArray(), "source_issues": source_issues}
+	# A missing/transitioning context has no implied destination or fallback.
+	if current_location == null or transitioning or get_location(current_location.location_id) == null:
+		return snapshot
+	snapshot.destination_ids = get_unlocked_destinations(current_location.location_id, inventory)
+	var pending: Array[StringName] = [current_location.location_id]
 	while not pending.is_empty():
 		var id: StringName = pending.pop_front()
 		if visited.has(String(id)) or not get_access_snapshot(id, inventory).get("unlocked", false):
 			continue
 		visited.append(String(id))
 		var location := get_location(id)
-		spots.append(location.fishing_spot)
+		if location.fishing_spot != null:
+			spots.append(location.fishing_spot)
 		for index in range(location.economy_contexts.size()):
+			# Malformed parallel source metadata must never invent a provider.
+			if index >= location.economy_provider_paths.size() or location.economy_provider_paths[index].strip_edges().is_empty() or location.economy_contexts[index] == null:
+				source_issues.append({"location_id": id, "context_index": index, "reason": "missing_economy_provider"})
+				continue
 			sources.append({"context": location.economy_contexts[index], "path": "%s:%s" % [id, location.economy_provider_paths[index]]})
-		for destination in location.destinations:
+		for destination in get_unlocked_destinations(id, inventory):
 			pending.append(StringName(destination))
-	return {"sources": sources, "spots": spots, "location_ids": visited}
+	# Packed arrays use value semantics; publish the populated visited array.
+	snapshot.location_ids = visited
+	return snapshot
 
 func request_travel(destination: StringName) -> Dictionary:
 	if transitioning or current_location == null or get_tree().paused:

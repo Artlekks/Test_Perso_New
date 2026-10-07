@@ -83,6 +83,9 @@ enum Phase {
 @export var fishing_catch_view: Node
 @export var loadout: FishingLoadout
 @export var lure_selector_view: Node
+@export_category("Fight Diagnostics")
+## Debug observer only; no gameplay/camera changes. F12 bookmarks live frames.
+@export var debug_fight_telemetry: bool = false
 @export_category("Catch Result")
 @export var catch_frame_delay: float = 0.5
 
@@ -166,6 +169,11 @@ var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
 
 func _ready() -> void:
+	if OS.is_debug_build() and (debug_fight_telemetry or OS.get_cmdline_user_args().has("--fight-telemetry")):
+		var telemetry = load("res://scripts/diagnostics/fishing_fight_telemetry.gd").new()
+		telemetry.name = "FightTelemetry"
+		telemetry.fishing = self
+		add_child(telemetry)
 	var pause_controller := FishingPauseControllerScript.new()
 	pause_controller.name = "FishingPauseController"
 	add_child(pause_controller)
@@ -1261,6 +1269,7 @@ func _on_bait_landed(point: Vector3) -> void:
 		
 func _enter_in_water() -> void:
 	phase = Phase.IN_WATER
+	_sync_fight_camera_tracking()
 	technique_detector.reset()
 	technique_view.clear()
 
@@ -1351,6 +1360,7 @@ func _begin_catch_landing() -> void:
 		return
 
 	phase = Phase.LANDING
+	_sync_fight_camera_tracking()
 
 	# The fish has genuinely reached the catch threshold. Stop player/fight
 	# control immediately so no new resistance round can start during the
@@ -1430,7 +1440,19 @@ func _abort_invalid_catch_landing() -> void:
 	aim.resume()
 
 
+func _sync_fight_camera_tracking() -> void:
+	if camera_rig == null or not camera_rig.has_method("set_fishing_fight_tracking"):
+		return
+	var active: bool = phase == Phase.IN_WATER or (phase == Phase.FIGHT and encounter.lifecycle.is_hooked())
+	# Water steering already moves the bait before a bite. Keep this same owner
+	# through hooking, without releasing or recapturing the camera base.
+	# active_bait is the physical mechanics target even when submerged or when
+	# the fight shadow/sprite is hidden. Never substitute a presentation node.
+	camera_rig.set_fishing_fight_tracking(active, caster.active_bait if active else null)
+
+
 func _process(delta: float) -> void:
+	_sync_fight_camera_tracking()
 	_fight_splash_cooldown_left = maxf(
 		_fight_splash_cooldown_left - delta,
 		0.0
@@ -1537,6 +1559,7 @@ func _on_fish_hooked() -> void:
 	technique_detector.reset()
 	technique_view.clear()
 	phase = Phase.FIGHT
+	_sync_fight_camera_tracking()
 	fish_resisting = true
 	caster.set_fight_mode(true)
 
@@ -1872,6 +1895,7 @@ func _resolve_failed_fight(outcome: StringName) -> void:
 	)
 
 	phase = Phase.LINE_BROKEN
+	_sync_fight_camera_tracking()
 
 	if caster.has_method("set_hold_returned_bait_for_landing"):
 		caster.set_hold_returned_bait_for_landing(false)

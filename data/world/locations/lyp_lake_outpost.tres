@@ -1,18 +1,17 @@
-[gd_resource type="Resource" script_class="PlayableLocationContext" load_steps=5 format=3]
-[ext_resource type="Script" path="res://scripts/world/playable_location_context.gd" id="1"]
-[ext_resource type="Resource" path="res://data/bof4/spots/lake_2.tres" id="2"]
-[ext_resource type="Resource" path="res://data/economy/contexts/lyp_outpost.tres" id="3"]
+[gd_resource type="Resource" script_class="PlayableLocationContext" format=3 uid="uid://xeoksoafty1u"]
+
+[ext_resource type="Script" uid="uid://dtkxd0k4hml6g" path="res://scripts/world/playable_location_context.gd" id="1"]
+[ext_resource type="Script" uid="uid://crjqdrv0vvcje" path="res://scripts/economy/merchant_economy_context.gd" id="1_pd6ua"]
+[ext_resource type="Resource" uid="uid://da3t83awf8ykm" path="res://data/bof4/spots/lake_2.tres" id="2"]
+[ext_resource type="Resource" uid="uid://46s7caaqg333" path="res://data/economy/contexts/lyp_outpost.tres" id="3"]
 [ext_resource type="Resource" path="res://data/economy/contexts/lyp_item_shop.tres" id="4"]
+
 [resource]
 script = ExtResource("1")
 location_id = &"lyp_lake_outpost"
 display_name = "Lyp Manillo / Lake 2 — Development Outpost"
 scene_path = "res://actors/locations/LypLakeOutpost.tscn"
 fishing_spot = ExtResource("2")
-economy_contexts = Array[Resource]([ExtResource("3"), ExtResource("4")])
-economy_provider_paths = PackedStringArray("World/ManilloTrader", "World/LypItemShop")
-destinations = PackedStringArray("wyndia_ocean_outpost", "river_fishing_outpost")
-required_lure_ids = PackedStringArray("tail")
-required_rod_ids = PackedStringArray("bamboo_rod")
+economy_contexts = Array[ExtResource("1_pd6ua")]([ExtResource("3"), ExtResource("4")])
 unlock_hint = "Requires Bamboo Rod and Tail ownership"
 unlock_flag = &"world.location.lyp_lake_outpost"
