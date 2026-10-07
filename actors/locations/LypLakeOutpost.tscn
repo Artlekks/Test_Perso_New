@@ -1,0 +1,13 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
+[ext_resource type="Resource" path="res://data/world/locations/lyp_lake_outpost.tres" id="2"]
+[ext_resource type="Resource" path="res://data/economy/contexts/lyp_outpost.tres" id="3"]
+[ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="4"]
+[node name="LypLakeOutpost" instance=ExtResource("1")]
+location_context = ExtResource("2")
+[node name="ManilloTrader" parent="World" index="6"]
+economy_context = ExtResource("3")
+trader_name = "Lyp Manillo (development stand-in)"
+[node name="ReturnTravel" parent="World" instance=ExtResource("4")]
+position = Vector3(-1.0, 0.06, 0.95)
+destination_id = &"wyndia_ocean_outpost"

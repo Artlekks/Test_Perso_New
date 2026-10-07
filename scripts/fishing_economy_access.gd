@@ -27,6 +27,7 @@ var item_transaction_service: GameItemTransactionService = null
 var _availability: Dictionary = {}
 var _allowed_shop_ids: PackedStringArray = PackedStringArray()
 var _allowed_trade_shop_ids: PackedStringArray = PackedStringArray()
+var _allowed_trade_recipe_ids: PackedStringArray = PackedStringArray()
 var _full_catalog_access: bool = false
 
 
@@ -78,10 +79,12 @@ func set_access_context(
 	shop_ids: PackedStringArray = PackedStringArray(),
 	trade_shop_ids: PackedStringArray = PackedStringArray(),
 	availability: Dictionary = {},
-	full_catalog_access: bool = false
+	full_catalog_access: bool = false,
+	trade_recipe_ids: PackedStringArray = PackedStringArray()
 ) -> void:
 	_allowed_shop_ids = shop_ids.duplicate()
 	_allowed_trade_shop_ids = trade_shop_ids.duplicate()
+	_allowed_trade_recipe_ids = trade_recipe_ids.duplicate()
 	_availability = availability.duplicate(true)
 	_full_catalog_access = full_catalog_access
 	changed.emit()
@@ -101,6 +104,7 @@ func get_access_context_snapshot() -> Dictionary:
 		"full_catalog_access": _full_catalog_access,
 		"shop_ids": _allowed_shop_ids.duplicate(),
 		"trade_shop_ids": _allowed_trade_shop_ids.duplicate(),
+		"trade_recipe_ids": _allowed_trade_recipe_ids.duplicate(),
 		"availability": _availability.duplicate(true),
 	}
 
@@ -372,11 +376,18 @@ func get_trade_entries() -> Array[Dictionary]:
 		return result
 
 	for recipe in trade_catalog.get_all_recipes():
-		if recipe == null or not _trade_shop_allowed(recipe.shop_id):
+		if recipe == null or not _trade_recipe_allowed(recipe):
 			continue
 		var status: Dictionary = trade_service.evaluate_trade(recipe)
+		var costs: Dictionary = recipe.get_cost_dictionary()
+		var progress_text := PackedStringArray()
+		for species_id: String in costs:
+			var fish = content_catalog.get_fish_by_id(StringName(species_id)) if content_catalog != null else null
+			progress_text.append("%s %d/%d" % [fish.fish_name if fish != null else species_id, inventory.get_fish_count(species_id) if inventory != null else 0, int(costs[species_id])])
 		result.append({
 			"kind": "trade",
+			"owned_count": (inventory.get_rod_count(recipe.reward_id) if recipe.reward_type == 1 else inventory.get_lure_count(recipe.reward_id)) if inventory != null else 0,
+			"requirement_progress_text": "; ".join(progress_text),
 			"id": str(recipe.recipe_id),
 			"shop_id": str(recipe.shop_id),
 			"shop_name": recipe.shop_name,
@@ -398,7 +409,7 @@ func trade_one(recipe_id: StringName) -> Dictionary:
 	var recipe = trade_service.get_recipe_by_id(recipe_id)
 	if recipe == null:
 		return _failure("unknown_recipe")
-	if not _trade_shop_allowed(recipe.shop_id):
+	if not _trade_recipe_allowed(recipe):
 		return _failure("shop_not_available")
 	var result: Dictionary = trade_service.execute_trade(recipe)
 	transaction_completed.emit(result.duplicate(true))
@@ -473,6 +484,9 @@ func _shop_allowed(shop_id: StringName) -> bool:
 
 func _trade_shop_allowed(shop_id: StringName) -> bool:
 	return _full_catalog_access or _allowed_trade_shop_ids.has(str(shop_id))
+
+func _trade_recipe_allowed(recipe) -> bool:
+	return _full_catalog_access or (_trade_shop_allowed(recipe.shop_id) and (_allowed_trade_recipe_ids.is_empty() or _allowed_trade_recipe_ids.has(String(recipe.recipe_id))))
 
 
 func _failure(reason: String) -> Dictionary:

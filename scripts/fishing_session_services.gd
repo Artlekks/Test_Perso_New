@@ -1318,6 +1318,9 @@ func initialize() -> void:
 	campaign_progression_director.configure_tackle_acquisition(
 		economy_service, FishingContentCatalogResource, FishingShopCatalogResource, FishingTradeCatalogResource
 	)
+	var world_locations := (Engine.get_main_loop() as SceneTree).root.get_node_or_null("WorldLocations")
+	if world_locations != null:
+		world_locations.configure_progression(inventory, unlock_state)
 
 	campaign_presentation_controller = (
 		PlayableCampaignPresentationControllerScript.new()

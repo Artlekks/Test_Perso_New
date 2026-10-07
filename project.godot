@@ -19,6 +19,10 @@ run/main_scene="uid://dqj6ysvar4jsa"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+WorldLocations="*res://scripts/world/world_location_service.gd"
+
 [display]
 
 window/size/viewport_width=640

@@ -2510,6 +2510,10 @@ func _test_shore_boundary_regression(
 	report: Dictionary
 ) -> void:
 	var group: String = "shore_boundary"
+	# Global transforms are only valid inside a SceneTree in current Godot.
+	# Keep the original assertions; give their physics fixtures a real world.
+	var fixture := Node3D.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(fixture)
 	var boundary = ShoreBoundaryScript.new()
 	var shape_node := CollisionShape3D.new()
 	var box := BoxShape3D.new()
@@ -2521,6 +2525,7 @@ func _test_shore_boundary_regression(
 	boundary.position = Vector3(0.0, 0.0, -0.45)
 	boundary.water_side_sign = -1
 	boundary.water_clearance = 0.0
+	fixture.add_child(boundary)
 
 	var clamped: Vector3 = boundary.constrain_water_motion(
 		Vector3(0.0, 0.0, -1.0),
@@ -2550,6 +2555,11 @@ func _test_shore_boundary_regression(
 	var reel_target := Node3D.new()
 	reel_target.position = Vector3.ZERO
 	bait.position = Vector3(0.0, 0.0, 0.20)
+	fixture.add_child(reel_target)
+	var ripple := Node3D.new()
+	ripple.name = "RippleView"
+	bait.add_child(ripple)
+	fixture.add_child(bait)
 	bait.set_reel_target(reel_target)
 	bait.set_shore_boundary(boundary)
 	bait.state = BaitScript.State.IN_WATER
@@ -2567,6 +2577,7 @@ func _test_shore_boundary_regression(
 	bait.free()
 	reel_target.free()
 	boundary.free()
+	fixture.free()
 
 
 func _test_camera_return_regression(

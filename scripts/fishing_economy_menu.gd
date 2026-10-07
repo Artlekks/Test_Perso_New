@@ -5,6 +5,7 @@ signal closed
 
 const MODE_BUY := 0
 const MODE_SELL := 1
+const MODE_TRADE := 2
 const ContextScript = preload("res://scripts/economy/merchant_economy_context.gd")
 
 const PAGE_SIZE := 5
@@ -66,6 +67,7 @@ var _input_ready: bool = false
 var _context_owner: WeakRef = null
 
 var _mode: int = MODE_BUY
+var _trade_only := false
 var _category_index: int = 0
 var _page_index: int = 0
 var _row_index: int = 0
@@ -118,6 +120,9 @@ func open_sell_menu() -> void:
 func open_merchant_menu(context: ContextScript, owner: Node, mode: int = MODE_BUY) -> bool:
 	if context == null or owner == null:
 		return false
+	var locations := get_node_or_null("/root/WorldLocations")
+	if locations != null and locations.is_current_scene(get_tree().current_scene) and not locations.context_belongs_here(context, owner):
+		return false
 	return _open_menu_in_mode(mode, context, owner)
 
 
@@ -152,7 +157,8 @@ func _open_menu_in_mode(mode: int, context: ContextScript = null, owner: Node = 
 	_open = true
 	_input_ready = false
 
-	_mode = MODE_SELL if mode == MODE_SELL else MODE_BUY
+	_mode = mode if mode in [MODE_BUY, MODE_SELL, MODE_TRADE] else MODE_BUY
+	_trade_only = _mode == MODE_TRADE
 	_category_index = 0
 	_page_index = 0
 	_row_index = 0
@@ -266,6 +272,8 @@ func _handle_confirmation_input(event: InputEvent) -> void:
 
 
 func _toggle_mode() -> void:
+	if _trade_only:
+		return
 	if _mode == MODE_BUY:
 		_mode = MODE_SELL
 	else:
@@ -367,6 +375,8 @@ func _refresh_confirmation() -> void:
 			display_name,
 			value,
 		]
+	elif _mode == MODE_TRADE:
+		confirm_prompt.text = "Trade fish for %s?" % display_name
 	else:
 		confirm_prompt.text = "Sell %s for %dz?" % [
 			display_name,
@@ -400,6 +410,8 @@ func _execute_confirmed_transaction() -> void:
 		result = _access.buy_one(
 			StringName(str(entry.get("id", "")))
 		)
+	elif _mode == MODE_TRADE:
+		result = _access.trade_one(StringName(str(entry.get("id", ""))))
 	else:
 		var sell_id: String = str(
 			entry.get("unified_item_id", "")
@@ -417,6 +429,8 @@ func _execute_confirmed_transaction() -> void:
 	if success:
 		if _mode == MODE_BUY:
 			_message("Purchased %s." % display_name)
+		elif _mode == MODE_TRADE:
+			_message("Traded for %s." % display_name)
 		else:
 			_message("Sold %s." % display_name)
 	else:
@@ -453,6 +467,26 @@ func _refresh_wallet() -> void:
 
 
 func _refresh_mode_feedback() -> void:
+	# Mask the baked Buy/Sell artwork for the separate trader entry point.
+	var mask := root.get_node_or_null("TradeHeader") as Label
+	if mask == null:
+		mask = Label.new()
+		mask.name = "TradeHeader"
+		mask.position = Vector2(180, 95)
+		mask.size = Vector2(210, 30)
+		mask.add_theme_font_size_override("font_size", 18)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.035, 0.105, 0.19)
+		mask.add_theme_stylebox_override("normal", style)
+		mask.text = "FISH TRADE"
+		mask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		root.add_child(mask)
+	mask.visible = _mode == MODE_TRADE
+	root.get_node("HelpLabel").text = "W/S Select   K Trade   I Back" if _mode == MODE_TRADE else "Q/E  Category     A/D  Page     W/S  Select\nJ  Buy/Sell       K  Action       I  Back"
+	if _mode == MODE_TRADE:
+		mode_cursor.visible = false
+		return
+	mode_cursor.visible = true
 	if _mode == MODE_BUY:
 		mode_cursor.position = Vector2(187.0, 110.0)
 	else:
@@ -462,6 +496,8 @@ func _refresh_mode_feedback() -> void:
 func _refresh_source_entries() -> void:
 	if _mode == MODE_BUY:
 		_source_entries = _access.get_buy_entries()
+	elif _mode == MODE_TRADE:
+		_source_entries = _access.get_trade_entries()
 	else:
 		_source_entries = _access.get_sell_entries()
 
@@ -529,7 +565,7 @@ func _refresh_visible_rows() -> void:
 		row_owned_labels[index].text = "x%d" % int(
 			entry.get("owned_count", 0)
 		)
-		row_price_labels[index].text = "%dz" % (
+		row_price_labels[index].text = "FISH" if _mode == MODE_TRADE else "%dz" % (
 			_entry_unit_value(entry)
 		)
 
@@ -569,6 +605,9 @@ func _update_info() -> void:
 	var entry: Dictionary = _selected_entry()
 	if entry.is_empty():
 		info_label.text = "Nothing available."
+		return
+	if _mode == MODE_TRADE:
+		info_label.text = str(entry.get("requirement_progress_text", entry.get("cost_text", ""))) + "\n" + ("Ready to trade." if entry.get("can_execute", false) else _friendly_reason(str(entry.get("reason", ""))))
 		return
 
 	var value: int = _entry_unit_value(entry)
@@ -632,6 +671,8 @@ func _page_count() -> int:
 
 
 func _current_categories() -> Array:
+	if _mode == MODE_TRADE:
+		return ["ALL"]
 	if _mode == MODE_BUY:
 		return BUY_CATEGORIES
 	return SELL_CATEGORIES

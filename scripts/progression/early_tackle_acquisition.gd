@@ -19,17 +19,17 @@ func configure(inventory: FishingInventory, economy: FishingEconomyService, cont
 	_trades = trades
 	_plan = JSON.parse_string(FileAccess.get_file_as_string(PLAN_PATH))
 
-func get_snapshot(world_sources: Array = [], playable_spots: Array = []) -> Dictionary:
+func get_snapshot(world_sources: Array = [], playable_spots: Array = [], reachable_spots: Array = []) -> Dictionary:
 	var targets: Array[Dictionary] = []
 	var next: Dictionary = {}
 	for definition: Dictionary in _plan.get("targets", []):
-		var row := _target_snapshot(definition, world_sources, playable_spots)
+		var row := _target_snapshot(definition, world_sources, playable_spots, reachable_spots)
 		targets.append(row)
 		if next.is_empty() and not row.complete:
 			next = row.duplicate(true)
 	return {"plan_id": _plan.get("plan_id", ""), "targets": targets, "next_target": next, "complete": not targets.is_empty() and next.is_empty()}
 
-func _target_snapshot(definition: Dictionary, sources: Array, spots: Array) -> Dictionary:
+func _target_snapshot(definition: Dictionary, sources: Array, spots: Array, reachable_spots: Array) -> Dictionary:
 	var row := definition.duplicate(true)
 	var id := StringName(row.item_id)
 	var owned := 0
@@ -57,6 +57,8 @@ func _target_snapshot(definition: Dictionary, sources: Array, spots: Array) -> D
 			continue # Explicit debug access is never world progression evidence.
 		var allowed: PackedStringArray = context.shop_ids if row.source_type == "shop_offer" else context.trade_shop_ids
 		if not allowed.has(row.shop_id):
+			continue
+		if row.source_type == "manillo_trade" and not context.trade_recipe_ids.is_empty() and not context.trade_recipe_ids.has(String(row.source_id)):
 			continue
 		if row.source_type == "shop_offer" and source.availability_tag != &"" and not bool(context.availability.get(source.availability_tag, context.availability.get(String(source.availability_tag), false))):
 			if not row.accessible:
@@ -90,7 +92,10 @@ func _target_snapshot(definition: Dictionary, sources: Array, spots: Array) -> D
 			var available := false
 			for spot in spots:
 				available = available or _spot_has_species(spot, fish_id)
-			row.requirements.append({"species_id": fish_id, "name": name, "owned": count, "required": required, "missing": maxi(0, required - count), "available_in_current_spots": available, "authored_spot_ids": authored_spots})
+			var reachable := available
+			for spot in reachable_spots:
+				reachable = reachable or _spot_has_species(spot, fish_id)
+			row.requirements.append({"species_id": fish_id, "name": name, "owned": count, "required": required, "missing": maxi(0, required - count), "available_in_current_spots": available, "available_in_reachable_spots": reachable, "authored_spot_ids": authored_spots})
 			row.requirements_met = row.requirements_met and count >= required
 			parts.append("%s %d/%d" % [name, count, required])
 		row.hint = "%s: trade at %s — %s." % [row.target, row.source_label, "; ".join(parts)]

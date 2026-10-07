@@ -74,6 +74,12 @@ func get_tackle_acquisition_snapshot() -> Dictionary:
 	var spots: Array = []
 	if is_inside_tree() and get_tree().current_scene != null:
 		var scene := get_tree().current_scene
+		var locations := get_node_or_null("/root/WorldLocations")
+		if locations != null and locations.is_current_scene(scene):
+			var world: Dictionary = locations.get_reachable_world_data()
+			var result: Dictionary = _acquisition.get_snapshot(world.sources, [locations.current_location.fishing_spot], world.spots)
+			result["reachable_location_ids"] = world.location_ids
+			return result
 		for provider in get_tree().get_nodes_in_group(&"world_economy_sources"):
 			if not provider.is_queued_for_deletion() and (provider == scene or scene.is_ancestor_of(provider)):
 				sources.append({"context": provider.get("economy_context"), "path": str(provider.get_path())})

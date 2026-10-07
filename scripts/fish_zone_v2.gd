@@ -19,6 +19,7 @@ signal fishing_spot_changed(spot: FishingSpotData)
 var concentration_field: FishingConcentrationField = (
 	FishingConcentrationFieldScript.new()
 )
+var debug_spot_override := false
 
 
 func _ready() -> void:
@@ -62,17 +63,23 @@ func get_shore_boundary() -> Node3D:
 
 
 func get_fish_population() -> Array[FishSpawnEntry]:
-	if fishing_spot == null:
+	var spot := get_fishing_spot()
+	if spot == null:
 		return []
 
-	return fishing_spot.get_fish_population()
+	return spot.get_fish_population()
 
 
 func get_fishing_spot() -> FishingSpotData:
+	var locations := get_node_or_null("/root/WorldLocations")
+	if not debug_spot_override and locations != null and locations.is_current_scene(get_tree().current_scene):
+		return locations.current_location.fishing_spot
 	return fishing_spot
 
 
 func set_fishing_spot(new_spot: FishingSpotData) -> void:
+	# Existing explicit debug selector. It cannot change normal location access.
+	debug_spot_override = true
 	fishing_spot = new_spot
 	_rebuild_concentration_field()
 

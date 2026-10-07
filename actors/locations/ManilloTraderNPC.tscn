@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://actors/BeachMerchantNPC.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/world/manillo_trader_npc.gd" id="2"]
+[node name="ManilloTraderNPC" instance=ExtResource("1")]
+script = ExtResource("2")
+economy_context = null
+
+[node name="PromptLabel3D" parent="." index="4"]
+pixel_size = 0.0015
+font_size = 22
