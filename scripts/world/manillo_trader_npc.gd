@@ -2,6 +2,7 @@ extends Node3D
 
 @export var economy_context: MerchantEconomyContext
 @export var trader_name: String = "Manillo trader (development stand-in)"
+@export_enum("Buy:0", "Sell:1", "Fish Trade:2") var menu_mode: int = 2
 @onready var area: Area3D = $InteractionArea
 var _menu: Node
 
@@ -9,7 +10,7 @@ func _ready() -> void:
 	add_to_group(&"world_interaction_targets")
 	add_to_group(&"world_economy_sources")
 	$PromptLabel3D.visible = true
-	$PromptLabel3D.text = trader_name + "\nK: Trade fish"
+	$PromptLabel3D.text = trader_name + ("\nK: Trade fish" if menu_mode == 2 else "\nK: Shop")
 
 func is_world_interaction_available(event: InputEvent) -> bool:
 	if not (event is InputEventKey) or not event.pressed or event.echo or event.keycode not in [KEY_K, KEY_ENTER]:
@@ -26,7 +27,7 @@ func interact_from_world(event: InputEvent) -> void:
 		return
 	_menu = get_tree().current_scene.find_child("FishingEconomyMenu", true, false)
 	if _menu != null:
-		_menu.open_merchant_menu(economy_context, self, _menu.MODE_TRADE)
+		_menu.open_merchant_menu(economy_context, self, menu_mode)
 
 func _exit_tree() -> void:
 	if is_instance_valid(_menu):

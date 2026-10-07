@@ -2,5 +2,4 @@
 [ext_resource type="Script" path="res://scripts/economy/merchant_economy_context.gd" id="1"]
 [resource]
 script = ExtResource("1")
-trade_shop_ids = PackedStringArray("lyp")
-trade_recipe_ids = PackedStringArray("lyp_crab", "lyp_angling_rod")
+shop_ids = PackedStringArray("lyp_item")

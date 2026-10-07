@@ -1,0 +1,14 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
+[ext_resource type="Resource" path="res://data/world/locations/chiqua_supply_outpost.tres" id="2"]
+[ext_resource type="Resource" path="res://data/economy/contexts/chiqua_item_shop.tres" id="3"]
+[ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="4"]
+[node name="ChiquaSupplyOutpost" instance=ExtResource("1")]
+location_context = ExtResource("2")
+[node name="ManilloTrader" parent="World" index="6"]
+economy_context = ExtResource("3")
+menu_mode = 0
+trader_name = "Chiqua Item Shop (development stand-in)"
+[node name="ReturnTravel" parent="World" instance=ExtResource("4")]
+position = Vector3(-1.0, 0.06, 0.95)
+destination_id = &"river_fishing_outpost"

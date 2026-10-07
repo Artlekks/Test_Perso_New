@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PlayableLocationContext" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/world/playable_location_context.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bof4/spots/river_2.tres" id="2"]
+[resource]
+script = ExtResource("1")
+location_id = &"river_fishing_outpost"
+display_name = "River 2 — Development Fishing Outpost"
+scene_path = "res://actors/locations/RiverFishingOutpost.tscn"
+fishing_spot = ExtResource("2")
+destinations = PackedStringArray("lyp_lake_outpost", "chiqua_supply_outpost")
+required_lure_ids = PackedStringArray("crab", "floater", "popper")
+unlock_hint = "Requires Crab, Floater and Popper ownership"
+unlock_flag = &"world.location.river_fishing_outpost"

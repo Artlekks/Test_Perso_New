@@ -6,6 +6,8 @@ const LOCATIONS = [
 	preload("res://data/world/locations/beach.tres"),
 	preload("res://data/world/locations/wyndia_ocean_outpost.tres"),
 	preload("res://data/world/locations/lyp_lake_outpost.tres"),
+	preload("res://data/world/locations/river_fishing_outpost.tres"),
+	preload("res://data/world/locations/chiqua_supply_outpost.tres"),
 ]
 var current_location: ContextScript = null
 var _scene_ref: WeakRef

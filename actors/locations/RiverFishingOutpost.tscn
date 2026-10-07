@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
+[ext_resource type="Resource" path="res://data/world/locations/river_fishing_outpost.tres" id="2"]
+[ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="3"]
+[node name="RiverFishingOutpost" instance=ExtResource("1")]
+location_context = ExtResource("2")
+[node name="ManilloTrader" parent="World" index="6"]
+visible = false
+process_mode = 4
+[node name="CollisionShape3D" parent="World/ManilloTrader/BodyCollider" index="0"]
+disabled = true
+[node name="ReturnTravel" parent="World" instance=ExtResource("3")]
+position = Vector3(-1.0, 0.06, 0.95)
+destination_id = &"lyp_lake_outpost"
+[node name="ChiquaTravel" parent="World" instance=ExtResource("3")]
+position = Vector3(1.5, 0.06, 0.95)
+destination_id = &"chiqua_supply_outpost"

@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="PackedScene" path="res://actors/locations/ManilloTraderNPC.tscn" id="1"]
+[node name="ContextualItemShopNPC" instance=ExtResource("1")]
+menu_mode = 0
+trader_name = "Item Shop (development stand-in)"

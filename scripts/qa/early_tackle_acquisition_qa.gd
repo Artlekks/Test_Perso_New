@@ -53,7 +53,19 @@ func _run() -> void:
 	var before := inventory.create_transaction_snapshot()
 	var snapshot := guidance.get_snapshot(providers, [Ocean2])
 	var rows: Array = snapshot.targets
-	check(rows.size() == 4, "four ownership targets")
+	check(rows.size() == 9, "nine ownership targets")
+	var extended_sources := ["shyde_floater", "lyp_popper", "lyp_angling_rod", "lyp_silver_top", "chiqua_hanger"]
+	var prices := {"shyde_floater": 300, "lyp_popper": 350, "lyp_silver_top": 450, "chiqua_hanger": 600}
+	for index in range(4, 9):
+		check(rows[index].source_id == extended_sources[index - 4] and rows[index].source_exists, "live extended source " + rows[index].source_id)
+		if rows[index].source_type == "shop_offer":
+			check(rows[index].price_zenny == prices[rows[index].source_id], "canonical live price " + rows[index].source_id)
+	var rod_costs := {}
+	for cost: Dictionary in rows[6].requirements:
+		rod_costs[cost.species_id] = cost.required
+	check(rod_costs == {"salmon": 2, "dorado": 2, "martian_squid": 2}, "exact Angling Rod authored costs")
+	check(rows[4].accessible and not rows[5].accessible and not rows[8].accessible, "Beach Floater source available; Lyp/Chiqua truthfully unavailable")
+	check(not rows[5].hint.contains("Save for"), "locked purchase guidance does not pretend money is the blocker")
 	check(snapshot.next_target.item_id == "baby_frog", "fresh next acquisition")
 	check(rows[0].source_id == "shyde_baby_frog" and rows[0].source_exists and rows[0].accessible, "real Beach offer reachable")
 	check(rows[0].price_zenny == 250 and not rows[0].requirements_met, "canonical Baby Frog 250z, fresh 100z insufficient")
@@ -96,6 +108,10 @@ func _run() -> void:
 	check(bool(access.buy_one(&"faerie_bamboo_rod").get("can_purchase", false)) and inventory.get_rod_count(&"bamboo_rod") == 1 and inventory.get_zenny() == 0, "alternate authored cash ownership recognized")
 	check(guidance.get_snapshot(providers).next_target.item_id == "crab", "alternate early ownership skips already-owned targets")
 	inventory.grant_lure(&"crab", 1, false)
+	check(guidance.get_snapshot(providers).next_target.item_id == "floater", "four early rewards advance into extended ladder")
+	for lure_id in [&"floater", &"popper", &"silver_top", &"hanger"]:
+		inventory.grant_lure(lure_id, 1, false)
+	inventory.grant_rod(&"angling_rod", 1, false)
 	check(guidance.get_snapshot(providers).complete, "all ownership completes plan")
 	check(not guidance.get_snapshot().targets[0].accessible, "scene departure removes access evidence")
 	var faerie := Shops.get_offer_by_id(&"faerie_bamboo_rod")

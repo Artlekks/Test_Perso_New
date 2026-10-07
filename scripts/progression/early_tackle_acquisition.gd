@@ -78,6 +78,7 @@ func _target_snapshot(definition: Dictionary, sources: Array, spots: Array, reac
 			row.hint = "Buy %s from the %s (live price unavailable)." % [row.target, row.source_label]
 	else:
 		row.requirements_met = true
+		row.requirements_reachable = true
 		var parts := PackedStringArray()
 		var costs: Dictionary = source.get_cost_dictionary()
 		for fish_id: String in costs:
@@ -97,10 +98,13 @@ func _target_snapshot(definition: Dictionary, sources: Array, spots: Array, reac
 				reachable = reachable or _spot_has_species(spot, fish_id)
 			row.requirements.append({"species_id": fish_id, "name": name, "owned": count, "required": required, "missing": maxi(0, required - count), "available_in_current_spots": available, "available_in_reachable_spots": reachable, "authored_spot_ids": authored_spots})
 			row.requirements_met = row.requirements_met and count >= required
+			row.requirements_reachable = row.requirements_reachable and reachable
 			parts.append("%s %d/%d" % [name, count, required])
 		row.hint = "%s: trade at %s — %s." % [row.target, row.source_label, "; ".join(parts)]
+		if row.accessible and not row.requirements_reachable:
+			row.hint += " Required fishing location locked/unavailable."
 	if not row.accessible:
-		row.hint += " Source unavailable in the current world."
+		row.hint = "%s: %s source locked/unavailable." % [row.target, row.source_label]
 	return row
 
 func _spot_has_species(spot, species_id: String) -> bool:

@@ -4,6 +4,11 @@
     {"item_id": "baby_frog", "kind": "lure", "target": "Baby Frog", "source_type": "shop_offer", "source_id": "shyde_baby_frog", "source_label": "Beach Merchant"},
     {"item_id": "bamboo_rod", "kind": "rod", "target": "Bamboo Rod", "source_type": "manillo_trade", "source_id": "wyndia_bamboo_rod", "source_label": "Wyndia Manillo"},
     {"item_id": "tail", "kind": "lure", "target": "Tail", "source_type": "manillo_trade", "source_id": "wyndia_tail", "source_label": "Wyndia Manillo"},
-    {"item_id": "crab", "kind": "lure", "target": "Crab", "source_type": "manillo_trade", "source_id": "lyp_crab", "source_label": "Lyp Manillo"}
+    {"item_id": "crab", "kind": "lure", "target": "Crab", "source_type": "manillo_trade", "source_id": "lyp_crab", "source_label": "Lyp Manillo"},
+    {"item_id": "floater", "kind": "lure", "target": "Floater", "source_type": "shop_offer", "source_id": "shyde_floater", "source_label": "Beach Merchant"},
+    {"item_id": "popper", "kind": "lure", "target": "Popper", "source_type": "shop_offer", "source_id": "lyp_popper", "source_label": "Lyp Item Shop"},
+    {"item_id": "angling_rod", "kind": "rod", "target": "Angling Rod", "source_type": "manillo_trade", "source_id": "lyp_angling_rod", "source_label": "Lyp Manillo"},
+    {"item_id": "silver_top", "kind": "lure", "target": "Silver Top", "source_type": "shop_offer", "source_id": "lyp_silver_top", "source_label": "Lyp Item Shop"},
+    {"item_id": "hanger", "kind": "lure", "target": "Hanger", "source_type": "shop_offer", "source_id": "chiqua_hanger", "source_label": "Chiqua Item Shop"}
   ]
 }
