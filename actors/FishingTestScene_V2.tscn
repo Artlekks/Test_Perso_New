@@ -96,9 +96,8 @@
 [ext_resource type="Script" uid="uid://rv8ugppryiry" path="res://scripts/world_actor_presentation.gd" id="96_world_actor_presentation"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterDriftAnglerNPC.tscn" id="97_drift_angler_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterGyosilNPC.tscn" id="98_gyosil_master"]
-
-[ext_resource type="Script" path="res://scripts/world/playable_location_scene.gd" id="location_script"]
 [ext_resource type="Resource" path="res://data/world/locations/beach.tres" id="location_context"]
+[ext_resource type="Script" uid="uid://t3mpbps4ct73" path="res://scripts/world/playable_location_scene.gd" id="location_script"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="travel_point"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
@@ -145,7 +144,7 @@ albedo_color = Color(0.33489877, 0.20385107, 0.09913743, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_shore_blocker"]
 size = Vector3(19, 4, 0.35)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c734g"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y8xxk"]
 render_priority = -120
 transparency = 1
 cull_mode = 2
@@ -163,7 +162,7 @@ shading_mode = 0
 albedo_color = Color(0, 0, 0, 0.38)
 albedo_texture = ExtResource("23_30w2a")
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_e3rjn"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_qdeph"]
 material = SubResource("StandardMaterial3D_blob")
 size = Vector2(0.24, 0.28)
 
@@ -234,8 +233,8 @@ location_context = ExtResource("location_context")
 
 [node name="World" type="Node3D" parent="." unique_id=268595614]
 
-[node name="OceanTravel" parent="World" instance=ExtResource("travel_point")]
-position = Vector3(-0.9, 0.06, 0.95)
+[node name="OceanTravel" parent="World" unique_id=847742587 instance=ExtResource("travel_point")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 0.06, 0.95)
 destination_id = &"wyndia_ocean_outpost"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="World" unique_id=105501597]
@@ -389,8 +388,8 @@ camera = NodePath("../CameraRig/Camera3D")
 collision_layer = 1
 
 [node name="WorldBlobShadow" parent="Player/CharacterBody3D/ShadowAnchor" parent_id_path=PackedInt32Array(363575400, 1856703931) index="0" unique_id=1933139612]
-material_override = SubResource("StandardMaterial3D_c734g")
-mesh = SubResource("PlaneMesh_e3rjn")
+material_override = SubResource("StandardMaterial3D_y8xxk")
+mesh = SubResource("PlaneMesh_qdeph")
 
 [node name="BaitSpawner" parent="Player/CharacterBody3D" index="4" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)

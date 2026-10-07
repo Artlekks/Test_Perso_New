@@ -381,13 +381,16 @@ func get_trade_entries() -> Array[Dictionary]:
 		var status: Dictionary = trade_service.evaluate_trade(recipe)
 		var costs: Dictionary = recipe.get_cost_dictionary()
 		var progress_text := PackedStringArray()
+		var requirements: Array[Dictionary] = []
 		for species_id: String in costs:
 			var fish = content_catalog.get_fish_by_id(StringName(species_id)) if content_catalog != null else null
+			requirements.append({"species_id": species_id, "name": fish.fish_name if fish != null else species_id, "required": int(costs[species_id])})
 			progress_text.append("%s %d/%d" % [fish.fish_name if fish != null else species_id, inventory.get_fish_count(species_id) if inventory != null else 0, int(costs[species_id])])
 		result.append({
 			"kind": "trade",
 			"owned_count": (inventory.get_rod_count(recipe.reward_id) if recipe.reward_type == 1 else inventory.get_lure_count(recipe.reward_id)) if inventory != null else 0,
 			"requirement_progress_text": "; ".join(progress_text),
+			"requirements": requirements,
 			"id": str(recipe.recipe_id),
 			"shop_id": str(recipe.shop_id),
 			"shop_name": recipe.shop_name,

@@ -16,6 +16,8 @@ const Simulator = preload("res://scripts/progression/economy_progression_simulat
 
 class MemoryInventory:
 	extends FishingInventory
+	func load_from_disk() -> bool:
+		return false
 	func save_to_disk() -> bool:
 		return true
 
@@ -171,6 +173,7 @@ func _run() -> void:
 	menu.free()
 	_check(not paused and access.get_buy_entries().is_empty(), "menu destruction clears active context and pause")
 	merchant._cached_menu = null
+	_test_trade_requirement_display(fixture)
 
 	# Existing foundation and authored-catalog freeze checks, without altering
 	# their assertion counts or running unrelated persistence-writing suites.
@@ -200,3 +203,87 @@ func _run() -> void:
 	fixture.queue_free()
 	await process_frame
 	quit(0 if _failures.is_empty() else 1)
+
+
+func _test_trade_requirement_display(fixture: Node) -> void:
+	var inventory := MemoryInventory.new()
+	fixture.add_child(inventory)
+	var economy := FishingEconomyService.new()
+	fixture.add_child(economy)
+	economy.configure(inventory, Content, Content.tackle, Shops, null, Config)
+	var trade := FishingTradeService.new()
+	fixture.add_child(trade)
+	trade.configure(inventory, Content.tackle, Trades)
+	var access := AccessScript.new()
+	fixture.add_child(access)
+	access.configure(inventory, economy, trade, null, null, Content, Shops, Trades)
+	var context := ContextScript.new()
+	context.trade_shop_ids = PackedStringArray(["wyndia", "lyp"])
+	context.trade_recipe_ids = PackedStringArray(["wyndia_bamboo_rod", "wyndia_tail", "lyp_crab"])
+	var menu = MenuScene.instantiate()
+	fixture.add_child(menu)
+	menu.configure(null, access)
+	var before := inventory.create_transaction_snapshot()
+	_check(menu.open_merchant_menu(context, fixture, menu.MODE_TRADE), "requirement display opens existing trade menu")
+	for id in context.trade_recipe_ids:
+		var entry := _entry(menu._source_entries, id)
+		var recipe = Trades.get_recipe_by_id(StringName(id))
+		var costs: Dictionary = recipe.get_cost_dictionary()
+		_check(entry.requirements.size() == costs.size(), "every authored requirement resolved " + id)
+		for requirement: Dictionary in entry.requirements:
+			_check(requirement.required == costs[requirement.species_id] and requirement.name == Content.get_fish_by_id(StringName(requirement.species_id)).fish_name, "requirement names/counts use recipe and fish catalog " + requirement.species_id)
+		var row := 0
+		for index in range(menu._source_entries.size()):
+			if menu._source_entries[index].id == id:
+				row = index
+		menu._move_selection(row - menu._row_index)
+		_check(menu.trade_requirements_label.text == "\n".join(menu._trade_requirement_lines(entry)), "selection refreshes exact requirement detail " + id)
+		_check(menu.info_label.text.contains(entry.requirement_progress_text), "owned/required information retained " + id)
+		if id == "wyndia_bamboo_rod":
+			_check(menu.row_price_labels[row].text == "Sea Bream x2", "Bamboo row shows Sea Bream x2")
+		elif id == "wyndia_tail":
+			_check(menu.row_price_labels[row].text == "Flying Fish x3", "Tail row shows Flying Fish x3")
+		else:
+			_check(menu.row_price_labels[row].text == "3 species", "Crab row uses readable compact summary")
+			_check(menu.trade_requirements_label.text == "Black Bass x1\nBlue Gill x1\nPiranha x1", "Crab detail shows all three species/counts without another menu")
+		var label: Label = menu.trade_requirements_label
+		var font := label.get_theme_font("font")
+		for line in menu._trade_requirement_lines(entry):
+			_check(font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x <= label.size.x, "requirement line fits detail width " + line)
+	_check(inventory.create_transaction_snapshot() == before, "display and selection mutate no inventory/save state")
+	# Change a duplicate recipe in memory only: UI must follow data, not item IDs.
+	var changed_recipe = Trades.get_recipe_by_id(&"wyndia_tail").duplicate(true)
+	changed_recipe.required_counts = PackedInt32Array([7])
+	var changed_catalog := FishingTradeCatalog.new()
+	changed_catalog.recipes.assign([changed_recipe])
+	access.trade_catalog = changed_catalog
+	menu._refresh()
+	_check(menu.row_price_labels[0].text == "Flying Fish x7" and menu.info_label.text.contains("Flying Fish 0/7"), "duplicate recipe count changes both presentation surfaces")
+	_check(Trades.get_recipe_by_id(&"wyndia_tail").required_counts[0] == 3, "authored recipe remains untouched")
+	access.trade_catalog = Trades
+	inventory.add_fish("sea_bream", 2, false)
+	inventory.add_fish("flying_fish", 3, false)
+	for species in ["black_bass", "blue_gill", "piranha"]:
+		inventory.add_fish(species, 1, false)
+	menu._refresh()
+	var wallet := inventory.get_zenny()
+	for id in ["wyndia_bamboo_rod", "lyp_crab"]:
+		for index in range(menu._source_entries.size()):
+			if menu._source_entries[index].id == id:
+				menu._move_selection(index - menu._row_index)
+		var transaction_before := inventory.create_transaction_snapshot()
+		menu._begin_confirmation()
+		_check(menu._confirm_active and not menu._confirm_yes, "existing confirmation defaults to No " + id)
+		menu._cancel_confirmation()
+		_check(inventory.create_transaction_snapshot() == transaction_before, "cancel consumes nothing " + id)
+		menu._begin_confirmation()
+		menu._confirm_yes = true
+		menu._execute_confirmed_transaction()
+	_check(inventory.owns_rod(&"bamboo_rod") and inventory.get_fish_count("sea_bream") == 0, "existing Bamboo transaction consumes exactly two fish and rewards rod")
+	_check(inventory.owns_lure(&"crab") and inventory.get_fish_count("black_bass") == 0 and inventory.get_fish_count("blue_gill") == 0 and inventory.get_fish_count("piranha") == 0, "existing Crab transaction consumes its exact three requirements")
+	_check(inventory.get_fish_count("flying_fish") == 3 and inventory.get_zenny() == wallet, "unrelated fish and wallet unchanged by trades")
+	menu.close_menu()
+	_check(menu.open_merchant_menu(BeachContext, fixture), "ordinary shop still opens after trade display")
+	_check(not menu.trade_requirements_panel.visible and menu.row_price_labels[0].position.x == 391.0 and menu.row_price_labels[0].size.x == 57.0 and menu.row_price_labels[0].text.ends_with("z"), "ordinary price layout restored and trade detail hidden")
+	menu.close_menu()
+	menu.free()

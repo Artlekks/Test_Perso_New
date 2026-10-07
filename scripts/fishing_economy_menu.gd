@@ -32,6 +32,8 @@ const ROW_HEIGHT := 28.0
 @onready var selection_bar: ColorRect = $Root/ListSelectionBar
 @onready var selection_cursor: Polygon2D = $Root/ListCursor
 @onready var info_label: Label = $Root/InfoLabel
+@onready var trade_requirements_panel: Panel = $Root/TradeRequirementsPanel
+@onready var trade_requirements_label: Label = $Root/TradeRequirementsPanel/Requirements
 @onready var message_label: Label = $Root/MessageLabel
 @onready var confirm_panel: Panel = $Root/ConfirmPanel
 @onready var confirm_prompt: Label = $Root/ConfirmPanel/Prompt
@@ -552,9 +554,14 @@ func _clamp_page_and_selection() -> void:
 
 func _refresh_visible_rows() -> void:
 	for index in range(PAGE_SIZE):
+		# Reuse the price column; keep ordinary Buy/Sell geometry unchanged.
+		var price_label := row_price_labels[index]
+		price_label.text = ""
+		price_label.position.x = 376.0 if _mode == MODE_TRADE else 391.0
+		price_label.size.x = 142.0 if _mode == MODE_TRADE else 57.0
+		price_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if _mode == MODE_TRADE else TextServer.OVERRUN_NO_TRIMMING
 		row_name_labels[index].text = ""
 		row_owned_labels[index].text = ""
-		row_price_labels[index].text = ""
 
 	var page_entries: Array[Dictionary] = _current_page_entries()
 	for index in range(page_entries.size()):
@@ -565,7 +572,7 @@ func _refresh_visible_rows() -> void:
 		row_owned_labels[index].text = "x%d" % int(
 			entry.get("owned_count", 0)
 		)
-		row_price_labels[index].text = "FISH" if _mode == MODE_TRADE else "%dz" % (
+		row_price_labels[index].text = _trade_requirement_summary(entry, row_price_labels[index]) if _mode == MODE_TRADE else "%dz" % (
 			_entry_unit_value(entry)
 		)
 
@@ -603,6 +610,8 @@ func _refresh_selection_feedback() -> void:
 
 func _update_info() -> void:
 	var entry: Dictionary = _selected_entry()
+	trade_requirements_panel.visible = _mode == MODE_TRADE and not entry.is_empty()
+	trade_requirements_label.text = "\n".join(_trade_requirement_lines(entry)) if trade_requirements_panel.visible else ""
 	if entry.is_empty():
 		info_label.text = "Nothing available."
 		return
@@ -628,6 +637,24 @@ func _update_info() -> void:
 			info_label.text += "\n%s" % _friendly_reason(
 				reason
 			)
+
+
+func _trade_requirement_lines(entry: Dictionary) -> PackedStringArray:
+	var lines := PackedStringArray()
+	for requirement: Dictionary in entry.get("requirements", []):
+		lines.append("%s x%d" % [requirement.name, int(requirement.required)])
+	return lines
+
+
+func _trade_requirement_summary(entry: Dictionary, label: Label) -> String:
+	var lines := _trade_requirement_lines(entry)
+	if lines.size() == 1:
+		var font := label.get_theme_font("font")
+		var font_size := label.get_theme_font_size("font_size")
+		if font.get_string_size(lines[0], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= label.size.x:
+			return lines[0]
+	# Exact requirements always remain visible for the selected row below.
+	return "%d species" % lines.size()
 
 
 func _selected_entry() -> Dictionary:
