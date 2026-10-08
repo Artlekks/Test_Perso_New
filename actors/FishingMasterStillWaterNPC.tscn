@@ -3,6 +3,29 @@
 [ext_resource type="Script" uid="uid://8mkyyuse8kjp" path="res://scripts/mastery/fishing_master_still_water_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://ousie20omnqx" path="res://assets/animations/fishing_master_still_water_frames.tres" id="2_r1efr"]
 [ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
+[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="4_m0wtl"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iv8kh"]
+render_priority = -120
+transparency = 1
+cull_mode = 2
+depth_draw_mode = 2
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+albedo_texture = ExtResource("4_m0wtl")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
+render_priority = -120
+transparency = 1
+cull_mode = 2
+depth_draw_mode = 2
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.65)
+albedo_texture = ExtResource("4_m0wtl")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_vv744"]
+material = SubResource("StandardMaterial3D_blob")
+size = Vector2(0.5, 0.51)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -25,9 +48,18 @@ sprite_frames = ExtResource("2_r1efr")
 animation = &"Idle"
 frame_progress = 0.87177056
 
-[node name="ShadowAnchor" type="Node3D" parent="."]
+[node name="ShadowAnchor" type="Node3D" parent="." unique_id=418929415]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.061901957, 0, 0.03234908)
 
-[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
+[node name="WorldBlobShadow" parent="ShadowAnchor" unique_id=518643636 instance=ExtResource("3_shadow")]
+process_mode = 3
+process_priority = 250
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.061901957, 0.006, 0.03234908)
+material_override = SubResource("StandardMaterial3D_iv8kh")
+mesh = SubResource("PlaneMesh_vv744")
+width = 0.5
+depth = 0.51
+opacity = 1.0
 
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1717076062]
 

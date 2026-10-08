@@ -150,7 +150,7 @@ transparency = 1
 cull_mode = 2
 depth_draw_mode = 2
 shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.65)
+albedo_color = Color(0, 0, 0, 1)
 albedo_texture = ExtResource("23_30w2a")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
@@ -164,7 +164,7 @@ albedo_texture = ExtResource("23_30w2a")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_qdeph"]
 material = SubResource("StandardMaterial3D_blob")
-size = Vector2(0.24, 0.28)
+size = Vector2(0.35, 0.38)
 
 [sub_resource type="Animation" id="Animation_lu0sf"]
 length = 0.001
