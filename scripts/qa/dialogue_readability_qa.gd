@@ -35,6 +35,9 @@ func run() -> void:
 	viewport.add_child(view)
 	await settle()
 	check(view.body_label.get_theme_font_size("font_size") == 18 and view.choice_label.get_theme_font_size("font_size") == 16, "shared dialogue baseline doubles body/choice sizes")
+	var panel_style := view.dialogue_panel.get_theme_stylebox("panel") as StyleBoxTexture
+	check(panel_style != null and panel_style.texture.get_size() == Vector2(32, 32) and panel_style.get_texture_margin(SIDE_LEFT) == 8.0, "authored Panel atlas assembled into fixed-corner nine-slice")
+	check(panel_style != null and panel_style.axis_stretch_horizontal == StyleBoxTexture.AXIS_STRETCH_MODE_TILE and panel_style.axis_stretch_vertical == StyleBoxTexture.AXIS_STRETCH_MODE_TILE, "dialogue texture repeats without stretching corners or grain")
 	check(view.body_label.get_theme_font("font").resource_path == "res://assets/fonts/BOF_Font_Refined.fnt", "existing bitmap font retained")
 	check(view.root.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST and view.body_label.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART, "nearest bitmap and smart wrapping")
 	for height in [480, 751]:

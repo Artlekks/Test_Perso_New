@@ -20,10 +20,15 @@ const TEXT_LEFT_WITHOUT_PORTRAIT: float = 18.0
 const BOTTOM_MARGIN: float = 38.0
 const TEXT_TOP: float = 40.0
 const FOOTER_HEIGHT: float = 30.0
+const PanelStyle = preload("res://scripts/dialogue/dialogue_panel_style.gd")
+const PANEL_ATLAS = preload("res://assets/ui/Panel.png")
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var authored_style := PanelStyle.create(PANEL_ATLAS)
+	dialogue_panel.add_theme_stylebox_override("panel", authored_style)
+	portrait_frame.add_theme_stylebox_override("panel", authored_style)
 	root.resized.connect(_reflow)
 	hide_dialogue()
 

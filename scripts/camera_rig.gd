@@ -14,6 +14,8 @@ signal exploration_view_started
 
 @export var fishing_h_offset: float = 0.90
 @export var fishing_v_offset: float = 0.65
+## Optional host presentation adjustment; desktop keeps the authored value.
+var mobile_fishing_vertical_offset: float = 0.0
 @export_range(0.5, 1.5, 0.01) var fishing_distance_scale: float = 1.0
 @export var aim_follow_speed: float = 6.0
 @export var fishing_yaw_offset_degrees: float = -15.0
@@ -1142,7 +1144,7 @@ func enter_fishing_view() -> void:
 	tween.parallel().tween_property(
 		camera,
 		"v_offset",
-		fishing_v_offset,
+		fishing_v_offset + mobile_fishing_vertical_offset,
 		0.5
 	)
 

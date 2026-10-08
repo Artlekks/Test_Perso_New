@@ -104,6 +104,7 @@ func run() -> void:
 	check(harness.safe_rect.encloses(Rect2(controls.position, controls.size)), "control panel inside safe region")
 	for label in controls.buttons:
 		check(Rect2(Vector2.ZERO, controls.size).encloses(controls.buttons[label]), label + " hit region contained")
+		check(controls.buttons[label].encloses(controls.button_visuals[label]), label + " visual inside comfortable hit region")
 		for other in controls.buttons:
 			if label < other:
 				check(not controls.buttons[label].intersects(controls.buttons[other]), "touch buttons do not overlap: %s / %s" % [label, other])
@@ -163,6 +164,32 @@ func run() -> void:
 	check(paused, "START uses existing manual pause")
 	await button("START")
 	check(not paused, "START resumes only its own pause")
+	# The disposable profile earns the existing starter bundle; C must reach
+	# the real NPC conversation through the ordinary world input router.
+	var triad := game.get_node("UI/TripleTriadGame")
+	check(triad.claim_salvaged_card_case().success, "C QA uses canonical starter acquisition in disposable save")
+	var card_npc := game.get_node("World/TripleTriadOpponentNPC")
+	player.global_position = card_npc.global_position + Vector3(0, 0, 0.35)
+	player.rotation.y = PI
+	for frame in range(6):
+		await physics_frame
+		await process_frame
+	# Campaign presentation re-enables the card interaction Area on its
+	# periodic refresh after the genuine starter acquisition.
+	await create_timer(1.0).timeout
+	check(card_npc._player_in_range and triad.get_opponent_availability(card_npc.opponent_id).available, "real Triple Triad NPC is available with authored starter acquisition")
+	await button("C")
+	check(session.dialogue_service.is_active() and paused, "touch C opens real Triple Triad challenge conversation")
+	await capture("mobile-portrait-card-challenge")
+	await button("B")
+	check(not session.dialogue_service.is_active() and not paused, "challenge cancellation retains existing dialogue ownership")
+	await button("C")
+	await button("A")
+	await settle(8)
+	check(triad.is_open() and paused, "C then canonical confirm opens real Triple Triad game")
+	triad.close_game()
+	await settle(3)
+	check(not triad.is_open() and not paused, "real card-game close restores pause ownership")
 	var merchant: Node3D = game.get_node("World/BeachMerchantNPC")
 	player.global_position = merchant.global_position + Vector3(0.5, 0, 0)
 	await settle(8)
@@ -222,6 +249,21 @@ func run() -> void:
 	await button("L")
 	await button("R")
 	check(observed_keys.has(KEY_Q) and observed_keys.has(KEY_E), "shoulders use existing Q/E keys")
+	for mapping in {"L": &"cam_right", "R": &"cam_left"}:
+		controls.touch_begin(61, controls.buttons[mapping].get_center())
+		await settle(2)
+		check(Input.is_action_pressed({"L": &"cam_right", "R": &"cam_left"}[mapping]), "shoulder activates canonical InputMap action " + mapping)
+		controls.touch_end(61)
+	controls.touch_begin(62, controls.stick_zone.get_center())
+	controls.touch_drag(62, controls.stick_origin + Vector2(controls.stick_radius, 0))
+	controls.touch_begin(63, controls.buttons["C"].get_center())
+	controls.touch_begin(64, controls.buttons["A"].get_center())
+	controls.touch_begin(65, controls.buttons["B"].get_center())
+	await settle(2)
+	check(observed_keys.has(KEY_C) and Input.is_physical_key_pressed(KEY_C) and controls.stick_touch == 62 and Input.is_action_pressed("move_right"), "C/A/B and stick retain independent simultaneous ownership")
+	controls.touch_end(63)
+	check(controls.touches.has(64) and controls.touches.has(65) and controls.stick_touch == 62, "C release does not release other fingers")
+	controls.release_all()
 	controls.touch_begin(40, controls.buttons["A"].get_center())
 	controls.touch_begin(41, controls.buttons["A"].get_center())
 	controls.touch_end(40)

@@ -6,10 +6,11 @@ signal key_requested(event: InputEventKey)
 @export var stick_radius: float = 56.0
 @export_range(0.05, 0.5, 0.01) var stick_deadzone: float = 0.18
 @export var mouse_testing: bool = true
-const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "MENU": KEY_J, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
+const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "C": KEY_C, "MENU": KEY_J, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
 const MOVEMENT := {KEY_A: &"move_left", KEY_D: &"move_right", KEY_W: &"move_forward", KEY_S: &"move_back"}
 const STEERING := {KEY_A: &"ds_left", KEY_D: &"ds_right"}
 var buttons: Dictionary = {}
+var button_visuals: Dictionary = {}
 var stick_zone := Rect2()
 var stick_touch := -1
 var stick_origin := Vector2.ZERO
@@ -32,14 +33,20 @@ func _layout() -> void:
 	var h := size.y
 	stick_zone = Rect2(Vector2(0, h * 0.24), Vector2(w * 0.51, h * 0.56))
 	buttons = {
-		"A": Rect2(Vector2(w * 0.77, h * 0.25), Vector2(w * 0.21, w * 0.21)),
-		"B": Rect2(Vector2(w * 0.55, h * 0.52), Vector2(w * 0.21, w * 0.21)),
+		"A": Rect2(Vector2(w * 0.77, h * 0.18), Vector2(w * 0.21, w * 0.21)),
+		"B": Rect2(Vector2(w * 0.55, h * 0.48), Vector2(w * 0.21, w * 0.21)),
+		"C": Rect2(Vector2(w * 0.55, h * 0.18), Vector2(w * 0.15, w * 0.15)),
 		"MENU": Rect2(Vector2(w * 0.015, h * 0.84), Vector2(w * 0.19, maxf(h * 0.13, w * 44.0 / 390.0))),
 		"SELECT": Rect2(Vector2(w * 0.35, h * 0.84), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
 		"START": Rect2(Vector2(w * 0.56, h * 0.84), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
 		"L": Rect2(Vector2.ZERO, Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
 		"R": Rect2(Vector2(w * 0.71, 0), Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
 	}
+	button_visuals = buttons.duplicate()
+	for label in ["L", "R", "MENU", "SELECT", "START"]:
+		var hit: Rect2 = buttons[label]
+		var height := w * 22.0 / 390.0
+		button_visuals[label] = Rect2(hit.position + Vector2(0, (hit.size.y - height) * 0.5), Vector2(hit.size.x, height))
 	queue_redraw()
 
 func _process(_delta: float) -> void:
@@ -176,10 +183,10 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("c5c5c5"))
 	for label in buttons:
-		var rect: Rect2 = buttons[label]
+		var rect: Rect2 = button_visuals[label]
 		var pressed := touches.values().has(label)
 		var color := Color("666666") if pressed else Color("343434")
-		if label in ["A", "B"]:
+		if label in ["A", "B", "C"]:
 			draw_circle(rect.get_center(), rect.size.x * 0.5, Color.BLACK)
 			draw_circle(rect.get_center(), rect.size.x * 0.44, color)
 		else:
@@ -187,12 +194,12 @@ func _draw() -> void:
 		var text: String = label
 		if label == "SELECT":
 			text = "SELECT*"
-		var font_size := 24 if label in ["A", "B"] else 13
+		var font_size := 24 if label in ["A", "B"] else (20 if label == "C" else 13)
 		var text_size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 		draw_string(_font, rect.get_center() + Vector2(-text_size.x * 0.5, font_size * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
 	var title := "TOUCH PLAYTEST"
-	draw_string(_font, Vector2(size.x * 0.33, size.y * 0.18), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("292929"))
-	draw_string(_font, Vector2(size.x * 0.36, size.y * 0.225), "* SELECT reserved", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("666666"))
+	draw_string(_font, Vector2(size.x * 0.33, 20 * size.x / 390.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("292929"))
+	draw_string(_font, Vector2(size.x * 0.36, 34 * size.x / 390.0), "* SELECT reserved", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("666666"))
 	if stick_touch != -1:
 		draw_circle(stick_origin, stick_radius, Color(0.12, 0.12, 0.12, 0.6))
 		draw_arc(stick_origin, stick_radius, 0, TAU, 48, Color.BLACK, 2, true)
