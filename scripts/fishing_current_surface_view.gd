@@ -16,10 +16,31 @@ var _caster: Node = null
 var _water_y: float = 0.0
 var _streaks: Array[MeshInstance3D] = []
 var _uvs: Array[Vector2] = []
-var _phases: PackedFloat32Array = PackedFloat32Array()
 var _drift_markers: Array[MeshInstance3D] = []
-var _clock: float = 0.0
 var _enabled: bool = false
+@export_category("Flow Presentation")
+@export_range(0.01, 1.0, 0.01) var flow_speed := 0.18
+@export_range(0.0, 0.2, 0.005) var wave_amplitude := 0.035
+@export_range(0.1, 2.0, 0.05) var wave_wavelength := 0.4
+@export_range(0.0, 4.0, 0.1) var wave_phase_speed := 1.2
+var _flows := PackedVector3Array()
+const FLOW_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled;
+uniform float amplitude = 0.035;
+uniform float wavelength = 0.4;
+uniform float phase_speed = 1.2;
+uniform float phase_offset = 0.0;
+uniform vec4 tint : source_color = vec4(0.78, 0.94, 1.0, 0.3);
+void vertex() {
+    float envelope = sin(UV.x * 3.14159265);
+    VERTEX.z += sin(VERTEX.x * 6.2831853 / wavelength - TIME * phase_speed + phase_offset) * amplitude * envelope;
+}
+void fragment() {
+    ALBEDO = tint.rgb;
+    ALPHA = tint.a;
+}
+"""
 
 
 func _ready() -> void:
@@ -60,48 +81,48 @@ func _process(delta: float) -> void:
 	if not _enabled or _swim_bounds == null or _current_service == null:
 		_hide_drift_markers()
 		return
-	_clock += delta
-	_update_streaks()
+	_update_streaks(delta)
 	_update_drift_preview()
 
 
-func _update_streaks() -> void:
+func _update_streaks(delta: float = 0.0) -> void:
 	var snapshot := _current_service.get_snapshot()
 	var reference_speed := maxf(float(snapshot.get("speed", 0.04)), 0.025)
 	var visual_strength := clampf(float(snapshot.get("visual_strength", 0.5)), 0.1, 1.0)
+	var world_u := _swim_bounds.normalized_uv_to_world(Vector2(1, 0.5), _water_y) - _swim_bounds.normalized_uv_to_world(Vector2(0, 0.5), _water_y)
+	var world_v := _swim_bounds.normalized_uv_to_world(Vector2(0.5, 1), _water_y) - _swim_bounds.normalized_uv_to_world(Vector2(0.5, 0), _water_y)
 	for index in range(_streaks.size()):
 		var streak := _streaks[index]
 		if streak == null:
 			continue
 		var base_uv := _uvs[index]
-		var local_flow := _current_service.sample_current_at_uv(base_uv, _clock)
+		var center := _swim_bounds.normalized_uv_to_world(base_uv, _water_y)
+		_flows[index] = _current_service.smooth_current_velocity(_flows[index], center, delta)
+		var local_flow := _flows[index]
 		var speed := local_flow.length()
 		if speed <= 0.002:
 			streak.visible = false
 			continue
 		var direction := local_flow.normalized()
 		var speed_ratio := clampf(speed / reference_speed, 0.25, 2.4)
-		var cycle_speed := 0.42 + speed_ratio * 0.22
-		var phase := fmod(_clock * cycle_speed + float(_phases[index]), 2.7)
-		var active_window := clampf(0.48 + speed_ratio * 0.16, 0.45, 0.92)
-		var active := phase < active_window
-		streak.visible = active
-		if not active:
-			continue
-
-		var travel := phase / active_window
-		var uv := base_uv + Vector2(direction.x, -direction.y) * ((travel - 0.5) * 0.12 * speed_ratio)
-		uv.x = wrapf(uv.x, 0.03, 0.97)
-		uv.y = wrapf(uv.y, 0.03, 0.97)
+		streak.visible = true
+		var travel := direction * flow_speed * speed_ratio * delta
+		var uv := base_uv + Vector2(travel.dot(world_u) / maxf(world_u.length_squared(), 0.001), travel.dot(world_v) / maxf(world_v.length_squared(), 0.001))
+		uv = Vector2(wrapf(uv.x, 0.0, 1.0), wrapf(uv.y, 0.0, 1.0))
+		_uvs[index] = uv
 		streak.global_position = _swim_bounds.normalized_uv_to_world(uv, _water_y)
-		streak.rotation = Vector3(0.0, -atan2(direction.y, direction.x), 0.0)
+		# The shared current filter already smooths heading: do not introduce a
+		# second visual lag that could point against the physical drift.
+		streak.rotation.y = -atan2(direction.z, direction.x)
 		streak.scale = Vector3(clampf(0.72 + speed_ratio * 0.28, 0.7, 1.45), 1.0, 1.0)
-		var material := streak.material_override as StandardMaterial3D
+		var material := streak.material_override as ShaderMaterial
 		if material != null:
 			var alpha := clampf((0.20 + speed_ratio * 0.13) * visual_strength, 0.12, 0.62)
-			var streak_color := material.albedo_color
-			streak_color.a = alpha
-			material.albedo_color = streak_color
+			var edge_fade := clampf(minf(minf(uv.x, 1.0 - uv.x), minf(uv.y, 1.0 - uv.y)) / 0.06, 0.0, 1.0)
+			material.set_shader_parameter("tint", Color(0.78, 0.94, 1.0, alpha * edge_fade))
+			material.set_shader_parameter("amplitude", wave_amplitude)
+			material.set_shader_parameter("wavelength", wave_wavelength)
+			material.set_shader_parameter("phase_speed", wave_phase_speed)
 
 
 func _update_drift_preview() -> void:
@@ -117,7 +138,7 @@ func _update_drift_preview() -> void:
 		return
 
 	var start: Vector3 = _caster.call("get_active_bait_world_position")
-	var path := _current_service.project_drift_path(start, 2.4, 0.4, _clock)
+	var path := _current_service.project_drift_path(start, 2.4, 0.4)
 	for index in range(_drift_markers.size()):
 		var marker := _drift_markers[index]
 		var path_index := index + 1
@@ -136,21 +157,23 @@ func _build_streaks() -> void:
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 918273
+	var shader := Shader.new()
+	shader.code = FLOW_SHADER
 	for index in range(STREAK_COUNT):
 		var streak := MeshInstance3D.new()
 		streak.name = "CurrentStreak%02d" % index
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.34 + rng.randf_range(0.0, 0.18), 0.004, 0.014)
-		var material := StandardMaterial3D.new()
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.albedo_color = Color(0.78, 0.94, 1.0, 0.42)
+		var mesh := PlaneMesh.new()
+		mesh.size = Vector2(0.6, 0.014)
+		mesh.subdivide_width = 12
+		var material := ShaderMaterial.new()
+		material.shader = shader
+		material.set_shader_parameter("phase_offset", rng.randf_range(0.0, TAU))
 		streak.mesh = mesh
 		streak.material_override = material
 		add_child(streak)
 		_streaks.append(streak)
 		_uvs.append(Vector2(rng.randf_range(0.08, 0.92), rng.randf_range(0.07, 0.90)))
-		_phases.append(rng.randf_range(0.0, 2.7))
+		_flows.append(Vector3.ZERO)
 
 
 func _build_drift_markers() -> void:

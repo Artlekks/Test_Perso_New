@@ -465,6 +465,8 @@ func attach_to_hooked_bait(
 		fish_data = hooked_fish_data
 
 	_fight_tracking = true
+	# Follow the final screen-constrained bait, before FishingLineView (110).
+	process_priority = 105
 	_fight_bait = bait
 	_spook_remaining = 0.0
 	_wariness_stress = 0.0
@@ -508,6 +510,7 @@ func release_from_hooked_bait(dive_away: bool = true) -> void:
 		return
 
 	_fight_tracking = false
+	process_priority = 0
 	_fight_bait = null
 	_bait = null
 	_observed_bait_id = 0
@@ -540,13 +543,9 @@ func begin_catch_landing() -> void:
 	if not _fight_tracking:
 		return
 
-	# The fight is over mechanically, but keep the shadow attached for the brief
-	# landing beat. Remove thrash opposition and calm the body so the final
-	# splash can mask a deliberate fade instead of a fish fighting in Ryu's feet.
-	_fight_follow_alignment = 1.0
-	_fight_wave_activity = minf(fight_spent_wave_activity, 0.18)
-	_fight_thrash_time_left = 0.0
-	_fight_thrash_intensity = 0.0
+	# Out of water: hide immediately; expiration only owns resource cleanup.
+	hide()
+	release_from_hooked_bait(false)
 
 
 func play_fight_thrash(intensity: float) -> void:

@@ -367,6 +367,12 @@ func _ready() -> void:
 		if telemetry != null:
 			telemetry.bind_runtime(self)
 			debug_controller.debug_menu.configure_economy_telemetry(telemetry)
+	var screen_bounds_script = preload("res://scripts/fishing_screen_water_bounds.gd")
+	var screen_bounds = screen_bounds_script.new()
+	screen_bounds.name = "ScreenWaterBounds"
+	screen_bounds.fishing = self
+	screen_bounds.info_view = $FishingInfoController.info_view
+	add_child(screen_bounds)
 
 
 func _setup_fishing_menu() -> void:

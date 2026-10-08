@@ -181,6 +181,7 @@ var simulation_frozen: bool = false
 var swim_bounds: Node = null
 var shore_boundary: Node = null
 var current_service: FishingCurrentService = null
+var _current_drift_velocity := Vector3.ZERO
 var mastery_service = null
 
 var snag_probe: Area3D = null
@@ -366,6 +367,8 @@ func set_swim_bounds(bounds: Node) -> void:
 
 
 func set_current_service(service: FishingCurrentService) -> void:
+	if current_service != service:
+		_current_drift_velocity = Vector3.ZERO
 	current_service = service
 
 
@@ -462,14 +465,14 @@ func _physics_process(delta: float) -> void:
 func _update_current_drift(delta: float) -> void:
 	if (
 		current_service == null
+		or simulation_frozen
 		or (state != State.SINKING and state != State.IN_WATER)
 		or delta <= 0.0
 	):
 		return
 
-	var current_velocity: Vector3 = (
-		current_service.sample_current_velocity(global_position)
-	)
+	_current_drift_velocity = current_service.smooth_current_velocity(_current_drift_velocity, global_position, delta)
+	var current_velocity := _current_drift_velocity
 	if current_velocity.length_squared() <= 0.0000001:
 		return
 

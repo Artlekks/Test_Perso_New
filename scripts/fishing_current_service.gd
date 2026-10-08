@@ -3,6 +3,16 @@ class_name FishingCurrentService
 
 signal current_profile_changed(snapshot: Dictionary)
 
+@export_range(0.1, 10.0, 0.1) var direction_response := 2.0
+
+func smooth_current_velocity(previous: Vector3, position: Vector3, delta: float) -> Vector3:
+	var target := sample_current_velocity(position)
+	var response := 1.0 - exp(-direction_response * maxf(delta, 0.0))
+	if previous.length_squared() < 0.0000001 or target.length_squared() < 0.0000001:
+		return previous.lerp(target, response)
+	var heading := lerp_angle(atan2(previous.z, previous.x), atan2(target.z, target.x), response)
+	return Vector3(cos(heading), 0.0, sin(heading)) * lerpf(previous.length(), target.length(), response)
+
 var _spot: FishingSpotData = null
 var _swim_bounds: FishSwimBounds = null
 var _tide_service: Node = null

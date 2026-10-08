@@ -899,12 +899,11 @@ func begin_catch_landing() -> bool:
 	fish_behavior.stop()
 	_reset_fight_readouts()
 
-	_set_active_fight_shadow_visual_state(&"spent")
-	if (
-		is_instance_valid(active_fight_shadow)
-		and active_fight_shadow.has_method("begin_catch_landing")
-	):
+	# LANDING is the authoritative out-of-water presentation transition.
+	# Remove it before Fishing begins the shoreline splash, not at catch commit.
+	if is_instance_valid(active_fight_shadow):
 		active_fight_shadow.begin_catch_landing()
+	_end_active_fight_shadow(false)
 
 	return true
 

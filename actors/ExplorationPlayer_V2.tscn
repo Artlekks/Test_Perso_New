@@ -11,13 +11,13 @@
 radius = 0.0972981
 height = 0.450552
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_11v8u"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m1dlh"]
 render_priority = -120
 transparency = 1
 cull_mode = 2
 depth_draw_mode = 2
 shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.65)
+albedo_color = Color(0, 0, 0, 1)
 albedo_texture = ExtResource("4_m1dlh")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
@@ -29,12 +29,15 @@ shading_mode = 0
 albedo_color = Color(0, 0, 0, 0.38)
 albedo_texture = ExtResource("4_m1dlh")
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_do2li"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_11v8u"]
 material = SubResource("StandardMaterial3D_blob")
-size = Vector2(0.24, 0.28)
+size = Vector2(0.35, 0.38)
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=363575400]
 collision_layer = 2
+collision_mask = 17
+platform_on_leave = 2
+platform_floor_layers = 0
 script = ExtResource("1_kavdw")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1354831898]
@@ -50,15 +53,17 @@ sprite_frames = ExtResource("2_g2awu")
 animation = &"Fishing_Idle"
 
 [node name="ShadowAnchor" type="Node3D" parent="." unique_id=1856703931]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.021932095, 0, -0.03388018)
 
 [node name="WorldBlobShadow" parent="ShadowAnchor" unique_id=1933139612 instance=ExtResource("32_ny21r")]
 process_mode = 3
 process_priority = 250
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
-material_override = SubResource("StandardMaterial3D_11v8u")
-mesh = SubResource("PlaneMesh_do2li")
-width = 0.24
-depth = 0.28
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.021932095, 0.006, -0.03388018)
+material_override = SubResource("StandardMaterial3D_m1dlh")
+mesh = SubResource("PlaneMesh_11v8u")
+width = 0.35000000000000003
+depth = 0.38
+opacity = 1.0
 
 [node name="SpriteDirector" type="Node" parent="." unique_id=1803301219 node_paths=PackedStringArray("sprite")]
 script = ExtResource("29_5cnmj")

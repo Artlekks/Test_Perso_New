@@ -26,6 +26,8 @@ var _frames_ready: bool = false
 
 func _ready() -> void:
 	top_level = true
+	# Surface projection follows the final screen-constrained waterborne bait.
+	process_priority = 105
 	visible = false
 	set_process(false)
 	_setup_sprite()

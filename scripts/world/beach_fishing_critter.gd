@@ -1,4 +1,4 @@
-extends AnimatableBody3D
+extends Node3D
 class_name BeachFishingCritter
 
 ## Crab-style ambient critter using the user's directional sheet.
@@ -15,6 +15,8 @@ class_name BeachFishingCritter
 @export_range(0.15, 2.0, 0.05) var idle_turn_interval: float = 0.70
 
 @onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var proximity_area: Area3D = $ProximityArea
+var _avoidance_cooldown: float = 0.0
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _home_position: Vector3 = Vector3.ZERO
@@ -39,6 +41,32 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_state_time_left -= delta
+	_avoidance_cooldown = maxf(0.0, _avoidance_cooldown - delta)
+	if _avoidance_cooldown <= 0.0:
+		for body in proximity_area.get_overlapping_bodies():
+			if not body.is_in_group("fishing_player"):
+				continue
+			var away: Vector3 = global_position - body.global_position
+			if get_parent() is Node3D:
+				away = (get_parent() as Node3D).global_basis.inverse() * away
+			var best := Vector2.ZERO
+			var score := -INF
+			for candidate in [Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)]:
+				var probe: Vector3 = position + Vector3(candidate.x, 0, candidate.y) * 0.05
+				if absf(probe.x - _home_position.x) > roam_half_width or absf(probe.z - _home_position.z) > roam_half_depth:
+					continue
+				var value: float = candidate.dot(Vector2(away.x, away.z))
+				if value > score:
+					score = value
+					best = candidate.normalized()
+			if not best.is_zero_approx():
+				_walking = true
+				_walk_direction = best
+				_last_facing = best
+				_state_time_left = walk_time_min
+				_play_walk(best)
+			_avoidance_cooldown = 0.6
+			break
 
 	if _walking:
 		_update_walk(delta)
@@ -60,31 +88,15 @@ func _physics_process(delta: float) -> void:
 
 func _update_walk(delta: float) -> void:
 	var step: float = maxf(move_speed, 0.0) * maxf(delta, 0.0)
-	position.x += _walk_direction.x * step
-	position.z += _walk_direction.y * step
-
 	var min_x: float = _home_position.x - roam_half_width
 	var max_x: float = _home_position.x + roam_half_width
 	var min_z: float = _home_position.z - roam_half_depth
 	var max_z: float = _home_position.z + roam_half_depth
 
-	var hit_edge: bool = false
-	if position.x < min_x:
-		position.x = min_x
-		hit_edge = true
-	elif position.x > max_x:
-		position.x = max_x
-		hit_edge = true
-
-	if position.z < min_z:
-		position.z = min_z
-		hit_edge = true
-	elif position.z > max_z:
-		position.z = max_z
-		hit_edge = true
-
-	position.y = _base_y
-
+	var desired := position + Vector3(_walk_direction.x * step, 0.0, _walk_direction.y * step)
+	var bounded := Vector3(clampf(desired.x, min_x, max_x), _base_y, clampf(desired.z, min_z, max_z))
+	var hit_edge := not desired.is_equal_approx(bounded)
+	position = bounded
 	if hit_edge:
 		_start_idle()
 

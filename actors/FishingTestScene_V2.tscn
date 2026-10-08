@@ -386,7 +386,7 @@ camera = NodePath("../CameraRig/Camera3D")
 
 [node name="CharacterBody3D" parent="Player" unique_id=363575400 instance=ExtResource("1_43krk")]
 collision_layer = 1
-move_speed = 0.8
+move_speed = 1.0
 
 [node name="WorldBlobShadow" parent="Player/CharacterBody3D/ShadowAnchor" parent_id_path=PackedInt32Array(363575400, 1856703931) index="0" unique_id=1933139612]
 material_override = SubResource("StandardMaterial3D_y8xxk")

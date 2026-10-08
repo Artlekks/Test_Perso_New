@@ -1,4 +1,4 @@
-extends Node3D
+extends "res://scripts/world/autonomous_world_actor.gd"
 class_name FishingCardMakerNPC
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
@@ -56,9 +56,11 @@ var _smoke_pending: bool = false
 var _special_playing: bool = false
 var _facing: StringName = &"se"
 var _dialogue_bridge: DialogueNPCBridge = null
+var locomotion_blocked: bool = false
 
 
 func _ready() -> void:
+	super._ready()
 	add_to_group(&"world_interaction_targets")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
@@ -85,8 +87,7 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# Move the common actor root on physics ticks. BodyCollider opts out of
-	# sync_to_physics so inherited transforms reach the physics server too.
+	# The physical actor root accepts only collision-safe patrol movement.
 	var tree := get_tree()
 	if tree == null or tree.paused:
 		return
@@ -169,6 +170,7 @@ func _begin_next_patrol_leg() -> void:
 		return
 
 	_moving = true
+	locomotion_blocked = false
 	_facing = _direction_name(travel)
 	_play_walk(_facing)
 
@@ -179,21 +181,29 @@ func _process_patrol_leg(delta: float) -> void:
 	var delta_to_target := flat_target - flat_position
 	var distance := delta_to_target.length()
 	if distance <= 0.005:
-		position.x = _target_position.x
-		position.z = _target_position.z
+		var unobstructed := try_autonomous_motion(Vector3(delta_to_target.x, 0.0, delta_to_target.y))
 		_finish_patrol_leg()
+		locomotion_blocked = not unobstructed
 		return
 
 	var direction := delta_to_target / distance
-	_facing = _direction_name(direction)
-	_play_walk(_facing)
 	var step := minf(patrol_speed * delta, distance)
-	position.x += direction.x * step
-	position.z += direction.y * step
+	var motion := avoidance_motion(Vector3(direction.x * step, 0.0, direction.y * step), delta)
+	if motion.is_zero_approx() or not try_autonomous_motion(motion):
+		# Use the existing idle pause and next leg instead of walking/jittering
+		# continuously against Ryu or another blocking actor.
+		_finish_patrol_leg()
+		locomotion_blocked = true
+		velocity = Vector3.ZERO
+		return
+	_facing = _direction_name(Vector2(motion.x, motion.z))
+	_play_walk(_facing)
 
 
 func _finish_patrol_leg() -> void:
 	_moving = false
+	velocity = Vector3.ZERO
+	locomotion_blocked = false
 	_pause_remaining = _random_idle_pause()
 	# Keep a single relaxed idle pose. Directional frames are reserved for
 	# locomotion/turning so the captain does not snap through cardinal idles.

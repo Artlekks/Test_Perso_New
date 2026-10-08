@@ -16,7 +16,11 @@ height = 0.5
 [sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
 radius = 0.48
 
-[node name="FishingCardMakerNPC" type="Node3D" unique_id=184826688]
+[node name="FishingCardMakerNPC" type="CharacterBody3D" unique_id=184826688]
+collision_layer = 16
+collision_mask = 19
+platform_floor_layers = 0
+platform_wall_layers = 0
 process_mode = 3
 script = ExtResource("1_script")
 
@@ -34,10 +38,7 @@ frame_progress = 0.49772128
 
 [node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
-[node name="BodyCollider" type="AnimatableBody3D" parent="." unique_id=1500292232]
-sync_to_physics = false
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyCollider" unique_id=1054673134]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1054673134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 shape = SubResource("CapsuleShape3D_body")
 
