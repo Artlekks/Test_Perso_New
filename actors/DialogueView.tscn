@@ -34,6 +34,7 @@ script = ExtResource("1_script")
 
 [node name="Root" type="Control" parent="."]
 visible = false
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -76,36 +77,41 @@ layout_mode = 0
 offset_left = 84.0
 offset_top = 9.0
 offset_right = 332.0
-offset_bottom = 25.0
+offset_bottom = 32.0
 theme_override_colors/font_color = Color(0.239216, 0.160784, 0.2, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 9
+theme_override_font_sizes/font_size = 18
 text = "Speaker"
 
-[node name="BodyLabel" type="Label" parent="Root/DialoguePanel"]
+[node name="ContentScroll" type="ScrollContainer" parent="Root/DialoguePanel"]
 layout_mode = 0
 offset_left = 84.0
-offset_top = 29.0
+offset_top = 40.0
 offset_right = 492.0
-offset_bottom = 62.0
-theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 9
-text = "Dialogue text"
-autowrap_mode = 2
+offset_bottom = 100.0
+horizontal_scroll_mode = 0
 
-[node name="ChoiceLabel" type="Label" parent="Root/DialoguePanel"]
-visible = false
-layout_mode = 0
-offset_left = 84.0
-offset_top = 52.0
-offset_right = 492.0
-offset_bottom = 94.0
+[node name="TextStack" type="VBoxContainer" parent="Root/DialoguePanel/ContentScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="BodyLabel" type="Label" parent="Root/DialoguePanel/ContentScroll/TextStack"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 18
+text = "Dialogue text"
+autowrap_mode = 3
+
+[node name="ChoiceLabel" type="Label" parent="Root/DialoguePanel/ContentScroll/TextStack"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.164706, 0.113725, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
 text = "> Choice"
-vertical_alignment = 1
+autowrap_mode = 3
 
 [node name="HintLabel" type="Label" parent="Root/DialoguePanel"]
 layout_mode = 0
@@ -115,6 +121,6 @@ offset_right = 492.0
 offset_bottom = 80.0
 theme_override_colors/font_color = Color(0.388235, 0.290196, 0.352941, 1)
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 7
+theme_override_font_sizes/font_size = 10
 text = "K : Next    I : Back"
 horizontal_alignment = 2

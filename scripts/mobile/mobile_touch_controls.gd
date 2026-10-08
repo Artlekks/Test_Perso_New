@@ -32,13 +32,13 @@ func _layout() -> void:
 	var h := size.y
 	stick_zone = Rect2(Vector2(0, h * 0.24), Vector2(w * 0.51, h * 0.56))
 	buttons = {
-		"A": Rect2(Vector2(w * 0.75, h * 0.28), Vector2(w * 0.21, w * 0.21)),
-		"B": Rect2(Vector2(w * 0.55, h * 0.54), Vector2(w * 0.21, w * 0.21)),
-		"MENU": Rect2(Vector2(w * 0.015, h * 0.84), Vector2(w * 0.19, h * 0.13)),
-		"SELECT": Rect2(Vector2(w * 0.35, h * 0.84), Vector2(w * 0.20, h * 0.13)),
-		"START": Rect2(Vector2(w * 0.56, h * 0.84), Vector2(w * 0.20, h * 0.13)),
-		"L": Rect2(Vector2.ZERO, Vector2(w * 0.29, h * 0.12)),
-		"R": Rect2(Vector2(w * 0.71, 0), Vector2(w * 0.29, h * 0.12)),
+		"A": Rect2(Vector2(w * 0.77, h * 0.25), Vector2(w * 0.21, w * 0.21)),
+		"B": Rect2(Vector2(w * 0.55, h * 0.52), Vector2(w * 0.21, w * 0.21)),
+		"MENU": Rect2(Vector2(w * 0.015, h * 0.84), Vector2(w * 0.19, maxf(h * 0.13, w * 44.0 / 390.0))),
+		"SELECT": Rect2(Vector2(w * 0.35, h * 0.84), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
+		"START": Rect2(Vector2(w * 0.56, h * 0.84), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
+		"L": Rect2(Vector2.ZERO, Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
+		"R": Rect2(Vector2(w * 0.71, 0), Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
 	}
 	queue_redraw()
 

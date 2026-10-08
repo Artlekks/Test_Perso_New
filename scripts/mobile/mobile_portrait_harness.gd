@@ -3,8 +3,11 @@ extends Control
 const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
 @export_file("*.tscn") var gameplay_scene: String = "res://actors/FishingTestScene_V2.tscn"
 @export var reference_size := Vector2i(390, 844)
-@export_range(0.35, 0.7, 0.01) var gameplay_region_ratio: float = 0.58
 @export var fallback_safe_insets := Vector4(0, 47, 0, 34)
+@export_range(0.45, 0.65, 0.01) var gameplay_height_share: float = 0.60
+@export var minimum_controls_height: float = 280.0
+@export var economy_body_font_size: int = 12
+@export var economy_small_font_size: int = 10
 @export var isolated_playtest_save: bool = true
 var gameplay_viewport: SubViewport
 var game: Node
@@ -69,6 +72,22 @@ func get_safe_rect(view_size: Vector2, device_safe: Rect2 = Rect2(), device_size
 		return Rect2(device_safe.position * scale, device_safe.size * scale).intersection(Rect2(Vector2.ZERO, view_size))
 	return Rect2(Vector2(fallback_safe_insets.x, fallback_safe_insets.y), Vector2(maxf(view_size.x - fallback_safe_insets.x - fallback_safe_insets.z, 0), maxf(view_size.y - fallback_safe_insets.y - fallback_safe_insets.w, 0)))
 
+func get_layout_rects(available: Rect2) -> Dictionary:
+	var column := available
+	# Retain the existing narrow control column only for landscape windows.
+	# Portrait uses all safe width, including when Safari chrome reduces height.
+	if column.size.x > column.size.y:
+		var reference_safe_height := maxf(float(reference_size.y) - fallback_safe_insets.y - fallback_safe_insets.w, 1.0)
+		var column_width := minf(column.size.x, column.size.y * float(reference_size.x) / reference_safe_height)
+		column.position.x += (column.size.x - column_width) * 0.5
+		column.size.x = column_width
+	var controls_min := minimum_controls_height * column.size.x / float(reference_size.x)
+	var desired_height := minf(column.size.y * gameplay_height_share, column.size.y - controls_min)
+	var logical_height := maxi(1, floori(desired_height * 640.0 / maxf(column.size.x, 1.0)))
+	var image := Rect2(column.position, Vector2(column.size.x, logical_height * column.size.x / 640.0))
+	var panel := Rect2(column.position + Vector2(0, image.size.y), Vector2(column.size.x, column.size.y - image.size.y))
+	return {"safe": column, "gameplay": image, "controls": panel, "resolution": Vector2i(640, logical_height)}
+
 func _layout() -> void:
 	if not is_instance_valid(controls):
 		return
@@ -84,16 +103,14 @@ func _layout() -> void:
 		if values is Array and values.size() == 6:
 			device_size = Vector2(values[4], values[5])
 			device_safe = Rect2(Vector2(values[0], values[1]), device_size - Vector2(values[0] + values[2], values[1] + values[3]))
-	safe_rect = get_safe_rect(size, device_safe, device_size)
-	# Keep a portrait column if a browser temporarily rotates to landscape.
-	var reference_safe_height := maxf(float(reference_size.y) - fallback_safe_insets.y - fallback_safe_insets.w, 1.0)
-	var column_width := minf(safe_rect.size.x, safe_rect.size.y * float(reference_size.x) / reference_safe_height)
-	safe_rect.position.x += (safe_rect.size.x - column_width) * 0.5
-	safe_rect.size.x = column_width
-	gameplay_image.position = safe_rect.position
-	gameplay_image.size = Vector2(safe_rect.size.x, safe_rect.size.y * gameplay_region_ratio)
-	controls.position = safe_rect.position + Vector2(0, gameplay_image.size.y)
-	controls.size = Vector2(safe_rect.size.x, safe_rect.size.y - gameplay_image.size.y)
+	var layout := get_layout_rects(get_safe_rect(size, device_safe, device_size))
+	safe_rect = layout.safe
+	gameplay_image.position = layout.gameplay.position
+	gameplay_image.size = layout.gameplay.size
+	controls.position = layout.controls.position
+	controls.size = layout.controls.size
+	gameplay_viewport.size = layout.resolution
+	_adapt_mobile_presentation()
 
 func _mount_game() -> void:
 	load_gameplay_scene(gameplay_scene)
@@ -116,10 +133,81 @@ func _replace_game(packed: PackedScene) -> void:
 	game.process_mode = Node.PROCESS_MODE_PAUSABLE
 	gameplay_viewport.add_child(game)
 	_bind_session_layers()
+	_adapt_mobile_presentation()
 
 func _node_added(node: Node) -> void:
 	if node is CanvasLayer:
 		_bind_session_layers.call_deferred()
+	if node is CanvasLayer or node is Camera3D:
+		_adapt_mobile_presentation.call_deferred()
+
+func _adapt_mobile_presentation() -> void:
+	if not is_instance_valid(game):
+		return
+	var extra_height := float(gameplay_viewport.size.y - 480)
+	for camera in game.find_children("*", "Camera3D", true, false):
+		if not camera.has_meta("mobile_original_projection"):
+			camera.set_meta("mobile_original_projection", {"aspect": camera.keep_aspect, "fov": camera.fov, "size": camera.size})
+		var original: Dictionary = camera.get_meta("mobile_original_projection")
+		if original.aspect == Camera3D.KEEP_HEIGHT:
+			# Equivalent horizontal FOV of the authored desktop 640x480 shot.
+			camera.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(original.fov) * 0.5) * 640.0 / 480.0))
+			camera.size = original.size * 640.0 / 480.0
+		camera.keep_aspect = Camera3D.KEEP_WIDTH
+	# Keep authored UI art/coordinates in a centered 640x480 band, without
+	# stretching menu backgrounds to the taller 3D viewport. Dialogue reflows
+	# independently using its real viewport height and larger shared typography.
+	var layers: Array = game.find_children("*", "CanvasLayer", true, false)
+	for entry in _bound_layers.values():
+		var layer = entry.node.get_ref()
+		if is_instance_valid(layer):
+			layers.append(layer)
+	for layer in layers:
+		if layer is DialogueView:
+			continue
+		if not layer.has_meta("mobile_original_offset"):
+			layer.set_meta("mobile_original_offset", layer.offset)
+			for child in layer.get_children():
+				if child is Control:
+					child.set_meta("mobile_original_vertical_layout", Vector4(child.anchor_top, child.anchor_bottom, child.offset_top, child.offset_bottom))
+					var old: Vector4 = child.get_meta("mobile_original_vertical_layout")
+					child.anchor_top = 0.0
+					child.anchor_bottom = 0.0
+					child.offset_top = old.x * 480.0 + old.z
+					child.offset_bottom = old.y * 480.0 + old.w
+		layer.offset = layer.get_meta("mobile_original_offset") + Vector2(0, extra_height * 0.5)
+		if layer.name == "FishingEconomyMenu" and not layer.has_meta("mobile_economy_readability"):
+			layer.set_meta("mobile_economy_readability", true)
+			# This menu alone uses unscaled 7-9px text; the fishing menu and
+			# catch frame already have their authored 2x text presentation.
+			for path in ["Root/Rows", "Root/TradeRequirementsPanel", "Root/ConfirmPanel"]:
+				for label in layer.get_node(path).find_children("*", "Label", true, false):
+					label.add_theme_font_size_override("font_size", economy_body_font_size)
+			for path in ["Root/WalletLabel", "Root/CategoryLabel", "Root/PageLabel", "Root/MessageLabel", "Root/HelpLabel"]:
+				var label := layer.get_node_or_null(path) as Label
+				if label != null:
+					label.add_theme_font_size_override("font_size", economy_small_font_size)
+			var info := layer.get_node("Root/InfoLabel") as Label
+			info.add_theme_font_size_override("font_size", economy_body_font_size)
+			info.offset_right = 384.0
+			info.offset_bottom = 395.0
+			var message := layer.get_node("Root/MessageLabel") as Label
+			message.offset_top = 397.0
+			message.offset_bottom = 424.0
+			message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			var requirements := layer.get_node("Root/TradeRequirementsPanel") as Panel
+			requirements.offset_left = 394.0
+			requirements.offset_right = 550.0
+			for label in requirements.get_children():
+				if label is Label:
+					label.offset_right = 150.0
+	var rig := game.get_node_or_null("CameraRig")
+	if rig != null:
+		for property in ["fight_safe_top", "fight_safe_bottom", "fishing_follow_top_y_ratio", "fishing_follow_bottom_y_ratio", "fishing_follow_trigger_y_ratio"]:
+			var key: String = "mobile_original_" + property
+			if not rig.has_meta(key):
+				rig.set_meta(key, rig.get(property))
+			rig.set(property, (float(rig.get_meta(key)) * 480.0 + extra_height * 0.5) / float(gameplay_viewport.size.y))
 
 func _bind_session_layers() -> void:
 	var session := get_tree().root.get_node_or_null("FishingSessionServices")
@@ -128,8 +216,7 @@ func _bind_session_layers() -> void:
 	for layer in session.find_children("*", "CanvasLayer", true, false):
 		if not _bound_layers.has(layer.get_instance_id()):
 			_bound_layers[layer.get_instance_id()] = {"node": weakref(layer), "parent": weakref(layer.get_parent())}
-		# Actual parenting gives Controls the correct 640x480 layout/input space,
-		# as well as rendering there. Data services remain at their existing root.
+		# Session data stays at its original root; presentation joins this viewport.
 		layer.reparent(gameplay_viewport)
 
 func _send_key(event: InputEventKey) -> void:
@@ -159,4 +246,15 @@ func _exit_tree() -> void:
 		var layer = entry.node.get_ref()
 		var original_parent = entry.parent.get_ref()
 		if is_instance_valid(layer) and is_instance_valid(original_parent):
+			if layer.has_meta("mobile_original_offset"):
+				layer.offset = layer.get_meta("mobile_original_offset")
+				layer.remove_meta("mobile_original_offset")
+				for child in layer.get_children():
+					if child is Control and child.has_meta("mobile_original_vertical_layout"):
+						var old: Vector4 = child.get_meta("mobile_original_vertical_layout")
+						child.anchor_top = old.x
+						child.anchor_bottom = old.y
+						child.offset_top = old.z
+						child.offset_bottom = old.w
+						child.remove_meta("mobile_original_vertical_layout")
 			layer.reparent(original_parent)

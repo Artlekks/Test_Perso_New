@@ -1,6 +1,6 @@
 """Serve a local Web export over HTTPS on the same development network only.
 
-Run: python tools/mobile/serve_playtest.py --directory build/mobile-web
+Run: python tools/mobile/serve_playtest.py --directory export
 Requires cryptography (python -m pip install cryptography). Stop with Ctrl+C.
 Development/playtest only: no deployment, export modification or save handling.
 """
@@ -104,6 +104,11 @@ class PlaytestHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, **kwargs)
 
     def send_head(self):
+        # Never return 304 for a development refresh, even when two exports
+        # share the same second-resolution Last-Modified timestamp.
+        for header in ("If-Modified-Since", "If-None-Match"):
+            if header in self.headers:
+                del self.headers[header]
         if self.path.split("?", 1)[0] == CERTIFICATE_URL:
             from io import BytesIO
             self.send_response(200)
@@ -115,13 +120,15 @@ class PlaytestHandler(SimpleHTTPRequestHandler):
         return super().send_head()
 
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         super().end_headers()
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--directory", default="build/mobile-web")
+    parser.add_argument("--directory", default="export")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8060)
     args = parser.parse_args()

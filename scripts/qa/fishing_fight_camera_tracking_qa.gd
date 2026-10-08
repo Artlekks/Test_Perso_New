@@ -38,6 +38,7 @@ func setup() -> void:
 	fish = Node3D.new()
 	viewport.add_child(fish)
 	rig = Rig.new()
+	rig.name = "CameraRig"
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
 	rig.add_child(camera)
@@ -48,11 +49,22 @@ func setup() -> void:
 	camera.position = Vector3(0, 4, 6)
 	camera.look_at(Vector3(0, 0, -4))
 	base = camera.transform
+	if OS.get_cmdline_user_args().has("--mobile"):
+		# Exercise the same harness-only aspect/UI-band adapter as production.
+		var shell = load("res://scripts/mobile/mobile_portrait_harness.gd").new()
+		viewport.size = shell.get_layout_rects(shell.get_safe_rect(Vector2(390, 844))).resolution
+		shell.game = viewport
+		shell.gameplay_viewport = viewport
+		shell._adapt_mobile_presentation()
+		shell.game = null
+		shell.free()
 
 func put_fish(pixel: Vector2, depth := 12.0) -> void:
 	rig.reset_fishing_follow()
 	camera.transform = base
-	fish.global_position = camera.project_position(pixel * Vector2(640, 480), depth)
+	var logical_pixel := pixel * Vector2(640, 480)
+	logical_pixel.y += float(viewport.size.y - 480) * 0.5
+	fish.global_position = camera.project_position(logical_pixel, depth)
 	rig.set_fishing_fight_tracking(true, fish)
 
 func tick(count := 1) -> void:
@@ -232,7 +244,7 @@ func run() -> void:
 	rig.fight_max_yaw_degrees = 55.0
 	put_fish(Vector2(0.90, 0.82))
 	tick(240)
-	check(camera.unproject_position(fish.global_position).y < 0.75 * 480, "lateral fish descending toward HUD gets vertical clearance from orbit")
+	check(camera.unproject_position(fish.global_position).y < rig.fight_safe_bottom * viewport.size.y, "lateral fish descending toward HUD gets vertical clearance from orbit")
 	var held := camera.transform
 	rig.set_fishing_fight_tracking(false)
 	tick(60)
@@ -306,7 +318,7 @@ func run() -> void:
 		var initial_distance := camera.global_position.length()
 		var initial_pitch := camera.global_basis.z.y
 		tick(240)
-		var projected := camera.unproject_position(fish.global_position) / Vector2(640, 480)
+		var projected := camera.unproject_position(fish.global_position) / Vector2(viewport.size)
 		check(projected.x >= 0.2 and projected.x <= 0.85, "authored pose tracks lateral fish into safe region")
 		check(camera.unproject_position(player.global_position).distance_to(initial_player_pixel) < 0.01,
 			"authored lower-left player framing preserved")

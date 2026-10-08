@@ -1109,7 +1109,10 @@ func _place_native_selector_on_item(
 			selector.visible = false
 		return
 
-	selector.position = _item_screen_position(list, index) + screen_offset
+	# Convert viewport coordinates back into the selector parent's canvas space.
+	# The optional portrait host translates this UI band; desktop is identity.
+	var parent_canvas := selector.get_parent() as CanvasItem
+	selector.position = parent_canvas.get_global_transform_with_canvas().affine_inverse() * (_item_screen_position(list, index) + screen_offset)
 	selector.visible = true
 
 

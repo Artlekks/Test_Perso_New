@@ -1,5 +1,6 @@
 """Local TLS smoke tests; no Godot export or phone required."""
 import hashlib
+import mimetypes
 from functools import partial
 from http.client import HTTPSConnection
 from http.server import ThreadingHTTPServer
@@ -54,6 +55,8 @@ class PlaytestTLSTests(unittest.TestCase):
         export.mkdir()
         (export / "index.html").write_bytes(b"<html>playtest</html>")
         (export / "index.wasm").write_bytes(b"wasm-test")
+        (export / "index.js").write_bytes(b"js-test")
+        (export / "index.pck").write_bytes(b"pck-test")
         before = {p.name: hashlib.sha256(p.read_bytes()).digest() for p in export.iterdir()}
         cert, key = helper.ensure_certificate("127.0.0.1", self.cache)
         public = ssl.PEM_cert_to_DER_cert(cert.read_text())
@@ -72,6 +75,8 @@ class PlaytestTLSTests(unittest.TestCase):
                 for path, expected, mime in [
                     ("/", b"<html>playtest</html>", "text/html"),
                     ("/index.wasm", b"wasm-test", "application/wasm"),
+                    ("/index.js", b"js-test", mimetypes.guess_type("index.js")[0]),
+                    ("/index.pck", b"pck-test", "application/octet-stream"),
                     (helper.CERTIFICATE_URL, public, "application/x-x509-ca-cert"),
                 ]:
                     client.request("GET", path)
@@ -79,7 +84,22 @@ class PlaytestTLSTests(unittest.TestCase):
                     self.assertEqual(response.status, 200)
                     self.assertEqual(response.read(), expected)
                     self.assertEqual(response.getheader("Content-Type"), mime)
-                    self.assertEqual(response.getheader("Cache-Control"), "no-store")
+                    self.assertEqual(response.getheader("Cache-Control"), "no-store, no-cache, max-age=0, must-revalidate")
+                    self.assertEqual(response.getheader("Pragma"), "no-cache")
+                    self.assertEqual(response.getheader("Expires"), "0")
+                self.assertEqual(before, {p.name: hashlib.sha256(p.read_bytes()).digest() for p in export.iterdir()})
+                # Simulate rebuilding while the SAME HTTPS listener stays up.
+                for name in ("index.html", "index.js", "index.pck", "index.wasm"):
+                    updated = b"new-build-" + name.encode()
+                    (export / name).write_bytes(updated)
+                    client.request("GET", "/" + name, headers={
+                        "If-Modified-Since": "Wed, 01 Jan 2099 00:00:00 GMT",
+                        "If-None-Match": '"old-build"',
+                    })
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(response.read(), updated)
+                before = {p.name: hashlib.sha256(p.read_bytes()).digest() for p in export.iterdir()}
                 client.request("GET", "/tls/127.0.0.1.key")
                 response = client.getresponse()
                 self.assertEqual(response.status, 404)
