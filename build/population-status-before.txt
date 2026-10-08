@@ -1,0 +1,82 @@
+ M actors/WorldBlobShadow.tscn
+ M data/npc/profiles/crab_small_01.tres
+ M data/npc/profiles/creature_green_01.tres
+ M data/npc/profiles/creature_red_01.tres
+ M data/npc/profiles/fisher_captain_01.tres
+ M data/npc/profiles/merchant_heavy_01.tres
+ M data/npc/profiles/placeholder_14bf342a.tres
+ M data/npc/profiles/placeholder_21f7b2b2.tres
+ M data/npc/profiles/placeholder_3cb9da3b.tres
+ M data/npc/profiles/placeholder_43fb177f.tres
+ M data/npc/profiles/placeholder_4b58ab5e.tres
+ M data/npc/profiles/placeholder_68024840.tres
+ M data/npc/profiles/placeholder_6d89ee8e.tres
+ M data/npc/profiles/placeholder_78f1768c.tres
+ M data/npc/profiles/placeholder_7d53dc6e.tres
+ M data/npc/profiles/placeholder_7f1b19bc.tres
+ M data/npc/profiles/placeholder_837b6a03.tres
+ M data/npc/profiles/placeholder_8483df78.tres
+ M data/npc/profiles/placeholder_85f413fb.tres
+ M data/npc/profiles/placeholder_8c3ae570.tres
+ M data/npc/profiles/placeholder_9d2e2d78.tres
+ M data/npc/profiles/placeholder_c3997e38.tres
+ M data/npc/profiles/placeholder_cac2bbc2.tres
+ M data/npc/profiles/placeholder_d1282736.tres
+ M data/npc/profiles/placeholder_d7c2eeb9.tres
+ M data/npc/profiles/placeholder_e1466c4f.tres
+ M data/npc/profiles/placeholder_e5085f21.tres
+ M data/npc/profiles/placeholder_e8e1ac56.tres
+ M data/npc/profiles/placeholder_ea87e795.tres
+ M data/npc/profiles/placeholder_f3876069.tres
+ M data/npc/profiles/placeholder_f8644d09.tres
+ M data/npc/profiles/placeholder_faacbedb.tres
+ M data/npc/profiles/placeholder_ff1c0303.tres
+ M data/npc/profiles/placeholder_ff6dba97_blue.tres
+ M data/npc/profiles/placeholder_ff6dba97_orange.tres
+ M data/npc/profiles/seated_crafter_01.tres
+ M data/npc/profiles/smoking_traveler_01.tres
+ M data/presentation/card_maker.tres
+ M data/presentation/coastalherb.tres
+ M data/presentation/crab.tres
+ M data/presentation/driftwood.tres
+ M data/presentation/excluded.tres
+ M data/presentation/ground_item.tres
+ M data/presentation/harborlockbox.tres
+ M data/presentation/harborrequestboard.tres
+ M data/presentation/ironscrap.tres
+ M data/presentation/merchant.tres
+ M data/presentation/player.tres
+ M data/presentation/regionalchampionshipregistrar.tres
+ M data/presentation/seaglass.tres
+ M data/presentation/seaweed.tres
+ M data/presentation/shell.tres
+ M data/presentation/still_water.tres
+ M export/index.html
+ M export/index.pck
+ M scripts/mobile/mobile_playtest_window.gd
+ M scripts/mobile/mobile_portrait_harness.gd
+ M scripts/mobile/mobile_touch_controls.gd
+ M scripts/npc/npc_catalog_entry.gd
+ M scripts/npc/npc_catalogue_preview.gd
+ M scripts/npc/npc_visual_profile.gd
+ M scripts/qa/developer_playtest_qa.gd
+ M scripts/qa/mobile_portrait_harness_qa.gd
+ M scripts/qa/mobile_web_parity_qa.gd
+ M scripts/qa/world_presentation_tuning_qa.gd
+ M scripts/triple_triad/triple_triad_deck_setup.gd
+ M scripts/world/ground_presentation.gd
+ M scripts/world/world_actor_presentation_profile.gd
+ M tools/npc/build_npc_catalog.py
+?? data/presentation/shadows/
+?? docs/mobile/presentation_interaction_standard_v1.md
+?? docs/mobile/presentation_interaction_standard_v1_files.txt
+?? scripts/mobile/responsive_menu_surface.gd
+?? scripts/mobile/responsive_menu_surface.gd.uid
+?? scripts/qa/mobile_presentation_standard_qa.gd
+?? scripts/qa/mobile_presentation_standard_qa.gd.uid
+?? scripts/world/world_marker_anchor.gd
+?? scripts/world/world_marker_anchor.gd.uid
+?? scripts/world/world_shadow_families.gd
+?? scripts/world/world_shadow_families.gd.uid
+?? scripts/world/world_shadow_family.gd
+?? scripts/world/world_shadow_family.gd.uid

@@ -1,35 +1,102 @@
-[gd_resource type="SpriteFrames" format=3]
-[ext_resource type="Texture2D" path="res://assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png" id="sheet"]
+[gd_resource type="SpriteFrames" format=3 uid="uid://c3l0hqgymy5y5"]
+
+[ext_resource type="Texture2D" uid="uid://2ahbook3at0e" path="res://assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png" id="sheet"]
+
 [sub_resource type="AtlasTexture" id="frame1"]
 atlas = ExtResource("sheet")
 region = Rect2(6, 80, 33, 48)
+
 [sub_resource type="AtlasTexture" id="frame2"]
 atlas = ExtResource("sheet")
 region = Rect2(40, 80, 33, 48)
+
 [sub_resource type="AtlasTexture" id="frame3"]
 atlas = ExtResource("sheet")
 region = Rect2(74, 80, 33, 48)
+
 [sub_resource type="AtlasTexture" id="frame4"]
 atlas = ExtResource("sheet")
 region = Rect2(108, 80, 33, 48)
+
 [sub_resource type="AtlasTexture" id="frame5"]
 atlas = ExtResource("sheet")
 region = Rect2(162, 82, 40, 56)
+
 [sub_resource type="AtlasTexture" id="frame6"]
 atlas = ExtResource("sheet")
 region = Rect2(203, 82, 40, 56)
+
 [sub_resource type="AtlasTexture" id="frame7"]
 atlas = ExtResource("sheet")
 region = Rect2(244, 82, 40, 56)
+
 [sub_resource type="AtlasTexture" id="frame8"]
 atlas = ExtResource("sheet")
 region = Rect2(285, 82, 40, 56)
+
 [resource]
-animations = [{"name": &"pose_008", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame1")}]},
-{"name": &"pose_009", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame2")}]},
-{"name": &"pose_010", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame3")}]},
-{"name": &"pose_011", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame4")}]},
-{"name": &"pose_012", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame5")}]},
-{"name": &"pose_013", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame6")}]},
-{"name": &"pose_014", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame7")}]},
-{"name": &"pose_015", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame8")}]}]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame1")
+}],
+"loop": 1,
+"name": &"pose_008",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame2")
+}],
+"loop": 1,
+"name": &"pose_009",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame3")
+}],
+"loop": 1,
+"name": &"pose_010",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame4")
+}],
+"loop": 1,
+"name": &"pose_011",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame5")
+}],
+"loop": 1,
+"name": &"pose_012",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame6")
+}],
+"loop": 1,
+"name": &"pose_013",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame7")
+}],
+"loop": 1,
+"name": &"pose_014",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame8")
+}],
+"loop": 1,
+"name": &"pose_015",
+"speed": 1.0
+}]

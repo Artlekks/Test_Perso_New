@@ -96,6 +96,7 @@ var _catalog: Resource = null
 var _collection_backend = null
 var _acquisition_policy: Resource = null
 var _cards: Array = []
+var mobile_start_enabled := false
 var developer_deck_provider: Callable
 var developer_test_deck: Array = []
 var _deck: Array = []
@@ -223,6 +224,11 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if _state == STATE_ANIMATING:
+		return
+
+	if mobile_start_enabled and _is_start(event):
+		_try_confirm_deck()
+		_accept_input()
 		return
 
 	# J is a UI mode switch, so it MUST be handled here rather than in
@@ -831,6 +837,12 @@ func _move_cursor(dx: int, dy: int) -> void:
 	if page_count <= 0:
 		return
 	var local_index: int = clampi(_cursor_index - page_start, 0, page_count - 1)
+	if mobile_start_enabled:
+		_cursor_index = page_start + clampi(local_index + dx + dy, 0, page_count - 1)
+		_status_text = ""
+		_refresh_collection()
+		_refresh_labels()
+		return
 	var column: int = local_index % COLLECTION_COLUMNS
 	var row: int = floori(float(local_index) / float(COLLECTION_COLUMNS))
 	column = clampi(column + dx, 0, COLLECTION_COLUMNS - 1)
@@ -1784,7 +1796,7 @@ func _is_delete_deck(event: InputEvent) -> bool:
 
 
 func _is_start(event: InputEvent) -> bool:
-	return _key_matches(event, KEY_ENTER)
+	return _key_matches(event, KEY_ENTER) or (mobile_start_enabled and _key_matches(event, KEY_SPACE))
 
 
 func _is_back(event: InputEvent) -> bool:

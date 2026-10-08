@@ -1,13 +1,14 @@
 extends Control
 
 const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
+const ResponsiveSurface = preload("res://scripts/mobile/responsive_menu_surface.gd")
 const PlaytestWindow = preload("res://scripts/mobile/mobile_playtest_window.gd")
 const RESPONSIVE_WINDOWS := ["FishingDebugMenu", "TripleTriadDebugMenu", "FishingEconomyMenu", "BeachCraftingMenu", "FishingCardMakerMenu", "TripleTriadGame", "PlayableCampaignQAGuide"]
 @export_file("*.tscn") var gameplay_scene: String = "res://actors/FishingTestScene_V2.tscn"
 @export var reference_size := Vector2i(390, 844)
 @export var fallback_safe_insets := Vector4(0, 47, 0, 34)
-@export_range(0.45, 0.65, 0.01) var gameplay_height_share: float = 0.60
-@export var minimum_controls_height: float = 280.0
+@export_range(0.45, 0.72, 0.01) var gameplay_height_share: float = 0.69
+@export var minimum_controls_height: float = 236.0
 @export var economy_body_font_size: int = 12
 @export var economy_small_font_size: int = 10
 @export var isolated_playtest_save: bool = true
@@ -223,31 +224,12 @@ func _adapt_mobile_presentation() -> void:
 				fitter.name = "MobilePlaytestWindow"
 				layer.add_child(fitter)
 				fitter.configure(window_root)
-		if layer.name == "FishingEconomyMenu" and not layer.has_meta("mobile_economy_readability"):
-			layer.set_meta("mobile_economy_readability", true)
-			# This menu alone uses unscaled 7-9px text; the fishing menu and
-			# catch frame already have their authored 2x text presentation.
-			for path in ["Root/Rows", "Root/TradeRequirementsPanel", "Root/ConfirmPanel"]:
-				for label in layer.get_node(path).find_children("*", "Label", true, false):
-					label.add_theme_font_size_override("font_size", economy_body_font_size)
-			for path in ["Root/WalletLabel", "Root/CategoryLabel", "Root/PageLabel", "Root/MessageLabel", "Root/HelpLabel"]:
-				var label := layer.get_node_or_null(path) as Label
-				if label != null:
-					label.add_theme_font_size_override("font_size", economy_small_font_size)
-			var info := layer.get_node("Root/InfoLabel") as Label
-			info.add_theme_font_size_override("font_size", economy_body_font_size)
-			info.offset_right = 384.0
-			info.offset_bottom = 395.0
-			var message := layer.get_node("Root/MessageLabel") as Label
-			message.offset_top = 397.0
-			message.offset_bottom = 424.0
-			message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			var requirements := layer.get_node("Root/TradeRequirementsPanel") as Panel
-			requirements.offset_left = 394.0
-			requirements.offset_right = 550.0
-			for label in requirements.get_children():
-				if label is Label:
-					label.offset_right = 150.0
+		var kind: String = {"FishingEconomyMenu":"economy", "BeachCraftingMenu":"crafting", "FishingCardMakerMenu":"card_maker"}.get(String(layer.name), "")
+		if not kind.is_empty() and layer.is_inside_tree():
+			ResponsiveSurface.attach(layer, layer.get_node("Root"), kind)
+		if layer.name == "TripleTriadGame" and layer.is_inside_tree():
+			var deck := layer.get_node_or_null("Root/TripleTriadDeckSetup") as Control
+			if deck != null: ResponsiveSurface.attach(deck, deck, "deck")
 	var rig := game.get_node_or_null("CameraRig")
 	if rig != null:
 		_adapt_fishing_composition(rig, extra_height)
@@ -322,6 +304,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var scrolling := false
 		for window in gameplay_viewport.find_children("MobilePlaytestWindow", "Node", true, false):
 			if window.bar != null and window.bar.visible: scrolling = true
+		for menu in gameplay_viewport.find_children("ResponsiveMenuSurface", "Control", true, false):
+			if menu.is_visible_in_tree(): scrolling = true
 		if event is InputEventScreenTouch and event.pressed and scrolling and Rect2(gameplay_image.position, gameplay_image.size).has_point(event.position):
 			_window_touches[event.index] = true
 		if _window_touches.has(event.index):
@@ -363,6 +347,9 @@ func _exit_tree() -> void:
 		var layer = entry.node.get_ref()
 		var original_parent = entry.parent.get_ref()
 		if is_instance_valid(layer) and is_instance_valid(original_parent):
+			for view in layer.find_children("ResponsiveMenuSurface", "Control", true, false):
+				view.restore_authored()
+				view.free()
 			var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
 			if fitter != null:
 				fitter.surface.position = fitter.original_position

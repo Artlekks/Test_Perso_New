@@ -1,11 +1,12 @@
-[gd_resource type="Resource" script_class="WorldActorPresentationProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WorldActorPresentationProfile" format=3 uid="uid://cw3i65l1loqmv"]
 
-[ext_resource type="Script" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
+[ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
-feet_from_bottom_px = 0.0
-animation_feet_from_bottom_px = {"Stand_Interest": 7.0}
-animation_feet_from_left_px = {"Stand_Interest": 12.0}
-shadow_width = 0.22
-shadow_depth = 0.22
+animation_feet_from_bottom_px = {
+"Stand_Interest": 7.0
+}
+animation_feet_from_left_px = {
+"Stand_Interest": 12.0
+}

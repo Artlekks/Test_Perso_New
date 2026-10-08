@@ -34,12 +34,12 @@ func _layout() -> void:
 	var h := size.y
 	stick_zone = Rect2(Vector2(0, h * 0.24), Vector2(w * 0.51, h * 0.56))
 	buttons = {
-		"A": Rect2(Vector2(w * 0.77, h * 0.18), Vector2(w * 0.21, w * 0.21)),
-		"B": Rect2(Vector2(w * 0.55, h * 0.48), Vector2(w * 0.21, w * 0.21)),
-		"C": Rect2(Vector2(w * 0.55, h * 0.18), Vector2(w * 0.15, w * 0.15)),
-		"MENU": Rect2(Vector2(w * 0.015, h * 0.84), Vector2(w * 0.19, maxf(h * 0.13, w * 44.0 / 390.0))),
-		"SELECT": Rect2(Vector2(w * 0.35, h * 0.84), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
-		"START": Rect2(Vector2(w * 0.56, h * 0.84), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
+		"A": Rect2(Vector2(w * 0.77, maxf(h * 0.18, w * 48.0 / 390.0)), Vector2(w * 0.19, w * 0.19)),
+		"B": Rect2(Vector2(w * 0.55, h * 0.48), Vector2(w * 0.19, w * 0.19)),
+		"C": Rect2(Vector2(w * 0.55, maxf(h * 0.18, w * 48.0 / 390.0)), Vector2(w * 0.15, w * 0.15)),
+		"MENU": Rect2(Vector2(w * 0.015, h - maxf(h * 0.13, w * 44.0 / 390.0)), Vector2(w * 0.19, maxf(h * 0.13, w * 44.0 / 390.0))),
+		"SELECT": Rect2(Vector2(w * 0.35, h - maxf(h * 0.13, w * 44.0 / 390.0)), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
+		"START": Rect2(Vector2(w * 0.56, h - maxf(h * 0.13, w * 44.0 / 390.0)), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
 		"L": Rect2(Vector2.ZERO, Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
 		"R": Rect2(Vector2(w * 0.71, 0), Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
 	}

@@ -18,7 +18,6 @@ default_animation = &"red_s"
 directional_mode = 5
 available_directions = PackedStringArray("S", "SE", "E", "NE", "N")
 role_tags = PackedStringArray("ambient_creature")
-shadow_family = &"small_creature"
 movement_capability = false
 
 directional_animation_prefixes = {"idle": "red_"}
@@ -26,3 +25,4 @@ directional_animation_prefixes = {"idle": "red_"}
 directional_aliases = {}
 
 default_directional_pose = "idle"
+shadow_family = "critter"

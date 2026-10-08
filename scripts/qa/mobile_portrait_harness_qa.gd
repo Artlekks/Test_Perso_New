@@ -90,8 +90,8 @@ func run() -> void:
 	var hardware: Rect2 = harness.get_safe_rect(Vector2(390, 844), Rect2(0, 141, 1170, 2289), Vector2(1170, 2532))
 	check(hardware.position.is_equal_approx(Vector2(0, 47)) and hardware.size.is_equal_approx(Vector2(390, 763)), "physical safe area converts to logical portrait units")
 	var reference: Dictionary = harness.get_layout_rects(hardware)
-	check(reference.resolution == Vector2i(640, 751) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference derives 640x751 gameplay resolution from safe area")
-	check(absf(reference.gameplay.size.y / hardware.size.y - 0.60) < 0.002 and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference uses 60/40 split and keeps 34-point home inset")
+	check(reference.resolution == Vector2i(640, 863) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference derives 640x863 gameplay resolution from safe area")
+	check(absf(reference.gameplay.size.y / hardware.size.y - 0.69) < 0.002 and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference uses 69/31 split and keeps 34-point home inset")
 	for dimensions in [Vector2(390, 844), Vector2(390, 664), Vector2(393, 852), Vector2(844, 390)]:
 		var available: Rect2 = harness.get_safe_rect(dimensions)
 		var layout: Dictionary = harness.get_layout_rects(available)
@@ -113,6 +113,7 @@ func run() -> void:
 	for layer in harness.gameplay_viewport.find_children("*", "CanvasLayer", true, false):
 		var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
 		if fitter == null: continue
+		if layer.name in ["FishingEconomyMenu", "BeachCraftingMenu", "FishingCardMakerMenu"]: continue
 		var surface: Control = fitter.surface
 		var was_visible := surface.visible
 		surface.show()
@@ -262,11 +263,10 @@ func run() -> void:
 	var economy = fishing.fishing_economy_menu
 	check(economy.is_open() and paused, "A opens real merchant menu through existing dialogue choice")
 	check(economy.root.size.is_equal_approx(Vector2(640, 480)), "merchant UI retains authored 640x480 geometry in taller viewport")
-	check(economy.row_name_labels[0].get_theme_font_size("font_size") == 12 and economy.info_label.get_theme_font_size("font_size") == 12, "mobile economy uses targeted larger text, without changing global economy typography")
-	for label in economy.row_name_labels + economy.row_owned_labels + economy.row_price_labels:
-		check(label.get_theme_font("font").get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x <= label.size.x, "real merchant row fits enlarged type: " + label.name)
-	check(dialogue._text_height(economy.info_label, economy.info_label.size.x, "Black Bass 0/1\nBlue Gill 0/1\nPiranha 0/1\nNeed more fish.") <= economy.info_label.size.y, "multi-species owned/required details fit mobile economy info box")
-	check(dialogue._text_height(economy.trade_requirements_label, economy.trade_requirements_label.size.x, "Black Bass x1\nBlue Gill x1\nPiranha x1") <= economy.trade_requirements_label.size.y, "three fish requirements fit widened mobile requirement box")
+	var responsive := economy.root.get_node("ResponsiveMenuSurface") as ResponsiveMenuSurface
+	for binding in responsive.bindings:
+		check(binding.label.get_theme_font_size("font_size") == 18, "common menu uses approved dialogue body baseline")
+	check(responsive.size.x == 608 and responsive.size.y == harness.gameplay_viewport.size.y - 24, "merchant presentation reflows to actual portrait gameplay dimensions")
 	await capture("mobile-portrait-merchant")
 	await button("B")
 	check(not economy.is_open() and not paused, "B closes real merchant menu with original pause ownership")

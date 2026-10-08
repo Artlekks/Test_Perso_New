@@ -6,3 +6,4 @@
 script = ExtResource("1")
 category = 4
 shadow_enabled = false
+shadow_family = "humanoid_standard"

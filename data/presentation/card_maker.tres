@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="WorldActorPresentationProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WorldActorPresentationProfile" format=3 uid="uid://tj5xs17orhto"]
 
-[ext_resource type="Script" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
+[ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 feet_from_bottom_px = 5.0
-shadow_width = 0.22
-shadow_depth = 0.22
-directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+directional_animation_prefixes = {
+"idle": "idle_",
+"walk": "walk_"
+}

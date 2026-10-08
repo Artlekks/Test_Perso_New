@@ -28,10 +28,21 @@ func _ready() -> void:
 		sprite.animation_changed.connect(apply_frame)
 	apply_profile()
 	update_anchor()
+	if not Engine.is_editor_hint(): _install_marker_anchor.call_deferred()
+
+func _install_marker_anchor() -> void:
+	var actor := get_parent() as Node3D
+	if actor == null or profile == null or actor.has_node("WorldMarkerAnchor"): return
+	if not actor.has_node("PromptLabel3D") and not actor.has_node("RequestMarker"): return
+	var anchor := WorldMarkerAnchor.new()
+	anchor.name = "WorldMarkerAnchor"
+	actor.add_child(anchor)
+	anchor.configure(actor, profile)
 
 func _process(_delta: float) -> void:
 	update_anchor()
 	update_directional_view()
+	apply_shadow_family()
 	if sprite != null and sprite.flip_h != _last_flip_h: apply_frame()
 	if Engine.is_editor_hint(): apply_profile()
 	if sprite != null and profile != null:
@@ -93,10 +104,7 @@ func apply_profile() -> void:
 	if directional_pose.is_empty(): directional_pose = profile.default_directional_pose
 	visual_anchor.position = Vector3(0, profile.ground_lift, 0)
 	visual_anchor.scale = profile.sprite_scale
-	shadow.width = profile.shadow_width
-	shadow.depth = profile.shadow_depth
-	shadow.opacity = profile.shadow_opacity
-	shadow.ground_offset = profile.shadow_ground_lift
+	apply_shadow_family()
 	shadow.visible = profile.shadow_enabled and profile.category != 4
 	if sprite != null:
 		sprite.position = Vector3.ZERO
@@ -127,3 +135,13 @@ func apply_frame() -> void:
 		if sprite.flip_h: x_offset = -x_offset
 		sprite.offset = Vector2(x_offset, texture.get_height() * 0.5 - padding)
 		_last_flip_h = sprite.flip_h
+
+func apply_shadow_family() -> void:
+	if profile == null or shadow == null: return
+	var family := profile.resolved_shadow_family()
+	var width := family.width * profile.shadow_scale_multiplier
+	var depth := family.depth * profile.shadow_scale_multiplier
+	if not is_equal_approx(shadow.width, width): shadow.width = width
+	if not is_equal_approx(shadow.depth, depth): shadow.depth = depth
+	if not is_equal_approx(shadow.opacity, family.opacity): shadow.opacity = family.opacity
+	if not is_equal_approx(shadow.ground_offset, family.ground_offset): shadow.ground_offset = family.ground_offset

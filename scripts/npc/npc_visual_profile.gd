@@ -11,7 +11,6 @@ enum DirectionalMode { ONE_VIEW, TWO_VIEW, FOUR_DIR, FOUR_DIR_WITH_MIRROR, EIGHT
 @export var default_animation: StringName
 @export_range(0.1, 4.0, 0.1) var animation_speed: float = 1.0
 @export var collider_profile: NPCColliderProfile
-@export var shadow_family: StringName = &"humanoid"
 @export var movement_capability: bool = false
 @export var role_tags: PackedStringArray = []
 

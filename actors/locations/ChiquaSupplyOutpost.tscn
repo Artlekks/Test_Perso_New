@@ -1,8 +1,12 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 [ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
 [ext_resource type="Resource" path="res://data/world/locations/chiqua_supply_outpost.tres" id="2"]
 [ext_resource type="Resource" path="res://data/economy/contexts/chiqua_item_shop.tres" id="3"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_3cb9da3b.tscn" id="population_0"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_43fb177f.tscn" id="population_1"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_d7c2eeb9.tscn" id="population_2"]
+
 [node name="ChiquaSupplyOutpost" instance=ExtResource("1")]
 location_context = ExtResource("2")
 [node name="ManilloTrader" parent="World" index="6"]
@@ -12,3 +16,15 @@ trader_name = "Chiqua Item Shop (development stand-in)"
 [node name="ReturnTravel" parent="World" instance=ExtResource("4")]
 position = Vector3(-1.0, 0.06, 0.95)
 destination_id = &"river_fishing_outpost"
+
+[node name="PopulationTrader" parent="World" instance=ExtResource("population_0") ]
+position = Vector3(-2.4, 0, 0.15)
+patrol_enabled = false
+
+[node name="PopulationUnusualResident" parent="World" instance=ExtResource("population_1") ]
+position = Vector3(2.5, 0, 0.15)
+patrol_enabled = false
+
+[node name="PopulationMystic" parent="World" instance=ExtResource("population_2") ]
+position = Vector3(-2.4, 0, 1.05)
+patrol_enabled = false

@@ -15,5 +15,5 @@ default_animation = &"Idle"
 directional_mode = 0
 available_directions = PackedStringArray("one view")
 role_tags = PackedStringArray("traveler", "quest_placeholder")
-shadow_family = &"humanoid"
 movement_capability = false
+shadow_family = "humanoid_standard"

@@ -1,10 +1,14 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 [ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
 [ext_resource type="Resource" path="res://data/world/locations/lyp_lake_outpost.tres" id="2"]
 [ext_resource type="Resource" path="res://data/economy/contexts/lyp_outpost.tres" id="3"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://actors/locations/ContextualItemShopNPC.tscn" id="5"]
 [ext_resource type="Resource" path="res://data/economy/contexts/lyp_item_shop.tres" id="6"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_21f7b2b2.tscn" id="population_0"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_d1282736.tscn" id="population_1"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_e1466c4f.tscn" id="population_2"]
+
 [node name="LypLakeOutpost" instance=ExtResource("1")]
 location_context = ExtResource("2")
 [node name="ManilloTrader" parent="World" index="6"]
@@ -20,3 +24,15 @@ trader_name = "Lyp Item Shop (development stand-in)"
 [node name="RiverTravel" parent="World" instance=ExtResource("4")]
 position = Vector3(1.5, 0.06, 0.95)
 destination_id = &"river_fishing_outpost"
+
+[node name="PopulationSeatedAngler" parent="World" instance=ExtResource("population_0") ]
+position = Vector3(-2.5, 0, 0.15)
+patrol_enabled = false
+
+[node name="PopulationVeteranAngler" parent="World" instance=ExtResource("population_1") ]
+position = Vector3(2.5, 0, 0.15)
+patrol_enabled = false
+
+[node name="PopulationElder" parent="World" instance=ExtResource("population_2") ]
+position = Vector3(-2.5, 0, 1.05)
+patrol_enabled = false

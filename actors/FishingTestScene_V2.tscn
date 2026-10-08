@@ -100,6 +100,9 @@
 [ext_resource type="Script" uid="uid://t3mpbps4ct73" path="res://scripts/world/playable_location_scene.gd" id="location_script"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="travel_point"]
 
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_14bf342a.tscn" id="population_0"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_cac2bbc2.tscn" id="population_1"]
+
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
 background_energy_multiplier = 0.0
@@ -204,6 +207,7 @@ inner_radius = 0.1
 outer_radius = 0.13
 rings = 24
 ring_segments = 24
+
 
 [node name="FishingTestScene_V2" type="Node3D" unique_id=2114470757]
 script = ExtResource("location_script")
@@ -1213,3 +1217,11 @@ screen_transition = NodePath("../../../UI/FishingHud/ScreenTransition")
 [editable path="World/BeachCritter2"]
 [editable path="Player/CharacterBody3D"]
 [editable path="UI/FishingHud/PowerMeter"]
+
+[node name="PopulationAngler" parent="World" instance=ExtResource("population_0") ]
+position = Vector3(-2.45, 0, 1.1)
+patrol_enabled = false
+
+[node name="PopulationResident" parent="World" instance=ExtResource("population_1") ]
+position = Vector3(2.45, 0, 1.1)
+patrol_enabled = false

@@ -24,6 +24,11 @@ func configure(root_control: Control) -> void:
 	_fit()
 
 func _process(_delta: float) -> void:
+	for view in surface.find_children("ResponsiveMenuSurface", "Control", true, false):
+		if view.is_visible_in_tree():
+			bar.visible = false
+			return
+	_visibility_changed_without_reset()
 	if last_size != get_viewport().get_visible_rect().size: _fit()
 
 func _fit() -> void:
@@ -43,6 +48,9 @@ func _fit() -> void:
 	bar.step = 1
 	_visibility_changed()
 	_place(bar.value)
+
+func _visibility_changed_without_reset() -> void:
+	bar.visible = surface.visible and bar.max_value > bar.page
 
 func _visibility_changed() -> void:
 	bar.visible = surface.visible and bar.max_value > bar.page

@@ -1,0 +1,558 @@
+{
+  "entries": {
+    "crab_small_01": {
+      "placeholder_roles": [
+        "ambient_creature"
+      ],
+      "importance_tier": "C",
+      "movement_type": "ambient",
+      "suggested_locations": [
+        "beach"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    },
+    "creature_green_01": {
+      "placeholder_roles": [
+        "ambient_creature"
+      ],
+      "importance_tier": "C",
+      "movement_type": "ambient",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    },
+    "creature_red_01": {
+      "placeholder_roles": [
+        "ambient_creature"
+      ],
+      "importance_tier": "C",
+      "movement_type": "ambient",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    },
+    "fisher_captain_01": {
+      "placeholder_roles": [
+        "angler",
+        "card_opponent"
+      ],
+      "importance_tier": "B",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "beach"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    },
+    "merchant_heavy_01": {
+      "placeholder_roles": [
+        "merchant",
+        "special_vendor"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "beach",
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    },
+    "placeholder_14bf342a": {
+      "placeholder_roles": [
+        "angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "beach"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_21f7b2b2": {
+      "placeholder_roles": [
+        "seated_angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_3cb9da3b": {
+      "placeholder_roles": [
+        "trader",
+        "special_vendor"
+      ],
+      "importance_tier": "A",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_43fb177f": {
+      "placeholder_roles": [
+        "quest_placeholder",
+        "traveler"
+      ],
+      "importance_tier": "A",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_4b58ab5e": {
+      "placeholder_roles": [
+        "traveler"
+      ],
+      "importance_tier": "C",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "river_fishing_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_68024840": {
+      "placeholder_roles": [
+        "harbor_worker"
+      ],
+      "importance_tier": "C",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_6d89ee8e": {
+      "placeholder_roles": [
+        "ambient_creature"
+      ],
+      "importance_tier": "C",
+      "movement_type": "ambient",
+      "suggested_locations": [
+        "river_fishing_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_78f1768c": {
+      "placeholder_roles": [
+        "angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_7d53dc6e": {
+      "placeholder_roles": [
+        "guard"
+      ],
+      "importance_tier": "B",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_7f1b19bc": {
+      "placeholder_roles": [
+        "trader"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_837b6a03": {
+      "placeholder_roles": [
+        "ambient_citizen"
+      ],
+      "importance_tier": "C",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_8483df78": {
+      "placeholder_roles": [
+        "angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_85f413fb": {
+      "placeholder_roles": [
+        "ambient_citizen"
+      ],
+      "importance_tier": "C",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "beach",
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_8c3ae570": {
+      "placeholder_roles": [
+        "harbor_worker"
+      ],
+      "importance_tier": "B",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_9d2e2d78": {
+      "placeholder_roles": [
+        "traveler",
+        "quest_placeholder"
+      ],
+      "importance_tier": "A",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "river_fishing_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_c3997e38": {
+      "placeholder_roles": [
+        "special_vendor"
+      ],
+      "importance_tier": "A",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_cac2bbc2": {
+      "placeholder_roles": [
+        "traveler",
+        "ambient_citizen"
+      ],
+      "importance_tier": "C",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "beach"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_d1282736": {
+      "placeholder_roles": [
+        "veteran_angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_d7c2eeb9": {
+      "placeholder_roles": [
+        "mystic",
+        "quest_placeholder"
+      ],
+      "importance_tier": "A",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_e1466c4f": {
+      "placeholder_roles": [
+        "elder"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_e5085f21": {
+      "placeholder_roles": [
+        "seated_angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_e8e1ac56": {
+      "placeholder_roles": [
+        "trader"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "wyndia_ocean_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_ea87e795": {
+      "placeholder_roles": [
+        "ambient_citizen"
+      ],
+      "importance_tier": "C",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_f3876069": {
+      "placeholder_roles": [
+        "veteran_angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "river_fishing_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_f8644d09": {
+      "placeholder_roles": [
+        "mystic"
+      ],
+      "importance_tier": "A",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_faacbedb": {
+      "placeholder_roles": [
+        "seated_angler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_ff1c0303": {
+      "placeholder_roles": [
+        "trader"
+      ],
+      "importance_tier": "B",
+      "movement_type": "patrol_capable",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "REVIEWED_DIRECTIONS"
+    },
+    "placeholder_ff6dba97_blue": {
+      "placeholder_roles": [
+        "elder"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "lyp_lake_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "placeholder_ff6dba97_orange": {
+      "placeholder_roles": [
+        "ambient_citizen"
+      ],
+      "importance_tier": "C",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "chiqua_supply_outpost"
+      ],
+      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+    },
+    "seated_crafter_01": {
+      "placeholder_roles": [
+        "crafter",
+        "harbor_worker"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "beach"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    },
+    "smoking_traveler_01": {
+      "placeholder_roles": [
+        "veteran_angler",
+        "traveler"
+      ],
+      "importance_tier": "B",
+      "movement_type": "stationary",
+      "suggested_locations": [
+        "beach",
+        "lyp_lake_outpost"
+      ],
+      "art_status": "EXISTING_AUTHORED"
+    }
+  },
+  "placements": [
+    {
+      "location": "beach",
+      "scene": "actors/FishingTestScene_V2.tscn",
+      "node": "World/PopulationAngler",
+      "catalogue_id": "placeholder_14bf342a",
+      "position": [
+        -2.45,
+        0,
+        1.1
+      ]
+    },
+    {
+      "location": "beach",
+      "scene": "actors/FishingTestScene_V2.tscn",
+      "node": "World/PopulationResident",
+      "catalogue_id": "placeholder_cac2bbc2",
+      "position": [
+        2.45,
+        0,
+        1.1
+      ]
+    },
+    {
+      "location": "wyndia_ocean_outpost",
+      "scene": "actors/locations/WyndiaOceanOutpost.tscn",
+      "node": "World/PopulationHarborWorker",
+      "catalogue_id": "placeholder_68024840",
+      "position": [
+        -2.4,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "wyndia_ocean_outpost",
+      "scene": "actors/locations/WyndiaOceanOutpost.tscn",
+      "node": "World/PopulationAngler",
+      "catalogue_id": "placeholder_78f1768c",
+      "position": [
+        2.5,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "wyndia_ocean_outpost",
+      "scene": "actors/locations/WyndiaOceanOutpost.tscn",
+      "node": "World/PopulationHarborResident",
+      "catalogue_id": "placeholder_8c3ae570",
+      "position": [
+        -2.4,
+        0,
+        1.05
+      ]
+    },
+    {
+      "location": "lyp_lake_outpost",
+      "scene": "actors/locations/LypLakeOutpost.tscn",
+      "node": "World/PopulationSeatedAngler",
+      "catalogue_id": "placeholder_21f7b2b2",
+      "position": [
+        -2.5,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "lyp_lake_outpost",
+      "scene": "actors/locations/LypLakeOutpost.tscn",
+      "node": "World/PopulationVeteranAngler",
+      "catalogue_id": "placeholder_d1282736",
+      "position": [
+        2.5,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "lyp_lake_outpost",
+      "scene": "actors/locations/LypLakeOutpost.tscn",
+      "node": "World/PopulationElder",
+      "catalogue_id": "placeholder_e1466c4f",
+      "position": [
+        -2.5,
+        0,
+        1.05
+      ]
+    },
+    {
+      "location": "river_fishing_outpost",
+      "scene": "actors/locations/RiverFishingOutpost.tscn",
+      "node": "World/PopulationUnusualTraveler",
+      "catalogue_id": "placeholder_9d2e2d78",
+      "position": [
+        -2.4,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "river_fishing_outpost",
+      "scene": "actors/locations/RiverFishingOutpost.tscn",
+      "node": "World/PopulationAmbientBird",
+      "catalogue_id": "placeholder_6d89ee8e",
+      "position": [
+        2.5,
+        0,
+        0.35
+      ]
+    },
+    {
+      "location": "chiqua_supply_outpost",
+      "scene": "actors/locations/ChiquaSupplyOutpost.tscn",
+      "node": "World/PopulationTrader",
+      "catalogue_id": "placeholder_3cb9da3b",
+      "position": [
+        -2.4,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "chiqua_supply_outpost",
+      "scene": "actors/locations/ChiquaSupplyOutpost.tscn",
+      "node": "World/PopulationUnusualResident",
+      "catalogue_id": "placeholder_43fb177f",
+      "position": [
+        2.5,
+        0,
+        0.15
+      ]
+    },
+    {
+      "location": "chiqua_supply_outpost",
+      "scene": "actors/locations/ChiquaSupplyOutpost.tscn",
+      "node": "World/PopulationMystic",
+      "catalogue_id": "placeholder_d7c2eeb9",
+      "position": [
+        -2.4,
+        0,
+        1.05
+      ]
+    }
+  ],
+  "special_assignments": "UNCONFIRMED"
+}

@@ -83,7 +83,21 @@ func run() -> void:
 		check(game.is_open(), "A confirms actual card game entry without granting inventory")
 		check(game.deck_setup.developer_test_deck.size() == 5 and game.deck_setup._deck.size() == 5, "empty real collection gets exactly five temporary legitimate cards")
 		var deck_before := bytes_snapshot()
-		game.deck_setup._try_confirm_deck()
+		game.deck_setup._enter_collection_for_profile(0)
+		game.deck_setup._cursor_index = 4
+		shell.controls.touch_begin(86, shell.controls.buttons.A.get_center())
+		await settle()
+		shell.controls.touch_end(86)
+		await create_timer(0.6).timeout
+		check(game.deck_setup._deck.size() == 4, "real mobile A removes last temporary card")
+		shell.controls.touch_begin(87, shell.controls.buttons.A.get_center())
+		await settle()
+		shell.controls.touch_end(87)
+		await create_timer(0.6).timeout
+		check(game.deck_setup._deck.size() == 5, "real mobile A selects fifth card before START")
+		shell.controls.touch_begin(89, shell.controls.buttons.START.get_center())
+		await settle()
+		shell.controls.touch_end(89)
 		await settle()
 		check(game._session.phase != game.PHASE_DECK_SETUP, "temporary deck starts normal match")
 		check(game._live_match.get_starting_player_cards().size() == 5, "normal match uses five borrowed cards")

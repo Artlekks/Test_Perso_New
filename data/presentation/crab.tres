@@ -1,14 +1,29 @@
-[gd_resource type="Resource" script_class="WorldActorPresentationProfile" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WorldActorPresentationProfile" format=3 uid="uid://d2ewkddxgr3g2"]
 
-[ext_resource type="Script" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
+[ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 category = 1
 feet_from_bottom_px = 7.0
+directional_animation_prefixes = {
+"idle": "idle_",
+"walk": "walk_"
+}
+directional_aliases = {
+"walk": {
+"NE": {
+"animation": "walk_nw",
+"flip_h": true
+},
+"SE": {
+"animation": "walk_sw",
+"flip_h": true
+}
+}
+}
 pixel_size = 0.012
-shadow_width = 0.10
-shadow_depth = 0.10
-shadow_opacity = 0.60
-directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
-directional_aliases = {"walk": {"NE": {"animation": "walk_nw", "flip_h": true}, "SE": {"animation": "walk_sw", "flip_h": true}}}
+shadow_width = 0.1
+shadow_depth = 0.1
+shadow_opacity = 0.6
+shadow_family = "critter"

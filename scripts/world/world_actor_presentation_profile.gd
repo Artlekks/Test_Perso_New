@@ -22,7 +22,16 @@ class_name WorldActorPresentationProfile
 @export var flat_on_ground: bool = false
 @export var ground_yaw_degrees: float = 0.0
 @export var shadow_enabled: bool = true
-@export var shadow_width: float = 0.22
-@export var shadow_depth: float = 0.22
-@export_range(0.0, 1.0) var shadow_opacity: float = 0.65
-@export var shadow_ground_lift: float = 0.006
+@export_storage var shadow_width: float = 0.22
+@export_storage var shadow_depth: float = 0.22
+@export_storage var shadow_opacity: float = 0.65
+@export_storage var shadow_ground_lift: float = 0.006
+
+## Family values are authoritative; legacy scalar fields above are retained for
+## older tooling and migration, not used to size production ground shadows.
+@export_enum("player", "humanoid_standard", "humanoid_large", "humanoid_small", "critter", "ground_prop", "item") var shadow_family: String = "humanoid_standard"
+@export_range(0.1, 4.0, 0.05) var shadow_scale_multiplier := 1.0
+@export var marker_height := 0.72
+
+func resolved_shadow_family() -> WorldShadowFamily:
+	return preload("res://scripts/world/world_shadow_families.gd").resolve(StringName(shadow_family))

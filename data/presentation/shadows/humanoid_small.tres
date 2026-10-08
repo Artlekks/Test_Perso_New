@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="WorldShadowFamily" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/world/world_shadow_family.gd" id="script"]
+[resource]
+script = ExtResource("script")
+family = &"humanoid_small"
+width = 0.18
+depth = 0.18
+opacity = 0.65
+ground_offset = 0.006

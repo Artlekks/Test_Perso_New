@@ -1,23 +1,66 @@
-[gd_resource type="SpriteFrames" format=3]
-[ext_resource type="Texture2D" path="res://assets/sprites/npc/source/c3997e38-4619-4daf-ba52-37f21ea0c26e.png" id="sheet"]
+[gd_resource type="SpriteFrames" format=3 uid="uid://cc3dgj74feorc"]
+
+[ext_resource type="Texture2D" uid="uid://bp30374asbusv" path="res://assets/sprites/npc/source/c3997e38-4619-4daf-ba52-37f21ea0c26e.png" id="sheet"]
+
 [sub_resource type="AtlasTexture" id="frame1"]
 atlas = ExtResource("sheet")
 region = Rect2(96, 7, 32, 56)
+
 [sub_resource type="AtlasTexture" id="frame2"]
 atlas = ExtResource("sheet")
 region = Rect2(136, 7, 40, 64)
+
 [sub_resource type="AtlasTexture" id="frame3"]
 atlas = ExtResource("sheet")
 region = Rect2(8, 9, 40, 56)
+
 [sub_resource type="AtlasTexture" id="frame4"]
 atlas = ExtResource("sheet")
 region = Rect2(184, 10, 40, 56)
+
 [sub_resource type="AtlasTexture" id="frame5"]
 atlas = ExtResource("sheet")
 region = Rect2(56, 11, 32, 56)
+
 [resource]
-animations = [{"name": &"pose_000", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame1")}]},
-{"name": &"pose_001", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame2")}]},
-{"name": &"pose_002", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame3")}]},
-{"name": &"pose_003", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame4")}]},
-{"name": &"pose_004", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame5")}]}]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame1")
+}],
+"loop": 1,
+"name": &"pose_000",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame2")
+}],
+"loop": 1,
+"name": &"pose_001",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame3")
+}],
+"loop": 1,
+"name": &"pose_002",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame4")
+}],
+"loop": 1,
+"name": &"pose_003",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame5")
+}],
+"loop": 1,
+"name": &"pose_004",
+"speed": 1.0
+}]

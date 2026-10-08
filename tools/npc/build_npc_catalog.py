@@ -19,6 +19,12 @@ def write(path, text):
 def string(value):
     return json.dumps(value)
 
+def casting_metadata(entry_id):
+    # Separate provisional world casting from artwork and gameplay providers.
+    path = ROOT / 'data/npc/world_population_v1.json'
+    metadata = json.loads(path.read_text(encoding='utf-8')).get('entries', {}).get(entry_id, {}) if path.exists() else {}
+    return ''.join(key+' = '+('PackedStringArray('+', '.join(map(string, value))+')' if isinstance(value, list) else string(value))+'\n' for key,value in metadata.items())
+
 def frames_for(entry):
     if entry.get("existing_frames"):
         assert (ROOT / entry["existing_frames"]).is_file()
@@ -71,9 +77,9 @@ def build():
         if entry.get('grounding_template'):
             raw = (ROOT/entry['grounding_template']).read_text()
             grounding = raw.split('[resource]\n',1)[1]
-            grounding = '\n'.join(line for line in grounding.splitlines() if not line.startswith('script =')) + '\n'
+            grounding = '\n'.join(line for line in grounding.splitlines() if not line.startswith(('script =', 'shadow_family ='))) + '\n'
         profile = '[gd_resource type="Resource" format=3]\n[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]\n[ext_resource type="SpriteFrames" path="res://'+frames+'" id="frames"]\n[ext_resource type="Resource" path="res://data/npc/colliders/'+entry['collider']+'.tres" id="collider"]\n[resource]\nscript = ExtResource("script")\n' + grounding
-        profile += 'npc_id = &'+string(entry['id'])+'\ndevelopment_name = '+string(entry['name'])+'\nsprite_frames = ExtResource("frames")\ncollider_profile = ExtResource("collider")\ndefault_animation = &'+string(entry['default_animation'])+'\ndirectional_mode = '+str(entry['mode'])+'\navailable_directions = PackedStringArray('+', '.join(map(string,entry['directions']))+')\nrole_tags = PackedStringArray('+', '.join(map(string,entry['tags']))+')\nshadow_family = &'+string(entry.get('shadow','humanoid'))+'\nmovement_capability = '+str(entry.get('movement',False)).lower()+'\n'
+        profile += 'npc_id = &'+string(entry['id'])+'\ndevelopment_name = '+string(entry['name'])+'\nsprite_frames = ExtResource("frames")\ncollider_profile = ExtResource("collider")\ndefault_animation = &'+string(entry['default_animation'])+'\ndirectional_mode = '+str(entry['mode'])+'\navailable_directions = PackedStringArray('+', '.join(map(string,entry['directions']))+')\nrole_tags = PackedStringArray('+', '.join(map(string,entry['tags']))+')\nshadow_family = '+string({'humanoid':'humanoid_standard','small_creature':'critter'}.get(entry.get('shadow','humanoid_standard'),entry.get('shadow','humanoid_standard')))+'\nmovement_capability = '+str(entry.get('movement',False)).lower()+'\n'
         for key,value in entry.get('profile_overrides',{}).items():
             # Replace inherited entries instead of duplicating resource properties.
             profile = '\n'.join(line for line in profile.split('\n') if not line.startswith(key+' ='))+'\n'
@@ -84,6 +90,8 @@ def build():
         write(profile_path, profile)
         write(scene_path, '[gd_scene load_steps=4 format=3]\n[ext_resource type="PackedScene" path="res://actors/npc/NPCActor.tscn" id="base"]\n[ext_resource type="Resource" path="res://'+profile_path+'" id="profile"]\n[ext_resource type="SpriteFrames" path="res://'+frames+'" id="frames"]\n[node name="NPC_'+entry['id']+'" instance=ExtResource("base")]\nvisual_profile = ExtResource("profile")\n[node name="GroundPresentation" parent="." index="1"]\nprofile = ExtResource("profile")\n[node name="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" index="0"]\nsprite_frames = ExtResource("frames")\nanimation = &'+string(entry['default_animation'])+'\n[editable path="GroundPresentation"]\n')
         write(entry_path, '[gd_resource type="Resource" format=3]\n[ext_resource type="Script" path="res://scripts/npc/npc_catalog_entry.gd" id="script"]\n[ext_resource type="PackedScene" path="res://'+scene_path+'" id="scene"]\n[ext_resource type="Resource" path="res://'+profile_path+'" id="profile"]\n[resource]\nscript = ExtResource("script")\nid = &'+string(entry['id'])+'\nscene = ExtResource("scene")\nprofile = ExtResource("profile")\ndevelopment_note = '+string(entry['note'])+'\n')
+        target = ROOT / entry_path
+        write(entry_path, target.read_text(encoding='utf-8') + casting_metadata(entry['id']))
         catalog += '[ext_resource type="Resource" path="res://'+entry_path+'" id="'+entry['id']+'"]\n'
     catalog += '[resource]\nscript = ExtResource("script")\nentries = Array[ExtResource("res://scripts/npc/npc_catalog_entry.gd")](['+ ', '.join('ExtResource("'+entry['id']+'")' for entry in entries) + '])\n'
     # Typed resource arrays use a script external resource, not a path token.

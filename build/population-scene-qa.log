@@ -1,0 +1,138 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+       [7] run (res://scripts/qa/npc_world_population_qa.gd:40)
+TripleTriad QA: 101/101 backend tests passed.
+Dialogue System QA: 175/175 tests passed.
+Item Backend QA: 13/13 tests passed.
+Beach Crafting QA: 14/14 tests passed (36 recipe combinations).
+Economy Foundation QA: 13/13 tests passed.
+Campaign Loop QA: 14/14 tests passed. Simulator: 22/24 economy checks healthy
+Structural economy health: PASS; 2 provisional balance alerts
+WARNING: Economy balance [sell_heavy_h12_cash_ceiling]: Sell-heavy H12 cash remains a useful economy | value 20975 | target <= 15500
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] initialize (res://scripts/fishing_session_services.gd:643)
+       [1] _get_or_create_session_services (res://scripts/fishing.gd:900)
+       [2] _ready (res://scripts/fishing.gd:239)
+       [3] run (res://scripts/qa/npc_world_population_qa.gd:40)
+WARNING: Economy balance [balanced_h12_cash_ceiling]: Balanced H12 cash remains spendable, not absurd | value 10537 | target <= 8000
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] initialize (res://scripts/fishing_session_services.gd:643)
+       [1] _get_or_create_session_services (res://scripts/fishing.gd:900)
+       [2] _ready (res://scripts/fishing.gd:239)
+       [3] run (res://scripts/qa/npc_world_population_qa.gd:40)
+Campaign Director QA: 14/14 tests passed.
+Campaign Guide QA: 8/8 tests passed.
+Campaign Presentation QA: 9/9 tests passed.
+Card Maker QA: 10/10 tests passed.
+Fishing Mastery QA: 64/64 tests passed.
+Fishing Master Current Reader QA: 17/17 tests passed.
+Fishing Master Depth Reader QA: 20/20 tests passed.
+Fishing Master Structure Hunter QA: 25/25 tests passed.
+Fishing Master Line Fighter QA: 30/30 tests passed.
+Fishing Master Deepwater Veteran QA: 29/29 tests passed.
+Fishing Master Surface Angler QA: 32/32 tests passed.
+Fishing Master Landing Guide QA: 34/34 tests passed.
+Fishing Master Weather Watcher QA: 31/31 tests passed.
+Fishing Master Tide Reader QA: 39/39 tests passed.
+Fishing Master Sign Reader QA: 25/25 tests passed.
+Fishing Master Nature Guide QA: 38/38 tests passed.
+Fishing Master Drift Angler QA: 29/29 tests passed.
+Fishing Cephalopod Shadow QA: 18/18 tests passed.
+Fishing Master Gyosil QA: 20/20 tests passed.
+Fishing Fight QA: 24/24 tests passed.
+Fishing Presentation QA: 10/10 tests passed.
+Fishing Bite Timing QA: 14/14 tests passed.
+Fishing Pump & Reel QA: 13/13 tests passed.
+Fishing Reading the Run QA: 18/18 tests passed.
+Fishing Aerial Control QA: 20/20 tests passed.
+Fishing Weather Sense QA: 22/22 tests passed.
+Fishing Tide Sense QA: 31/31 tests passed.
+Fishing Deep-Water Control QA: 26/26 tests passed.
+Fishing Surface Control QA: 28/28 tests passed.
+Fishing Landing Technique QA: 24/24 tests passed.
+Fishing Read Fish Sign QA: 21/21 tests passed.
+Fishing One With Nature QA: 23/23 tests passed.
+Fishing System Stability QA: 27/27 tests passed.
+Fishing Fresh Save Rehearsal QA: 55/55 tests passed.
+Fresh Save Path: Fresh Start -> Starter Case Search -> Learn Loop -> Connected Systems -> Specialization -> Campaign Foundation Complete -> One With Nature -> Gyosil Long-Term Rewards
+ERROR: provider approach remains clear FishingMasterStillWaterNPC
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/npc_world_population_qa.gd:24)
+       [1] run (res://scripts/qa/npc_world_population_qa.gd:66)
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+       [7] run (res://scripts/qa/npc_world_population_qa.gd:40)
+TripleTriad QA: 101/101 backend tests passed.
+ERROR: no duplicate existing provider res://actors/locations/LocationTravelPoint.tscn
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/npc_world_population_qa.gd:24)
+       [1] run (res://scripts/qa/npc_world_population_qa.gd:75)
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+       [7] run (res://scripts/qa/npc_world_population_qa.gd:40)
+TripleTriad QA: 101/101 backend tests passed.
+ERROR: no duplicate existing provider res://actors/locations/LocationTravelPoint.tscn
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/npc_world_population_qa.gd:24)
+       [1] run (res://scripts/qa/npc_world_population_qa.gd:75)
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+       [7] run (res://scripts/qa/npc_world_population_qa.gd:40)
+TripleTriad QA: 101/101 backend tests passed.
+ERROR: no duplicate existing provider res://actors/locations/LocationTravelPoint.tscn
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/npc_world_population_qa.gd:24)
+       [1] run (res://scripts/qa/npc_world_population_qa.gd:75)
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+       [7] run (res://scripts/qa/npc_world_population_qa.gd:40)
+TripleTriad QA: 101/101 backend tests passed.
+NPC WORLD POPULATION QA: 397/401 passed

@@ -20,7 +20,7 @@ default_animation = &"idle_s"
 directional_mode = 4
 available_directions = PackedStringArray("S", "SE", "E", "NE", "N", "NW", "W", "SW")
 role_tags = PackedStringArray("ambient_creature")
-shadow_family = &"small_creature"
 movement_capability = false
 
 default_directional_pose = "idle"
+shadow_family = "critter"

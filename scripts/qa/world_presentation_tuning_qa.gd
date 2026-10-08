@@ -73,6 +73,7 @@ func run() -> void:
 			p.profile.animation_feet_from_left_px = {}
 			p.profile.shadow_width = {"ExplorationPlayer_V2":0.24, "FishingCardMakerNPC":0.36, "FishingMasterStillWaterNPC":0.32, "BeachFishingCritter":0.14}.get(filename, 0.38)
 			p.profile.shadow_depth = p.profile.shadow_width
+			p.profile.shadow_scale_multiplier = p.profile.shadow_width / p.profile.resolved_shadow_family().width
 			p.apply_profile()
 		var sprite = p.sprite as AnimatedSprite3D
 		if filename == "ExplorationPlayer_V2": sprite.animation = &"Idle_S"

@@ -1,8 +1,11 @@
-[gd_resource type="Resource" script_class="WorldActorPresentationProfile" load_steps=2 format=3]
-[ext_resource type="Script" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
+[gd_resource type="Resource" script_class="WorldActorPresentationProfile" format=3 uid="uid://5qhbdy0r6wyq"]
+
+[ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
+
 [resource]
 script = ExtResource("1")
 category = 3
-shadow_width = 0.10
-shadow_depth = 0.10
-shadow_opacity = 0.40
+shadow_width = 0.1
+shadow_depth = 0.1
+shadow_opacity = 0.4
+shadow_family = "ground_prop"

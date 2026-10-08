@@ -102,7 +102,15 @@ func run() -> void:
 		check(triad.is_open(), "Web DEV confirms actual card game")
 		if triad.deck_setup.developer_test_deck.size() == 5:
 			check(triad._collection_backend.get_owned_cards().size() < 5, "Web fallback leaves real ownership separate")
-			triad.deck_setup._try_confirm_deck()
+			triad.deck_setup._enter_collection_for_profile(0)
+			triad.deck_setup._cursor_index = 4
+			await touch(shell, "A")
+			await settle(0.6)
+			check(triad.deck_setup._deck.size() == 4, "Web DOM A removes final borrowed card")
+			await touch(shell, "A")
+			await settle(0.6)
+			check(triad.deck_setup._deck.size() == 5, "Web DOM A selects final card through normal path")
+			await touch(shell, "START")
 			await settle(1.5)
 			check(triad._session.phase != triad.PHASE_DECK_SETUP, "Web temporary deck starts actual match")
 		triad.close_game()

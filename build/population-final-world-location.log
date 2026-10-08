@@ -1,0 +1,300 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ISOLATED USERDATA: C:/Users/Alucard7th/AppData/Roaming/CodexWorldLocationQA-1097568
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+       [7] _run (res://scripts/qa/world_location_access_qa.gd:67)
+TripleTriad QA: 101/101 backend tests passed.
+Dialogue System QA: 175/175 tests passed.
+Item Backend QA: 13/13 tests passed.
+Beach Crafting QA: 14/14 tests passed (36 recipe combinations).
+Economy Foundation QA: 13/13 tests passed.
+Campaign Loop QA: 14/14 tests passed. Simulator: 22/24 economy checks healthy
+Structural economy health: PASS; 2 provisional balance alerts
+WARNING: Economy balance [sell_heavy_h12_cash_ceiling]: Sell-heavy H12 cash remains a useful economy | value 20975 | target <= 15500
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] initialize (res://scripts/fishing_session_services.gd:643)
+       [1] _get_or_create_session_services (res://scripts/fishing.gd:900)
+       [2] _ready (res://scripts/fishing.gd:239)
+       [3] _run (res://scripts/qa/world_location_access_qa.gd:67)
+WARNING: Economy balance [balanced_h12_cash_ceiling]: Balanced H12 cash remains spendable, not absurd | value 10537 | target <= 8000
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] initialize (res://scripts/fishing_session_services.gd:643)
+       [1] _get_or_create_session_services (res://scripts/fishing.gd:900)
+       [2] _ready (res://scripts/fishing.gd:239)
+       [3] _run (res://scripts/qa/world_location_access_qa.gd:67)
+Campaign Director QA: 14/14 tests passed.
+Campaign Guide QA: 8/8 tests passed.
+Campaign Presentation QA: 9/9 tests passed.
+Card Maker QA: 10/10 tests passed.
+Fishing Mastery QA: 64/64 tests passed.
+Fishing Master Current Reader QA: 17/17 tests passed.
+Fishing Master Depth Reader QA: 20/20 tests passed.
+Fishing Master Structure Hunter QA: 25/25 tests passed.
+Fishing Master Line Fighter QA: 30/30 tests passed.
+Fishing Master Deepwater Veteran QA: 29/29 tests passed.
+Fishing Master Surface Angler QA: 32/32 tests passed.
+Fishing Master Landing Guide QA: 34/34 tests passed.
+Fishing Master Weather Watcher QA: 31/31 tests passed.
+Fishing Master Tide Reader QA: 39/39 tests passed.
+Fishing Master Sign Reader QA: 25/25 tests passed.
+Fishing Master Nature Guide QA: 38/38 tests passed.
+Fishing Master Drift Angler QA: 29/29 tests passed.
+Fishing Cephalopod Shadow QA: 18/18 tests passed.
+Fishing Master Gyosil QA: 20/20 tests passed.
+Fishing Fight QA: 24/24 tests passed.
+Fishing Presentation QA: 10/10 tests passed.
+Fishing Bite Timing QA: 14/14 tests passed.
+Fishing Pump & Reel QA: 13/13 tests passed.
+Fishing Reading the Run QA: 18/18 tests passed.
+Fishing Aerial Control QA: 20/20 tests passed.
+Fishing Weather Sense QA: 22/22 tests passed.
+Fishing Tide Sense QA: 31/31 tests passed.
+Fishing Deep-Water Control QA: 26/26 tests passed.
+Fishing Surface Control QA: 28/28 tests passed.
+Fishing Landing Technique QA: 24/24 tests passed.
+Fishing Read Fish Sign QA: 21/21 tests passed.
+Fishing One With Nature QA: 23/23 tests passed.
+Fishing System Stability QA: 27/27 tests passed.
+Fishing Fresh Save Rehearsal QA: 55/55 tests passed.
+Fresh Save Path: Fresh Start -> Starter Case Search -> Learn Loop -> Connected Systems -> Specialization -> Campaign Foundation Complete -> One With Nature -> Gyosil Long-Term Rewards
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+CATCHABILITY: sea_bream spot=ocean_1 lure=straight depth=75% weight=17.7695224330679
+CATCHABILITY: flying_fish spot=ocean_1 lure=straight depth=75% weight=31.9979395553444
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+CATCHABILITY: black_bass spot=lake_2 lure=straight depth=75% weight=18.87012
+CATCHABILITY: blue_gill spot=lake_2 lure=straight depth=75% weight=16.736976
+CATCHABILITY: piranha spot=lake_2 lure=straight depth=75% weight=21.8784
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+CATCHABILITY: dorado spot=lake_2 lure=straight depth=75% weight=1.944
+PRE-ANGLING FIGHT: dorado tier=3 recommended_rod_tier=1 bamboo_tier=1 active_reel_seconds=9.03
+CATCHABILITY: martian_squid spot=lake_2 lure=straight depth=75% weight=11.814336
+PRE-ANGLING FIGHT: martian_squid tier=3 recommended_rod_tier=1 bamboo_tier=1 active_reel_seconds=8.36
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+CATCHABILITY: salmon spot=river_2 lure=straight depth=75% weight=2.655
+PRE-ANGLING FIGHT: salmon tier=4 recommended_rod_tier=2 bamboo_tier=1 active_reel_seconds=10.35
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WARNING: TripleTriadGame: backend is not ready; match open rejected.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] open_game_by_id (res://scripts/triple_triad/triple_triad_game.gd:855)
+       [1] _test_public_facade_precomposition_guard (res://scripts/triple_triad/triple_triad_backend_qa.gd:3449)
+       [2] _run (res://scripts/triple_triad/triple_triad_backend_qa.gd:787)
+       [3] run_all (res://scripts/triple_triad/triple_triad_backend_qa.gd:729)
+       [4] run_backend_qa (res://scripts/triple_triad/triple_triad_developer_tools_controller.gd:115)
+       [5] run_backend_qa (res://scripts/triple_triad/triple_triad_game.gd:283)
+       [6] _ready (res://scripts/triple_triad/triple_triad_game.gd:148)
+TripleTriad QA: 101/101 backend tests passed.
+WORLD/LOCATION ARCHITECTURE: 579 checks, 0 failures
+[Fishing QA] PASS 22950 / 22950  (179.7 ms)
+[Fishing QA] all_species_progression PASS 214  FAIL 0
+[Fishing QA] camera_return PASS 7  FAIL 0
+[Fishing QA] cast_input   PASS 9  FAIL 0
+[Fishing QA] catalog      PASS 10  FAIL 0
+[Fishing QA] catch_persistence PASS 18  FAIL 0
+[Fishing QA] debug_persistence PASS 9  FAIL 0
+[Fishing QA] debug_specimen PASS 8  FAIL 0
+[Fishing QA] difficulty_accessibility PASS 273  FAIL 0
+[Fishing QA] economy      PASS 123  FAIL 0
+[Fishing QA] economy_access_save_integrity PASS 9  FAIL 0
+[Fishing QA] environment  PASS 19  FAIL 0
+[Fishing QA] fight_lifecycle PASS 405  FAIL 0
+[Fishing QA] fight_stats  PASS 4026  FAIL 0
+[Fishing QA] fight_tension PASS 11  FAIL 0
+[Fishing QA] fish         PASS 1050  FAIL 0
+[Fishing QA] fish_consumable_effects PASS 80  FAIL 0
+[Fishing QA] landing      PASS 4  FAIL 0
+[Fishing QA] lures        PASS 1480  FAIL 0
+[Fishing QA] outcomes     PASS 33  FAIL 0
+[Fishing QA] progression  PASS 24  FAIL 0
+[Fishing QA] progression_reward_contract PASS 29  FAIL 0
+[Fishing QA] qa_profiles  PASS 44  FAIL 0
+[Fishing QA] record_mercy PASS 215  FAIL 0
+[Fishing QA] rewards      PASS 9  FAIL 0
+[Fishing QA] rods         PASS 90  FAIL 0
+[Fishing QA] scoring      PASS 7591  FAIL 0
+[Fishing QA] shore_boundary PASS 3  FAIL 0
+[Fishing QA] specimen_generation PASS 5850  FAIL 0
+[Fishing QA] spots        PASS 343  FAIL 0
+[Fishing QA] tackle_differentiation PASS 727  FAIL 0
+[Fishing QA] techniques   PASS 29  FAIL 0
+[Fishing QA] tension      PASS 132  FAIL 0
+[Fishing QA] trades       PASS 76  FAIL 0
+FULL FISHING REGRESSION: PASS 22950 / 22950  (179.7 ms)
+campaign_loop_qa_report: 14/14
+campaign_progression_director_qa_report: 14/14
+campaign_qa_guide_qa_report: 8/8
+campaign_presentation_qa_report: 9/9
+fresh_save_rehearsal_qa_report: 55/55
+system_stability_qa_report: 27/27
+World Location Access QA: 586 checks, 0 failures

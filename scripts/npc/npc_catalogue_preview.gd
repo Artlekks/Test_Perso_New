@@ -6,11 +6,15 @@ var focus := Vector3.ZERO
 var selected := -1
 
 func _ready() -> void:
+	var entries: Array = Array(CATALOG.entries)
+	entries.sort_custom(func(a, b):
+		if a.importance_tier != b.importance_tier: return a.importance_tier < b.importance_tier
+		return String(a.id) < String(b.id))
 	var columns := ceili(sqrt(float(CATALOG.entries.size())))
 	var rows := ceili(float(CATALOG.entries.size()) / columns)
 	$Camera3D.size = maxf(7.5, rows * 3.0 + 2)
 	for index in range(CATALOG.entries.size()):
-		var entry = CATALOG.entries[index]
+		var entry = entries[index]
 		var actor := entry.scene.instantiate() as CatalogueNPCActor
 		actor.position = Vector3((index % columns - (columns - 1) * 0.5) * 2.5, 0, (floori(float(index) / columns) - (rows - 1) * 0.5) * 3.0)
 		add_child(actor)
@@ -30,7 +34,7 @@ func _ready() -> void:
 		footprint.visible = false
 		actor.add_child(footprint)
 		var label := Label3D.new()
-		label.text = entry.profile.development_name + "\n" + String(entry.id)
+		label.text = "Tier " + entry.importance_tier + " / " + ", ".join(entry.placeholder_roles) + "\n" + entry.profile.development_name + "\n" + String(entry.id) + "\n" + entry.art_status
 		label.font_size = 24
 		label.pixel_size = 0.005
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED

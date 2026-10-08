@@ -12,9 +12,9 @@ default_animation = &"pose_000"
 directional_mode = 5
 available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
-shadow_family = &"humanoid"
 movement_capability = false
 
 animation_feet_from_bottom_px = {"pose_000": 3, "pose_001": 0}
 
 animation_feet_from_left_px = {"pose_000": 27.5, "pose_001": 25.5}
+shadow_family = "humanoid_standard"

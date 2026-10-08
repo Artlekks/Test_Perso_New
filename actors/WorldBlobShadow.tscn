@@ -1,20 +1,28 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://b7e2p7wutl0ow"]
 
-[ext_resource type="Shader" path="res://assets/shaders/world_contact_shadow.gdshader" id="1_shadow"]
-[ext_resource type="Script" path="res://scripts/world/world_blob_shadow.gd" id="2_script"]
+[ext_resource type="Shader" uid="uid://x1eatirecbnv" path="res://assets/shaders/world_contact_shadow.gdshader" id="1_shadow"]
+[ext_resource type="Script" uid="uid://bynq80mwgbup2" path="res://scripts/world/world_blob_shadow.gd" id="2_script"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jlcgg"]
+render_priority = -120
+shader = ExtResource("1_shadow")
+shader_parameter/opacity = 0.65
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_blob"]
 render_priority = -120
 shader = ExtResource("1_shadow")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_blob"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_st51v"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.30, 0.30)
+size = Vector2(0.3, 0.3)
 
-[node name="WorldBlobShadow" type="MeshInstance3D"]
+[node name="WorldBlobShadow" type="MeshInstance3D" unique_id=527595371]
+process_mode = 3
+process_priority = 250
 top_level = true
-cast_shadow = 0
 sorting_offset = -1.0
-mesh = SubResource("PlaneMesh_blob")
+material_override = SubResource("ShaderMaterial_jlcgg")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_st51v")
 script = ExtResource("2_script")

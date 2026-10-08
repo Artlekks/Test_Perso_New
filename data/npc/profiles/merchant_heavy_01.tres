@@ -17,5 +17,5 @@ default_animation = &"Bag_Search"
 directional_mode = 0
 available_directions = PackedStringArray("one view")
 role_tags = PackedStringArray("merchant", "special_vendor")
-shadow_family = &"humanoid"
 movement_capability = false
+shadow_family = "humanoid_standard"

@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+Existing Economy Foundation QA: 13/13
+Existing Economy/Trade/Full-Access regression groups: 208/208
+Existing First-10h source/economy simulator: 22/24
+PROVISIONAL BALANCE ALERT: Sell-heavy H12 cash remains a useful economy | value 20975 | target <= 15500
+PROVISIONAL BALANCE ALERT: Balanced H12 cash remains spendable, not absurd | value 10537 | target <= 8000
+World Economy Access QA: 81 checks, 0 failures

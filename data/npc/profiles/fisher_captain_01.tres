@@ -16,7 +16,7 @@ default_animation = &"idle_se"
 directional_mode = 5
 available_directions = PackedStringArray("SE", "SW", "NE", "NW")
 role_tags = PackedStringArray("fisher", "card_opponent")
-shadow_family = &"humanoid"
 movement_capability = true
 
 default_directional_pose = "idle"
+shadow_family = "humanoid_standard"
