@@ -1,5 +1,6 @@
 extends Node3D
 class_name TripleTriadHarborRequestBoard
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const WorldRequestStateScript = preload("res://scripts/quests/world_request_state.gd")
 const WorldRequestRegistryScript = preload("res://scripts/quests/world_request_registry.gd")
@@ -513,10 +514,10 @@ func _ensure_objective_tracker() -> Node:
 	if not is_inside_tree():
 		return null
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
 
-	var existing := tree.current_scene.find_child(
+	var existing := GameplaySceneRoot.resolve(tree).find_child(
 		"WorldObjectiveTracker",
 		true,
 		false
@@ -528,7 +529,7 @@ func _ensure_objective_tracker() -> Node:
 	var tracker = WorldObjectiveTrackerScene.instantiate()
 	if tracker == null:
 		return null
-	tree.current_scene.add_child(tracker)
+	GameplaySceneRoot.resolve(tree).add_child(tracker)
 	_objective_tracker = tracker
 	return _objective_tracker
 
@@ -546,9 +547,9 @@ func _find_game() -> Node:
 	if not is_inside_tree():
 		return null
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_game = tree.current_scene.find_child("TripleTriadGame", true, false)
+	_game = GameplaySceneRoot.resolve(tree).find_child("TripleTriadGame", true, false)
 	if _game != null and _game.has_signal("backend_state_changed"):
 		var callback := Callable(self, "_on_backend_state_changed")
 		if not _game.is_connected("backend_state_changed", callback):

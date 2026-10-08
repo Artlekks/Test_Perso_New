@@ -1,5 +1,6 @@
 extends Node
 class_name PlayableCampaignPresentationController
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Runtime bridge from the read-only Campaign Progression Director to the beach
 ## presentation layer. It does not unlock systems or mutate save data.
@@ -125,12 +126,12 @@ func _apply_feature_states() -> void:
 	if not is_inside_tree():
 		return
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
 	for raw_feature_id in TARGET_NODE_NAMES.keys():
 		var feature_id: String = str(raw_feature_id)
 		var node_name: String = str(TARGET_NODE_NAMES[raw_feature_id])
-		var target: Node = tree.current_scene.find_child(
+		var target: Node = GameplaySceneRoot.resolve(tree).find_child(
 			node_name,
 			true,
 			false
@@ -187,9 +188,9 @@ func _bind_info_view() -> void:
 	if not is_inside_tree():
 		return
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
-	var candidate: Node = tree.current_scene.find_child(
+	var candidate: Node = GameplaySceneRoot.resolve(tree).find_child(
 		"FishingInfoView",
 		true,
 		false

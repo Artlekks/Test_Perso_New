@@ -1,4 +1,5 @@
 extends Node
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const Recorder = preload("res://scripts/telemetry/economy_playtest_recorder.gd")
 var recorder = Recorder.new()
@@ -274,7 +275,7 @@ func _process(_delta: float) -> void:
 		return
 	var runtime = _get_runtime()
 	var world = _world()
-	var scene = get_tree().current_scene
+	var scene = GameplaySceneRoot.resolve(get_tree())
 	if _scene == null or _scene.get_ref() != scene:
 		_menus.clear()
 		_scene = weakref(scene) if scene != null else null

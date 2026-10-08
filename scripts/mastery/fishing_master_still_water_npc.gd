@@ -1,5 +1,6 @@
 extends Node3D
 class_name FishingMasterStillWaterNPC
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const MasterDialogueProfilesScript = preload(
@@ -164,7 +165,7 @@ func _bind_runtime() -> bool:
 		return false
 	var services := tree.root.get_node_or_null("FishingSessionServices")
 	if services == null:
-		var scene := tree.current_scene
+		var scene := GameplaySceneRoot.resolve(tree)
 		if scene != null:
 			var fishing := scene.find_child("Fishing", true, false)
 			if fishing != null:
@@ -244,7 +245,7 @@ func _find_player() -> Node:
 	var candidates := tree.get_nodes_in_group("fishing_player")
 	if not candidates.is_empty():
 		return candidates[0] as Node
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	return scene.find_child("CharacterBody3D", true, false)
@@ -252,9 +253,9 @@ func _find_player() -> Node:
 
 func _find_info_view() -> FishingInfoView:
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	var candidate := tree.current_scene.find_child("FishingInfoView", true, false)
+	var candidate := GameplaySceneRoot.resolve(tree).find_child("FishingInfoView", true, false)
 	return candidate as FishingInfoView
 
 

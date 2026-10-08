@@ -18,6 +18,7 @@ config/name="FishingGame"
 run/main_scene="uid://dqj6ysvar4jsa"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
+run/main_scene.mobile_portrait="res://actors/mobile/MobilePortraitHarness.tscn"
 
 [autoload]
 
@@ -29,6 +30,9 @@ window/size/viewport_width=640
 window/size/viewport_height=480
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep_height"
+window/size/viewport_width.mobile_portrait=390
+window/size/viewport_height.mobile_portrait=844
+window/handheld/orientation.mobile_portrait=1
 
 [input]
 
@@ -117,3 +121,4 @@ cam_left={
 
 textures/canvas_textures/default_texture_filter=0
 environment/defaults/default_clear_color=Color(0.266575, 0.266575, 0.266575, 1)
+renderer/rendering_method.mobile_portrait="gl_compatibility"

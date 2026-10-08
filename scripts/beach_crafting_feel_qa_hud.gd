@@ -1,5 +1,6 @@
 extends CanvasLayer
 class_name BeachCraftingFeelQAHUD
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 @onready var root: Control = $Root
 @onready var lure_label: Label = $Root/Panel/LureLabel
@@ -184,7 +185,7 @@ func _fish_line() -> String:
 	if bait == null:
 		return "FISH    cast first"
 
-	var scene := get_tree().current_scene
+	var scene := GameplaySceneRoot.resolve(get_tree())
 	if scene == null:
 		return "FISH    --"
 
@@ -234,7 +235,7 @@ func _get_equipped_lure() -> BaitData:
 
 
 func _get_active_bait() -> Node3D:
-	var scene := get_tree().current_scene
+	var scene := GameplaySceneRoot.resolve(get_tree())
 	if scene == null:
 		return null
 

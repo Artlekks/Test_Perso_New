@@ -1,5 +1,6 @@
 extends Node3D
 class_name BeachCrafterNPC
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/beach_crafter.tres")
@@ -297,7 +298,7 @@ func _find_session_services() -> Node:
 	if services != null:
 		return services
 
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	var fishing := scene.find_child("Fishing", true, false)
@@ -368,7 +369,7 @@ func _find_card_game() -> Node:
 	var tree := get_tree()
 	if tree == null:
 		return null
-	var scene: Node = tree.current_scene
+	var scene: Node = GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 

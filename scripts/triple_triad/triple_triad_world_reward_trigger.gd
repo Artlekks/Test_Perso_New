@@ -1,5 +1,6 @@
 extends Area2D
 class_name TripleTriadWorldRewardTrigger
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal reward_claimed(result: Dictionary)
 signal reward_unavailable(result: Dictionary)
@@ -101,9 +102,9 @@ func _find_game() -> Node:
 	if is_instance_valid(_game):
 		return _game
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_game = tree.current_scene.find_child(
+	_game = GameplaySceneRoot.resolve(tree).find_child(
 		"TripleTriadGame",
 		true,
 		false

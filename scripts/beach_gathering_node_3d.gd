@@ -1,5 +1,6 @@
 extends Node3D
 class_name BeachGatheringNode3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal gathered(
 	material_id: StringName,
@@ -251,7 +252,7 @@ func _find_session_services() -> Node:
 	if services != null:
 		return services
 
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	var fishing := scene.find_child("Fishing", true, false)

@@ -1,5 +1,6 @@
 extends Node
 class_name DialogueNPCBridge
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Small reusable adapter between an NPC interaction and DialogueService.
 ##
@@ -216,7 +217,7 @@ func _find_dialogue_service() -> Node:
 		return null
 	var services := tree.root.get_node_or_null("FishingSessionServices")
 	if services == null:
-		var scene := tree.current_scene
+		var scene := GameplaySceneRoot.resolve(tree)
 		if scene != null:
 			var fishing := scene.find_child("Fishing", true, false)
 			if fishing != null:

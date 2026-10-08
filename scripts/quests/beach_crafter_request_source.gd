@@ -1,5 +1,6 @@
 extends Node
 class_name BeachCrafterRequestSource
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Second live request source: a material-count beach survey owned by the Crafter.
 ##
@@ -634,16 +635,16 @@ func _ensure_objective_tracker() -> Node:
 	if not is_inside_tree():
 		return null
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	var existing := tree.current_scene.find_child("WorldObjectiveTracker", true, false)
+	var existing := GameplaySceneRoot.resolve(tree).find_child("WorldObjectiveTracker", true, false)
 	if existing != null and existing.has_method("register_request"):
 		_objective_tracker = existing
 		return _objective_tracker
 	var tracker = WorldObjectiveTrackerScene.instantiate()
 	if tracker == null:
 		return null
-	tree.current_scene.add_child(tracker)
+	GameplaySceneRoot.resolve(tree).add_child(tracker)
 	_objective_tracker = tracker
 	return _objective_tracker
 
@@ -672,9 +673,9 @@ func _find_existing_objective_tracker() -> Node:
 	if not is_inside_tree():
 		return null
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	var existing := tree.current_scene.find_child("WorldObjectiveTracker", true, false)
+	var existing := GameplaySceneRoot.resolve(tree).find_child("WorldObjectiveTracker", true, false)
 	if existing != null and existing.has_method("register_request"):
 		_objective_tracker = existing
 	return _objective_tracker
@@ -687,7 +688,7 @@ func _find_session_services() -> Node:
 	var services := tree.root.get_node_or_null("FishingSessionServices")
 	if services != null:
 		return services
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	var fishing := scene.find_child("Fishing", true, false)
@@ -704,9 +705,9 @@ func _find_card_game() -> Node:
 	if not is_inside_tree():
 		return null
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_card_game = tree.current_scene.find_child("TripleTriadGame", true, false)
+	_card_game = GameplaySceneRoot.resolve(tree).find_child("TripleTriadGame", true, false)
 	if _card_game != null and _card_game.has_signal("backend_state_changed"):
 		var callback := Callable(self, "_on_card_backend_state_changed")
 		if not _card_game.is_connected("backend_state_changed", callback):

@@ -1,5 +1,6 @@
 extends Node3D
 class_name FishingRewardClaimNPCBase
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Shared interaction/runtime plumbing for world NPCs that claim rewards from
 ## FishingRewardService. Reward logic stays in the concrete NPC/policy.
@@ -95,7 +96,7 @@ func _find_session_services() -> Node:
 	var services := tree.root.get_node_or_null("FishingSessionServices")
 	if services != null:
 		return services
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	var fishing := scene.find_child("Fishing", true, false)
@@ -129,7 +130,7 @@ func _find_player() -> Node3D:
 	var candidates := tree.get_nodes_in_group("fishing_player")
 	if not candidates.is_empty() and candidates[0] is Node3D:
 		return candidates[0] as Node3D
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	return scene.find_child("CharacterBody3D", true, false) as Node3D
@@ -137,9 +138,9 @@ func _find_player() -> Node3D:
 
 func _find_info_view() -> FishingInfoView:
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	return tree.current_scene.find_child("FishingInfoView", true, false) as FishingInfoView
+	return GameplaySceneRoot.resolve(tree).find_child("FishingInfoView", true, false) as FishingInfoView
 
 
 func _is_player_close_enough() -> bool:

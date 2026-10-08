@@ -1,5 +1,6 @@
 extends CanvasLayer
 class_name FishingMenu
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const EquipPageController = preload(
 	"res://scripts/fishing_menu_equip_controller.gd"
@@ -619,9 +620,9 @@ func _can_open_menu() -> bool:
 
 func _is_triple_triad_active() -> bool:
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return false
-	var card_game: Node = tree.current_scene.find_child("TripleTriadGame", true, false)
+	var card_game: Node = GameplaySceneRoot.resolve(tree).find_child("TripleTriadGame", true, false)
 	return (
 		card_game != null
 		and card_game.has_method("is_open")

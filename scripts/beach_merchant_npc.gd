@@ -1,4 +1,5 @@
 extends Node3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const EconomyContextScript = preload("res://scripts/economy/merchant_economy_context.gd")
@@ -274,7 +275,7 @@ func _find_economy_menu() -> Node:
 	if is_instance_valid(_cached_menu):
 		_bind_menu_signals(_cached_menu)
 		return _cached_menu
-	var scene := get_tree().current_scene
+	var scene := GameplaySceneRoot.resolve(get_tree())
 	if scene == null:
 		return null
 	_cached_menu = scene.find_child("FishingEconomyMenu", true, false)
@@ -299,7 +300,7 @@ func _find_card_game() -> Node:
 	if is_instance_valid(_cached_card_game):
 		_bind_card_game_signals(_cached_card_game)
 		return _cached_card_game
-	var scene := get_tree().current_scene
+	var scene := GameplaySceneRoot.resolve(get_tree())
 	if scene == null:
 		return null
 	_cached_card_game = scene.find_child("TripleTriadGame", true, false)

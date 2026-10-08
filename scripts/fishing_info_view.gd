@@ -1,5 +1,6 @@
 extends CanvasLayer
 class_name FishingInfoView
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 enum Priority {
 	NORMAL,
@@ -192,10 +193,10 @@ func _bind_game_mode() -> void:
 		return
 
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
 
-	_game_mode = tree.current_scene.find_child(
+	_game_mode = GameplaySceneRoot.resolve(tree).find_child(
 		String(game_mode_node_name),
 		true,
 		false

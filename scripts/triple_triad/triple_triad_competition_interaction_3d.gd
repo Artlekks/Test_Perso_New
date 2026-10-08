@@ -1,5 +1,6 @@
 extends Node3D
 class_name TripleTriadCompetitionInteraction3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal competition_started(competition_id: StringName)
 signal competition_resumed(competition_id: StringName)
@@ -148,9 +149,9 @@ func _find_game() -> Node:
 	if is_instance_valid(_game):
 		return _game
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_game = tree.current_scene.find_child("TripleTriadGame", true, false)
+	_game = GameplaySceneRoot.resolve(tree).find_child("TripleTriadGame", true, false)
 	if _game != null:
 		_bind_game_signal("backend_state_changed")
 		_bind_game_signal("competition_state_changed")

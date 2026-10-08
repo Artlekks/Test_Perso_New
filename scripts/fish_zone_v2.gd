@@ -1,4 +1,5 @@
 extends Area3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const FishingConcentrationFieldScript = preload(
 	"res://scripts/fishing_concentration_field.gd"
@@ -72,7 +73,7 @@ func get_fish_population() -> Array[FishSpawnEntry]:
 
 func get_fishing_spot() -> FishingSpotData:
 	var locations := get_node_or_null("/root/WorldLocations")
-	if not debug_spot_override and locations != null and locations.is_current_scene(get_tree().current_scene):
+	if not debug_spot_override and locations != null and locations.is_current_scene(GameplaySceneRoot.resolve(get_tree())):
 		return locations.current_location.fishing_spot
 	return fishing_spot
 

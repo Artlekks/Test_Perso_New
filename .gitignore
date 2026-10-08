@@ -1,6 +1,7 @@
 # Godot generated cache
 .godot/
 /android/
+/build/mobile-web/
 
 # Editor / transient scene saves
 *.tmp

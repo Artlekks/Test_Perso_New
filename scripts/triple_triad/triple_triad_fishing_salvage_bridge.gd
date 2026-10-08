@@ -1,5 +1,6 @@
 extends Node
 class_name TripleTriadFishingSalvageBridge
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Integration boundary between the fishing game's persistent catch transaction
 ## stream and Triple Triad's acquisition backend.
@@ -167,9 +168,9 @@ func _try_bind_caster() -> void:
 	if not is_inside_tree():
 		return
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
-	var candidate: Node = tree.current_scene.find_child("Caster", true, false)
+	var candidate: Node = GameplaySceneRoot.resolve(tree).find_child("Caster", true, false)
 	if candidate == null or not candidate.has_signal("bait_landed"):
 		return
 	var callback := Callable(self, "_on_bait_landed")
@@ -191,7 +192,7 @@ func _find_catch_repository() -> Node:
 	if services_repository is Node:
 		return services_repository as Node
 
-	var scene: Node = tree.current_scene
+	var scene: Node = GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	var fishing_controller: Node = scene.find_child("Fishing", true, false)
@@ -336,9 +337,9 @@ func _spawn_starter_sparkle() -> void:
 	if not is_inside_tree():
 		return
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
-	var scene: Node = tree.current_scene
+	var scene: Node = GameplaySceneRoot.resolve(tree)
 	var world_parent: Node = scene.find_child("World", true, false)
 	var zone: Node = scene.find_child("FishZone_V2", true, false)
 	if (

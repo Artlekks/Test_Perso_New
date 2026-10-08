@@ -1,5 +1,6 @@
 extends RefCounted
 class_name TripleTriadDeveloperToolsController
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const BalanceSimulatorScript = preload("res://scripts/triple_triad/triple_triad_balance_simulator.gd")
 const CampaignQAHarnessScript = preload("res://scripts/triple_triad/triple_triad_campaign_qa_harness.gd")
@@ -196,8 +197,8 @@ func capture_diagnostic_report() -> Dictionary:
 	var tree_paused: bool = false
 	if tree != null:
 		tree_paused = tree.paused
-		if tree.current_scene != null:
-			scene_path = str(tree.current_scene.scene_file_path)
+		if GameplaySceneRoot.resolve(tree) != null:
+			scene_path = str(GameplaySceneRoot.resolve(tree).scene_file_path)
 	var backend_ready: bool = bool(_call_callback(&"is_backend_ready", [], false))
 	var global_snapshot: Dictionary = {}
 	if backend_ready:

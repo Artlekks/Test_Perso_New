@@ -1,4 +1,5 @@
 extends Node
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal location_changed(location: Resource)
 signal access_changed
@@ -146,7 +147,7 @@ func request_travel(destination: StringName) -> Dictionary:
 		return {"success": false, "reason": "fishing_owns_input"}
 	transitioning = true
 	_clear_economy_access()
-	var error := get_tree().change_scene_to_file(get_location(destination).scene_path)
+	var error := GameplaySceneRoot.change_scene_to_file(get_tree(), get_location(destination).scene_path)
 	if error != OK:
 		transitioning = false
 		return {"success": false, "reason": "scene_unavailable"}

@@ -1,4 +1,5 @@
 extends Node
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const FishingSessionServicesScript = preload(
 	"res://scripts/fishing_session_services.gd"
@@ -386,7 +387,7 @@ func _setup_fishing_menu() -> void:
 
 	var menu_parent: Node = get_node_or_null("../../UI")
 	if menu_parent == null:
-		menu_parent = get_tree().current_scene
+		menu_parent = GameplaySceneRoot.resolve(get_tree())
 
 	if menu_parent == null:
 		push_warning("Fishing: no parent available for FishingMenu.")
@@ -415,7 +416,7 @@ func _setup_fishing_economy_menu() -> void:
 
 	var menu_parent: Node = get_node_or_null("../../UI")
 	if menu_parent == null:
-		menu_parent = get_tree().current_scene
+		menu_parent = GameplaySceneRoot.resolve(get_tree())
 	if menu_parent == null:
 		menu.queue_free()
 		return
@@ -1826,7 +1827,7 @@ func _spawn_surface_splash(
 		return
 
 	var splash := FishingSurfaceSplashScene.instantiate()
-	var scene_root := get_tree().current_scene
+	var scene_root := GameplaySceneRoot.resolve(get_tree())
 
 	if scene_root == null:
 		return

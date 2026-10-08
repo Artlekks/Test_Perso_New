@@ -1,4 +1,5 @@
 extends Node3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 @export var economy_context: MerchantEconomyContext
 @export var trader_name: String = "Manillo trader (development stand-in)"
@@ -25,7 +26,7 @@ func is_world_interaction_available(event: InputEvent) -> bool:
 func interact_from_world(event: InputEvent) -> void:
 	if not is_world_interaction_available(event):
 		return
-	_menu = get_tree().current_scene.find_child("FishingEconomyMenu", true, false)
+	_menu = GameplaySceneRoot.resolve(get_tree()).find_child("FishingEconomyMenu", true, false)
 	if _menu != null:
 		_menu.open_merchant_menu(economy_context, self, menu_mode)
 

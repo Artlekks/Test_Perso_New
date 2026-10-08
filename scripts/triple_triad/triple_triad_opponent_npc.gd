@@ -1,4 +1,5 @@
 extends Node3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const NPCDialogueRouterScript = preload("res://scripts/dialogue/npc_dialogue_router.gd")
@@ -165,7 +166,7 @@ func _find_game() -> Node:
 	if is_instance_valid(_cached_game):
 		_bind_game_signals(_cached_game)
 		return _cached_game
-	var scene: Node = get_tree().current_scene
+	var scene: Node = GameplaySceneRoot.resolve(get_tree())
 	if scene == null:
 		return null
 	_cached_game = scene.find_child("TripleTriadGame", true, false)

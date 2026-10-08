@@ -1,5 +1,6 @@
 extends "res://scripts/world/autonomous_world_actor.gd"
 class_name FishingCardMakerNPC
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 const DialogueNPCBridgeScript = preload("res://scripts/dialogue/dialogue_npc_bridge.gd")
 const PORTRAIT: Texture2D = preload("res://data/dialogue/portraits/card_maker.tres")
@@ -508,7 +509,7 @@ func _find_session_services() -> Node:
 	if services != null:
 		return services
 
-	var scene := tree.current_scene
+	var scene := GameplaySceneRoot.resolve(tree)
 	if scene == null:
 		return null
 	var fishing := scene.find_child("Fishing", true, false)
@@ -552,13 +553,13 @@ func _cache_player_body() -> void:
 	if not is_inside_tree():
 		return
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
-	var candidate := tree.current_scene.get_node_or_null("Player/CharacterBody3D")
+	var candidate := GameplaySceneRoot.resolve(tree).get_node_or_null("Player/CharacterBody3D")
 	if candidate is Node3D:
 		_player_body = candidate as Node3D
 		return
-	var found := tree.current_scene.find_child("CharacterBody3D", true, false)
+	var found := GameplaySceneRoot.resolve(tree).find_child("CharacterBody3D", true, false)
 	if found is Node3D:
 		_player_body = found as Node3D
 

@@ -1,5 +1,6 @@
 extends Node
 class_name FishingCardMakerService
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal card_made(result: Dictionary)
 signal pending_recovery_completed(result: Dictionary)
@@ -330,9 +331,9 @@ func _find_game() -> Node:
 		return null
 
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_cached_game = tree.current_scene.find_child("TripleTriadGame", true, false)
+	_cached_game = GameplaySceneRoot.resolve(tree).find_child("TripleTriadGame", true, false)
 	return _cached_game
 
 

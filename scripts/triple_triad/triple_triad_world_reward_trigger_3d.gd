@@ -1,5 +1,6 @@
 extends Node3D
 class_name TripleTriadWorldRewardTrigger3D
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal reward_claimed(result: Dictionary)
 signal reward_unavailable(result: Dictionary)
@@ -158,9 +159,9 @@ func _find_game() -> Node:
 	if is_instance_valid(_game):
 		return _game
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_game = tree.current_scene.find_child("TripleTriadGame", true, false)
+	_game = GameplaySceneRoot.resolve(tree).find_child("TripleTriadGame", true, false)
 	if _game != null and _game.has_signal("backend_state_changed"):
 		var callback := Callable(self, "_on_backend_state_changed")
 		if not _game.is_connected("backend_state_changed", callback):

@@ -1,4 +1,5 @@
 extends CanvasLayer
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 signal opened
 signal closed
@@ -123,7 +124,7 @@ func open_merchant_menu(context: ContextScript, owner: Node, mode: int = MODE_BU
 	if context == null or owner == null:
 		return false
 	var locations := get_node_or_null("/root/WorldLocations")
-	if locations != null and locations.is_current_scene(get_tree().current_scene) and not locations.context_belongs_here(context, owner):
+	if locations != null and locations.is_current_scene(GameplaySceneRoot.resolve(get_tree())) and not locations.context_belongs_here(context, owner):
 		return false
 	return _open_menu_in_mode(mode, context, owner)
 

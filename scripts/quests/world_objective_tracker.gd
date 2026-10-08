@@ -1,5 +1,6 @@
 extends CanvasLayer
 class_name WorldObjectiveTracker
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Lightweight exploration objective tracker + request read model.
 ##
@@ -135,11 +136,11 @@ func open_journal() -> bool:
 	if not is_inside_tree():
 		return false
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return false
 
 	if not is_instance_valid(_journal_view):
-		var existing := tree.current_scene.find_child(
+		var existing := GameplaySceneRoot.resolve(tree).find_child(
 			"WorldRequestJournal",
 			true,
 			false
@@ -150,7 +151,7 @@ func open_journal() -> bool:
 			_journal_view = WorldRequestJournalScene.instantiate()
 			if _journal_view == null:
 				return false
-			tree.current_scene.add_child(_journal_view)
+			GameplaySceneRoot.resolve(tree).add_child(_journal_view)
 
 	if not _journal_view.has_method("open_with_requests"):
 		return false
@@ -199,9 +200,9 @@ func _bind_game_mode() -> void:
 	if is_instance_valid(_game_mode):
 		return
 	var tree := get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return
-	_game_mode = tree.current_scene.find_child(
+	_game_mode = GameplaySceneRoot.resolve(tree).find_child(
 		String(game_mode_node_name),
 		true,
 		false

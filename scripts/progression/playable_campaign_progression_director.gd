@@ -1,5 +1,6 @@
 extends Node
 class_name PlayableCampaignProgressionDirector
+const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 
 ## Read-only campaign progression composer for the current playable vertical slice.
 ##
@@ -72,8 +73,8 @@ func get_tackle_acquisition_snapshot() -> Dictionary:
 		return {}
 	var sources: Array = []
 	var spots: Array = []
-	if is_inside_tree() and get_tree().current_scene != null:
-		var scene := get_tree().current_scene
+	if is_inside_tree() and GameplaySceneRoot.resolve(get_tree()) != null:
+		var scene := GameplaySceneRoot.resolve(get_tree())
 		var locations := get_node_or_null("/root/WorldLocations")
 		if locations != null and locations.is_current_scene(scene):
 			var world: Dictionary = locations.get_reachable_world_data()
@@ -472,9 +473,9 @@ func _find_triple_triad_game() -> Node:
 	if not is_inside_tree():
 		return null
 	var tree: SceneTree = get_tree()
-	if tree == null or tree.current_scene == null:
+	if tree == null or GameplaySceneRoot.resolve(tree) == null:
 		return null
-	_cached_triple_triad_game = tree.current_scene.find_child(
+	_cached_triple_triad_game = GameplaySceneRoot.resolve(tree).find_child(
 		"TripleTriadGame",
 		true,
 		false
