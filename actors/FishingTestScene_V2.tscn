@@ -144,15 +144,6 @@ albedo_color = Color(0.33489877, 0.20385107, 0.09913743, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_shore_blocker"]
 size = Vector3(19, 4, 0.35)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.38)
-albedo_texture = ExtResource("23_30w2a")
-
 [sub_resource type="Animation" id="Animation_lu0sf"]
 length = 0.001
 tracks/0/type = "value"
@@ -288,23 +279,88 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.949, 0, 0.609)
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0, 0.033282578)
 
+[node name="GroundPresentation" parent="World/TripleTriadOpponentNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/TripleTriadOpponentNPC" index="1" unique_id=1090408400]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07442939, 0)
+
+[node name="InteractionArea" parent="World/TripleTriadOpponentNPC" index="2" unique_id=1999055414]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07442939, 0)
+
 [node name="BeachCrafterNPC" parent="World" unique_id=1235902304 instance=ExtResource("75_crafter_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0, 0.6531534)
+
+[node name="GroundPresentation" parent="World/BeachCrafterNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/BeachCrafterNPC" index="1" unique_id=1538002036]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/BeachCrafterNPC" index="2" unique_id=487911518]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="FishingCardMakerNPC" parent="World" unique_id=907071164 instance=ExtResource("77_card_maker_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.78892124, 0, 0.51951283)
 
+[node name="GroundPresentation" parent="World/FishingCardMakerNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="CollisionShape3D" parent="World/FishingCardMakerNPC" index="1" unique_id=1054673134]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12546021, 0)
+
+[node name="InteractionArea" parent="World/FishingCardMakerNPC" index="2" unique_id=1679237028]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12453979, 0)
+
 [node name="HarborLockbox" parent="World" unique_id=447281446 instance=ExtResource("78_harbor_lockbox")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.62, 0, 0.5)
+
+[node name="BodyCollider" parent="World/HarborLockbox" index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="PromptLabel3D" parent="World/HarborLockbox" index="4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+
+[node name="InteractionArea" parent="World/HarborLockbox" index="5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="GroundPresentation" parent="World/HarborLockbox" index="6"]
+process_mode = 3
+process_priority = 240
 
 [node name="HarborRequestBoard" parent="World" unique_id=1486436162 instance=ExtResource("79_harbor_request")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.72, 0, 0.5)
 
+[node name="PromptLabel3D" parent="World/HarborRequestBoard" index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.28, 0)
+
+[node name="RequestMarker" parent="World/HarborRequestBoard" index="4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
+
+[node name="InteractionArea" parent="World/HarborRequestBoard" index="5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="GroundPresentation" parent="World/HarborRequestBoard" index="8"]
+process_mode = 3
+process_priority = 240
+
 [node name="RegionalChampionshipRegistrar" parent="World" unique_id=226446659 instance=ExtResource("80_regional_championship")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.08, 0, 0.5)
 
+[node name="PromptLabel3D" parent="World/RegionalChampionshipRegistrar" index="4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.56, 0)
+
+[node name="InteractionArea" parent="World/RegionalChampionshipRegistrar" index="5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="GroundPresentation" parent="World/RegionalChampionshipRegistrar" index="6"]
+process_mode = 3
+process_priority = 240
+
 [node name="BeachGatheringCircuit" parent="World" unique_id=1174588029 instance=ExtResource("76_gathering_circuit")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="FishingMasterStillWaterNPC" parent="World" unique_id=954943286 instance=ExtResource("82_still_water_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.468, 0, -0.076)
@@ -312,41 +368,171 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.468, 0, -0.076)
 [node name="FishingMasterCurrentReaderNPC" parent="World" unique_id=488993862 instance=ExtResource("83_current_reader_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterCurrentReaderNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterCurrentReaderNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterCurrentReaderNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterDepthReaderNPC" parent="World" unique_id=367342925 instance=ExtResource("84_depth_reader_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0, -0.1)
+
+[node name="GroundPresentation" parent="World/FishingMasterDepthReaderNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterDepthReaderNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterDepthReaderNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="FishingMasterStructureHunterNPC" parent="World" unique_id=854136164 instance=ExtResource("85_structure_hunter_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterStructureHunterNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterStructureHunterNPC" index="1" unique_id=78913514]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterStructureHunterNPC" index="2" unique_id=357632536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterLineFighterNPC" parent="World" unique_id=1261999496 instance=ExtResource("86_line_fighter_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0, -0.1)
+
+[node name="GroundPresentation" parent="World/FishingMasterLineFighterNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterLineFighterNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterLineFighterNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="FishingMasterDeepwaterVeteranNPC" parent="World" unique_id=2139456398 instance=ExtResource("87_deepwater_veteran_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterDeepwaterVeteranNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterDeepwaterVeteranNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterDeepwaterVeteranNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterSurfaceAnglerNPC" parent="World" unique_id=1356287476 instance=ExtResource("88_surface_angler_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0, -0.1)
+
+[node name="GroundPresentation" parent="World/FishingMasterSurfaceAnglerNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterSurfaceAnglerNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterSurfaceAnglerNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="FishingMasterLandingGuideNPC" parent="World" unique_id=1755332562 instance=ExtResource("89_landing_guide_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterLandingGuideNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterLandingGuideNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterLandingGuideNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterWeatherWatcherNPC" parent="World" unique_id=1605666736 instance=ExtResource("90_weather_watcher_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.9, 0, -0.1)
+
+[node name="GroundPresentation" parent="World/FishingMasterWeatherWatcherNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterWeatherWatcherNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterWeatherWatcherNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="FishingMasterTideReaderNPC" parent="World" unique_id=1179926240 instance=ExtResource("91_tide_reader_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.45, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterTideReaderNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterTideReaderNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterTideReaderNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterSignReaderNPC" parent="World" unique_id=1207016313 instance=ExtResource("92_sign_reader_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, -0.1)
+
+[node name="GroundPresentation" parent="World/FishingMasterSignReaderNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterSignReaderNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterSignReaderNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="FishingMasterNatureGuideNPC" parent="World" unique_id=2033202793 instance=ExtResource("94_nature_guide_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterNatureGuideNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterNatureGuideNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterNatureGuideNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterDriftAnglerNPC" parent="World" unique_id=331403465 instance=ExtResource("97_drift_angler_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0, -0.1)
 
+[node name="GroundPresentation" parent="World/FishingMasterDriftAnglerNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterDriftAnglerNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterDriftAnglerNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
 [node name="FishingMasterGyosilNPC" parent="World" unique_id=1642803515 instance=ExtResource("98_gyosil_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9062995, 0, -0.1)
+
+[node name="GroundPresentation" parent="World/FishingMasterGyosilNPC" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="BodyCollider" parent="World/FishingMasterGyosilNPC" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+
+[node name="InteractionArea" parent="World/FishingMasterGyosilNPC" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
 [node name="BeachCritter" parent="World" unique_id=232758415 instance=ExtResource("81_beach_critter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, 0, 0.12)
@@ -354,11 +540,31 @@ roam_half_width = 0.48
 roam_half_depth = 0.26
 move_speed = 0.19
 
+[node name="GroundPresentation" parent="World/BeachCritter" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="ProximityArea" parent="World/BeachCritter" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.055645004, 0)
+
+[node name="CollisionShape3D" parent="World/BeachCritter/ProximityArea" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.065, 0)
+
 [node name="BeachCritter2" parent="World" unique_id=1473005735 instance=ExtResource("81_beach_critter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6136692, 0, 0.344522)
 roam_half_width = 0.48
 roam_half_depth = 0.26
 move_speed = 0.19
+
+[node name="GroundPresentation" parent="World/BeachCritter2" index="0"]
+process_mode = 3
+process_priority = 240
+
+[node name="ProximityArea" parent="World/BeachCritter2" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.055645004, 0)
+
+[node name="CollisionShape3D" parent="World/BeachCritter2/ProximityArea" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.065, 0)
 
 [node name="NPCAnimationAutoplay" type="Node" parent="." unique_id=907469643]
 script = ExtResource("93_npc_anim_autoplay")
@@ -374,14 +580,18 @@ camera = NodePath("../CameraRig/Camera3D")
 [node name="CharacterBody3D" parent="Player" unique_id=363575400 instance=ExtResource("1_43krk")]
 collision_layer = 1
 
-[node name="BaitSpawner" parent="Player/CharacterBody3D" index="4" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
+[node name="GroundPresentation" parent="Player/CharacterBody3D" index="1"]
+process_mode = 3
+process_priority = 240
+
+[node name="BaitSpawner" parent="Player/CharacterBody3D" index="3" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("14_0pfgo")
 anchor = NodePath("..")
 camera = NodePath("../../../CameraRig/Camera3D")
 screen_offset = Vector2(-25, -90)
 
-[node name="ReelEndPoint" parent="Player/CharacterBody3D" index="6" unique_id=1454488651 node_paths=PackedStringArray("anchor", "camera")]
+[node name="ReelEndPoint" parent="Player/CharacterBody3D" index="5" unique_id=1454488651 node_paths=PackedStringArray("anchor", "camera")]
 anchor = NodePath("..")
 camera = NodePath("../../../CameraRig/Camera3D")
 screen_offset = Vector2(0, -60)
@@ -980,221 +1190,26 @@ screen_transition = NodePath("../../../UI/FishingHud/ScreenTransition")
 
 [editable path="World/FishZone_V2"]
 [editable path="World/beach"]
+[editable path="World/TripleTriadOpponentNPC"]
+[editable path="World/BeachCrafterNPC"]
+[editable path="World/FishingCardMakerNPC"]
+[editable path="World/HarborLockbox"]
+[editable path="World/HarborRequestBoard"]
+[editable path="World/RegionalChampionshipRegistrar"]
+[editable path="World/FishingMasterCurrentReaderNPC"]
+[editable path="World/FishingMasterDepthReaderNPC"]
+[editable path="World/FishingMasterStructureHunterNPC"]
+[editable path="World/FishingMasterLineFighterNPC"]
+[editable path="World/FishingMasterDeepwaterVeteranNPC"]
+[editable path="World/FishingMasterSurfaceAnglerNPC"]
+[editable path="World/FishingMasterLandingGuideNPC"]
+[editable path="World/FishingMasterWeatherWatcherNPC"]
+[editable path="World/FishingMasterTideReaderNPC"]
+[editable path="World/FishingMasterSignReaderNPC"]
+[editable path="World/FishingMasterNatureGuideNPC"]
+[editable path="World/FishingMasterDriftAnglerNPC"]
+[editable path="World/FishingMasterGyosilNPC"]
+[editable path="World/BeachCritter"]
+[editable path="World/BeachCritter2"]
 [editable path="Player/CharacterBody3D"]
 [editable path="UI/FishingHud/PowerMeter"]
-
-[node name="BodyCollider" parent="World/TripleTriadOpponentNPC"]
-position = Vector3(0, 0.0744293928, 0)
-
-[node name="InteractionArea" parent="World/TripleTriadOpponentNPC"]
-position = Vector3(0, 0.0744293928, 0)
-
-[editable path="World/TripleTriadOpponentNPC"]
-
-[node name="BodyCollider" parent="World/BeachCrafterNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/BeachCrafterNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/BeachCrafterNPC"]
-
-[node name="CollisionShape3D" parent="World/FishingCardMakerNPC"]
-position = Vector3(0, 0.1254602075, 0)
-
-[node name="InteractionArea" parent="World/FishingCardMakerNPC"]
-position = Vector3(0, -0.1245397925, 0)
-
-[editable path="World/FishingCardMakerNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterCurrentReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterCurrentReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterCurrentReaderNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterDepthReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterDepthReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterDepthReaderNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterStructureHunterNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterStructureHunterNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterStructureHunterNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterLineFighterNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterLineFighterNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterLineFighterNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterDeepwaterVeteranNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterDeepwaterVeteranNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterDeepwaterVeteranNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterSurfaceAnglerNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterSurfaceAnglerNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterSurfaceAnglerNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterLandingGuideNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterLandingGuideNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterLandingGuideNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterWeatherWatcherNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterWeatherWatcherNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterWeatherWatcherNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterTideReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterTideReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterTideReaderNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterSignReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterSignReaderNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterSignReaderNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterNatureGuideNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterNatureGuideNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterNatureGuideNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterDriftAnglerNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterDriftAnglerNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterDriftAnglerNPC"]
-
-[node name="BodyCollider" parent="World/FishingMasterGyosilNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[node name="InteractionArea" parent="World/FishingMasterGyosilNPC"]
-position = Vector3(0, 0.0700000003, 0)
-
-[editable path="World/FishingMasterGyosilNPC"]
-
-[node name="ProximityArea" parent="World/BeachCritter"]
-position = Vector3(0, -0.0556450039, 0)
-
-[editable path="World/BeachCritter"]
-
-[node name="ProximityArea" parent="World/BeachCritter2"]
-position = Vector3(0, -0.0556450039, 0)
-
-[editable path="World/BeachCritter2"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Driftwood01"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Driftwood01"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Shell01"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Shell01"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Seaweed01"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Seaweed01"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Driftwood02"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Driftwood02"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/IronScrap01"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/IronScrap01"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/SeaGlass01"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/SeaGlass01"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/IronScrap02"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/IronScrap02"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Shell02"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Shell02"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Driftwood03"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Driftwood03"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/Seaweed02"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/Seaweed02"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/CoastalHerb01"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/CoastalHerb01"]
-
-[node name="InteractionArea" parent="World/BeachGatheringCircuit/CoastalHerb02"]
-position = Vector3(0, 0.0062794313, 0)
-
-[editable path="World/BeachGatheringCircuit/CoastalHerb02"]
-
-[node name="InteractionArea" parent="World/HarborLockbox"]
-position = Vector3(0, 0.07, 0)
-
-[node name="BodyCollider" parent="World/HarborLockbox"]
-position = Vector3(0, 0.07, 0)
-
-[editable path="World/HarborLockbox"]
-
-[node name="InteractionArea" parent="World/HarborRequestBoard"]
-position = Vector3(0, 0.07, 0)
-
-[editable path="World/HarborRequestBoard"]
-
-[node name="InteractionArea" parent="World/RegionalChampionshipRegistrar"]
-position = Vector3(0, 0.07, 0)
-
-[editable path="World/RegionalChampionshipRegistrar"]

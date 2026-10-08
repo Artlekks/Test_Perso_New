@@ -17,6 +17,7 @@ func check(ok: bool, label: String) -> void:
 		push_error(label)
 func strip(node: Node) -> void:
 	if node is CanvasLayer: node.visible = false
+	if node is Label3D: node.visible = false
 	if node is BeachGatheringNode3D: return
 	if node.get_script() in [Presentation, Shadow]: return
 	for child in node.get_children(): strip(child)
@@ -62,6 +63,13 @@ func test_actor(actor: Node3D) -> void:
 			var tex = sprite.sprite_frames.get_frame_texture(animation, sprite.frame)
 			var padding = presentation.profile.animation_feet_from_bottom_px.get(String(animation), presentation.profile.feet_from_bottom_px)
 			check(is_equal_approx(sprite.offset.y + float(padding), tex.get_height() * 0.5), "%s sheet feet registration %s" % [actor.name,animation])
+			var feet_x: float = presentation.profile.animation_feet_from_left_px.get(String(animation), presentation.profile.feet_from_left_px)
+			for flipped in [false, true]:
+				sprite.flip_h = flipped
+				presentation.apply_frame()
+				var expected_x: float = tex.get_width() * 0.5 - feet_x if feet_x >= 0 else 0.0
+				if flipped: expected_x = -expected_x
+				check(is_equal_approx(sprite.offset.x, expected_x), "%s declared sheet stance mirrors correctly %s/%s" % [actor.name,animation,flipped])
 func run() -> void:
 	# Every authored character, including inherited regional merchant families.
 	var files := DirAccess.get_files_at("res://actors")

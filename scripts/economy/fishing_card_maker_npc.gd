@@ -206,9 +206,7 @@ func _finish_patrol_leg() -> void:
 	velocity = Vector3.ZERO
 	locomotion_blocked = false
 	_pause_remaining = _random_idle_pause()
-	# Keep a single relaxed idle pose. Directional frames are reserved for
-	# locomotion/turning so the captain does not snap through cardinal idles.
-	_play_idle(&"se")
+	_play_idle(_facing)
 
 	if _smoke_pending:
 		_smoke_pending = false
@@ -237,25 +235,14 @@ func _direction_name(direction: Vector2) -> StringName:
 	return &"se" if x >= 0.0 else &"sw"
 
 
-func _play_idle(_direction: StringName = &"se") -> void:
+func _play_idle(direction: StringName = &"se") -> void:
 	_special_playing = false
-	_play_animation_if_available(&"idle_se")
+	$GroundPresentation.set_local_directional_pose("idle", GroundPresentation.ViewDirection.world_vector(String(direction)))
 
 
 func _play_walk(direction: StringName) -> void:
 	_special_playing = false
-	var walk_direction := direction
-	# The original sprite sheet contains real walking cycles for NE and SE.
-	# West versions are exact mirrors. Cardinal movement is intentionally
-	# resolved to the nearest diagonal instead of replaying an idle cycle.
-	match direction:
-		&"n", &"e":
-			walk_direction = &"ne"
-		&"s":
-			walk_direction = &"se"
-		&"w":
-			walk_direction = &"sw"
-	_play_animation_if_available(StringName("walk_%s" % String(walk_direction)))
+	$GroundPresentation.set_local_directional_pose("walk", GroundPresentation.ViewDirection.world_vector(String(direction)))
 
 
 func _play_smoke() -> void:
@@ -267,17 +254,8 @@ func _play_smoke() -> void:
 		_play_idle(_facing)
 		return
 	_special_playing = true
+	$GroundPresentation.directional_pose = ""
 	animated_sprite.play(&"smoke")
-
-
-func _play_animation_if_available(animation_name: StringName) -> void:
-	if animated_sprite == null or animated_sprite.sprite_frames == null:
-		return
-	if not animated_sprite.sprite_frames.has_animation(animation_name):
-		return
-	if animated_sprite.animation == animation_name and animated_sprite.is_playing():
-		return
-	animated_sprite.play(animation_name)
 
 
 func _random_idle_pause() -> float:

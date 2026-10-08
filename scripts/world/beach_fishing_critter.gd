@@ -151,50 +151,8 @@ func _random_eight_way_direction() -> Vector2:
 
 
 func _play_idle(direction: Vector2) -> void:
-	if animated_sprite == null or animated_sprite.sprite_frames == null:
-		return
-
-	animated_sprite.flip_h = false
-	var animation_name: StringName = _idle_animation_for_direction(direction)
-	if not animated_sprite.sprite_frames.has_animation(animation_name):
-		return
-	animated_sprite.play(animation_name)
+	$GroundPresentation.set_local_directional_pose("idle", Vector3(direction.x, 0, direction.y))
 
 
 func _play_walk(direction: Vector2) -> void:
-	if animated_sprite == null or animated_sprite.sprite_frames == null:
-		return
-
-	var northward: bool = direction.y < 0.0
-	var eastward: bool = direction.x > 0.0
-	var animation_name: StringName = &"walk_nw" if northward else &"walk_sw"
-
-	# Authored strips point west. Mirroring gives NE/SE exactly as requested.
-	animated_sprite.flip_h = eastward
-	if not animated_sprite.sprite_frames.has_animation(animation_name):
-		return
-	animated_sprite.play(animation_name)
-
-
-func _idle_animation_for_direction(direction: Vector2) -> StringName:
-	var angle: float = atan2(direction.y, direction.x)
-	var octant: int = posmod(int(round(angle / (PI / 4.0))), 8)
-
-	# atan2 octants: E, SE, S, SW, W, NW, N, NE for +Z = south.
-	match octant:
-		0:
-			return &"idle_e"
-		1:
-			return &"idle_se"
-		2:
-			return &"idle_s"
-		3:
-			return &"idle_sw"
-		4:
-			return &"idle_w"
-		5:
-			return &"idle_nw"
-		6:
-			return &"idle_n"
-		_:
-			return &"idle_ne"
+	$GroundPresentation.set_local_directional_pose("walk", Vector3(direction.x, 0, direction.y))

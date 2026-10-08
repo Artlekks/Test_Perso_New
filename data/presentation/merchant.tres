@@ -6,5 +6,6 @@
 script = ExtResource("1")
 feet_from_bottom_px = 0.0
 animation_feet_from_bottom_px = {"Stand_Interest": 7.0}
-shadow_width = 0.38
-shadow_depth = 0.38
+animation_feet_from_left_px = {"Stand_Interest": 12.0}
+shadow_width = 0.22
+shadow_depth = 0.22

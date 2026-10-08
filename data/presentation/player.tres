@@ -5,5 +5,5 @@
 [resource]
 script = ExtResource("1")
 feet_from_bottom_px = 70.0
-shadow_width = 0.24
-shadow_depth = 0.24
+shadow_width = 0.18
+shadow_depth = 0.18

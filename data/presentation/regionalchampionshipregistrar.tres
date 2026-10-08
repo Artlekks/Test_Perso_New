@@ -3,6 +3,6 @@
 [resource]
 script = ExtResource("1")
 category = 3
-shadow_width = 0.28
-shadow_depth = 0.28
+shadow_width = 0.18
+shadow_depth = 0.18
 shadow_opacity = 0.40

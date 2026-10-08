@@ -126,9 +126,6 @@ func web_shadow_orbits(game: Node, shell: Node) -> void:
 	shell.gameplay_viewport.add_child(camera)
 	var original_camera: Camera3D = shell.gameplay_viewport.get_camera_3d()
 	camera.current = true
-	var npc = game.get_node("World/BeachMerchantNPC")
-	var shadow = npc.get_node("GroundPresentation/ShadowAnchor/WorldBlobShadow")
-	var original: Transform3D = shadow.global_transform
 	var layers := game.find_children("*", "CanvasLayer", true, false)
 	var states: Array[bool] = []
 	for layer in layers:
@@ -136,15 +133,49 @@ func web_shadow_orbits(game: Node, shell: Node) -> void:
 		layer.visible = false
 	var zone = game.get_node("World/FishZone_V2")
 	zone.hide()
-	paused = true
-	for angle in 4:
-		camera.global_position = npc.global_position + Vector3(sin(angle * PI / 2) * 1.5, 1.0, cos(angle * PI / 2) * 1.5)
-		camera.look_at(npc.global_position + Vector3(0,0.2,0))
-		await settle(0.5)
-		check(shadow.global_transform.is_equal_approx(original) and shadow.material_override is ShaderMaterial, "Web rendered orbit keeps radial shadow fixed %d" % angle)
-		print("WEB GROUNDING ORBIT: ", angle, " transform=", shadow.global_transform)
-		await settle(12.0)
-	paused = false
+	var was_paused := get_tree().paused
+	get_tree().paused = true
+	var actors: Array[Node3D] = []
+	var actor_visibility: Array[bool] = []
+	for p in game.find_children("GroundPresentation", "Node3D", true, false):
+		actors.append(p.get_parent())
+		actor_visibility.append(p.get_parent().visible)
+	var labels := game.find_children("*", "Label3D", true, false)
+	var label_visibility: Array[bool] = []
+	for label in labels:
+		label_visibility.append(label.visible)
+		label.hide()
+	var Direction = preload("res://scripts/world/view_relative_direction.gd")
+	for path in ["Player/CharacterBody3D", "World/BeachMerchantNPC", "World/FishingCardMakerNPC", "World/FishingMasterStillWaterNPC"]:
+		var npc = game.get_node(path)
+		for actor in actors: actor.visible = actor == npc
+		var presentation = npc.get_node("GroundPresentation")
+		var shadow = presentation.shadow
+		var original: Transform3D = shadow.global_transform
+		var physical: Transform3D = npc.global_transform
+		var sprite = presentation.sprite
+		var animation: StringName = sprite.animation
+		var reference: Node3D = npc.camera_reference if path.begins_with("Player/") else null
+		for angle in 4:
+			camera.global_position = npc.global_position + Vector3(sin(angle * PI / 2) * 1.5, 1.0, cos(angle * PI / 2) * 1.5)
+			camera.look_at(npc.global_position + Vector3(0,0.2,0))
+			if reference != null:
+				npc.camera_reference = camera
+				npc._update_facing_from_world(npc.global_basis.z)
+				npc._play_animation("Idle", npc.last_dir)
+			await settle(0.5)
+			check(shadow.global_transform.is_equal_approx(original) and npc.global_transform.is_equal_approx(physical), "%s Web orbit fixes root/shadow %d" % [path, angle])
+			if not presentation.directional_pose.is_empty():
+				var chosen = Direction.resolve(presentation._directions, Direction.sector(presentation.world_facing, camera.global_basis))
+				check(sprite.animation == StringName(chosen.animation), "%s Web authored relative view %d" % [path,angle])
+			elif reference == null:
+				check(sprite.animation == animation, "%s preserves one-direction fallback %d" % [path,angle])
+			print("WEB GROUNDING ORBIT: ", path, " angle=", angle, " animation=", sprite.animation, " transform=", shadow.global_transform)
+			await settle(1.5)
+		if reference != null: npc.camera_reference = reference
+	for i in actors.size(): actors[i].visible = actor_visibility[i]
+	for i in labels.size(): labels[i].visible = label_visibility[i]
+	get_tree().paused = was_paused
 	for i in layers.size(): layers[i].visible = states[i]
 	zone.show()
 	original_camera.current = true
