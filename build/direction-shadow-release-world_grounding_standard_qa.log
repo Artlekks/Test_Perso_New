@@ -1,0 +1,75 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: World/BeachGatheringCircuit/Driftwood01/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/Shell01/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/Seaweed01/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/Driftwood02/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/IronScrap01/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/SeaGlass01/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/IronScrap02/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/Shell02/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/Driftwood03/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/Seaweed02/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/CoastalHerb01/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+ERROR: World/BeachGatheringCircuit/CoastalHerb02/InteractionArea/CollisionShape3D physics world position unchanged
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] check (res://scripts/qa/world_grounding_standard_qa.gd:17)
+       [1] run (res://scripts/qa/world_grounding_standard_qa.gd:107)
+       [2] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WORLD GROUNDING/SHADOW QA: 1048/1060

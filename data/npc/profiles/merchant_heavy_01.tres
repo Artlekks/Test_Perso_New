@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/beach_merchant_frames.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_heavy.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 feet_from_bottom_px = 0.0
@@ -14,8 +16,9 @@ development_name = "Heavy Merchant"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"Bag_Search"
-directional_mode = 0
-available_directions = PackedStringArray("one view")
 role_tags = PackedStringArray("merchant", "special_vendor")
 movement_capability = false
 shadow_family = "humanoid_standard"
+available_directions = PackedStringArray("SE")
+directional_mode = 0
+shadow_family_resource = ExtResource("shared_shadow_family")

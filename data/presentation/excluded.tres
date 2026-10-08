@@ -2,8 +2,11 @@
 
 [ext_resource type="Script" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
 
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("1")
 category = 4
 shadow_enabled = false
 shadow_family = "humanoid_standard"
+shadow_family_resource = ExtResource("shared_shadow_family")

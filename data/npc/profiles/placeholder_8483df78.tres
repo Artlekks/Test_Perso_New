@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_8483df78.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_8483df78"
@@ -9,8 +11,6 @@ development_name = "Angler Action Sheet"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 0, "pose_002": 0, "p
 
 animation_feet_from_left_px = {"pose_000": 27.0, "pose_001": 27.0, "pose_002": 27.0, "pose_003": 27.0, "pose_004": 27.0, "pose_005": 27.0, "pose_006": 27.0, "pose_007": 27.0, "pose_008": 27.0, "pose_009": 27.0, "pose_010": 27.0, "pose_011": 27.0, "pose_012": 27.0, "pose_013": 27.0, "pose_014": 27.0, "pose_015": 27.0, "pose_016": 27.0, "pose_017": 27.0, "pose_018": 27.0, "pose_019": 27.0, "pose_020": 27.0, "pose_021": 27.0, "pose_022": 27.0, "pose_023": 27.0, "pose_024": 27.0, "pose_025": 27.0, "pose_026": 27.0, "pose_027": 27.0, "pose_028": 27.0, "pose_029": 27.0, "pose_030": 27.0, "pose_031": 18.0, "pose_032": 18.0, "pose_033": 18.0, "pose_034": 18.0, "pose_035": 18.0, "pose_036": 18.0, "pose_037": 18.0, "pose_038": 18.0, "pose_039": 18.0, "pose_040": 18.0, "pose_041": 18.0, "pose_042": 18.0, "pose_043": 18.0, "pose_044": 18.0, "pose_045": 18.0, "pose_046": 18.0, "pose_047": 18.0, "pose_048": 18.0, "pose_049": 18.0, "pose_050": 18.0, "pose_051": 18.0, "pose_052": 18.0, "pose_053": 18.0, "pose_054": 18.0, "pose_055": 18.0, "pose_056": 18.0, "pose_057": 18.0, "pose_058": 18.0, "pose_059": 18.0, "pose_060": 18.0, "pose_061": 18.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"NE": {"animation": "pose_000", "flip_h": false}, "SE": {"animation": "pose_031", "flip_h": false}, "NW": {"animation": "pose_000", "flip_h": true}, "SW": {"animation": "pose_031", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("NE", "SE")
+directional_mode = 1
+shadow_family_resource = ExtResource("shared_shadow_family")

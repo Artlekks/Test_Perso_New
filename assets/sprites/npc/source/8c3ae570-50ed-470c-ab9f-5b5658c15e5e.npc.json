@@ -149,7 +149,7 @@
     }
   ],
   "default_animation": "idle_s",
-  "mode": 5,
+  "mode": 3,
   "directions": [
     "N",
     "NE",
@@ -167,7 +167,8 @@
     "animation_feet_from_bottom_px": "{\"idle_n\": 4, \"idle_ne\": 5, \"idle_e\": 3, \"idle_se\": 2, \"idle_s\": 4, \"walk_ne\": 6, \"walk_se\": 3}",
     "animation_feet_from_left_px": "{\"idle_n\": 15.0, \"idle_ne\": 20.0, \"idle_e\": 10.5, \"idle_se\": 11.0, \"idle_s\": 23.0, \"walk_ne\": 17.5, \"walk_se\": 15.0}",
     "directional_animation_prefixes": "{\"idle\": \"idle_\", \"walk\": \"walk_\"}",
-    "default_directional_pose": "\"idle\""
+    "default_directional_pose": "\"idle\"",
+    "directional_aliases": "{\"idle\": {\"W\": {\"animation\": \"idle_e\", \"flip_h\": true}, \"NW\": {\"animation\": \"idle_ne\", \"flip_h\": true}, \"SW\": {\"animation\": \"idle_se\", \"flip_h\": true}}, \"walk\": {\"NW\": {\"animation\": \"walk_ne\", \"flip_h\": true}, \"SW\": {\"animation\": \"walk_se\", \"flip_h\": true}}}"
   },
   "movement": true,
   "batch_generated": true

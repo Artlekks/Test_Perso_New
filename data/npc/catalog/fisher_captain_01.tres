@@ -12,4 +12,4 @@ placeholder_roles = PackedStringArray("angler", "card_opponent")
 importance_tier = "B"
 movement_type = "patrol_capable"
 suggested_locations = PackedStringArray("beach")
-art_status = "EXISTING_AUTHORED"
+art_status = "REVIEWED_DIRECTIONS"

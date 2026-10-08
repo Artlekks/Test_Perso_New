@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_e8e1ac56.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_e8e1ac56"
@@ -9,8 +11,6 @@ development_name = "Green Cap Trader"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 6, "pose_002": 0, "p
 
 animation_feet_from_left_px = {"pose_000": 19.0, "pose_001": 16.5, "pose_002": 11.0, "pose_003": 21.5, "pose_004": 19.0, "pose_005": 25.0, "pose_006": 25.0, "pose_007": 25.0, "pose_008": 25.0, "pose_009": 16.0, "pose_010": 16.0, "pose_011": 16.0, "pose_012": 16.0, "pose_013": 16.0, "pose_014": 16.0, "pose_015": 16.0, "pose_016": 16.0, "pose_017": 16.0, "pose_018": 16.0, "pose_019": 16.0, "pose_020": 16.0, "pose_021": 16.0, "pose_022": 16.0, "pose_023": 16.0, "pose_024": 16.0, "pose_025": 16.0, "pose_026": 16.0, "pose_027": 16.0, "pose_028": 25.0, "pose_029": 25.0, "pose_030": 25.0, "pose_031": 25.0, "pose_032": 25.0, "pose_033": 25.0, "pose_034": 25.0, "pose_035": 25.0, "pose_036": 25.0, "pose_037": 25.0, "pose_038": 25.0, "pose_039": 25.0, "pose_040": 25.0, "pose_041": 25.0, "pose_042": 25.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"S": {"animation": "pose_000", "flip_h": false}, "SE": {"animation": "pose_001", "flip_h": false}, "E": {"animation": "pose_002", "flip_h": false}, "NE": {"animation": "pose_003", "flip_h": false}, "N": {"animation": "pose_004", "flip_h": false}, "W": {"animation": "pose_002", "flip_h": true}, "NW": {"animation": "pose_003", "flip_h": true}, "SW": {"animation": "pose_001", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("S", "SE", "E", "NE", "N")
+directional_mode = 3
+shadow_family_resource = ExtResource("shared_shadow_family")

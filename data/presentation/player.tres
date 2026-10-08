@@ -2,9 +2,12 @@
 
 [ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
 
+[ext_resource type="Resource" path="res://data/presentation/shadows/player.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("1")
 feet_from_bottom_px = 70.0
 shadow_width = 0.18
 shadow_depth = 0.18
 shadow_family = "player"
+shadow_family_resource = ExtResource("shared_shadow_family")

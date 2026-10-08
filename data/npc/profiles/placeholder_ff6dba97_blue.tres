@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_ff6dba97_blue.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_ff6dba97_blue"
@@ -9,8 +11,6 @@ development_name = "Stout Bearded Traveler (blue)"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 1, "pose_001": 1, "pose_002": 1, "p
 
 animation_feet_from_left_px = {"pose_000": 22.5, "pose_001": 22.5, "pose_002": 22.5, "pose_003": 22.5, "pose_004": 12.0, "pose_005": 12.0, "pose_006": 12.0, "pose_007": 12.0, "pose_008": 22.5, "pose_009": 22.5, "pose_010": 22.5, "pose_011": 22.5, "pose_012": 12.0, "pose_013": 12.0, "pose_014": 12.0, "pose_015": 12.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"NE": {"animation": "pose_000", "flip_h": false}, "SE": {"animation": "pose_004", "flip_h": false}, "NW": {"animation": "pose_000", "flip_h": true}, "SW": {"animation": "pose_004", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("NE", "SE")
+directional_mode = 1
+shadow_family_resource = ExtResource("shared_shadow_family")

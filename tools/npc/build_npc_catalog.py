@@ -72,18 +72,24 @@ def build():
         write('data/npc/colliders/' + family + '.tres', '[gd_resource type="Resource" format=3]\n[ext_resource type="Script" path="res://scripts/npc/npc_collider_profile.gd" id="script"]\n[resource]\nscript = ExtResource("script")\nfamily = &'+string(family)+'\nradius = '+str(values[0])+'\nheight = '+str(values[1])+'\nhard_blocking = '+str(values[2]).lower()+'\n')
     catalog = '[gd_resource type="Resource" format=3]\n[ext_resource type="Script" path="res://scripts/npc/npc_catalog.gd" id="script"]\n'
     for entry in entries:
+        # Reviewed original one-view strips face SE. This is descriptive
+        # catalogue metadata only; it does not enable directional animation.
+        if entry['directions'] == ['one view']: entry['directions'] = ['SE']
         frames = frames_for(entry)
         grounding = ''
         if entry.get('grounding_template'):
             raw = (ROOT/entry['grounding_template']).read_text()
             grounding = raw.split('[resource]\n',1)[1]
-            grounding = '\n'.join(line for line in grounding.splitlines() if not line.startswith(('script =', 'shadow_family ='))) + '\n'
+            grounding = '\n'.join(line for line in grounding.splitlines() if not line.startswith(('script =', 'shadow_family =', 'shadow_family_resource ='))) + '\n'
         profile = '[gd_resource type="Resource" format=3]\n[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]\n[ext_resource type="SpriteFrames" path="res://'+frames+'" id="frames"]\n[ext_resource type="Resource" path="res://data/npc/colliders/'+entry['collider']+'.tres" id="collider"]\n[resource]\nscript = ExtResource("script")\n' + grounding
         profile += 'npc_id = &'+string(entry['id'])+'\ndevelopment_name = '+string(entry['name'])+'\nsprite_frames = ExtResource("frames")\ncollider_profile = ExtResource("collider")\ndefault_animation = &'+string(entry['default_animation'])+'\ndirectional_mode = '+str(entry['mode'])+'\navailable_directions = PackedStringArray('+', '.join(map(string,entry['directions']))+')\nrole_tags = PackedStringArray('+', '.join(map(string,entry['tags']))+')\nshadow_family = '+string({'humanoid':'humanoid_standard','small_creature':'critter'}.get(entry.get('shadow','humanoid_standard'),entry.get('shadow','humanoid_standard')))+'\nmovement_capability = '+str(entry.get('movement',False)).lower()+'\n'
         for key,value in entry.get('profile_overrides',{}).items():
             # Replace inherited entries instead of duplicating resource properties.
             profile = '\n'.join(line for line in profile.split('\n') if not line.startswith(key+' ='))+'\n'
             profile += key+' = '+value+'\n'
+        family = {'humanoid':'humanoid_standard','small_creature':'critter'}.get(entry.get('shadow','humanoid_standard'), entry.get('shadow','humanoid_standard'))
+        profile = profile.replace('[resource]', '[ext_resource type="Resource" path="res://data/presentation/shadows/'+family+'.tres" id="shared_shadow_family"]\n[resource]', 1)
+        profile += 'shadow_family_resource = ExtResource("shared_shadow_family")\n'
         profile_path = 'data/npc/profiles/'+entry['id']+'.tres'
         scene_path = 'actors/npc/catalog/NPC_'+entry['id']+'.tscn'
         entry_path = 'data/npc/catalog/'+entry['id']+'.tres'

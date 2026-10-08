@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_837b6a03.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_837b6a03"
@@ -9,8 +11,6 @@ development_name = "Short Robed Traveler"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 5, "pose_001": 5, "pose_002": 5, "p
 
 animation_feet_from_left_px = {"pose_000": 7.0, "pose_001": 7.0, "pose_002": 7.0, "pose_003": 7.0, "pose_004": 7.0, "pose_005": 7.0, "pose_006": 21.0, "pose_007": 21.0, "pose_008": 21.0, "pose_009": 21.0, "pose_010": 21.0, "pose_011": 21.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"NE": {"animation": "pose_000", "flip_h": false}, "SE": {"animation": "pose_006", "flip_h": false}, "NW": {"animation": "pose_000", "flip_h": true}, "SW": {"animation": "pose_006", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("NE", "SE")
+directional_mode = 1
+shadow_family_resource = ExtResource("shared_shadow_family")

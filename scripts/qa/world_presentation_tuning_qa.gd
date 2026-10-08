@@ -16,6 +16,13 @@ func run() -> void:
 				if separation < closest:
 					closest = separation
 					expected = index
+			# Missing true side art uses the front hemisphere at an exact side
+			# tie; four-diagonal sheets must not select NW instead of SW here.
+			if turn in [2, 6]:
+				for index in count:
+					var authored_sector: int = index * (8 / count)
+					var difference := absi(authored_sector - turn)
+					if mini(difference, 8 - difference) == closest and authored_sector in [0, 1, 7]: expected = index
 			check(Direction.resolve(available, turn).animation == str(expected), "%d-direction chooses nearest authored view %d" % [count, turn])
 	check(Direction.resolve({}, 3).is_empty(), "missing art produces no fabricated animation")
 	var reference_player := CharacterBody3D.new()

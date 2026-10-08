@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_6d89ee8e.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/ambient_creature.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/critter.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_6d89ee8e"
@@ -9,8 +11,6 @@ development_name = "Small Bird"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"idle_s"
-directional_mode = 5
-available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,11 +18,15 @@ animation_feet_from_bottom_px = {"idle_n": 0, "idle_ne": 0, "idle_e": 0, "idle_s
 
 animation_feet_from_left_px = {"idle_n": 4.0, "idle_ne": 7.5, "idle_e": 7.0, "idle_se": 10.5, "idle_s": 3.5, "fly_ne": 8.0, "fly_se": 9.5}
 
-directional_animation_prefixes = {"idle": "idle_", "fly": "fly_"}
 
-default_directional_pose = "idle"
 
 shadow_width = 0.10
 
 shadow_depth = 0.10
 shadow_family = "critter"
+directional_animation_prefixes = {"idle": "idle_", "fly": "fly_"}
+directional_aliases = {"idle": {"W": {"animation": "idle_e", "flip_h": true}, "NW": {"animation": "idle_ne", "flip_h": true}, "SW": {"animation": "idle_se", "flip_h": true}}, "fly": {"NW": {"animation": "fly_ne", "flip_h": true}, "SW": {"animation": "fly_se", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
+directional_mode = 3
+shadow_family_resource = ExtResource("shared_shadow_family")

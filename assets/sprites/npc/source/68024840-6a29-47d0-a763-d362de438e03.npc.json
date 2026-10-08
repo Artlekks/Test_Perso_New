@@ -29,19 +29,23 @@
     }
   ],
   "default_animation": "pose_000",
-  "mode": 5,
+  "mode": 1,
   "directions": [
-    "UNCONFIRMED"
+    "NE",
+    "SE"
   ],
   "collider": "humanoid_standard",
   "tags": [
     "placeholder",
     "role_unconfirmed"
   ],
-  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented. Directional audit v1: reviewed static view cells; explicit same-hemisphere side mirrors only. Original pose names and FPS retained.",
   "profile_overrides": {
     "animation_feet_from_bottom_px": "{\"pose_000\": 6, \"pose_001\": 4}",
-    "animation_feet_from_left_px": "{\"pose_000\": 16.0, \"pose_001\": 19.5}"
+    "animation_feet_from_left_px": "{\"pose_000\": 16.0, \"pose_001\": 19.5}",
+    "directional_animation_prefixes": "{\"idle\": \"\"}",
+    "directional_aliases": "{\"idle\": {\"NE\": {\"animation\": \"pose_000\", \"flip_h\": false}, \"SE\": {\"animation\": \"pose_001\", \"flip_h\": false}, \"NW\": {\"animation\": \"pose_000\", \"flip_h\": true}, \"SW\": {\"animation\": \"pose_001\", \"flip_h\": true}}}",
+    "default_directional_pose": "\"idle\""
   },
   "batch_generated": true
 }

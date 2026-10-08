@@ -12,4 +12,4 @@ placeholder_roles = PackedStringArray("ambient_creature")
 importance_tier = "C"
 movement_type = "ambient"
 suggested_locations = PackedStringArray("beach")
-art_status = "EXISTING_AUTHORED"
+art_status = "REVIEWED_DIRECTIONS"

@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_critter_frames.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/ambient_creature.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/critter.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 category = 1
@@ -15,14 +17,15 @@ development_name = "Red Small Creature"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"red_s"
-directional_mode = 5
-available_directions = PackedStringArray("S", "SE", "E", "NE", "N")
 role_tags = PackedStringArray("ambient_creature")
 movement_capability = false
 
 directional_animation_prefixes = {"idle": "red_"}
 
-directional_aliases = {}
 
 default_directional_pose = "idle"
 shadow_family = "critter"
+directional_aliases = {"idle": {"W": {"animation": "red_e", "flip_h": true}, "NW": {"animation": "red_ne", "flip_h": true}, "SW": {"animation": "red_se", "flip_h": true}}}
+available_directions = PackedStringArray("S", "SE", "E", "NE", "N")
+directional_mode = 3
+shadow_family_resource = ExtResource("shared_shadow_family")

@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_ea87e795.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_ea87e795"
@@ -9,8 +11,6 @@ development_name = "Red Cap Stout Traveler"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 0, "pose_002": 0, "p
 
 animation_feet_from_left_px = {"pose_000": 12.5, "pose_001": 20.0, "pose_002": 23.5, "pose_003": 23.5, "pose_004": 13.5, "pose_005": 13.5, "pose_006": 13.5, "pose_007": 12.5, "pose_008": 12.5, "pose_009": 12.5, "pose_010": 26.0, "pose_011": 21.0, "pose_012": 26.0, "pose_013": 21.0, "pose_014": 19.0, "pose_015": 21.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"E": {"animation": "pose_000", "flip_h": false}, "NE": {"animation": "pose_001", "flip_h": false}, "S": {"animation": "pose_002", "flip_h": false}, "N": {"animation": "pose_003", "flip_h": false}, "W": {"animation": "pose_000", "flip_h": true}, "NW": {"animation": "pose_001", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("E", "NE", "S", "N")
+directional_mode = 3
+shadow_family_resource = ExtResource("shared_shadow_family")

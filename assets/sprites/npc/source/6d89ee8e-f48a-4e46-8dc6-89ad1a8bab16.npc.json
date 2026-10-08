@@ -149,7 +149,7 @@
     }
   ],
   "default_animation": "idle_s",
-  "mode": 5,
+  "mode": 3,
   "directions": [
     "N",
     "NE",
@@ -169,7 +169,8 @@
     "directional_animation_prefixes": "{\"idle\": \"idle_\", \"fly\": \"fly_\"}",
     "default_directional_pose": "\"idle\"",
     "shadow_width": "0.10",
-    "shadow_depth": "0.10"
+    "shadow_depth": "0.10",
+    "directional_aliases": "{\"idle\": {\"W\": {\"animation\": \"idle_e\", \"flip_h\": true}, \"NW\": {\"animation\": \"idle_ne\", \"flip_h\": true}, \"SW\": {\"animation\": \"idle_se\", \"flip_h\": true}}, \"fly\": {\"NW\": {\"animation\": \"fly_ne\", \"flip_h\": true}, \"SW\": {\"animation\": \"fly_se\", \"flip_h\": true}}}"
   },
   "movement": false,
   "shadow": "small_creature",

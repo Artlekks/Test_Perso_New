@@ -1,0 +1,1057 @@
+{
+  "placeholder_14bf342a": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/14bf342a-6e01-475f-855b-ab8c7e1c4c44.png",
+    "one_view": false
+  },
+  "placeholder_21f7b2b2": {
+    "authored": [
+      "SE"
+    ],
+    "idle_map": {
+      "SE": {
+        "animation": "pose_000",
+        "flip_h": false
+      }
+    },
+    "source": "assets/sprites/npc/source/21f7b2b2-8e28-4d4e-8e58-fa2d53043887.png",
+    "one_view": true
+  },
+  "placeholder_3cb9da3b": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/3cb9da3b-dea9-41aa-9169-cfff07f937f6.png",
+    "one_view": false
+  },
+  "placeholder_43fb177f": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/43fb177f-03b9-47b6-b25d-b0572f705688.png",
+    "one_view": false
+  },
+  "placeholder_4b58ab5e": {
+    "authored": [
+      "SE",
+      "NE"
+    ],
+    "idle_map": {
+      "SE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_001",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_000",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/4b58ab5e-1e86-4227-bb53-623429065b8c.png",
+    "one_view": false
+  },
+  "placeholder_68024840": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/68024840-6a29-47d0-a763-d362de438e03.png",
+    "one_view": false
+  },
+  "placeholder_6d89ee8e": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/6d89ee8e-f48a-4e46-8dc6-89ad1a8bab16.png",
+    "one_view": false
+  },
+  "placeholder_78f1768c": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/78f1768c-ad54-4da1-b8da-2a6bda09c4d2.png",
+    "one_view": false
+  },
+  "placeholder_7d53dc6e": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/7d53dc6e-3831-4a26-83af-f689f5c590de.png",
+    "one_view": false
+  },
+  "placeholder_7f1b19bc": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/7f1b19bc-6451-40fb-9baa-02e3cf16b2f9.png",
+    "one_view": false
+  },
+  "placeholder_837b6a03": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_006",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_006",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/837b6a03-4c6f-406b-b808-46862d834e7f.png",
+    "one_view": false
+  },
+  "placeholder_8483df78": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_031",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_031",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/8483df78-0886-42ff-9faf-01c0eec86da6.png",
+    "one_view": false
+  },
+  "placeholder_85f413fb": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_014",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_014",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/85f413fb-8539-46a6-9dda-fd041a900d84.png",
+    "one_view": false
+  },
+  "placeholder_8c3ae570": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/8c3ae570-50ed-470c-ab9f-5b5658c15e5e.png",
+    "one_view": false
+  },
+  "placeholder_9d2e2d78": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/9d2e2d78-50ed-4078-b2af-fd7d31cb3ac2.png",
+    "one_view": false
+  },
+  "placeholder_c3997e38": {
+    "authored": [
+      "E",
+      "SE",
+      "N",
+      "S",
+      "NE"
+    ],
+    "idle_map": {
+      "E": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "N": {
+        "animation": "pose_002",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "pose_003",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_004",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "pose_004",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/c3997e38-4619-4daf-ba52-37f21ea0c26e.png",
+    "one_view": false
+  },
+  "placeholder_cac2bbc2": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/cac2bbc2-efe8-4023-a1c9-d06df3a6dc8a.png",
+    "one_view": false
+  },
+  "placeholder_d1282736": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/d1282736-f781-4e81-892d-7e7f21143d14.png",
+    "one_view": false
+  },
+  "placeholder_d7c2eeb9": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/d7c2eeb9-b691-4058-a2c1-62ddb5fcac7a.png",
+    "one_view": false
+  },
+  "placeholder_e1466c4f": {
+    "authored": [
+      "SE",
+      "NE"
+    ],
+    "idle_map": {
+      "SE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_001",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_000",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/e1466c4f-5a8f-49c2-baa7-6e73af652713.png",
+    "one_view": false
+  },
+  "placeholder_e5085f21": {
+    "authored": [
+      "NE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      }
+    },
+    "source": "assets/sprites/npc/source/e5085f21-5579-4f00-a04f-b00d19e870c5.png",
+    "one_view": true
+  },
+  "placeholder_e8e1ac56": {
+    "authored": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N"
+    ],
+    "idle_map": {
+      "S": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "pose_002",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_003",
+        "flip_h": false
+      },
+      "N": {
+        "animation": "pose_004",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "pose_002",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "pose_003",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/e8e1ac56-298c-42a9-849b-89e06978b0cc.png",
+    "one_view": false
+  },
+  "placeholder_ea87e795": {
+    "authored": [
+      "E",
+      "NE",
+      "S",
+      "N"
+    ],
+    "idle_map": {
+      "E": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "pose_002",
+        "flip_h": false
+      },
+      "N": {
+        "animation": "pose_003",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "pose_001",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/ea87e795-7281-42b8-aa5e-fdf3e655b971.png",
+    "one_view": false
+  },
+  "placeholder_f3876069": {
+    "authored": [
+      "SE",
+      "NE"
+    ],
+    "idle_map": {
+      "SE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_001",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_000",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/f3876069-ee69-4b97-aacc-58d174d96f3d.png",
+    "one_view": false
+  },
+  "placeholder_f8644d09": {
+    "authored": [
+      "N",
+      "S",
+      "E",
+      "SE",
+      "NE"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "pose_001",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "pose_002",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_003",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "pose_004",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "pose_002",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "pose_004",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_003",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/f8644d09-2600-4edf-87b9-995fcd6c5ee4.png",
+    "one_view": false
+  },
+  "placeholder_faacbedb": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_020",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_020",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/faacbedb-1832-444b-9b47-0d3ec5c62751.png",
+    "one_view": false
+  },
+  "placeholder_ff1c0303": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S"
+    ],
+    "idle_map": {
+      "N": {
+        "animation": "idle_n",
+        "flip_h": false
+      },
+      "NE": {
+        "animation": "idle_ne",
+        "flip_h": false
+      },
+      "E": {
+        "animation": "idle_e",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "idle_se",
+        "flip_h": false
+      },
+      "S": {
+        "animation": "idle_s",
+        "flip_h": false
+      },
+      "W": {
+        "animation": "idle_e",
+        "flip_h": true
+      },
+      "NW": {
+        "animation": "idle_ne",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "idle_se",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/ff1c0303-fa8f-4d5b-b0aa-3e7087bfd24b.png",
+    "one_view": false
+  },
+  "placeholder_ff6dba97_blue": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_000",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_004",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_000",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_004",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png",
+    "one_view": false
+  },
+  "placeholder_ff6dba97_orange": {
+    "authored": [
+      "NE",
+      "SE"
+    ],
+    "idle_map": {
+      "NE": {
+        "animation": "pose_008",
+        "flip_h": false
+      },
+      "SE": {
+        "animation": "pose_012",
+        "flip_h": false
+      },
+      "NW": {
+        "animation": "pose_008",
+        "flip_h": true
+      },
+      "SW": {
+        "animation": "pose_012",
+        "flip_h": true
+      }
+    },
+    "source": "assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png",
+    "one_view": false
+  },
+  "merchant_heavy_01": {
+    "authored": [
+      "SE"
+    ],
+    "source": "assets/animations/beach_merchant_frames.tres",
+    "one_view": true
+  },
+  "seated_crafter_01": {
+    "authored": [
+      "SE"
+    ],
+    "source": "assets/animations/beach_crafter_frames.tres",
+    "one_view": true
+  },
+  "smoking_traveler_01": {
+    "authored": [
+      "SE"
+    ],
+    "source": "assets/animations/fishing_master_still_water_frames.tres",
+    "one_view": true
+  },
+  "fisher_captain_01": {
+    "authored": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "NW"
+    ],
+    "source": "assets/animations/fishing_captain_frames.tres",
+    "one_view": false
+  },
+  "crab_small_01": {
+    "authored": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N",
+      "NW",
+      "W",
+      "SW"
+    ],
+    "source": "assets/animations/beach_fishing_crab_frames.tres",
+    "one_view": false
+  },
+  "creature_green_01": {
+    "authored": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N"
+    ],
+    "source": "assets/animations/beach_fishing_critter_frames.tres",
+    "one_view": false
+  },
+  "creature_red_01": {
+    "authored": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N"
+    ],
+    "source": "assets/animations/beach_fishing_critter_frames.tres",
+    "one_view": false
+  }
+}

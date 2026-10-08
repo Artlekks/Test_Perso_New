@@ -341,19 +341,23 @@
     }
   ],
   "default_animation": "pose_000",
-  "mode": 5,
+  "mode": 1,
   "directions": [
-    "UNCONFIRMED"
+    "NE",
+    "SE"
   ],
   "collider": "humanoid_standard",
   "tags": [
     "placeholder",
     "role_unconfirmed"
   ],
-  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented. Directional audit v1: reviewed static view cells; explicit same-hemisphere side mirrors only. Original pose names and FPS retained.",
   "profile_overrides": {
     "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 0, \"pose_002\": 0, \"pose_003\": 0, \"pose_004\": 0, \"pose_005\": 0, \"pose_006\": 0, \"pose_007\": 0, \"pose_008\": 0, \"pose_009\": 0, \"pose_010\": 0, \"pose_011\": 0, \"pose_012\": 0, \"pose_013\": 0, \"pose_014\": 0, \"pose_015\": 0, \"pose_016\": 0, \"pose_017\": 0, \"pose_018\": 0, \"pose_019\": 0, \"pose_020\": 0, \"pose_021\": 0, \"pose_022\": 0, \"pose_023\": 0, \"pose_024\": 0, \"pose_025\": 0, \"pose_026\": 0, \"pose_027\": 0}",
-    "animation_feet_from_left_px": "{\"pose_000\": 22.0, \"pose_001\": 22.0, \"pose_002\": 22.0, \"pose_003\": 22.0, \"pose_004\": 22.0, \"pose_005\": 22.0, \"pose_006\": 22.0, \"pose_007\": 22.0, \"pose_008\": 22.0, \"pose_009\": 22.0, \"pose_010\": 22.0, \"pose_011\": 22.0, \"pose_012\": 22.0, \"pose_013\": 22.0, \"pose_014\": 18.5, \"pose_015\": 18.5, \"pose_016\": 18.5, \"pose_017\": 18.5, \"pose_018\": 18.5, \"pose_019\": 18.5, \"pose_020\": 18.5, \"pose_021\": 18.5, \"pose_022\": 18.5, \"pose_023\": 18.5, \"pose_024\": 18.5, \"pose_025\": 18.5, \"pose_026\": 18.5, \"pose_027\": 18.5}"
+    "animation_feet_from_left_px": "{\"pose_000\": 22.0, \"pose_001\": 22.0, \"pose_002\": 22.0, \"pose_003\": 22.0, \"pose_004\": 22.0, \"pose_005\": 22.0, \"pose_006\": 22.0, \"pose_007\": 22.0, \"pose_008\": 22.0, \"pose_009\": 22.0, \"pose_010\": 22.0, \"pose_011\": 22.0, \"pose_012\": 22.0, \"pose_013\": 22.0, \"pose_014\": 18.5, \"pose_015\": 18.5, \"pose_016\": 18.5, \"pose_017\": 18.5, \"pose_018\": 18.5, \"pose_019\": 18.5, \"pose_020\": 18.5, \"pose_021\": 18.5, \"pose_022\": 18.5, \"pose_023\": 18.5, \"pose_024\": 18.5, \"pose_025\": 18.5, \"pose_026\": 18.5, \"pose_027\": 18.5}",
+    "directional_animation_prefixes": "{\"idle\": \"\"}",
+    "directional_aliases": "{\"idle\": {\"NE\": {\"animation\": \"pose_000\", \"flip_h\": false}, \"SE\": {\"animation\": \"pose_014\", \"flip_h\": false}, \"NW\": {\"animation\": \"pose_000\", \"flip_h\": true}, \"SW\": {\"animation\": \"pose_014\", \"flip_h\": true}}}",
+    "default_directional_pose": "\"idle\""
   },
   "batch_generated": true
 }

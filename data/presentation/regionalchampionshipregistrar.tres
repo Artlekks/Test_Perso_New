@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
 
+[ext_resource type="Resource" path="res://data/presentation/shadows/ground_prop.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("1")
 category = 3
@@ -10,3 +12,4 @@ shadow_depth = 0.18
 shadow_opacity = 0.4
 shadow_family = "ground_prop"
 shadow_scale_multiplier = 1.8
+shadow_family_resource = ExtResource("shared_shadow_family")

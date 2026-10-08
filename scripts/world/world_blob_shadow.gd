@@ -4,19 +4,21 @@ class_name WorldBlobShadow
 
 ## Place under ActorRoot/ShadowAnchor, never under the animated sprite.
 ## Width/depth are world units; actor scale, facing and billboarding are ignored.
-@export_range(0.01, 4.0, 0.01) var width: float = 0.30:
+## Runtime receivers. Author category size on the presentation profile's
+## shadow_family_resource; editing this nested renderer is not persistent tuning.
+@export_storage var width: float = 0.30:
 	set(value):
 		width = maxf(value, 0.01)
 		_apply_style()
-@export_range(0.01, 4.0, 0.01) var depth: float = 0.30:
+@export_storage var depth: float = 0.30:
 	set(value):
 		depth = maxf(value, 0.01)
 		_apply_style()
-@export_range(0.0, 1.0, 0.01) var opacity: float = 0.65:
+@export_storage var opacity: float = 0.65:
 	set(value):
 		opacity = clampf(value, 0.0, 1.0)
 		_apply_style()
-@export_range(0.001, 0.05, 0.001) var ground_offset: float = 0.006:
+@export_storage var ground_offset: float = 0.006:
 	set(value):
 		ground_offset = maxf(value, 0.001)
 		update_ground_transform()

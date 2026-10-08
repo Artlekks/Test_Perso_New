@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_crab_frames.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/ambient_creature.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/critter.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 category = 1
@@ -17,10 +19,11 @@ development_name = "Small Crab"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"idle_s"
-directional_mode = 4
-available_directions = PackedStringArray("S", "SE", "E", "NE", "N", "NW", "W", "SW")
 role_tags = PackedStringArray("ambient_creature")
 movement_capability = false
 
 default_directional_pose = "idle"
 shadow_family = "critter"
+available_directions = PackedStringArray("S", "SE", "E", "NE", "N", "NW", "W", "SW")
+directional_mode = 4
+shadow_family_resource = ExtResource("shared_shadow_family")

@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_21f7b2b2.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_21f7b2b2"
@@ -9,8 +11,6 @@ development_name = "Seated Angler"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 2, "pose_001": 2, "pose_002": 2, "p
 
 animation_feet_from_left_px = {"pose_000": 20.0, "pose_001": 20.0, "pose_002": 20.0, "pose_003": 20.0, "pose_004": 20.0, "pose_005": 20.0, "pose_006": 20.0, "pose_007": 20.0, "pose_008": 20.0, "pose_009": 20.0, "pose_010": 20.0, "pose_011": 20.0, "pose_012": 20.0, "pose_013": 20.0, "pose_014": 20.0, "pose_015": 20.0, "pose_016": 20.0, "pose_017": 20.0, "pose_018": 20.0, "pose_019": 20.0, "pose_020": 20.0, "pose_021": 20.0, "pose_022": 20.0, "pose_023": 20.0, "pose_024": 20.0, "pose_025": 20.0, "pose_026": 20.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"SE": {"animation": "pose_000", "flip_h": false}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("SE")
+directional_mode = 0
+shadow_family_resource = ExtResource("shared_shadow_family")

@@ -12,4 +12,4 @@ placeholder_roles = PackedStringArray("angler")
 importance_tier = "B"
 movement_type = "stationary"
 suggested_locations = PackedStringArray("beach")
-art_status = "POSES_NEED_SEMANTIC_REVIEW"
+art_status = "REVIEWED_DIRECTIONS"

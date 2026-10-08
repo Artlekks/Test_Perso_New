@@ -197,19 +197,25 @@
     }
   ],
   "default_animation": "pose_000",
-  "mode": 5,
+  "mode": 3,
   "directions": [
-    "UNCONFIRMED"
+    "E",
+    "NE",
+    "S",
+    "N"
   ],
   "collider": "humanoid_standard",
   "tags": [
     "placeholder",
     "role_unconfirmed"
   ],
-  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented. Directional audit v1: reviewed static view cells; explicit same-hemisphere side mirrors only. Original pose names and FPS retained.",
   "profile_overrides": {
     "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 0, \"pose_002\": 0, \"pose_003\": 0, \"pose_004\": 1, \"pose_005\": 0, \"pose_006\": 1, \"pose_007\": 3, \"pose_008\": 5, \"pose_009\": 3, \"pose_010\": 1, \"pose_011\": 2, \"pose_012\": 1, \"pose_013\": 0, \"pose_014\": 1, \"pose_015\": 0}",
-    "animation_feet_from_left_px": "{\"pose_000\": 12.5, \"pose_001\": 20.0, \"pose_002\": 23.5, \"pose_003\": 23.5, \"pose_004\": 13.5, \"pose_005\": 13.5, \"pose_006\": 13.5, \"pose_007\": 12.5, \"pose_008\": 12.5, \"pose_009\": 12.5, \"pose_010\": 26.0, \"pose_011\": 21.0, \"pose_012\": 26.0, \"pose_013\": 21.0, \"pose_014\": 19.0, \"pose_015\": 21.0}"
+    "animation_feet_from_left_px": "{\"pose_000\": 12.5, \"pose_001\": 20.0, \"pose_002\": 23.5, \"pose_003\": 23.5, \"pose_004\": 13.5, \"pose_005\": 13.5, \"pose_006\": 13.5, \"pose_007\": 12.5, \"pose_008\": 12.5, \"pose_009\": 12.5, \"pose_010\": 26.0, \"pose_011\": 21.0, \"pose_012\": 26.0, \"pose_013\": 21.0, \"pose_014\": 19.0, \"pose_015\": 21.0}",
+    "directional_animation_prefixes": "{\"idle\": \"\"}",
+    "directional_aliases": "{\"idle\": {\"E\": {\"animation\": \"pose_000\", \"flip_h\": false}, \"NE\": {\"animation\": \"pose_001\", \"flip_h\": false}, \"S\": {\"animation\": \"pose_002\", \"flip_h\": false}, \"N\": {\"animation\": \"pose_003\", \"flip_h\": false}, \"W\": {\"animation\": \"pose_000\", \"flip_h\": true}, \"NW\": {\"animation\": \"pose_001\", \"flip_h\": true}}}",
+    "default_directional_pose": "\"idle\""
   },
   "batch_generated": true
 }

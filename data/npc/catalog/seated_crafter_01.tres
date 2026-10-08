@@ -12,4 +12,4 @@ placeholder_roles = PackedStringArray("crafter", "harbor_worker")
 importance_tier = "B"
 movement_type = "stationary"
 suggested_locations = PackedStringArray("beach")
-art_status = "EXISTING_AUTHORED"
+art_status = "REVIEWED_ONE_VIEW"

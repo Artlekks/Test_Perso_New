@@ -1,0 +1,143 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/player/fishing/anim_Ryu_fishing-Turn_180.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/player/fishing/anim_Ryu_fishing-Turn_L.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/player/fishing/anim_Ryu_fishing-Turn_180.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/player/fishing/anim_Ryu_fishing-Turn_180.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_03.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_card_maker/fishing_captain_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_card_maker/fishing_captain_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_card_maker/fishing_captain_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_card_maker/fishing_captain_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_09_B.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_09_B.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_09_B.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_merchant/Line_09_B.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_master/smoking_dog.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_master/smoking_dog.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_master/smoking_dog.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/fishing_master/smoking_dog.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_critters/crab_directional_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_critters/crab_directional_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_critters/crab_directional_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+WARNING: Loaded resource as image file, this will not work on export: 'res://assets/sprites/npcs/beach_critters/crab_directional_atlas.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] run (res://scripts/qa/world_presentation_tuning_qa.gd:103)
+       [1] settle (res://scripts/qa/world_grounding_standard_qa.gd:26)
+PRESENTATION TUNING QA: 265/265; measurements user://presentation-measurements.json

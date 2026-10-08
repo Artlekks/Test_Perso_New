@@ -9,7 +9,7 @@
       "suggested_locations": [
         "beach"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "creature_green_01": {
       "placeholder_roles": [
@@ -20,7 +20,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "creature_red_01": {
       "placeholder_roles": [
@@ -31,7 +31,7 @@
       "suggested_locations": [
         "chiqua_supply_outpost"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "fisher_captain_01": {
       "placeholder_roles": [
@@ -43,7 +43,7 @@
       "suggested_locations": [
         "beach"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "merchant_heavy_01": {
       "placeholder_roles": [
@@ -56,7 +56,7 @@
         "beach",
         "wyndia_ocean_outpost"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_ONE_VIEW"
     },
     "placeholder_14bf342a": {
       "placeholder_roles": [
@@ -67,7 +67,7 @@
       "suggested_locations": [
         "beach"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_21f7b2b2": {
       "placeholder_roles": [
@@ -78,7 +78,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_ONE_VIEW"
     },
     "placeholder_3cb9da3b": {
       "placeholder_roles": [
@@ -113,7 +113,7 @@
       "suggested_locations": [
         "river_fishing_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_68024840": {
       "placeholder_roles": [
@@ -124,7 +124,7 @@
       "suggested_locations": [
         "wyndia_ocean_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_6d89ee8e": {
       "placeholder_roles": [
@@ -168,7 +168,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_837b6a03": {
       "placeholder_roles": [
@@ -179,7 +179,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_8483df78": {
       "placeholder_roles": [
@@ -190,7 +190,7 @@
       "suggested_locations": [
         "wyndia_ocean_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_85f413fb": {
       "placeholder_roles": [
@@ -202,7 +202,7 @@
         "beach",
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_8c3ae570": {
       "placeholder_roles": [
@@ -236,7 +236,7 @@
       "suggested_locations": [
         "chiqua_supply_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_cac2bbc2": {
       "placeholder_roles": [
@@ -271,7 +271,7 @@
       "suggested_locations": [
         "chiqua_supply_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_e1466c4f": {
       "placeholder_roles": [
@@ -282,7 +282,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_e5085f21": {
       "placeholder_roles": [
@@ -293,7 +293,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_ONE_VIEW"
     },
     "placeholder_e8e1ac56": {
       "placeholder_roles": [
@@ -304,7 +304,7 @@
       "suggested_locations": [
         "wyndia_ocean_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_ea87e795": {
       "placeholder_roles": [
@@ -315,7 +315,7 @@
       "suggested_locations": [
         "chiqua_supply_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_f3876069": {
       "placeholder_roles": [
@@ -326,7 +326,7 @@
       "suggested_locations": [
         "river_fishing_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_f8644d09": {
       "placeholder_roles": [
@@ -337,7 +337,7 @@
       "suggested_locations": [
         "chiqua_supply_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_faacbedb": {
       "placeholder_roles": [
@@ -348,7 +348,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_ff1c0303": {
       "placeholder_roles": [
@@ -370,7 +370,7 @@
       "suggested_locations": [
         "lyp_lake_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "placeholder_ff6dba97_orange": {
       "placeholder_roles": [
@@ -381,7 +381,7 @@
       "suggested_locations": [
         "chiqua_supply_outpost"
       ],
-      "art_status": "POSES_NEED_SEMANTIC_REVIEW"
+      "art_status": "REVIEWED_DIRECTIONS"
     },
     "seated_crafter_01": {
       "placeholder_roles": [
@@ -393,7 +393,7 @@
       "suggested_locations": [
         "beach"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_ONE_VIEW"
     },
     "smoking_traveler_01": {
       "placeholder_roles": [
@@ -406,7 +406,7 @@
         "beach",
         "lyp_lake_outpost"
       ],
-      "art_status": "EXISTING_AUTHORED"
+      "art_status": "REVIEWED_ONE_VIEW"
     }
   },
   "placements": [

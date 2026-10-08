@@ -12,4 +12,4 @@ placeholder_roles = PackedStringArray("merchant", "special_vendor")
 importance_tier = "B"
 movement_type = "stationary"
 suggested_locations = PackedStringArray("beach", "wyndia_ocean_outpost")
-art_status = "EXISTING_AUTHORED"
+art_status = "REVIEWED_ONE_VIEW"

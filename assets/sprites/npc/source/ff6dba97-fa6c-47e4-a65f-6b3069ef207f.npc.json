@@ -104,19 +104,23 @@
         }
       ],
       "default_animation": "pose_000",
-      "mode": 5,
+      "mode": 1,
       "directions": [
-        "UNCONFIRMED"
+        "NE",
+        "SE"
       ],
       "collider": "humanoid_standard",
       "tags": [
         "placeholder",
         "role_unconfirmed"
       ],
-      "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+      "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented. Directional audit v1: reviewed static view cells; explicit same-hemisphere side mirrors only. Original pose names and FPS retained.",
       "profile_overrides": {
         "animation_feet_from_bottom_px": "{\"pose_000\": 1, \"pose_001\": 1, \"pose_002\": 1, \"pose_003\": 1, \"pose_004\": 7, \"pose_005\": 7, \"pose_006\": 7, \"pose_007\": 7, \"pose_008\": 1, \"pose_009\": 1, \"pose_010\": 1, \"pose_011\": 1, \"pose_012\": 7, \"pose_013\": 7, \"pose_014\": 7, \"pose_015\": 7}",
-        "animation_feet_from_left_px": "{\"pose_000\": 22.5, \"pose_001\": 22.5, \"pose_002\": 22.5, \"pose_003\": 22.5, \"pose_004\": 12.0, \"pose_005\": 12.0, \"pose_006\": 12.0, \"pose_007\": 12.0, \"pose_008\": 22.5, \"pose_009\": 22.5, \"pose_010\": 22.5, \"pose_011\": 22.5, \"pose_012\": 12.0, \"pose_013\": 12.0, \"pose_014\": 12.0, \"pose_015\": 12.0}"
+        "animation_feet_from_left_px": "{\"pose_000\": 22.5, \"pose_001\": 22.5, \"pose_002\": 22.5, \"pose_003\": 22.5, \"pose_004\": 12.0, \"pose_005\": 12.0, \"pose_006\": 12.0, \"pose_007\": 12.0, \"pose_008\": 22.5, \"pose_009\": 22.5, \"pose_010\": 22.5, \"pose_011\": 22.5, \"pose_012\": 12.0, \"pose_013\": 12.0, \"pose_014\": 12.0, \"pose_015\": 12.0}",
+        "directional_animation_prefixes": "{\"idle\": \"\"}",
+        "directional_aliases": "{\"idle\": {\"NE\": {\"animation\": \"pose_000\", \"flip_h\": false}, \"SE\": {\"animation\": \"pose_004\", \"flip_h\": false}, \"NW\": {\"animation\": \"pose_000\", \"flip_h\": true}, \"SW\": {\"animation\": \"pose_004\", \"flip_h\": true}}}",
+        "default_directional_pose": "\"idle\""
       },
       "batch_generated": true
     },
@@ -223,19 +227,23 @@
         }
       ],
       "default_animation": "pose_008",
-      "mode": 5,
+      "mode": 1,
       "directions": [
-        "UNCONFIRMED"
+        "NE",
+        "SE"
       ],
       "collider": "humanoid_standard",
       "tags": [
         "placeholder",
         "role_unconfirmed"
       ],
-      "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+      "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented. Directional audit v1: reviewed static view cells; explicit same-hemisphere side mirrors only. Original pose names and FPS retained.",
       "profile_overrides": {
         "animation_feet_from_bottom_px": "{\"pose_000\": 1, \"pose_001\": 1, \"pose_002\": 1, \"pose_003\": 1, \"pose_004\": 7, \"pose_005\": 7, \"pose_006\": 7, \"pose_007\": 7, \"pose_008\": 1, \"pose_009\": 1, \"pose_010\": 1, \"pose_011\": 1, \"pose_012\": 7, \"pose_013\": 7, \"pose_014\": 7, \"pose_015\": 7}",
-        "animation_feet_from_left_px": "{\"pose_000\": 22.5, \"pose_001\": 22.5, \"pose_002\": 22.5, \"pose_003\": 22.5, \"pose_004\": 12.0, \"pose_005\": 12.0, \"pose_006\": 12.0, \"pose_007\": 12.0, \"pose_008\": 22.5, \"pose_009\": 22.5, \"pose_010\": 22.5, \"pose_011\": 22.5, \"pose_012\": 12.0, \"pose_013\": 12.0, \"pose_014\": 12.0, \"pose_015\": 12.0}"
+        "animation_feet_from_left_px": "{\"pose_000\": 22.5, \"pose_001\": 22.5, \"pose_002\": 22.5, \"pose_003\": 22.5, \"pose_004\": 12.0, \"pose_005\": 12.0, \"pose_006\": 12.0, \"pose_007\": 12.0, \"pose_008\": 22.5, \"pose_009\": 22.5, \"pose_010\": 22.5, \"pose_011\": 22.5, \"pose_012\": 12.0, \"pose_013\": 12.0, \"pose_014\": 12.0, \"pose_015\": 12.0}",
+        "directional_animation_prefixes": "{\"idle\": \"\"}",
+        "directional_aliases": "{\"idle\": {\"NE\": {\"animation\": \"pose_008\", \"flip_h\": false}, \"SE\": {\"animation\": \"pose_012\", \"flip_h\": false}, \"NW\": {\"animation\": \"pose_008\", \"flip_h\": true}, \"SW\": {\"animation\": \"pose_012\", \"flip_h\": true}}}",
+        "default_directional_pose": "\"idle\""
       },
       "batch_generated": true
     }

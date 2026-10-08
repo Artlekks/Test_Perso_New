@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_43fb177f.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_43fb177f"
@@ -9,8 +11,6 @@ development_name = "Horned Traveler"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"idle_s"
-directional_mode = 5
-available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = true
 
@@ -18,7 +18,11 @@ animation_feet_from_bottom_px = {"idle_n": 0, "idle_ne": 3, "idle_e": 0, "idle_s
 
 animation_feet_from_left_px = {"idle_n": 15.5, "idle_ne": 20.0, "idle_e": 12.0, "idle_se": 11.5, "idle_s": 15.5, "walk_ne": 23.5, "walk_se": 16.5}
 
-directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
 
-default_directional_pose = "idle"
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+directional_aliases = {"idle": {"W": {"animation": "idle_e", "flip_h": true}, "NW": {"animation": "idle_ne", "flip_h": true}, "SW": {"animation": "idle_se", "flip_h": true}}, "walk": {"NW": {"animation": "walk_ne", "flip_h": true}, "SW": {"animation": "walk_se", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
+directional_mode = 3
+shadow_family_resource = ExtResource("shared_shadow_family")

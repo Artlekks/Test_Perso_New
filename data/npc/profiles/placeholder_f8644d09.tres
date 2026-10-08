@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_f8644d09.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_f8644d09"
@@ -9,8 +11,6 @@ development_name = "Purple Cape Stout Traveler"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 0, "pose_002": 2, "p
 
 animation_feet_from_left_px = {"pose_000": 14.0, "pose_001": 13.0, "pose_002": 10.5, "pose_003": 7.0, "pose_004": 14.5}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"N": {"animation": "pose_000", "flip_h": false}, "S": {"animation": "pose_001", "flip_h": false}, "E": {"animation": "pose_002", "flip_h": false}, "SE": {"animation": "pose_003", "flip_h": false}, "NE": {"animation": "pose_004", "flip_h": false}, "W": {"animation": "pose_002", "flip_h": true}, "NW": {"animation": "pose_004", "flip_h": true}, "SW": {"animation": "pose_003", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("N", "S", "E", "SE", "NE")
+directional_mode = 3
+shadow_family_resource = ExtResource("shared_shadow_family")

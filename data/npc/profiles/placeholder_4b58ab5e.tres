@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
 [ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_4b58ab5e.tres" id="frames"]
 [ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[ext_resource type="Resource" path="res://data/presentation/shadows/humanoid_standard.tres" id="shared_shadow_family"]
+
 [resource]
 script = ExtResource("script")
 npc_id = &"placeholder_4b58ab5e"
@@ -9,8 +11,6 @@ development_name = "Blue Scarf Traveler"
 sprite_frames = ExtResource("frames")
 collider_profile = ExtResource("collider")
 default_animation = &"pose_000"
-directional_mode = 5
-available_directions = PackedStringArray("UNCONFIRMED")
 role_tags = PackedStringArray("placeholder", "role_unconfirmed")
 movement_capability = false
 
@@ -18,3 +18,9 @@ animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 0}
 
 animation_feet_from_left_px = {"pose_000": 22.5, "pose_001": 31.0}
 shadow_family = "humanoid_standard"
+directional_animation_prefixes = {"idle": ""}
+directional_aliases = {"idle": {"SE": {"animation": "pose_000", "flip_h": false}, "NE": {"animation": "pose_001", "flip_h": false}, "NW": {"animation": "pose_001", "flip_h": true}, "SW": {"animation": "pose_000", "flip_h": true}}}
+default_directional_pose = "idle"
+available_directions = PackedStringArray("SE", "NE")
+directional_mode = 1
+shadow_family_resource = ExtResource("shared_shadow_family")
