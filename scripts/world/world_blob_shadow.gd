@@ -4,7 +4,7 @@ class_name WorldBlobShadow
 
 ## Place under ActorRoot/ShadowAnchor, never under the animated sprite.
 ## Width/depth are world units; actor scale, facing and billboarding are ignored.
-@export_range(0.01, 4.0, 0.01) var width: float = 0.26:
+@export_range(0.01, 4.0, 0.01) var width: float = 0.30:
 	set(value):
 		width = maxf(value, 0.01)
 		_apply_style()
@@ -20,10 +20,6 @@ class_name WorldBlobShadow
 	set(value):
 		ground_offset = maxf(value, 0.001)
 		update_ground_transform()
-
-## Optional horizontal ground plane. Without one, use the physical anchor's Y.
-## The beach presentation controller supplies beach/Beach at runtime.
-@export var ground_reference: Node3D
 
 var _style_is_unique: bool = false
 
@@ -49,7 +45,7 @@ func _apply_style() -> void:
 		material_override = (mesh as PlaneMesh).material.duplicate()
 		_style_is_unique = true
 	(mesh as PlaneMesh).size = Vector2(width, depth)
-	(material_override as StandardMaterial3D).albedo_color = Color(0, 0, 0, opacity)
+	(material_override as ShaderMaterial).set_shader_parameter("opacity", opacity)
 
 
 func update_ground_transform() -> void:
@@ -59,14 +55,11 @@ func update_ground_transform() -> void:
 	if anchor == null:
 		return
 	var foot_position := anchor.global_position
-	# Treat ShadowAnchor.position as one fixed, world-aligned stance offset.
-	# A nonzero authored offset must not orbit the root when the actor turns.
-	var actor := anchor.get_parent() as Node3D
-	if actor != null:
-		foot_position = actor.global_position + anchor.position
+	# GroundPresentation is a world-aligned copy of the authoritative actor root.
+	var presentation := anchor.get_parent() as Node3D
+	if presentation != null:
+		foot_position = presentation.global_position
 	var ground_y: float = foot_position.y
-	if is_instance_valid(ground_reference):
-		ground_y = ground_reference.global_position.y
 	global_transform = Transform3D(
 		Basis.IDENTITY,
 		Vector3(foot_position.x, ground_y + ground_offset, foot_position.z)

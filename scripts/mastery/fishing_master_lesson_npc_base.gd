@@ -14,7 +14,7 @@ const MasterDialogueProfilesScript = preload(
 @export var idle_animation: StringName = &"Stand_Interest"
 @export var talk_animation: StringName = &"Bag_Search"
 
-@onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 

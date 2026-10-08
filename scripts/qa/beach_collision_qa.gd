@@ -11,6 +11,8 @@ func _initialize() -> void:
 
 
 func _isolate_collision_fixture(node: Node) -> void:
+	if node is GroundPresentation or node is WorldBlobShadow:
+		return
 	# Retain the Card Maker's typed menu/request dependencies. Remove unrelated
 	# gameplay scripts before _ready so this fixture cannot load/save a session.
 	if node.name == &"FishingCardMakerNPC":
@@ -59,7 +61,7 @@ func _run() -> void:
 	var maker := world.get_node("FishingCardMakerNPC") as FishingCardMakerNPC
 	var body := maker as CharacterBody3D
 	var shape := body.get_node("CollisionShape3D") as CollisionShape3D
-	var sprite := maker.get_node("AnimatedSprite3D") as AnimatedSprite3D
+	var sprite := maker.get_node("GroundPresentation/VisualAnchor/AnimatedSprite3D") as AnimatedSprite3D
 	var home_center := shape.global_position
 	var space := world.get_world_3d().direct_space_state
 	var area := maker.get_node("InteractionArea") as Area3D
@@ -102,8 +104,8 @@ func _run() -> void:
 		crab._update_walk(0.1)
 		await _settle()
 		_check(crab.position.x > previous.x and crab.position.z > previous.z, "%s retains both movement components" % name)
-		_check(sensor.global_position.is_equal_approx(crab.global_position), "%s proximity follows sprite root" % name)
-		_check(crab.get_node("AnimatedSprite3D").global_position.is_equal_approx(crab.global_position), "%s visible and body positions agree" % name)
+		_check(Vector2(sensor.global_position.x, sensor.global_position.z).is_equal_approx(Vector2(crab.global_position.x, crab.global_position.z)), "%s proximity follows physical root X/Z" % name)
+		_check(crab.get_node("GroundPresentation").global_position.is_equal_approx(crab.global_position), "%s physical feet anchor follows actor" % name)
 	var circuit := world.get_node("BeachGatheringCircuit")
 	_check(circuit.find_children("*", "PhysicsBody3D", true, false).is_empty(), "all gathering objects remain non-blocking")
 	_check(circuit.get_child_count() == 12, "all twelve gathering objects inspected")

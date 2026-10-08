@@ -1,0 +1,6855 @@
+{
+	"frames": {
+		"res://assets/animations/beach_fishing_crab_frames.tres": [
+			{
+				"alpha_rect": [
+					10,
+					8,
+					12,
+					8
+				],
+				"animation": "idle_e",
+				"bottom_padding": 8,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					12,
+					6,
+					7,
+					11
+				],
+				"animation": "idle_n",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					12,
+					6,
+					7,
+					11
+				],
+				"animation": "idle_s",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "idle_se",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					8,
+					12,
+					8
+				],
+				"animation": "idle_w",
+				"bottom_padding": 8,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					6,
+					12,
+					11
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 7,
+				"frame": 1,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 7,
+				"frame": 2,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					6,
+					12,
+					11
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 7,
+				"frame": 3,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					6,
+					12,
+					12
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 6,
+				"frame": 1,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					6,
+					10,
+					11
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 7,
+				"frame": 2,
+				"size": [
+					32,
+					24
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					6,
+					12,
+					12
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 6,
+				"frame": 3,
+				"size": [
+					32,
+					24
+				]
+			}
+		],
+		"res://assets/animations/beach_merchant_frames.tres": [
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 0,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 1,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 2,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 3,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 4,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 5,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 6,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 7,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 8,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 9,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 10,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 11,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 12,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 13,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 14,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 15,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 16,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 17,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 18,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 19,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					4,
+					34,
+					40
+				],
+				"animation": "Bag_Search",
+				"bottom_padding": 0,
+				"frame": 20,
+				"size": [
+					40,
+					44
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					0,
+					35,
+					49
+				],
+				"animation": "Stand_Interest",
+				"bottom_padding": 7,
+				"frame": 0,
+				"size": [
+					40,
+					56
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					0,
+					35,
+					49
+				],
+				"animation": "Stand_Interest",
+				"bottom_padding": 7,
+				"frame": 1,
+				"size": [
+					40,
+					56
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					0,
+					35,
+					49
+				],
+				"animation": "Stand_Interest",
+				"bottom_padding": 7,
+				"frame": 2,
+				"size": [
+					40,
+					56
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					0,
+					35,
+					49
+				],
+				"animation": "Stand_Interest",
+				"bottom_padding": 7,
+				"frame": 3,
+				"size": [
+					40,
+					56
+				]
+			}
+		],
+		"res://assets/animations/fishing_captain_frames.tres": [
+			{
+				"alpha_rect": [
+					11,
+					13,
+					26,
+					51
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					12,
+					26,
+					52
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					12,
+					26,
+					52
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					11,
+					26,
+					53
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					10,
+					26,
+					54
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					10,
+					26,
+					54
+				],
+				"animation": "idle_ne",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					13,
+					26,
+					51
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					12,
+					26,
+					52
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					12,
+					26,
+					52
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					11,
+					26,
+					53
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					10,
+					26,
+					54
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					10,
+					26,
+					54
+				],
+				"animation": "idle_nw",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					15,
+					30,
+					49
+				],
+				"animation": "idle_se",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					15,
+					30,
+					49
+				],
+				"animation": "idle_se",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					15,
+					30,
+					49
+				],
+				"animation": "idle_se",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					14,
+					30,
+					50
+				],
+				"animation": "idle_se",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					13,
+					30,
+					51
+				],
+				"animation": "idle_se",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					13,
+					30,
+					51
+				],
+				"animation": "idle_se",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					15,
+					30,
+					49
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					15,
+					30,
+					49
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					15,
+					30,
+					49
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					14,
+					30,
+					50
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					13,
+					30,
+					51
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					13,
+					30,
+					51
+				],
+				"animation": "idle_sw",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					29,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 0,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					29,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 1,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					29,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 2,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					15,
+					29,
+					50
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 3,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					14,
+					29,
+					51
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 4,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					14,
+					29,
+					51
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 5,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					13,
+					29,
+					52
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 6,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 7,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 8,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 9,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 10,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 11,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 12,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 13,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 14,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 15,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					29,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 16,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					14,
+					31,
+					51
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 17,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					14,
+					33,
+					51
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 18,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					9,
+					38,
+					56
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 19,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					7,
+					38,
+					58
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 20,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					7,
+					48,
+					58
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 21,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					5,
+					48,
+					60
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 22,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					3,
+					48,
+					62
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 23,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					2,
+					48,
+					63
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 24,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					7,
+					38,
+					58
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 25,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					2,
+					10,
+					36,
+					55
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 26,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 27,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 28,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 29,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 30,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					28,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 31,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					29,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 32,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					29,
+					49
+				],
+				"animation": "smoke",
+				"bottom_padding": 1,
+				"frame": 33,
+				"size": [
+					48,
+					66
+				]
+			},
+			{
+				"alpha_rect": [
+					12,
+					14,
+					23,
+					50
+				],
+				"animation": "walk_ne",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					14,
+					29,
+					50
+				],
+				"animation": "walk_ne",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					12,
+					13,
+					23,
+					51
+				],
+				"animation": "walk_ne",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					11,
+					28,
+					53
+				],
+				"animation": "walk_ne",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					9,
+					36,
+					55
+				],
+				"animation": "walk_ne",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					10,
+					28,
+					54
+				],
+				"animation": "walk_ne",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					13,
+					14,
+					23,
+					50
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					14,
+					29,
+					50
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					13,
+					13,
+					23,
+					51
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					11,
+					28,
+					53
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					6,
+					9,
+					36,
+					55
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					10,
+					28,
+					54
+				],
+				"animation": "walk_nw",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					7,
+					15,
+					34,
+					49
+				],
+				"animation": "walk_se",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					3,
+					15,
+					41,
+					49
+				],
+				"animation": "walk_se",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					7,
+					15,
+					34,
+					49
+				],
+				"animation": "walk_se",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					17,
+					27,
+					47
+				],
+				"animation": "walk_se",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					18,
+					28,
+					46
+				],
+				"animation": "walk_se",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					16,
+					27,
+					48
+				],
+				"animation": "walk_se",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					7,
+					15,
+					34,
+					49
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 5,
+				"frame": 0,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					4,
+					15,
+					41,
+					49
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 5,
+				"frame": 1,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					7,
+					15,
+					34,
+					49
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 5,
+				"frame": 2,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					17,
+					27,
+					47
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 5,
+				"frame": 3,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					18,
+					28,
+					46
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 5,
+				"frame": 4,
+				"size": [
+					48,
+					69
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					16,
+					27,
+					48
+				],
+				"animation": "walk_sw",
+				"bottom_padding": 5,
+				"frame": 5,
+				"size": [
+					48,
+					69
+				]
+			}
+		],
+		"res://assets/animations/fishing_master_still_water_frames.tres": [
+			{
+				"alpha_rect": [
+					0,
+					19,
+					38,
+					31
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 0,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					19,
+					38,
+					31
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 1,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					18,
+					38,
+					32
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 2,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					16,
+					38,
+					34
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 3,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					15,
+					38,
+					35
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 4,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					13,
+					38,
+					37
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 5,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					12,
+					38,
+					38
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 6,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					10,
+					38,
+					40
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 7,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					9,
+					38,
+					41
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 8,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					7,
+					38,
+					43
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 9,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					6,
+					38,
+					44
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 10,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					6,
+					38,
+					44
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 11,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					12,
+					38,
+					38
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 12,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					10,
+					38,
+					40
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 13,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					8,
+					39,
+					42
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 14,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					8,
+					39,
+					42
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 15,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					7,
+					39,
+					43
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 16,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					6,
+					39,
+					44
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 17,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					6,
+					39,
+					44
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 18,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					14,
+					39,
+					36
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 19,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					14,
+					39,
+					36
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 20,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					12,
+					39,
+					38
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 21,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					12,
+					39,
+					38
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 22,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					11,
+					40,
+					39
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 23,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					19,
+					39,
+					31
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 24,
+				"size": [
+					44,
+					54
+				]
+			},
+			{
+				"alpha_rect": [
+					0,
+					19,
+					38,
+					31
+				],
+				"animation": "Idle",
+				"bottom_padding": 4,
+				"frame": 25,
+				"size": [
+					44,
+					54
+				]
+			}
+		],
+		"res://assets/animations/player_frames.tres": [
+			{
+				"alpha_rect": [
+					85,
+					17,
+					48,
+					74
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					26,
+					56,
+					64
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					79,
+					33,
+					72,
+					57
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					36,
+					62,
+					54
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					41,
+					50,
+					49
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					42,
+					50,
+					48
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					42,
+					42,
+					48
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					42,
+					27,
+					48
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					22,
+					47
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					43,
+					22,
+					47
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 9,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					42,
+					19,
+					48
+				],
+				"animation": "Cancel_Fishing",
+				"bottom_padding": 70,
+				"frame": 10,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					20,
+					53,
+					70
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					19,
+					50,
+					72
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 69,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					14,
+					46,
+					76
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					82,
+					11,
+					45,
+					79
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					82,
+					9,
+					43,
+					81
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					29,
+					65,
+					61
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					23,
+					59,
+					67
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					20,
+					54,
+					70
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					20,
+					52,
+					70
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					20,
+					54,
+					70
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 9,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					20,
+					52,
+					70
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 10,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					20,
+					54,
+					70
+				],
+				"animation": "Fishing_Catch",
+				"bottom_padding": 70,
+				"frame": 11,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					15,
+					44,
+					76
+				],
+				"animation": "Fishing_Idle",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					19,
+					47
+				],
+				"animation": "Idle_E",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					28,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					26,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					43,
+					22,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 9,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 10,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					43,
+					22,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 11,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 12,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 13,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 14,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 15,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 16,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 17,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 18,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 19,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					26,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 20,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					28,
+					48
+				],
+				"animation": "Idle_LookAt_Horizon",
+				"bottom_padding": 69,
+				"frame": 21,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					42,
+					24,
+					47
+				],
+				"animation": "Idle_N",
+				"bottom_padding": 71,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					42,
+					19,
+					48
+				],
+				"animation": "Idle_NE",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					42,
+					19,
+					48
+				],
+				"animation": "Idle_NW",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					24,
+					47
+				],
+				"animation": "Idle_S",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					22,
+					48
+				],
+				"animation": "Idle_SE",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					22,
+					48
+				],
+				"animation": "Idle_SW",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					88,
+					43,
+					19,
+					47
+				],
+				"animation": "Idle_W",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					43,
+					22,
+					47
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					22,
+					47
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					42,
+					27,
+					48
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					42,
+					42,
+					48
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					42,
+					51,
+					48
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					41,
+					50,
+					49
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					36,
+					62,
+					54
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					79,
+					33,
+					75,
+					57
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					79,
+					33,
+					72,
+					57
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					81,
+					32,
+					72,
+					58
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 9,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					26,
+					56,
+					64
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 70,
+				"frame": 10,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					17,
+					48,
+					74
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 69,
+				"frame": 11,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					15,
+					43,
+					76
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 69,
+				"frame": 12,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					15,
+					41,
+					76
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 69,
+				"frame": 13,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					15,
+					44,
+					76
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 69,
+				"frame": 14,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					15,
+					42,
+					76
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 69,
+				"frame": 15,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					15,
+					44,
+					76
+				],
+				"animation": "Prep_Fishing",
+				"bottom_padding": 69,
+				"frame": 16,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					11,
+					40,
+					80
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					70,
+					20,
+					53,
+					71
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					43,
+					41,
+					72,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					44,
+					41,
+					71,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					46,
+					41,
+					69,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					50,
+					41,
+					65,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					46,
+					41,
+					69,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					44,
+					41,
+					71,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					46,
+					41,
+					69,
+					50
+				],
+				"animation": "Prep_Throw",
+				"bottom_padding": 69,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					46,
+					41,
+					69,
+					50
+				],
+				"animation": "Prep_Throw_Idle",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					17,
+					45,
+					73
+				],
+				"animation": "Reel",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					18,
+					45,
+					72
+				],
+				"animation": "Reel",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					19,
+					45,
+					71
+				],
+				"animation": "Reel",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					18,
+					45,
+					72
+				],
+				"animation": "Reel",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					88,
+					14,
+					35,
+					76
+				],
+				"animation": "Reel_Back",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					88,
+					15,
+					35,
+					75
+				],
+				"animation": "Reel_Back",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					88,
+					16,
+					35,
+					74
+				],
+				"animation": "Reel_Back",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					88,
+					15,
+					35,
+					75
+				],
+				"animation": "Reel_Back",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					19,
+					42,
+					71
+				],
+				"animation": "Reel_Back_Strong",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					20,
+					42,
+					70
+				],
+				"animation": "Reel_Back_Strong",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					21,
+					43,
+					69
+				],
+				"animation": "Reel_Back_Strong",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					20,
+					42,
+					70
+				],
+				"animation": "Reel_Back_Strong",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					19,
+					42,
+					71
+				],
+				"animation": "Reel_Bite",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					21,
+					43,
+					69
+				],
+				"animation": "Reel_Bite",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					23,
+					45,
+					67
+				],
+				"animation": "Reel_Bite",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					21,
+					43,
+					69
+				],
+				"animation": "Reel_Bite",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					19,
+					42,
+					71
+				],
+				"animation": "Reel_Bite",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					19,
+					42,
+					71
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					21,
+					43,
+					69
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					23,
+					45,
+					67
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					20,
+					42,
+					70
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					23,
+					45,
+					67
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					21,
+					43,
+					69
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					19,
+					42,
+					71
+				],
+				"animation": "Reel_Bite_Strong",
+				"bottom_padding": 70,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					23,
+					45,
+					67
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					20,
+					42,
+					70
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					78,
+					12,
+					31,
+					75
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 73,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					25,
+					19,
+					87,
+					67
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 74,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					2,
+					61,
+					95,
+					34
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 65,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					7,
+					78,
+					94,
+					45
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 37,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					9,
+					79,
+					84,
+					57
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 24,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					79,
+					83,
+					59
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 22,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					80,
+					83,
+					60
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 20,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					79,
+					83,
+					59
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 22,
+				"frame": 9,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					10,
+					79,
+					84,
+					57
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 24,
+				"frame": 10,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					75,
+					85,
+					64
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 21,
+				"frame": 11,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					76,
+					95,
+					63
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 21,
+				"frame": 12,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					82,
+					107,
+					57
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 21,
+				"frame": 13,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					81,
+					107,
+					58
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 21,
+				"frame": 14,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					82,
+					107,
+					57
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 21,
+				"frame": 15,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					11,
+					82,
+					107,
+					57
+				],
+				"animation": "Reel_Broken_Rod",
+				"bottom_padding": 21,
+				"frame": 16,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					24,
+					57,
+					66
+				],
+				"animation": "Reel_Front",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					25,
+					57,
+					65
+				],
+				"animation": "Reel_Front",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					26,
+					57,
+					64
+				],
+				"animation": "Reel_Front",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					25,
+					57,
+					65
+				],
+				"animation": "Reel_Front",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					17,
+					45,
+					73
+				],
+				"animation": "Reel_Idle",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					14,
+					33,
+					76
+				],
+				"animation": "Reel_Left",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					15,
+					33,
+					75
+				],
+				"animation": "Reel_Left",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					16,
+					33,
+					74
+				],
+				"animation": "Reel_Left",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					15,
+					33,
+					75
+				],
+				"animation": "Reel_Left",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					89,
+					14,
+					33,
+					76
+				],
+				"animation": "Reel_Left_Idle",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					22,
+					56,
+					68
+				],
+				"animation": "Reel_Right",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					23,
+					56,
+					67
+				],
+				"animation": "Reel_Right",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					24,
+					56,
+					66
+				],
+				"animation": "Reel_Right",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					23,
+					56,
+					67
+				],
+				"animation": "Reel_Right",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					22,
+					56,
+					68
+				],
+				"animation": "Reel_Right_Idle",
+				"bottom_padding": 70,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					46,
+					41,
+					69,
+					50
+				],
+				"animation": "Throw",
+				"bottom_padding": 69,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					48,
+					44,
+					76,
+					47
+				],
+				"animation": "Throw",
+				"bottom_padding": 69,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					57,
+					39,
+					75,
+					53
+				],
+				"animation": "Throw",
+				"bottom_padding": 68,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					91,
+					18,
+					56,
+					75
+				],
+				"animation": "Throw",
+				"bottom_padding": 67,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					91,
+					23,
+					84,
+					70
+				],
+				"animation": "Throw",
+				"bottom_padding": 67,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					90,
+					36,
+					92,
+					57
+				],
+				"animation": "Throw",
+				"bottom_padding": 67,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					90,
+					34,
+					91,
+					59
+				],
+				"animation": "Throw",
+				"bottom_padding": 67,
+				"frame": 6,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					90,
+					36,
+					92,
+					57
+				],
+				"animation": "Throw",
+				"bottom_padding": 67,
+				"frame": 7,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					90,
+					34,
+					91,
+					59
+				],
+				"animation": "Throw",
+				"bottom_padding": 67,
+				"frame": 8,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					90,
+					34,
+					91,
+					59
+				],
+				"animation": "Throw_Idle",
+				"bottom_padding": 67,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					46,
+					27,
+					46
+				],
+				"animation": "Walk_E",
+				"bottom_padding": 68,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					45,
+					23,
+					44
+				],
+				"animation": "Walk_E",
+				"bottom_padding": 71,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					45,
+					21,
+					44
+				],
+				"animation": "Walk_E",
+				"bottom_padding": 71,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					46,
+					26,
+					45
+				],
+				"animation": "Walk_E",
+				"bottom_padding": 69,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					45,
+					22,
+					47
+				],
+				"animation": "Walk_E",
+				"bottom_padding": 68,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					45,
+					21,
+					47
+				],
+				"animation": "Walk_E",
+				"bottom_padding": 68,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					44,
+					23,
+					49
+				],
+				"animation": "Walk_N",
+				"bottom_padding": 67,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					23,
+					46
+				],
+				"animation": "Walk_N",
+				"bottom_padding": 71,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					48
+				],
+				"animation": "Walk_N",
+				"bottom_padding": 69,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					44,
+					23,
+					49
+				],
+				"animation": "Walk_N",
+				"bottom_padding": 67,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					46
+				],
+				"animation": "Walk_N",
+				"bottom_padding": 71,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					23,
+					48
+				],
+				"animation": "Walk_N",
+				"bottom_padding": 69,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					44,
+					27,
+					49
+				],
+				"animation": "Walk_NE",
+				"bottom_padding": 67,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					22,
+					47
+				],
+				"animation": "Walk_NE",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					24,
+					46
+				],
+				"animation": "Walk_NE",
+				"bottom_padding": 71,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					82,
+					44,
+					28,
+					46
+				],
+				"animation": "Walk_NE",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					22,
+					47
+				],
+				"animation": "Walk_NE",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					43,
+					22,
+					49
+				],
+				"animation": "Walk_NE",
+				"bottom_padding": 68,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					80,
+					44,
+					27,
+					49
+				],
+				"animation": "Walk_NW",
+				"bottom_padding": 67,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					22,
+					47
+				],
+				"animation": "Walk_NW",
+				"bottom_padding": 70,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					82,
+					43,
+					24,
+					46
+				],
+				"animation": "Walk_NW",
+				"bottom_padding": 71,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					82,
+					44,
+					28,
+					46
+				],
+				"animation": "Walk_NW",
+				"bottom_padding": 70,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					22,
+					47
+				],
+				"animation": "Walk_NW",
+				"bottom_padding": 70,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					43,
+					22,
+					49
+				],
+				"animation": "Walk_NW",
+				"bottom_padding": 68,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					45,
+					22,
+					48
+				],
+				"animation": "Walk_S",
+				"bottom_padding": 67,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					49
+				],
+				"animation": "Walk_S",
+				"bottom_padding": 68,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					23,
+					46
+				],
+				"animation": "Walk_S",
+				"bottom_padding": 71,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					45,
+					22,
+					48
+				],
+				"animation": "Walk_S",
+				"bottom_padding": 67,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					23,
+					49
+				],
+				"animation": "Walk_S",
+				"bottom_padding": 68,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					23,
+					46
+				],
+				"animation": "Walk_S",
+				"bottom_padding": 71,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					44,
+					26,
+					44
+				],
+				"animation": "Walk_SE",
+				"bottom_padding": 72,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					23,
+					44
+				],
+				"animation": "Walk_SE",
+				"bottom_padding": 73,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					24,
+					47
+				],
+				"animation": "Walk_SE",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					44,
+					26,
+					48
+				],
+				"animation": "Walk_SE",
+				"bottom_padding": 68,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					24,
+					48
+				],
+				"animation": "Walk_SE",
+				"bottom_padding": 69,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					43,
+					22,
+					46
+				],
+				"animation": "Walk_SE",
+				"bottom_padding": 71,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					44,
+					26,
+					44
+				],
+				"animation": "Walk_SW",
+				"bottom_padding": 72,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					86,
+					43,
+					23,
+					44
+				],
+				"animation": "Walk_SW",
+				"bottom_padding": 73,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					24,
+					47
+				],
+				"animation": "Walk_SW",
+				"bottom_padding": 70,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					83,
+					44,
+					26,
+					48
+				],
+				"animation": "Walk_SW",
+				"bottom_padding": 68,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					43,
+					24,
+					48
+				],
+				"animation": "Walk_SW",
+				"bottom_padding": 69,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					87,
+					43,
+					22,
+					46
+				],
+				"animation": "Walk_SW",
+				"bottom_padding": 71,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					81,
+					46,
+					27,
+					46
+				],
+				"animation": "Walk_W",
+				"bottom_padding": 68,
+				"frame": 0,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					45,
+					23,
+					44
+				],
+				"animation": "Walk_W",
+				"bottom_padding": 71,
+				"frame": 1,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					45,
+					21,
+					44
+				],
+				"animation": "Walk_W",
+				"bottom_padding": 71,
+				"frame": 2,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					81,
+					46,
+					26,
+					45
+				],
+				"animation": "Walk_W",
+				"bottom_padding": 69,
+				"frame": 3,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					84,
+					45,
+					22,
+					47
+				],
+				"animation": "Walk_W",
+				"bottom_padding": 68,
+				"frame": 4,
+				"size": [
+					192,
+					160
+				]
+			},
+			{
+				"alpha_rect": [
+					85,
+					46,
+					21,
+					47
+				],
+				"animation": "Walk_W",
+				"bottom_padding": 67,
+				"frame": 5,
+				"size": [
+					192,
+					160
+				]
+			}
+		]
+	},
+	"ground": [
+		-0.0225000008940697,
+		-0.100000001490116,
+		-1.67143392562866
+	],
+	"shapes": [
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/OceanTravel/InteractionArea/CollisionShape3D",
+			"position": [
+				-0.899999976158142,
+				0.360000014305115,
+				0.949999988079071
+			],
+			"shape": "(res://actors/locations/LocationTravelPoint.tscn::range):<SphereShape3D#-9223371761322554107>",
+			"world_bottom": -0.289999961853027
+		},
+		{
+			"basis": "[X: (0.481185, 0.0, 0.0), Y: (0.0, 0.74, 0.0), Z: (0.0, 0.0, 0.70951)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 0,
+			"path": "/root/FishingTestScene_V2/World/FishZone_V2/FishSwimBounds/BoundsShape3D",
+			"position": [
+				0.0297722816467285,
+				-0.812915861606598,
+				-4.40063714981079
+			],
+			"shape": "(res://actors/FishZone_V2.tscn::BoxShape3D_swim_bounds):<BoxShape3D#-9223371869686593090>",
+			"world_bottom": -1.5529158115387
+		},
+		{
+			"basis": "[X: (1.752554, 0.0, 0.0), Y: (0.0, 1.605, 0.0), Z: (0.0, 0.0, 1.605)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishZone_V2/CollisionShape3D",
+			"position": [
+				0.0215758383274078,
+				0.0,
+				-0.740945279598236
+			],
+			"shape": "(res://actors/FishingTestScene_V2.tscn::BoxShape3D_m5b5u):<BoxShape3D#-9223371761205113597>",
+			"world_bottom": -0.802500009536743
+		},
+		{
+			"basis": "[X: (0.317756, 0.0, 0.0), Y: (0.0, 0.2, 0.0), Z: (0.0, 0.0, 0.2)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/ShoreBlocker/CollisionShape3D",
+			"position": [
+				0.0,
+				0.211945489048958,
+				-0.454296112060547
+			],
+			"shape": "(res://actors/FishingTestScene_V2.tscn::BoxShape3D_shore_blocker):<BoxShape3D#-9223371761138004724>",
+			"world_bottom": -0.188054516911507
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/BeachMerchantNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				-1.94900000095367,
+				0.25,
+				0.609000027179718
+			],
+			"shape": "(res://actors/BeachMerchantNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371844134892841>",
+			"world_bottom": 0.0
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachMerchantNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				-1.94900000095367,
+				0.319999992847443,
+				0.609000027179718
+			],
+			"shape": "(res://actors/BeachMerchantNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371844118115624>",
+			"world_bottom": -0.159999996423721
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/TripleTriadOpponentNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				2.02154636383057,
+				0.194429397583008,
+				0.0332825779914856
+			],
+			"shape": "(res://actors/TripleTriadOpponentNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371841165325601>",
+			"world_bottom": -0.0555706024169922
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/TripleTriadOpponentNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				2.02154636383057,
+				0.394429385662079,
+				0.0332825779914856
+			],
+			"shape": "(res://actors/TripleTriadOpponentNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371841148548384>",
+			"world_bottom": -0.0855706036090851
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/BeachCrafterNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				-0.800000011920929,
+				0.0611472502350807,
+				0.653153419494629
+			],
+			"shape": "(res://actors/BeachCrafterNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371802292515942>",
+			"world_bottom": -0.1888527572155
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachCrafterNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				-0.800000011920929,
+				0.389999985694885,
+				0.653153419494629
+			],
+			"shape": "(res://actors/BeachCrafterNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371802275738724>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 16,
+			"mask": 19,
+			"path": "/root/FishingTestScene_V2/World/FishingCardMakerNPC/CollisionShape3D",
+			"position": [
+				0.788921236991882,
+				0.125460207462311,
+				0.519512832164764
+			],
+			"shape": "(res://actors/FishingCardMakerNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371791555097550>",
+			"world_bottom": -0.124539792537689
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingCardMakerNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				0.788921236991882,
+				0.195460200309753,
+				0.519512832164764
+			],
+			"shape": "(res://actors/FishingCardMakerNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371791538320333>",
+			"world_bottom": -0.284539788961411
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/HarborLockbox/BodyCollider/CollisionShape3D",
+			"position": [
+				3.61999988555908,
+				0.240000009536743,
+				0.5
+			],
+			"shape": "(res://actors/HarborLockbox.tscn::BoxShape3D_body):<BoxShape3D#-9223371790699459527>",
+			"world_bottom": 0.0700000077486038
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/HarborLockbox/InteractionArea/CollisionShape3D",
+			"position": [
+				3.61999988555908,
+				0.25,
+				0.5
+			],
+			"shape": "(res://actors/HarborLockbox.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371790716236744>",
+			"world_bottom": -0.300000011920929
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/HarborRequestBoard/InteractionArea/CollisionShape3D",
+			"position": [
+				-3.72000002861023,
+				0.589999973773956,
+				0.5
+			],
+			"shape": "(res://actors/HarborRequestBoard.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371789390836665>",
+			"world_bottom": 0.0399999618530273
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/RegionalChampionshipRegistrar/InteractionArea/CollisionShape3D",
+			"position": [
+				5.07999992370605,
+				0.519999980926514,
+				0.5
+			],
+			"shape": "(res://actors/RegionalChampionshipRegistrar.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371788535198640>",
+			"world_bottom": 0.0399999916553497
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood01/InteractionArea/CollisionShape3D",
+			"position": [
+				-3.79999995231628,
+				0.256279438734055,
+				0.620000004768372
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Shell01/InteractionArea/CollisionShape3D",
+			"position": [
+				-3.09999990463257,
+				0.256279438734055,
+				0.239999994635582
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Seaweed01/InteractionArea/CollisionShape3D",
+			"position": [
+				-2.65000009536743,
+				0.256279438734055,
+				0.720000028610229
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood02/InteractionArea/CollisionShape3D",
+			"position": [
+				-1.70000004768372,
+				0.256279438734055,
+				0.219999998807907
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/IronScrap01/InteractionArea/CollisionShape3D",
+			"position": [
+				-1.25,
+				0.256279438734055,
+				0.720000028610229
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/SeaGlass01/InteractionArea/CollisionShape3D",
+			"position": [
+				0.25,
+				0.256279438734055,
+				0.680000007152557
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/IronScrap02/InteractionArea/CollisionShape3D",
+			"position": [
+				0.850000023841858,
+				0.256279438734055,
+				0.219999998807907
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Shell02/InteractionArea/CollisionShape3D",
+			"position": [
+				1.39999997615814,
+				0.256279438734055,
+				0.680000007152557
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood03/InteractionArea/CollisionShape3D",
+			"position": [
+				2.70000004768372,
+				0.256279438734055,
+				0.239999994635582
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Seaweed02/InteractionArea/CollisionShape3D",
+			"position": [
+				3.45000004768372,
+				0.256279438734055,
+				0.649999976158142
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/CoastalHerb01/InteractionArea/CollisionShape3D",
+			"position": [
+				-2.20000004768372,
+				0.256279438734055,
+				0.479999989271164
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/CoastalHerb02/InteractionArea/CollisionShape3D",
+			"position": [
+				2.04999995231628,
+				0.256279438734055,
+				0.430000007152557
+			],
+			"shape": "(res://actors/BeachGatheringNode3D.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371801252328541>",
+			"world_bottom": -0.393720537424088
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterStillWaterNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				-2.46799993515015,
+				0.25,
+				-0.0759999975562096
+			],
+			"shape": "(res://actors/FishingMasterStillWaterNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371784609330034>",
+			"world_bottom": 0.0
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterStillWaterNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				-2.46799993515015,
+				0.319999992847443,
+				-0.0759999975562096
+			],
+			"shape": "(res://actors/FishingMasterStillWaterNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371784592552817>",
+			"world_bottom": -0.159999996423721
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterCurrentReaderNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				3.0,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterCurrentReaderNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371782730281835>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterCurrentReaderNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				3.0,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterCurrentReaderNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371782713504618>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDepthReaderNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				4.55000019073486,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterDepthReaderNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371781270664035>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDepthReaderNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				4.55000019073486,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterDepthReaderNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371781253886818>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterStructureHunterNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				6.15000009536743,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterStructureHunterNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371779811046236>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterStructureHunterNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				6.15000009536743,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterStructureHunterNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371779794269019>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterLineFighterNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				7.69999980926514,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterLineFighterNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371778351428437>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterLineFighterNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				7.69999980926514,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterLineFighterNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371778334651220>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDeepwaterVeteranNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				9.25,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterDeepwaterVeteranNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371776740815694>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDeepwaterVeteranNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				9.25,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterDeepwaterVeteranNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371776724038477>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterSurfaceAnglerNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				10.8000001907349,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterSurfaceAnglerNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371775130202951>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterSurfaceAnglerNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				10.8000001907349,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterSurfaceAnglerNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371775113425734>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterLandingGuideNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				12.3500003814697,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterLandingGuideNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371773519590208>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterLandingGuideNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				12.3500003814697,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterLandingGuideNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371773502812991>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterWeatherWatcherNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				13.8999996185303,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterWeatherWatcherNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371772059972409>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterWeatherWatcherNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				13.8999996185303,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterWeatherWatcherNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371772043195192>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterTideReaderNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				15.4499998092651,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterTideReaderNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371770432582450>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterTideReaderNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				15.4499998092651,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterTideReaderNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371770415805233>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterSignReaderNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				17.0,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterSignReaderNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371768738083627>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterSignReaderNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				17.0,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterSignReaderNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371768721306410>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterNatureGuideNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				18.5499992370605,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterNatureGuideNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371766825480994>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterNatureGuideNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				18.5499992370605,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterNatureGuideNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371766808703777>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDriftAnglerNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				20.1000003814697,
+				0.319999992847443,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterDriftAnglerNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371763855913738>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDriftAnglerNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				20.1000003814697,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterDriftAnglerNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371763839136521>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 1,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterGyosilNPC/BodyCollider/CollisionShape3D",
+			"position": [
+				-0.906299471855164,
+				0.340000003576279,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterGyosilNPC.tscn::CapsuleShape3D_body):<CapsuleShape3D#-9223371762278855424>",
+			"world_bottom": 0.0699999928474426
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/FishingMasterGyosilNPC/InteractionArea/CollisionShape3D",
+			"position": [
+				-0.906299471855164,
+				0.389999985694885,
+				-0.100000001490116
+			],
+			"shape": "(res://actors/FishingMasterGyosilNPC.tscn::SphereShape3D_interaction):<SphereShape3D#-9223371762262078211>",
+			"world_bottom": -0.0900000035762787
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachCritter/ProximityArea/CollisionShape3D",
+			"position": [
+				-1.54999995231628,
+				0.00935499370098114,
+				0.119999997317791
+			],
+			"shape": "(res://actors/BeachFishingCritter.tscn::SphereShape3D_crab):<SphereShape3D#-9223371787344016279>",
+			"world_bottom": -0.390645027160645
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 0,
+			"mask": 3,
+			"path": "/root/FishingTestScene_V2/World/BeachCritter2/ProximityArea/CollisionShape3D",
+			"position": [
+				1.6136691570282,
+				0.00935499370098114,
+				0.344521999359131
+			],
+			"shape": "(res://actors/BeachFishingCritter.tscn::SphereShape3D_crab):<SphereShape3D#-9223371787344016279>",
+			"world_bottom": -0.390645027160645
+		},
+		{
+			"basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+			"disabled": false,
+			"layer": 1,
+			"mask": 17,
+			"path": "/root/FishingTestScene_V2/Player/CharacterBody3D/CollisionShape3D",
+			"position": [
+				0.0,
+				0.223204001784325,
+				0.0
+			],
+			"shape": "(res://actors/ExplorationPlayer_V2.tscn::CapsuleShape3D_jpo3w):<CapsuleShape3D#-9223371972598036823>",
+			"world_bottom": -0.00207199156284332
+		}
+	],
+	"sprites": [
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				22.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachMerchantNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/BeachMerchantNPC",
+			"root_position": [
+				-1.94900000095367,
+				0.0,
+				0.609000027179718
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/TripleTriadOpponentNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/TripleTriadOpponentNPC",
+			"root_position": [
+				2.02154636383057,
+				0.0,
+				0.0332825779914856
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				22.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachCrafterNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/BeachCrafterNPC",
+			"root_position": [
+				-0.800000011920929,
+				0.0,
+				0.653153419494629
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/fishing_captain_frames.tres",
+			"offset": [
+				0.0,
+				29.5
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingCardMakerNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingCardMakerNPC",
+			"root_position": [
+				0.788921236991882,
+				0.0,
+				0.519512832164764
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood01/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood01",
+			"root_position": [
+				-3.79999995231628,
+				0.0,
+				0.620000004768372
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Shell01/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00499999988824129,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Shell01",
+			"root_position": [
+				-3.09999990463257,
+				0.0,
+				0.239999994635582
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Seaweed01/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00899999961256981,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Seaweed01",
+			"root_position": [
+				-2.65000009536743,
+				0.0,
+				0.720000028610229
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood02/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood02",
+			"root_position": [
+				-1.70000004768372,
+				0.0,
+				0.219999998807907
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/IronScrap01/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.008500000461936,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/IronScrap01",
+			"root_position": [
+				-1.25,
+				0.0,
+				0.720000028610229
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/SeaGlass01/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.0094999996945262,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/SeaGlass01",
+			"root_position": [
+				0.25,
+				0.0,
+				0.680000007152557
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/IronScrap02/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.008500000461936,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/IronScrap02",
+			"root_position": [
+				0.850000023841858,
+				0.0,
+				0.219999998807907
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Shell02/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00499999988824129,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Shell02",
+			"root_position": [
+				1.39999997615814,
+				0.0,
+				0.680000007152557
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood03/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Driftwood03",
+			"root_position": [
+				2.70000004768372,
+				0.0,
+				0.239999994635582
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Seaweed02/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00899999961256981,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/Seaweed02",
+			"root_position": [
+				3.45000004768372,
+				0.0,
+				0.649999976158142
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/CoastalHerb01/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00899999961256981,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/CoastalHerb01",
+			"root_position": [
+				-2.20000004768372,
+				0.0,
+				0.479999989271164
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 0,
+			"offset": [
+				0.0,
+				0.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/CoastalHerb02/GroundPresentation/VisualAnchor/GatherSprite3D",
+			"pixel_size": 0.00899999961256981,
+			"root": "/root/FishingTestScene_V2/World/BeachGatheringCircuit/CoastalHerb02",
+			"root_position": [
+				2.04999995231628,
+				0.0,
+				0.430000007152557
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/fishing_master_still_water_frames.tres",
+			"offset": [
+				0.0,
+				23.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterStillWaterNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterStillWaterNPC",
+			"root_position": [
+				-2.46799993515015,
+				0.0,
+				-0.0759999975562096
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterCurrentReaderNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterCurrentReaderNPC",
+			"root_position": [
+				3.0,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDepthReaderNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterDepthReaderNPC",
+			"root_position": [
+				4.55000019073486,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterStructureHunterNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterStructureHunterNPC",
+			"root_position": [
+				6.15000009536743,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterLineFighterNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterLineFighterNPC",
+			"root_position": [
+				7.69999980926514,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDeepwaterVeteranNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterDeepwaterVeteranNPC",
+			"root_position": [
+				9.25,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterSurfaceAnglerNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterSurfaceAnglerNPC",
+			"root_position": [
+				10.8000001907349,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterLandingGuideNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterLandingGuideNPC",
+			"root_position": [
+				12.3500003814697,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterWeatherWatcherNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterWeatherWatcherNPC",
+			"root_position": [
+				13.8999996185303,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterTideReaderNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterTideReaderNPC",
+			"root_position": [
+				15.4499998092651,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterSignReaderNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterSignReaderNPC",
+			"root_position": [
+				17.0,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterNatureGuideNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterNatureGuideNPC",
+			"root_position": [
+				18.5499992370605,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterDriftAnglerNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterDriftAnglerNPC",
+			"root_position": [
+				20.1000003814697,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_merchant_frames.tres",
+			"offset": [
+				0.0,
+				21.0
+			],
+			"path": "/root/FishingTestScene_V2/World/FishingMasterGyosilNPC/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/World/FishingMasterGyosilNPC",
+			"root_position": [
+				-0.906299471855164,
+				0.0,
+				-0.100000001490116
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_fishing_crab_frames.tres",
+			"offset": [
+				0.0,
+				5.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachCritter/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.0120000001043081,
+			"root": "/root/FishingTestScene_V2/World/BeachCritter",
+			"root_position": [
+				-1.54999995231628,
+				0.0,
+				0.119999997317791
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/beach_fishing_crab_frames.tres",
+			"offset": [
+				0.0,
+				5.0
+			],
+			"path": "/root/FishingTestScene_V2/World/BeachCritter2/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.0120000001043081,
+			"root": "/root/FishingTestScene_V2/World/BeachCritter2",
+			"root_position": [
+				1.6136691570282,
+				0.0,
+				0.344521999359131
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"billboard": 1,
+			"frames": "res://assets/animations/player_frames.tres",
+			"offset": [
+				0.0,
+				10.0
+			],
+			"path": "/root/FishingTestScene_V2/Player/CharacterBody3D/GroundPresentation/VisualAnchor/AnimatedSprite3D",
+			"pixel_size": 0.00999999977648258,
+			"root": "/root/FishingTestScene_V2/Player/CharacterBody3D",
+			"root_position": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"sprite_position": [
+				0.0,
+				0.0,
+				0.0
+			]
+		}
+	]
+}

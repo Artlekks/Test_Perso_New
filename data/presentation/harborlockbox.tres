@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="WorldActorPresentationProfile" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
+[resource]
+script = ExtResource("1")
+category = 3
+shadow_width = 0.24
+shadow_depth = 0.24
+shadow_opacity = 0.40

@@ -59,6 +59,7 @@ func _ready() -> void:
 	controls = TouchControls.new()
 	controls.name = "TouchControls"
 	controls.key_requested.connect(_send_key)
+	controls.action_requested.connect(_queue_action)
 	presentation.add_child(controls)
 	resized.connect(_layout)
 	get_window().focus_exited.connect(controls.release_all)
@@ -281,6 +282,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_forwarding = false
 		get_viewport().set_input_as_handled()
 
+func _queue_action(event: InputEventAction) -> void:
+	# Deliver after ScreenTouch handling finishes, rather than nesting a raw key.
+	_dispatch_action.call_deferred(event)
+
+func _dispatch_action(event: InputEventAction) -> void:
+	if event.pressed:
+		Input.action_press(event.action, event.strength)
+	else:
+		Input.action_release(event.action)
+	if is_instance_valid(gameplay_viewport):
+		gameplay_viewport.push_input(event, true)
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		if is_instance_valid(controls):
@@ -289,6 +302,8 @@ func _notification(what: int) -> void:
 func _exit_tree() -> void:
 	if is_instance_valid(controls):
 		controls.release_all()
+	if Input.is_action_pressed(&"world_card_challenge"):
+		Input.action_release(&"world_card_challenge")
 	for entry in _bound_layers.values():
 		var layer = entry.node.get_ref()
 		var original_parent = entry.parent.get_ref()

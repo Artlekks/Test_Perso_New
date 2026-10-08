@@ -2,12 +2,14 @@
 
 [ext_resource type="Script" uid="uid://s5w6p0vupyfr" path="res://scripts/economy/fishing_card_maker_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bdh0vfoiqp6fq" path="res://assets/animations/fishing_captain_frames.tres" id="2_frames"]
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="PackedScene" path="res://actors/FishingCardMakerMenu.tscn" id="4_menu"]
 [ext_resource type="Script" uid="uid://d3ehdk8xkgd2r" path="res://scripts/quests/card_maker_fishing_request_source.gd" id="5_request_source"]
 [ext_resource type="Script" uid="uid://6lq2vslx0crb" path="res://scripts/quests/fishing_catch_count_request_objective.gd" id="6_catch_objective"]
 [ext_resource type="Script" uid="uid://c5u7clg61553w" path="res://scripts/triple_triad/triple_triad_quest_reward_adapter.gd" id="7_reward_adapter"]
 [ext_resource type="PackedScene" path="res://actors/WorldRequestMarker.tscn" id="8_request_marker"]
+
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/card_maker.tres" id="ground_profile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -24,19 +26,16 @@ platform_wall_layers = 0
 process_mode = 3
 script = ExtResource("1_script")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=437527995]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
-offset = Vector2(0, -2)
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" unique_id=437527995]
 billboard = 1
 texture_filter = 0
 sprite_frames = ExtResource("2_frames")
 animation = &"idle_se"
 autoplay = "idle_se"
 frame_progress = 0.49772128
-
-[node name="ShadowAnchor" type="Node3D" parent="."]
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1054673134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)

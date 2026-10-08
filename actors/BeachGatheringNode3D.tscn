@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" path="res://scripts/beach_gathering_node_3d.gd" id="1_script"]
 
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/ground_item.tres" id="ground_profile"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_placeholder"]
 shading_mode = 0
 albedo_color = Color(0.78, 0.72, 0.52, 1)
@@ -22,9 +25,11 @@ position = Vector3(0, 0.065, 0)
 material_override = SubResource("StandardMaterial3D_placeholder")
 mesh = SubResource("SphereMesh_placeholder")
 
-[node name="GatherSprite3D" type="Sprite3D" parent="."]
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="GatherSprite3D" type="Sprite3D" parent="GroundPresentation/VisualAnchor"]
 visible = false
-position = Vector3(0, -0.004, 0)
 rotation = Vector3(-1.5707964, 0, 0)
 billboard = 0
 texture_filter = 0

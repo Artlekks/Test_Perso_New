@@ -26,13 +26,14 @@ func _input(event: InputEvent) -> void:
 
 
 func handle_event(event: InputEvent) -> bool:
-	if not (event is InputEventKey):
+	var card_action := event.is_action(&"world_card_challenge")
+	if not (event is InputEventKey) and not card_action:
 		return false
 	var key_event := event as InputEventKey
-	var key: int = key_event.physical_keycode
+	var key: int = KEY_C if card_action else key_event.physical_keycode
 	if key == 0:
 		key = key_event.keycode
-	if not key_event.pressed:
+	if not event.is_pressed():
 		_claimed_keys.erase(key)
 		return false
 	var tree := get_tree()
@@ -46,9 +47,9 @@ func handle_event(event: InputEvent) -> bool:
 	if _claimed_keys.has(key):
 		get_viewport().set_input_as_handled()
 		return true
-	if tree.paused or key_event.echo:
+	if tree.paused or event.is_echo():
 		return false
-	if key_event.keycode not in [KEY_K, KEY_ENTER, KEY_C] and key_event.physical_keycode not in [KEY_K, KEY_ENTER, KEY_C]:
+	if not card_action and key_event.keycode not in [KEY_K, KEY_ENTER] and key_event.physical_keycode not in [KEY_K, KEY_ENTER]:
 		return false
 	var target := select_target(
 		_player, tree.get_nodes_in_group(TARGET_GROUP), event

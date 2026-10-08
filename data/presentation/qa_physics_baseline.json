@@ -1,0 +1,710 @@
+[
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/OceanTravel/InteractionArea/CollisionShape3D",
+    "position": [
+      -0.899999976158142,
+      0.360000014305115,
+      0.949999988079071
+    ]
+  },
+  {
+    "basis": "[X: (0.481185, 0.0, 0.0), Y: (0.0, 0.74, 0.0), Z: (0.0, 0.0, 0.70951)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 0,
+    "path": "World/FishZone_V2/FishSwimBounds/BoundsShape3D",
+    "position": [
+      0.0297722816467285,
+      -0.812915861606598,
+      -4.40063714981079
+    ]
+  },
+  {
+    "basis": "[X: (1.752554, 0.0, 0.0), Y: (0.0, 1.605, 0.0), Z: (0.0, 0.0, 1.605)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishZone_V2/CollisionShape3D",
+    "position": [
+      0.0215758383274078,
+      0.0,
+      -0.740945279598236
+    ]
+  },
+  {
+    "basis": "[X: (0.317756, 0.0, 0.0), Y: (0.0, 0.2, 0.0), Z: (0.0, 0.0, 0.2)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/ShoreBlocker/CollisionShape3D",
+    "position": [
+      0.0,
+      0.211945489048958,
+      -0.454296112060547
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/BeachMerchantNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      -1.94900000095367,
+      0.25,
+      0.609000027179718
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachMerchantNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      -1.94900000095367,
+      0.319999992847443,
+      0.609000027179718
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/TripleTriadOpponentNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      2.02154636383057,
+      0.194429397583008,
+      0.0332825779914856
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/TripleTriadOpponentNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      2.02154636383057,
+      0.394429385662079,
+      0.0332825779914856
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/BeachCrafterNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      -0.800000011920929,
+      0.0611472502350807,
+      0.653153419494629
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachCrafterNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      -0.800000011920929,
+      0.389999985694885,
+      0.653153419494629
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 16,
+    "mask": 19,
+    "path": "World/FishingCardMakerNPC/CollisionShape3D",
+    "position": [
+      0.788921236991882,
+      0.125460207462311,
+      0.519512832164764
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingCardMakerNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      0.788921236991882,
+      0.195460200309753,
+      0.519512832164764
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/HarborLockbox/BodyCollider/CollisionShape3D",
+    "position": [
+      3.61999988555908,
+      0.240000009536743,
+      0.5
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 1,
+    "path": "World/HarborLockbox/InteractionArea/CollisionShape3D",
+    "position": [
+      3.61999988555908,
+      0.25,
+      0.5
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 1,
+    "path": "World/HarborRequestBoard/InteractionArea/CollisionShape3D",
+    "position": [
+      -3.72000002861023,
+      0.589999973773956,
+      0.5
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 1,
+    "path": "World/RegionalChampionshipRegistrar/InteractionArea/CollisionShape3D",
+    "position": [
+      5.07999992370605,
+      0.519999980926514,
+      0.5
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Driftwood01/InteractionArea/CollisionShape3D",
+    "position": [
+      -3.79999995231628,
+      0.256279438734055,
+      0.620000004768372
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Shell01/InteractionArea/CollisionShape3D",
+    "position": [
+      -3.09999990463257,
+      0.256279438734055,
+      0.239999994635582
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Seaweed01/InteractionArea/CollisionShape3D",
+    "position": [
+      -2.65000009536743,
+      0.256279438734055,
+      0.720000028610229
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Driftwood02/InteractionArea/CollisionShape3D",
+    "position": [
+      -1.70000004768372,
+      0.256279438734055,
+      0.219999998807907
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/IronScrap01/InteractionArea/CollisionShape3D",
+    "position": [
+      -1.25,
+      0.256279438734055,
+      0.720000028610229
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/SeaGlass01/InteractionArea/CollisionShape3D",
+    "position": [
+      0.25,
+      0.256279438734055,
+      0.680000007152557
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/IronScrap02/InteractionArea/CollisionShape3D",
+    "position": [
+      0.850000023841858,
+      0.256279438734055,
+      0.219999998807907
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Shell02/InteractionArea/CollisionShape3D",
+    "position": [
+      1.39999997615814,
+      0.256279438734055,
+      0.680000007152557
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Driftwood03/InteractionArea/CollisionShape3D",
+    "position": [
+      2.70000004768372,
+      0.256279438734055,
+      0.239999994635582
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/Seaweed02/InteractionArea/CollisionShape3D",
+    "position": [
+      3.45000004768372,
+      0.256279438734055,
+      0.649999976158142
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/CoastalHerb01/InteractionArea/CollisionShape3D",
+    "position": [
+      -2.20000004768372,
+      0.256279438734055,
+      0.479999989271164
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachGatheringCircuit/CoastalHerb02/InteractionArea/CollisionShape3D",
+    "position": [
+      2.04999995231628,
+      0.256279438734055,
+      0.430000007152557
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterStillWaterNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      -2.46799993515015,
+      0.25,
+      -0.0759999975562096
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterStillWaterNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      -2.46799993515015,
+      0.319999992847443,
+      -0.0759999975562096
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterCurrentReaderNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      3.0,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterCurrentReaderNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      3.0,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterDepthReaderNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      4.55000019073486,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterDepthReaderNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      4.55000019073486,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterStructureHunterNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      6.15000009536743,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterStructureHunterNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      6.15000009536743,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterLineFighterNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      7.69999980926514,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterLineFighterNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      7.69999980926514,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterDeepwaterVeteranNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      9.25,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterDeepwaterVeteranNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      9.25,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterSurfaceAnglerNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      10.8000001907349,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterSurfaceAnglerNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      10.8000001907349,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterLandingGuideNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      12.3500003814697,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterLandingGuideNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      12.3500003814697,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterWeatherWatcherNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      13.8999996185303,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterWeatherWatcherNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      13.8999996185303,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterTideReaderNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      15.4499998092651,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterTideReaderNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      15.4499998092651,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterSignReaderNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      17.0,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterSignReaderNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      17.0,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterNatureGuideNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      18.5499992370605,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterNatureGuideNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      18.5499992370605,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterDriftAnglerNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      20.1000003814697,
+      0.319999992847443,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterDriftAnglerNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      20.1000003814697,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 1,
+    "path": "World/FishingMasterGyosilNPC/BodyCollider/CollisionShape3D",
+    "position": [
+      -0.906299471855164,
+      0.340000003576279,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/FishingMasterGyosilNPC/InteractionArea/CollisionShape3D",
+    "position": [
+      -0.906299471855164,
+      0.389999985694885,
+      -0.100000001490116
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachCritter/ProximityArea/CollisionShape3D",
+    "position": [
+      -1.54999995231628,
+      0.00935499370098114,
+      0.119999997317791
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 0,
+    "mask": 3,
+    "path": "World/BeachCritter2/ProximityArea/CollisionShape3D",
+    "position": [
+      1.6136691570282,
+      0.00935499370098114,
+      0.344521999359131
+    ]
+  },
+  {
+    "basis": "[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0)]",
+    "disabled": false,
+    "layer": 1,
+    "mask": 17,
+    "path": "Player/CharacterBody3D/CollisionShape3D",
+    "position": [
+      0.0,
+      0.223204001784325,
+      0.0
+    ]
+  }
+]

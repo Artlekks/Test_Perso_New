@@ -3,7 +3,9 @@
 [ext_resource type="Script" path="res://scripts/world/beach_fishing_critter.gd" id="1_script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_crab_frames.tres" id="2_frames"]
 
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
+
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/crab.tres" id="ground_profile"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_crab"]
 radius = 0.4
@@ -12,7 +14,10 @@ radius = 0.4
 process_mode = 3
 script = ExtResource("1_script")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor"]
 billboard = 1
 alpha_cut = 1
 texture_filter = 0
@@ -28,9 +33,3 @@ collision_mask = 3
 [node name="CollisionShape3D" type="CollisionShape3D" parent="ProximityArea"]
 position = Vector3(0, 0.065, 0)
 shape = SubResource("SphereShape3D_crab")
-
-[node name="ShadowAnchor" type="Node3D" parent="."]
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
-width = 0.14
-depth = 0.16

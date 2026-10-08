@@ -4,6 +4,7 @@ extends Node
 ## execution uses isolated userdata; never import or modify a normal save.
 var checks := 0
 var failures: Array[String] = []
+var card_action_events: Array[bool] = []
 var root: Window:
 	get:
 		return get_tree().root
@@ -40,11 +41,23 @@ func touch(shell: Node, label: String) -> void:
 	event.index = 12
 	event.position = root.get_final_transform() * shell.controls.get_global_transform_with_canvas() * shell.controls.buttons[label].get_center()
 	event.pressed = true
-	Input.parse_input_event(event)
+	if OS.get_name() == "Web":
+		browser_touch(event)
+	else:
+		Input.parse_input_event(event)
 	await settle()
 	event.pressed = false
-	Input.parse_input_event(event)
+	if OS.get_name() == "Web":
+		browser_touch(event)
+	else:
+		Input.parse_input_event(event)
 	await settle()
+
+func browser_touch(event: InputEventScreenTouch) -> void:
+	# Browser integration: DOM TouchEvent -> canvas/Emscripten -> Godot ->
+	# MobileTouchControls. Never invoke a gameplay action or NPC directly.
+	var data := JSON.stringify({"x":event.position.x,"y":event.position.y,"pressed":event.pressed,"id":event.index})
+	JavaScriptBridge.eval("(()=>{const e=" + data + ";const c=document.getElementById('canvas');const r=c.getBoundingClientRect();const t=new Touch({identifier:e.id,target:c,clientX:r.left+e.x*r.width/c.width,clientY:r.top+e.y*r.height/c.height});c.dispatchEvent(new TouchEvent(e.pressed?'touchstart':'touchend',{bubbles:true,cancelable:true,touches:e.pressed?[t]:[],targetTouches:e.pressed?[t]:[],changedTouches:[t]}));})()")
 
 func run() -> void:
 	print("WEB PREBOOT ROUTES: ", load("res://data/world/locations/beach.tres").destinations)
@@ -54,6 +67,8 @@ func run() -> void:
 	current_scene = shell
 	await settle(1.0)
 	var game: Node = shell.game
+	shell.controls.action_requested.connect(func(event: InputEventAction):
+		if event.action == &"world_card_challenge": card_action_events.append(event.pressed))
 	var locations := root.get_node("WorldLocations")
 	var sign := game.get_node("World/OceanTravel")
 	var session := root.get_node("FishingSessionServices")
@@ -78,6 +93,7 @@ func run() -> void:
 	print("WEB C EVIDENCE: range=", npc._player_in_range, " availability=", triad.get_opponent_availability(npc.opponent_id), " mapping=", shell.controls.BUTTON_KEYS["C"])
 	check(npc._player_in_range, "Web card NPC real interaction range")
 	await touch(shell, "C")
+	check(card_action_events == [true,false] and not Input.is_action_pressed(&"world_card_challenge"), "browser C emits one named press/release and clears held state")
 	check(session.dialogue_service.is_active(), "Web ScreenTouch C reaches card challenge")
 	if session.dialogue_service.is_active():
 		await touch(shell, "A")
@@ -85,6 +101,8 @@ func run() -> void:
 		triad.close_game()
 		await settle()
 	check(not paused, "Web card exit restores pause")
+	if OS.get_name() == "Web" and JavaScriptBridge.eval("new URLSearchParams(location.search).has('shadow_orbits')"):
+		await web_shadow_orbits(game, shell)
 	session.inventory.grant_lure(&"baby_frog", 1, false)
 	check(locations.get_unlocked_destinations().has("wyndia_ocean_outpost"), "Web equivalent progression unlocks Ocean route")
 	check(locations.request_travel(&"wyndia_ocean_outpost").success, "Web canonical travel starts")
@@ -101,3 +119,33 @@ func run() -> void:
 	print("MOBILE WEB PARITY QA: %d/%d" % [checks - failures.size(), checks])
 	if OS.get_name() != "Web":
 		get_tree().quit(0 if failures.is_empty() else 1)
+
+func web_shadow_orbits(game: Node, shell: Node) -> void:
+	# Opt-in rendered Web QA only; production harness never calls this fixture.
+	var camera := Camera3D.new()
+	shell.gameplay_viewport.add_child(camera)
+	var original_camera: Camera3D = shell.gameplay_viewport.get_camera_3d()
+	camera.current = true
+	var npc = game.get_node("World/BeachMerchantNPC")
+	var shadow = npc.get_node("GroundPresentation/ShadowAnchor/WorldBlobShadow")
+	var original: Transform3D = shadow.global_transform
+	var layers := game.find_children("*", "CanvasLayer", true, false)
+	var states: Array[bool] = []
+	for layer in layers:
+		states.append(layer.visible)
+		layer.visible = false
+	var zone = game.get_node("World/FishZone_V2")
+	zone.hide()
+	paused = true
+	for angle in 4:
+		camera.global_position = npc.global_position + Vector3(sin(angle * PI / 2) * 1.5, 1.0, cos(angle * PI / 2) * 1.5)
+		camera.look_at(npc.global_position + Vector3(0,0.2,0))
+		await settle(0.5)
+		check(shadow.global_transform.is_equal_approx(original) and shadow.material_override is ShaderMaterial, "Web rendered orbit keeps radial shadow fixed %d" % angle)
+		print("WEB GROUNDING ORBIT: ", angle, " transform=", shadow.global_transform)
+		await settle(12.0)
+	paused = false
+	for i in layers.size(): layers[i].visible = states[i]
+	zone.show()
+	original_camera.current = true
+	camera.queue_free()

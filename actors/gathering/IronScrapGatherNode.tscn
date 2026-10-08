@@ -3,9 +3,11 @@
 [ext_resource type="PackedScene" path="res://actors/BeachGatheringNode3D.tscn" id="1_base"]
 [ext_resource type="Texture2D" path="res://assets/sprites/gathering/iron_scraps.png" id="2_sprite"]
 
+[ext_resource type="Resource" path="res://data/presentation/ironscrap.tres" id="ground_profile"]
+
 [node name="IronScrapGatherNode" instance=ExtResource("1_base")]
 material_id = &"iron_scrap"
 presentation_texture = ExtResource("2_sprite")
-presentation_pixel_size = 0.0085
-presentation_ground_offset = -0.004
-presentation_yaw_degrees = 18.0
+
+[node name="GroundPresentation" parent="." index="1"]
+profile = ExtResource("ground_profile")

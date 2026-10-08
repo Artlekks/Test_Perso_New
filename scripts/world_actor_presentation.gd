@@ -3,8 +3,8 @@ class_name WorldActorPresentation
 
 ## Runtime presentation/collision polish for billboard-style world actors.
 ##
-## Actor scenes own ActorRoot/ShadowAnchor/WorldBlobShadow. This controller
-## supplies the beach ground reference; the reusable shadow owns its transform.
+## Actor scenes own ActorRoot/GroundPresentation/ShadowAnchor/WorldBlobShadow.
+## The shared component owns feet alignment and the root-relative world shadow.
 ## Sprite ordering and existing collision-footprint behavior stay separate.
 
 @export var world_root: Node3D
@@ -19,7 +19,6 @@ class_name WorldActorPresentation
 @export_range(0.12, 0.40, 0.01) var minimum_npc_radius: float = 0.24
 @export_range(0.30, 0.80, 0.01) var minimum_npc_height: float = 0.52
 
-const BlobShadowScript = preload("res://scripts/world/world_blob_shadow.gd")
 const IGNORED_WORLD_ROOTS: Array[StringName] = [
 	&"FishZone_V2",
 	&"beach",
@@ -73,10 +72,8 @@ func _register_actor(anchor: Node3D) -> void:
 		sprite.no_depth_test = false
 		_sort_entries.append({"anchor": anchor, "sprite": sprite})
 
-	var shadow := anchor.get_node_or_null("ShadowAnchor/WorldBlobShadow") as BlobShadowScript
-	if shadow != null and is_instance_valid(world_root):
-		shadow.ground_reference = world_root.get_node_or_null("beach/Beach") as Node3D
-		shadow.update_ground_transform()
+	# GroundPresentation owns root-relative feet/shadow placement. Do not project
+	# shadows onto a mesh node origin (which is not necessarily its surface).
 
 
 func _update_render_priorities() -> void:

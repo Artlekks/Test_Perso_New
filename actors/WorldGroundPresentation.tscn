@@ -1,0 +1,10 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://scripts/world/ground_presentation.gd" id="presentation_script"]
+[ext_resource type="Resource" path="res://data/presentation/merchant.tres" id="default_profile"]
+[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="shadow"]
+[node name="GroundPresentation" type="Node3D"]
+script = ExtResource("presentation_script")
+profile = ExtResource("default_profile")
+[node name="VisualAnchor" type="Node3D" parent="."]
+[node name="ShadowAnchor" type="Node3D" parent="."]
+[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("shadow")]

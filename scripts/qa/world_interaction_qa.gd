@@ -135,9 +135,9 @@ func _run() -> void:
 	_check(not router.handle_event(press), "removed targets cannot leave stale selection")
 
 	var gather := GatherScene.instantiate()
-	var sprite := gather.get_node("GatherSprite3D") as Sprite3D
+	var sprite := gather.get_node("GroundPresentation/VisualAnchor/GatherSprite3D") as Sprite3D
 	_check(sprite.alpha_cut == SpriteBase3D.ALPHA_CUT_DISABLED and sprite.render_priority < -90, "ground sprite draws before character bodies")
-	_check(sprite.position == Vector3(0, -0.004, 0), "ground sprite position preserved")
+	_check(sprite.position.is_zero_approx() and gather.get_node("GroundPresentation").profile.flat_on_ground, "ground sprite uses shared physical anchor")
 	gather.free()
 	var maker := CardMakerScript.new()
 	_check(is_equal_approx(maker.patrol_speed, 0.54), "patrol speed reflects walk cadence")

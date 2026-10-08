@@ -18,14 +18,11 @@ signal gathered(
 
 @export_category("Presentation")
 @export var presentation_texture: Texture2D
-@export_range(0.001, 0.03, 0.0005) var presentation_pixel_size: float = 0.008
-@export_range(-0.03, 0.03, 0.001) var presentation_ground_offset: float = -0.004
-@export_range(-180.0, 180.0, 1.0) var presentation_yaw_degrees: float = 0.0
 
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var placeholder_mesh: MeshInstance3D = $PlaceholderMesh
-@onready var gather_sprite: Sprite3D = get_node_or_null("GatherSprite3D") as Sprite3D
+@onready var gather_sprite: Sprite3D = $GroundPresentation/VisualAnchor/GatherSprite3D
 
 var _player_in_range: bool = false
 var _depleted: bool = false
@@ -150,7 +147,8 @@ func _apply_authored_sprite() -> void:
 	if gather_sprite == null:
 		return
 	gather_sprite.texture = presentation_texture
-	gather_sprite.pixel_size = presentation_pixel_size
+	var presentation := $GroundPresentation as GroundPresentation
+	presentation.apply_profile()
 	# Ground pickups are decals/objects on the beach plane, never upright
 	# billboards. Keep them a few millimetres above the authored node origin
 	# to avoid z-fighting while still reading as physically on the sand.
@@ -162,10 +160,9 @@ func _apply_authored_sprite() -> void:
 	gather_sprite.transparent = true
 	gather_sprite.no_depth_test = false
 	gather_sprite.render_priority = -110
-	gather_sprite.position = Vector3(0.0, presentation_ground_offset, 0.0)
 	gather_sprite.rotation_degrees = Vector3(
 		-90.0,
-		presentation_yaw_degrees,
+		presentation.profile.ground_yaw_degrees,
 		0.0
 	)
 

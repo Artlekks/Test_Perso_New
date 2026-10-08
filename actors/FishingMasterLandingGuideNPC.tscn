@@ -2,7 +2,9 @@
 
 [ext_resource type="Script" path="res://scripts/mastery/fishing_master_landing_guide_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
+
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/merchant.tres" id="ground_profile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -16,9 +18,10 @@ process_mode = 3
 script = ExtResource("1_script")
 interaction_prompt = "K : Listen"
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
-offset = Vector2(0, 11)
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor"]
 billboard = 1
 texture_filter = 0
 sprite_frames = ExtResource("2_frames")
@@ -27,10 +30,6 @@ autoplay = "Stand_Interest"
 alpha_cut = 1
 flip_h = false
 alpha_scissor_threshold = 0.5
-
-[node name="ShadowAnchor" type="Node3D" parent="."]
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="StaticBody3D" parent="."]
 collision_layer = 1

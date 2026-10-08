@@ -3,9 +3,11 @@
 [ext_resource type="PackedScene" path="res://actors/BeachGatheringNode3D.tscn" id="1_base"]
 [ext_resource type="Texture2D" path="res://assets/sprites/gathering/shell.png" id="2_sprite"]
 
+[ext_resource type="Resource" path="res://data/presentation/shell.tres" id="ground_profile"]
+
 [node name="ShellGatherNode" instance=ExtResource("1_base")]
 material_id = &"shell"
 presentation_texture = ExtResource("2_sprite")
-presentation_pixel_size = 0.0050
-presentation_ground_offset = -0.004
-presentation_yaw_degrees = 22.0
+
+[node name="GroundPresentation" parent="." index="1"]
+profile = ExtResource("ground_profile")

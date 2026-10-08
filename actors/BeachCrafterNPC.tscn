@@ -2,12 +2,14 @@
 
 [ext_resource type="Script" uid="uid://c0x8617tl8m6m" path="res://scripts/beach_crafter_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="PackedScene" path="res://actors/BeachCraftingMenu.tscn" id="4_menu"]
 [ext_resource type="Script" uid="uid://dwx7agqmodt7o" path="res://scripts/quests/beach_crafter_request_source.gd" id="5_request_source"]
 [ext_resource type="Script" uid="uid://clc7s77ojh2eh" path="res://scripts/quests/material_count_request_objective.gd" id="6_material_objective"]
 [ext_resource type="Script" uid="uid://c5u7clg61553w" path="res://scripts/triple_triad/triple_triad_quest_reward_adapter.gd" id="7_reward_adapter"]
 [ext_resource type="PackedScene" path="res://actors/WorldRequestMarker.tscn" id="8_request_marker"]
+
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/merchant.tres" id="ground_profile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -20,19 +22,16 @@ radius = 0.48
 process_mode = 3
 script = ExtResource("1_script")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=1763916120]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
-offset = Vector2(0, 11)
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" unique_id=1763916120]
 billboard = 1
 alpha_cut = 1
 texture_filter = 0
 sprite_frames = ExtResource("2_frames")
 animation = &"Bag_Search"
 autoplay = "Bag_Search"
-
-[node name="ShadowAnchor" type="Node3D" parent="."]
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1538002036]
 

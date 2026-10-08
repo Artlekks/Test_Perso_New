@@ -29,7 +29,7 @@ const CHOICE_JOURNAL: StringName = &"journal"
 @export var card_opponent_id: StringName = &""
 @export var card_opponent_profile: Resource
 
-@onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var crafting_menu: BeachCraftingMenu = $BeachCraftingMenu

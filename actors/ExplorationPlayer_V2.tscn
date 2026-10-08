@@ -2,36 +2,15 @@
 
 [ext_resource type="Script" uid="uid://br1iuj7c02amn" path="res://scripts/exploration_player_v2.gd" id="1_kavdw"]
 [ext_resource type="SpriteFrames" uid="uid://dsfp4gvdeeesr" path="res://assets/animations/player_frames.tres" id="2_g2awu"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="4_m1dlh"]
 [ext_resource type="Script" uid="uid://qeewigw0xrig" path="res://scripts/sprite_director.gd" id="29_5cnmj"]
 [ext_resource type="Script" uid="uid://c1nagc5sqiw7x" path="res://scripts/screen_space_marker.gd" id="30_wma1f"]
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="32_ny21r"]
+
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/player.tres" id="ground_profile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jpo3w"]
 radius = 0.0972981
 height = 0.450552
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m1dlh"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 1)
-albedo_texture = ExtResource("4_m1dlh")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.38)
-albedo_texture = ExtResource("4_m1dlh")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_11v8u"]
-material = SubResource("StandardMaterial3D_blob")
-size = Vector2(0.35, 0.38)
 
 [node name="CharacterBody3D" type="CharacterBody3D" unique_id=363575400]
 collision_layer = 2
@@ -45,30 +24,18 @@ move_speed = 1.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.223204, 0)
 shape = SubResource("CapsuleShape3D_jpo3w")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=477032395]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0819474, 0)
-offset = Vector2(0, 11)
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" unique_id=477032395]
 billboard = 1
 texture_filter = 0
 sprite_frames = ExtResource("2_g2awu")
 animation = &"Fishing_Idle"
 
-[node name="ShadowAnchor" type="Node3D" parent="." unique_id=1856703931]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.021932095, 0, -0.03388018)
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" unique_id=1933139612 instance=ExtResource("32_ny21r")]
-process_mode = 3
-process_priority = 250
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.021932095, 0.006, -0.03388018)
-material_override = SubResource("StandardMaterial3D_m1dlh")
-mesh = SubResource("PlaneMesh_11v8u")
-width = 0.35000000000000003
-depth = 0.38
-opacity = 1.0
-
 [node name="SpriteDirector" type="Node" parent="." unique_id=1803301219 node_paths=PackedStringArray("sprite")]
 script = ExtResource("29_5cnmj")
-sprite = NodePath("../AnimatedSprite3D")
+sprite = NodePath("../GroundPresentation/VisualAnchor/AnimatedSprite3D")
 
 [node name="BaitSpawner" type="Marker3D" parent="." unique_id=175473048]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.554043, 0)

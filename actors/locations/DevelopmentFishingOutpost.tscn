@@ -28,7 +28,6 @@
 [ext_resource type="Texture2D" uid="uid://bg1hs3yossh0p" path="res://assets/ui/fishing_hud/DepthMeter.png" id="21_y5vpm"]
 [ext_resource type="Texture2D" uid="uid://d10owiins2pky" path="res://assets/ui/fishing_hud/DepthMeter_Arrow.png" id="22_f3f7x"]
 [ext_resource type="SpriteFrames" uid="uid://dsfp4gvdeeesr" path="res://assets/animations/player_frames.tres" id="22_t57di"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="23_30w2a"]
 [ext_resource type="Script" uid="uid://4pvfc0hnnyim" path="res://scripts/hud_controller.gd" id="24_0qupg"]
 [ext_resource type="Script" uid="uid://b0gkhniyqm6nk" path="res://scripts/encounter.gd" id="24_cybga"]
 [ext_resource type="Texture2D" uid="uid://d024dksf47073" path="res://assets/ui/fishing_hud/BottomSquare.png" id="24_gdibe"]
@@ -76,6 +75,8 @@
 [ext_resource type="Script" path="res://scripts/world/playable_location_scene.gd" id="location_script"]
 [ext_resource type="PackedScene" path="res://actors/locations/ManilloTraderNPC.tscn" id="manillo_scene"]
 
+[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="23_30w2a"]
+
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
 background_energy_multiplier = 0.0
@@ -119,28 +120,6 @@ albedo_color = Color(0.33489877, 0.20385107, 0.09913743, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_shore_blocker"]
 size = Vector3(19, 4, 0.35)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c734g"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.65)
-albedo_texture = ExtResource("23_30w2a")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.38)
-albedo_texture = ExtResource("23_30w2a")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_e3rjn"]
-material = SubResource("StandardMaterial3D_blob")
-size = Vector2(0.24, 0.28)
 
 [sub_resource type="Animation" id="Animation_lu0sf"]
 length = 0.001
@@ -278,10 +257,6 @@ camera = NodePath("../CameraRig/Camera3D")
 [node name="CharacterBody3D" parent="Player" unique_id=363575400 instance=ExtResource("1_43krk")]
 collision_layer = 1
 
-[node name="WorldBlobShadow" parent="Player/CharacterBody3D/ShadowAnchor" parent_id_path=PackedInt32Array(363575400, 1856703931) index="0" unique_id=1933139612]
-material_override = SubResource("StandardMaterial3D_c734g")
-mesh = SubResource("PlaneMesh_e3rjn")
-
 [node name="BaitSpawner" parent="Player/CharacterBody3D" index="4" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("14_0pfgo")
@@ -296,7 +271,7 @@ screen_offset = Vector2(0, -60)
 
 [node name="RodTipTracker" type="Marker3D" parent="Player/CharacterBody3D" unique_id=862572580 node_paths=PackedStringArray("source_sprite", "camera", "fallback_marker")]
 script = ExtResource("65_rod_tip_tracker")
-source_sprite = NodePath("../AnimatedSprite3D")
+source_sprite = NodePath("../GroundPresentation/VisualAnchor/AnimatedSprite3D")
 camera = NodePath("../../../CameraRig/Camera3D")
 fallback_marker = NodePath("../BaitSpawner")
 pixel_correction = Vector2(1, -22)
@@ -465,7 +440,7 @@ offset_top = 231.0
 offset_right = 142.0
 offset_bottom = 271.0
 script = ExtResource("21_f3f7x")
-source_sprite = NodePath("../../../Player/CharacterBody3D/AnimatedSprite3D")
+source_sprite = NodePath("../../../Player/CharacterBody3D/GroundPresentation/VisualAnchor/AnimatedSprite3D")
 caster = NodePath("../../../Game/Fishing/Caster")
 player_screen_notifier = NodePath("../../../Player/CharacterBody3D/RyuScreenNotifier")
 slide_in_time = 0.2
@@ -892,4 +867,12 @@ screen_transition = NodePath("../../../UI/FishingHud/ScreenTransition")
 [editable path="UI/FishingHud/PowerMeter"]
 
 [node name="ManilloTrader" parent="World" instance=ExtResource("manillo_scene")]
-position = Vector3(0.9, 0.063, 0.65)
+position = Vector3(0.9, 0, 0.65)
+
+[node name="BodyCollider" parent="World/ManilloTrader"]
+position = Vector3(0, 0.063, 0)
+
+[node name="InteractionArea" parent="World/ManilloTrader"]
+position = Vector3(0, 0.063, 0)
+
+[editable path="World/ManilloTrader"]

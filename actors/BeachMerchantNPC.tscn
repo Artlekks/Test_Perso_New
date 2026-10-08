@@ -2,31 +2,9 @@
 
 [ext_resource type="Script" uid="uid://d15mvk8kx347x" path="res://scripts/beach_merchant_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="Resource" path="res://data/economy/contexts/beach_merchant.tres" id="4_context"]
-[ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="5_dbuur"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_saqad"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.65)
-albedo_texture = ExtResource("5_dbuur")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
-render_priority = -120
-transparency = 1
-cull_mode = 2
-depth_draw_mode = 2
-shading_mode = 0
-albedo_color = Color(0, 0, 0, 0.65)
-albedo_texture = ExtResource("5_dbuur")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_e0yxf"]
-material = SubResource("StandardMaterial3D_blob")
-size = Vector2(0.56, 0.55)
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/merchant.tres" id="ground_profile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -40,27 +18,16 @@ process_mode = 3
 script = ExtResource("1_script")
 economy_context = ExtResource("4_context")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=800306091]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
-offset = Vector2(0, 11)
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" unique_id=800306091]
 billboard = 1
 alpha_cut = 1
 texture_filter = 0
 sprite_frames = ExtResource("2_frames")
 animation = &"Bag_Search"
 autoplay = "Bag_Search"
-
-[node name="ShadowAnchor" type="Node3D" parent="." unique_id=505045587]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.020133331, 0, -0.019970983)
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" unique_id=1710164015 instance=ExtResource("3_shadow")]
-process_mode = 3
-process_priority = 250
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.020133331, 0.006, -0.019970983)
-material_override = SubResource("StandardMaterial3D_saqad")
-mesh = SubResource("PlaneMesh_e0yxf")
-width = 0.56
-depth = 0.55
 
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=669549534]
 

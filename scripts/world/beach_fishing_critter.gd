@@ -14,7 +14,7 @@ class_name BeachFishingCritter
 @export_range(0.2, 4.0, 0.05) var walk_time_max: float = 1.30
 @export_range(0.15, 2.0, 0.05) var idle_turn_interval: float = 0.70
 
-@onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
 @onready var proximity_area: Area3D = $ProximityArea
 var _avoidance_cooldown: float = 0.0
 

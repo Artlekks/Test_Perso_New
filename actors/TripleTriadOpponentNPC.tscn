@@ -2,8 +2,10 @@
 
 [ext_resource type="Script" uid="uid://df2co5hd6wn06" path="res://scripts/triple_triad/triple_triad_opponent_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
-[ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="Resource" uid="uid://duxb3uhvvld7y" path="res://data/triple_triad/opponents/beach_trader.tres" id="4_profile"]
+
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/merchant.tres" id="ground_profile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -17,8 +19,10 @@ script = ExtResource("1_script")
 opponent_id = &"beach_trader"
 opponent_profile = ExtResource("4_profile")
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=370317126]
-offset = Vector2(0, 11)
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" unique_id=370317126]
 flip_h = true
 billboard = 1
 alpha_cut = 1
@@ -26,10 +30,6 @@ texture_filter = 0
 sprite_frames = ExtResource("2_frames")
 animation = &"Stand_Interest"
 autoplay = "Stand_Interest"
-
-[node name="ShadowAnchor" type="Node3D" parent="."]
-
-[node name="WorldBlobShadow" parent="ShadowAnchor" instance=ExtResource("3_shadow")]
 
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1090408400]
 

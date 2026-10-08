@@ -10,7 +10,7 @@ const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 @export var talk_animation: StringName = &"Bag_Search"
 @export_range(0.25, 1.5, 0.05) var max_interaction_distance: float = 0.68
 
-@onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 

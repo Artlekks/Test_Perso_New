@@ -14,7 +14,7 @@ const ACTION_OPEN_CARDS: StringName = &"open_cards"
 ## Legacy/fallback direct profile reference for older scenes.
 @export var opponent_profile: Resource
 
-@onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 
@@ -291,14 +291,4 @@ func _is_player_body(body: Node) -> bool:
 
 
 func _is_card_action(event: InputEvent) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return (
-		key_event.pressed
-		and not key_event.echo
-		and (
-			key_event.keycode == KEY_C
-			or key_event.physical_keycode == KEY_C
-		)
-	)
+	return event.is_action_pressed(&"world_card_challenge", false)

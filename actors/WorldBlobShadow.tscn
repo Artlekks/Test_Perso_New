@@ -1,20 +1,16 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/shared/Shadow.png" id="1_shadow"]
+[ext_resource type="Shader" path="res://assets/shaders/world_contact_shadow.gdshader" id="1_shadow"]
 [ext_resource type="Script" path="res://scripts/world/world_blob_shadow.gd" id="2_script"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blob"]
-transparency = 1
-cull_mode = 2
-shading_mode = 0
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blob"]
 render_priority = -120
-depth_draw_mode = 2
-albedo_color = Color(0, 0, 0, 0.65)
-albedo_texture = ExtResource("1_shadow")
+shader = ExtResource("1_shadow")
+shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_blob"]
-material = SubResource("StandardMaterial3D_blob")
-size = Vector2(0.26, 0.30)
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.30, 0.30)
 
 [node name="WorldBlobShadow" type="MeshInstance3D"]
 top_level = true

@@ -167,6 +167,17 @@ func run() -> void:
 	# The disposable profile earns the existing starter bundle; C must reach
 	# the real NPC conversation through the ordinary world input router.
 	var triad := game.get_node("UI/TripleTriadGame")
+	var locked_npc := game.get_node("World/TripleTriadOpponentNPC")
+	player.global_position = locked_npc.global_position + Vector3(0,0,0.35)
+	player.rotation.y = PI
+	await create_timer(0.6).timeout
+	var locked_events: Array[bool] = []
+	controls.action_requested.connect(func(event: InputEventAction):
+		if event.action == &"world_card_challenge": locked_events.append(event.pressed))
+	print("MOBILE C FRESH-SAVE EVIDENCE: unlocked=", triad.is_card_game_unlocked(), " monitoring=", locked_npc.interaction_area.monitoring, " availability=", triad.get_opponent_availability(locked_npc.opponent_id))
+	check(not triad.is_card_game_unlocked() and not locked_npc.interaction_area.monitoring, "fresh phone profile deliberately disables card NPC until starter acquisition")
+	await button("C")
+	check(locked_events == [true,false] and not session.dialogue_service.is_active() and not Input.is_action_pressed("world_card_challenge"), "fresh locked profile receives C normally without bypassing progression")
 	check(triad.claim_salvaged_card_case().success, "C QA uses canonical starter acquisition in disposable save")
 	var card_npc := game.get_node("World/TripleTriadOpponentNPC")
 	player.global_position = card_npc.global_position + Vector3(0, 0, 0.35)
@@ -265,7 +276,7 @@ func run() -> void:
 	controls.touch_begin(64, controls.buttons["A"].get_center())
 	controls.touch_begin(65, controls.buttons["B"].get_center())
 	await settle(2)
-	check(observed_keys.has(KEY_C) and Input.is_physical_key_pressed(KEY_C) and controls.stick_touch == 62 and Input.is_action_pressed("move_right"), "C/A/B and stick retain independent simultaneous ownership")
+	check(Input.is_action_pressed("world_card_challenge") and controls.stick_touch == 62 and Input.is_action_pressed("move_right"), "C named action/A/B and stick retain independent simultaneous ownership")
 	controls.touch_end(63)
 	check(controls.touches.has(64) and controls.touches.has(65) and controls.stick_touch == 62, "C release does not release other fingers")
 	controls.release_all()
@@ -277,6 +288,27 @@ func run() -> void:
 	controls.touch_end(41)
 	await settle(2)
 	check(not Input.is_action_pressed("enter_fishing"), "last button finger releases confirmation")
+	var card_events: Array[bool] = []
+	controls.action_requested.connect(func(event: InputEventAction):
+		if event.action == &"world_card_challenge": card_events.append(event.pressed))
+	controls.touch_begin(80, controls.buttons["C"].get_center())
+	controls.touch_begin(81, controls.buttons["C"].get_center())
+	controls.touch_end(80)
+	await settle(2)
+	check(card_events == [true] and Input.is_action_pressed("world_card_challenge"), "second C finger retains one named press")
+	controls.touch_end(81)
+	await settle(2)
+	check(card_events == [true, false] and not Input.is_action_pressed("world_card_challenge"), "last C finger emits exactly one release")
+	card_events.clear()
+	for finger in range(82, 86):
+		controls.touch_begin(finger, controls.buttons["C"].get_center())
+		controls.touch_end(finger)
+	await settle(2)
+	check(card_events == [true,false,true,false,true,false,true,false] and not Input.is_action_pressed("world_card_challenge"), "rapid C taps retain balanced named events")
+	controls.touch_begin(86, controls.buttons["C"].get_center())
+	root.focus_exited.emit()
+	await settle(2)
+	check(not Input.is_action_pressed("world_card_challenge") and controls.touches.is_empty(), "focus loss releases named C ownership")
 	controls.touch_begin(50, controls.stick_zone.get_center())
 	controls.touch_drag(50, controls.stick_origin + Vector2(controls.stick_radius * 3, 0))
 	await settle(2)

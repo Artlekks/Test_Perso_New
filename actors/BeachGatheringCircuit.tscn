@@ -13,37 +13,37 @@ script = ExtResource("1_script")
 circuit_id = &"ocean_2_beach_visit"
 
 [node name="Driftwood01" parent="." instance=ExtResource("2_drift")]
-position = Vector3(-3.8, 0.04, 0.62)
+position = Vector3(-3.8, 0, 0.62)
 
 [node name="Shell01" parent="." instance=ExtResource("3_shell")]
-position = Vector3(-3.1, 0.04, 0.24)
+position = Vector3(-3.1, 0, 0.24)
 
 [node name="Seaweed01" parent="." instance=ExtResource("6_weed")]
-position = Vector3(-2.65, 0.04, 0.72)
+position = Vector3(-2.65, 0, 0.72)
 
 [node name="Driftwood02" parent="." instance=ExtResource("2_drift")]
-position = Vector3(-1.7, 0.04, 0.22)
+position = Vector3(-1.7, 0, 0.22)
 
 [node name="IronScrap01" parent="." instance=ExtResource("5_iron")]
-position = Vector3(-1.25, 0.04, 0.72)
+position = Vector3(-1.25, 0, 0.72)
 
 [node name="SeaGlass01" parent="." instance=ExtResource("4_glass")]
-position = Vector3(0.25, 0.04, 0.68)
+position = Vector3(0.25, 0, 0.68)
 
 [node name="IronScrap02" parent="." instance=ExtResource("5_iron")]
-position = Vector3(0.85, 0.04, 0.22)
+position = Vector3(0.85, 0, 0.22)
 
 [node name="Shell02" parent="." instance=ExtResource("3_shell")]
-position = Vector3(1.4, 0.04, 0.68)
+position = Vector3(1.4, 0, 0.68)
 
 [node name="Driftwood03" parent="." instance=ExtResource("2_drift")]
-position = Vector3(2.7, 0.04, 0.24)
+position = Vector3(2.7, 0, 0.24)
 
 [node name="Seaweed02" parent="." instance=ExtResource("6_weed")]
-position = Vector3(3.45, 0.04, 0.65)
+position = Vector3(3.45, 0, 0.65)
 [node name="CoastalHerb01" parent="." instance=ExtResource("7_herb")]
-position = Vector3(-2.2, 0.04, 0.48)
+position = Vector3(-2.2, 0, 0.48)
 
 [node name="CoastalHerb02" parent="." instance=ExtResource("7_herb")]
-position = Vector3(2.05, 0.04, 0.43)
+position = Vector3(2.05, 0, 0.43)
 

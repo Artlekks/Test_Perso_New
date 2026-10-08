@@ -36,7 +36,7 @@ const CHOICE_JOURNAL: StringName = &"journal"
 @export_range(1.0, 60.0, 0.5) var smoke_interval_min: float = 7.0
 @export_range(1.0, 60.0, 0.5) var smoke_interval_max: float = 14.0
 
-@onready var animated_sprite: AnimatedSprite3D = $AnimatedSprite3D
+@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
 @onready var prompt_label: Label3D = $PromptLabel3D
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var card_maker_menu: FishingCardMakerMenu = $FishingCardMakerMenu

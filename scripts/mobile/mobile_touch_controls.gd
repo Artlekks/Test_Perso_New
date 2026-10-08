@@ -3,6 +3,7 @@ extends Control
 ## Input adapter only: the canonical keyboard event also activates InputMap
 ## actions and reaches existing raw-key menus/dialogue. Never send both events.
 signal key_requested(event: InputEventKey)
+signal action_requested(event: InputEventAction)
 @export var stick_radius: float = 56.0
 @export_range(0.05, 0.5, 0.01) var stick_deadzone: float = 0.18
 @export var mouse_testing: bool = true
@@ -61,6 +62,13 @@ func _process(_delta: float) -> void:
 			Input.action_press(STEERING[key], strength)
 
 func _emit_key(key: int, pressed: bool) -> void:
+	if key == KEY_C:
+		var action := InputEventAction.new()
+		action.action = &"world_card_challenge"
+		action.pressed = pressed
+		action.strength = 1.0 if pressed else 0.0
+		action_requested.emit(action)
+		return
 	if not pressed and MOVEMENT.has(key):
 		Input.action_release(MOVEMENT[key])
 		if STEERING.has(key):

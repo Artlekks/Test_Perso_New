@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_competition_interaction_3d.gd" id="1_competition"]
 
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
+[ext_resource type="Resource" path="res://data/presentation/regionalchampionshipregistrar.tres" id="ground_profile"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
 albedo_color = Color(0.28, 0.18, 0.11, 1)
 roughness = 0.9
@@ -71,3 +74,6 @@ monitorable = false
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 shape = SubResource("SphereShape3D_interaction")
+
+[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
+profile = ExtResource("ground_profile")
