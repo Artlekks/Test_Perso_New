@@ -8,6 +8,7 @@ const PLAN_PATH := "res://data/progression/playable_campaign_loop_v1.json"
 
 
 static func run() -> Dictionary:
+	DeveloperPlaytestService.force_normal_for_qa()
 	var report := {
 		"test_count": 0,
 		"passed_count": 0,

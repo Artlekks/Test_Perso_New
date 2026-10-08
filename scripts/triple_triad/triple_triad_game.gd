@@ -258,6 +258,10 @@ func _install_composition_result(result: Dictionary) -> void:
 
 	var services: Dictionary = result.get("services", {})
 	_collection_backend = services.get("collection_backend")
+	_world_gateway.developer_access = func(): return DeveloperPlaytestService.allows(&"cards")
+	var developer := DeveloperPlaytestService.current()
+	if developer != null and not developer.mode_changed.is_connected(_on_developer_mode_changed):
+		developer.mode_changed.connect(_on_developer_mode_changed)
 	_progression = services.get("progression")
 	_backend_errors.clear()
 	for raw_error in result.get("errors", []):
@@ -370,6 +374,19 @@ func get_collection_snapshot() -> Array:
 	if _runtime_state == null:
 		return []
 	return _runtime_state.get_collection_snapshot()
+
+func grant_development_card_loadout() -> Dictionary:
+	var developer := DeveloperPlaytestService.current()
+	if developer == null or not developer.can_mutate_test_save():
+		return {"success": false, "reason": "Isolated test save required"}
+	if not _backend_ready or _collection_backend == null or card_catalog == null:
+		return {"success": false, "reason": "Card backend unavailable"}
+	for index in range(mini(5, card_catalog.get_total_source_count())):
+		var card = card_catalog.get_card(index)
+		if card != null: _collection_backend.acquire_card(card, 1, true)
+	_invalidate_state_api("developer_loadout")
+	_publish_backend_state_change("developer_loadout")
+	return {"success": true, "reason": "Granted cards in isolated test save"}
 
 
 func get_card_snapshot(card_id: StringName) -> Dictionary:
@@ -603,6 +620,9 @@ func is_card_game_unlocked() -> bool:
 	if _world_gateway == null:
 		return false
 	return _world_gateway.is_card_game_unlocked()
+
+func _on_developer_mode_changed(_enabled: bool) -> void:
+	card_game_unlock_changed.emit(is_card_game_unlocked())
 
 
 func get_acquisition_snapshot() -> Dictionary:

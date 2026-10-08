@@ -375,6 +375,10 @@ func initialize() -> void:
 		return
 
 	_initialized = true
+	# Runtime access defaults OFF throughout the normal initialization/QA chain.
+	var developer = preload("res://scripts/developer_playtest_service.gd").new()
+	developer.name = "DeveloperPlaytestService"
+	add_child(developer)
 
 	if OS.is_debug_build():
 		_load_debug_qa_dependencies()
@@ -736,6 +740,7 @@ func initialize() -> void:
 		)
 
 	mastery_service = FishingMasteryServiceScript.new() as FishingMasteryService
+	mastery_service.developer_access = func(): return DeveloperPlaytestService.allows(&"mastery")
 	mastery_service.name = "FishingMasteryService"
 	add_child(mastery_service)
 	mastery_service.configure(

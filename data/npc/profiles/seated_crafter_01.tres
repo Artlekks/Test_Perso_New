@@ -1,0 +1,23 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/beach_crafter_frames.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/seated_npc.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+feet_from_bottom_px = 0.0
+shadow_width = 0.22
+shadow_depth = 0.22
+npc_id = &"seated_crafter_01"
+development_name = "Seated Crafter"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"Idle"
+directional_mode = 0
+available_directions = PackedStringArray("one view")
+role_tags = PackedStringArray("harbor_worker", "quest_placeholder")
+shadow_family = &"humanoid"
+movement_capability = false
+
+animation_feet_from_bottom_px = {}
+
+animation_feet_from_left_px = {}

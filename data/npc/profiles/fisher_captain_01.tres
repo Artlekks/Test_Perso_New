@@ -1,0 +1,22 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/fishing_captain_frames.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+feet_from_bottom_px = 5.0
+shadow_width = 0.22
+shadow_depth = 0.22
+directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+npc_id = &"fisher_captain_01"
+development_name = "Fishing Captain"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"idle_se"
+directional_mode = 5
+available_directions = PackedStringArray("SE", "SW", "NE", "NW")
+role_tags = PackedStringArray("fisher", "card_opponent")
+shadow_family = &"humanoid"
+movement_capability = true
+
+default_directional_pose = "idle"

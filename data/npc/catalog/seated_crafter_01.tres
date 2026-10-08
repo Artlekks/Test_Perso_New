@@ -1,0 +1,10 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_catalog_entry.gd" id="script"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_seated_crafter_01.tscn" id="scene"]
+[ext_resource type="Resource" path="res://data/npc/profiles/seated_crafter_01.tres" id="profile"]
+[resource]
+script = ExtResource("script")
+id = &"seated_crafter_01"
+scene = ExtResource("scene")
+profile = ExtResource("profile")
+development_note = "31 authored seated frames; no walk/back art. Existing 5 FPS timing retained."

@@ -45,20 +45,21 @@ func get_availability(
 			"reason": "Opponent disabled.",
 			"required_player_rank": profile.required_player_rank,
 		}
-	if profile.requires_card_game_unlocked and not bool(context.get("card_game_unlocked", true)):
+	var developer := bool(context.get("developer_access", false))
+	if profile.requires_card_game_unlocked and not bool(context.get("card_game_unlocked", true)) and not developer:
 		return {
 			"available": false,
 			"reason": "Find a card collection first.",
 			"required_player_rank": profile.required_player_rank,
 		}
-	if clean_rank < profile.required_player_rank:
+	if clean_rank < profile.required_player_rank and not developer:
 		return {
 			"available": false,
 			"reason": "Requires Duel Rank %d." % profile.required_player_rank,
 			"required_player_rank": profile.required_player_rank,
 		}
 	var total_wins: int = maxi(0, int(context.get("total_player_wins", 0)))
-	if total_wins < profile.required_total_player_wins:
+	if total_wins < profile.required_total_player_wins and not developer:
 		return {
 			"available": false,
 			"reason": "Requires %d card-duel wins." % profile.required_total_player_wins,
@@ -72,7 +73,7 @@ func get_availability(
 			beaten_ids[str(raw_id)] = true
 	for raw_required_id in profile.unlock_after_opponent_ids:
 		var required_id: String = str(raw_required_id)
-		if not beaten_ids.has(required_id):
+		if not beaten_ids.has(required_id) and not developer:
 			var prerequisite: TripleTriadOpponentProfile = get_opponent(StringName(required_id))
 			var prerequisite_name: String = required_id
 			if prerequisite != null:

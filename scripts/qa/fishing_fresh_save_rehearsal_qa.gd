@@ -44,6 +44,7 @@ const MAIN_SCENE_PATH := "res://actors/FishingTestScene_V2.tscn"
 
 
 static func run(session: Node) -> Dictionary:
+	DeveloperPlaytestService.force_normal_for_qa()
 	var report := {
 		"test_count": 0,
 		"passed_count": 0,

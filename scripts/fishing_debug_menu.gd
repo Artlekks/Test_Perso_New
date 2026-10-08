@@ -72,10 +72,34 @@ var _fish_index: int = 0
 var _economy_telemetry: Node = null
 var _telemetry_button: Button
 var _telemetry_status := ""
+var _playtest_page := false
+var _playtest_row := 0
+var _travel_index := 0
+var _playtest_panel: VBoxContainer
+var _playtest_rows: Array[Label] = []
+var _playtest_status := "Access is transient; loadouts require isolated mobile save."
 
 
 func _ready() -> void:
 	root.hide()
+	var tab := Button.new()
+	tab.text = "PLAYTEST / FISHING QA (START / Space)"
+	tab.position = Vector2(28, 43)
+	tab.size = Vector2(564, 26)
+	tab.focus_mode = Control.FOCUS_NONE
+	tab.pressed.connect(_toggle_playtest_page)
+	$Root/Panel.add_child(tab)
+	_playtest_panel = VBoxContainer.new()
+	_playtest_panel.position = Vector2(28, 74)
+	_playtest_panel.size = Vector2(564, 430)
+	_playtest_panel.add_theme_constant_override("separation", 18)
+	for index in range(5):
+		var label := Label.new()
+		label.add_theme_font_size_override("font_size", 18)
+		_playtest_rows.append(label)
+		_playtest_panel.add_child(label)
+	$Root/Panel.add_child(_playtest_panel)
+	_playtest_panel.hide()
 	_telemetry_button = Button.new()
 	_telemetry_button.position = Vector2(28, 372)
 	_telemetry_button.size = Vector2(564, 28)
@@ -153,6 +177,55 @@ func open_menu() -> bool:
 func close_menu() -> void:
 	root.hide()
 
+func _toggle_playtest_page() -> void:
+	_playtest_page = not _playtest_page
+	for child in $Root/Panel.get_children():
+		if child == _playtest_panel or child is Button or child.name in ["TitleLabel", "DividerLabel"]: continue
+		child.visible = not _playtest_page
+	_telemetry_button.visible = not _playtest_page
+	_playtest_panel.visible = _playtest_page
+	_refresh()
+
+func _refresh_playtest() -> void:
+	var developer := DeveloperPlaytestService.current()
+	var locations := get_node_or_null("/root/WorldLocations")
+	var authored: Array = locations.get_all_locations() if locations != null else []
+	_travel_index = clampi(_travel_index, 0, maxi(0, authored.size() - 1))
+	var destination: String = authored[_travel_index].display_name if not authored.is_empty() else "No authored locations"
+	var rows := ["Developer Mode: %s | Access: ALL" % ("ON" if developer != null and developer.enabled else "OFF"), "Travel: < %s >  (A/K to go)" % destination, "Grant Fishing Loadout", "Grant Card Loadout", "Grant Economy Wallet"]
+	for index in range(rows.size()): _playtest_rows[index].text = ("> " if index == _playtest_row else "  ") + rows[index]
+	status_label.visible = true
+	status_label.text = _playtest_status
+
+func _playtest_change(step: int) -> void:
+	if _playtest_row == 0:
+		var developer := DeveloperPlaytestService.current()
+		if developer != null: developer.set_enabled(not developer.enabled)
+	elif _playtest_row == 1:
+		var locations := get_node_or_null("/root/WorldLocations")
+		if locations != null and not locations.get_all_locations().is_empty():
+			_travel_index = posmod(_travel_index + step, locations.get_all_locations().size())
+
+func _playtest_activate() -> void:
+	var developer := DeveloperPlaytestService.current()
+	if developer == null: return
+	if _playtest_row == 0: developer.set_enabled(not developer.enabled)
+	elif _playtest_row == 1:
+		if not developer.enabled:
+			_playtest_status = "Enable DEV for the authored location selector."
+			return
+		var locations := get_node_or_null("/root/WorldLocations")
+		var authored: Array = locations.get_all_locations()
+		if authored.is_empty(): return
+		# Release the exploration debug modal before normal travel validates pause
+		# and transfers scene ownership. Never teleport transforms around it.
+		get_parent().close(false)
+		var result: Dictionary = locations.request_travel(authored[_travel_index].location_id)
+		_playtest_status = str(result.reason)
+	elif _playtest_row in [2, 3, 4]:
+		var result := developer.grant_loadout(["fishing", "cards", "wallet"][_playtest_row - 2])
+		_playtest_status = str(result.reason)
+
 
 func is_open() -> bool:
 	return root.visible
@@ -161,6 +234,19 @@ func is_open() -> bool:
 ## Returns true when the menu requests to close.
 func handle_input(event: InputEvent) -> bool:
 	if not is_open():
+		return false
+	if event is InputEventKey and event.echo: return false
+	if _is_key_press(event, KEY_SPACE):
+		_toggle_playtest_page()
+		return false
+	if _playtest_page:
+		if event.is_action_pressed("cancel_fishing"): return true
+		if event.is_action_pressed("ui_up") or event.is_action_pressed("move_forward"): _playtest_row = posmod(_playtest_row - 1, 5)
+		elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_back"): _playtest_row = posmod(_playtest_row + 1, 5)
+		elif event.is_action_pressed("ui_left") or event.is_action_pressed("ds_left"): _playtest_change(-1)
+		elif event.is_action_pressed("ui_right") or event.is_action_pressed("ds_right"): _playtest_change(1)
+		elif event.is_action_pressed("enter_fishing"): _playtest_activate()
+		_refresh_playtest()
 		return false
 	if _selected_row == Row.TELEMETRY and event is InputEventKey and event.echo:
 		return false
@@ -463,6 +549,9 @@ func _sync_spot_from_runtime() -> void:
 
 
 func _refresh() -> void:
+	if _playtest_page:
+		_refresh_playtest()
+		return
 	_update_telemetry_button()
 	if _loadout == null or _settings == null:
 		return

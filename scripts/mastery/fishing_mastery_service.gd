@@ -8,6 +8,8 @@ const FLAG_PREFIX := "mastery.technique."
 
 var _catalog: FishingMasteryTechniqueCatalog = null
 var _unlock_state: FishingUnlockState = null
+## Assigned only to the live session service; standalone progression QA is pure.
+var developer_access: Callable
 
 
 func configure(
@@ -45,7 +47,7 @@ func can_learn(
 		}
 	for raw_prereq in technique.prerequisite_ids:
 		var prereq := StringName(str(raw_prereq))
-		if not has_technique(prereq):
+		if not has_technique(prereq) and not (developer_access.is_valid() and developer_access.call()):
 			return {
 				"can_learn": false,
 				"reason": "missing_prerequisite",

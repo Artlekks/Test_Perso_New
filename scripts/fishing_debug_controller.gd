@@ -31,6 +31,22 @@ var _unlock_state: FishingUnlockState = null
 var _reward_service: FishingRewardService = null
 var _session_modifier_service = null
 var _open: bool = false
+var _exploration_pause_owned := false
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+func _input(event: InputEvent) -> void:
+	# The same F10 menu is also a development entry point in exploration.
+	# Pausing only this modal prevents world K/C/movement from competing with it.
+	# The existing AIM debug input/restoration path remains in Fishing.
+	if _game_mode == null or not _game_mode.is_exploration(): return
+	if is_toggle_event(event):
+		if not get_tree().paused or _exploration_pause_owned:
+			toggle(true)
+			get_viewport().set_input_as_handled()
+	elif _exploration_pause_owned and route_open_input(event):
+		get_viewport().set_input_as_handled()
 
 
 func configure(
@@ -138,7 +154,10 @@ func open() -> bool:
 		return false
 
 	_open = true
-	if _aim != null and _aim.has_method("stop"):
+	if _game_mode != null and _game_mode.is_exploration():
+		_exploration_pause_owned = true
+		get_tree().paused = true
+	if _game_mode != null and _game_mode.is_fishing() and _aim != null and _aim.has_method("stop"):
 		_aim.stop()
 	return true
 
@@ -149,10 +168,14 @@ func close(resume_aim: bool) -> void:
 
 	var was_open := _open
 	_open = false
+	if _exploration_pause_owned:
+		_exploration_pause_owned = false
+		get_tree().paused = false
 
 	if (
 		was_open
 		and resume_aim
+		and _game_mode != null and _game_mode.is_fishing()
 		and _aim != null
 		and _aim.has_method("resume")
 	):

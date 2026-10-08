@@ -9,6 +9,8 @@ const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
 @export var economy_body_font_size: int = 12
 @export var economy_small_font_size: int = 10
 @export var isolated_playtest_save: bool = true
+@export var developer_playtest_default_enabled: bool = true
+var _developer_mode_initialized := false
 var gameplay_viewport: SubViewport
 var game: Node
 var controls: Control
@@ -136,6 +138,19 @@ func _replace_game(packed: PackedScene) -> void:
 	# anchors first, rather than moving those destinations after initialization.
 	_adapt_mobile_presentation()
 	gameplay_viewport.add_child(game)
+	_initialize_developer_mode.call_deferred()
+	_bind_session_layers()
+	_adapt_mobile_presentation()
+
+func _initialize_developer_mode() -> void:
+	if _developer_mode_initialized: return
+	var developer := DeveloperPlaytestService.current()
+	if developer == null:
+		get_tree().process_frame.connect(_initialize_developer_mode, CONNECT_ONE_SHOT)
+		return
+	_developer_mode_initialized = true
+	developer.authorize_isolated_mobile_save(isolated_playtest_save)
+	developer.set_enabled(developer_playtest_default_enabled)
 	_bind_session_layers()
 	_adapt_mobile_presentation()
 
@@ -168,6 +183,9 @@ func _adapt_mobile_presentation() -> void:
 		if is_instance_valid(layer):
 			layers.append(layer)
 	for layer in layers:
+		if layer.name == "DeveloperIndicator":
+			layer.offset = Vector2(0, gameplay_viewport.size.y - 24)
+			continue
 		if layer is DialogueView or layer.name in ["ExplorationHud", "FishingHud", "PowerMeter", "FishingInfoView"]:
 			continue
 		if not layer.has_meta("mobile_original_offset"):

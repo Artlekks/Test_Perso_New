@@ -101,6 +101,10 @@ func _update_render_priorities() -> void:
 
 
 func _expand_actor_footprint(actor: Node3D) -> void:
+	# Catalogue families already own their complete footprint, including ambient
+	# sensor-only policy. Legacy presentation fallback must not override them.
+	if actor.has_meta("profile_owned_collision"):
+		return
 	# Every instance keeps its authored crab-sized body, including renamed ones.
 	if actor is BeachFishingCritter:
 		return

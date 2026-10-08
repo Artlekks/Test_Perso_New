@@ -62,6 +62,7 @@ func browser_touch(event: InputEventScreenTouch) -> void:
 func run() -> void:
 	print("WEB PREBOOT ROUTES: ", load("res://data/world/locations/beach.tres").destinations)
 	var shell = load("res://actors/mobile/MobilePortraitHarness.tscn").instantiate()
+	shell.developer_playtest_default_enabled = false
 	shell.isolated_playtest_save = false
 	root.add_child(shell)
 	current_scene = shell
@@ -83,6 +84,33 @@ func run() -> void:
 	check(not locations.get_access_snapshot(&"wyndia_ocean_outpost", blank).unlocked and locations.get_unlocked_destinations(&"beach", blank).is_empty(), "Web blank progression never gains free travel")
 	blank.free()
 	var triad := game.get_node("UI/TripleTriadGame")
+	var developer := DeveloperPlaytestService.current()
+	var initial_monitoring: bool = game.get_node("World/TripleTriadOpponentNPC").interaction_area.monitoring
+	developer.set_enabled(true)
+	await settle(0.8)
+	check(developer.indicator.visible and triad.is_card_game_unlocked(), "Web DEV indicator and transient card gate")
+	check(locations.get_access_snapshot(&"lyp_lake_outpost").unlocked, "Web DEV grants authored location access")
+	var dev_npc := game.get_node("World/TripleTriadOpponentNPC")
+	var dev_player := game.get_node("Player/CharacterBody3D")
+	dev_player.global_position = dev_npc.global_position + Vector3(0,0,0.35)
+	dev_player.rotation.y = PI
+	await settle(0.8)
+	await touch(shell, "C")
+	check(session.dialogue_service.is_active(), "Web actual DOM touch C enters DEV card conversation")
+	if session.dialogue_service.is_active():
+		await touch(shell, "A")
+		check(triad.is_open(), "Web DEV confirms actual card game")
+		triad.close_game()
+	await settle()
+	await touch(shell, "SELECT")
+	var debug_menu = game.get_node("Game/Fishing").debug_controller.debug_menu
+	check(debug_menu.is_open(), "Web SELECT opens same F10 menu")
+	await touch(shell, "SELECT")
+	check(not debug_menu.is_open(), "Web SELECT closes same F10 menu")
+	developer.set_enabled(false)
+	await settle(0.8)
+	card_action_events.clear()
+	check(dev_npc.interaction_area.monitoring == initial_monitoring, "Web OFF restores underlying normal campaign interaction state")
 	var acquisition: Dictionary = triad.claim_salvaged_card_case()
 	check(acquisition.success or acquisition.reason == "already_claimed", "Web test uses authored starter acquisition")
 	var npc := game.get_node("World/TripleTriadOpponentNPC")

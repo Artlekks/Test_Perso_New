@@ -1,0 +1,28 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_critter_frames.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/ambient_creature.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+category = 1
+feet_from_bottom_px = 7.0
+pixel_size = 0.012
+shadow_width = 0.10
+shadow_depth = 0.10
+shadow_opacity = 0.60
+npc_id = &"creature_red_01"
+development_name = "Red Small Creature"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"red_s"
+directional_mode = 5
+available_directions = PackedStringArray("S", "SE", "E", "NE", "N")
+role_tags = PackedStringArray("ambient_creature")
+shadow_family = &"small_creature"
+movement_capability = false
+
+directional_animation_prefixes = {"idle": "red_"}
+
+directional_aliases = {}
+
+default_directional_pose = "idle"

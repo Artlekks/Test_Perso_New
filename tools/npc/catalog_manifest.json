@@ -1,0 +1,19 @@
+{
+  "colliders": {
+    "humanoid_standard": [0.18, 0.52, true],
+    "humanoid_heavy": [0.24, 0.56, true],
+    "humanoid_small": [0.14, 0.42, true],
+    "seated_npc": [0.22, 0.44, true],
+    "ambient_creature": [0.08, 0.16, false],
+    "ground_prop_small": [0.12, 0.24, false]
+  },
+  "entries": [
+    {"id":"merchant_heavy_01","name":"Heavy Merchant","existing_frames":"assets/animations/beach_merchant_frames.tres","grounding_template":"data/presentation/merchant.tres","default_animation":"Bag_Search","mode":0,"directions":["one view"],"collider":"humanoid_heavy","tags":["merchant","special_vendor"],"note":"Two source strips, one view with bag/interest states. Special external role assignments UNCONFIRMED."},
+    {"id":"seated_crafter_01","name":"Seated Crafter","existing_frames":"assets/animations/beach_crafter_frames.tres","grounding_template":"data/presentation/merchant.tres","profile_overrides":{"animation_feet_from_bottom_px":"{}","animation_feet_from_left_px":"{}"},"default_animation":"Idle","mode":0,"directions":["one view"],"collider":"seated_npc","tags":["harbor_worker","quest_placeholder"],"note":"31 authored seated frames; no walk/back art. Existing 5 FPS timing retained."},
+    {"id":"smoking_traveler_01","name":"Smoking Traveler","existing_frames":"assets/animations/fishing_master_still_water_frames.tres","grounding_template":"data/presentation/still_water.tres","default_animation":"Idle","mode":0,"directions":["one view"],"collider":"seated_npc","tags":["traveler","quest_placeholder"],"note":"26 authored frames; existing 5 FPS retained. Fishing Master special reference assignment UNCONFIRMED."},
+    {"id":"fisher_captain_01","name":"Fishing Captain","existing_frames":"assets/animations/fishing_captain_frames.tres","grounding_template":"data/presentation/card_maker.tres","profile_overrides":{"default_directional_pose":"\"idle\""},"default_animation":"idle_se","mode":5,"directions":["SE","SW","NE","NW"],"collider":"humanoid_standard","tags":["fisher","card_opponent"],"movement":true,"note":"Four diagonal idle/walk views; camera-relative nearest-view fallback. Smoke deliberately unused due to source alignment issues."},
+    {"id":"crab_small_01","name":"Small Crab","existing_frames":"assets/animations/beach_fishing_crab_frames.tres","grounding_template":"data/presentation/crab.tres","profile_overrides":{"default_directional_pose":"\"idle\""},"default_animation":"idle_s","mode":4,"directions":["S","SE","E","NE","N","NW","W","SW"],"collider":"ambient_creature","shadow":"small_creature","tags":["ambient_creature"],"note":"Eight idle views; NW/SW walk views plus production explicit NE/SE mirrors. No hard floor body."},
+    {"id":"creature_green_01","name":"Green Small Creature","existing_frames":"assets/animations/beach_fishing_critter_frames.tres","grounding_template":"data/presentation/crab.tres","profile_overrides":{"directional_animation_prefixes":"{\"idle\": \"green_\"}","directional_aliases":"{}","default_directional_pose":"\"idle\""},"default_animation":"green_s","mode":5,"directions":["S","SE","E","NE","N"],"collider":"ambient_creature","shadow":"small_creature","tags":["ambient_creature"],"note":"Five authored views; west art absent. Nearest-view fallback only; no invented mirrored artwork."},
+    {"id":"creature_red_01","name":"Red Small Creature","existing_frames":"assets/animations/beach_fishing_critter_frames.tres","grounding_template":"data/presentation/crab.tres","profile_overrides":{"directional_animation_prefixes":"{\"idle\": \"red_\"}","directional_aliases":"{}","default_directional_pose":"\"idle\""},"default_animation":"red_s","mode":5,"directions":["S","SE","E","NE","N"],"collider":"ambient_creature","shadow":"small_creature","tags":["ambient_creature"],"note":"Five authored views; west art absent. Nearest-view fallback only."}
+  ]
+}

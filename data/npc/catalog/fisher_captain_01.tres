@@ -1,0 +1,10 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_catalog_entry.gd" id="script"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_fisher_captain_01.tscn" id="scene"]
+[ext_resource type="Resource" path="res://data/npc/profiles/fisher_captain_01.tres" id="profile"]
+[resource]
+script = ExtResource("script")
+id = &"fisher_captain_01"
+scene = ExtResource("scene")
+profile = ExtResource("profile")
+development_note = "Four diagonal idle/walk views; camera-relative nearest-view fallback. Smoke deliberately unused due to source alignment issues."

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_catalog.gd" id="script"]
+[ext_resource type="Resource" path="res://data/npc/catalog/merchant_heavy_01.tres" id="merchant_heavy_01"]
+[ext_resource type="Resource" path="res://data/npc/catalog/seated_crafter_01.tres" id="seated_crafter_01"]
+[ext_resource type="Resource" path="res://data/npc/catalog/smoking_traveler_01.tres" id="smoking_traveler_01"]
+[ext_resource type="Resource" path="res://data/npc/catalog/fisher_captain_01.tres" id="fisher_captain_01"]
+[ext_resource type="Resource" path="res://data/npc/catalog/crab_small_01.tres" id="crab_small_01"]
+[ext_resource type="Resource" path="res://data/npc/catalog/creature_green_01.tres" id="creature_green_01"]
+[ext_resource type="Resource" path="res://data/npc/catalog/creature_red_01.tres" id="creature_red_01"]
+[ext_resource type="Script" path="res://scripts/npc/npc_catalog_entry.gd" id="entry_script"]
+[resource]
+script = ExtResource("script")
+entries = Array[ExtResource("entry_script")]([ExtResource("merchant_heavy_01"), ExtResource("seated_crafter_01"), ExtResource("smoking_traveler_01"), ExtResource("fisher_captain_01"), ExtResource("crab_small_01"), ExtResource("creature_green_01"), ExtResource("creature_red_01")])

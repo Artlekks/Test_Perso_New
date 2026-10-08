@@ -25,6 +25,7 @@ var _rng: RandomNumberGenerator = null
 var _fallback_player_rank: int = 1
 var _backend_ready: bool = false
 var _fishing_salvage_bridge = null
+var developer_access: Callable
 
 
 func initialize(
@@ -64,7 +65,7 @@ func set_fishing_salvage_bridge(bridge) -> void:
 func is_card_game_unlocked() -> bool:
 	if _acquisition_service == null:
 		return false
-	return bool(_acquisition_service.call("is_card_game_unlocked"))
+	return bool(_acquisition_service.call("is_card_game_unlocked")) or (developer_access.is_valid() and developer_access.call())
 
 
 func get_acquisition_snapshot() -> Dictionary:
@@ -647,6 +648,7 @@ func _opponent_availability_context() -> Dictionary:
 			)
 	return {
 		"card_game_unlocked": is_card_game_unlocked(),
+		"developer_access": developer_access.is_valid() and developer_access.call(),
 		"beaten_opponent_ids": beaten_ids,
 		"total_player_wins": total_wins,
 	}

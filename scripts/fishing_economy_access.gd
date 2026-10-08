@@ -310,7 +310,7 @@ func get_buy_entries() -> Array[Dictionary]:
 		var offer: ShopOfferScript = offer_value as ShopOfferScript
 		if offer == null or not _shop_allowed(offer.shop_id):
 			continue
-		var status: Dictionary = economy_service.evaluate_purchase(offer, 1, _availability)
+		var status: Dictionary = economy_service.evaluate_purchase(offer, 1, _runtime_availability(offer))
 		var live_price: int = int(status.get("unit_price_zenny", 0))
 		var owned_count: int = 0
 		if inventory != null:
@@ -364,7 +364,7 @@ func buy_one(offer_id: StringName) -> Dictionary:
 		return _failure("unknown_offer")
 	if not _shop_allowed(offer.shop_id):
 		return _failure("shop_not_available")
-	var result: Dictionary = economy_service.purchase_offer(offer, 1, _availability)
+	var result: Dictionary = economy_service.purchase_offer(offer, 1, _runtime_availability(offer))
 	transaction_completed.emit(result.duplicate(true))
 	changed.emit()
 	return result
@@ -483,6 +483,14 @@ func _format_trade_costs(costs: Dictionary) -> String:
 
 func _shop_allowed(shop_id: StringName) -> bool:
 	return _full_catalog_access or _allowed_shop_ids.has(str(shop_id))
+
+func _runtime_availability(offer) -> Dictionary:
+	var result := _availability.duplicate(true)
+	# Override the progression tag only after provider/context scope validation.
+	# Prices, authored IDs, unique ownership, costs and consumption stay backend-owned.
+	if DeveloperPlaytestService.allows(&"economy") and _shop_allowed(offer.shop_id) and offer.availability_tag != &"":
+		result[offer.availability_tag] = true
+	return result
 
 
 func _trade_shop_allowed(shop_id: StringName) -> bool:

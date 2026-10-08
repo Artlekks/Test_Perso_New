@@ -1,0 +1,12 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="PackedScene" path="res://actors/npc/NPCActor.tscn" id="base"]
+[ext_resource type="Resource" path="res://data/npc/profiles/fisher_captain_01.tres" id="profile"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/fishing_captain_frames.tres" id="frames"]
+[node name="NPC_fisher_captain_01" instance=ExtResource("base")]
+visual_profile = ExtResource("profile")
+[node name="GroundPresentation" parent="." index="1"]
+profile = ExtResource("profile")
+[node name="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" index="0"]
+sprite_frames = ExtResource("frames")
+animation = &"idle_se"
+[editable path="GroundPresentation"]

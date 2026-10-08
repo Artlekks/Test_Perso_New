@@ -17,6 +17,16 @@ var transitioning := false
 var _progress_inventory: FishingInventory
 var _unlocks: FishingUnlockState
 
+func get_all_locations() -> Array:
+	return LOCATIONS.duplicate()
+
+func configure_developer_access(service: DeveloperPlaytestService) -> void:
+	if not service.mode_changed.is_connected(_on_developer_mode_changed):
+		service.mode_changed.connect(_on_developer_mode_changed)
+
+func _on_developer_mode_changed(_enabled: bool) -> void:
+	access_changed.emit()
+
 func configure_progression(inventory: FishingInventory, unlocks: FishingUnlockState) -> void:
 	if is_instance_valid(_progress_inventory) and _progress_inventory.changed.is_connected(_refresh_unlocks):
 		_progress_inventory.changed.disconnect(_refresh_unlocks)
@@ -47,6 +57,10 @@ func get_access_snapshot(id: StringName, inventory = null) -> Dictionary:
 	var location := get_location(id)
 	if location == null:
 		return {"unlocked": false, "reason": "unknown_location"}
+	# Explicit inventory snapshots are progression queries, including the flag
+	# discovery loop above. A runtime access override must never grant flags.
+	if inventory == null and DeveloperPlaytestService.allows(&"travel"):
+		return {"location_id": id, "unlocked": true, "missing_item_ids": PackedStringArray(), "unlock_hint": location.unlock_hint, "developer_access": true}
 	if inventory == null and is_instance_valid(_unlocks) and location.unlock_flag != &"" and _unlocks.has_flag(location.unlock_flag):
 		return {"location_id": id, "unlocked": true, "missing_item_ids": PackedStringArray(), "unlock_hint": location.unlock_hint}
 	if inventory == null:
@@ -96,7 +110,12 @@ func get_unlocked_destinations(location_id: StringName = &"", inventory = null) 
 	var location = current_location if location_id == &"" else get_location(location_id)
 	if location == null:
 		return destinations
-	for destination in location.destinations:
+	var candidates: PackedStringArray = location.destinations
+	if inventory == null and DeveloperPlaytestService.allows(&"travel"):
+		candidates = PackedStringArray()
+		for authored in LOCATIONS:
+			if authored.location_id != location.location_id: candidates.append(String(authored.location_id))
+	for destination in candidates:
 		var target := get_location(StringName(destination))
 		if target != null and not target.scene_path.is_empty() and not destinations.has(destination) and get_access_snapshot(target.location_id, inventory).get("unlocked", false):
 			destinations.append(destination)
@@ -137,7 +156,10 @@ func get_reachable_world_data(inventory = null) -> Dictionary:
 func request_travel(destination: StringName) -> Dictionary:
 	if transitioning or current_location == null or get_tree().paused:
 		return {"success": false, "reason": "busy"}
-	if not current_location.destinations.has(String(destination)):
+	var target := get_location(destination)
+	if target == null or target.scene_path.is_empty() or not ResourceLoader.exists(target.scene_path):
+		return {"success": false, "reason": "scene_unavailable"}
+	if not current_location.destinations.has(String(destination)) and not DeveloperPlaytestService.allows(&"travel"):
 		return {"success": false, "reason": "no_route"}
 	if not get_access_snapshot(destination).get("unlocked", false):
 		return {"success": false, "reason": "destination_locked"}

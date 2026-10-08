@@ -1,0 +1,26 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://assets/animations/beach_fishing_crab_frames.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/ambient_creature.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+category = 1
+feet_from_bottom_px = 7.0
+pixel_size = 0.012
+shadow_width = 0.10
+shadow_depth = 0.10
+shadow_opacity = 0.60
+directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+directional_aliases = {"walk": {"NE": {"animation": "walk_nw", "flip_h": true}, "SE": {"animation": "walk_sw", "flip_h": true}}}
+npc_id = &"crab_small_01"
+development_name = "Small Crab"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"idle_s"
+directional_mode = 4
+available_directions = PackedStringArray("S", "SE", "E", "NE", "N", "NW", "W", "SW")
+role_tags = PackedStringArray("ambient_creature")
+shadow_family = &"small_creature"
+movement_capability = false
+
+default_directional_pose = "idle"

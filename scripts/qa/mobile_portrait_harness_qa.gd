@@ -60,6 +60,7 @@ func run() -> void:
 	current_scene = null
 	desktop_fixture.free()
 	harness = Shell.instantiate()
+	harness.developer_playtest_default_enabled = false
 	harness.isolated_playtest_save = false
 	root.add_child(harness)
 	current_scene = harness
@@ -261,7 +262,8 @@ func run() -> void:
 	# Reserved SELECT produces no key; L/R retain existing Q/E behavior.
 	var before := observed_keys.size()
 	await button("SELECT")
-	check(observed_keys.size() == before, "SELECT explicitly reserved")
+	check(observed_keys.size() > before and observed_keys.has(KEY_F10), "SELECT uses canonical F10")
+	await button("SELECT")
 	await button("L")
 	await button("R")
 	check(observed_keys.has(KEY_Q) and observed_keys.has(KEY_E), "shoulders use existing Q/E keys")

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_collider_profile.gd" id="script"]
+[resource]
+script = ExtResource("script")
+family = &"humanoid_small"
+radius = 0.14
+height = 0.42
+hard_blocking = true

@@ -7,7 +7,7 @@ signal action_requested(event: InputEventAction)
 @export var stick_radius: float = 56.0
 @export_range(0.05, 0.5, 0.01) var stick_deadzone: float = 0.18
 @export var mouse_testing: bool = true
-const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "C": KEY_C, "MENU": KEY_J, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
+const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "C": KEY_C, "MENU": KEY_J, "SELECT": KEY_F10, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
 const MOVEMENT := {KEY_A: &"move_left", KEY_D: &"move_right", KEY_W: &"move_forward", KEY_S: &"move_back"}
 const STEERING := {KEY_A: &"ds_left", KEY_D: &"ds_right"}
 var buttons: Dictionary = {}
@@ -200,14 +200,11 @@ func _draw() -> void:
 		else:
 			draw_style_box(_button_style(color), rect)
 		var text: String = label
-		if label == "SELECT":
-			text = "SELECT*"
 		var font_size := 24 if label in ["A", "B"] else (20 if label == "C" else 13)
 		var text_size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 		draw_string(_font, rect.get_center() + Vector2(-text_size.x * 0.5, font_size * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
 	var title := "TOUCH PLAYTEST"
 	draw_string(_font, Vector2(size.x * 0.33, 20 * size.x / 390.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("292929"))
-	draw_string(_font, Vector2(size.x * 0.36, 34 * size.x / 390.0), "* SELECT reserved", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("666666"))
 	if stick_touch != -1:
 		draw_circle(stick_origin, stick_radius, Color(0.12, 0.12, 0.12, 0.6))
 		draw_arc(stick_origin, stick_radius, 0, TAU, 48, Color.BLACK, 2, true)

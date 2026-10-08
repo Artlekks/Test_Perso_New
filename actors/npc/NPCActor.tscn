@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_actor.gd" id="actor"]
+[ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="presentation"]
+[sub_resource type="SphereShape3D" id="interaction"]
+radius = 0.85
+[node name="NPCActor" type="CharacterBody3D"]
+collision_layer = 16
+collision_mask = 19
+platform_floor_layers = 0
+platform_wall_layers = 0
+script = ExtResource("actor")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="GroundPresentation" parent="." instance=ExtResource("presentation")]
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor"]
+billboard = 1
+texture_filter = 0
+pixel_size = 0.01
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+position = Vector3(0, 0.25, 0)
+shape = SubResource("interaction")
