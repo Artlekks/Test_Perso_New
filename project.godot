@@ -34,6 +34,10 @@ window/size/viewport_width.mobile_portrait=390
 window/size/viewport_height.mobile_portrait=844
 window/handheld/orientation.mobile_portrait=1
 
+[editor]
+
+export/convert_text_resources_to_binary=false
+
 [input]
 
 ui_left={

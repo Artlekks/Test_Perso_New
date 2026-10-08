@@ -13,13 +13,12 @@ class_name DialogueView
 @onready var content_scroll: ScrollContainer = $Root/DialoguePanel/ContentScroll
 @onready var body_label: Label = $Root/DialoguePanel/ContentScroll/TextStack/BodyLabel
 @onready var choice_label: Label = $Root/DialoguePanel/ContentScroll/TextStack/ChoiceLabel
-@onready var hint_label: Label = $Root/DialoguePanel/HintLabel
 
 const TEXT_LEFT_WITH_PORTRAIT: float = 84.0
 const TEXT_LEFT_WITHOUT_PORTRAIT: float = 18.0
 const BOTTOM_MARGIN: float = 38.0
 const TEXT_TOP: float = 40.0
-const FOOTER_HEIGHT: float = 30.0
+const TEXT_BOTTOM_PADDING: float = 14.0
 const PanelStyle = preload("res://scripts/dialogue/dialogue_panel_style.gd")
 const PANEL_ATLAS = preload("res://assets/ui/Panel.png")
 
@@ -63,17 +62,6 @@ func present(snapshot: Dictionary) -> void:
 		)
 	else:
 		choice_label.text = ""
-
-	var is_last := bool(snapshot.get("is_last_line", false))
-	var can_cancel := bool(snapshot.get("allow_cancel", true))
-	if has_choices:
-		hint_label.text = "W/S : Select    K : Choose"
-	elif is_last:
-		hint_label.text = "K : Close"
-	else:
-		hint_label.text = "K : Next"
-	if can_cancel:
-		hint_label.text += "    I : Back"
 	_reflow()
 
 
@@ -102,15 +90,13 @@ func _reflow() -> void:
 	var body_height := _text_height(body_label, text_width, body_label.text)
 	var choice_height := _text_height(choice_label, text_width, choice_label.text) if choice_label.visible else 0.0
 	var content_height := body_height + (8.0 + choice_height if choice_label.visible else 0.0)
-	var panel_height := minf(maxf(100.0, TEXT_TOP + content_height + FOOTER_HEIGHT), view_size.y - BOTTOM_MARGIN - 24.0)
+	var panel_height := minf(maxf(100.0, TEXT_TOP + content_height + TEXT_BOTTOM_PADDING), view_size.y - BOTTOM_MARGIN - 24.0)
 	dialogue_panel.position = Vector2((view_size.x - panel_width) * 0.5, view_size.y - BOTTOM_MARGIN - panel_height)
 	dialogue_panel.size = Vector2(panel_width, panel_height)
 	speaker_label.offset_right = panel_width - 20.0
 	content_scroll.offset_top = TEXT_TOP
 	content_scroll.offset_right = panel_width - 20.0
-	content_scroll.offset_bottom = panel_height - FOOTER_HEIGHT
-	hint_label.position = Vector2(18.0, panel_height - 24.0)
-	hint_label.size = Vector2(panel_width - 38.0, 18.0)
+	content_scroll.offset_bottom = panel_height - TEXT_BOTTOM_PADDING
 	body_label.custom_minimum_size.y = body_height
 	choice_label.custom_minimum_size.y = choice_height
 	content_scroll.scroll_vertical = 0

@@ -199,6 +199,11 @@ func run() -> void:
 	check(paused and session.dialogue_service.is_active(), "real merchant dialogue opens")
 	var dialogue = session.dialogue_controller.get_view()
 	check(dialogue.body_label.get_theme_font_size("font_size") == 18 and dialogue.choice_label.get_theme_font_size("font_size") == 16, "mobile uses global larger dialogue baseline without another multiplier")
+	var location_label: Label = game.get_node("UI/ExplorationHud").location_label
+	for label in [dialogue.body_label, dialogue.speaker_label, dialogue.choice_label]:
+		check(label.get_theme_font("font") == location_label.get_theme_font("font") and label.get_theme_color("font_color") == location_label.get_theme_color("font_color"), "dialogue uses Ocean Spot font and native glyph modulation: " + label.name)
+		check(label.material == location_label.material and label.get_theme_constant("outline_size") == location_label.get_theme_constant("outline_size") and label.get_theme_color("font_shadow_color") == location_label.get_theme_color("font_shadow_color"), "dialogue matches Ocean Spot material/outline/shadow: " + label.name)
+	check(not dialogue.has_node("Root/DialoguePanel/HintLabel"), "mobile production dialogue has no footer hints")
 	check(dialogue.root.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, "dialogue bitmap filtering stays nearest")
 	check(Rect2(Vector2.ZERO, Vector2(harness.gameplay_viewport.size)).encloses(dialogue.dialogue_panel.get_rect()), "dialogue panel stays inside taller mobile viewport")
 	check(dialogue.content_scroll.size.y >= dialogue.body_label.size.y + (dialogue.choice_label.size.y + 8.0 if dialogue.choice_label.visible else 0.0), "real merchant dialogue fits: scroll=%s body=%s choices=%s measured=%s/%s" % [dialogue.content_scroll.size, dialogue.body_label.size, dialogue.choice_label.size, dialogue.body_label.custom_minimum_size, dialogue.choice_label.custom_minimum_size])

@@ -296,7 +296,7 @@ shape = SubResource("BoxShape3D_shore_blocker")
 debug_color = Color(0.9650225, 0.18974304, 0, 0.41960785)
 
 [node name="BeachMerchantNPC" parent="World" unique_id=1429238293 instance=ExtResource("72_merchant_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9486763, 0.06284177, 0.60926473)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.949, 0, 0.609)
 
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.07442939, 0.033282578)
@@ -320,7 +320,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.08, 0.07, 0.5)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.033720568, 0)
 
 [node name="FishingMasterStillWaterNPC" parent="World" unique_id=954943286 instance=ExtResource("82_still_water_master")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.468474, 0.07, -0.07606385)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.468, 0, -0.076)
 
 [node name="FishingMasterCurrentReaderNPC" parent="World" unique_id=488993862 instance=ExtResource("83_current_reader_master")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.07, -0.1)

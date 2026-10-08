@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://actors/WorldBlobShadow.tscn" id="3_shadow"]
 [ext_resource type="Texture2D" uid="uid://bnnpyo7ugjpxy" path="res://assets/sprites/shared/Shadow.png" id="4_m0wtl"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iv8kh"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m0wtl"]
 render_priority = -120
 transparency = 1
 cull_mode = 2
@@ -23,7 +23,7 @@ shading_mode = 0
 albedo_color = Color(0, 0, 0, 0.65)
 albedo_texture = ExtResource("4_m0wtl")
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_vv744"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_iv8kh"]
 material = SubResource("StandardMaterial3D_blob")
 size = Vector2(0.5, 0.51)
 
@@ -39,7 +39,7 @@ process_mode = 3
 script = ExtResource("1_script")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="." unique_id=1816864478]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09970136, 0)
 offset = Vector2(0, 11)
 billboard = 1
 alpha_cut = 1
@@ -49,14 +49,14 @@ animation = &"Idle"
 frame_progress = 0.87177056
 
 [node name="ShadowAnchor" type="Node3D" parent="." unique_id=418929415]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.061901957, 0, 0.03234908)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.023911238, 0, 0)
 
 [node name="WorldBlobShadow" parent="ShadowAnchor" unique_id=518643636 instance=ExtResource("3_shadow")]
 process_mode = 3
 process_priority = 250
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.061901957, 0.006, 0.03234908)
-material_override = SubResource("StandardMaterial3D_iv8kh")
-mesh = SubResource("PlaneMesh_vv744")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.023911238, 0.006, 0)
+material_override = SubResource("StandardMaterial3D_m0wtl")
+mesh = SubResource("PlaneMesh_iv8kh")
 width = 0.5
 depth = 0.51
 opacity = 1.0
