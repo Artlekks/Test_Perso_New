@@ -1,0 +1,174 @@
+{
+  "id": "placeholder_ff1c0303",
+  "name": "Green Turban Traveler",
+  "source": "assets/sprites/npc/source/ff1c0303-fa8f-4d5b-b0aa-3e7087bfd24b.png",
+  "animations": [
+    {
+      "name": "idle_n",
+      "fps": 1,
+      "rects": [
+        [
+          5,
+          12,
+          40,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_ne",
+      "fps": 1,
+      "rects": [
+        [
+          53,
+          15,
+          32,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_e",
+      "fps": 1,
+      "rects": [
+        [
+          93,
+          13,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_se",
+      "fps": 1,
+      "rects": [
+        [
+          125,
+          7,
+          34,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "idle_s",
+      "fps": 1,
+      "rects": [
+        [
+          165,
+          13,
+          40,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "walk_ne",
+      "fps": 8,
+      "rects": [
+        [
+          5,
+          76,
+          38,
+          56
+        ],
+        [
+          44,
+          76,
+          38,
+          56
+        ],
+        [
+          83,
+          76,
+          38,
+          56
+        ],
+        [
+          122,
+          76,
+          38,
+          56
+        ],
+        [
+          161,
+          76,
+          38,
+          56
+        ],
+        [
+          200,
+          76,
+          38,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "walk_se",
+      "fps": 8,
+      "rects": [
+        [
+          261,
+          68,
+          36,
+          57
+        ],
+        [
+          298,
+          68,
+          36,
+          57
+        ],
+        [
+          335,
+          68,
+          36,
+          57
+        ],
+        [
+          372,
+          68,
+          36,
+          57
+        ],
+        [
+          409,
+          68,
+          36,
+          57
+        ],
+        [
+          446,
+          68,
+          36,
+          57
+        ]
+      ]
+    }
+  ],
+  "default_animation": "idle_s",
+  "mode": 5,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Reviewed five standing views N/NE/E/SE/S and NE/SE walk strips (8 FPS). Missing west views use nearest authored direction, no fabricated frames. Special role UNCONFIRMED.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"idle_n\": 0, \"idle_ne\": 0, \"idle_e\": 0, \"idle_se\": 0, \"idle_s\": 0, \"walk_ne\": 8, \"walk_se\": 2}",
+    "animation_feet_from_left_px": "{\"idle_n\": 16.5, \"idle_ne\": 18.5, \"idle_e\": 11.0, \"idle_se\": 9.0, \"idle_s\": 16.5, \"walk_ne\": 24.0, \"walk_se\": 14.0}",
+    "directional_animation_prefixes": "{\"idle\": \"idle_\", \"walk\": \"walk_\"}",
+    "default_directional_pose": "\"idle\""
+  },
+  "movement": true,
+  "batch_generated": true
+}

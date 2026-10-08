@@ -1,0 +1,47 @@
+{
+  "id": "placeholder_e1466c4f",
+  "name": "Green Bearded Traveler",
+  "source": "assets/sprites/npc/source/e1466c4f-5a8f-49c2-baa7-6e73af652713.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          55,
+          6,
+          40,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          7,
+          10,
+          40,
+          48
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 3, \"pose_001\": 0}",
+    "animation_feet_from_left_px": "{\"pose_000\": 27.5, \"pose_001\": 25.5}"
+  },
+  "batch_generated": true
+}

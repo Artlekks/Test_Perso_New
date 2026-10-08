@@ -1,0 +1,20 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_e8e1ac56.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_e8e1ac56"
+development_name = "Green Cap Trader"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"pose_000"
+directional_mode = 5
+available_directions = PackedStringArray("UNCONFIRMED")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = false
+
+animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 6, "pose_002": 0, "pose_003": 4, "pose_004": 0, "pose_005": 0, "pose_006": 0, "pose_007": 0, "pose_008": 0, "pose_009": 0, "pose_010": 0, "pose_011": 0, "pose_012": 0, "pose_013": 0, "pose_014": 0, "pose_015": 0, "pose_016": 0, "pose_017": 0, "pose_018": 0, "pose_019": 0, "pose_020": 0, "pose_021": 0, "pose_022": 0, "pose_023": 0, "pose_024": 0, "pose_025": 0, "pose_026": 0, "pose_027": 0, "pose_028": 0, "pose_029": 0, "pose_030": 0, "pose_031": 0, "pose_032": 0, "pose_033": 0, "pose_034": 0, "pose_035": 0, "pose_036": 0, "pose_037": 0, "pose_038": 0, "pose_039": 0, "pose_040": 0, "pose_041": 0, "pose_042": 0}
+
+animation_feet_from_left_px = {"pose_000": 19.0, "pose_001": 16.5, "pose_002": 11.0, "pose_003": 21.5, "pose_004": 19.0, "pose_005": 25.0, "pose_006": 25.0, "pose_007": 25.0, "pose_008": 25.0, "pose_009": 16.0, "pose_010": 16.0, "pose_011": 16.0, "pose_012": 16.0, "pose_013": 16.0, "pose_014": 16.0, "pose_015": 16.0, "pose_016": 16.0, "pose_017": 16.0, "pose_018": 16.0, "pose_019": 16.0, "pose_020": 16.0, "pose_021": 16.0, "pose_022": 16.0, "pose_023": 16.0, "pose_024": 16.0, "pose_025": 16.0, "pose_026": 16.0, "pose_027": 16.0, "pose_028": 25.0, "pose_029": 25.0, "pose_030": 25.0, "pose_031": 25.0, "pose_032": 25.0, "pose_033": 25.0, "pose_034": 25.0, "pose_035": 25.0, "pose_036": 25.0, "pose_037": 25.0, "pose_038": 25.0, "pose_039": 25.0, "pose_040": 25.0, "pose_041": 25.0, "pose_042": 25.0}

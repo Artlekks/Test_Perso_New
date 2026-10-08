@@ -24,6 +24,7 @@ const TECHNIQUE_CATALOG: FishingTechniqueCatalog = preload(
 
 const QA_PROFILE_DIRECTORY := "res://data/debug/qa_profiles"
 const MAX_DEBUG_SHADOW_COUNT := 12
+const ResponsiveWindow = preload("res://scripts/mobile/mobile_playtest_window.gd")
 
 
 enum Row {
@@ -78,6 +79,8 @@ var _travel_index := 0
 var _playtest_panel: VBoxContainer
 var _playtest_rows: Array[Label] = []
 var _playtest_status := "Access is transient; loadouts require isolated mobile save."
+var _travel_submenu := false
+const PLAYTEST_ROW_COUNT := 7
 
 
 func _ready() -> void:
@@ -93,7 +96,7 @@ func _ready() -> void:
 	_playtest_panel.position = Vector2(28, 74)
 	_playtest_panel.size = Vector2(564, 430)
 	_playtest_panel.add_theme_constant_override("separation", 18)
-	for index in range(5):
+	for index in range(PLAYTEST_ROW_COUNT):
 		var label := Label.new()
 		label.add_theme_font_size_override("font_size", 18)
 		_playtest_rows.append(label)
@@ -108,6 +111,12 @@ func _ready() -> void:
 	$Root/Panel.add_child(_telemetry_button)
 	$Root/Panel/DividerLabel2.hide()
 	_update_telemetry_button()
+	_toggle_playtest_page()
+	if not get_viewport() is SubViewport:
+		var fitter := ResponsiveWindow.new()
+		fitter.name = "MobilePlaytestWindow"
+		add_child(fitter)
+		fitter.configure(root)
 
 
 func configure_economy_telemetry(telemetry: Node) -> void:
@@ -164,6 +173,9 @@ func set_fish_zone(zone: Node) -> void:
 
 
 func open_menu() -> bool:
+	if not _playtest_page: _toggle_playtest_page()
+	_playtest_row = 0
+	_travel_submenu = false
 	_update_telemetry_button()
 	if _loadout == null or _settings == null:
 		return false
@@ -179,6 +191,7 @@ func close_menu() -> void:
 
 func _toggle_playtest_page() -> void:
 	_playtest_page = not _playtest_page
+	$Root/Panel/TitleLabel.text = "PLAYTEST" if _playtest_page else "FISHING QA / DEBUG"
 	for child in $Root/Panel.get_children():
 		if child == _playtest_panel or child is Button or child.name in ["TitleLabel", "DividerLabel"]: continue
 		child.visible = not _playtest_page
@@ -192,8 +205,13 @@ func _refresh_playtest() -> void:
 	var authored: Array = locations.get_all_locations() if locations != null else []
 	_travel_index = clampi(_travel_index, 0, maxi(0, authored.size() - 1))
 	var destination: String = authored[_travel_index].display_name if not authored.is_empty() else "No authored locations"
-	var rows := ["Developer Mode: %s | Access: ALL" % ("ON" if developer != null and developer.enabled else "OFF"), "Travel: < %s >  (A/K to go)" % destination, "Grant Fishing Loadout", "Grant Card Loadout", "Grant Economy Wallet"]
-	for index in range(rows.size()): _playtest_rows[index].text = ("> " if index == _playtest_row else "  ") + rows[index]
+	var rows := ["Developer Mode: %s" % ("ON" if developer != null and developer.enabled else "OFF"), "Travel To...", "Grant Fishing Test Loadout", "Grant Card Test Loadout", "Grant Economy Test Wallet", "Economy Recording...", "Other Debug Pages..."]
+	if _travel_submenu:
+		rows.clear()
+		for location in authored: rows.append(location.display_name)
+	for index in range(_playtest_rows.size()):
+		_playtest_rows[index].visible = index < rows.size()
+		if index < rows.size(): _playtest_rows[index].text = ("> " if index == (_travel_index if _travel_submenu else _playtest_row) else "  ") + rows[index]
 	status_label.visible = true
 	status_label.text = _playtest_status
 
@@ -217,11 +235,19 @@ func _playtest_activate() -> void:
 		var locations := get_node_or_null("/root/WorldLocations")
 		var authored: Array = locations.get_all_locations()
 		if authored.is_empty(): return
+		if not _travel_submenu:
+			_travel_submenu = true
+			return
 		# Release the exploration debug modal before normal travel validates pause
 		# and transfers scene ownership. Never teleport transforms around it.
 		get_parent().close(false)
 		var result: Dictionary = locations.request_travel(authored[_travel_index].location_id)
 		_playtest_status = str(result.reason)
+	elif _playtest_row == 5:
+		_toggle_economy_recording()
+		_playtest_status = _telemetry_status
+	elif _playtest_row == 6:
+		_toggle_playtest_page()
 	elif _playtest_row in [2, 3, 4]:
 		var result := developer.grant_loadout(["fishing", "cards", "wallet"][_playtest_row - 2])
 		_playtest_status = str(result.reason)
@@ -240,12 +266,25 @@ func handle_input(event: InputEvent) -> bool:
 		_toggle_playtest_page()
 		return false
 	if _playtest_page:
-		if event.is_action_pressed("cancel_fishing"): return true
-		if event.is_action_pressed("ui_up") or event.is_action_pressed("move_forward"): _playtest_row = posmod(_playtest_row - 1, 5)
-		elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_back"): _playtest_row = posmod(_playtest_row + 1, 5)
-		elif event.is_action_pressed("ui_left") or event.is_action_pressed("ds_left"): _playtest_change(-1)
-		elif event.is_action_pressed("ui_right") or event.is_action_pressed("ds_right"): _playtest_change(1)
+		if event.is_action_pressed("cancel_fishing"):
+			if _travel_submenu:
+				_travel_submenu = false
+				_refresh_playtest()
+				return false
+			return true
+		var step := 0
+		if event.is_action_pressed("ui_up") or event.is_action_pressed("move_forward"): step = -1
+		elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_back"): step = 1
+		elif event.is_action_pressed("ui_left") or event.is_action_pressed("ds_left"):
+			if get_viewport() is SubViewport or _travel_submenu: step = -1
+			else: _playtest_change(-1)
+		elif event.is_action_pressed("ui_right") or event.is_action_pressed("ds_right"):
+			if get_viewport() is SubViewport or _travel_submenu: step = 1
+			else: _playtest_change(1)
 		elif event.is_action_pressed("enter_fishing"): _playtest_activate()
+		if step != 0:
+			if _travel_submenu: _travel_index = posmod(_travel_index + step, get_node("/root/WorldLocations").get_all_locations().size())
+			else: _playtest_row = posmod(_playtest_row + step, PLAYTEST_ROW_COUNT)
 		_refresh_playtest()
 		return false
 	if _selected_row == Row.TELEMETRY and event is InputEventKey and event.echo:

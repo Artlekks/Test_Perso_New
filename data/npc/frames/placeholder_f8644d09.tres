@@ -1,0 +1,23 @@
+[gd_resource type="SpriteFrames" format=3]
+[ext_resource type="Texture2D" path="res://assets/sprites/npc/source/f8644d09-2600-4edf-87b9-995fcd6c5ee4.png" id="sheet"]
+[sub_resource type="AtlasTexture" id="frame1"]
+atlas = ExtResource("sheet")
+region = Rect2(3, 4, 32, 48)
+[sub_resource type="AtlasTexture" id="frame2"]
+atlas = ExtResource("sheet")
+region = Rect2(155, 6, 32, 48)
+[sub_resource type="AtlasTexture" id="frame3"]
+atlas = ExtResource("sheet")
+region = Rect2(83, 9, 24, 48)
+[sub_resource type="AtlasTexture" id="frame4"]
+atlas = ExtResource("sheet")
+region = Rect2(115, 10, 32, 48)
+[sub_resource type="AtlasTexture" id="frame5"]
+atlas = ExtResource("sheet")
+region = Rect2(43, 11, 32, 48)
+[resource]
+animations = [{"name": &"pose_000", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame1")}]},
+{"name": &"pose_001", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame2")}]},
+{"name": &"pose_002", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame3")}]},
+{"name": &"pose_003", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame4")}]},
+{"name": &"pose_004", "speed": 1, "loop": true, "frames": [{"duration": 1.0, "texture": SubResource("frame5")}]}]

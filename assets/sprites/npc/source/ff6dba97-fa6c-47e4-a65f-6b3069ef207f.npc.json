@@ -1,0 +1,243 @@
+{
+  "batch_generated": true,
+  "entries": [
+    {
+      "id": "placeholder_ff6dba97_blue",
+      "name": "Stout Bearded Traveler (blue)",
+      "source": "assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png",
+      "animations": [
+        {
+          "name": "pose_000",
+          "fps": 1,
+          "rects": [
+            [
+              6,
+              8,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_001",
+          "fps": 1,
+          "rects": [
+            [
+              40,
+              8,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_002",
+          "fps": 1,
+          "rects": [
+            [
+              74,
+              8,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_003",
+          "fps": 1,
+          "rects": [
+            [
+              108,
+              8,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_004",
+          "fps": 1,
+          "rects": [
+            [
+              162,
+              10,
+              40,
+              56
+            ]
+          ]
+        },
+        {
+          "name": "pose_005",
+          "fps": 1,
+          "rects": [
+            [
+              203,
+              10,
+              40,
+              56
+            ]
+          ]
+        },
+        {
+          "name": "pose_006",
+          "fps": 1,
+          "rects": [
+            [
+              244,
+              10,
+              40,
+              56
+            ]
+          ]
+        },
+        {
+          "name": "pose_007",
+          "fps": 1,
+          "rects": [
+            [
+              285,
+              10,
+              40,
+              56
+            ]
+          ]
+        }
+      ],
+      "default_animation": "pose_000",
+      "mode": 5,
+      "directions": [
+        "UNCONFIRMED"
+      ],
+      "collider": "humanoid_standard",
+      "tags": [
+        "placeholder",
+        "role_unconfirmed"
+      ],
+      "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+      "profile_overrides": {
+        "animation_feet_from_bottom_px": "{\"pose_000\": 1, \"pose_001\": 1, \"pose_002\": 1, \"pose_003\": 1, \"pose_004\": 7, \"pose_005\": 7, \"pose_006\": 7, \"pose_007\": 7, \"pose_008\": 1, \"pose_009\": 1, \"pose_010\": 1, \"pose_011\": 1, \"pose_012\": 7, \"pose_013\": 7, \"pose_014\": 7, \"pose_015\": 7}",
+        "animation_feet_from_left_px": "{\"pose_000\": 22.5, \"pose_001\": 22.5, \"pose_002\": 22.5, \"pose_003\": 22.5, \"pose_004\": 12.0, \"pose_005\": 12.0, \"pose_006\": 12.0, \"pose_007\": 12.0, \"pose_008\": 22.5, \"pose_009\": 22.5, \"pose_010\": 22.5, \"pose_011\": 22.5, \"pose_012\": 12.0, \"pose_013\": 12.0, \"pose_014\": 12.0, \"pose_015\": 12.0}"
+      },
+      "batch_generated": true
+    },
+    {
+      "id": "placeholder_ff6dba97_orange",
+      "name": "Stout Bearded Traveler (orange)",
+      "source": "assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png",
+      "animations": [
+        {
+          "name": "pose_008",
+          "fps": 1,
+          "rects": [
+            [
+              6,
+              80,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_009",
+          "fps": 1,
+          "rects": [
+            [
+              40,
+              80,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_010",
+          "fps": 1,
+          "rects": [
+            [
+              74,
+              80,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_011",
+          "fps": 1,
+          "rects": [
+            [
+              108,
+              80,
+              33,
+              48
+            ]
+          ]
+        },
+        {
+          "name": "pose_012",
+          "fps": 1,
+          "rects": [
+            [
+              162,
+              82,
+              40,
+              56
+            ]
+          ]
+        },
+        {
+          "name": "pose_013",
+          "fps": 1,
+          "rects": [
+            [
+              203,
+              82,
+              40,
+              56
+            ]
+          ]
+        },
+        {
+          "name": "pose_014",
+          "fps": 1,
+          "rects": [
+            [
+              244,
+              82,
+              40,
+              56
+            ]
+          ]
+        },
+        {
+          "name": "pose_015",
+          "fps": 1,
+          "rects": [
+            [
+              285,
+              82,
+              40,
+              56
+            ]
+          ]
+        }
+      ],
+      "default_animation": "pose_008",
+      "mode": 5,
+      "directions": [
+        "UNCONFIRMED"
+      ],
+      "collider": "humanoid_standard",
+      "tags": [
+        "placeholder",
+        "role_unconfirmed"
+      ],
+      "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+      "profile_overrides": {
+        "animation_feet_from_bottom_px": "{\"pose_000\": 1, \"pose_001\": 1, \"pose_002\": 1, \"pose_003\": 1, \"pose_004\": 7, \"pose_005\": 7, \"pose_006\": 7, \"pose_007\": 7, \"pose_008\": 1, \"pose_009\": 1, \"pose_010\": 1, \"pose_011\": 1, \"pose_012\": 7, \"pose_013\": 7, \"pose_014\": 7, \"pose_015\": 7}",
+        "animation_feet_from_left_px": "{\"pose_000\": 22.5, \"pose_001\": 22.5, \"pose_002\": 22.5, \"pose_003\": 22.5, \"pose_004\": 12.0, \"pose_005\": 12.0, \"pose_006\": 12.0, \"pose_007\": 12.0, \"pose_008\": 22.5, \"pose_009\": 22.5, \"pose_010\": 22.5, \"pose_011\": 22.5, \"pose_012\": 12.0, \"pose_013\": 12.0, \"pose_014\": 12.0, \"pose_015\": 12.0}"
+      },
+      "batch_generated": true
+    }
+  ]
+}

@@ -23,6 +23,24 @@ static func force_normal_for_qa() -> void:
 	var service := current()
 	if service != null: service.set_enabled(false)
 
+static func card_test_deck(catalog: Resource, owned: Array, policy: Resource, rank: int, budget: int) -> Array:
+	if not allows(&"cards") or catalog == null or policy == null: return []
+	var legal: Array = []
+	for card in owned:
+		if policy.can_use_card(card, rank): legal.append(card)
+	legal.sort_custom(func(a, b): return int(a.deck_cost) < int(b.deck_cost))
+	if legal.size() >= 5:
+		var cost := 0
+		for index in range(5): cost += int(legal[index].deck_cost)
+		if cost <= budget: return [] # Preserve the real collection/deck workflow.
+	var candidates: Array = policy.build_starting_collection(catalog)
+	candidates = candidates.filter(func(card): return policy.can_use_card(card, rank))
+	if candidates.size() < 5: return []
+	candidates.resize(5)
+	var cost := 0
+	for card in candidates: cost += int(card.deck_cost)
+	return candidates if cost <= budget else []
+
 func set_enabled(value: bool) -> void:
 	if value and not OS.is_debug_build(): return
 	if enabled == value: return

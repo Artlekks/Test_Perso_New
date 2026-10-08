@@ -1,0 +1,47 @@
+{
+  "id": "placeholder_7f1b19bc",
+  "name": "Blue Cap Stout Traveler",
+  "source": "assets/sprites/npc/source/7f1b19bc-6451-40fb-9baa-02e3cf16b2f9.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          5,
+          8,
+          32,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          45,
+          9,
+          32,
+          48
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 3, \"pose_001\": 3}",
+    "animation_feet_from_left_px": "{\"pose_000\": 18.5, \"pose_001\": 9.0}"
+  },
+  "batch_generated": true
+}

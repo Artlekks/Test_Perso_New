@@ -1,0 +1,10 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_catalog_entry.gd" id="script"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_6d89ee8e.tscn" id="scene"]
+[ext_resource type="Resource" path="res://data/npc/profiles/placeholder_6d89ee8e.tres" id="profile"]
+[resource]
+script = ExtResource("script")
+id = &"placeholder_6d89ee8e"
+scene = ExtResource("scene")
+profile = ExtResource("profile")
+development_note = "Reviewed five standing bird views and two flapping strips fly NE/SE (8 FPS). No walking animation invented. Master role UNCONFIRMED."

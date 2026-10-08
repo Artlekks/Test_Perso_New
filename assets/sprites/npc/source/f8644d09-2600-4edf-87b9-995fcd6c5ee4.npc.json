@@ -1,0 +1,83 @@
+{
+  "id": "placeholder_f8644d09",
+  "name": "Purple Cape Stout Traveler",
+  "source": "assets/sprites/npc/source/f8644d09-2600-4edf-87b9-995fcd6c5ee4.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          3,
+          4,
+          32,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          155,
+          6,
+          32,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          83,
+          9,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          115,
+          10,
+          32,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          43,
+          11,
+          32,
+          48
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 0, \"pose_002\": 2, \"pose_003\": 3, \"pose_004\": 5}",
+    "animation_feet_from_left_px": "{\"pose_000\": 14.0, \"pose_001\": 13.0, \"pose_002\": 10.5, \"pose_003\": 7.0, \"pose_004\": 14.5}"
+  },
+  "batch_generated": true
+}

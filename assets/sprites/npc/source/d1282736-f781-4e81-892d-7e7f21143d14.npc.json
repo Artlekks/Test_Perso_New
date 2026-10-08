@@ -1,0 +1,174 @@
+{
+  "id": "placeholder_d1282736",
+  "name": "Dark Hat Traveler",
+  "source": "assets/sprites/npc/source/d1282736-f781-4e81-892d-7e7f21143d14.png",
+  "animations": [
+    {
+      "name": "idle_n",
+      "fps": 1,
+      "rects": [
+        [
+          10,
+          13,
+          24,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "idle_ne",
+      "fps": 1,
+      "rects": [
+        [
+          43,
+          8,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_e",
+      "fps": 1,
+      "rects": [
+        [
+          74,
+          17,
+          32,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "idle_se",
+      "fps": 1,
+      "rects": [
+        [
+          114,
+          18,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "idle_s",
+      "fps": 1,
+      "rects": [
+        [
+          162,
+          18,
+          32,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "walk_ne",
+      "fps": 8,
+      "rects": [
+        [
+          10,
+          65,
+          24,
+          51
+        ],
+        [
+          35,
+          65,
+          24,
+          51
+        ],
+        [
+          60,
+          65,
+          24,
+          51
+        ],
+        [
+          85,
+          65,
+          24,
+          51
+        ],
+        [
+          110,
+          65,
+          24,
+          51
+        ],
+        [
+          135,
+          65,
+          24,
+          51
+        ]
+      ]
+    },
+    {
+      "name": "walk_se",
+      "fps": 8,
+      "rects": [
+        [
+          182,
+          71,
+          41,
+          42
+        ],
+        [
+          224,
+          71,
+          41,
+          42
+        ],
+        [
+          266,
+          71,
+          41,
+          42
+        ],
+        [
+          308,
+          71,
+          41,
+          42
+        ],
+        [
+          350,
+          71,
+          41,
+          42
+        ],
+        [
+          392,
+          71,
+          41,
+          42
+        ]
+      ]
+    }
+  ],
+  "default_animation": "idle_s",
+  "mode": 5,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Reviewed five standing views N/NE/E/SE/S and NE/SE walk strips (8 FPS). Missing west views use nearest authored direction, no fabricated frames. Special role UNCONFIRMED.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"idle_n\": 1, \"idle_ne\": 2, \"idle_e\": 3, \"idle_se\": 3, \"idle_s\": 4, \"walk_ne\": 8, \"walk_se\": 5}",
+    "animation_feet_from_left_px": "{\"idle_n\": 11.0, \"idle_ne\": 13.0, \"idle_e\": 14.0, \"idle_se\": 11.5, \"idle_s\": 17.5, \"walk_ne\": 14.0, \"walk_se\": 19.0}",
+    "directional_animation_prefixes": "{\"idle\": \"idle_\", \"walk\": \"walk_\"}",
+    "default_directional_pose": "\"idle\""
+  },
+  "movement": true,
+  "batch_generated": true
+}

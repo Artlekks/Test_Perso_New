@@ -1,0 +1,167 @@
+{
+  "id": "placeholder_837b6a03",
+  "name": "Short Robed Traveler",
+  "source": "assets/sprites/npc/source/837b6a03-4c6f-406b-b808-46862d834e7f.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          4,
+          9,
+          32,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          37,
+          9,
+          32,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          70,
+          9,
+          32,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          103,
+          9,
+          32,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          136,
+          9,
+          32,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_005",
+      "fps": 1,
+      "rects": [
+        [
+          169,
+          9,
+          32,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_006",
+      "fps": 1,
+      "rects": [
+        [
+          224,
+          16,
+          32,
+          43
+        ]
+      ]
+    },
+    {
+      "name": "pose_007",
+      "fps": 1,
+      "rects": [
+        [
+          257,
+          16,
+          32,
+          43
+        ]
+      ]
+    },
+    {
+      "name": "pose_008",
+      "fps": 1,
+      "rects": [
+        [
+          290,
+          16,
+          32,
+          43
+        ]
+      ]
+    },
+    {
+      "name": "pose_009",
+      "fps": 1,
+      "rects": [
+        [
+          323,
+          16,
+          32,
+          43
+        ]
+      ]
+    },
+    {
+      "name": "pose_010",
+      "fps": 1,
+      "rects": [
+        [
+          356,
+          16,
+          32,
+          43
+        ]
+      ]
+    },
+    {
+      "name": "pose_011",
+      "fps": 1,
+      "rects": [
+        [
+          389,
+          16,
+          32,
+          43
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 5, \"pose_001\": 5, \"pose_002\": 5, \"pose_003\": 5, \"pose_004\": 5, \"pose_005\": 5, \"pose_006\": 2, \"pose_007\": 2, \"pose_008\": 2, \"pose_009\": 2, \"pose_010\": 2, \"pose_011\": 2}",
+    "animation_feet_from_left_px": "{\"pose_000\": 7.0, \"pose_001\": 7.0, \"pose_002\": 7.0, \"pose_003\": 7.0, \"pose_004\": 7.0, \"pose_005\": 7.0, \"pose_006\": 21.0, \"pose_007\": 21.0, \"pose_008\": 21.0, \"pose_009\": 21.0, \"pose_010\": 21.0, \"pose_011\": 21.0}"
+  },
+  "batch_generated": true
+}

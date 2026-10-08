@@ -1,0 +1,83 @@
+{
+  "id": "placeholder_c3997e38",
+  "name": "Gold Armored Stout Traveler",
+  "source": "assets/sprites/npc/source/c3997e38-4619-4daf-ba52-37f21ea0c26e.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          96,
+          7,
+          32,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          136,
+          7,
+          40,
+          64
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          9,
+          40,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          184,
+          10,
+          40,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          56,
+          11,
+          32,
+          56
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 7, \"pose_002\": 3, \"pose_003\": 4, \"pose_004\": 1}",
+    "animation_feet_from_left_px": "{\"pose_000\": 12.5, \"pose_001\": 13.0, \"pose_002\": 19.0, \"pose_003\": 18.0, \"pose_004\": 20.0}"
+  },
+  "batch_generated": true
+}

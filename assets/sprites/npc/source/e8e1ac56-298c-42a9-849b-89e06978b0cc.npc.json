@@ -1,0 +1,539 @@
+{
+  "id": "placeholder_e8e1ac56",
+  "name": "Green Cap Trader",
+  "source": "assets/sprites/npc/source/e8e1ac56-298c-42a9-849b-89e06978b0cc.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          184,
+          3,
+          40,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          136,
+          5,
+          41,
+          64
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          96,
+          6,
+          32,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          56,
+          9,
+          34,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          10,
+          40,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_005",
+      "fps": 1,
+      "rects": [
+        [
+          208,
+          74,
+          51,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_006",
+      "fps": 1,
+      "rects": [
+        [
+          260,
+          74,
+          51,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_007",
+      "fps": 1,
+      "rects": [
+        [
+          312,
+          74,
+          51,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_008",
+      "fps": 1,
+      "rects": [
+        [
+          364,
+          74,
+          51,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_009",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          78,
+          44,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_010",
+      "fps": 1,
+      "rects": [
+        [
+          53,
+          78,
+          44,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_011",
+      "fps": 1,
+      "rects": [
+        [
+          98,
+          78,
+          44,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_012",
+      "fps": 1,
+      "rects": [
+        [
+          143,
+          78,
+          44,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_013",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_014",
+      "fps": 1,
+      "rects": [
+        [
+          58,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_015",
+      "fps": 1,
+      "rects": [
+        [
+          108,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_016",
+      "fps": 1,
+      "rects": [
+        [
+          158,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_017",
+      "fps": 1,
+      "rects": [
+        [
+          208,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_018",
+      "fps": 1,
+      "rects": [
+        [
+          258,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_019",
+      "fps": 1,
+      "rects": [
+        [
+          308,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_020",
+      "fps": 1,
+      "rects": [
+        [
+          358,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_021",
+      "fps": 1,
+      "rects": [
+        [
+          408,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_022",
+      "fps": 1,
+      "rects": [
+        [
+          458,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_023",
+      "fps": 1,
+      "rects": [
+        [
+          508,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_024",
+      "fps": 1,
+      "rects": [
+        [
+          558,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_025",
+      "fps": 1,
+      "rects": [
+        [
+          608,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_026",
+      "fps": 1,
+      "rects": [
+        [
+          658,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_027",
+      "fps": 1,
+      "rects": [
+        [
+          708,
+          130,
+          49,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_028",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_029",
+      "fps": 1,
+      "rects": [
+        [
+          61,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_030",
+      "fps": 1,
+      "rects": [
+        [
+          114,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_031",
+      "fps": 1,
+      "rects": [
+        [
+          167,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_032",
+      "fps": 1,
+      "rects": [
+        [
+          220,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_033",
+      "fps": 1,
+      "rects": [
+        [
+          273,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_034",
+      "fps": 1,
+      "rects": [
+        [
+          326,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_035",
+      "fps": 1,
+      "rects": [
+        [
+          379,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_036",
+      "fps": 1,
+      "rects": [
+        [
+          432,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_037",
+      "fps": 1,
+      "rects": [
+        [
+          485,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_038",
+      "fps": 1,
+      "rects": [
+        [
+          538,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_039",
+      "fps": 1,
+      "rects": [
+        [
+          591,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_040",
+      "fps": 1,
+      "rects": [
+        [
+          644,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_041",
+      "fps": 1,
+      "rects": [
+        [
+          697,
+          178,
+          52,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_042",
+      "fps": 1,
+      "rects": [
+        [
+          750,
+          178,
+          52,
+          48
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 6, \"pose_002\": 0, \"pose_003\": 4, \"pose_004\": 0, \"pose_005\": 0, \"pose_006\": 0, \"pose_007\": 0, \"pose_008\": 0, \"pose_009\": 0, \"pose_010\": 0, \"pose_011\": 0, \"pose_012\": 0, \"pose_013\": 0, \"pose_014\": 0, \"pose_015\": 0, \"pose_016\": 0, \"pose_017\": 0, \"pose_018\": 0, \"pose_019\": 0, \"pose_020\": 0, \"pose_021\": 0, \"pose_022\": 0, \"pose_023\": 0, \"pose_024\": 0, \"pose_025\": 0, \"pose_026\": 0, \"pose_027\": 0, \"pose_028\": 0, \"pose_029\": 0, \"pose_030\": 0, \"pose_031\": 0, \"pose_032\": 0, \"pose_033\": 0, \"pose_034\": 0, \"pose_035\": 0, \"pose_036\": 0, \"pose_037\": 0, \"pose_038\": 0, \"pose_039\": 0, \"pose_040\": 0, \"pose_041\": 0, \"pose_042\": 0}",
+    "animation_feet_from_left_px": "{\"pose_000\": 19.0, \"pose_001\": 16.5, \"pose_002\": 11.0, \"pose_003\": 21.5, \"pose_004\": 19.0, \"pose_005\": 25.0, \"pose_006\": 25.0, \"pose_007\": 25.0, \"pose_008\": 25.0, \"pose_009\": 16.0, \"pose_010\": 16.0, \"pose_011\": 16.0, \"pose_012\": 16.0, \"pose_013\": 16.0, \"pose_014\": 16.0, \"pose_015\": 16.0, \"pose_016\": 16.0, \"pose_017\": 16.0, \"pose_018\": 16.0, \"pose_019\": 16.0, \"pose_020\": 16.0, \"pose_021\": 16.0, \"pose_022\": 16.0, \"pose_023\": 16.0, \"pose_024\": 16.0, \"pose_025\": 16.0, \"pose_026\": 16.0, \"pose_027\": 16.0, \"pose_028\": 25.0, \"pose_029\": 25.0, \"pose_030\": 25.0, \"pose_031\": 25.0, \"pose_032\": 25.0, \"pose_033\": 25.0, \"pose_034\": 25.0, \"pose_035\": 25.0, \"pose_036\": 25.0, \"pose_037\": 25.0, \"pose_038\": 25.0, \"pose_039\": 25.0, \"pose_040\": 25.0, \"pose_041\": 25.0, \"pose_042\": 25.0}"
+  },
+  "batch_generated": true
+}

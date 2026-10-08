@@ -1,0 +1,177 @@
+{
+  "id": "placeholder_6d89ee8e",
+  "name": "Small Bird",
+  "source": "assets/sprites/npc/source/6d89ee8e-f48a-4e46-8dc6-89ad1a8bab16.png",
+  "animations": [
+    {
+      "name": "idle_n",
+      "fps": 1,
+      "rects": [
+        [
+          10,
+          8,
+          8,
+          16
+        ]
+      ]
+    },
+    {
+      "name": "idle_ne",
+      "fps": 1,
+      "rects": [
+        [
+          26,
+          6,
+          16,
+          16
+        ]
+      ]
+    },
+    {
+      "name": "idle_e",
+      "fps": 1,
+      "rects": [
+        [
+          49,
+          5,
+          16,
+          16
+        ]
+      ]
+    },
+    {
+      "name": "idle_se",
+      "fps": 1,
+      "rects": [
+        [
+          74,
+          5,
+          16,
+          16
+        ]
+      ]
+    },
+    {
+      "name": "idle_s",
+      "fps": 1,
+      "rects": [
+        [
+          98,
+          4,
+          8,
+          16
+        ]
+      ]
+    },
+    {
+      "name": "fly_ne",
+      "fps": 8,
+      "rects": [
+        [
+          10,
+          32,
+          18,
+          19
+        ],
+        [
+          29,
+          32,
+          18,
+          19
+        ],
+        [
+          48,
+          32,
+          18,
+          19
+        ],
+        [
+          67,
+          32,
+          18,
+          19
+        ],
+        [
+          86,
+          32,
+          18,
+          19
+        ],
+        [
+          105,
+          32,
+          18,
+          19
+        ]
+      ]
+    },
+    {
+      "name": "fly_se",
+      "fps": 8,
+      "rects": [
+        [
+          146,
+          32,
+          17,
+          16
+        ],
+        [
+          164,
+          32,
+          17,
+          16
+        ],
+        [
+          182,
+          32,
+          17,
+          16
+        ],
+        [
+          200,
+          32,
+          17,
+          16
+        ],
+        [
+          218,
+          32,
+          17,
+          16
+        ],
+        [
+          236,
+          32,
+          17,
+          16
+        ]
+      ]
+    }
+  ],
+  "default_animation": "idle_s",
+  "mode": 5,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S"
+  ],
+  "collider": "ambient_creature",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Reviewed five standing bird views and two flapping strips fly NE/SE (8 FPS). No walking animation invented. Master role UNCONFIRMED.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"idle_n\": 0, \"idle_ne\": 0, \"idle_e\": 0, \"idle_se\": 0, \"idle_s\": 0, \"fly_ne\": 2, \"fly_se\": 0}",
+    "animation_feet_from_left_px": "{\"idle_n\": 4.0, \"idle_ne\": 7.5, \"idle_e\": 7.0, \"idle_se\": 10.5, \"idle_s\": 3.5, \"fly_ne\": 8.0, \"fly_se\": 9.5}",
+    "directional_animation_prefixes": "{\"idle\": \"idle_\", \"fly\": \"fly_\"}",
+    "default_directional_pose": "\"idle\"",
+    "shadow_width": "0.10",
+    "shadow_depth": "0.10"
+  },
+  "movement": false,
+  "shadow": "small_creature",
+  "batch_generated": true
+}

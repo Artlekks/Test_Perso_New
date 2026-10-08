@@ -26,6 +26,13 @@ def inventory():
                 frame_ids = re.findall(r'SubResource\("([^\"]+)"\)',match[1])
                 selected = [regions[id] for id in frame_ids if id in regions]
                 if selected: groups.append({'name':match[2],'fps':float(match[3]),'rects':selected})
+            # The deterministic ingestion writer emits name/speed before frames;
+            # Godot's editor emits frames/loop/name/speed. Inventory both layouts.
+            for match in re.finditer(r'"name":\s*&"([^\"]+)",\s*"speed":\s*([\d.]+),\s*"loop":.*?"frames":\s*\[(.*?)\]',text,re.S):
+                frame_ids = re.findall(r'SubResource\("([^\"]+)"\)',match[3])
+                selected = [regions[id] for id in frame_ids if id in regions]
+                if selected and not any(group['name']==match[1] for group in groups):
+                    groups.append({'name':match[1],'fps':float(match[2]),'rects':selected})
             resource_path = resource.relative_to(ROOT).as_posix()
             scenes = [p.relative_to(ROOT).as_posix() for p in (ROOT/'actors').rglob('*.tscn') if resource_path in p.read_text()]
             row['conversions'].append({'sprite_frames':resource_path,'animations':groups,'scenes':scenes})

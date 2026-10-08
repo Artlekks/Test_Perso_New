@@ -1,0 +1,143 @@
+{
+  "id": "placeholder_e5085f21",
+  "name": "Seated Fishing Pose",
+  "source": "assets/sprites/npc/source/e5085f21-5579-4f00-a04f-b00d19e870c5.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          49,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          90,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          131,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          172,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_005",
+      "fps": 1,
+      "rects": [
+        [
+          213,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_006",
+      "fps": 1,
+      "rects": [
+        [
+          254,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_007",
+      "fps": 1,
+      "rects": [
+        [
+          295,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_008",
+      "fps": 1,
+      "rects": [
+        [
+          336,
+          8,
+          40,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "pose_009",
+      "fps": 1,
+      "rects": [
+        [
+          377,
+          8,
+          40,
+          40
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 4, \"pose_001\": 4, \"pose_002\": 4, \"pose_003\": 4, \"pose_004\": 4, \"pose_005\": 4, \"pose_006\": 4, \"pose_007\": 4, \"pose_008\": 4, \"pose_009\": 4}",
+    "animation_feet_from_left_px": "{\"pose_000\": 16.0, \"pose_001\": 16.0, \"pose_002\": 16.0, \"pose_003\": 16.0, \"pose_004\": 16.0, \"pose_005\": 16.0, \"pose_006\": 16.0, \"pose_007\": 16.0, \"pose_008\": 16.0, \"pose_009\": 16.0}"
+  },
+  "batch_generated": true
+}

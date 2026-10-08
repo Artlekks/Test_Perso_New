@@ -96,6 +96,8 @@ var _catalog: Resource = null
 var _collection_backend = null
 var _acquisition_policy: Resource = null
 var _cards: Array = []
+var developer_deck_provider: Callable
+var developer_test_deck: Array = []
 var _deck: Array = []
 var _collection_views: Array = []
 var _deck_views: Array = []
@@ -165,6 +167,8 @@ func open_setup(
 		_cards = _collection_backend.call("get_owned_cards")
 	elif _catalog != null and _catalog.has_method("get_cards_for_level_range"):
 		_cards = _catalog.call("get_cards_for_level_range", 1, 10)
+	developer_test_deck = developer_deck_provider.call(_cards, _player_rank, _budget_limit) if developer_deck_provider.is_valid() else []
+	if not developer_test_deck.is_empty(): _cards = developer_test_deck.duplicate()
 	_sort_cards()
 	_total_profiles = _load_profile_count()
 	_sanitize_all_saved_profiles()
@@ -561,12 +565,13 @@ func _refresh_deck() -> void:
 		)
 
 func _refresh_labels() -> void:
-	current_deck_label.text = "Deck #%d" % (_profile_index + 1)
+	current_deck_label.text = "DEV Deck" if not developer_test_deck.is_empty() else "Deck #%d" % (_profile_index + 1)
 	current_deck_count.text = "%d/%d" % [_deck.size(), HAND_SIZE]
 	cards_owned_label.text = "Cards Owned  %d / %d" % [
 		_cards.size(),
 		_total_catalog_card_count(),
 	]
+	if not developer_test_deck.is_empty(): cards_owned_label.text = "Test Cards  5 (temporary)"
 	budget_label.text = "Pts %d/%d" % [
 		_deck_cost(),
 		_budget_limit,
@@ -1267,6 +1272,7 @@ func _load_sort_mode() -> int:
 
 
 func _save_sort_preference() -> void:
+	if not developer_test_deck.is_empty(): return
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
 	config.set_value("meta", "sort_mode", _sort_mode)
@@ -1290,6 +1296,7 @@ func _switch_profile(new_profile_index: int) -> void:
 
 
 func _sanitize_all_saved_profiles() -> void:
+	if not developer_test_deck.is_empty(): return
 	if _catalog == null:
 		return
 	var config := ConfigFile.new()
@@ -1363,6 +1370,9 @@ func _sanitize_card_array(cards: Array) -> Array:
 
 
 func _load_profile(profile_index: int) -> void:
+	if not developer_test_deck.is_empty():
+		_deck = developer_test_deck.duplicate()
+		return
 	_deck.clear()
 	var running_cost: int = 0
 	var config := ConfigFile.new()
@@ -1425,6 +1435,7 @@ func _load_profile(profile_index: int) -> void:
 
 
 func _save_current_profile() -> void:
+	if not developer_test_deck.is_empty(): return
 	if _catalog == null:
 		return
 
@@ -1451,6 +1462,7 @@ func _save_current_profile() -> void:
 
 
 func remove_card_from_all_profiles(card_id: StringName) -> void:
+	if not developer_test_deck.is_empty(): return
 	if String(card_id).is_empty():
 		return
 
@@ -1502,6 +1514,8 @@ func remove_card_from_all_profiles(card_id: StringName) -> void:
 
 
 func _can_use_card(card) -> bool:
+	if not developer_test_deck.is_empty():
+		return developer_test_deck.has(card) and _acquisition_policy.can_use_card(card, _player_rank)
 	if card == null:
 		return false
 	if (
@@ -1587,6 +1601,7 @@ func _load_profile_count() -> int:
 
 
 func _save_profile_count() -> void:
+	if not developer_test_deck.is_empty(): return
 	var config := ConfigFile.new()
 	config.load(SAVE_PATH)
 	config.set_value(

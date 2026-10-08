@@ -1,0 +1,10 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_catalog_entry.gd" id="script"]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_68024840.tscn" id="scene"]
+[ext_resource type="Resource" path="res://data/npc/profiles/placeholder_68024840.tres" id="profile"]
+[resource]
+script = ExtResource("script")
+id = &"placeholder_68024840"
+scene = ExtResource("scene")
+profile = ExtResource("profile")
+development_note = "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented."

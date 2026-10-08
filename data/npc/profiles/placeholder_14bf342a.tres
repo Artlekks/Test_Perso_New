@@ -1,0 +1,20 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_14bf342a.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_14bf342a"
+development_name = "Rod Angler"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"pose_000"
+directional_mode = 5
+available_directions = PackedStringArray("UNCONFIRMED")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = false
+
+animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 0}
+
+animation_feet_from_left_px = {"pose_000": 6.5, "pose_001": 59.0}

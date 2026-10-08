@@ -110,6 +110,40 @@ func run() -> void:
 			if label < other:
 				check(not controls.buttons[label].intersects(controls.buttons[other]), "touch buttons do not overlap: %s / %s" % [label, other])
 	await capture("mobile-portrait-gameplay")
+	for layer in harness.gameplay_viewport.find_children("*", "CanvasLayer", true, false):
+		var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
+		if fitter == null: continue
+		var surface: Control = fitter.surface
+		var was_visible := surface.visible
+		surface.show()
+		await settle(2)
+		check(surface.position.y + fitter.content_min.y >= 0, "responsive top stays in gameplay: " + layer.name)
+		check(surface.position.y + fitter.content_max.y <= harness.gameplay_viewport.size.y + 1 or fitter.bar.visible, "responsive bottom fits or scrolls: " + layer.name)
+		await capture("window-" + layer.name)
+		var original_size: Vector2i = harness.gameplay_viewport.size
+		harness.gameplay_viewport.size = Vector2i(640, 360)
+		await settle(2)
+		check(fitter.bar.visible, "short gameplay viewport exposes scroll: " + layer.name)
+		fitter.bar.value = 0
+		var begin := InputEventScreenTouch.new()
+		begin.index = 99
+		begin.pressed = true
+		begin.position = harness.gameplay_image.position + Vector2(0.99, 0.7) * harness.gameplay_image.size
+		harness._unhandled_input(begin)
+		await settle(2)
+		var swipe := InputEventScreenDrag.new()
+		swipe.index = 99
+		swipe.position = begin.position - Vector2(0, 32)
+		harness._unhandled_input(swipe)
+		await settle(2)
+		check(fitter.bar.value > 0, "actual gameplay touch gutter scrolls content: " + layer.name)
+		begin.pressed = false
+		harness._unhandled_input(begin)
+		fitter.bar.value = fitter.bar.max_value
+		check(surface.position.y + fitter.content_max.y <= 360.0, "scroll reaches last authored content: " + layer.name)
+		harness.gameplay_viewport.size = original_size
+		await settle(2)
+		surface.visible = was_visible
 	# Drive actual ScreenTouch/Drag events, two independent touch identities.
 	player.global_position = Vector3(100, 0, 100)
 	player.camera_reference = null

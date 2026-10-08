@@ -53,7 +53,8 @@ def build():
     manifest = json.loads((ROOT / 'tools/npc/catalog_manifest.json').read_text())
     entries = manifest['entries']
     for path in sorted((ROOT / 'assets/sprites/npc/source').glob('*.npc.json')):
-        entries.append(json.loads(path.read_text()))
+        reviewed = json.loads(path.read_text())
+        entries.extend(reviewed['entries'] if 'entries' in reviewed else [reviewed])
     mapped_sources = {entry.get('source') for entry in entries}
     for path in sorted((ROOT / 'assets/sprites/npc/source').glob('*.png')):
         if path.relative_to(ROOT).as_posix() not in mapped_sources:

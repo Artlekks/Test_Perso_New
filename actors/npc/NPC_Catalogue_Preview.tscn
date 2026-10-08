@@ -26,4 +26,4 @@ environment = SubResource("environment")
 [node name="Label" type="Label" parent="Help"]
 offset_left = 10.0
 offset_top = 10.0
-text = "Catalogue | Q/E: orbit | +/-: zoom | Space: walk pose | I: idle | Roots Y=0"
+text = "Catalogue | Q/E orbit | +/- zoom | Tab inspect next | Space walk | I idle | R poses | C colliders | Roots Y=0"

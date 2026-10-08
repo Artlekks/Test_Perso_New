@@ -61,6 +61,8 @@ func start_recording() -> bool:
 	_connect_runtime()
 	if _indicator == null:
 		_indicator = CanvasLayer.new()
+		_indicator.name = "EconomyRecordingStatus"
+		_indicator.set_meta("development_status", true)
 		_indicator.layer = 130
 		add_child(_indicator)
 		var label := Label.new()

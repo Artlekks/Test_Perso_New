@@ -1,0 +1,215 @@
+{
+  "id": "placeholder_ea87e795",
+  "name": "Red Cap Stout Traveler",
+  "source": "assets/sprites/npc/source/ea87e795-7281-42b8-aa5e-fdf3e655b971.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          104,
+          4,
+          27,
+          50
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          64,
+          5,
+          32,
+          49
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          180,
+          5,
+          48,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          7,
+          48,
+          46
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          272,
+          57,
+          40,
+          59
+        ]
+      ]
+    },
+    {
+      "name": "pose_005",
+      "fps": 1,
+      "rects": [
+        [
+          313,
+          57,
+          40,
+          59
+        ]
+      ]
+    },
+    {
+      "name": "pose_006",
+      "fps": 1,
+      "rects": [
+        [
+          354,
+          57,
+          40,
+          59
+        ]
+      ]
+    },
+    {
+      "name": "pose_007",
+      "fps": 1,
+      "rects": [
+        [
+          395,
+          57,
+          40,
+          59
+        ]
+      ]
+    },
+    {
+      "name": "pose_008",
+      "fps": 1,
+      "rects": [
+        [
+          436,
+          57,
+          40,
+          59
+        ]
+      ]
+    },
+    {
+      "name": "pose_009",
+      "fps": 1,
+      "rects": [
+        [
+          477,
+          57,
+          40,
+          59
+        ]
+      ]
+    },
+    {
+      "name": "pose_010",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          63,
+          40,
+          51
+        ]
+      ]
+    },
+    {
+      "name": "pose_011",
+      "fps": 1,
+      "rects": [
+        [
+          49,
+          63,
+          40,
+          51
+        ]
+      ]
+    },
+    {
+      "name": "pose_012",
+      "fps": 1,
+      "rects": [
+        [
+          90,
+          63,
+          40,
+          51
+        ]
+      ]
+    },
+    {
+      "name": "pose_013",
+      "fps": 1,
+      "rects": [
+        [
+          131,
+          63,
+          40,
+          51
+        ]
+      ]
+    },
+    {
+      "name": "pose_014",
+      "fps": 1,
+      "rects": [
+        [
+          172,
+          63,
+          40,
+          51
+        ]
+      ]
+    },
+    {
+      "name": "pose_015",
+      "fps": 1,
+      "rects": [
+        [
+          213,
+          63,
+          40,
+          51
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 0, \"pose_002\": 0, \"pose_003\": 0, \"pose_004\": 1, \"pose_005\": 0, \"pose_006\": 1, \"pose_007\": 3, \"pose_008\": 5, \"pose_009\": 3, \"pose_010\": 1, \"pose_011\": 2, \"pose_012\": 1, \"pose_013\": 0, \"pose_014\": 1, \"pose_015\": 0}",
+    "animation_feet_from_left_px": "{\"pose_000\": 12.5, \"pose_001\": 20.0, \"pose_002\": 23.5, \"pose_003\": 23.5, \"pose_004\": 13.5, \"pose_005\": 13.5, \"pose_006\": 13.5, \"pose_007\": 12.5, \"pose_008\": 12.5, \"pose_009\": 12.5, \"pose_010\": 26.0, \"pose_011\": 21.0, \"pose_012\": 26.0, \"pose_013\": 21.0, \"pose_014\": 19.0, \"pose_015\": 21.0}"
+  },
+  "batch_generated": true
+}

@@ -1,0 +1,47 @@
+{
+  "id": "placeholder_d7c2eeb9",
+  "name": "Purple Robed Traveler",
+  "source": "assets/sprites/npc/source/d7c2eeb9-b691-4058-a2c1-62ddb5fcac7a.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          8,
+          25,
+          56
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          40,
+          9,
+          24,
+          56
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 7, \"pose_001\": 6}",
+    "animation_feet_from_left_px": "{\"pose_000\": 14.0, \"pose_001\": 6.5}"
+  },
+  "batch_generated": true
+}

@@ -109,6 +109,7 @@ var _runtime_state = null
 var _live_match = null
 var _match_orchestrator = null
 var _persistence = null
+var _developer_test_match := false
 
 
 func _ready() -> void:
@@ -120,6 +121,7 @@ func _ready() -> void:
 		_build_composition_callbacks()
 	)
 	_install_composition_result(composition_result)
+	_bind_developer_mode.call_deferred()
 
 	for raw_warning in composition_result.get("warnings", []):
 		push_warning("TripleTriadGame backend: %s" % str(raw_warning))
@@ -381,8 +383,7 @@ func grant_development_card_loadout() -> Dictionary:
 		return {"success": false, "reason": "Isolated test save required"}
 	if not _backend_ready or _collection_backend == null or card_catalog == null:
 		return {"success": false, "reason": "Card backend unavailable"}
-	for index in range(mini(5, card_catalog.get_total_source_count())):
-		var card = card_catalog.get_card(index)
+	for card in acquisition_policy.build_starting_collection(card_catalog):
 		if card != null: _collection_backend.acquire_card(card, 1, true)
 	_invalidate_state_api("developer_loadout")
 	_publish_backend_state_change("developer_loadout")
@@ -622,7 +623,16 @@ func is_card_game_unlocked() -> bool:
 	return _world_gateway.is_card_game_unlocked()
 
 func _on_developer_mode_changed(_enabled: bool) -> void:
+	if not _enabled and _developer_test_match and is_open(): close_game()
+	if not _enabled and is_instance_valid(deck_setup): deck_setup.developer_test_deck.clear()
 	card_game_unlock_changed.emit(is_card_game_unlocked())
+
+func _bind_developer_mode() -> void:
+	# Session services can become ready after this UI composes. Resolve the
+	# live owner after scene readiness, and again at the match entry boundary.
+	var developer := DeveloperPlaytestService.current()
+	if developer != null and not developer.mode_changed.is_connected(_on_developer_mode_changed):
+		developer.mode_changed.connect(_on_developer_mode_changed)
 
 
 func get_acquisition_snapshot() -> Dictionary:
@@ -892,6 +902,7 @@ func open_game_by_id(opponent_id: StringName) -> bool:
 
 
 func open_game(opponent_profile_override: Resource = null) -> void:
+	_bind_developer_mode()
 	if not _backend_ready or is_open() or card_catalog == null:
 		return
 	if (
@@ -938,6 +949,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	if _progression != null:
 		active_player_budget = int(_progression.get_deck_budget(player_deck_budget))
 		active_player_rank = int(_progression.get_rank_number())
+	deck_setup.developer_deck_provider = func(owned: Array, rank: int, budget: int): return DeveloperPlaytestService.card_test_deck(card_catalog, owned, acquisition_policy, rank, budget)
 	_ui_flow.open_deck_setup(
 		card_catalog,
 		active_player_budget,
@@ -945,6 +957,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 		_collection_backend,
 		acquisition_policy
 	)
+	_developer_test_match = not deck_setup.developer_test_deck.is_empty()
 	tree.paused = true
 	opened.emit()
 
@@ -957,7 +970,9 @@ func close_game() -> void:
 	_ui_flow.close_session_surfaces()
 	_presentation.hide_preview_visuals()
 	_session.close_session()
-	_persistence.checkpoint("close_game")
+	if not _developer_test_match: _persistence.checkpoint("close_game")
+	_developer_test_match = false
+	deck_setup.developer_test_deck.clear()
 	_invalidate_state_api("close_game")
 	_opponent_collection_backend = null
 	var tree: SceneTree = get_tree()
@@ -1124,6 +1139,10 @@ func _finish_match(
 	_match_flow.finish_match(forced_winner, reason)
 	_presentation.hide_preview_visuals()
 	_refresh_views()
+	if _developer_test_match:
+		_ui_flow.show_result(_session.result_winner, _session.surrendered)
+		message_label.text = "Developer Test Deck — practice result; collection unchanged"
+		return
 	var result_payload: Dictionary = _persistence.record_match_outcome(
 		_match.get_score(),
 		_session.result_winner,
@@ -1139,6 +1158,9 @@ func _finish_match(
 
 
 func _begin_result_transition() -> void:
+	if _developer_test_match:
+		close_game()
+		return
 	_match_orchestrator.begin_result_transition(
 		_opponent_collection_backend
 	)

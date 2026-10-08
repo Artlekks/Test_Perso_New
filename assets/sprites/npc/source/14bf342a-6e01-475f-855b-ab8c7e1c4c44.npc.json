@@ -1,0 +1,47 @@
+{
+  "id": "placeholder_14bf342a",
+  "name": "Rod Angler",
+  "source": "assets/sprites/npc/source/14bf342a-6e01-475f-855b-ab8c7e1c4c44.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          6,
+          6,
+          56,
+          64
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          70,
+          40,
+          64,
+          40
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 0, \"pose_001\": 0}",
+    "animation_feet_from_left_px": "{\"pose_000\": 6.5, \"pose_001\": 59.0}"
+  },
+  "batch_generated": true
+}

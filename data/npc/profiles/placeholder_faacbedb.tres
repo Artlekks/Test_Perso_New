@@ -1,0 +1,20 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_faacbedb.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_faacbedb"
+development_name = "Seated Light Angler"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"pose_000"
+directional_mode = 5
+available_directions = PackedStringArray("UNCONFIRMED")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = false
+
+animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 0, "pose_002": 0, "pose_003": 0, "pose_004": 0, "pose_005": 0, "pose_006": 0, "pose_007": 0, "pose_008": 0, "pose_009": 0, "pose_010": 0, "pose_011": 0, "pose_012": 0, "pose_013": 0, "pose_014": 0, "pose_015": 0, "pose_016": 0, "pose_017": 0, "pose_018": 0, "pose_019": 0, "pose_020": 0, "pose_021": 0, "pose_022": 0, "pose_023": 0, "pose_024": 0, "pose_025": 0, "pose_026": 0, "pose_027": 0, "pose_028": 0, "pose_029": 0, "pose_030": 0, "pose_031": 0, "pose_032": 0, "pose_033": 0, "pose_034": 0, "pose_035": 0, "pose_036": 0, "pose_037": 0, "pose_038": 0, "pose_039": 0}
+
+animation_feet_from_left_px = {"pose_000": 12.5, "pose_001": 12.5, "pose_002": 12.5, "pose_003": 12.5, "pose_004": 12.5, "pose_005": 12.5, "pose_006": 12.5, "pose_007": 12.5, "pose_008": 12.5, "pose_009": 12.5, "pose_010": 12.5, "pose_011": 12.5, "pose_012": 12.5, "pose_013": 12.5, "pose_014": 12.5, "pose_015": 12.5, "pose_016": 12.5, "pose_017": 12.5, "pose_018": 12.5, "pose_019": 12.5, "pose_020": 19.0, "pose_021": 19.0, "pose_022": 19.0, "pose_023": 19.0, "pose_024": 19.0, "pose_025": 19.0, "pose_026": 19.0, "pose_027": 19.0, "pose_028": 19.0, "pose_029": 19.0, "pose_030": 19.0, "pose_031": 19.0, "pose_032": 19.0, "pose_033": 19.0, "pose_034": 19.0, "pose_035": 19.0, "pose_036": 19.0, "pose_037": 19.0, "pose_038": 19.0, "pose_039": 19.0}

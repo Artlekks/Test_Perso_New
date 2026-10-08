@@ -1,0 +1,174 @@
+{
+  "id": "placeholder_cac2bbc2",
+  "name": "Red Hair Traveler",
+  "source": "assets/sprites/npc/source/cac2bbc2-efe8-4023-a1c9-d06df3a6dc8a.png",
+  "animations": [
+    {
+      "name": "idle_n",
+      "fps": 1,
+      "rects": [
+        [
+          4,
+          7,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_ne",
+      "fps": 1,
+      "rects": [
+        [
+          36,
+          7,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_e",
+      "fps": 1,
+      "rects": [
+        [
+          68,
+          7,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_se",
+      "fps": 1,
+      "rects": [
+        [
+          100,
+          7,
+          33,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "idle_s",
+      "fps": 1,
+      "rects": [
+        [
+          140,
+          8,
+          24,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "walk_ne",
+      "fps": 8,
+      "rects": [
+        [
+          4,
+          63,
+          29,
+          49
+        ],
+        [
+          34,
+          63,
+          29,
+          49
+        ],
+        [
+          64,
+          63,
+          29,
+          49
+        ],
+        [
+          94,
+          63,
+          29,
+          49
+        ],
+        [
+          124,
+          63,
+          29,
+          49
+        ],
+        [
+          154,
+          63,
+          29,
+          49
+        ]
+      ]
+    },
+    {
+      "name": "walk_se",
+      "fps": 8,
+      "rects": [
+        [
+          204,
+          63,
+          33,
+          49
+        ],
+        [
+          238,
+          63,
+          33,
+          49
+        ],
+        [
+          272,
+          63,
+          33,
+          49
+        ],
+        [
+          306,
+          63,
+          33,
+          49
+        ],
+        [
+          340,
+          63,
+          33,
+          49
+        ],
+        [
+          374,
+          63,
+          33,
+          49
+        ]
+      ]
+    }
+  ],
+  "default_animation": "idle_s",
+  "mode": 5,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Reviewed five standing views N/NE/E/SE/S and NE/SE walk strips (8 FPS). Missing west views use nearest authored direction, no fabricated frames. Special role UNCONFIRMED.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"idle_n\": 4, \"idle_ne\": 3, \"idle_e\": 2, \"idle_se\": 0, \"idle_s\": 3, \"walk_ne\": 4, \"walk_se\": 4}",
+    "animation_feet_from_left_px": "{\"idle_n\": 11.0, \"idle_ne\": 17.5, \"idle_e\": 17.0, \"idle_se\": 12.0, \"idle_s\": 10.0, \"walk_ne\": 13.0, \"walk_se\": 17.0}",
+    "directional_animation_prefixes": "{\"idle\": \"idle_\", \"walk\": \"walk_\"}",
+    "default_directional_pose": "\"idle\""
+  },
+  "movement": true,
+  "batch_generated": true
+}

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_7d53dc6e.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_7d53dc6e"
+development_name = "Violet Armored Traveler"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"idle_s"
+directional_mode = 5
+available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = true
+
+animation_feet_from_bottom_px = {"idle_n": 1, "idle_ne": 0, "idle_e": 0, "idle_se": 4, "idle_s": 0, "walk_ne": 7, "walk_se": 6}
+
+animation_feet_from_left_px = {"idle_n": 15.0, "idle_ne": 21.0, "idle_e": 12.0, "idle_se": 9.0, "idle_s": 15.0, "walk_ne": 21.5, "walk_se": 16.0}
+
+directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+
+default_directional_pose = "idle"

@@ -100,11 +100,26 @@ func run() -> void:
 	if session.dialogue_service.is_active():
 		await touch(shell, "A")
 		check(triad.is_open(), "Web DEV confirms actual card game")
+		if triad.deck_setup.developer_test_deck.size() == 5:
+			check(triad._collection_backend.get_owned_cards().size() < 5, "Web fallback leaves real ownership separate")
+			triad.deck_setup._try_confirm_deck()
+			await settle(1.5)
+			check(triad._session.phase != triad.PHASE_DECK_SETUP, "Web temporary deck starts actual match")
 		triad.close_game()
 	await settle()
 	await touch(shell, "SELECT")
 	var debug_menu = game.get_node("Game/Fishing").debug_controller.debug_menu
 	check(debug_menu.is_open(), "Web SELECT opens same F10 menu")
+	check(debug_menu._playtest_page and debug_menu._playtest_rows[0].text.contains("Developer Mode: ON"), "Web F10 starts with visible Developer Mode")
+	await touch(shell, "A")
+	check(not developer.enabled, "Web DOM A toggles DEV OFF")
+	await touch(shell, "A")
+	check(developer.enabled, "Web DOM A toggles DEV ON")
+	debug_menu._playtest_row = 1
+	await touch(shell, "A")
+	check(debug_menu._travel_submenu, "Web DOM A opens Travel To")
+	await touch(shell, "B")
+	check(not debug_menu._travel_submenu and debug_menu.is_open(), "Web DOM B backs out of travel")
 	await touch(shell, "SELECT")
 	check(not debug_menu.is_open(), "Web SELECT closes same F10 menu")
 	developer.set_enabled(false)

@@ -1,0 +1,338 @@
+[
+  {
+    "source": "assets/sprites/npc/source/14bf342a-6e01-475f-855b-ab8c7e1c4c44.png",
+    "dimensions": [
+      176,
+      89
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/21f7b2b2-8e28-4d4e-8e58-fa2d53043887.png",
+    "dimensions": [
+      682,
+      132
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 27,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/3cb9da3b-dea9-41aa-9169-cfff07f937f6.png",
+    "dimensions": [
+      451,
+      123
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/43fb177f-03b9-47b6-b25d-b0572f705688.png",
+    "dimensions": [
+      645,
+      139
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/4b58ab5e-1e86-4227-bb53-623429065b8c.png",
+    "dimensions": [
+      126,
+      65
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/68024840-6a29-47d0-a763-d362de438e03.png",
+    "dimensions": [
+      93,
+      68
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/6d89ee8e-f48a-4e46-8dc6-89ad1a8bab16.png",
+    "dimensions": [
+      268,
+      60
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + fly NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/78f1768c-ad54-4da1-b8da-2a6bda09c4d2.png",
+    "dimensions": [
+      544,
+      141
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/7d53dc6e-3831-4a26-83af-f689f5c590de.png",
+    "dimensions": [
+      536,
+      140
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/7f1b19bc-6451-40fb-9baa-02e3cf16b2f9.png",
+    "dimensions": [
+      83,
+      62
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/837b6a03-4c6f-406b-b808-46862d834e7f.png",
+    "dimensions": [
+      446,
+      65
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 12,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/8483df78-0886-42ff-9faf-01c0eec86da6.png",
+    "dimensions": [
+      673,
+      217
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 62,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/85f413fb-8539-46a6-9dda-fd041a900d84.png",
+    "dimensions": [
+      587,
+      118
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 28,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/8c3ae570-50ed-470c-ab9f-5b5658c15e5e.png",
+    "dimensions": [
+      468,
+      140
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/9d2e2d78-50ed-4078-b2af-fd7d31cb3ac2.png",
+    "dimensions": [
+      509,
+      134
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/c3997e38-4619-4daf-ba52-37f21ea0c26e.png",
+    "dimensions": [
+      234,
+      72
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 5,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/cac2bbc2-efe8-4023-a1c9-d06df3a6dc8a.png",
+    "dimensions": [
+      423,
+      120
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/d1282736-f781-4e81-892d-7e7f21143d14.png",
+    "dimensions": [
+      438,
+      123
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/d7c2eeb9-b691-4058-a2c1-62ddb5fcac7a.png",
+    "dimensions": [
+      77,
+      73
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/e1466c4f-5a8f-49c2-baa7-6e73af652713.png",
+    "dimensions": [
+      102,
+      71
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/e5085f21-5579-4f00-a04f-b00d19e870c5.png",
+    "dimensions": [
+      434,
+      53
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 10,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/e8e1ac56-298c-42a9-849b-89e06978b0cc.png",
+    "dimensions": [
+      829,
+      233
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 43,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/ea87e795-7281-42b8-aa5e-fdf3e655b971.png",
+    "dimensions": [
+      524,
+      127
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 16,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/f3876069-ee69-4b97-aacc-58d174d96f3d.png",
+    "dimensions": [
+      95,
+      69
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 2,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/f8644d09-2600-4edf-87b9-995fcd6c5ee4.png",
+    "dimensions": [
+      195,
+      64
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 5,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/faacbedb-1832-444b-9b47-0d3ec5c62751.png",
+    "dimensions": [
+      855,
+      100
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 40,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  },
+  {
+    "source": "assets/sprites/npc/source/ff1c0303-fa8f-4d5b-b0aa-3e7087bfd24b.png",
+    "dimensions": [
+      494,
+      138
+    ],
+    "status": "CONVERTED_REVIEWED_GROUPS",
+    "closed_frames": 17,
+    "role": "UNCONFIRMED",
+    "direction": "N/NE/E/SE/S; west absent",
+    "animation": "idle + walk NE/SE"
+  },
+  {
+    "source": "assets/sprites/npc/source/ff6dba97-fa6c-47e4-a65f-6b3069ef207f.png",
+    "dimensions": [
+      332,
+      142
+    ],
+    "status": "POSES_EXTRACTED_NEEDS_REVIEW",
+    "closed_frames": 16,
+    "role": "UNCONFIRMED",
+    "direction": "NEEDS_REVIEW",
+    "animation": "NEEDS_REVIEW"
+  }
+]

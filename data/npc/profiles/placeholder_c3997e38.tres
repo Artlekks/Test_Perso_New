@@ -1,0 +1,20 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_c3997e38.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_c3997e38"
+development_name = "Gold Armored Stout Traveler"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"pose_000"
+directional_mode = 5
+available_directions = PackedStringArray("UNCONFIRMED")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = false
+
+animation_feet_from_bottom_px = {"pose_000": 0, "pose_001": 7, "pose_002": 3, "pose_003": 4, "pose_004": 1}
+
+animation_feet_from_left_px = {"pose_000": 12.5, "pose_001": 13.0, "pose_002": 19.0, "pose_003": 18.0, "pose_004": 20.0}

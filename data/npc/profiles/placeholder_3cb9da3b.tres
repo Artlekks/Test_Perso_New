@@ -1,0 +1,24 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_3cb9da3b.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_3cb9da3b"
+development_name = "Turban Trader"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"idle_s"
+directional_mode = 5
+available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = true
+
+animation_feet_from_bottom_px = {"idle_n": 1, "idle_ne": 2, "idle_e": 3, "idle_se": 3, "idle_s": 4, "walk_ne": 8, "walk_se": 5}
+
+animation_feet_from_left_px = {"idle_n": 11.0, "idle_ne": 13.0, "idle_e": 14.0, "idle_se": 11.5, "idle_s": 17.5, "walk_ne": 14.0, "walk_se": 19.0}
+
+directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+
+default_directional_pose = "idle"

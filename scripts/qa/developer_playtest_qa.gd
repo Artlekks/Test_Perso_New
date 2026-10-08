@@ -81,6 +81,21 @@ func run() -> void:
 		shell.controls.touch_end(78)
 		await settle()
 		check(game.is_open(), "A confirms actual card game entry without granting inventory")
+		check(game.deck_setup.developer_test_deck.size() == 5 and game.deck_setup._deck.size() == 5, "empty real collection gets exactly five temporary legitimate cards")
+		var deck_before := bytes_snapshot()
+		game.deck_setup._try_confirm_deck()
+		await settle()
+		check(game._session.phase != game.PHASE_DECK_SETUP, "temporary deck starts normal match")
+		check(game._live_match.get_starting_player_cards().size() == 5, "normal match uses five borrowed cards")
+		check(game._collection_backend.get_owned_cards().is_empty(), "borrowed match does not mutate real collection")
+		game._finish_match(game.OWNER_OPPONENT, &"surrender")
+		game._begin_result_transition()
+		check(bytes_snapshot() == deck_before, "temporary match/start/result/close never saves borrowed cards or stakes")
+		game.open_game_by_id(npc.opponent_id)
+		check(game.is_open() and game.deck_setup.developer_test_deck.size() == 5, "fallback can be reopened without permanent grant")
+		developer.set_enabled(false)
+		check(not game.is_open() and game.deck_setup.developer_test_deck.is_empty(), "DEV OFF immediately releases temporary deck/session")
+		check(bytes_snapshot() == deck_before and game._collection_backend.get_owned_cards().is_empty(), "DEV OFF leaves real collection and save bytes unchanged")
 		game.close_game()
 	await settle()
 	developer.set_enabled(false)
@@ -105,11 +120,30 @@ func run() -> void:
 	await settle()
 	var menu: Node = shell.game.get_node("Game/Fishing").debug_controller.debug_menu
 	check(menu.is_open() and paused, "SELECT opens modal existing F10 menu during exploration")
+	check(menu._playtest_page and menu._playtest_rows[0].text.contains("Developer Mode: ON"), "Developer Mode is initial top entry")
+	shell.controls.touch_begin(83, shell.controls.buttons.A.get_center())
+	await process_frame
+	shell.controls.touch_end(83)
+	await settle()
+	check(not developer.enabled, "mobile A toggles Developer Mode OFF")
+	shell.controls.touch_begin(84, shell.controls.buttons.A.get_center())
+	await process_frame
+	shell.controls.touch_end(84)
+	await settle()
+	check(developer.enabled, "mobile A toggles Developer Mode ON")
+	menu._playtest_row = 1
+	menu._playtest_activate()
+	check(menu._travel_submenu, "A activation opens authored Travel To submenu")
+	var back := InputEventKey.new()
+	back.physical_keycode = KEY_I
+	back.pressed = true
+	check(not menu.handle_input(back) and not menu._travel_submenu and menu.is_open(), "B backs out of travel without closing F10")
 	shell.controls.touch_begin(81, shell.controls.buttons.START.get_center())
 	await process_frame
 	shell.controls.touch_end(81)
 	await settle()
-	check(menu._playtest_page, "START selects PLAYTEST section through Space")
+	check(not menu._playtest_page, "START switches PLAYTEST to existing FISHING QA")
+	menu._toggle_playtest_page()
 	if OS.get_cmdline_user_args().has("--rendered"):
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("build/developer-playtest-menu.png")
@@ -129,6 +163,7 @@ func run() -> void:
 	check(developer.grant_loadout("cards").success, "explicit isolated card loadout command")
 	game = shell.game.get_node("UI/TripleTriadGame")
 	check(game._collection_backend.get_owned_cards().size() >= 5, "card loadout provides valid collection")
+	check(DeveloperPlaytestService.card_test_deck(game.card_catalog, game._collection_backend.get_owned_cards(), game.acquisition_policy, 6, 30).is_empty(), "real legal collection preserves real deck workflow")
 	check(game.get_acquisition_snapshot().claimed_bundle_ids.is_empty(), "loadout does not forge starter case claim")
 	developer.authorize_isolated_mobile_save(false)
 	developer.set_enabled(false)

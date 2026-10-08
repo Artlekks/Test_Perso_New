@@ -21,6 +21,9 @@ func run() -> void:
 		var profile = entry.profile
 		check(profile.collider_profile != null and profile.shadow_enabled, "collider and shadow profiles")
 		check(profile.sprite_frames.has_animation(profile.default_animation), "default animation exists")
+		for pose in profile.directional_animation_prefixes:
+			var prefix: String = profile.directional_animation_prefixes[pose]
+			check(Array(profile.sprite_frames.get_animation_names()).any(func(name): return String(name).begins_with(prefix)), "directional pose resolves authored animation " + String(entry.id) + "/" + str(pose))
 		for pose in profile.directional_aliases:
 			for direction in profile.directional_aliases[pose]:
 				check(profile.sprite_frames.has_animation(profile.directional_aliases[pose][direction].animation), "alias exists")
@@ -93,6 +96,12 @@ func run() -> void:
 			for frame in range(5): await process_frame
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(directory.path_join("catalogue_%d.png" % index))
+		preview.focus = preview.actors[10].position
+		preview.get_node("Camera3D").size = 2.5
+		preview._update_camera()
+		for frame in range(5): await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(directory.path_join("catalogue-closeup.png"))
 	preview.free()
 	print("NPC Catalogue QA: %d/%d passed" % [checks-failures.size(), checks])
 	quit(0 if failures.is_empty() else 1)

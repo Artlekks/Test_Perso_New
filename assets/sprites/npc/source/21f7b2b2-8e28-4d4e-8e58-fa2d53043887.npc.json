@@ -1,0 +1,347 @@
+{
+  "id": "placeholder_21f7b2b2",
+  "name": "Seated Angler",
+  "source": "assets/sprites/npc/source/21f7b2b2-8e28-4d4e-8e58-fa2d53043887.png",
+  "animations": [
+    {
+      "name": "pose_000",
+      "fps": 1,
+      "rects": [
+        [
+          8,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_001",
+      "fps": 1,
+      "rects": [
+        [
+          55,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_002",
+      "fps": 1,
+      "rects": [
+        [
+          102,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_003",
+      "fps": 1,
+      "rects": [
+        [
+          149,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_004",
+      "fps": 1,
+      "rects": [
+        [
+          196,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_005",
+      "fps": 1,
+      "rects": [
+        [
+          243,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_006",
+      "fps": 1,
+      "rects": [
+        [
+          290,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_007",
+      "fps": 1,
+      "rects": [
+        [
+          337,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_008",
+      "fps": 1,
+      "rects": [
+        [
+          384,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_009",
+      "fps": 1,
+      "rects": [
+        [
+          431,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_010",
+      "fps": 1,
+      "rects": [
+        [
+          478,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_011",
+      "fps": 1,
+      "rects": [
+        [
+          525,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_012",
+      "fps": 1,
+      "rects": [
+        [
+          572,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_013",
+      "fps": 1,
+      "rects": [
+        [
+          619,
+          5,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_014",
+      "fps": 1,
+      "rects": [
+        [
+          55,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_015",
+      "fps": 1,
+      "rects": [
+        [
+          102,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_016",
+      "fps": 1,
+      "rects": [
+        [
+          149,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_017",
+      "fps": 1,
+      "rects": [
+        [
+          196,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_018",
+      "fps": 1,
+      "rects": [
+        [
+          243,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_019",
+      "fps": 1,
+      "rects": [
+        [
+          290,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_020",
+      "fps": 1,
+      "rects": [
+        [
+          337,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_021",
+      "fps": 1,
+      "rects": [
+        [
+          384,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_022",
+      "fps": 1,
+      "rects": [
+        [
+          431,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_023",
+      "fps": 1,
+      "rects": [
+        [
+          478,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_024",
+      "fps": 1,
+      "rects": [
+        [
+          525,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_025",
+      "fps": 1,
+      "rects": [
+        [
+          572,
+          69,
+          46,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "pose_026",
+      "fps": 1,
+      "rects": [
+        [
+          619,
+          69,
+          46,
+          55
+        ]
+      ]
+    }
+  ],
+  "default_animation": "pose_000",
+  "mode": 5,
+  "directions": [
+    "UNCONFIRMED"
+  ],
+  "collider": "humanoid_standard",
+  "tags": [
+    "placeholder",
+    "role_unconfirmed"
+  ],
+  "note": "Closed guide cells preserved as individually inspectable static poses. Direction, row animation/timing and special role UNCONFIRMED; open guides NEEDS_REVIEW. No walk cycle invented.",
+  "profile_overrides": {
+    "animation_feet_from_bottom_px": "{\"pose_000\": 2, \"pose_001\": 2, \"pose_002\": 2, \"pose_003\": 2, \"pose_004\": 2, \"pose_005\": 2, \"pose_006\": 2, \"pose_007\": 2, \"pose_008\": 2, \"pose_009\": 2, \"pose_010\": 2, \"pose_011\": 2, \"pose_012\": 2, \"pose_013\": 2, \"pose_014\": 2, \"pose_015\": 2, \"pose_016\": 2, \"pose_017\": 2, \"pose_018\": 2, \"pose_019\": 2, \"pose_020\": 2, \"pose_021\": 2, \"pose_022\": 2, \"pose_023\": 2, \"pose_024\": 2, \"pose_025\": 2, \"pose_026\": 2}",
+    "animation_feet_from_left_px": "{\"pose_000\": 20.0, \"pose_001\": 20.0, \"pose_002\": 20.0, \"pose_003\": 20.0, \"pose_004\": 20.0, \"pose_005\": 20.0, \"pose_006\": 20.0, \"pose_007\": 20.0, \"pose_008\": 20.0, \"pose_009\": 20.0, \"pose_010\": 20.0, \"pose_011\": 20.0, \"pose_012\": 20.0, \"pose_013\": 20.0, \"pose_014\": 20.0, \"pose_015\": 20.0, \"pose_016\": 20.0, \"pose_017\": 20.0, \"pose_018\": 20.0, \"pose_019\": 20.0, \"pose_020\": 20.0, \"pose_021\": 20.0, \"pose_022\": 20.0, \"pose_023\": 20.0, \"pose_024\": 20.0, \"pose_025\": 20.0, \"pose_026\": 20.0}"
+  },
+  "batch_generated": true
+}

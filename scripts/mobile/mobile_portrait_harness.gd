@@ -1,6 +1,8 @@
 extends Control
 
 const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
+const PlaytestWindow = preload("res://scripts/mobile/mobile_playtest_window.gd")
+const RESPONSIVE_WINDOWS := ["FishingDebugMenu", "TripleTriadDebugMenu", "FishingEconomyMenu", "BeachCraftingMenu", "FishingCardMakerMenu", "TripleTriadGame", "PlayableCampaignQAGuide"]
 @export_file("*.tscn") var gameplay_scene: String = "res://actors/FishingTestScene_V2.tscn"
 @export var reference_size := Vector2i(390, 844)
 @export var fallback_safe_insets := Vector4(0, 47, 0, 34)
@@ -18,6 +20,7 @@ var gameplay_image: TextureRect
 var safe_rect := Rect2()
 var _forwarding := false
 var _bound_layers: Dictionary = {}
+var _window_touches := {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -183,6 +186,19 @@ func _adapt_mobile_presentation() -> void:
 		if is_instance_valid(layer):
 			layers.append(layer)
 	for layer in layers:
+		if layer.has_meta("development_status"):
+			# Diagnostic layers alone join the shell's control canvas. Gameplay
+			# HUD and location-name artwork retain their established ownership.
+			if layer.get_parent() != controls: layer.reparent(controls)
+			layer.custom_viewport = get_viewport()
+			layer.offset = controls.global_position + Vector2(controls.size.x * 0.78, controls.size.y * 0.60)
+			for label in layer.get_children():
+				if label is Label:
+					label.position = Vector2.ZERO
+					label.size = Vector2(controls.size.x * 0.21, controls.size.y * 0.21)
+					label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+					label.add_theme_font_size_override("font_size", 10)
+			continue
 		if layer.name == "DeveloperIndicator":
 			layer.offset = Vector2(0, gameplay_viewport.size.y - 24)
 			continue
@@ -199,6 +215,14 @@ func _adapt_mobile_presentation() -> void:
 					child.offset_top = old.x * 480.0 + old.z
 					child.offset_bottom = old.y * 480.0 + old.w
 		layer.offset = layer.get_meta("mobile_original_offset") + Vector2(0, extra_height * 0.5)
+		if layer.name in RESPONSIVE_WINDOWS and layer.is_inside_tree():
+			layer.offset = Vector2.ZERO
+			var window_root := layer.get_node_or_null("Root") as Control
+			if window_root != null and not layer.has_node("MobilePlaytestWindow"):
+				var fitter := PlaytestWindow.new()
+				fitter.name = "MobilePlaytestWindow"
+				layer.add_child(fitter)
+				fitter.configure(window_root)
 		if layer.name == "FishingEconomyMenu" and not layer.has_meta("mobile_economy_readability"):
 			layer.set_meta("mobile_economy_readability", true)
 			# This menu alone uses unscaled 7-9px text; the fishing menu and
@@ -283,7 +307,7 @@ func _bind_session_layers() -> void:
 		if not _bound_layers.has(layer.get_instance_id()):
 			_bound_layers[layer.get_instance_id()] = {"node": weakref(layer), "parent": weakref(layer.get_parent())}
 		# Session data stays at its original root; presentation joins this viewport.
-		layer.reparent(gameplay_viewport)
+		if not layer.has_meta("development_status"): layer.reparent(gameplay_viewport)
 
 func _send_key(event: InputEventKey) -> void:
 	if event.physical_keycode in [KEY_W, KEY_A, KEY_S, KEY_D]:
@@ -294,6 +318,19 @@ func _send_key(event: InputEventKey) -> void:
 		Input.parse_input_event(event)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		var scrolling := false
+		for window in gameplay_viewport.find_children("MobilePlaytestWindow", "Node", true, false):
+			if window.bar != null and window.bar.visible: scrolling = true
+		if event is InputEventScreenTouch and event.pressed and scrolling and Rect2(gameplay_image.position, gameplay_image.size).has_point(event.position):
+			_window_touches[event.index] = true
+		if _window_touches.has(event.index):
+			var local_event = event.duplicate()
+			local_event.position = (event.position - gameplay_image.position) * Vector2(gameplay_viewport.size) / gameplay_image.size
+			gameplay_viewport.push_input(local_event, true)
+			if event is InputEventScreenTouch and not event.pressed: _window_touches.erase(event.index)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and not _forwarding:
 		_forwarding = true
 		gameplay_viewport.push_input(event, true)
@@ -326,6 +363,12 @@ func _exit_tree() -> void:
 		var layer = entry.node.get_ref()
 		var original_parent = entry.parent.get_ref()
 		if is_instance_valid(layer) and is_instance_valid(original_parent):
+			var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
+			if fitter != null:
+				fitter.surface.position = fitter.original_position
+				fitter.bar.free()
+				fitter.free()
+			if layer.has_meta("development_status"): layer.custom_viewport = null
 			if layer.has_meta("mobile_original_offset"):
 				layer.offset = layer.get_meta("mobile_original_offset")
 				layer.remove_meta("mobile_original_offset")

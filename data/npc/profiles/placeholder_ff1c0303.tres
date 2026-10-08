@@ -1,0 +1,24 @@
+[gd_resource type="Resource" format=3]
+[ext_resource type="Script" path="res://scripts/npc/npc_visual_profile.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://data/npc/frames/placeholder_ff1c0303.tres" id="frames"]
+[ext_resource type="Resource" path="res://data/npc/colliders/humanoid_standard.tres" id="collider"]
+[resource]
+script = ExtResource("script")
+npc_id = &"placeholder_ff1c0303"
+development_name = "Green Turban Traveler"
+sprite_frames = ExtResource("frames")
+collider_profile = ExtResource("collider")
+default_animation = &"idle_s"
+directional_mode = 5
+available_directions = PackedStringArray("N", "NE", "E", "SE", "S")
+role_tags = PackedStringArray("placeholder", "role_unconfirmed")
+shadow_family = &"humanoid"
+movement_capability = true
+
+animation_feet_from_bottom_px = {"idle_n": 0, "idle_ne": 0, "idle_e": 0, "idle_se": 0, "idle_s": 0, "walk_ne": 8, "walk_se": 2}
+
+animation_feet_from_left_px = {"idle_n": 16.5, "idle_ne": 18.5, "idle_e": 11.0, "idle_se": 9.0, "idle_s": 16.5, "walk_ne": 24.0, "walk_se": 14.0}
+
+directional_animation_prefixes = {"idle": "idle_", "walk": "walk_"}
+
+default_directional_pose = "idle"
