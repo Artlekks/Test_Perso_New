@@ -28,11 +28,13 @@ func _ready() -> void:
 		sprite.animation_changed.connect(apply_frame)
 	apply_profile()
 	update_anchor()
-	if not Engine.is_editor_hint(): _install_marker_anchor.call_deferred()
 
 func _install_marker_anchor() -> void:
 	var actor := get_parent() as Node3D
-	if actor == null or profile == null or actor.has_node("WorldMarkerAnchor"): return
+	if actor == null or profile == null: return
+	if actor.has_node("WorldMarkerAnchor"):
+		actor.get_node("WorldMarkerAnchor").configure(actor, profile)
+		return
 	if not actor.has_node("PromptLabel3D") and not actor.has_node("RequestMarker"): return
 	var anchor := WorldMarkerAnchor.new()
 	anchor.name = "WorldMarkerAnchor"
@@ -107,6 +109,7 @@ func apply_profile() -> void:
 		if profile.flat_on_ground:
 			sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 		apply_frame()
+	if not Engine.is_editor_hint(): _install_marker_anchor.call_deferred()
 
 func apply_frame() -> void:
 	if sprite == null or profile == null: return

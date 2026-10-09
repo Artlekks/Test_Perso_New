@@ -74,19 +74,29 @@ The temporary DEV hand still creates no real ownership/save/stakes changes.
 `scripts/world/world_marker_anchor.gd` creates one root-owned **WorldMarkerAnchor**
 for each GroundPresentation actor that has PromptLabel3D or RequestMarker.
 `WorldActorPresentationProfile.marker_height` (default 0.72 world units) supplies
-height. Its world-aligned transform follows the physical actor root. Existing
-named markers register with the anchor, opt out of inherited orientation, and
-copy that transform; labels billboard independently. Their public paths remain
-unchanged for interaction/request controllers. No camera-relative translation or
-world-scene compensation was added. Existing reusable base scenes retain their
-public markers; runtime installation is deferred until actor initialization ends.
+height. Its world-aligned transform follows the physical actor root. The runtime
+anchor audit found that a correctly fixed world-height point still has lateral
+perspective parallax against a billboarded body in the authored exploration
+camera. The user explicitly selected screen-space icon placement while retaining
+the fixed physical anchor.
+
+The anchor now owns `MarkerCanvas` and one camera-facing 2D visual per source.
+Icons project vertically above the physical feet using the profile's marker
+height and scale from the source pixel size at the actor's depth. Only this
+screen presentation responds to the camera. Physical anchors, actors, sprites,
+shadows and camera transforms are unchanged. Existing PromptLabel3D/RequestMarker
+paths remain state sources; their 3D labels use render layer 0 so there is no
+duplicate icon. Fonts, text, outline, colors and request/modal visibility come
+from those sources. No destination-scene placement supplies the rendered height.
 Fishing rod/bait screen-space helpers are deliberately unaffected.
 
-QA verifies actual Card Maker patrol movement/following, then full eight-angle
-orbits around Card Maker, Beach Crafter and Harbor Request Board. Marker and shadow
-world positions stay fixed during camera orbit. Four rendered captures per actor
-are retained. Camera-visible silhouette registration still needs physical-phone
-acceptance; tests prove root-space positioning, not every perceptual art judgement.
+`world_marker_anchor_qa.gd` inventories all 24 marker-bearing actor bases and
+derived traders, checks request states and real Card Maker patrol movement, and
+runs complete 360-degree orbits around Card Maker, Still Water Master and Crafter.
+Rendered runs inspect actual glyph pixels at every 22.5-degree step, supplementing
+the physical transform checks. See `world_marker_runtime_anchor_audit_v1.md` for
+the before/after evidence, complete actor list and commands. Physical iPhone
+acceptance is still separate from native rendered execution.
 
 ## Shadow families / exact tuning surface
 
