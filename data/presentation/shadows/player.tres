@@ -5,6 +5,6 @@
 [resource]
 script = ExtResource("script")
 family = &"player"
-width = 0.4
-depth = 0.4
+width = 0.33
+depth = 0.33
 ground_offset = 0.05
