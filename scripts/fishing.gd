@@ -1,5 +1,6 @@
 extends Node
 const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
+signal cast_started
 
 const FishingSessionServicesScript = preload(
 	"res://scripts/fishing_session_services.gd"
@@ -2112,6 +2113,5 @@ func _commit_curved_cast() -> void:
 	bait_landed_during_throw = false
 
 	phase = Phase.THROW
-	if is_instance_valid(session_services) and session_services.economy_playtest_telemetry != null:
-		session_services.economy_playtest_telemetry.cast_started()
 	sprite_director.play(&"Throw")
+	cast_started.emit()

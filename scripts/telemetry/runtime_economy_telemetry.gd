@@ -150,6 +150,7 @@ func _connect_runtime() -> void:
 	var runtime = _get_runtime()
 	if not is_instance_valid(runtime):
 		return
+	_connect_signal(runtime, "cast_started", cast_started, _runtime_connections)
 	_connect_signal(runtime.encounter, "bite_opportunity_started", _encounter, _runtime_connections)
 	_connect_signal(runtime.encounter, "fish_hooked", _hook, _runtime_connections)
 	_connect_signal(runtime.encounter, "bite_missed", _miss, _runtime_connections)

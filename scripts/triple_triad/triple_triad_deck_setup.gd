@@ -13,17 +13,16 @@ const MIN_PROFILE_COUNT := 5
 const VISIBLE_PROFILE_COUNT := 5
 const MAX_PROFILE_COUNT := 50
 const HAND_SIZE := 5
-const COLLECTION_COLUMNS := 10
-const VISIBLE_COLLECTION_COLUMNS := 9
+const COLLECTION_COLUMNS := 5
+const VISIBLE_COLLECTION_COLUMNS := 5
 const COLLECTION_ROWS := 2
 const PAGE_SIZE := COLLECTION_COLUMNS * COLLECTION_ROWS
-const COLLECTION_SCALE := Vector2(0.50, 0.50)
-# CardView is 116x132. At 0.50 scale the visible card is 58x66, so a
-# 59 px horizontal step gives both deck and collection cards a 1 px gap.
-const COLLECTION_STEP_X := 59.0
-const COLLECTION_STEP_Y := 69.0
+const COLLECTION_SCALE := Vector2.ONE
+# Native 116x132 cards with six logical pixels between columns.
+const COLLECTION_STEP_X := 122.0
+const COLLECTION_STEP_Y := 140.0
 const DECK_SCALE := COLLECTION_SCALE
-const DECK_STEP_X := 58.0
+const DECK_STEP_X := 122.0
 const DeckStore = preload("res://scripts/triple_triad/triple_triad_deck_store.gd")
 const SAVE_PATH := DeckStore.SAVE_PATH
 const SAVE_VERSION := 2
@@ -49,7 +48,7 @@ const NAV_SORT := 3
 const COLLECTION_FOCUS_SCALE := COLLECTION_SCALE
 const COLLECTION_FOCUS_Y := 0.0
 const COLLECTION_CARD_OFFSET := Vector2.ZERO
-const DECK_SLOT_SIZE := Vector2(58.0, 66.0)
+const DECK_SLOT_SIZE := Vector2(116.0, 132.0)
 const DECK_CARD_OFFSET := Vector2.ZERO
 const DECK_SELECTED_X_OFFSET := -4.0
 const USED_CARD_MODULATE := Color(0.46, 0.46, 0.46, 1.0)
@@ -121,10 +120,13 @@ var _show_extended_details: bool = false
 var _nav_zone: int = NAV_COLLECTION
 var _profile_nav_index: int = 0
 var _deck_cursor_index: int = 0
+var _slot_replacement_requested := -1
 var _sort_cursor_index: int = 0
 
 
 func _ready() -> void:
+	preload("res://scripts/ui/triple_triad_portrait_layout.gd").deck(self)
+	mobile_start_enabled = preload("res://scripts/ui/portrait_ui.gd").mobile(self)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	_profile_name_labels = [
@@ -194,12 +196,14 @@ func open_setup(
 	_nav_zone = NAV_PROFILES
 	_profile_nav_index = _profile_index
 	_deck_cursor_index = 0
+	_slot_replacement_requested = -1
 	_sort_cursor_index = _sort_button_index_from_mode()
 	visible = true
 	_refresh_all()
 
 
 func close_setup() -> void:
+	_slot_replacement_requested = -1
 	if visible:
 		_save_current_profile()
 	_state = STATE_BROWSE
@@ -227,7 +231,7 @@ func _input(event: InputEvent) -> void:
 	if _state == STATE_ANIMATING:
 		return
 
-	if mobile_start_enabled and _is_start(event):
+	if _is_start(event):
 		_try_confirm_deck()
 		_accept_input()
 		return
@@ -271,7 +275,12 @@ func _handle_back_navigation() -> void:
 	if _state == STATE_REPLACE:
 		_cancel_replacement()
 		return
-	if _nav_zone == NAV_COLLECTION or _nav_zone == NAV_SORT:
+	if _nav_zone == NAV_COLLECTION and _slot_replacement_requested >= 0:
+		_slot_replacement_requested = -1
+		_nav_zone = NAV_DECK
+		_refresh_all()
+		return
+	if _nav_zone == NAV_COLLECTION or _nav_zone == NAV_SORT or _nav_zone == NAV_DECK:
 		_return_to_profiles()
 		_refresh_all()
 		return
@@ -541,11 +550,11 @@ func _refresh_collection() -> void:
 			view.visible = false
 
 func _refresh_deck() -> void:
-	deck_arrow.visible = _state == STATE_REPLACE
+	deck_arrow.visible = _state == STATE_REPLACE or _nav_zone == NAV_DECK
 	for index in range(_deck_views.size()):
 		var view: Control = _deck_views[index]
 		view.pivot_offset = Vector2.ZERO
-		var is_replace_target: bool = _state == STATE_REPLACE and index == _replace_slot_index
+		var is_replace_target: bool = (_state == STATE_REPLACE and index == _replace_slot_index) or (_nav_zone == NAV_DECK and index == _deck_cursor_index)
 		view.position = DECK_CARD_OFFSET + Vector2(
 			float(index) * DECK_STEP_X + (DECK_SELECTED_X_OFFSET if is_replace_target else 0.0),
 			0.0
@@ -561,9 +570,10 @@ func _refresh_deck() -> void:
 			view.visible = false
 
 	_refresh_slot_styles()
-	if _state == STATE_REPLACE:
+	if _state == STATE_REPLACE or _nav_zone == NAV_DECK:
+		var slot := _replace_slot_index if _state == STATE_REPLACE else _deck_cursor_index
 		var deck_arrow_local := DECK_CARD_OFFSET + Vector2(
-			float(_replace_slot_index) * DECK_STEP_X - 14.0,
+			float(slot) * DECK_STEP_X - 10.0,
 			(DECK_SLOT_SIZE.y * 0.5) - 6.0
 		)
 		deck_arrow.position = deck_root.position + Vector2(
@@ -578,7 +588,7 @@ func _refresh_labels() -> void:
 		_cards.size(),
 		_total_catalog_card_count(),
 	]
-	if not developer_test_deck.is_empty(): cards_owned_label.text = "Test Cards  5 (temporary)"
+	if not developer_test_deck.is_empty(): cards_owned_label.text = "Practice Cards 5"
 	budget_label.text = "Pts %d/%d" % [
 		_deck_cost(),
 		_budget_limit,
@@ -615,14 +625,14 @@ func _refresh_labels() -> void:
 		and _nav_zone == NAV_PROFILES
 	)
 	if _profile_nav_index < 0:
-		profile_selection_arrow.position = Vector2(19.0, 84.0)
+		profile_selection_arrow.position = Vector2(566.0, 14.0)
 	else:
 		var selected_local: int = (
 			_profile_nav_index - deck_page_start
 		)
 		profile_selection_arrow.position = Vector2(
-			19.0,
-			109.0 + float(selected_local) * 25.0
+			float(selected_local) * 108.0 + 4.0,
+			14.0
 		)
 
 	var detail_focus_card = _focused_detail_card()
@@ -703,6 +713,8 @@ func _saved_profile_count(profile_index: int) -> int:
 
 func _navigate(dx: int, dy: int) -> void:
 	match _nav_zone:
+		NAV_DECK:
+			_deck_cursor_index = clampi(_deck_cursor_index + dx, 0, HAND_SIZE - 1)
 		NAV_PROFILES:
 			_navigate_profiles(dx, dy)
 		NAV_SORT:
@@ -712,8 +724,8 @@ func _navigate(dx: int, dy: int) -> void:
 	_refresh_all()
 
 
-func _navigate_profiles(_dx: int, dy: int) -> void:
-	if dy == 0:
+func _navigate_profiles(dx: int, dy: int) -> void:
+	if dx == 0 and dy == 0:
 		return
 
 	var page_start: int = _deck_page_index * VISIBLE_PROFILE_COUNT
@@ -722,7 +734,15 @@ func _navigate_profiles(_dx: int, dy: int) -> void:
 		_total_profiles - 1
 	)
 
-	if _profile_nav_index < 0:
+	if dx != 0:
+		# Profile buttons are now a horizontal row ending in New Deck.
+		if _profile_nav_index < 0:
+			_profile_nav_index = page_end if dx < 0 else page_start
+		elif (_profile_nav_index == page_end and dx > 0) or (_profile_nav_index == page_start and dx < 0):
+			_profile_nav_index = -1
+		else:
+			_profile_nav_index = clampi(_profile_nav_index + dx, page_start, page_end)
+	elif _profile_nav_index < 0:
 		if dy > 0 and page_start <= page_end:
 			_profile_nav_index = page_start
 	else:
@@ -759,6 +779,11 @@ func _navigate_collection(dx: int, dy: int) -> void:
 
 func _activate_navigation_target() -> void:
 	match _nav_zone:
+		NAV_DECK:
+			_slot_replacement_requested = _deck_cursor_index
+			_nav_zone = NAV_COLLECTION
+			_status_text = "Choose a card for slot %d." % (_deck_cursor_index + 1)
+			_refresh_all()
 		NAV_PROFILES:
 			if _profile_nav_index < 0:
 				_on_new_deck_pressed()
@@ -780,7 +805,8 @@ func _enter_collection_for_profile(profile_index: int) -> void:
 	_switch_profile(profile_index)
 	_profile_index = profile_index
 	_profile_nav_index = profile_index
-	_nav_zone = NAV_COLLECTION
+	_nav_zone = NAV_DECK
+	_slot_replacement_requested = -1
 	_cursor_index = clampi(
 		_page_index * PAGE_SIZE,
 		0,
@@ -796,6 +822,7 @@ func _return_to_collection() -> void:
 
 
 func _return_to_profiles() -> void:
+	_slot_replacement_requested = -1
 	_nav_zone = NAV_PROFILES
 	_deck_page_index = floori(
 		float(_profile_index) / float(VISIBLE_PROFILE_COUNT)
@@ -805,6 +832,8 @@ func _return_to_profiles() -> void:
 
 
 func _focused_detail_card():
+	if _nav_zone == NAV_DECK:
+		return _deck[_deck_cursor_index] if _deck_cursor_index < _deck.size() else null
 	if _cursor_index >= 0 and _cursor_index < _cards.size():
 		return _cards[_cursor_index]
 	return null
@@ -838,12 +867,6 @@ func _move_cursor(dx: int, dy: int) -> void:
 	if page_count <= 0:
 		return
 	var local_index: int = clampi(_cursor_index - page_start, 0, page_count - 1)
-	if mobile_start_enabled:
-		_cursor_index = page_start + clampi(local_index + dx + dy, 0, page_count - 1)
-		_status_text = ""
-		_refresh_collection()
-		_refresh_labels()
-		return
 	var column: int = local_index % COLLECTION_COLUMNS
 	var row: int = floori(float(local_index) / float(COLLECTION_COLUMNS))
 	column = clampi(column + dx, 0, COLLECTION_COLUMNS - 1)
@@ -907,6 +930,10 @@ func _select_cursor_card() -> void:
 		_refresh_labels()
 		return
 	if _deck_has_card(card):
+		if _slot_replacement_requested >= 0:
+			_status_text = "Already in this deck. Choose an unused card."
+			_refresh_labels()
+			return
 		var deck_index: int = _deck_index_of(card)
 		if deck_index >= 0:
 			_deck.remove_at(deck_index)
@@ -931,6 +958,9 @@ func _select_cursor_card() -> void:
 	_state = STATE_REPLACE
 	_status_text = "Choose the deck card to replace."
 	_refresh_all()
+	if _slot_replacement_requested >= 0:
+		_replace_slot_index = _slot_replacement_requested
+		_confirm_replacement()
 
 
 func _move_replace_slot(direction: int) -> void:
@@ -971,6 +1001,7 @@ func _animate_add_to_deck(card, source_index: int, target_slot: int) -> void:
 	_deck.append(card)
 	_save_current_profile()
 	_state = STATE_BROWSE
+	_finish_slot_navigation()
 	_status_text = "Added to deck."
 	_refresh_all()
 
@@ -986,7 +1017,14 @@ func _animate_replace_deck_card(card, source_index: int, target_slot: int) -> vo
 	_replace_card = null
 	_replace_source_index = -1
 	_status_text = "Deck updated."
+	_finish_slot_navigation()
 	_refresh_all()
+
+func _finish_slot_navigation() -> void:
+	if _slot_replacement_requested < 0: return
+	_deck_cursor_index = mini(_slot_replacement_requested, maxi(_deck.size() - 1, 0))
+	_slot_replacement_requested = -1
+	_nav_zone = NAV_DECK
 
 
 func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
@@ -1040,9 +1078,20 @@ func _animate_card_transfer(card, source_index: int, target_slot: int) -> void:
 
 
 func _refresh_slot_styles() -> void:
-	# Deck_Screen.png is the authoritative visual grid.
-	# The generated slot panels stay hidden and are used only as internal geometry.
-	pass
+	var ui = preload("res://scripts/ui/portrait_ui.gd")
+	for index in range(_deck_slot_panels.size()):
+		var panel: Panel = _deck_slot_panels[index]
+		panel.add_theme_stylebox_override("panel", ui.panel_style())
+		panel.visible = index >= _deck.size()
+		if not panel.has_node("EmptySlotLabel"):
+			var label := Label.new()
+			label.name = "EmptySlotLabel"
+			label.text = "Empty\nslot %d" % (index + 1)
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			panel.add_child(label)
+			ui.typography(label)
+			label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func _try_confirm_deck() -> void:
 	if _deck.size() != HAND_SIZE:
@@ -1140,10 +1189,10 @@ func _refresh_sort_ui() -> void:
 		_state == STATE_BROWSE
 		and _nav_zone == NAV_SORT
 	)
-	var selection_x := [425.0, 497.0, 572.0]
+	var selection_x := [4.0, 126.0, 248.0]
 	sort_selection_arrow.position = Vector2(
 		selection_x[_sort_cursor_index],
-		190.0
+		16.0
 	)
 
 

@@ -90,18 +90,18 @@ func run() -> void:
 	var hardware: Rect2 = harness.get_safe_rect(Vector2(390, 844), Rect2(0, 141, 1170, 2289), Vector2(1170, 2532))
 	check(hardware.position.is_equal_approx(Vector2(0, 47)) and hardware.size.is_equal_approx(Vector2(390, 763)), "physical safe area converts to logical portrait units")
 	var reference: Dictionary = harness.get_layout_rects(hardware)
-	check(reference.resolution == Vector2i(640, 863) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference derives 640x863 gameplay resolution from safe area")
-	check(absf(reference.gameplay.size.y / hardware.size.y - 0.69) < 0.002 and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference uses 69/31 split and keeps 34-point home inset")
+	check(reference.resolution == Vector2i(640, 864) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference retains canonical 640x864 game geometry")
+	check(reference.gameplay.size.is_equal_approx(Vector2(390,526.5)) and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference scales canonical game surface and keeps 34-point home inset")
 	for dimensions in [Vector2(390, 844), Vector2(390, 664), Vector2(393, 852), Vector2(844, 390)]:
 		var available: Rect2 = harness.get_safe_rect(dimensions)
 		var layout: Dictionary = harness.get_layout_rects(available)
-		check(available.encloses(layout.gameplay) and available.encloses(layout.controls), "game and controls stay in safe area %s" % dimensions)
+		check(available.encloses(layout.display) and available.encloses(layout.controls), "game display and controls stay in safe area %s" % dimensions)
 		check(is_equal_approx(layout.gameplay.size.x / 640.0, layout.gameplay.size.y / layout.resolution.y), "uniform uncropped taller display scale %s" % dimensions)
-		check(is_equal_approx(layout.gameplay.position.y, available.position.y) and is_equal_approx(layout.controls.position.y, layout.gameplay.end.y) and is_equal_approx(layout.controls.end.y, available.end.y), "no top/game/control gap and bottom safe inset retained %s" % dimensions)
+		check(is_equal_approx(layout.display.position.y, available.position.y) and is_equal_approx(layout.controls.position.y, layout.display.end.y) and is_equal_approx(layout.controls.end.y, available.end.y), "no top/game/control gap and bottom safe inset retained %s" % dimensions)
 		if dimensions.x < dimensions.y:
-			check(is_equal_approx(layout.gameplay.size.x, available.size.x), "portrait uses maximum safe width even with Safari chrome %s" % dimensions)
-	check(harness.gameplay_image.position.is_equal_approx(harness.safe_rect.position) and is_equal_approx(harness.gameplay_image.size.y / harness.gameplay_viewport.size.y, harness.gameplay_image.size.x / 640.0), "live game image has no outer letterbox region or distortion")
-	check(is_equal_approx(controls.position.y, harness.gameplay_image.position.y + harness.gameplay_image.size.y), "live controls immediately follow game image")
+			check(is_equal_approx(layout.gameplay.size.x, available.size.x), "portrait texture fills entire safe width %s" % dimensions)
+	check(harness.gameplay_window.position.is_equal_approx(harness.safe_rect.position) and is_equal_approx(harness.gameplay_image.size.y / harness.gameplay_viewport.size.y, harness.gameplay_image.size.x / 640.0), "live game display has no side bars or distortion")
+	check(is_equal_approx(controls.position.y, harness.gameplay_window.position.y + harness.gameplay_window.size.y), "live controls immediately follow clipped display")
 	check(harness.safe_rect.encloses(Rect2(controls.position, controls.size)), "control panel inside safe region")
 	for label in controls.buttons:
 		check(Rect2(Vector2.ZERO, controls.size).encloses(controls.buttons[label]), label + " hit region contained")
@@ -129,7 +129,7 @@ func run() -> void:
 		var begin := InputEventScreenTouch.new()
 		begin.index = 99
 		begin.pressed = true
-		begin.position = harness.gameplay_image.position + Vector2(0.99, 0.7) * harness.gameplay_image.size
+		begin.position = harness.gameplay_image.global_position + Vector2(0.90, 0.7) * harness.gameplay_image.size
 		harness._unhandled_input(begin)
 		await settle(2)
 		var swipe := InputEventScreenDrag.new()
@@ -262,7 +262,7 @@ func run() -> void:
 	await button("A")
 	var economy = fishing.fishing_economy_menu
 	check(economy.is_open() and paused, "A opens real merchant menu through existing dialogue choice")
-	check(economy.root.size.is_equal_approx(Vector2(640, 480)), "merchant UI retains authored 640x480 geometry in taller viewport")
+	check(economy.root.has_node("ResponsiveMenuSurface"), "merchant uses shared canonical UI on every host")
 	var responsive := economy.root.get_node("ResponsiveMenuSurface") as ResponsiveMenuSurface
 	for binding in responsive.bindings:
 		check(binding.label.get_theme_font_size("font_size") == 18, "common menu uses approved dialogue body baseline")

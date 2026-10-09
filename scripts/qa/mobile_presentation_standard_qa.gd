@@ -47,7 +47,7 @@ func inspect_view(view: ResponsiveMenuSurface, label: String) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.index = 95
 	touch.pressed = true
-	touch.position = shell.gameplay_image.position + shell.gameplay_image.size * Vector2(0.99, 0.7)
+	touch.position = shell.gameplay_image.global_position + shell.gameplay_image.size * Vector2(0.90, 0.7)
 	shell._unhandled_input(touch)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 95
@@ -72,7 +72,7 @@ func run() -> void:
 	var game: Node = shell.game
 	var fishing: Node = game.get_node("Game/Fishing")
 	var reference: Dictionary = shell.get_layout_rects(shell.get_safe_rect(Vector2(390,844)))
-	check(reference.resolution == Vector2i(640,863), "iPhone 13 Pro 69/31 target resolves uniform 640x863 gameplay")
+	check(reference.resolution == Vector2i(640,864), "iPhone 13 Pro uses fixed canonical 640x864 gameplay")
 	check(reference.controls.size.y >= 236 and reference.controls.end.y == 810, "comfortable controls and home clearance")
 	for key in shell.controls.buttons:
 		var hit: Rect2 = shell.controls.buttons[key]
@@ -106,7 +106,9 @@ func run() -> void:
 	maker.close_menu()
 	var triad := game.get_node("UI/TripleTriadGame")
 	triad.open_game_by_id(game.get_node("World/TripleTriadOpponentNPC").opponent_id)
-	await inspect_view(triad.deck_setup.get_node("ResponsiveMenuSurface"), "deck")
+	await settle()
+	check(triad.deck_setup.COLLECTION_SCALE == Vector2.ONE and triad.deck_setup.PAGE_SIZE == 10, "shared deck uses native cards and ten-card pages")
+	await capture("deck")
 	check(triad.deck_setup._deck.size() == 5 and triad.deck_setup.mobile_start_enabled, "empty real collection has valid transient hand and mobile START")
 	var start := InputEventKey.new()
 	start.pressed = true
@@ -171,8 +173,8 @@ func run() -> void:
 
 func inspect_desktop() -> void:
 	current_scene = null
-	root.content_scale_size = Vector2i(640,480)
-	root.size = Vector2i(640,480)
+	root.content_scale_size = Vector2i(640,864)
+	root.size = Vector2i(640,864)
 	var desktop: Node = load("res://actors/FishingTestScene_V2.tscn").instantiate()
 	root.add_child(desktop)
 	current_scene = desktop
@@ -180,25 +182,25 @@ func inspect_desktop() -> void:
 	var economy: Node = desktop.get_node("Game/Fishing").fishing_economy_menu
 	economy.open_debug_full_catalog_menu()
 	await settle()
-	check(not economy.root.has_node("ResponsiveMenuSurface") and economy.root.size == Vector2(640,480), "desktop merchant keeps original wide geometry")
+	check(economy.root.has_node("ResponsiveMenuSurface") and economy.root.get_node("ResponsiveMenuSurface").size == Vector2(608,840), "desktop merchant uses same canonical portrait geometry")
 	await capture("desktop-merchant")
 	economy.close_menu()
 	var crafter: Node = desktop.get_node("World/BeachCrafterNPC/BeachCraftingMenu")
 	crafter.open_menu()
 	await settle()
-	check(not crafter.root.has_node("ResponsiveMenuSurface"), "desktop crafting uses existing wide composition")
+	check(crafter.root.has_node("ResponsiveMenuSurface"), "desktop crafting uses shared portrait composition")
 	await capture("desktop-crafting")
 	crafter.close_menu()
 	var maker: Node = desktop.get_node("World/FishingCardMakerNPC/FishingCardMakerMenu")
 	maker.open_menu()
 	await settle()
-	check(not maker.root.has_node("ResponsiveMenuSurface"), "desktop card crafting uses existing wide composition")
+	check(maker.root.has_node("ResponsiveMenuSurface"), "desktop card crafting uses shared portrait composition")
 	await capture("desktop-card-crafting")
 	maker.close_menu()
 	var triad: Node = desktop.get_node("UI/TripleTriadGame")
 	triad.open_game_by_id(desktop.get_node("World/TripleTriadOpponentNPC").opponent_id)
 	await settle()
-	check(not triad.deck_setup.mobile_start_enabled and not triad.deck_setup.has_node("ResponsiveMenuSurface"), "desktop deck has no mobile START override or reflow")
+	check(not triad.deck_setup.mobile_start_enabled and not triad.deck_setup.has_node("ResponsiveMenuSurface"), "desktop deck uses same native-card layout without touch key override")
 	var enter := InputEventKey.new()
 	enter.physical_keycode = KEY_ENTER
 	enter.pressed = true

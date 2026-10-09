@@ -51,7 +51,9 @@ func action_for_event(event: InputEvent, allow_campaign_qa: bool) -> StringName:
 		return ACTION_UP
 	if _matches_key(key_event, KEY_S) or _matches_key(key_event, KEY_DOWN):
 		return ACTION_DOWN
-	if _matches_key(key_event, KEY_R):
+	# The unchanged touch shell's R shoulder emits E. Accept the same alias
+	# on every host; this routes to the existing rotation command/rules.
+	if _matches_key(key_event, KEY_R) or _matches_key(key_event, KEY_E):
 		return ACTION_ROTATE
 	return ACTION_NONE
 

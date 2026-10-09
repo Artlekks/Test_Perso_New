@@ -9,6 +9,10 @@ var _yes_selected: bool = false
 
 
 func _ready() -> void:
+	var ui = preload("res://scripts/ui/portrait_ui.gd")
+	ui.typography(self)
+	$Panel.add_theme_stylebox_override("panel", ui.panel_style())
+	$Panel/HelpLabel.text = ui.hints(self, "A/D: Choose   K: Confirm   I: Back")
 	visible = false
 	_refresh()
 

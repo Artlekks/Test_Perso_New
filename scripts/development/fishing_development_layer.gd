@@ -35,6 +35,8 @@ func mount_game(game: Node) -> void:
 		fishing.debug_controller = debug
 		_controllers.append(weakref(fishing))
 		debug.debug_menu.configure_economy_telemetry_provider(get_economy_playtest_telemetry)
+	# An already-created observer follows scene travel without recreating it.
+	if is_instance_valid(telemetry): telemetry.bind_runtime(fishing)
 	if campaign_guide == null:
 		campaign_guide = load("res://scripts/progression/playable_campaign_qa_controller.gd").new()
 		campaign_guide.name = "PlayableCampaignQAController"

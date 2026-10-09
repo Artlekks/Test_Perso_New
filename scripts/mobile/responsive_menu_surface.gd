@@ -5,7 +5,7 @@ class_name ResponsiveMenuSurface
 const FONT = preload("res://assets/fonts/BOF_Font_Refined.fnt")
 const MIN_FONT := 18
 const ATLAS = preload("res://assets/ui/Panel.png")
-const PanelStyle = preload("res://scripts/dialogue/dialogue_panel_style.gd")
+const Portrait = preload("res://scripts/ui/portrait_ui.gd")
 var controller: Node
 var authored: Control
 var kind: String
@@ -17,6 +17,7 @@ var last_focus := ""
 var drag_index := -1
 var drag_y := 0.0
 var _was_visible := false
+var previews: Array[Dictionary] = []
 
 static func attach(menu: Node, root_control: Control, menu_kind: String) -> ResponsiveMenuSurface:
 	var existing := root_control.get_node_or_null("ResponsiveMenuSurface") as ResponsiveMenuSurface
@@ -33,6 +34,9 @@ static func attach(menu: Node, root_control: Control, menu_kind: String) -> Resp
 func _build() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	process_priority = 500
+	# Stay owned/visibility-bound to the menu without inheriting its obsolete
+	# animated 640x480 root scale. New geometry is always canvas-local pixels.
+	set_as_top_level(true)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = 3500
@@ -52,20 +56,20 @@ func _build() -> void:
 		"economy": _economy()
 		"crafting": _crafting()
 		"card_maker": _card_maker()
-		"deck": _deck()
+		"inventory": _inventory()
 	_sync()
 
 func _mask_authored() -> void:
 	# Some existing menus create feedback/transfer artwork lazily on first open.
 	# Keep those outputs available to their controller, but never draw a second UI.
 	for child in authored.get_children():
-		if child == self or not child is CanvasItem or originals.has(child): continue
-		originals[child] = child.modulate
+		if child == self or not child is CanvasItem: continue
+		if not originals.has(child): originals[child] = child.modulate
 		child.modulate = Color(1, 1, 1, 0)
 
 func _section(title: String) -> VBoxContainer:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", PanelStyle.create(ATLAS))
+	panel.add_theme_stylebox_override("panel", Portrait.panel_style())
 	stack.add_child(panel)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]: margin.add_theme_constant_override("margin_" + side, 12)
@@ -89,6 +93,15 @@ func _line(parent: Node, paths: Array, fallback := "", selection := -1, group :=
 	bindings.append({"label": label, "paths": paths, "fallback": fallback, "index": selection, "group": group})
 	return label
 
+func _preview(parent: Node, path: String, footprint := Vector2(116,132)) -> void:
+	var image := TextureRect.new()
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.custom_minimum_size = footprint
+	image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	parent.add_child(image)
+	previews.append({"image":image, "path":path})
+
 func _economy() -> void:
 	var header := _section("MERCHANT / FISH TRADE")
 	_line(header, [], "", -1, "mode")
@@ -98,7 +111,7 @@ func _economy() -> void:
 	var detail := _section("SELECTED ITEM / OWNED")
 	_line(detail, ["InfoLabel", "MessageLabel"])
 	_line(detail, ["TradeRequirementsPanel/Requirements"])
-	_line(_section("ACTION"), [], "A: Buy / Sell / Trade    B: Back\nMENU: Buy / Sell\nL/R: Category    Left/Right: Page")
+	_line(_section("ACTION"), [], "K: Buy / Sell / Trade    I: Back\nJ: Buy / Sell\nQ/E: Category    Left/Right: Page")
 	_line(_section("CONFIRM"), ["ConfirmPanel/Prompt", "ConfirmPanel/Choice"], "", -1, "confirm")
 
 func _crafting() -> void:
@@ -107,37 +120,49 @@ func _crafting() -> void:
 	for path in ["Panel/RecipeLabel", "Panel/SlotsLabel", "Panel/CostLabel"]: _line(detail, [path])
 	var preview := _section("RESULT / INVENTORY")
 	for path in ["Panel/PreviewLabel", "Panel/ComparisonLabel", "Panel/InventoryLabel", "Panel/StatusLabel"]: _line(preview, [path])
-	_line(_section("ACTION"), [], "A: Craft    B: Back    MENU: Customize\nUp/Down: Recipe or material\nLeft/Right: Material slot")
+	_line(_section("ACTION"), [], "K: Craft    I: Back    J: Customize\nUp/Down: Recipe or material\nLeft/Right: Material slot")
 
 func _card_maker() -> void:
 	_line(_section("CARD CRAFTING"), ["Panel/ZennyLabel"])
 	var list := _section("CARDS")
 	for i in range(1,6): _line(list, ["Panel/Rows/Row%dName" % i, "Panel/Rows/Row%dOwned" % i, "Panel/Rows/Row%dCost" % i], "", i-1, "rows")
 	var detail := _section("SELECTED CARD")
+	_preview(detail, "Panel/SelectedPreview")
 	for path in ["SelectedNameLabel", "SelectedDescriptionLabel", "ModeLabel", "OwnedLabel", "RequirementLabel", "FeeValueLabel", "StatusLabel"]: _line(detail, ["Panel/" + path])
-	_line(_section("ACTION"), [], "A: Create card    B: Back")
+	_line(_section("ACTION"), [], "K: Create card    I: Back")
 	_line(_section("CONFIRM"), ["ConfirmPanel/PromptLabel", "ConfirmPanel/ChoiceLabel"], "", -1, "confirm")
 
-func _deck() -> void:
-	controller.mobile_start_enabled = true
-	_line(_section("TRIPLE TRIAD / DECK"), ["CurrentDeckLabel", "CurrentDeckCount", "BudgetLabel", "CardsOwnedLabel"])
-	_line(_section("PLAY"), [], "", -1, "start")
-	var profiles := _section("SAVED DECKS")
-	_line(profiles, [], "New Deck", -1, "new_profile")
-	for i in range(1,6): _line(profiles, ["DeckList/Deck%dName" % i, "DeckList/Deck%dCount" % i], "", i-1, "profiles")
-	var deck := _section("SELECTED FIVE")
-	for i in range(5): _line(deck, [], "", i, "deck")
-	_line(_section("SORT / PAGE"), ["PageIndicator"], "", -1, "sort")
-	var collection := _section("COLLECTION")
-	for i in range(20): _line(collection, [], "", i, "collection")
-	var detail := _section("SELECTED CARD")
-	for path in ["DetailName", "DetailNumber", "DetailRarity", "DetailDescription", "DetailEffect", "StatusLabel"]: _line(detail, [path])
-	_line(_section("ACTION"), [], "A: Add / Remove    B: Back\nSTART: Play valid deck    MENU: Sort\nL: Save deck    R: Delete deck")
+func _inventory() -> void:
+	_line(_section("INVENTORY / FISHING"), [], "", -1, "inventory_header")
+	var list := _section("ENTRIES")
+	for i in range(12): _line(list, [], "", i, "inventory_rows")
+	var detail := _section("SELECTED ENTRY")
+	_preview(detail, "Root/EquipPage/GuidePanel/GuideIcon", Vector2(64,64))
+	_line(detail, [], "", -1, "inventory_detail")
+	_line(_section("ACTION"), [], "K: Confirm    I: Back\nWASD: Select    Q/E: Page")
+
+func _inventory_outputs() -> Dictionary:
+	var lists: Array = [controller.command_list, controller.equip_slot_list, controller.data_species_list, controller.help_list, controller.hints_list]
+	var page: int = controller._page
+	var source: ItemList = lists[mini(page, 4)]
+	if page == 1 and controller._equip_focus == 1: source = controller.equip_accessory_list
+	if controller.exit_confirm.visible: source = controller.exit_list
+	var detail: String = ""
+	match page:
+		0: detail = controller.main_rod_label.text + "\n" + controller.main_lure_label.text + "\nRank: " + controller.rank_label.text + "\nPoints: " + controller.points_label.text + "\nTime: " + controller.time_label.text
+		1: detail = controller.equip_guide_title_label.text + "\n" + controller.equip_guide_description_label.text
+		2: detail = controller.data_detail_name_label.text + "\n" + controller.data_detail_effect_label.text + "\n" + controller.data_detail_guide_label.text + "\nAverage size: " + controller.data_detail_avg_label.text + "\nBest size: " + controller.data_size_label.text + "\nBest points: " + controller.data_points_label.text + "\nLocation: " + controller.data_point_label.text + "\nOwned: " + controller.data_caught_count_label.text
+		3: detail = controller.help_text_label.text
+		4: detail = controller.hints_text_label.text
+		_: detail = controller.info_label.text
+	var selected := source.get_selected_items()
+	return {"list": source, "index": int(selected[0]) if not selected.is_empty() else 0, "detail": detail, "page": page}
 
 func _process(_delta: float) -> void:
 	if authored == null: return
 	_mask_authored()
-	position = Vector2(16,12) - authored.get_global_transform_with_canvas().origin
+	if kind == "inventory": controller.selector_layer.modulate = Color(1, 1, 1, 0)
+	position = Vector2(16,12)
 	size = get_viewport().get_visible_rect().size - Vector2(32,24)
 	_sync()
 
@@ -149,6 +174,12 @@ func _sync() -> void:
 		scroll.scroll_vertical = 0
 		last_focus = ""
 	_was_visible = true
+	for preview in previews:
+		var source := authored.get_node_or_null(preview.path) as TextureRect
+		if kind == "inventory":
+			source = controller.data_portrait if controller._page == 2 else controller.equip_guide_icon
+		preview.image.texture = source.texture if source != null else null
+		preview.image.visible = preview.image.texture != null
 	var focus := ""
 	var focused: Control
 	var confirmation := authored.get_node_or_null("ConfirmPanel") as Control
@@ -169,28 +200,17 @@ func _sync() -> void:
 			"confirm":
 				binding.label.get_parent().get_parent().get_parent().visible = confirming
 				selected = confirming
-			"start":
-				var ready: bool = controller._deck.size() == 5 and controller._deck_cost() <= controller._budget_limit
-				text = "START : PLAY" if ready else "Choose 5 cards within the point budget"
-			"new_profile": selected = controller._nav_zone == controller.NAV_PROFILES and controller._profile_nav_index < 0
-			"profiles": selected = controller._nav_zone == controller.NAV_PROFILES and controller._profile_nav_index % 5 == index and controller._profile_nav_index >= 0
-			"deck":
-				text = "%d. Empty" % (index+1)
-				if index < controller._deck.size(): text = "%d. %s" % [index+1, controller._deck[index].display_name]
-				selected = controller._nav_zone == controller.NAV_DECK and controller._deck_cursor_index == index
-			"collection":
-				var card_index: int = controller._page_index * 20 + index
-				text = ""
-				if card_index < controller._cards.size():
-					var card = controller._cards[card_index]
-					text = "%s  (Cost %d)%s" % [card.display_name, card.deck_cost, "  [in deck]" if controller._deck_has_card(card) else ""]
-				selected = controller._nav_zone == controller.NAV_COLLECTION and controller._cursor_index == card_index
-			"sort":
-				text = "Sort: %s   Page %s" % [controller._sort_cursor_label(), text]
-				selected = controller._nav_zone == controller.NAV_SORT
+			"inventory_header": text = ["STATUS", "EQUIPMENT", "FISH DATA", "HELP", "HINTS", "OPTIONS"][controller._page]
+			"inventory_rows":
+				var output := _inventory_outputs()
+				var start := maxi(0, int(output.index) - 5)
+				var item := start + index
+				text = output.list.get_item_text(item) if item < output.list.item_count else ""
+				selected = item == output.index
+			"inventory_detail": text = _inventory_outputs().detail
 		# Bitmap atlas has no Unicode punctuation glyphs; only presentation changes.
 		text = text.replace("\u2014", "-").replace("\u00d7", "x").replace("\u2192", "->")
-		binding.label.text = ("> " if selected else "") + text
+		binding.label.text = ("> " if selected else "") + Portrait.hints(self, text)
 		binding.label.visible = not text.is_empty()
 		if selected and (not confirming or binding.group == "confirm"):
 			focus = binding.group + str(index) + str(text)
@@ -214,4 +234,3 @@ func _input(event: InputEvent) -> void:
 func restore_authored() -> void:
 	for original in originals:
 		if is_instance_valid(original): original.modulate = originals[original]
-	if kind == "deck" and is_instance_valid(controller): controller.mobile_start_enabled = false

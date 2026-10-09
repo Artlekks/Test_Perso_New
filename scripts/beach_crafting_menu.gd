@@ -47,6 +47,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	root.hide()
 
+	preload("res://scripts/mobile/responsive_menu_surface.gd").attach(self, root, "crafting")
 
 func configure(
 	service: BeachCraftingService,

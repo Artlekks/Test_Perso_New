@@ -1,16 +1,10 @@
 extends Control
 
 const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
-const ResponsiveSurface = preload("res://scripts/mobile/responsive_menu_surface.gd")
-const PlaytestWindow = preload("res://scripts/mobile/mobile_playtest_window.gd")
-const RESPONSIVE_WINDOWS := ["FishingDebugMenu", "TripleTriadDebugMenu", "FishingEconomyMenu", "BeachCraftingMenu", "FishingCardMakerMenu", "TripleTriadGame", "PlayableCampaignQAGuide"]
 @export_file("*.tscn") var gameplay_scene: String = "res://actors/FishingTestScene_V2.tscn"
 @export var reference_size := Vector2i(390, 844)
 @export var fallback_safe_insets := Vector4(0, 47, 0, 34)
-@export_range(0.45, 0.72, 0.01) var gameplay_height_share: float = 0.69
 @export var minimum_controls_height: float = 236.0
-@export var economy_body_font_size: int = 12
-@export var economy_small_font_size: int = 10
 @export var isolated_playtest_save: bool = true
 @export var developer_playtest_default_enabled: bool = true
 var _developer_mode_initialized := false
@@ -18,6 +12,13 @@ var gameplay_viewport: SubViewport
 var game: Node
 var controls: Control
 var gameplay_image: TextureRect
+var gameplay_window: Control
+var _surface_scroll := 0.0
+var _surface_scroll_max := 0.0
+var _surface_drag := -1
+var _surface_drag_y := 0.0
+var _surface_was_modal := false
+var _surface_modal_layers: Array[WeakRef] = []
 var safe_rect := Rect2()
 var _forwarding := false
 var _bound_layers: Dictionary = {}
@@ -48,7 +49,7 @@ func _ready() -> void:
 	presentation.add_child(black)
 	gameplay_viewport = SubViewport.new()
 	gameplay_viewport.name = "GameplayViewport"
-	gameplay_viewport.size = Vector2i(640, 480)
+	gameplay_viewport.size = Vector2i(640, 864)
 	gameplay_viewport.own_world_3d = true
 	gameplay_viewport.world_2d = World2D.new()
 	gameplay_viewport.handle_input_locally = true
@@ -61,7 +62,12 @@ func _ready() -> void:
 	gameplay_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	gameplay_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	gameplay_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	presentation.add_child(gameplay_image)
+	gameplay_window = Control.new()
+	gameplay_window.name = "GameplayDisplayWindow"
+	gameplay_window.clip_contents = true
+	gameplay_window.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	presentation.add_child(gameplay_window)
+	gameplay_window.add_child(gameplay_image)
 	controls = TouchControls.new()
 	controls.name = "TouchControls"
 	controls.key_requested.connect(_send_key)
@@ -88,16 +94,20 @@ func get_layout_rects(available: Rect2) -> Dictionary:
 		var column_width := minf(column.size.x, column.size.y * float(reference_size.x) / reference_safe_height)
 		column.position.x += (column.size.x - column_width) * 0.5
 		column.size.x = column_width
+	# Width is authoritative. Short Safari windows clip spare world sky rather
+	# than shrink the canonical surface; menus can scroll the display vertically.
 	var controls_min := minimum_controls_height * column.size.x / float(reference_size.x)
-	var desired_height := minf(column.size.y * gameplay_height_share, column.size.y - controls_min)
-	var logical_height := maxi(1, floori(desired_height * 640.0 / maxf(column.size.x, 1.0)))
-	var image := Rect2(column.position, Vector2(column.size.x, logical_height * column.size.x / 640.0))
-	var panel := Rect2(column.position + Vector2(0, image.size.y), Vector2(column.size.x, column.size.y - image.size.y))
-	return {"safe": column, "gameplay": image, "controls": panel, "resolution": Vector2i(640, logical_height)}
+	var scale := column.size.x / 640.0
+	var width := 640.0 * scale
+	var image := Rect2(column.position, Vector2(width, 864.0 * scale))
+	var display := Rect2(column.position, Vector2(width, minf(image.size.y, maxf(1.0,column.size.y-controls_min))))
+	var panel := Rect2(column.position + Vector2(0, display.size.y), Vector2(column.size.x, column.size.y - display.size.y))
+	return {"safe": column, "gameplay": image, "display": display, "controls": panel, "resolution": Vector2i(640, 864)}
 
 func _layout() -> void:
 	if not is_instance_valid(controls):
 		return
+	_surface_drag = -1
 	var device_safe := Rect2()
 	var device_size := Vector2.ZERO
 	if OS.get_name() in ["iOS", "Android"]:
@@ -112,12 +122,43 @@ func _layout() -> void:
 			device_safe = Rect2(Vector2(values[0], values[1]), device_size - Vector2(values[0] + values[2], values[1] + values[3]))
 	var layout := get_layout_rects(get_safe_rect(size, device_safe, device_size))
 	safe_rect = layout.safe
-	gameplay_image.position = layout.gameplay.position
+	gameplay_window.position = layout.display.position
+	gameplay_window.size = layout.display.size
 	gameplay_image.size = layout.gameplay.size
+	_surface_scroll_max = maxf(0,layout.gameplay.size.y-layout.display.size.y)
+	_surface_scroll = clampf(_surface_scroll,0,_surface_scroll_max) if _has_surface_modal() else _surface_scroll_max
+	gameplay_image.position = Vector2(0,-_surface_scroll)
 	controls.position = layout.controls.position
 	controls.size = layout.controls.size
 	gameplay_viewport.size = layout.resolution
 	_adapt_mobile_presentation()
+
+func _process(_delta: float) -> void:
+	# World play keeps bottom HUD visible; modal content starts at the top.
+	var modal := _has_surface_modal()
+	if modal != _surface_was_modal:
+		_surface_was_modal = modal
+		_surface_scroll = 0.0 if modal else _surface_scroll_max
+		if gameplay_image != null: gameplay_image.position.y = -_surface_scroll
+
+func _input(event: InputEvent) -> void:
+	# A narrow right-edge gutter scrolls the display window, independently of
+	# each canonical menu's own content scrolling. No gameplay state is changed.
+	if _surface_scroll_max <= 0 or not _has_surface_modal(): return
+	if event is InputEventScreenTouch:
+		var box := gameplay_window.get_global_rect()
+		if event.pressed and box.has_point(event.position) and event.position.x >= box.end.x - 20:
+			_surface_drag = event.index
+			_surface_drag_y = event.position.y
+			get_viewport().set_input_as_handled()
+		elif not event.pressed and event.index == _surface_drag:
+			_surface_drag = -1
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenDrag and event.index == _surface_drag:
+		_surface_scroll = clampf(_surface_scroll + _surface_drag_y - event.position.y,0,_surface_scroll_max)
+		_surface_drag_y = event.position.y
+		gameplay_image.position.y = -_surface_scroll
+		get_viewport().set_input_as_handled()
 
 func _mount_game() -> void:
 	load_gameplay_scene(gameplay_scene)
@@ -136,6 +177,7 @@ func _replace_game(packed: PackedScene) -> void:
 	controls.release_all()
 	if is_instance_valid(game):
 		game.free()
+	_surface_modal_layers = _surface_modal_layers.filter(func(binding): return binding.get_ref() != null)
 	game = packed.instantiate()
 	game.process_mode = Node.PROCESS_MODE_PAUSABLE
 	# HUD scripts cache their tween destinations in _ready. Establish host
@@ -160,126 +202,36 @@ func _initialize_developer_mode() -> void:
 
 func _node_added(node: Node) -> void:
 	if node is CanvasLayer:
+		if node.has_method("is_open") or node is DialogueView or node.name in ["FishingCatchView", "FishingLureSelectorView"]:
+			if not _surface_modal_layers.any(func(binding): return binding.get_ref() == node):
+				_surface_modal_layers.append(weakref(node))
 		_bind_session_layers.call_deferred()
 	if node is CanvasLayer or node is Camera3D:
 		_adapt_mobile_presentation.call_deferred()
 
+func _has_surface_modal() -> bool:
+	# Read published presentation visibility, not SceneTree.paused: manual pause
+	# must retain the world HUD, and catch results need their header while unpaused.
+	for binding in _surface_modal_layers:
+		var layer = binding.get_ref()
+		if not is_instance_valid(layer) or not layer.is_node_ready(): continue
+		if layer.has_method("is_open") and layer.is_open(): return true
+		if layer is DialogueView or layer.name in ["FishingCatchView", "FishingLureSelectorView"]:
+			var surface := layer.get_node_or_null("Root") as Control
+			if surface != null and surface.is_visible_in_tree(): return true
+	return false
+
 func _adapt_mobile_presentation() -> void:
-	if not is_instance_valid(game):
-		return
-	var extra_height := float(gameplay_viewport.size.y - 480)
-	_adapt_gameplay_hud(extra_height)
-	for camera in game.find_children("*", "Camera3D", true, false):
-		if not camera.has_meta("mobile_original_projection"):
-			camera.set_meta("mobile_original_projection", {"aspect": camera.keep_aspect, "fov": camera.fov, "size": camera.size})
-		var original: Dictionary = camera.get_meta("mobile_original_projection")
-		if original.aspect == Camera3D.KEEP_HEIGHT:
-			# Equivalent horizontal FOV of the authored desktop 640x480 shot.
-			camera.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(original.fov) * 0.5) * 640.0 / 480.0))
-			camera.size = original.size * 640.0 / 480.0
-		camera.keep_aspect = Camera3D.KEEP_WIDTH
-	# Keep authored UI art/coordinates in a centered 640x480 band, without
-	# stretching menu backgrounds to the taller 3D viewport. Dialogue reflows
-	# independently using its real viewport height and larger shared typography.
-	var layers: Array = game.find_children("*", "CanvasLayer", true, false)
+	if not is_instance_valid(game): return
+	preload("res://scripts/ui/canonical_game_surface.gd").prepare(game)
 	for entry in _bound_layers.values():
 		var layer = entry.node.get_ref()
-		if is_instance_valid(layer):
-			layers.append(layer)
-	for layer in layers:
+		if not is_instance_valid(layer): continue
 		if layer.has_meta("development_status"):
-			# Diagnostic layers alone join the shell's control canvas. Gameplay
-			# HUD and location-name artwork retain their established ownership.
 			if layer.get_parent() != controls: layer.reparent(controls)
 			layer.custom_viewport = get_viewport()
 			layer.offset = controls.global_position + Vector2(controls.size.x * 0.78, controls.size.y * 0.60)
-			for label in layer.get_children():
-				if label is Label:
-					label.position = Vector2.ZERO
-					label.size = Vector2(controls.size.x * 0.21, controls.size.y * 0.21)
-					label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-					label.add_theme_font_size_override("font_size", 10)
-			continue
-		if layer.name == "DeveloperIndicator":
-			layer.offset = Vector2(0, gameplay_viewport.size.y - 24)
-			continue
-		if layer is DialogueView or layer.name in ["ExplorationHud", "FishingHud", "PowerMeter", "FishingInfoView"]:
-			continue
-		if not layer.has_meta("mobile_original_offset"):
-			layer.set_meta("mobile_original_offset", layer.offset)
-			for child in layer.get_children():
-				if child is Control:
-					child.set_meta("mobile_original_vertical_layout", Vector4(child.anchor_top, child.anchor_bottom, child.offset_top, child.offset_bottom))
-					var old: Vector4 = child.get_meta("mobile_original_vertical_layout")
-					child.anchor_top = 0.0
-					child.anchor_bottom = 0.0
-					child.offset_top = old.x * 480.0 + old.z
-					child.offset_bottom = old.y * 480.0 + old.w
-		layer.offset = layer.get_meta("mobile_original_offset") + Vector2(0, extra_height * 0.5)
-		if layer.name in RESPONSIVE_WINDOWS and layer.is_inside_tree():
-			layer.offset = Vector2.ZERO
-			var window_root := layer.get_node_or_null("Root") as Control
-			if window_root != null and not layer.has_node("MobilePlaytestWindow"):
-				var fitter := PlaytestWindow.new()
-				fitter.name = "MobilePlaytestWindow"
-				layer.add_child(fitter)
-				fitter.configure(window_root)
-		var kind: String = {"FishingEconomyMenu":"economy", "BeachCraftingMenu":"crafting", "FishingCardMakerMenu":"card_maker"}.get(String(layer.name), "")
-		if not kind.is_empty() and layer.is_inside_tree():
-			ResponsiveSurface.attach(layer, layer.get_node("Root"), kind)
-		if layer.name == "TripleTriadGame" and layer.is_inside_tree():
-			var deck := layer.get_node_or_null("Root/TripleTriadDeckSetup") as Control
-			if deck != null: ResponsiveSurface.attach(deck, deck, "deck")
-	var rig := game.get_node_or_null("CameraRig")
-	if rig != null:
-		_adapt_fishing_composition(rig, extra_height)
-		for property in ["fight_safe_top", "fight_safe_bottom", "fishing_follow_top_y_ratio", "fishing_follow_bottom_y_ratio", "fishing_follow_trigger_y_ratio"]:
-			var key: String = "mobile_original_" + property
-			if not rig.has_meta(key):
-				rig.set_meta(key, rig.get(property))
-			rig.set(property, (float(rig.get_meta(key)) * 480.0 + extra_height * 0.5) / float(gameplay_viewport.size.y))
-
-func _bottom_anchor(control: Control) -> void:
-	if control == null or control.has_meta("mobile_grounded_hud"):
-		return
-	control.set_meta("mobile_grounded_hud", true)
-	var top := control.anchor_top * 480.0 + control.offset_top
-	var bottom := control.anchor_bottom * 480.0 + control.offset_bottom
-	control.anchor_top = 1.0
-	control.anchor_bottom = 1.0
-	control.offset_top = top - 480.0
-	control.offset_bottom = bottom - 480.0
-
-func _adapt_gameplay_hud(extra_height: float) -> void:
-	# These are the production HUDs, with their production visibility/tweens.
-	# Only menus retain the centered legacy band.
-	for path in ["UI/ExplorationHud/Root/HelpPanel", "UI/FishingHud/CharacterView", "UI/FishingHud/PowerMeter/Root", "UI/FishingHud/PowerMeter/DepthMeter"]:
-		_bottom_anchor(game.get_node_or_null(path) as Control)
-	var info := game.get_node_or_null("UI/FishingHud/FishingInfoView")
-	if info != null:
-		if not info.has_meta("mobile_notice_home"):
-			info.set_meta("mobile_notice_home", info.exploration_position)
-		info.exploration_position = info.get_meta("mobile_notice_home") + Vector2(0, extra_height)
-
-func _adapt_fishing_composition(rig: Node, extra_height: float) -> void:
-	var camera := rig.get_node_or_null("Camera3D") as Camera3D
-	var pose := rig.get_node_or_null("FishingCameraPose") as Camera3D
-	if camera == null or pose == null:
-		return
-	if not rig.has_meta("mobile_desktop_camera_distance"):
-		rig.set_meta("mobile_desktop_camera_distance", camera.position.length())
-	var original: Dictionary = camera.get_meta("mobile_original_projection")
-	var desktop := Projection.create_perspective(original.fov, 640.0 / 480.0, camera.near, camera.far, original.aspect == Camera3D.KEEP_WIDTH)
-	var view := pose.transform
-	view.origin *= float(rig.get_meta("mobile_desktop_camera_distance")) * rig.fishing_distance_scale / view.origin.length()
-	view.origin += view.basis.x * rig.fishing_h_offset + view.basis.y * rig.fishing_v_offset
-	var feet := view.affine_inverse() * Vector3.ZERO
-	var clip := desktop * Vector4(feet.x, feet.y, feet.z, 1)
-	var desktop_y := (1.0 - clip.y / clip.w) * 0.5
-	# KEEP_WIDTH adds equal vertical space above/below. Shift composition by
-	# the additional pixels needed to retain the authored normalized foot Y.
-	rig.mobile_fishing_vertical_offset = extra_height * (desktop_y - 0.5) * 2.0 * (-feet.z) / (480.0 * desktop.y.y)
-	rig.set_meta("mobile_desktop_foot_y", desktop_y)
+		elif layer.name == "DeveloperIndicator": layer.offset = Vector2(0, 840)
 
 func _bind_session_layers() -> void:
 	var session := get_tree().root.get_node_or_null("FishingSessionServices")
@@ -306,11 +258,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			if window.bar != null and window.bar.visible: scrolling = true
 		for menu in gameplay_viewport.find_children("ResponsiveMenuSurface", "Control", true, false):
 			if menu.is_visible_in_tree(): scrolling = true
-		if event is InputEventScreenTouch and event.pressed and scrolling and Rect2(gameplay_image.position, gameplay_image.size).has_point(event.position):
+		for detail in gameplay_viewport.find_children("PortraitDetails", "ScrollContainer", true, false):
+			if detail.is_visible_in_tree(): scrolling = true
+		if event is InputEventScreenTouch and event.pressed and scrolling and gameplay_window.get_global_rect().has_point(event.position):
 			_window_touches[event.index] = true
 		if _window_touches.has(event.index):
 			var local_event = event.duplicate()
-			local_event.position = (event.position - gameplay_image.position) * Vector2(gameplay_viewport.size) / gameplay_image.size
+			local_event.position = (event.position - gameplay_image.global_position) * Vector2(gameplay_viewport.size) / gameplay_image.size
 			gameplay_viewport.push_input(local_event, true)
 			if event is InputEventScreenTouch and not event.pressed: _window_touches.erase(event.index)
 			get_viewport().set_input_as_handled()
@@ -335,6 +289,7 @@ func _dispatch_action(event: InputEventAction) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		_surface_drag = -1
 		if is_instance_valid(controls):
 			controls.release_all()
 
@@ -347,9 +302,6 @@ func _exit_tree() -> void:
 		var layer = entry.node.get_ref()
 		var original_parent = entry.parent.get_ref()
 		if is_instance_valid(layer) and is_instance_valid(original_parent):
-			for view in layer.find_children("ResponsiveMenuSurface", "Control", true, false):
-				view.restore_authored()
-				view.free()
 			var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
 			if fitter != null:
 				fitter.surface.position = fitter.original_position

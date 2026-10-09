@@ -12,7 +12,7 @@ const OWNER_OPPONENT := 2
 const PHASE_SELECT_CARD := SessionControllerScript.PHASE_SELECT_CARD
 const PHASE_SELECT_CELL := SessionControllerScript.PHASE_SELECT_CELL
 
-const HAND_STEP_Y := 47.0
+const HAND_STEP_Y := 140.0
 const HAND_SELECTED_X_OFFSET := -8.0
 const PREVIEW_GHOST_ALPHA := 0.72
 const PREVIEW_INFLUENCE_COLOR := Color(1.0, 0.76, 0.18, 0.28)
@@ -24,11 +24,10 @@ const ACTIVE_INFLUENCE_OPPONENT_BORDER := Color(1.0, 0.34, 0.24, 0.90)
 const ACTIVE_INFLUENCE_BOTH_FILL := Color(0.78, 0.34, 0.92, 0.14)
 const ACTIVE_INFLUENCE_BOTH_BORDER := Color(0.96, 0.62, 1.0, 0.92)
 
-# CardView's authored internal layout stays 116x132. The presentation layer
-# scales complete views to the 74x88 runtime footprint instead of rewriting the
-# sacred number/portrait layout in the card scene.
+# CardView's authored internal layout stays 116x132 at native integer scale.
+# The canonical portrait board and both hands share exactly this footprint.
 const CARD_BASE_SIZE := Vector2(116.0, 132.0)
-const CARD_VISUAL_SIZE := Vector2(74.0, 88.0)
+const CARD_VISUAL_SIZE := Vector2(116.0, 132.0)
 const CARD_VISUAL_SCALE := Vector2(
 	CARD_VISUAL_SIZE.x / CARD_BASE_SIZE.x,
 	CARD_VISUAL_SIZE.y / CARD_BASE_SIZE.y

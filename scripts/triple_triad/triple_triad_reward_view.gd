@@ -14,8 +14,8 @@ const STATE_RESOLVING := 3
 const STATE_ENTERING := 4
 const STATE_FOCUS_HOLD := 5
 
-const ROW_SCALE := Vector2(0.82, 0.82)
-const ROW_STEP_X := 96.0
+const ROW_SCALE := Vector2.ONE
+const ROW_STEP_X := 122.0
 const ROW_LOCAL_ORIGIN := Vector2.ZERO
 
 # FFVIII-style result-screen entrance: opponent row comes in from the left,
@@ -29,8 +29,8 @@ const OPPONENT_THINK_SECONDS := 0.55
 const OPPONENT_PICK_HOLD_SECONDS := 0.45
 const FOCUS_TRAVEL_SECONDS := 0.32
 const EXIT_SECONDS := 0.34
-const FOCUS_SCALE := Vector2(1.42, 1.42)
-const FOCUS_AUTHORED_Y := 183.0
+const FOCUS_SCALE := Vector2(2, 2)
+const FOCUS_AUTHORED_Y := 300.0
 
 @onready var prompt_label: Label = $PromptPanel/PromptLabel
 @onready var opponent_row_root: Control = $OpponentRowRoot
@@ -64,6 +64,7 @@ var _eligible_opponent_ids: Dictionary = {}
 
 
 func _ready() -> void:
+	preload("res://scripts/ui/triple_triad_portrait_layout.gd").result(self)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	_build_card_rows()
@@ -411,7 +412,7 @@ func _run_opponent_take_sequence(sequence_id: int) -> void:
 		prompt_label.text = "No card lost — your last playable deck is protected."
 		info_label.text = ""
 		_set_help_large(true)
-		help_label.text = "K: Continue"
+		help_label.text = preload("res://scripts/ui/portrait_ui.gd").hints(self, "K: Continue")
 		_focus_card = null
 		_focus_sequence_id = sequence_id
 		_focus_exit_down = false
@@ -488,7 +489,7 @@ func _animate_card_transfer(
 	_focus_sequence_id = sequence_id
 	_state = STATE_FOCUS_HOLD
 	_set_help_large(true)
-	help_label.text = "K: Continue"
+	help_label.text = preload("res://scripts/ui/portrait_ui.gd").hints(self, "K: Continue")
 
 
 func _run_focus_exit(exit_down: bool, sequence_id: int) -> void:
@@ -543,8 +544,8 @@ func _clear_focus_card() -> void:
 	_focus_card = null
 
 
-func _set_help_large(value: bool) -> void:
-	help_label.add_theme_font_size_override("font_size", 15 if value else 11)
+func _set_help_large(_value: bool) -> void:
+	help_label.add_theme_font_size_override("font_size", 18)
 
 
 func _accept_input() -> void:

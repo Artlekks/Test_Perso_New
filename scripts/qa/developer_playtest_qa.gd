@@ -84,6 +84,9 @@ func run() -> void:
 		check(game.deck_setup.developer_test_deck.size() == 5 and game.deck_setup._deck.size() == 5, "empty real collection gets exactly five temporary legitimate cards")
 		var deck_before := bytes_snapshot()
 		game.deck_setup._enter_collection_for_profile(0)
+		check(game.deck_setup._nav_zone == game.deck_setup.NAV_DECK, "saved deck entry focuses five slots")
+		# Exercise the existing collection add/remove path after slot-first entry.
+		game.deck_setup._return_to_collection()
 		game.deck_setup._cursor_index = 4
 		shell.controls.touch_begin(86, shell.controls.buttons.A.get_center())
 		await settle()

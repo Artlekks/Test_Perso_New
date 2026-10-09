@@ -116,7 +116,7 @@ func _visual_scale(control: Control) -> Vector2:
 
 
 func _prepare_deal_card(view: Control, index: int) -> void:
-	view.position = Vector2(0.0, 520.0 + float(index) * 10.0)
+	view.position = Vector2(0.0, 900.0 + float(index) * 10.0)
 	view.modulate = Color(1, 1, 1, 0)
 
 

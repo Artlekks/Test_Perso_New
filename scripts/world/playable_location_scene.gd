@@ -5,6 +5,7 @@ extends Node3D
 @export var location_context: PlayableLocationContext
 
 func _enter_tree() -> void:
+	preload("res://scripts/ui/canonical_game_surface.gd").prepare(self)
 	if location_context == null:
 		return
 	get_node("/root/WorldLocations").bind_location(location_context, self)

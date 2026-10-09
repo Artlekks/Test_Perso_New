@@ -1,10 +1,8 @@
 extends Control
 class_name TripleTriadMatchHUD
 
-# EDIT LAYOUT IN: res://actors/TripleTriadMatchHUD.tscn
-# Every visible HUD element is a real scene node now. Move it in Godot's 2D
-# editor and the runtime will respect that placement. No hidden coordinate
-# constants in this script should fight your scene edits.
+# Shared canonical geometry: scripts/ui/triple_triad_portrait_layout.gd.
+# These existing scene nodes remain the live controller outputs on every host.
 
 const OWNER_PLAYER := 1
 
@@ -29,6 +27,7 @@ var _help_roots: Array[Control] = []
 
 
 func _ready() -> void:
+	preload("res://scripts/ui/triple_triad_portrait_layout.gd").hud(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pattern_cells = [
 		$InfluencePattern/Cell00, $InfluencePattern/Cell10, $InfluencePattern/Cell20,
@@ -72,11 +71,11 @@ func set_help_entries(entries: Array) -> void:
 			var key_text: String = str(entry.get("key", ""))
 			var action_text: String = str(entry.get("action", ""))
 			root.visible = not key_text.is_empty() or not action_text.is_empty()
-			key_label.text = key_text
+			key_label.text = preload("res://scripts/ui/portrait_ui.gd").hints(self, key_text + ":").trim_suffix(":")
 			action_label.text = action_text
 			key_label.add_theme_font_size_override(
 				"font_size",
-				6 if key_text.length() >= 4 else 7
+				18
 			)
 		else:
 			root.visible = false
@@ -100,7 +99,7 @@ func set_card_info(card, rotation_quarters: int) -> void:
 		clear_card_info()
 		return
 
-	_info_card.visible = true
+	_info_card.visible = false
 	_info_card.configure(
 		card,
 		OWNER_PLAYER,
@@ -127,9 +126,7 @@ func set_card_info(card, rotation_quarters: int) -> void:
 
 
 func _set_score(target: Control, _anchor: Control, value: int) -> void:
-	# Position and scale are fully authored in TripleTriadMatchHUD.tscn. Runtime
-	# changes only the glyph text. This makes X/Y 84,40 and 532,40 literal
-	# top-left positions instead of re-centering the digits behind the editor.
+	# Shared portrait geometry owns the anchors; updates only change glyph text.
 	target.call("set_text", str(maxi(value, 0)))
 	target.position = Vector2.ZERO
 

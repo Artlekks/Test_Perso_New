@@ -337,6 +337,7 @@ func _ready() -> void:
 	_reset_panel_positions()
 	_sync_selector_visibility()
 
+	preload("res://scripts/mobile/responsive_menu_surface.gd").attach(self, root, "inventory")
 
 func configure(
 	game_mode: Node,

@@ -82,6 +82,7 @@ func _ready() -> void:
 	root.visible = false
 	confirm_panel.visible = false
 
+	preload("res://scripts/mobile/responsive_menu_surface.gd").attach(self, root, "card_maker")
 
 func configure(service: FishingCardMakerService) -> void:
 	_service = service

@@ -87,6 +87,7 @@ func _ready() -> void:
 	root.visible = false
 	confirm_panel.visible = false
 
+	preload("res://scripts/mobile/responsive_menu_surface.gd").attach(self, root, "economy")
 
 func configure(game_mode: Node, access) -> void:
 	if _access != null and _access != access:

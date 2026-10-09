@@ -187,7 +187,7 @@ func _runtime_checks() -> void:
 	var card: Dictionary = session.card_maker_service.make_card(&"trout_card")
 	check(card.get("success", false), "real Card Maker transaction commits: " + str(card))
 	check(telemetry.recorder.ledger.size() == 4 and telemetry.recorder.ledger[3].source == "card_maker", "real Card Maker expenditure once")
-	telemetry.cast_started()
+	runtime.cast_started.emit()
 	var fish := FishInstance.new()
 	fish.species = session.economy_service.content_catalog.get_fish_by_id(&"salmon")
 	fish.size = 80.0
@@ -232,7 +232,7 @@ func _runtime_checks() -> void:
 		await process_frame
 		var destination_runtime = current_scene.get_node("Game/Fishing")
 		check(telemetry.recorder.active and telemetry._get_runtime() == destination_runtime, "same recorder survives travel and rebinds physical runtime")
-		check(telemetry._runtime_connections.size() == 8, "one set of fishing observers after scene change")
+		check(telemetry._runtime_connections.size() == 9 and destination_runtime.cast_started.is_connected(telemetry.cast_started), "one set of fishing observers, including cast-start, after scene change")
 		var travel_output: Dictionary = telemetry.stop_recording()
 		check(travel_output.ok and telemetry.last_report.ending.location == "wyndia_ocean_outpost", "travel report ends at actual authoritative location")
 		check(telemetry.last_report.summary.wallet_reconciliation_error == 0, "wallet reconciles across scenes")

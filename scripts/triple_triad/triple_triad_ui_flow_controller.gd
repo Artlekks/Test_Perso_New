@@ -24,7 +24,7 @@ const PHASE_REWARD := SessionControllerScript.PHASE_REWARD
 const PHASE_DECK_SETUP := SessionControllerScript.PHASE_DECK_SETUP
 const PHASE_SURRENDER_CONFIRM := SessionControllerScript.PHASE_SURRENDER_CONFIRM
 
-const HAND_STEP_Y := 47.0
+const HAND_STEP_Y := 140.0
 const RESULT_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.56)
 
 var _root: Control = null
@@ -146,12 +146,7 @@ func prepare_new_match() -> void:
 
 
 func set_match_skin_visible(enabled: bool) -> void:
-	if _backdrop != null:
-		_backdrop.texture = (
-			CARD_GAME_BACKGROUND
-			if enabled
-			else _default_backdrop_texture
-		)
+	if _backdrop != null: _backdrop.visible = false
 	if _match_hud != null:
 		_match_hud.visible = enabled
 	if not enabled:
@@ -329,6 +324,7 @@ func phase_uses_player_selection(phase: int) -> bool:
 
 
 func _apply_authored_layout() -> void:
+	preload("res://scripts/ui/triple_triad_portrait_layout.gd").battle(_root)
 	if _grid_artwork != null:
 		_grid_artwork.visible = false
 	if _info_panel != null:
