@@ -366,6 +366,11 @@ var economy_playtest_telemetry: Node = null
 
 func _ready() -> void:
 	initialize()
+	var tree_root := get_tree().root
+	if tree_root.has_meta("pending_fishing_session_services"):
+		var pending = tree_root.get_meta("pending_fishing_session_services")
+		if pending is WeakRef and pending.get_ref() == self:
+			tree_root.remove_meta("pending_fishing_session_services")
 
 
 func initialize() -> void:
@@ -2068,6 +2073,19 @@ func get_beach_gathering_inventory() -> BeachGatheringInventory:
 
 func get_beach_crafting_service() -> BeachCraftingService:
 	return beach_crafting_service
+
+
+func unbind_loadout(loadout) -> void:
+	# A departing scene may only release its own binding, never its replacement.
+	if active_loadout != loadout:
+		return
+	active_loadout = null
+	if beach_crafting_service != null:
+		beach_crafting_service.bind_loadout(null)
+	if beach_crafting_feel_qa_hud != null:
+		beach_crafting_feel_qa_hud.set_loadout(null)
+	if save_integrity_service != null:
+		save_integrity_service.loadout = null
 
 
 func bind_loadout(loadout) -> Dictionary:

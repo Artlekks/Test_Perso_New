@@ -20,6 +20,12 @@ var _tackle_catalog: FishingTackleCatalog = null
 var _restoring_persistent_selection: bool = false
 
 
+func _exit_tree() -> void:
+	var session := get_node_or_null("/root/FishingSessionServices")
+	if session != null:
+		session.unbind_loadout(self)
+
+
 func _ready() -> void:
 	if lure_catalog == null:
 		push_warning("FishingLoadout: no lure catalog is assigned.")

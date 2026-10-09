@@ -221,6 +221,8 @@ static func run(
 		"Learning to read signs must not become a disguised catch-rate or specimen buff."
 	)
 
+	mastery.free()
+	unlock.free()
 	return report
 
 

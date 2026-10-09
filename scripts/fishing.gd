@@ -886,6 +886,12 @@ func _get_or_create_session_services() -> FishingSessionServices:
 	var existing := tree_root.get_node_or_null(
 		"FishingSessionServices"
 	)
+	# Publish the pending owner before initialization/deferred attachment. A
+	# second fishing scene becoming ready in this frame must reuse that owner.
+	if existing == null and tree_root.has_meta("pending_fishing_session_services"):
+		var pending = tree_root.get_meta("pending_fishing_session_services", null)
+		if pending is WeakRef:
+			existing = pending.get_ref()
 
 	if existing is FishingSessionServices:
 		var existing_services := existing as FishingSessionServices
@@ -894,6 +900,7 @@ func _get_or_create_session_services() -> FishingSessionServices:
 
 	var services := FishingSessionServicesScript.new() as FishingSessionServices
 	services.name = "FishingSessionServices"
+	tree_root.set_meta("pending_fishing_session_services", weakref(services))
 
 	# Initialize before deferred tree attachment. This gives Fishing immediate
 	# access while keeping the SceneTree-root mutation safe during _ready().
@@ -1826,12 +1833,12 @@ func _spawn_surface_splash(
 	if FishingSurfaceSplashScene == null:
 		return
 
-	var splash := FishingSurfaceSplashScene.instantiate()
 	var scene_root := GameplaySceneRoot.resolve(get_tree())
 
 	if scene_root == null:
 		return
 
+	var splash := FishingSurfaceSplashScene.instantiate()
 	scene_root.add_child(splash)
 
 	if splash.has_method("configure"):

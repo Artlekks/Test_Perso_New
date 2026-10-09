@@ -377,6 +377,12 @@ static func run(
 		"Long sessions must loop cleanly through repeated tides."
 	)
 
+	# These detached Node fixtures belong to this invocation, not the session.
+	environment.free()
+	current.free()
+	tide.free()
+	mastery.free()
+	unlock.free()
 	report["valid"] = int(report["passed_count"]) == int(report["test_count"])
 	return report
 

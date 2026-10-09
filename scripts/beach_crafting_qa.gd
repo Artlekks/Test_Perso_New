@@ -348,6 +348,7 @@ static func _test_inventory_atomicity(report: Dictionary) -> void:
 		failure_preserved and success_consumed,
 		"Failed costs must consume nothing; successful costs must consume exactly once."
 	)
+	inventory.free()
 
 
 static func _test_beach_circuit_economy(

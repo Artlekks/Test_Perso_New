@@ -1431,6 +1431,8 @@ func _test_economy_contract(report: Dictionary) -> void:
 			"is_king": true,
 		}, false, false)
 		_assert_equal_int(report, service.get_current_trade_value_units(tail_recipe), 450, "Manillo value rises with improved record", group)
+	service.free()
+	progress.free()
 
 
 func _test_player_economy_access_and_save_integrity(report: Dictionary) -> void:
@@ -1556,6 +1558,16 @@ func _test_player_economy_access_and_save_integrity(report: Dictionary) -> void:
 			duplicate_ids += 1
 		ids[specimen.specimen_id] = true
 	_assert_equal_int(report, duplicate_ids, 0, "duplicate specimen ids repaired", group)
+	# This function owns these detached fixture services. Release consumers
+	# before their dependencies instead of relying on a runner to scavenge.
+	integrity.free()
+	access.free()
+	consumables.free()
+	economy_service.free()
+	trade_service.free()
+	modifiers.free()
+	progress.free()
+	inventory.free()
 
 
 func _test_fish_consumable_effects(report: Dictionary) -> void:

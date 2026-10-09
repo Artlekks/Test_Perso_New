@@ -237,4 +237,13 @@ func _find_dialogue_service() -> Node:
 
 
 func _exit_tree() -> void:
+	var service := _service
+	var dialogue_id := _pending_dialogue_id
+	# Disconnect before closing: teardown must not dispatch NPC actions back
+	# into the actor that is leaving the scene.
 	_disconnect_service()
+	cancel_pending()
+	if is_instance_valid(service) and dialogue_id != &"" and service.has_method("get_snapshot"):
+		var snapshot: Dictionary = service.get_snapshot()
+		if snapshot.get("active", false) and snapshot.get("dialogue_id", &"") == dialogue_id:
+			service.force_close(&"source_removed")

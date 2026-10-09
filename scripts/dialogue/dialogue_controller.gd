@@ -121,6 +121,7 @@ func _ensure_view() -> void:
 	var instance = DialogueViewScene.instantiate()
 	if not (instance is DialogueView):
 		push_error("DialogueController: DialogueView.tscn root is not DialogueView.")
+		instance.free()
 		return
 	_view = instance as DialogueView
 	_view.name = "DialogueView"

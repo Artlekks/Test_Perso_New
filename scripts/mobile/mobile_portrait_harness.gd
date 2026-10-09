@@ -355,7 +355,10 @@ func _exit_tree() -> void:
 				fitter.surface.position = fitter.original_position
 				fitter.bar.free()
 				fitter.free()
-			if layer.has_meta("development_status"): layer.custom_viewport = null
+			if layer.has_meta("development_status"):
+				# The persistent layer outlives this SubViewport. Godot rejects
+				# nullptr here; restore the original owner's live viewport.
+				layer.custom_viewport = original_parent.get_viewport()
 			if layer.has_meta("mobile_original_offset"):
 				layer.offset = layer.get_meta("mobile_original_offset")
 				layer.remove_meta("mobile_original_offset")
