@@ -24,6 +24,28 @@ func strip(node: Node) -> void:
 	node.set_script(null)
 func settle() -> void:
 	for i in 3: await process_frame
+func test_gathering_sensor(shape: CollisionShape3D, preserved_center: Vector3, label: String) -> void:
+	# Exercise the actual Area broadphase against the pre-migration boundary,
+	# independently of the scene transform assertions. This probe is not a player
+	# and cannot trigger gathering, inventory or interaction routing.
+	var area := shape.get_parent() as Area3D
+	var probe := CharacterBody3D.new()
+	probe.collision_layer = 1
+	probe.collision_mask = 0
+	var probe_shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 0.001
+	probe_shape.shape = sphere
+	probe.add_child(probe_shape)
+	root.add_child(probe)
+	var radius: float = shape.shape.radius
+	probe.global_position = preserved_center + Vector3(0, radius - 0.001, 0)
+	for i in 6: await physics_frame
+	check(area.overlaps_body(probe), label + " preserved sensor upper boundary detects body")
+	probe.global_position = preserved_center + Vector3(0, radius + 0.01, 0)
+	for i in 6: await physics_frame
+	check(not area.overlaps_body(probe), label + " outside preserved sensor boundary rejects body")
+	probe.free()
 func test_actor(actor: Node3D) -> void:
 	var presentation := actor.get_node("GroundPresentation") as GroundPresentation
 	var shadow := presentation.shadow
@@ -107,6 +129,8 @@ func run() -> void:
 		check(shape.global_position.is_equal_approx(Vector3(row.position[0],row.position[1],row.position[2])), row.path + " physics world position unchanged")
 		check(str(shape.global_basis) == row.basis and shape.disabled == row.disabled, row.path + " physics basis/state unchanged")
 		check(shape.get_parent().collision_layer == row.layer and shape.get_parent().collision_mask == row.mask, row.path + " layer/mask unchanged")
+		if String(row.path).begins_with("World/BeachGatheringCircuit/"):
+			await test_gathering_sensor(shape, Vector3(row.position[0],row.position[1],row.position[2]), row.path)
 	for presentation in scene.find_children("GroundPresentation", "Node3D", true, false):
 		check(is_zero_approx(presentation.get_parent().global_position.y), str(presentation.get_parent().name) + " normalized physical root Y")
 		check(presentation.get_parent().find_children("ShadowSprite3D", "", true, false).is_empty(), "no manually transformed legacy shadow")

@@ -38,6 +38,9 @@ alpha_scissor_threshold = 0.5
 cast_shadow = 0
 
 [node name="InteractionArea" type="Area3D" parent="."]
+; Preserve the pre-grounding sensor origin (0.04 - 0.033720568).
+; ActorRoot and presentation stay at ground Y=0; compensation is physics-only.
+position = Vector3(0, 0.0062794313, 0)
 collision_layer = 0
 collision_mask = 3
 monitoring = true
