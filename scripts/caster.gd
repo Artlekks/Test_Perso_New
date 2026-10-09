@@ -1,5 +1,6 @@
 extends Node3D
 
+signal active_bait_changed(bait: Node3D)
 signal bait_landed(point: Vector3)
 signal bait_returned
 signal bait_depth_changed(current_depth: float, total_depth: float)
@@ -42,7 +43,32 @@ var landing_shift_threshold: float = 0.65
 var max_landing_shift_ratio: float = 0.22
 @export var max_landing_shift_distance: float = 1.1
 
-var active_bait: Node3D
+var _bait_exit_callback := Callable()
+var active_bait: Node3D:
+	set(value):
+		if active_bait == value:
+			return
+		if is_instance_valid(active_bait):
+			if active_bait.tree_exiting.is_connected(_bait_exit_callback):
+				active_bait.tree_exiting.disconnect(_bait_exit_callback)
+			# A replaced/deferred-deletion bait cannot report return/depth for its successor.
+			for binding in [["landed", _on_bait_landed], ["depth_changed", _on_bait_depth_changed], ["returned", _on_bait_returned], ["snag_risk_changed", _on_bait_snag_risk_changed], ["snagged", _on_bait_snagged]]:
+				if active_bait.has_signal(binding[0]) and active_bait.is_connected(binding[0], binding[1]):
+					active_bait.disconnect(binding[0], binding[1])
+		active_bait = value
+		_bait_exit_callback = Callable()
+		if is_instance_valid(value):
+			_bait_exit_callback = _on_owned_bait_exiting.bind(value.get_instance_id())
+			value.tree_exiting.connect(_bait_exit_callback, CONNECT_ONE_SHOT)
+		active_bait_changed.emit(value)
+
+func _on_owned_bait_exiting(instance_id: int) -> void:
+	if is_instance_valid(active_bait) and active_bait.get_instance_id() == instance_id:
+		active_bait = null
+
+func _exit_tree() -> void:
+	active_bait = null
+
 var current_bait_depth: float = 0.0
 var current_total_depth: float = 0.0
 var active_rod_data: RodData = null

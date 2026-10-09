@@ -89,6 +89,8 @@ var _ambient_profile: AmbientFishProfile = null
 var _environment_context: Dictionary = {}
 var _active_bait: Node3D = null
 var _active_bait_id: int = 0
+var _bait_owner: Node = null
+var _bait_exit_callback := Callable()
 var _bait_lookup_cooldown: float = 0.0
 var _fishing_player: Node3D = null
 var _mastery_service = null
@@ -153,6 +155,7 @@ func _initialize_presence() -> void:
 		push_warning("FishShadowPresence needs FishSwimBounds on its fish zone.")
 		return
 
+	_bind_bait_owner()
 	_refresh_spot_identity()
 	_desired_count = _choose_population_count()
 	_population_reconsider_remaining = _rng.randf_range(
@@ -238,11 +241,40 @@ func _update_player_disturbance(delta: float) -> void:
 		)
 
 
+func _bind_bait_owner() -> void:
+	# Scene-local authoritative owner, including games hosted by the mobile viewport.
+	var ancestor: Node = self
+	while ancestor != null:
+		var candidate := ancestor.get_node_or_null("Game/Fishing/Caster")
+		if candidate != null and candidate.has_signal("active_bait_changed"):
+			_bait_owner = candidate
+			_bait_owner.connect("active_bait_changed", _on_owned_bait_changed)
+			_on_owned_bait_changed(_bait_owner.get("active_bait"))
+			return
+		ancestor = ancestor.get_parent()
+
+func _on_owned_bait_changed(candidate: Node3D) -> void:
+	_set_active_bait(candidate)
+
+func _on_cached_bait_exiting(instance_id: int) -> void:
+	# An old bait's delayed exit must never unbind a newer cast.
+	if instance_id == _active_bait_id:
+		_set_active_bait(null)
+
+func _exit_tree() -> void:
+	if is_instance_valid(_bait_owner) and _bait_owner.is_connected("active_bait_changed", _on_owned_bait_changed):
+		_bait_owner.disconnect("active_bait_changed", _on_owned_bait_changed)
+	_bait_owner = null
+	_set_active_bait(null)
+
 func _update_active_bait_reference(delta: float) -> void:
+	if is_instance_valid(_bait_owner):
+		return # Lifecycle notifications, not group discovery, own production binding.
 	var candidate: Node3D = null
 
 	if (
 		is_instance_valid(_active_bait)
+		and not _active_bait.is_queued_for_deletion()
 		and _active_bait.is_in_group("bait")
 	):
 		candidate = _active_bait
@@ -277,7 +309,20 @@ func _update_active_bait_reference(delta: float) -> void:
 
 
 func _set_active_bait(candidate: Node3D) -> void:
+	if is_instance_valid(_active_bait) and _active_bait.tree_exiting.is_connected(_bait_exit_callback):
+		_active_bait.tree_exiting.disconnect(_bait_exit_callback)
+	if not is_instance_valid(candidate) or candidate.is_queued_for_deletion():
+		candidate = null
+	var next_id := candidate.get_instance_id() if candidate != null else 0
+	if next_id != _active_bait_id:
+		# Hooked actors belong to this cast too; release them before replacement
+		# or retrieval can leave them observing a queued old bait for another frame.
+		end_fight_shadow()
 	_active_bait = candidate
+	_bait_exit_callback = Callable()
+	if candidate != null:
+		_bait_exit_callback = _on_cached_bait_exiting.bind(candidate.get_instance_id())
+		candidate.tree_exiting.connect(_bait_exit_callback, CONNECT_ONE_SHOT)
 	_active_bait_id = (
 		candidate.get_instance_id()
 		if is_instance_valid(candidate)
@@ -626,6 +671,8 @@ func _spawn_one_shadow() -> void:
 		shadow.set_debug_force_readable(true)
 
 	_spawned_shadows.append(shadow)
+	if not is_instance_valid(_active_bait):
+		_set_active_bait(null)
 	shadow.set_ambient_bait(_active_bait)
 
 

@@ -285,6 +285,7 @@ var _one_with_nature_settle_ratio: float = 0.0
 var _wariness_stress: float = 0.0
 var _spook_remaining: float = 0.0
 
+var _bait_exit_callback := Callable()
 var _fight_tracking: bool = false
 var _fight_bait: Node3D = null
 var _fight_last_bait_position: Vector3 = Vector3.ZERO
@@ -464,6 +465,7 @@ func attach_to_hooked_bait(
 	if hooked_fish_data != null:
 		fish_data = hooked_fish_data
 
+	_watch_bait_lifetime(bait)
 	_fight_tracking = true
 	# Follow the final screen-constrained bait, before FishingLineView (110).
 	process_priority = 105
@@ -511,6 +513,7 @@ func release_from_hooked_bait(dive_away: bool = true) -> void:
 
 	_fight_tracking = false
 	process_priority = 0
+	_unwatch_bait_lifetime()
 	_fight_bait = null
 	_bait = null
 	_observed_bait_id = 0
@@ -778,6 +781,7 @@ func set_ambient_bait(candidate: Node3D) -> void:
 		_bait = candidate
 		return
 
+	_watch_bait_lifetime(candidate)
 	_bait = candidate
 	_observed_bait_id = candidate_id
 	_pre_bite_state = PreBiteState.ROAM
@@ -944,6 +948,7 @@ func _return_to_roam_with_cooldown() -> void:
 
 
 func _clear_bait_interest() -> void:
+	_unwatch_bait_lifetime()
 	_bait = null
 	_observed_bait_id = 0
 	_pre_bite_state = PreBiteState.ROAM
@@ -1518,3 +1523,28 @@ func _get_visual_plane_y() -> float:
 		deep_plane_height,
 		_depth_ratio
 	)
+
+
+func _unwatch_bait_lifetime() -> void:
+	if is_instance_valid(_bait) and _bait.tree_exiting.is_connected(_bait_exit_callback):
+		_bait.tree_exiting.disconnect(_bait_exit_callback)
+	_bait_exit_callback = Callable()
+
+func _watch_bait_lifetime(candidate: Node3D) -> void:
+	_unwatch_bait_lifetime()
+	_bait_exit_callback = _on_tracked_bait_exiting.bind(candidate.get_instance_id())
+	candidate.tree_exiting.connect(_bait_exit_callback, CONNECT_ONE_SHOT)
+
+func _on_tracked_bait_exiting(instance_id: int) -> void:
+	if instance_id != _observed_bait_id:
+		return
+	if _fight_tracking:
+		release_from_hooked_bait(true)
+	else:
+		_clear_bait_interest()
+
+func _exit_tree() -> void:
+	_unwatch_bait_lifetime()
+	_bait = null
+	_fight_bait = null
+	_observed_bait_id = 0
