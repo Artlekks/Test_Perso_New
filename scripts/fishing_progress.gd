@@ -831,7 +831,7 @@ func _trim_recent_catch_transactions() -> void:
 func reset_all_progress(delete_save: bool = true) -> void:
 	_reset_runtime_state()
 
-	if delete_save and FileAccess.file_exists(SAVE_PATH):
+	if delete_save and FileAccess.file_exists(_save_path):
 		var absolute_path := ProjectSettings.globalize_path(
 			_save_path
 		)

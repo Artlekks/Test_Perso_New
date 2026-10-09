@@ -722,7 +722,7 @@ static func _test_player_inventory_restart(
 		true
 	)
 
-	inventory = null
+	inventory.free()
 
 	var restarted = (
 		PlayerInventoryScript.new()
@@ -751,7 +751,7 @@ static func _test_player_inventory_restart(
 		)
 	)
 
-	restarted = null
+	restarted.free()
 
 	var after_remove = (
 		PlayerInventoryScript.new()

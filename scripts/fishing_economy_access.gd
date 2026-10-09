@@ -41,6 +41,8 @@ func configure(
 	new_shop_catalog,
 	new_trade_catalog
 ) -> void:
+	_disconnect_source(inventory, "changed", "_on_source_changed")
+	_disconnect_source(modifier_service, "modifiers_changed", "_on_source_changed_with_payload")
 	inventory = new_inventory
 	economy_service = new_economy_service
 	trade_service = new_trade_service
@@ -66,6 +68,7 @@ func configure_item_backbone(
 	new_inventory_facade: GameInventoryFacade,
 	new_transaction_service: GameItemTransactionService
 ) -> void:
+	_disconnect_source(item_inventory_facade, "changed", "_on_source_changed")
 	item_catalog = new_item_catalog
 	item_inventory_facade = new_inventory_facade
 	item_transaction_service = new_transaction_service
@@ -73,6 +76,12 @@ func configure_item_backbone(
 		var callback := Callable(self, "_on_source_changed")
 		if not item_inventory_facade.is_connected("changed", callback):
 			item_inventory_facade.connect("changed", callback)
+
+
+func _disconnect_source(source, signal_name: String, method_name: String) -> void:
+	var callback := Callable(self, method_name)
+	if is_instance_valid(source) and source.has_signal(signal_name) and source.is_connected(signal_name, callback):
+		source.disconnect(signal_name, callback)
 
 
 func set_access_context(

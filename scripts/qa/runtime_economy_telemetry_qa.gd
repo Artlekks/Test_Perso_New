@@ -118,12 +118,10 @@ func _run() -> void:
 	var mismatch: Dictionary = r.stop({"zenny": 20})
 	check(not mismatch.summary.ledger_reconciled and mismatch.summary.wallet_reconciliation_error == -10, "missing wallet event remains an explicit reconciliation diagnostic")
 	await _runtime_checks()
-	print("RUNTIME ECONOMY TELEMETRY QA: %d/%d passed" % [checks - failures.size(), checks])
 	for id in Node.get_orphan_node_ids():
 		if not initial_orphans.has(id):
-			var node = instance_from_id(id)
-			if is_instance_valid(node):
-				node.free()
+			check(false, "telemetry fixture leaked orphan node %d" % id)
+	print("RUNTIME ECONOMY TELEMETRY QA: %d/%d passed" % [checks - failures.size(), checks])
 	quit(0 if failures.is_empty() else 1)
 
 func _runtime_checks() -> void:

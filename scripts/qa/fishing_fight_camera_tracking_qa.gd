@@ -370,13 +370,10 @@ func run_existing_regressions() -> void:
 	session.queue_free()
 	for frame in range(3):
 		await process_frame
-	# Existing harness suites construct detached Node-based inventories.
-	# Match the isolated full-scene QA teardown instead of leaking its fixtures.
+	# Each fixture must release its own nodes; never hide a leak by scavenging it.
 	for id in Node.get_orphan_node_ids():
 		if not orphan_before.has(id):
-			var orphan = instance_from_id(id)
-			if is_instance_valid(orphan):
-				orphan.free()
+			check(false, "regression fixture leaked orphan node %d" % id)
 
 
 func test_complete_retrieve() -> void:

@@ -307,8 +307,6 @@ func run() -> void:
 		await test_runtime_modes()
 	for id in Node.get_orphan_node_ids():
 		if not orphan_before.has(id):
-			var orphan = instance_from_id(id)
-			if is_instance_valid(orphan):
-				orphan.free()
+			check(false, "collision fixture leaked orphan node %d" % id)
 	print("WORLD ACTOR COLLISION QA: %d/%d; max passive player displacement=%s; epsilon=%s" % [checks - failures.size(), checks, max_player_displacement, EPSILON])
 	quit(0 if failures.is_empty() else 1)

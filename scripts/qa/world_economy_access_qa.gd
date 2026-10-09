@@ -193,9 +193,7 @@ func _run() -> void:
 	_check(int(report.failed) == 0, "existing economy freeze/full-access groups remain green")
 	for id in Node.get_orphan_node_ids():
 		if not orphan_before.has(id):
-			var orphan = instance_from_id(id)
-			if is_instance_valid(orphan):
-				orphan.free()
+			_check(false, "world-economy fixture leaked orphan node %d" % id)
 	var simulation: Dictionary = Simulator.new().run_default_suite(false)
 	print("Existing First-10h source/economy simulator: %d/%d" % [simulation.checks_passed, simulation.checks_total])
 	for alert in simulation.health.balance_alerts:

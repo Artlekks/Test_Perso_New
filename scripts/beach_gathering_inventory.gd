@@ -21,6 +21,9 @@ func configure_backbone(
 	transaction_service: GameItemTransactionService,
 	legacy_save_path: String = SAVE_PATH
 ) -> void:
+	var old_callback := Callable(self, "_on_backbone_item_count_changed")
+	if is_instance_valid(_item_inventory) and _item_inventory.is_connected("item_count_changed", old_callback):
+		_item_inventory.disconnect("item_count_changed", old_callback)
 	_item_inventory = item_inventory
 	_item_catalog = item_catalog
 	_transaction_service = transaction_service

@@ -1147,7 +1147,7 @@ func reset_inventory(delete_save: bool = true) -> void:
 	rod_counts[str(STARTER_ROD_ID)] = 1
 
 	if delete_save and FileAccess.file_exists(_save_path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(_save_path))
 
 	_dirty = true
 	commit_changes()

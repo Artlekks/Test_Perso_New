@@ -14,6 +14,7 @@ func configure(
 	new_player_inventory: PlayerItemInventory,
 	new_fishing_inventory: FishingInventory
 ) -> void:
+	_disconnect_inventory_signals()
 	item_catalog = new_catalog
 	player_inventory = new_player_inventory
 	fishing_inventory = new_fishing_inventory
@@ -71,6 +72,29 @@ func configure(
 			"manillo_balance_changed",
 			"_on_manillo_balance_changed"
 		)
+
+
+func _disconnect_inventory_signals() -> void:
+	# Configuration transfers subscription ownership, including explicit unbind.
+	if is_instance_valid(player_inventory):
+		_disconnect_signal(player_inventory, "changed", "_on_player_inventory_changed")
+		_disconnect_signal(player_inventory, "item_count_changed", "_on_player_item_count_changed")
+	if is_instance_valid(fishing_inventory):
+		for binding in [
+			["changed", "_on_fishing_inventory_changed"],
+			["fish_count_changed", "_on_fish_count_changed"],
+			["lure_count_changed", "_on_lure_count_changed"],
+			["rod_count_changed", "_on_rod_count_changed"],
+			["zenny_changed", "_on_zenny_changed"],
+			["manillo_balance_changed", "_on_manillo_balance_changed"],
+		]:
+			_disconnect_signal(fishing_inventory, binding[0], binding[1])
+
+
+func _disconnect_signal(source: Node, signal_name: String, method_name: String) -> void:
+	var callback := Callable(self, method_name)
+	if source.has_signal(signal_name) and source.is_connected(signal_name, callback):
+		source.disconnect(signal_name, callback)
 
 
 func get_count(item_id: StringName) -> int:

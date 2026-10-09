@@ -321,8 +321,6 @@ func run() -> void:
 		await process_frame
 	for id in Node.get_orphan_node_ids():
 		if not orphan_before.has(id):
-			var orphan = instance_from_id(id)
-			if is_instance_valid(orphan):
-				orphan.free()
+			check(false, "presentation fixture leaked orphan node %d" % id)
 	print("PRESENTATION/CURRENT POLISH QA: %d/%d passed" % [checks - failures.size(), checks])
 	quit(0 if failures.is_empty() else 1)
