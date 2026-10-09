@@ -83,6 +83,7 @@ func run() -> void:
 		shell.passive.focus_seconds = 10
 		shell.set_mode(shell.Mode.PASSIVE)
 		await wait_for(func(): return shell.passive.state==shell.passive.State.FOCUS,"repeated passive cast settles")
+		if cycle==0: await passive_camera_drift()
 		shell.set_mode(shell.Mode.ACTIVE)
 		check(shell.passive.state==shell.passive.State.IDLE,"early Active cancels schedule")
 		check(not fishing.encounter.bite_active,"cancel awards no opportunity")
@@ -114,3 +115,27 @@ func run() -> void:
 	check(Node.get_orphan_node_ids().is_empty(),"restart teardown leaves no orchestrator orphans")
 	print("Passive Fishing QA: %d/%d; failures=%s" % [checks-failures.size(),checks,failures])
 	quit(0 if failures.is_empty() else 1)
+
+func passive_camera_drift() -> void:
+	var bait: Node3D = fishing.caster.active_bait
+	var original := bait.global_transform
+	var original_mode := bait.process_mode
+	bait.process_mode=Node.PROCESS_MODE_DISABLED
+	var rig: Node = fishing.camera_rig
+	var camera: Camera3D = rig.get_node("Camera3D")
+	rig.fight_camera_tracking.reset()
+	camera.transform=rig._fight_base_camera_transform
+	var shot := camera.global_transform
+	for side in [-1,1]:
+		for frame in range(60):
+			# Deterministic physical drift inside the wider outer threshold,
+			# with the real Passive lease and IN_WATER owner continuously active.
+			var x: float = (.15 if side<0 else .89)+sin(frame*.1)*.02
+			bait.global_position=camera.project_position(Vector2(x,.4)*Vector2(shell.gameplay_viewport.size),12)
+			await process_frame
+		check(shell.mode==shell.Mode.PASSIVE and shell.passive.state==shell.passive.State.FOCUS,"Passive drift retains activity/focus")
+		check(rig._fight_tracking_active and not rig.fight_camera_tracking.tracking,"Passive water owner remains active without dead-zone correction")
+		check(camera.global_transform.is_equal_approx(shot),"real Passive physical drift does not micro-rotate side %d" % side)
+	check(not fishing.encounter.bite_active,"drift test cannot bypass focus opportunity timer")
+	bait.global_transform=original
+	bait.process_mode=original_mode

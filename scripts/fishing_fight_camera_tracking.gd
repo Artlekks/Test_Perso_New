@@ -21,36 +21,39 @@ func violation(point: Vector2, region: Rect2) -> float:
 	return point.distance_squared_to(nearest)
 
 func step(delta: float, project: Callable, outer: Rect2, hysteresis: float,
-		max_yaw: float, response: float, return_response: float) -> float:
-	var margin := minf(hysteresis, minf(outer.size.x, outer.size.y) * 0.25)
-	var inner := outer.grow(-margin)
+		max_yaw: float, response: float, _return_response: float, vertical_hysteresis := 0.025) -> float:
+	var horizontal_margin := clampf(hysteresis, 0.0, outer.size.x * 0.25)
+	var vertical_margin := clampf(vertical_hysteresis, 0.0, outer.size.y * 0.25)
+	var margin := Vector2(horizontal_margin,vertical_margin)
+	var inner := Rect2(outer.position+margin,outer.size-margin*2.0)
 	var point: Vector2 = project.call(yaw)
-	if not inside(point, outer):
+	if not inside(point, outer, 0.000001):
 		tracking = true
-	elif tracking and inside(point, inner, 0.001):
+	elif tracking and inside(point, inner):
 		tracking = false
 	limited = false
 	requested_yaw = yaw
 	if not tracking:
-		# Return only as far as the inner region allows. This cannot restart
-		# edge tracking on the next frame, even when the fish rests at an edge.
-		var returning := lerpf(yaw, 0.0, 1.0 - exp(-return_response * delta))
-		if inside(project.call(returning), inner):
-			yaw = returning
+		# Hold the established shot throughout the dead zone. Unwinding here
+		# would rotate a comfortably visible bait and re-chase current drift.
+		# Retrieve/result return remains owned by CameraRig's existing flow.
 		return yaw
 
 	# Search the bounded orbit for the closest safe heading. Projection also
 	# checks vertical clearance: a sideways run can descend toward the HUD.
 	# This work runs only outside the dead zone, never during other phases.
 	var best := yaw
-	var best_error := violation(point, inner)
+	# Aim a subpixel inside the stop region so exponential convergence actually
+	# crosses it, rather than approaching the boundary indefinitely.
+	var goal := inner.grow(-0.0001)
+	var best_error := violation(point, goal)
 	var best_distance := INF
 	var found_safe := false
 	const SAMPLES := 32
 	for index in range(SAMPLES + 1):
 		var candidate := lerpf(-max_yaw, max_yaw, float(index) / SAMPLES)
 		var projected: Vector2 = project.call(candidate)
-		var error := violation(projected, inner)
+		var error := violation(projected, goal)
 		var distance := absf(candidate - yaw)
 		if error <= 0.00000001:
 			if not found_safe or distance < best_distance:
@@ -66,7 +69,7 @@ func step(delta: float, project: Callable, outer: Rect2, hysteresis: float,
 		var safe_yaw := best
 		for iteration in range(12):
 			var midpoint := (unsafe_yaw + safe_yaw) * 0.5
-			if inside(project.call(midpoint), inner):
+			if inside(project.call(midpoint), goal):
 				safe_yaw = midpoint
 			else:
 				unsafe_yaw = midpoint

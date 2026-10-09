@@ -7,6 +7,7 @@ var fishing: Node
 var finished_animations: Array[StringName] = []
 var casts := 0
 @export var companion := false
+@export var test_camera_dead_zone := false
 class ForcedFish extends RefCounted:
 	func get_forced_fish(): return load("res://data/bof4/fish/sea_bream.tres")
 func _ready() -> void:
@@ -78,6 +79,8 @@ func run() -> void:
 	for cycle in range(3):
 		print("ACCEPTANCE CYCLE ", cycle)
 		if not await cast(): return finish()
+		if test_camera_dead_zone:
+			await camera_dead_zone(cycle)
 		if not companion and cycle == 0:
 			if not OS.has_feature("web"): get_window().size = Vector2i(390,664)
 			await get_tree().create_timer(0.12).timeout
@@ -154,4 +157,59 @@ func finish() -> void:
 	print("PORTRAIT FISHING ACCEPTANCE: ", JSON.stringify(report))
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.portraitFishingReport=" + JSON.stringify(report), true)
-	else: get_tree().quit(0 if failures.is_empty() else 1)
+	else:
+		# Release the disposable host before its session owner, matching travel
+		# fixtures; retained session UI must return to a still-live viewport.
+		shell.queue_free()
+		for frame in range(3): await get_tree().process_frame
+		var session := get_node_or_null("/root/FishingSessionServices")
+		if session!=null: session.queue_free()
+		for frame in range(3): await get_tree().process_frame
+		get_tree().quit(0 if failures.is_empty() else 1)
+
+func camera_dead_zone(cycle: int) -> void:
+	# Deterministic fixture-only physical target placement. Production casting,
+	# movement and camera APIs are unchanged; actual cast/return still run above.
+	var bait: Node3D = fishing.caster.active_bait
+	var original := bait.global_transform
+	var original_mode := bait.process_mode
+	bait.process_mode=Node.PROCESS_MODE_DISABLED
+	fishing.encounter.bite_timer.stop()
+	var rig: Node = fishing.camera_rig
+	var camera: Camera3D = rig.get_node("Camera3D")
+	for side in [-1,1]:
+		rig.fight_camera_tracking.reset()
+		camera.transform=rig._fight_base_camera_transform
+		var held := camera.global_transform
+		for x in ([0.5,0.20,0.15,0.125] if side<0 else [0.5,0.85,0.89,0.915]):
+			bait.global_position=camera.project_position(Vector2(x,.4)*Vector2(shell.gameplay_viewport.size),12)
+			await get_tree().create_timer(.12).timeout
+			check(not rig.fight_camera_tracking.tracking and camera.global_transform.is_equal_approx(held),"rendered visible drift/old boundary holds shot on side %d" % side)
+		bait.global_position=camera.project_position(Vector2(.08 if side<0 else .94,.4)*Vector2(shell.gameplay_viewport.size),12)
+		var physical := bait.global_position
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(rig.fight_camera_tracking.tracking and rig.fight_camera_tracking.requested_yaw*side<0,"rendered clear outer crossing requests correct yaw")
+		check(absf(rig.fight_camera_tracking.yaw)<absf(rig.fight_camera_tracking.requested_yaw),"rendered correction retains slow exponential response")
+		bait.global_position=camera.project_position(Vector2(.15 if side<0 else .89,.4)*Vector2(shell.gameplay_viewport.size),12)
+		await get_tree().process_frame
+		check(rig.fight_camera_tracking.tracking,"rendered slight return keeps latch")
+		bait.global_position=camera.project_position(Vector2(.205 if side<0 else .835,.4)*Vector2(shell.gameplay_viewport.size),12)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(not rig.fight_camera_tracking.tracking,"rendered inner return stops latch")
+		var stopped := camera.global_transform
+		for frame in range(60):
+			bait.global_position=camera.project_position(Vector2((.205 if side<0 else .835)+sin(frame*.1)*.025,.4)*Vector2(shell.gameplay_viewport.size),12)
+			await get_tree().process_frame
+		check(camera.global_transform.is_equal_approx(stopped),"rendered current/passive-style drift holds shot without micro-rotation")
+		var projected := camera.unproject_position(bait.global_position)
+		var displayed: Vector2 = shell.gameplay_image.global_position+projected*shell.gameplay_image.size/Vector2(shell.gameplay_viewport.size)
+		check(shell.gameplay_window.get_global_rect().has_point(displayed),"rendered physical bait remains inside visible mobile crop after stopping")
+		check(physical!=original.origin,"fixture explicitly exercises physical target, not visibility gating")
+		print("RENDERED DEAD ZONE: cycle=",cycle," side=",side," yaw=",rig.fight_camera_tracking.yaw," screen=",camera.unproject_position(bait.global_position)/Vector2(shell.gameplay_viewport.size))
+	bait.global_transform=original
+	bait.process_mode=original_mode
+	# Leave a deterministic large left/right yaw for real retrieve/landing below.
+	rig.fight_camera_tracking.yaw=deg_to_rad(-45 if cycle%2==0 else 45)
+	camera.global_transform=rig._fight_orbit_transform(rig.global_transform*rig._fight_base_camera_transform,rig.target.global_position,rig.fight_camera_tracking.yaw)

@@ -49,12 +49,16 @@ var quick_cancel_camera_return_time: float = 0.85
 @export_range(0.01, 0.2, 0.01) var retrieve_yaw_stop_degrees: float = 0.05
 
 @export_category("Fight Camera Tracking")
-@export_range(0.0, 0.9, 0.01) var fight_safe_left: float = 0.20
-@export_range(0.1, 1.0, 0.01) var fight_safe_right: float = 0.85
+## Outer activation edges, normalized to the active fishing viewport.
+@export_range(0.0, 0.9, 0.01) var fight_safe_left: float = 0.12
+@export_range(0.1, 1.0, 0.01) var fight_safe_right: float = 0.92
 @export_range(0.0, 0.9, 0.01) var fight_safe_top: float = 0.08
 ## HUD begins around y=405/480; leave clearance for the fish sprite above it.
 @export_range(0.1, 1.0, 0.01) var fight_safe_bottom: float = 0.75
-@export_range(0.0, 0.1, 0.005) var fight_tracking_hysteresis: float = 0.025
+## Inward horizontal stop margin: defaults produce inner edges 0.20 / 0.84.
+@export_range(0.0, 0.2, 0.005) var fight_tracking_hysteresis: float = 0.08
+## Preserve vertical HUD clearance independently of the wider lateral band.
+@export_range(0.0, 0.1, 0.005) var fight_vertical_tracking_hysteresis: float = 0.025
 @export_range(0.1, 20.0, 0.1) var fight_yaw_response: float = 6.0
 @export_range(0.1, 20.0, 0.1) var fight_yaw_return_response: float = 2.0
 @export_range(0.0, 90.0, 1.0) var fight_max_yaw_degrees: float = 55.0
@@ -240,7 +244,7 @@ func _update_fight_camera_tracking(delta: float) -> void:
 		maxf(0.01, fight_safe_bottom - fight_safe_top)))
 	var yaw: float = fight_camera_tracking.step(delta, project, region,
 		fight_tracking_hysteresis, deg_to_rad(fight_max_yaw_degrees),
-		fight_yaw_response, fight_yaw_return_response)
+		fight_yaw_response, fight_yaw_return_response, fight_vertical_tracking_hysteresis)
 	camera.global_transform = _fight_orbit_transform(base, pivot, yaw)
 
 

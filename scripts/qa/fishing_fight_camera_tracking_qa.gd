@@ -201,6 +201,7 @@ func test_water_state_coverage() -> void:
 func run() -> void:
 	setup()
 	await process_frame
+	test_wide_dead_zone()
 	test_visibility_independence()
 	test_water_state_coverage()
 	put_fish(Vector2(0.5, 0.4))
@@ -230,7 +231,7 @@ func run() -> void:
 	var neutral_fish := (rig.global_transform * base) * Vector3(0, 0, -12)
 	fish.global_position = neutral_fish
 	tick(300)
-	check(absf(rig.fight_camera_tracking.yaw) < 0.001, "safe central fish permits smooth neutral return")
+	check(is_equal_approx(rig.fight_camera_tracking.yaw,settled), "safe central fish holds established yaw; retrieve owns neutral return")
 	put_fish(Vector2(0.08, 0.4))
 	tick()
 	check(rig.fight_camera_tracking.requested_yaw > 0.0, "left edge requests camera yaw left (positive world Y)")
@@ -344,6 +345,39 @@ func run() -> void:
 		await run_existing_regressions()
 	print("FIGHT CAMERA QA: %d/%d passed" % [checks - failures.size(), checks])
 	quit(0 if failures.is_empty() else 1)
+
+func test_wide_dead_zone() -> void:
+	var outer := Rect2(rig.fight_safe_left,rig.fight_safe_top,rig.fight_safe_right-rig.fight_safe_left,rig.fight_safe_bottom-rig.fight_safe_top)
+	var margin: float = rig.fight_tracking_hysteresis
+	check(is_equal_approx(outer.position.x,0.12) and is_equal_approx(outer.end.x,0.92),"outer starts are deliberately wider than prior 20/85 percent")
+	check(is_equal_approx(outer.position.x+margin,0.20) and is_equal_approx(outer.end.x-margin,0.84),"inner horizontal stops are centralized 20/84 percent")
+	for x in [0.12,0.15,0.19,0.20,0.5,0.84,0.85,0.89,0.92]:
+		put_fish(Vector2(x,0.4))
+		tick(120)
+		check(not rig.fight_camera_tracking.tracking and is_zero_approx(rig.fight_camera_tracking.yaw),"visible bait including old/exact outer boundary holds camera: %s" % x)
+	for side in [-1,1]:
+		var latch = load("res://scripts/fishing_fight_camera_tracking.gd").new()
+		var point := [Vector2(0.115 if side<0 else 0.925,0.4)]
+		var projection := func(_yaw): return point[0]
+		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
+		check(latch.tracking,"clear outer crossing starts tracking on side %d" % side)
+		point[0].x=0.15 if side<0 else 0.89
+		for frame in range(120): latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
+		check(latch.tracking,"slight inward movement keeps tracking latched on side %d" % side)
+		point[0].x=0.205 if side<0 else 0.835
+		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
+		check(not latch.tracking,"sufficient inner crossing stops side %d" % side)
+		latch.yaw=deg_to_rad(15)*side
+		var held: float = latch.yaw
+		# Slow current / passive drift and edge noise use the same projection.
+		for frame in range(600):
+			point[0].x=(0.205 if side<0 else 0.835)+sin(frame*.03)*.025
+			latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
+		check(not latch.tracking and is_equal_approx(latch.yaw,held),"current/passive drift has no reactivation or micro-unwind on side %d" % side)
+		point[0]=Vector2(0.5,0.77)
+		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
+		check(latch.tracking,"horizontal tuning retains lower HUD protection")
+	rig.reset_fishing_follow()
 
 func run_existing_regressions() -> void:
 	var orphan_before := Node.get_orphan_node_ids()
