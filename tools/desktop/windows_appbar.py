@@ -1,0 +1,183 @@
+"""Windows-only companion AppBar sidecar. Never changes SPI_SETWORKAREA.
+
+Owns the shell registration in its own message-pumped HWND; watches the game
+process handle so a crashed/terminated game releases the reservation as well.
+Commands/status are atomic JSON files, scoped to one game PID. No game data.
+"""
+import argparse
+import ctypes as c
+from ctypes import wintypes as w
+import json
+import os
+from pathlib import Path
+import time
+
+u = c.WinDLL("user32", use_last_error=True)
+s = c.WinDLL("shell32", use_last_error=True)
+k = c.WinDLL("kernel32", use_last_error=True)
+LRESULT = c.c_ssize_t
+WNDPROC = c.WINFUNCTYPE(LRESULT, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
+
+class AppData(c.Structure):
+    _fields_ = [("cbSize", w.DWORD), ("hWnd", w.HWND), ("callback", w.UINT),
+                ("edge", w.UINT), ("rect", w.RECT), ("param", w.LPARAM)]
+
+class Monitor(c.Structure):
+    _fields_ = [("size", w.DWORD), ("monitor", w.RECT), ("work", w.RECT), ("flags", w.DWORD)]
+
+class WindowClass(c.Structure):
+    _fields_ = [("style", w.UINT), ("proc", WNDPROC), ("extra", c.c_int),
+                ("window_extra", c.c_int), ("instance", w.HINSTANCE), ("icon", w.HICON),
+                ("cursor", w.HANDLE), ("brush", w.HBRUSH), ("menu", w.LPCWSTR), ("name", w.LPCWSTR)]
+
+u.DefWindowProcW.restype = LRESULT
+u.DefWindowProcW.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM]
+u.CreateWindowExW.restype = w.HWND
+u.CreateWindowExW.argtypes = [w.DWORD, w.LPCWSTR, w.LPCWSTR, w.DWORD, c.c_int, c.c_int, c.c_int, c.c_int, w.HWND, w.HMENU, w.HINSTANCE, c.c_void_p]
+u.MonitorFromWindow.restype = w.HANDLE
+u.MonitorFromWindow.argtypes = [w.HWND, w.DWORD]
+u.GetMonitorInfoW.argtypes = [w.HANDLE, c.POINTER(Monitor)]
+u.SetWindowPos.argtypes = [w.HWND, w.HWND, c.c_int, c.c_int, c.c_int, c.c_int, w.UINT]
+u.GetWindowRect.argtypes = [w.HWND, c.POINTER(w.RECT)]
+u.IsWindow.argtypes = [w.HWND]
+u.DestroyWindow.argtypes = [w.HWND]
+u.ShowWindow.argtypes = [w.HWND, c.c_int]
+u.SetLayeredWindowAttributes.argtypes = [w.HWND, w.DWORD, w.BYTE, w.DWORD]
+s.SHAppBarMessage.argtypes = [w.DWORD, c.POINTER(AppData)]
+s.SHAppBarMessage.restype = c.c_size_t
+k.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
+k.OpenProcess.restype = w.HANDLE
+k.WaitForSingleObject.argtypes = [w.HANDLE, w.DWORD]
+k.CloseHandle.argtypes = [w.HANDLE]
+
+def rect_value(r):
+    return [r.left, r.top, r.right, r.bottom]
+
+def monitor_info(hwnd):
+    info = Monitor(size=c.sizeof(Monitor))
+    if not u.GetMonitorInfoW(u.MonitorFromWindow(hwnd, 2), c.byref(info)):
+        raise c.WinError(c.get_last_error())
+    return info
+
+def atomic_json(path, payload):
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(payload), encoding="utf-8")
+    os.replace(temp, path)
+
+class AppBar:
+    def __init__(self):
+        self.registered = False
+        self.dirty = False
+        self.command = {}
+        self.baseline = None
+        self.callback = u.RegisterWindowMessageW("FishingCompanionAppBar")
+        self.proc = WNDPROC(self.window_proc)
+        self.cls = WindowClass(proc=self.proc, name="FishingCompanionReservation")
+        if not u.RegisterClassW(c.byref(self.cls)):
+            raise c.WinError(c.get_last_error())
+        # Invisible visual, but a real visible tool window for shell registration.
+        self.hwnd = u.CreateWindowExW(0x80000 | 0x80 | 0x08000000,
+            self.cls.name, "Fishing Companion Reservation", 0x80000000,
+            0, 0, 1, 1, None, None, None, None)
+        if not self.hwnd:
+            raise c.WinError(c.get_last_error())
+        u.SetLayeredWindowAttributes(self.hwnd, 0, 0, 2)
+        self.data = AppData(cbSize=c.sizeof(AppData), hWnd=self.hwnd,
+                            callback=self.callback, edge=2)
+
+    def window_proc(self, hwnd, msg, wp, lp):
+        if msg == self.callback and wp == 1:  # ABN_POSCHANGED
+            self.dirty = True
+        if msg in (0x7E, 0x2E0):  # display/DPI changed
+            self.dirty = True
+        return u.DefWindowProcW(hwnd, msg, wp, lp)
+
+    def release(self):
+        if self.registered:
+            s.SHAppBarMessage(1, c.byref(self.data))
+            self.registered = False
+        u.ShowWindow(self.hwnd, 0)
+
+    def apply(self, command):
+        self.command = command
+        target = int(command["hwnd"])
+        if not u.IsWindow(target):
+            raise RuntimeError("Companion HWND is no longer valid")
+        if not command.get("docked", False):
+            self.release()
+            return self.status(target)
+        info = monitor_info(target)
+        if not self.registered:
+            self.baseline = rect_value(info.work)
+            if not s.SHAppBarMessage(0, c.byref(self.data)):
+                raise RuntimeError("Shell rejected ABM_NEW")
+            self.registered = True
+        width = max(48, min(int(command["width"]), info.monitor.right-info.monitor.left))
+        r = info.monitor
+        self.data.rect = w.RECT(r.right-width, r.top, r.right, r.bottom)
+        s.SHAppBarMessage(2, c.byref(self.data))  # shell respects taskbar/other bars
+        self.data.rect.left = self.data.rect.right - width
+        s.SHAppBarMessage(3, c.byref(self.data))
+        r = self.data.rect
+        u.SetWindowPos(self.hwnd, None, r.left, r.top, width, r.bottom-r.top, 0x14)
+        u.ShowWindow(self.hwnd, 4)
+        height = min(int(command["height"]), r.bottom-r.top)
+        # Borderless Godot client = full native outer footprint. No DPI conversion
+        # guess: both processes are per-monitor aware and operate in physical px.
+        u.SetWindowPos(target, None, r.left, r.top+(r.bottom-r.top-height)//2,
+                       width, height, 0x14)
+        self.dirty = False  # ignore notifications from our own negotiation
+        return self.status(target)
+
+    def status(self, target):
+        info = monitor_info(target)
+        actual = w.RECT()
+        u.GetWindowRect(target, c.byref(actual))
+        return {"registered": self.registered, "work_area": rect_value(info.work),
+                "monitor": rect_value(info.monitor), "reservation": rect_value(self.data.rect),
+                "window": rect_value(actual), "baseline": self.baseline,
+                "sequence": self.command.get("sequence", 0), "error": ""}
+
+def main():
+    args = argparse.ArgumentParser()
+    args.add_argument("--pid", type=int, required=True)
+    args.add_argument("--command", type=Path, required=True)
+    args.add_argument("--status", type=Path, required=True)
+    options = args.parse_args()
+    # Per-monitor-v2: do not virtualize native coordinates on mixed-DPI screens.
+    u.SetProcessDpiAwarenessContext.argtypes = [w.HANDLE]
+    u.SetProcessDpiAwarenessContext(c.c_void_p(-4))
+    process = k.OpenProcess(0x100000, False, options.pid)
+    if not process:
+        raise c.WinError(c.get_last_error())
+    bar = AppBar()
+    last = None
+    try:
+        message = w.MSG()
+        while k.WaitForSingleObject(process, 0) == 258:
+            while u.PeekMessageW(c.byref(message), None, 0, 0, 1):
+                u.TranslateMessage(c.byref(message))
+                u.DispatchMessageW(c.byref(message))
+            try:
+                command = json.loads(options.command.read_text(encoding="utf-8"))
+            except (FileNotFoundError, json.JSONDecodeError, PermissionError):
+                time.sleep(.05)
+                continue
+            if command.get("close"):
+                break
+            if command != last or bar.dirty:
+                atomic_json(options.status, bar.apply(command))
+                last = command
+            time.sleep(.05)
+    except Exception as error:
+        atomic_json(options.status, {"registered": False, "error": str(error)})
+        raise
+    finally:
+        bar.release()
+        if bar.command and u.IsWindow(int(bar.command["hwnd"])):
+            atomic_json(options.status, bar.status(int(bar.command["hwnd"])))
+        u.DestroyWindow(bar.hwnd)
+        k.CloseHandle(process)
+
+if __name__ == "__main__":
+    main()

@@ -202,7 +202,7 @@ func _initialize_developer_mode() -> void:
 
 func _node_added(node: Node) -> void:
 	if node is CanvasLayer:
-		if node.has_method("is_open") or node is DialogueView or node.name in ["FishingCatchView", "FishingLureSelectorView"]:
+		if not node is DialogueView and (node.has_method("is_open") or node.name in ["FishingCatchView", "FishingLureSelectorView"]):
 			if not _surface_modal_layers.any(func(binding): return binding.get_ref() == node):
 				_surface_modal_layers.append(weakref(node))
 		_bind_session_layers.call_deferred()
@@ -215,8 +215,10 @@ func _has_surface_modal() -> bool:
 	for binding in _surface_modal_layers:
 		var layer = binding.get_ref()
 		if not is_instance_valid(layer) or not layer.is_node_ready(): continue
+		# Dialogue is a bottom-anchored overlay, never a shell scroll owner.
+		if layer is DialogueView: continue
 		if layer.has_method("is_open") and layer.is_open(): return true
-		if layer is DialogueView or layer.name in ["FishingCatchView", "FishingLureSelectorView"]:
+		if layer.name in ["FishingCatchView", "FishingLureSelectorView"]:
 			var surface := layer.get_node_or_null("Root") as Control
 			if surface != null and surface.is_visible_in_tree(): return true
 	return false

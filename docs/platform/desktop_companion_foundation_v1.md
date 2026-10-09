@@ -31,7 +31,7 @@ Click **Mode** or press **Ctrl+Shift+F12** while Active to cycle modes:
 
 | Mode | Display | Default window footprint |
 |---|---|---:|
-| Active | Full portrait, normal keyboard gameplay | 480 × 676, including 28px developer bar |
+| Active | Full portrait, normal keyboard gameplay | 480 × 718, including 28px developer bar and 42px keyboard strip |
 | Passive | Smaller uniformly fitted preview | 240 × 220 |
 | Collapsed | Minimal status and Mode control, game image hidden | 96 × 160 |
 
@@ -60,6 +60,9 @@ Tune `scripts/desktop/desktop_companion.gd` exports:
 - `gameplay_scene`
 
 `SURFACE` (640 × 864) and `CHROME_HEIGHT` (28) are centralized constants.
+`KEYBOARD_HEIGHT` (42) adds shell space without reducing the gameplay image.
+Windows **Dock Right / Float** and mode-dependent desktop reservation are now
+available; see [Desktop Companion Docking v1](desktop_companion_docking_v1.md).
 Active scale is bounded by the current monitor's usable width/height. Each mode
 is positioned against that monitor's right edge and centered vertically using
 DisplayServer.screen_get_usable_rect. No actual monitor resolution is assumed;

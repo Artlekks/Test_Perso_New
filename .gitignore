@@ -2,6 +2,8 @@
 .godot/
 /android/
 /build/mobile-web/
+/build/desktop-docking/
+/tools/desktop/__pycache__/
 
 # Editor / transient scene saves
 *.tmp
