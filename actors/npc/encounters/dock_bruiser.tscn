@@ -1,0 +1,15 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_7f1b19bc.tscn" id="actor"]
+[ext_resource type="Script" path="res://scripts/triple_triad/triple_triad_opponent_npc.gd" id="role"]
+
+[node name="CardsDockBruiser" instance=ExtResource("actor")]
+patrol_enabled = false
+[node name="CardChallenge" type="Node3D" parent="."]
+script = ExtResource("role")
+sprite_path = NodePath("../GroundPresentation/VisualAnchor/AnimatedSprite3D")
+interaction_area_path = NodePath("../InteractionArea")
+opponent_id = &"dock_bruiser"
+[node name="InteractionArea" parent="." index="2"]
+collision_mask = 3
+[node name="PromptLabel3D" type="Label3D" parent="CardChallenge"]
+visible = false

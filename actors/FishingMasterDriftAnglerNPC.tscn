@@ -57,3 +57,5 @@ modulate = Color(0.709804, 0.901961, 1, 1)
 text = "K : Listen"
 font_size = 28
 outline_size = 8
+
+[editable path="GroundPresentation"]

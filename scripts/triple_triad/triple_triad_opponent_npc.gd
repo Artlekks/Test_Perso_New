@@ -14,9 +14,12 @@ const ACTION_OPEN_CARDS: StringName = &"open_cards"
 ## Legacy/fallback direct profile reference for older scenes.
 @export var opponent_profile: Resource
 
-@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
+## A role provider may share its catalogue actor's presentation and range Area.
+@export var sprite_path: NodePath = ^"GroundPresentation/VisualAnchor/AnimatedSprite3D"
+@export var interaction_area_path: NodePath = ^"InteractionArea"
+@onready var animated_sprite: AnimatedSprite3D = get_node(sprite_path)
 @onready var prompt_label: Label3D = $PromptLabel3D
-@onready var interaction_area: Area3D = $InteractionArea
+@onready var interaction_area: Area3D = get_node(interaction_area_path)
 
 var _player_in_range: bool = false
 var _cached_game: Node = null

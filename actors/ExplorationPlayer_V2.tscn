@@ -44,3 +44,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.554043, 0)
 
 [node name="ReelEndPoint" type="Marker3D" parent="." unique_id=1454488651]
 script = ExtResource("30_wma1f")
+
+[editable path="GroundPresentation"]

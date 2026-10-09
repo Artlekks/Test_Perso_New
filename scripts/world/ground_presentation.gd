@@ -112,7 +112,7 @@ func apply_profile() -> void:
 	if not Engine.is_editor_hint(): _install_marker_anchor.call_deferred()
 
 func apply_frame() -> void:
-	if sprite == null or profile == null: return
+	if not is_instance_valid(sprite) or profile == null: return
 	if profile.flat_on_ground:
 		sprite.offset = Vector2.ZERO
 		return
@@ -121,6 +121,11 @@ func apply_frame() -> void:
 	var feet_x := profile.feet_from_left_px
 	if sprite is AnimatedSprite3D:
 		var animated := sprite as AnimatedSprite3D
+		# The reusable NPCActor template intentionally has no frames until its
+		# catalogue profile is assigned. Editor resource reloads may also clear
+		# them briefly; previewing/saving that valid authoring state must be safe.
+		if animated.sprite_frames == null or not animated.sprite_frames.has_animation(animated.animation): return
+		if animated.frame < 0 or animated.frame >= animated.sprite_frames.get_frame_count(animated.animation): return
 		texture = animated.sprite_frames.get_frame_texture(animated.animation, animated.frame)
 		padding = float(profile.animation_feet_from_bottom_px.get(String(animated.animation), padding))
 		feet_x = float(profile.animation_feet_from_left_px.get(String(animated.animation), feet_x))

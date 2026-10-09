@@ -54,3 +54,5 @@ modulate = Color(0.78, 0.91, 1, 1)
 text = "C : Cards"
 font_size = 28
 outline_size = 8
+
+[editable path="GroundPresentation"]

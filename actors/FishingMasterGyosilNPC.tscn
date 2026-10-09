@@ -57,3 +57,5 @@ modulate = Color(0.9, 0.83, 0.58, 1)
 text = "K : Gyosil"
 font_size = 28
 outline_size = 8
+
+[editable path="GroundPresentation"]

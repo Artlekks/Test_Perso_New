@@ -14,9 +14,11 @@ const MasterDialogueProfilesScript = preload(
 @export var idle_animation: StringName = &"Stand_Interest"
 @export var talk_animation: StringName = &"Bag_Search"
 
-@onready var animated_sprite: AnimatedSprite3D = $GroundPresentation/VisualAnchor/AnimatedSprite3D
+@export var sprite_path: NodePath = ^"GroundPresentation/VisualAnchor/AnimatedSprite3D"
+@export var interaction_area_path: NodePath = ^"InteractionArea"
+@onready var animated_sprite: AnimatedSprite3D = get_node(sprite_path)
 @onready var prompt_label: Label3D = $PromptLabel3D
-@onready var interaction_area: Area3D = $InteractionArea
+@onready var interaction_area: Area3D = get_node(interaction_area_path)
 
 var _player_in_range: bool = false
 var _player: Node = null

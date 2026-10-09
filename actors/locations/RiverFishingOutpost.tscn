@@ -1,9 +1,15 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 [ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
 [ext_resource type="Resource" path="res://data/world/locations/river_fishing_outpost.tres" id="2"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_9d2e2d78.tscn" id="population_0"]
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_6d89ee8e.tscn" id="population_1"]
+
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/marsh_keeper.tscn" id="delivery_marsh_keeper"]
+
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/wandering_sage.tscn" id="delivery_wandering_sage"]
+
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/snag_escape.tscn" id="delivery_snag_escape"]
 
 [node name="RiverFishingOutpost" instance=ExtResource("1")]
 location_context = ExtResource("2")
@@ -26,3 +32,12 @@ patrol_enabled = false
 [node name="PopulationAmbientBird" parent="World" instance=ExtResource("population_1") ]
 position = Vector3(2.5, 0, 0.35)
 patrol_enabled = false
+
+[node name="CardsMarshKeeper" parent="World" instance=ExtResource("delivery_marsh_keeper")]
+position = Vector3(-2.75, 0, 0.6)
+
+[node name="CardsWanderingSage" parent="World" instance=ExtResource("delivery_wandering_sage")]
+position = Vector3(0.0, 0, 0.65)
+
+[node name="LessonSnagEscape" parent="World" instance=ExtResource("delivery_snag_escape")]
+position = Vector3(2.8, 0, 0.65)

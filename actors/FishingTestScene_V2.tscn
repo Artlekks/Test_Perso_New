@@ -102,6 +102,8 @@
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_cac2bbc2.tscn" id="population_1"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="travel_point"]
 
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/pier_apprentice.tscn" id="delivery_pier_apprentice"]
+
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
 background_energy_multiplier = 0.0
@@ -206,6 +208,7 @@ inner_radius = 0.1
 outer_radius = 0.13
 rings = 24
 ring_segments = 24
+
 
 [node name="FishingTestScene_V2" type="Node3D" unique_id=2114470757]
 script = ExtResource("location_script")
@@ -1223,3 +1226,6 @@ screen_transition = NodePath("../../../UI/FishingHud/ScreenTransition")
 [editable path="World/BeachCritter2"]
 [editable path="Player/CharacterBody3D"]
 [editable path="UI/FishingHud/PowerMeter"]
+
+[node name="CardsPierApprentice" parent="World" instance=ExtResource("delivery_pier_apprentice")]
+position = Vector3(-2.75, 0, 0.55)

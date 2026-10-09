@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=11 format=3]
 [ext_resource type="PackedScene" path="res://actors/locations/DevelopmentFishingOutpost.tscn" id="1"]
 [ext_resource type="Resource" path="res://data/world/locations/wyndia_ocean_outpost.tres" id="2"]
 [ext_resource type="Resource" path="res://data/economy/contexts/wyndia_outpost.tres" id="3"]
@@ -6,6 +6,12 @@
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_68024840.tscn" id="population_0"]
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_78f1768c.tscn" id="population_1"]
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_8c3ae570.tscn" id="population_2"]
+
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/gearwright.tscn" id="delivery_gearwright"]
+
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/dock_bruiser.tscn" id="delivery_dock_bruiser"]
+
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/storm_captain.tscn" id="delivery_storm_captain"]
 
 [node name="WyndiaOceanOutpost" instance=ExtResource("1")]
 location_context = ExtResource("2")
@@ -30,3 +36,12 @@ patrol_enabled = false
 [node name="PopulationHarborResident" parent="World" instance=ExtResource("population_2") ]
 position = Vector3(-2.4, 0, 1.05)
 patrol_enabled = false
+
+[node name="CardsGearwright" parent="World" instance=ExtResource("delivery_gearwright")]
+position = Vector3(-2.75, 0, 0.6)
+
+[node name="CardsDockBruiser" parent="World" instance=ExtResource("delivery_dock_bruiser")]
+position = Vector3(0.0, 0, 0.65)
+
+[node name="CardsStormCaptain" parent="World" instance=ExtResource("delivery_storm_captain")]
+position = Vector3(2.8, 0, 0.65)

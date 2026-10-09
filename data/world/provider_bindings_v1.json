@@ -545,68 +545,129 @@
       "refs": {
         "request_id": "beach_demo_card_maker_sea_bass_01"
       }
+    },
+    {
+      "provider_id": "beach:World/CardsPierApprentice/CardChallenge",
+      "location_id": "beach",
+      "path": "World/CardsPierApprentice/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "pier_apprentice"
+      }
+    },
+    {
+      "provider_id": "wyndia_ocean_outpost:World/CardsGearwright/CardChallenge",
+      "location_id": "wyndia_ocean_outpost",
+      "path": "World/CardsGearwright/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "gearwright"
+      }
+    },
+    {
+      "provider_id": "wyndia_ocean_outpost:World/CardsDockBruiser/CardChallenge",
+      "location_id": "wyndia_ocean_outpost",
+      "path": "World/CardsDockBruiser/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "dock_bruiser"
+      }
+    },
+    {
+      "provider_id": "wyndia_ocean_outpost:World/CardsStormCaptain/CardChallenge",
+      "location_id": "wyndia_ocean_outpost",
+      "path": "World/CardsStormCaptain/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "storm_captain"
+      }
+    },
+    {
+      "provider_id": "lyp_lake_outpost:World/CardsHighlandKeeper/CardChallenge",
+      "location_id": "lyp_lake_outpost",
+      "path": "World/CardsHighlandKeeper/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "highland_keeper"
+      }
+    },
+    {
+      "provider_id": "lyp_lake_outpost:World/CardsTideOracle/CardChallenge",
+      "location_id": "lyp_lake_outpost",
+      "path": "World/CardsTideOracle/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "tide_oracle"
+      }
+    },
+    {
+      "provider_id": "river_fishing_outpost:World/CardsMarshKeeper/CardChallenge",
+      "location_id": "river_fishing_outpost",
+      "path": "World/CardsMarshKeeper/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "marsh_keeper"
+      }
+    },
+    {
+      "provider_id": "river_fishing_outpost:World/CardsWanderingSage/CardChallenge",
+      "location_id": "river_fishing_outpost",
+      "path": "World/CardsWanderingSage/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "wandering_sage"
+      }
+    },
+    {
+      "provider_id": "chiqua_supply_outpost:World/CardsLanternGambler/CardChallenge",
+      "location_id": "chiqua_supply_outpost",
+      "path": "World/CardsLanternGambler/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "lantern_gambler"
+      }
+    },
+    {
+      "provider_id": "chiqua_supply_outpost:World/CardsAshChampion/CardChallenge",
+      "location_id": "chiqua_supply_outpost",
+      "path": "World/CardsAshChampion/CardChallenge",
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "provider_type": "triple_triad_opponent_npc",
+      "refs": {
+        "opponent_id": "ash_champion"
+      }
+    },
+    {
+      "provider_id": "lyp_lake_outpost:World/LessonStructureFighting/MasterLesson",
+      "location_id": "lyp_lake_outpost",
+      "path": "World/LessonStructureFighting/MasterLesson",
+      "script": "res://scripts/mastery/fishing_master_authored_lesson.gd",
+      "provider_type": "fishing_master_authored_lesson",
+      "refs": {
+        "technique_id": "structure_fighting",
+        "teacher_id": "master_structure_hunter"
+      }
+    },
+    {
+      "provider_id": "river_fishing_outpost:World/LessonSnagEscape/MasterLesson",
+      "location_id": "river_fishing_outpost",
+      "path": "World/LessonSnagEscape/MasterLesson",
+      "script": "res://scripts/mastery/fishing_master_authored_lesson.gd",
+      "provider_type": "fishing_master_authored_lesson",
+      "refs": {
+        "technique_id": "snag_escape",
+        "teacher_id": "master_structure_hunter"
+      }
     }
   ],
-  "deferred_world_content": [
-    {
-      "domain": "opponent",
-      "id": "ash_champion",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "dock_bruiser",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "gearwright",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "highland_keeper",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "lantern_gambler",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "marsh_keeper",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "pier_apprentice",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "storm_captain",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "tide_oracle",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "opponent",
-      "id": "wandering_sage",
-      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
-    },
-    {
-      "domain": "mastery",
-      "id": "structure_fighting",
-      "reason": "Authored capability/prerequisite data exists; Structure Hunter currently teaches Read Structure only. No delivered world lesson for this technique."
-    },
-    {
-      "domain": "mastery",
-      "id": "snag_escape",
-      "reason": "Authored capability/prerequisite data exists; Structure Hunter currently teaches Read Structure only. No delivered world lesson for this technique."
-    }
-  ]
+  "deferred_world_content": []
 }

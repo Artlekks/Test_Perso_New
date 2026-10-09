@@ -57,3 +57,5 @@ modulate = Color(0.90, 0.78, 0.45, 1)
 text = "K : Watch"
 font_size = 28
 outline_size = 8
+
+[editable path="GroundPresentation"]

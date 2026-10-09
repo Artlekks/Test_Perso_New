@@ -60,7 +60,7 @@ func test_actor(actor: Node3D) -> void:
 		check(presentation.profile.category == 3, "%s native ground prop profile" % actor.name)
 	check(presentation.global_position.is_equal_approx(actor.global_position), "%s physical root anchor" % actor.name)
 	check(shadow.global_basis.is_equal_approx(Basis.IDENTITY), "%s flat world shadow" % actor.name)
-	check(shadow.global_position.is_equal_approx(actor.global_position + Vector3(0, presentation.profile.shadow_ground_lift, 0)), "%s centered root-relative shadow" % actor.name)
+	check(shadow.global_position.is_equal_approx(actor.global_position + Vector3(0, presentation.profile.resolved_shadow_family().ground_offset, 0)), "%s centered root-relative shadow" % actor.name)
 	check(shadow.width == shadow.depth and shadow.opacity < 0.8, "%s compact soft category shadow" % actor.name)
 	check(shadow.material_override is ShaderMaterial and shadow.material_override.render_priority == -120, "%s reusable radial material under actors" % actor.name)
 	var original := shadow.global_transform
@@ -116,7 +116,7 @@ func run() -> void:
 		await settle()
 		for presentation in regional.find_children("GroundPresentation", "Node3D", true, false):
 			check(presentation.shadow.material_override is ShaderMaterial, filename + " inherited radial shadow without legacy override")
-			check(presentation.shadow.global_position.is_equal_approx(presentation.global_position + Vector3(0,presentation.profile.shadow_ground_lift,0)), filename + " inherited root contact shadow")
+			check(presentation.shadow.global_position.is_equal_approx(presentation.global_position + Vector3(0,presentation.profile.resolved_shadow_family().ground_offset,0)), filename + " inherited root contact shadow")
 		regional.free()
 	var scene = load("res://actors/FishingTestScene_V2.tscn").instantiate()
 	strip(scene)

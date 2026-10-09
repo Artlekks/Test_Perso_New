@@ -58,3 +58,5 @@ modulate = Color(1, 0.964706, 0.709804, 1)
 text = "K : Gather"
 font_size = 24
 outline_size = 7
+
+[editable path="GroundPresentation"]

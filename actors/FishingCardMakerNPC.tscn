@@ -75,3 +75,5 @@ source_context = &"card_maker_coastal_catch"
 
 [node name="RequestMarker" parent="." unique_id=2128033218 instance=ExtResource("8_request_marker")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.67534316, 0)
+
+[editable path="GroundPresentation"]

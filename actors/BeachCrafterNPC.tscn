@@ -73,3 +73,5 @@ source_context = &"beach_crafter_survey"
 
 [node name="RequestMarker" parent="." unique_id=1149921424 instance=ExtResource("8_request_marker")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.48713893, 0)
+
+[editable path="GroundPresentation"]
