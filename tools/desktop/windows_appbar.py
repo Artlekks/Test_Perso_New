@@ -62,7 +62,17 @@ def monitor_info(hwnd):
 def atomic_json(path, payload):
     temp = path.with_suffix(".tmp")
     temp.write_text(json.dumps(payload), encoding="utf-8")
-    os.replace(temp, path)
+    # Godot may hold the old status file briefly while reading it. Windows
+    # denies replacement during that read; retry this transient sharing lock
+    # without tearing down a healthy AppBar. Permanent failures still raise.
+    for attempt in range(25):
+        try:
+            os.replace(temp, path)
+            return
+        except PermissionError:
+            if attempt == 24:
+                raise
+            time.sleep(.01)
 
 class AppBar:
     def __init__(self):
@@ -114,9 +124,14 @@ class AppBar:
             self.registered = True
         width = max(48, min(int(command["width"]), info.monitor.right-info.monitor.left))
         r = info.monitor
-        self.data.rect = w.RECT(r.right-width, r.top, r.right, r.bottom)
+        left = command.get("edge", "right") == "left"
+        self.data.edge = 0 if left else 2
+        self.data.rect = w.RECT(r.left, r.top, r.left+width, r.bottom) if left else w.RECT(r.right-width, r.top, r.right, r.bottom)
         s.SHAppBarMessage(2, c.byref(self.data))  # shell respects taskbar/other bars
-        self.data.rect.left = self.data.rect.right - width
+        if left:
+            self.data.rect.right = self.data.rect.left + width
+        else:
+            self.data.rect.left = self.data.rect.right - width
         s.SHAppBarMessage(3, c.byref(self.data))
         r = self.data.rect
         u.SetWindowPos(self.hwnd, None, r.left, r.top, width, r.bottom-r.top, 0x14)
@@ -136,7 +151,7 @@ class AppBar:
         return {"registered": self.registered, "work_area": rect_value(info.work),
                 "monitor": rect_value(info.monitor), "reservation": rect_value(self.data.rect),
                 "window": rect_value(actual), "baseline": self.baseline,
-                "sequence": self.command.get("sequence", 0), "error": ""}
+                "sequence": self.command.get("sequence", 0), "edge":self.command.get("edge","right"), "error": ""}
 
 def main():
     args = argparse.ArgumentParser()
@@ -170,6 +185,7 @@ def main():
                 last = command
             time.sleep(.05)
     except Exception as error:
+        options.status.with_suffix(".error.txt").write_text(repr(error), encoding="utf-8")
         atomic_json(options.status, {"registered": False, "error": str(error)})
         raise
     finally:

@@ -7,6 +7,11 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_theme_font_size_override("font_size", 12)
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_theme_font_override("font",preload("res://assets/fonts/BOF_Font_Refined.fnt"))
+	add_theme_font_size_override("font_size",16)
+	add_theme_color_override("font_color",Color.WHITE)
+	add_theme_constant_override("outline_size",0)
 	autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 static func key_name(action: StringName) -> String:
@@ -18,6 +23,10 @@ static func key_name(action: StringName) -> String:
 
 func _process(_delta: float) -> void:
 	if host == null or not is_instance_valid(host.game): return
+	if host.passive != null and host.passive.state != host.passive.State.IDLE:
+		if host.passive.is_ready(): text = "! FISH READY\nActive + K to hook   I to cancel"
+		else: text = "FOCUS  %02d:%02d\n%s" % [int(host.passive.elapsed)/60,int(host.passive.elapsed)%60,host.passive.reason]
+		return
 	var service := get_node_or_null("/root/FishingSessionServices")
 	var dialogue = service.get("dialogue_service") if service != null else null
 	var confirm := key_name(&"enter_fishing")

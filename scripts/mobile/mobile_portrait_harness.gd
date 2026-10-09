@@ -13,6 +13,11 @@ var game: Node
 var controls: Control
 var gameplay_image: TextureRect
 var gameplay_window: Control
+var overlay_viewport: SubViewport
+var overlay_image: TextureRect
+var hud_viewport: SubViewport
+var hud_image: TextureRect
+var _presentation_layers: Array[WeakRef] = []
 var _surface_scroll := 0.0
 var _surface_scroll_max := 0.0
 var _surface_drag := -1
@@ -68,6 +73,13 @@ func _ready() -> void:
 	gameplay_window.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	presentation.add_child(gameplay_window)
 	gameplay_window.add_child(gameplay_image)
+	# World crop is immutable across overlays. Independent transparent canvases
+	# let large menus scroll without moving the world or its camera/HUD.
+	overlay_viewport = _make_overlay_viewport("OverlayViewport")
+	overlay_image = _make_overlay_image(overlay_viewport)
+	hud_viewport = _make_overlay_viewport("PinnedHudViewport")
+	hud_image = _make_overlay_image(hud_viewport)
+	gameplay_window.move_child(hud_image,1)
 	controls = TouchControls.new()
 	controls.name = "TouchControls"
 	controls.key_requested.connect(_send_key)
@@ -78,6 +90,26 @@ func _ready() -> void:
 	get_tree().node_added.connect(_node_added)
 	_layout()
 	call_deferred("_mount_game")
+
+func _make_overlay_viewport(label: String) -> SubViewport:
+	var viewport := SubViewport.new()
+	viewport.name = label
+	viewport.size = Vector2i(640,864)
+	viewport.transparent_bg = true
+	viewport.disable_3d = true
+	viewport.world_2d = World2D.new()
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	return viewport
+
+func _make_overlay_image(viewport: SubViewport) -> TextureRect:
+	var image := TextureRect.new()
+	image.texture = viewport.get_texture()
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gameplay_window.add_child(image)
+	return image
 
 func get_safe_rect(view_size: Vector2, device_safe: Rect2 = Rect2(), device_size: Vector2 = Vector2.ZERO) -> Rect2:
 	if device_safe.has_area() and device_size.x > 0 and device_size.y > 0:
@@ -127,11 +159,16 @@ func _layout() -> void:
 	gameplay_image.size = layout.gameplay.size
 	_surface_scroll_max = maxf(0,layout.gameplay.size.y-layout.display.size.y)
 	_surface_scroll = clampf(_surface_scroll,0,_surface_scroll_max) if _has_surface_modal() else _surface_scroll_max
-	gameplay_image.position = Vector2(0,-_surface_scroll)
+	gameplay_image.position = Vector2(0,-_surface_scroll_max)
+	overlay_image.size = layout.gameplay.size
+	overlay_image.position = Vector2(0,-_surface_scroll)
+	hud_image.size = layout.gameplay.size
+	hud_image.position = Vector2.ZERO
 	controls.position = layout.controls.position
 	controls.size = layout.controls.size
 	gameplay_viewport.size = layout.resolution
 	_adapt_mobile_presentation()
+	_bind_overlay_layers()
 
 func _process(_delta: float) -> void:
 	# World play keeps bottom HUD visible; modal content starts at the top.
@@ -139,7 +176,7 @@ func _process(_delta: float) -> void:
 	if modal != _surface_was_modal:
 		_surface_was_modal = modal
 		_surface_scroll = 0.0 if modal else _surface_scroll_max
-		if gameplay_image != null: gameplay_image.position.y = -_surface_scroll
+		if overlay_image != null: overlay_image.position.y = -_surface_scroll
 
 func _input(event: InputEvent) -> void:
 	# A narrow right-edge gutter scrolls the display window, independently of
@@ -157,7 +194,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag and event.index == _surface_drag:
 		_surface_scroll = clampf(_surface_scroll + _surface_drag_y - event.position.y,0,_surface_scroll_max)
 		_surface_drag_y = event.position.y
-		gameplay_image.position.y = -_surface_scroll
+		overlay_image.position.y = -_surface_scroll
 		get_viewport().set_input_as_handled()
 
 func _mount_game() -> void:
@@ -208,6 +245,44 @@ func _node_added(node: Node) -> void:
 		_bind_session_layers.call_deferred()
 	if node is CanvasLayer or node is Camera3D:
 		_adapt_mobile_presentation.call_deferred()
+	if node is CanvasLayer:
+		if not _presentation_layers.any(func(binding): return binding.get_ref() == node): _presentation_layers.append(weakref(node))
+		_bind_overlay_layers.call_deferred()
+
+func _bind_overlay_layers() -> void:
+	if overlay_viewport == null or not is_instance_valid(game): return
+	_presentation_layers = _presentation_layers.filter(func(binding): return binding.get_ref() != null)
+	for binding in _presentation_layers:
+		var layer = binding.get_ref()
+		if not is_instance_valid(layer) or not layer.is_node_ready(): continue
+		if layer == game.get_node_or_null("UI/ExplorationHud"):
+			_set_layer_viewport(layer,hud_viewport)
+			# Restore the top HUD independently of the world sky crop. Its bottom
+			# help panel retains the original physical screen placement and tween home.
+			var help: Control = layer.help_panel
+			if not help.has_meta("shell_help_home"): help.set_meta("shell_help_home",layer.help_panel_home)
+			var home: Vector2 = help.get_meta("shell_help_home")
+			var crop := _surface_scroll_max * 640.0 / maxf(gameplay_image.size.x,1.0)
+			var desired := home - Vector2(0,crop)
+			if layer.help_panel_home != desired:
+				var delta_home: Vector2 = desired-layer.help_panel_home
+				help.position += delta_home
+				layer.help_panel_home = desired
+		elif layer is DialogueView or layer.has_method("is_open") or layer.name in ["FishingCatchView","FishingLureSelectorView"]:
+			_set_layer_viewport(layer,overlay_viewport)
+
+func _set_layer_viewport(layer: CanvasLayer, viewport: Viewport) -> void:
+	if layer.custom_viewport == viewport: return
+	# Godot's setter changes the canvas viewport without rebinding the parent's
+	# draw-order signal. Assign outside the tree so enter/exit pair correctly.
+	var parent := layer.get_parent()
+	var index := layer.get_index()
+	var scene_owner := layer.owner
+	parent.remove_child(layer)
+	layer.custom_viewport = viewport
+	parent.add_child(layer)
+	parent.move_child(layer,index)
+	layer.owner = scene_owner
 
 func _has_surface_modal() -> bool:
 	# Read published presentation visibility, not SceneTree.paused: manual pause
@@ -231,7 +306,7 @@ func _adapt_mobile_presentation() -> void:
 		if not is_instance_valid(layer): continue
 		if layer.has_meta("development_status"):
 			if layer.get_parent() != controls: layer.reparent(controls)
-			layer.custom_viewport = get_viewport()
+			_set_layer_viewport(layer,get_viewport())
 			layer.offset = controls.global_position + Vector2(controls.size.x * 0.78, controls.size.y * 0.60)
 		elif layer.name == "DeveloperIndicator": layer.offset = Vector2(0, 840)
 
@@ -243,7 +318,7 @@ func _bind_session_layers() -> void:
 		if not _bound_layers.has(layer.get_instance_id()):
 			_bound_layers[layer.get_instance_id()] = {"node": weakref(layer), "parent": weakref(layer.get_parent())}
 		# Session data stays at its original root; presentation joins this viewport.
-		if not layer.has_meta("development_status"): layer.reparent(gameplay_viewport)
+		if not layer.has_meta("development_status") and layer.get_parent() != gameplay_viewport: layer.reparent(gameplay_viewport)
 
 func _send_key(event: InputEventKey) -> void:
 	if event.physical_keycode in [KEY_W, KEY_A, KEY_S, KEY_D]:
@@ -266,7 +341,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_window_touches[event.index] = true
 		if _window_touches.has(event.index):
 			var local_event = event.duplicate()
-			local_event.position = (event.position - gameplay_image.global_position) * Vector2(gameplay_viewport.size) / gameplay_image.size
+			local_event.position = (event.position - overlay_image.global_position) * Vector2(overlay_viewport.size) / overlay_image.size
+			# Custom viewport changes rendering, not the Control input owner.
 			gameplay_viewport.push_input(local_event, true)
 			if event is InputEventScreenTouch and not event.pressed: _window_touches.erase(event.index)
 			get_viewport().set_input_as_handled()
@@ -304,6 +380,7 @@ func _exit_tree() -> void:
 		var layer = entry.node.get_ref()
 		var original_parent = entry.parent.get_ref()
 		if is_instance_valid(layer) and is_instance_valid(original_parent):
+			layer.custom_viewport = original_parent.get_viewport()
 			var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
 			if fitter != null:
 				fitter.surface.position = fitter.original_position

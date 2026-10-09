@@ -42,10 +42,11 @@ def main():
         def active():
             try:
                 state = json.loads(status_path.read_text())
-                return state if state.get("registered") and state["sequence"] >= 4 else None
+                ready = "DOCK QA HOLD READY" in (output/"witness-game.log").read_text(errors="replace")
+                return state if ready and state.get("registered") and state.get("edge") == "right" else None
             except (FileNotFoundError,json.JSONDecodeError,PermissionError):
                 return None
-        state = wait_for(active)
+        state = wait_for(active,120)
         witness = native.u.CreateWindowExW(0,"STATIC","Companion QA Normal Window",0x00CF0000,
             state["work_area"][0]+20,state["work_area"][1]+20,600,400,None,None,None,None)
         assert witness
@@ -72,7 +73,7 @@ def main():
         process = subprocess.Popen([str(options.godot),"--path",str(project),"--rendering-method","gl_compatibility",
             "--script","res://scripts/qa/desktop_companion_docking_qa.gd","--log-file",
             "res://build/desktop-docking/normal-close-game.log"],creationflags=subprocess.CREATE_NO_WINDOW)
-        assert process.wait(timeout=35) == 0
+        assert process.wait(timeout=120) == 0
         wait_for(restored,8)
         checks.append({"check":"normal docked game close releases AppBar", "restored_work_area":baseline})
         (output/"native-witness-report.json").write_text(json.dumps(checks,indent=2))

@@ -10,9 +10,10 @@ var requested_at := 0
 func supported() -> bool:
 	return OS.get_name() == "Windows" and DisplayServer.get_name() != "headless" and not OS.has_feature("web")
 
-func request(docked: bool, window: Window) -> Error:
+func request(docked: bool, window: Window, edge := "right", requested_size := Vector2i.ZERO) -> Error:
 	if not supported(): return ERR_UNAVAILABLE
-	var next := {"docked": docked, "hwnd": DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE, window.get_window_id()), "width": window.size.x, "height": window.size.y}
+	var target_size: Vector2i = requested_size if requested_size!=Vector2i.ZERO else window.size
+	var next := {"docked": docked, "edge":edge, "hwnd": DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE, window.get_window_id()), "width": target_size.x, "height": target_size.y}
 	if next == last_request and helper_pid > 0 and OS.is_process_running(helper_pid): return OK
 	last_request = next.duplicate()
 	sequence += 1

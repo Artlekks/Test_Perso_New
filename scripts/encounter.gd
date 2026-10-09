@@ -258,6 +258,30 @@ enum FightState {
 var fish_stamina: float = 0.0
 var player_reeling: bool = false
 var bite_active: bool = false
+var _opportunity_owner: WeakRef
+var _external_opportunity_request := false
+var _persistent_opportunity := false
+
+func acquire_opportunity_schedule(owner: Node) -> bool:
+	if owner == null or lifecycle.is_hooked() or bite_active: return false
+	if _opportunity_owner != null and _opportunity_owner.get_ref() != null and _opportunity_owner.get_ref() != owner: return false
+	_opportunity_owner = weakref(owner)
+	bite_timer.stop()
+	return true
+
+func release_opportunity_schedule(owner: Node, resume_normal := true) -> void:
+	if _opportunity_owner == null or _opportunity_owner.get_ref() != owner: return
+	_opportunity_owner = null
+	_external_opportunity_request = false
+	if resume_normal and lifecycle.is_waiting_for_bite(): bite_timer.start(first_bite_delay)
+
+func request_persistent_opportunity(owner: Node) -> bool:
+	if _opportunity_owner == null or _opportunity_owner.get_ref() != owner or not lifecycle.is_waiting_for_bite(): return false
+	_external_opportunity_request = true
+	_on_bite_timer_timeout()
+	_external_opportunity_request = false
+	bite_timer.stop()
+	return bite_active and _persistent_opportunity
 var bite_hook_ready: bool = false
 var bite_commit_time_left: float = 0.0
 var active_bite_timing: Dictionary = {}
@@ -324,7 +348,7 @@ func _on_bait_landed(_point: Vector3) -> void:
 
 	_reset_technique()
 	tension.start_free_reel()
-	bite_timer.start(first_bite_delay)
+	if _opportunity_owner == null or _opportunity_owner.get_ref() == null: bite_timer.start(first_bite_delay)
 
 
 func _on_bait_returned() -> void:
@@ -351,6 +375,8 @@ func _on_bait_returned() -> void:
 
 
 func _on_bite_timer_timeout() -> void:
+	var scheduled := _opportunity_owner != null and _opportunity_owner.get_ref() != null
+	if scheduled and not _external_opportunity_request: return
 	# Stale one-shot timer callbacks are harmless. Only the explicit waiting
 	# state may select a new fish or open a bite window.
 	if not lifecycle.is_waiting_for_bite():
@@ -385,7 +411,7 @@ func _on_bite_timer_timeout() -> void:
 		# If a visible fish is actively performing the pre-bite sequence but has
 		# not finished inspecting yet, do not let a background invisible fish
 		# steal the moment. The visible fish can still reject the lure and leave.
-		if shadow_candidate == null and _has_active_visible_pre_bite():
+		if not scheduled and shadow_candidate == null and _has_active_visible_pre_bite():
 			bite_timer.start(shadow_pre_bite_retry_delay)
 			return
 
@@ -462,7 +488,7 @@ func _on_bite_timer_timeout() -> void:
 			1.0
 		)
 
-		if randf() > bite_chance:
+		if not scheduled and randf() > bite_chance:
 			bite_timer.start(retry_bite_delay)
 			return
 
@@ -529,7 +555,12 @@ func _on_bite_timer_timeout() -> void:
 		active_bite_timing.get("total_window", total_window)
 	)
 	bite_opportunity_started.emit()
-	bite_window_timer.start(resolved_total_window)
+	_persistent_opportunity = scheduled
+	if scheduled:
+		# The same authored selection/lifecycle/hooks, with a persistent response
+		# window owned by the passive schedule. No fish or reward is granted here.
+		_set_bite_hook_ready()
+	else: bite_window_timer.start(resolved_total_window)
 
 	if bite_commit_time_left <= 0.001:
 		_set_bite_hook_ready()
@@ -560,6 +591,8 @@ func _confirm_hit() -> bool:
 
 	if not lifecycle.confirm_hook():
 		return false
+	_opportunity_owner = null
+	_persistent_opportunity = false
 
 	bite_active = false
 	bite_hook_ready = false
@@ -678,6 +711,7 @@ func _confirm_hit() -> bool:
 	return true
 
 func _on_bite_window_timeout() -> void:
+	if _persistent_opportunity: return
 	_resolve_bite_miss(&"late_hook")
 
 
@@ -3468,6 +3502,9 @@ func reset_cast_session() -> void:
 
 
 func _reset_cast_runtime(clear_bait_data: bool) -> void:
+	_persistent_opportunity = false
+	_external_opportunity_request = false
+	if clear_bait_data: _opportunity_owner = null
 	_end_active_fight_shadow(false)
 	bite_timer.stop()
 	bite_window_timer.stop()

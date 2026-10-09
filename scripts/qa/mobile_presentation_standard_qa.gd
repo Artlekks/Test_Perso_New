@@ -47,7 +47,7 @@ func inspect_view(view: ResponsiveMenuSurface, label: String) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.index = 95
 	touch.pressed = true
-	touch.position = shell.gameplay_image.global_position + shell.gameplay_image.size * Vector2(0.90, 0.7)
+	touch.position = shell.overlay_image.global_position + shell.overlay_image.size * Vector2(0.90, 0.7)
 	shell._unhandled_input(touch)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 95

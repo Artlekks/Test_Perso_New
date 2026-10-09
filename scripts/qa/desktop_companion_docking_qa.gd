@@ -18,7 +18,8 @@ func status_ready(registered: bool) -> Dictionary:
 	var until := Time.get_ticks_msec()+8000
 	while Time.get_ticks_msec()<until:
 		var state: Dictionary = shell.platform.read_status()
-		if state.get("sequence",-1) == shell.platform.sequence and state.get("registered",false) == registered: return state
+		if not shell._request_pending and state.get("sequence",-1) == shell.platform.sequence and state.get("registered",false) == registered:
+			if not registered or state.get("reservation",[0,0,0,0])[2]-state.get("reservation",[0,0,0,0])[0] == (shell.collapsed_width if shell.window_state==shell.WindowState.COLLAPSED else shell.dock_width): return state
 		if not str(state.get("error","")).is_empty(): print("APPBAR ERROR: ",state); break
 		await process_frame
 	check(false,"native helper acknowledges request")
@@ -38,20 +39,61 @@ func run() -> void:
 	if initial.is_empty(): shell.set_docked(false); shell.platform.close(); quit(1); return
 	var baseline: Array = initial.baseline
 	FileAccess.open("res://build/desktop-docking/native-fixture.json",FileAccess.WRITE).store_string(JSON.stringify({"command":shell.platform.command_path,"status":shell.platform.status_path,"baseline":baseline,"pid":OS.get_process_id()}))
-	for mode in [shell.Mode.ACTIVE,shell.Mode.PASSIVE,shell.Mode.COLLAPSED,shell.Mode.ACTIVE]:
-		shell.set_mode(mode)
-		var state := await status_ready(true)
-		if state.is_empty(): continue
-		print("NATIVE APPBAR SAMPLE: ",JSON.stringify(state))
-		var width: int = [shell.dock_active_width,shell.dock_passive_width,shell.dock_collapsed_width][mode]
-		check(state.reservation[2]-state.reservation[0] == width,"mode reserved width %d" % width)
-		check(state.work_area[2] == state.reservation[0],"ordinary desktop excludes reservation")
-		check(state.window[0] == state.reservation[0] and state.window[2] == state.reservation[2],"companion flush inside reserved strip")
-		check(state.reservation[1] == baseline[1] and state.reservation[3] == baseline[3],"taskbar vertical clearance respected")
-		check(shell.game.get_instance_id() == game_id and root.get_node("FishingSessionServices").get_instance_id() == session_id,"same game/session survives docking mode")
-		check(shell.gameplay_viewport.size == Vector2i(640,864) and not paused,"canonical running session retained")
-		check(shell.gameplay_viewport.get_camera_3d().global_transform == camera,"docking leaves camera unchanged")
+	for edge in [shell.WindowState.DOCK_RIGHT,shell.WindowState.DOCK_LEFT,shell.WindowState.DOCK_RIGHT]:
+		shell.set_window_state(edge)
+		for width in [480,620,360,540,480]:
+			shell.set_dock_width(width)
+			await settle()
+			var state := await status_ready(true)
+			if state.is_empty(): continue
+			print("NATIVE APPBAR SAMPLE: ",JSON.stringify(state))
+			check(state.reservation[2]-state.reservation[0] == width,"live dock width %d" % width)
+			check(state.work_area[0] == state.reservation[2] if edge == shell.WindowState.DOCK_LEFT else state.work_area[2] == state.reservation[0],"ordinary desktop excludes selected edge")
+			check(state.window[0] == state.reservation[0] and state.window[2] == state.reservation[2],"companion remains attached")
+			check(shell.game.get_instance_id() == game_id and root.get_node("FishingSessionServices").get_instance_id() == session_id,"same session through resizing")
+			check(shell.gameplay_viewport.size == Vector2i(640,864) and not paused,"canonical session retained")
+			check(shell.gameplay_viewport.get_camera_3d().global_transform == camera,"windowing leaves camera unchanged")
+		var before := Rect2i(root.position,root.size)
+		shell.set_mode(99)
+		check(Rect2i(root.position,root.size)==before and shell.mode==shell.Mode.ACTIVE,"invalid legacy mode recovers without shrinking")
+		shell.toggle_collapse()
+		await settle()
+		var collapsed := await status_ready(true)
+		if collapsed.is_empty(): shell.queue_free(); quit(1); return
+		check(collapsed.reservation[2]-collapsed.reservation[0]==shell.collapsed_width,"collapse reserves narrow strip")
+		check(shell.effective_window_state()==edge,"collapse remembers edge")
+		shell.toggle_collapse()
+		await settle()
+		var expanded := await status_ready(true)
+		if expanded.is_empty(): shell.queue_free(); quit(1); return
+		check(expanded.reservation[2]-expanded.reservation[0]==480 and shell.dock_width==480,"expand restores exact previous width")
+	# Real Passive entry/cast while docked. Activity never writes geometry or
+	# drops the native reservation, including across a left/right presentation.
+	for edge in [shell.WindowState.DOCK_LEFT,shell.WindowState.DOCK_RIGHT]:
+		shell.set_window_state(edge)
+		await status_ready(true)
+		await settle()
+		var activity_rect := Rect2i(root.position,root.size)
+		shell.passive.focus_seconds=100
+		shell.set_mode(shell.Mode.PASSIVE)
+		check(shell.mode==shell.Mode.PASSIVE,"docked Passive accepted")
+		var deadline := Time.get_ticks_msec()+15000
+		while shell.passive.state!=shell.passive.State.FOCUS and Time.get_ticks_msec()<deadline: await process_frame
+		check(shell.passive.state==shell.passive.State.FOCUS,"docked passive production cast reaches water")
+		check(Rect2i(root.position,root.size)==activity_rect,"Passive preserves dock geometry")
+		shell.set_mode(shell.Mode.ACTIVE)
+		check(Rect2i(root.position,root.size)==activity_rect,"Active preserves dock geometry")
+		check(shell.window_state==edge and shell.platform.read_status().get("registered",false),"activity keeps edge and reservation")
+		var fishing: Node = shell.game.get_node("Game/Fishing")
+		if fishing.phase==fishing.Phase.IN_WATER: fishing._cancel_water_cast_to_aim()
 		await create_timer(.3).timeout
+	var fishing_after: Node = shell.game.get_node("Game/Fishing")
+	var cancel := InputEventAction.new()
+	cancel.action=&"cancel_fishing"; cancel.pressed=true
+	fishing_after._unhandled_input(cancel)
+	var exit_deadline := Time.get_ticks_msec()+15000
+	while not fishing_after.game_mode.is_exploration() and Time.get_ticks_msec()<exit_deadline: await process_frame
+	check(fishing_after.game_mode.is_exploration(),"docked passive returns through normal fishing exit")
 	if OS.get_cmdline_user_args().has("--hold-docked"):
 		print("DOCK QA HOLD READY")
 		await create_timer(30).timeout

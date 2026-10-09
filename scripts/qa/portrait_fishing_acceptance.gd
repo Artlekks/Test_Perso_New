@@ -98,8 +98,9 @@ func run() -> void:
 		check(session.get_instance_id() == session_id, "shell layout preserves session identity")
 		if companion:
 			var bait: int = fishing.caster.active_bait.get_instance_id()
-			for next in [shell.Mode.PASSIVE, shell.Mode.COLLAPSED, shell.Mode.ACTIVE]:
-				shell.set_mode(next)
+			for next in range(3):
+				if next < 2: shell.toggle_collapse()
+				else: shell.set_mode(shell.Mode.ACTIVE)
 				await get_tree().create_timer(0.12).timeout
 				check(fishing.can_process() and not get_tree().paused, "companion mode never pauses fishing")
 				check(fishing.caster.active_bait.get_instance_id() == bait, "companion mode preserves physical bait")

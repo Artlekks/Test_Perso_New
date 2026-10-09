@@ -2,6 +2,17 @@ extends Node
 const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 signal cast_started
 
+func request_cast_confirm() -> bool:
+	# Orchestrators use the same gated command path and animation callbacks.
+	if phase not in [Phase.AIM,Phase.CHARGE,Phase.CURVE]: return false
+	var event := InputEventAction.new()
+	event.action = &"enter_fishing"
+	event.pressed = true
+	_unhandled_input(event)
+	event.pressed = false
+	_unhandled_input(event)
+	return true
+
 const FishingSessionServicesScript = preload(
 	"res://scripts/fishing_session_services.gd"
 )
