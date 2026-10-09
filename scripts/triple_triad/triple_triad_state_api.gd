@@ -5,7 +5,7 @@ const API_SCHEMA_VERSION := 6
 
 const DECKS_PATH := "user://triple_triad_decks.cfg"
 const OPPONENT_COLLECTIONS_PATH := "user://triple_triad_opponents.cfg"
-const PROFILE_COUNT := 6
+const DeckStore = preload("res://scripts/triple_triad/triple_triad_deck_store.gd")
 const HAND_SIZE := 5
 
 var _catalog: Resource = null
@@ -295,7 +295,7 @@ func _build_deck_profiles() -> Array:
 	var budget: int = _player_budget()
 	var active_profile: int = _active_profile_index()
 
-	for profile_index in range(PROFILE_COUNT):
+	for profile_index in range(DeckStore.profile_count(config)):
 		var card_ids := PackedStringArray()
 		var id_key: String = "deck_ids_%d" % (profile_index + 1)
 		var raw_ids = config.get_value("decks", id_key, PackedStringArray())
@@ -561,7 +561,8 @@ func _opponent_collection_snapshot(
 func _get_deck_config() -> ConfigFile:
 	if not _deck_config_loaded:
 		_deck_config = ConfigFile.new()
-		_deck_config.load(DECKS_PATH)
+		if DeckStore.load_config(_deck_config) != OK:
+			_deck_config.clear()
 		_deck_config_loaded = true
 	return _deck_config
 
@@ -576,11 +577,7 @@ func _get_opponent_config() -> ConfigFile:
 
 func _active_profile_index() -> int:
 	var config: ConfigFile = _get_deck_config()
-	return clampi(
-		int(config.get_value("meta", "last_profile", 0)),
-		0,
-		PROFILE_COUNT - 1
-	)
+	return DeckStore.active_profile(config)
 
 
 func _player_rank() -> int:

@@ -211,6 +211,21 @@ func commit_reward_transfer(
 		return {"success": false, "reason": "missing_card"}
 	if _card_economy == null or opponent_collection_backend == null:
 		return {"success": false, "reason": "economy_unavailable"}
+	if _collection_backend.has_method("can_commit_state") and _collection_backend.can_commit_state() != OK:
+		return {"success": false, "reason": "stale_collection"}
+	if _resolution_journal != null and not _resolution_journal.has_pending():
+		return {"success": false, "reason": "resolution_not_ready"}
+	# A repeated result callback must replay the original absolute quantities,
+	# never derive another +/-1 transfer from the already committed collection.
+	if _resolution_journal != null and _resolution_journal.has_pending():
+		var pending: Dictionary = _resolution_journal.get_snapshot()
+		if not str(pending.get("selected_card_id", "")).is_empty():
+			if str(pending.selected_card_id) != String(card_definition.card_id) or int(pending.winner) != winner or str(pending.opponent_id) != String(opponent_id):
+				return {"success": false, "reason": "selection_already_committed"}
+			var replay: Dictionary = reconcile_selected_pending_resolution(pending)
+			replay["metadata_ok"] = bool(replay.get("success", false))
+			replay["remove_from_decks"] = winner == OWNER_OPPONENT and not _collection_backend.owns_card(card_definition)
+			return replay
 
 	var transfer_state: Dictionary = prepare_reward_transfer_state(
 		card_definition,

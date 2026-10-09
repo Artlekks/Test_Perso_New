@@ -24,7 +24,8 @@ const COLLECTION_STEP_X := 59.0
 const COLLECTION_STEP_Y := 69.0
 const DECK_SCALE := COLLECTION_SCALE
 const DECK_STEP_X := 58.0
-const SAVE_PATH := "user://triple_triad_decks.cfg"
+const DeckStore = preload("res://scripts/triple_triad/triple_triad_deck_store.gd")
+const SAVE_PATH := DeckStore.SAVE_PATH
 const SAVE_VERSION := 2
 
 const SORT_RANK_ASCENDING := 0
@@ -687,7 +688,7 @@ func _saved_profile_count(profile_index: int) -> int:
 	if profile_index == _profile_index:
 		return _deck.size()
 	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	if DeckStore.load_config(config) != OK:
 		return 0
 	var id_key: String = "deck_ids_%d" % (profile_index + 1)
 	if config.has_section_key("decks", id_key):
@@ -1053,7 +1054,10 @@ func _try_confirm_deck() -> void:
 		_status_text = "Point limit exceeded: %d / %d" % [total_cost, _budget_limit]
 		_refresh_labels()
 		return
-	_save_current_profile()
+	if _save_current_profile() != OK:
+		_status_text = "Deck could not be saved. Please retry."
+		_refresh_labels()
+		return
 	deck_confirmed.emit(_deck.duplicate())
 
 
@@ -1272,7 +1276,7 @@ func _stamp_config(config: ConfigFile) -> void:
 
 func _load_sort_mode() -> int:
 	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	if DeckStore.load_config(config) != OK:
 		return SORT_RANK_ASCENDING
 	if config.has_section_key("meta", "sort_mode"):
 		return clampi(
@@ -1286,10 +1290,10 @@ func _load_sort_mode() -> int:
 func _save_sort_preference() -> void:
 	if not developer_test_deck.is_empty(): return
 	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
+	DeckStore.load_config(config)
 	config.set_value("meta", "sort_mode", _sort_mode)
 	_stamp_config(config)
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = DeckStore.save_config(config)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not save sort preference (%s)." % error_string(save_error))
 
@@ -1308,56 +1312,11 @@ func _switch_profile(new_profile_index: int) -> void:
 
 
 func _sanitize_all_saved_profiles() -> void:
-	if not developer_test_deck.is_empty(): return
-	if _catalog == null:
+	if not developer_test_deck.is_empty() or _catalog == null:
 		return
-	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
-		return
-	var changed: bool = false
-	for profile_index in range(_total_profiles):
-		var id_key: String = "deck_ids_%d" % (profile_index + 1)
-		var legacy_key: String = "deck_%d" % (profile_index + 1)
-		var source_cards: Array = []
-		var had_profile: bool = false
-		if config.has_section_key("decks", id_key):
-			had_profile = true
-			var raw_ids = config.get_value("decks", id_key, PackedStringArray())
-			if raw_ids is PackedStringArray or raw_ids is Array:
-				for raw_id in raw_ids:
-					if _catalog.has_method("get_card_by_id"):
-						var card = _catalog.call("get_card_by_id", StringName(str(raw_id)))
-						if card != null:
-							source_cards.append(card)
-		elif config.has_section_key("decks", legacy_key):
-			had_profile = true
-			var raw_indices = config.get_value("decks", legacy_key, PackedInt32Array())
-			if raw_indices is PackedInt32Array or raw_indices is Array:
-				for raw_index in raw_indices:
-					var card = null
-					if _catalog.has_method("get_card_by_legacy_source_index"):
-						card = _catalog.call("get_card_by_legacy_source_index", int(raw_index))
-					elif _catalog.has_method("get_card"):
-						card = _catalog.call("get_card", int(raw_index))
-					if card != null:
-						source_cards.append(card)
-
-		if not had_profile:
-			continue
-		var clean_cards: Array = _sanitize_card_array(source_cards)
-		var clean_ids := PackedStringArray()
-		for card in clean_cards:
-			clean_ids.append(String(card.card_id))
-		var current_ids = config.get_value("decks", id_key, PackedStringArray())
-		if current_ids != clean_ids:
-			config.set_value("decks", id_key, clean_ids)
-			changed = true
-
-	if changed:
-		_stamp_config(config)
-		var save_error: Error = config.save(SAVE_PATH)
-		if save_error != OK:
-			push_warning("TripleTriadDeckSetup: could not sanitize deck profiles (%s)." % error_string(save_error))
+	var report: Dictionary = DeckStore.audit_profiles(_catalog, _collection_backend, _budget_limit, _player_rank, _acquisition_policy)
+	if not bool(report.valid):
+		push_warning("TripleTriadDeckSetup: deck repair could not be committed: %s" % str(report.warnings))
 
 
 func _sanitize_card_array(cards: Array) -> Array:
@@ -1388,7 +1347,7 @@ func _load_profile(profile_index: int) -> void:
 	_deck.clear()
 	var running_cost: int = 0
 	var config := ConfigFile.new()
-	var load_error: Error = config.load(SAVE_PATH)
+	var load_error: Error = DeckStore.load_config(config)
 	var had_saved_profile: bool = false
 
 	if load_error == OK:
@@ -1446,13 +1405,13 @@ func _load_profile(profile_index: int) -> void:
 	_save_current_profile()
 
 
-func _save_current_profile() -> void:
-	if not developer_test_deck.is_empty(): return
+func _save_current_profile() -> Error:
+	if not developer_test_deck.is_empty(): return OK
 	if _catalog == null:
-		return
+		return ERR_UNCONFIGURED
 
 	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
+	DeckStore.load_config(config)
 
 	_deck = _sanitize_card_array(_deck)
 	var ids := PackedStringArray()
@@ -1468,9 +1427,11 @@ func _save_current_profile() -> void:
 	config.set_value("meta", "profile_count", _total_profiles)
 
 	_stamp_config(config)
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = DeckStore.save_config(config)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not save deck profiles (%s)." % error_string(save_error))
+
+	return save_error
 
 
 func remove_card_from_all_profiles(card_id: StringName) -> void:
@@ -1479,7 +1440,7 @@ func remove_card_from_all_profiles(card_id: StringName) -> void:
 		return
 
 	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
+	DeckStore.load_config(config)
 
 	for profile_index in range(_load_profile_count()):
 		var id_key: String = "deck_ids_%d" % (profile_index + 1)
@@ -1517,7 +1478,7 @@ func remove_card_from_all_profiles(card_id: StringName) -> void:
 	_deck = filtered_deck
 
 	_stamp_config(config)
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = DeckStore.save_config(config)
 	if save_error != OK:
 		push_warning("TripleTriadDeckSetup: could not prune deck profiles (%s)." % error_string(save_error))
 
@@ -1567,7 +1528,7 @@ func _card_lock_reason(card) -> String:
 
 func _load_last_profile_index() -> int:
 	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	if DeckStore.load_config(config) != OK:
 		return 0
 	return clampi(
 		int(config.get_value("meta", "last_profile", 0)),
@@ -1578,51 +1539,23 @@ func _load_last_profile_index() -> int:
 
 func _load_profile_count() -> int:
 	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	if DeckStore.load_config(config) != OK:
 		return MIN_PROFILE_COUNT
 
-	var highest_saved: int = 0
-	for raw_key in config.get_section_keys("decks"):
-		var key: String = str(raw_key)
-		var number_text: String = ""
-		if key.begins_with("deck_ids_"):
-			number_text = key.trim_prefix("deck_ids_")
-		elif key.begins_with("deck_"):
-			number_text = key.trim_prefix("deck_")
-		if number_text.is_valid_int():
-			highest_saved = maxi(
-				highest_saved,
-				number_text.to_int()
-			)
-
-	var stored_count: int = int(
-		config.get_value(
-			"meta",
-			"profile_count",
-			MIN_PROFILE_COUNT
-		)
-	)
-	return clampi(
-		maxi(
-			MIN_PROFILE_COUNT,
-			maxi(stored_count, highest_saved)
-		),
-		MIN_PROFILE_COUNT,
-		MAX_PROFILE_COUNT
-	)
+	return DeckStore.profile_count(config)
 
 
 func _save_profile_count() -> void:
 	if not developer_test_deck.is_empty(): return
 	var config := ConfigFile.new()
-	config.load(SAVE_PATH)
+	DeckStore.load_config(config)
 	config.set_value(
 		"meta",
 		"profile_count",
 		_total_profiles
 	)
 	_stamp_config(config)
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = DeckStore.save_config(config)
 	if save_error != OK:
 		push_warning(
 			"TripleTriadDeckSetup: could not save deck profile count (%s)."

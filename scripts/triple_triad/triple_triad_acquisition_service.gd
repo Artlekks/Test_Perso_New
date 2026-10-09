@@ -1,5 +1,7 @@
 extends RefCounted
+
 class_name TripleTriadAcquisitionService
+const Storage = preload("res://scripts/triple_triad/triple_triad_config_store.gd")
 
 signal bundle_claimed(result: Dictionary)
 signal unlock_changed(unlocked: bool)
@@ -13,6 +15,10 @@ var _tracker = null
 var _registry: Resource = null
 var _claimed: Dictionary = {}
 var _card_game_unlocked: bool = false
+var _pending_quantities: Dictionary = {}
+var _pending_history: Dictionary = {}
+var _write_blocked := false
+var _committed_hash := ""
 
 
 func initialize(
@@ -27,18 +33,47 @@ func initialize(
 	_registry = registry
 	_claimed.clear()
 	_card_game_unlocked = false
+	_pending_quantities.clear()
+	_pending_history.clear()
+	_write_blocked = false
+	_committed_hash = ""
 
 	var config := ConfigFile.new()
-	var load_error: Error = config.load(SAVE_PATH)
+	var load_error: Error = Storage.load_recover(config, SAVE_PATH)
+	if load_error == OK:
+		_committed_hash = FileAccess.get_sha256(SAVE_PATH)
 	var had_save: bool = load_error == OK
 	if had_save:
+		if int(config.get_value("meta", "version", 0)) > SAVE_VERSION:
+			_write_blocked = true
+			return
 		_load_from_config(config)
+		var pending = config.get_value("pending", "quantities", {})
+		if pending is Dictionary and not pending.is_empty():
+			_pending_quantities = pending.duplicate(true)
+			var history = config.get_value("pending", "history", {})
+			_pending_history = history.duplicate(true) if history is Dictionary else {}
+			if _collection.restore_quantities_snapshot(_pending_quantities) != OK:
+				_write_blocked = true
+				push_warning("TripleTriadAcquisitionService: invalid recovery quantities retained; writes disabled.")
+				return
+			if _collection.save_state() != OK:
+				_write_blocked = true
+				return
+			if not _commit_pending_history():
+				_write_blocked = true
+				return
+			_pending_quantities.clear()
+			_pending_history.clear()
 	elif load_error != ERR_FILE_NOT_FOUND:
+		_write_blocked = true
 		push_warning(
 			"TripleTriadAcquisitionService: state could not be loaded (%s)."
 			% error_string(load_error)
 		)
 
+	if _write_blocked:
+		return
 	if not had_save:
 		_migrate_legacy_collection()
 	_sanitize_claimed_ids()
@@ -79,6 +114,11 @@ func claim_bundle(
 		result["reason"] = "already_claimed"
 		return result
 
+	if _write_blocked or not _pending_quantities.is_empty():
+		result["reason"] = "recovery_pending"
+		return result
+	var ownership_before: Dictionary = _collection.get_quantities_snapshot()
+	var claimed_before: Dictionary = _claimed.duplicate(true)
 	var card_results: Array = []
 	var granted_cards: int = 0
 	var new_unique_cards: int = 0
@@ -102,14 +142,6 @@ func claim_bundle(
 			granted_cards += 1
 			if before <= 0:
 				new_unique_cards += 1
-			if _tracker != null and _tracker.has_method("record_acquisition"):
-				_tracker.call(
-					"record_acquisition",
-					card,
-					StringName(str(bundle.get("source_type"))),
-					source_context,
-					1
-				)
 		card_results.append({
 			"card_id": String(card_id),
 			"display_name": str(card.get("display_name")),
@@ -117,14 +149,17 @@ func claim_bundle(
 			"quantity_after": after,
 		})
 
-	if _collection.has_method("save_state"):
-		_collection.call("save_state")
-
 	_claimed[String(bundle_id)] = true
 	var was_unlocked: bool = _card_game_unlocked
 	if bool(bundle.get("unlocks_card_game")):
 		_card_game_unlocked = true
-	_save()
+	for acquired in card_results:
+		_prepare_pending_history(StringName(acquired.card_id), maxi(0, int(acquired.quantity_after) - int(acquired.quantity_before)), StringName(str(bundle.get("source_type"))), source_context)
+	if not _commit_collection_change(ownership_before):
+		_claimed = claimed_before
+		_card_game_unlocked = was_unlocked
+		result["reason"] = "save_failed"
+		return result
 
 	result["success"] = true
 	result["reason"] = "ok"
@@ -164,22 +199,20 @@ func grant_card(
 	if card == null:
 		result["reason"] = "unknown_card"
 		return result
+	if _write_blocked or not _pending_quantities.is_empty():
+		result["reason"] = "recovery_pending"
+		return result
+	var ownership_before: Dictionary = _collection.get_quantities_snapshot()
 	var before: int = 0
 	if _collection.has_method("get_quantity_by_id"):
 		before = int(_collection.call("get_quantity_by_id", card_id))
 	var after: int = before
 	for _index in range(maxi(1, amount)):
 		after = int(_collection.call("acquire_card", card, 1, false))
-	if _collection.has_method("save_state"):
-		_collection.call("save_state")
-	if after > before and _tracker != null and _tracker.has_method("record_acquisition"):
-		_tracker.call(
-			"record_acquisition",
-			card,
-			source_type,
-			source_context,
-			after - before
-		)
+	_prepare_pending_history(card_id, maxi(0, after - before), source_type, source_context)
+	if not _commit_collection_change(ownership_before):
+		result["reason"] = "save_failed"
+		return result
 	result["success"] = after > before
 	result["reason"] = "ok" if after > before else "not_granted"
 	result["quantity_before"] = before
@@ -264,16 +297,78 @@ func _load_from_config(config: ConfigFile) -> void:
 
 
 func _save() -> Error:
+	if _write_blocked:
+		return ERR_INVALID_DATA
+	var disk_hash: String = FileAccess.get_sha256(SAVE_PATH) if FileAccess.file_exists(SAVE_PATH) else ""
+	if disk_hash != _committed_hash:
+		push_warning("TripleTriadAcquisitionService: stale claim owner cannot overwrite the canonical save.")
+		return ERR_BUSY
 	var config := ConfigFile.new()
 	config.set_value("meta", "version", SAVE_VERSION)
+	if not _pending_quantities.is_empty():
+		config.set_value("pending", "quantities", _pending_quantities)
+		config.set_value("pending", "history", _pending_history)
 	config.set_value("meta", "card_game_unlocked", _card_game_unlocked)
 	for raw_id in _claimed.keys():
 		if bool(_claimed[raw_id]):
 			config.set_value("claimed", str(raw_id), true)
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = Storage.commit(config, SAVE_PATH)
+	if save_error == OK:
+		_committed_hash = FileAccess.get_sha256(SAVE_PATH)
 	if save_error != OK:
 		push_warning(
 			"TripleTriadAcquisitionService: state save failed (%s)."
 			% error_string(save_error)
 		)
 	return save_error
+
+
+func _commit_collection_change(before: Dictionary) -> bool:
+	var desired: Dictionary = _collection.get_quantities_snapshot()
+	_collection.restore_quantities_snapshot(before)
+	if _collection.can_commit_state() != OK:
+		_pending_history.clear()
+		return false
+	_pending_quantities = desired
+	if _save() != OK:
+		_pending_quantities.clear()
+		_pending_history.clear()
+		return false
+	_collection.restore_quantities_snapshot(desired)
+	if _collection.save_state() != OK:
+		_collection.restore_quantities_snapshot(before)
+		return false
+	if not _commit_pending_history():
+		return false
+	var history: Dictionary = _pending_history.duplicate(true)
+	_pending_quantities = {}
+	_pending_history = {}
+	if _save() != OK:
+		_pending_quantities = desired
+		_pending_history = history
+		return false
+	return true
+
+
+func _prepare_pending_history(card_id: StringName, amount: int, source: StringName, context: StringName) -> void:
+	if amount <= 0 or _tracker == null:
+		return
+	var before: Dictionary = _tracker.get_card_history(card_id)
+	_pending_history[String(card_id)] = {"acquired": int(before.get("acquired", 0)) + amount, "lost": int(before.get("lost", 0)), "source": String(source), "context": String(context)}
+
+func _commit_pending_history() -> bool:
+	if _tracker == null:
+		return true
+	for raw_id in _pending_history:
+		if not _pending_history[raw_id] is Dictionary:
+			return false
+		var entry: Dictionary = _pending_history[raw_id]
+		for key in ["acquired", "lost"]:
+			if not entry.get(key) is int or int(entry[key]) < 0:
+				return false
+		for key in ["source", "context"]:
+			if not entry.get(key) is String:
+				return false
+		if not _tracker.reconcile_card_history(StringName(str(raw_id)), int(entry.acquired), int(entry.lost), StringName(entry.source), StringName(entry.context)):
+			return false
+	return true

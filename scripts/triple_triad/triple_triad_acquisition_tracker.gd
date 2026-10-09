@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Storage = preload("res://scripts/triple_triad/triple_triad_config_store.gd")
+
 const SAVE_PATH := "user://triple_triad_acquisition_history.cfg"
 const SAVE_VERSION := 1
 
@@ -93,7 +95,7 @@ func reconcile_card_history(
 		or int(entry.get("lost", 0)) != clean_lost
 	)
 	if not changed:
-		return true
+		return _save() == OK
 
 	entry["acquired"] = clean_acquired
 	entry["lost"] = clean_lost
@@ -209,7 +211,7 @@ func _save() -> Error:
 		config.set_value(section, "last_opponent_id", str(entry.get("last_opponent_id", "")))
 		config.set_value(section, "last_event_unix", maxi(0, int(entry.get("last_event_unix", 0))))
 
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = Storage.commit(config, SAVE_PATH)
 	if save_error != OK:
 		push_warning(
 			"TripleTriadAcquisitionTracker: could not save history (%s)."

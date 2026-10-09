@@ -153,7 +153,9 @@ func apply_scenario(
 			"reason": "card_catalog_unavailable",
 		}
 
-	_clear_all_triple_triad_saves()
+	var reset_error: Error = _clear_all_triple_triad_saves()
+	if reset_error != OK:
+		return {"success": false, "reason": "reset_failed", "error": error_string(reset_error)}
 
 	match scenario_id:
 		SCENARIO_FRESH:
@@ -417,9 +419,9 @@ func get_managed_save_paths() -> PackedStringArray:
 
 
 func reset_decks_only() -> Dictionary:
-	_delete_with_backup(DECKS_PATH)
+	var reset_error: Error = _delete_with_backup(DECKS_PATH)
 	return {
-		"success": true,
+		"success": reset_error == OK,
 		"reload_required": true,
 	}
 
@@ -451,17 +453,16 @@ func _is_managed_save_path(path: String) -> bool:
 	return _managed_save_paths(true).has(path)
 
 
-func _clear_all_triple_triad_saves() -> void:
+func _clear_all_triple_triad_saves() -> Error:
 	for path in _managed_save_paths(false):
-		_delete_with_backup(path)
+		var error: Error = _delete_with_backup(path)
+		if error != OK:
+			return error
+	return OK
 
 
-func _delete_with_backup(path: String) -> void:
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(path)
-	var backup: String = "%s.bak" % path
-	if FileAccess.file_exists(backup):
-		DirAccess.remove_absolute(backup)
+func _delete_with_backup(path: String) -> Error:
+	return preload("res://scripts/triple_triad/triple_triad_config_store.gd").delete_save(path)
 
 
 func _seed_collection(card_ids, card_catalog: Resource) -> void:

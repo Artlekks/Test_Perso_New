@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Storage = preload("res://scripts/triple_triad/triple_triad_config_store.gd")
+
 const JOURNAL_PATH := "user://triple_triad_transfer_journal.cfg"
 const JOURNAL_VERSION := 1
 const OpponentCollectionScript = preload("res://scripts/triple_triad/triple_triad_opponent_collection.gd")
@@ -18,6 +20,8 @@ func recover_pending(catalog: Resource, player_collection) -> bool:
 	var config := ConfigFile.new()
 	if config.load(JOURNAL_PATH) != OK or not config.has_section("transaction"):
 		return true
+	if player_collection.has_method("can_commit_state") and player_collection.can_commit_state() != OK:
+		return false
 
 	var card_id := StringName(str(config.get_value("transaction", "card_id", "")))
 	var opponent_id := StringName(str(config.get_value("transaction", "opponent_id", "")))
@@ -71,6 +75,8 @@ func reconcile_quantities(
 	):
 		return false
 	if has_pending_transfer():
+		return false
+	if player_collection.has_method("can_commit_state") and player_collection.can_commit_state() != OK:
 		return false
 	if (
 		not catalog.has_method("get_card_by_id")
@@ -167,6 +173,8 @@ func _commit_transfer(
 	opponent_collection,
 	promote_for_rematch: bool
 ) -> bool:
+	if player_collection.has_method("can_commit_state") and player_collection.can_commit_state() != OK:
+		return false
 	var opponent_id: StringName = opponent_collection.get_opponent_id()
 	if not _write_journal(card_id, opponent_id, desired_player, desired_opponent, promote_for_rematch):
 		return false
@@ -203,7 +211,7 @@ func _write_journal(
 	config.set_value("transaction", "player_quantity", maxi(0, player_quantity))
 	config.set_value("transaction", "opponent_quantity", maxi(0, opponent_quantity))
 	config.set_value("transaction", "promote_for_rematch", promote_for_rematch)
-	var save_error: Error = config.save(JOURNAL_PATH)
+	var save_error: Error = Storage.commit(config, JOURNAL_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadCardEconomy: could not write transfer journal (%s)." % error_string(save_error))
 		return false
@@ -213,7 +221,7 @@ func _write_journal(
 func _clear_journal() -> bool:
 	var config := ConfigFile.new()
 	# Saving an empty ConfigFile is portable and keeps recovery logic simple.
-	var save_error: Error = config.save(JOURNAL_PATH)
+	var save_error: Error = Storage.commit(config, JOURNAL_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadCardEconomy: could not clear transfer journal (%s)." % error_string(save_error))
 		return false

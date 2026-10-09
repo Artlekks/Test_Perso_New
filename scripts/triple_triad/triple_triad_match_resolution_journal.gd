@@ -1,5 +1,7 @@
 extends RefCounted
+
 class_name TripleTriadMatchResolutionJournal
+const Storage = preload("res://scripts/triple_triad/triple_triad_config_store.gd")
 
 const DEFAULT_PATH := "user://triple_triad_match_resolution.cfg"
 const SAVE_VERSION := 1
@@ -163,7 +165,7 @@ func begin_resolution(snapshot: Dictionary) -> bool:
 	config.set_value("resolution", "transfer_committed", false)
 	config.set_value("resolution", "metadata_committed", false)
 	config.set_value("resolution", "transfer_state", {})
-	return config.save(_save_path) == OK
+	return Storage.commit(config, _save_path) == OK
 
 
 func record_selection(
@@ -179,6 +181,10 @@ func record_selection(
 	if clean_id.is_empty():
 		return false
 
+	var previous_id: String = str(config.get_value("resolution", "selected_card_id", ""))
+	if not previous_id.is_empty():
+		return previous_id == clean_id and config.get_value("resolution", "transfer_state", {}) == transfer_state
+
 	config.set_value("resolution", "selected_card_id", clean_id)
 	config.set_value(
 		"resolution",
@@ -187,7 +193,7 @@ func record_selection(
 	)
 	config.set_value("resolution", "transfer_committed", false)
 	config.set_value("resolution", "metadata_committed", false)
-	return config.save(_save_path) == OK
+	return Storage.commit(config, _save_path) == OK
 
 
 func mark_transfer_committed() -> bool:
@@ -200,7 +206,7 @@ func mark_metadata_committed() -> bool:
 
 func clear() -> bool:
 	var config := ConfigFile.new()
-	return config.save(_save_path) == OK
+	return Storage.commit(config, _save_path) == OK
 
 
 func _set_flag(key: String, value: bool) -> bool:
@@ -210,7 +216,7 @@ func _set_flag(key: String, value: bool) -> bool:
 	if not bool(config.get_value("resolution", "pending", false)):
 		return false
 	config.set_value("resolution", key, value)
-	return config.save(_save_path) == OK
+	return Storage.commit(config, _save_path) == OK
 
 
 func _string_array(value) -> PackedStringArray:

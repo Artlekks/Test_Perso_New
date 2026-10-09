@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Storage = preload("res://scripts/triple_triad/triple_triad_config_store.gd")
+
 const SAVE_PATH := "user://triple_triad_opponents.cfg"
 const SAVE_VERSION := 2
 const HAND_SIZE := 5
@@ -604,7 +606,7 @@ func _save() -> Error:
 		if quantity > 0:
 			config.set_value(cards_section, String(card_id), quantity)
 
-	var save_error: Error = config.save(SAVE_PATH)
+	var save_error: Error = Storage.commit(config, SAVE_PATH)
 	if save_error != OK:
 		push_warning("TripleTriadOpponentCollection: could not save NPC cards (%s)." % error_string(save_error))
 	return save_error

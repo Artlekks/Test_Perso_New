@@ -16,9 +16,10 @@ const WORLD_REWARD_LEDGER_PATH := "user://triple_triad_world_delivery.cfg"
 const COMPETITIONS_PATH := "user://triple_triad_competitions.cfg"
 const COMPLETION_PATH := "user://triple_triad_completion.cfg"
 
-const PROFILE_COUNT := 6
+const DeckStore = preload("res://scripts/triple_triad/triple_triad_deck_store.gd")
+const Storage = preload("res://scripts/triple_triad/triple_triad_config_store.gd")
 const HAND_SIZE := 5
-const DECK_SAVE_VERSION := 1
+const DECK_SAVE_VERSION := DeckStore.SAVE_VERSION
 
 var _last_report: Dictionary = {}
 
@@ -47,7 +48,7 @@ func preflight_restore_backups() -> Dictionary:
 			failed.append(path)
 			continue
 
-		var restore_error: Error = backup.save(path)
+		var restore_error: Error = Storage.commit(backup, path)
 		if restore_error == OK:
 			restored.append(path)
 		else:
@@ -191,23 +192,13 @@ func _audit_player_collection(catalog: Resource, player_collection) -> Dictionar
 	if not config.has_section("cards"):
 		return report
 
-	var changed: bool = false
+	# The backend is the only ownership writer; integrity verifies its output.
 	for raw_key in config.get_section_keys("cards"):
 		var card_id := StringName(str(raw_key))
-		var quantity: int = int(config.get_value("cards", raw_key, 0))
-		var card = null
-		if catalog.has_method("get_card_by_id"):
-			card = catalog.call("get_card_by_id", card_id)
-		if card == null or quantity <= 0:
-			config.erase_section_key("cards", str(raw_key))
-			report["repairs"] += 1
-			changed = true
-
-	if changed:
-		var save_error: Error = config.save(PLAYER_COLLECTION_PATH)
-		if save_error != OK:
+		var quantity = config.get_value("cards", raw_key, 0)
+		if not quantity is int or int(quantity) <= 0 or catalog.call("get_card_by_id", card_id) == null:
 			report["valid"] = false
-			report["warnings"].append("Player collection repairs could not be saved.")
+			report["warnings"].append("Collection backend emitted an invalid ownership entry: %s" % String(card_id))
 
 	return report
 
@@ -244,143 +235,8 @@ func _audit_progression(progression) -> Dictionary:
 	return report
 
 
-func _audit_player_decks(
-	catalog: Resource,
-	player_collection,
-	budget_limit: int,
-	player_rank: int,
-	acquisition_policy: Resource = null
-) -> Dictionary:
-	var report := {
-		"valid": true,
-		"repairs": 0,
-		"warnings": [],
-		"profiles_checked": 0,
-		"budget": maxi(5, budget_limit),
-	}
-
-	var config := ConfigFile.new()
-	var load_error: Error = config.load(DECKS_PATH)
-	if load_error != OK:
-		# No deck file yet is a normal fresh-save state.
-		if load_error == ERR_FILE_NOT_FOUND:
-			return report
-		report["valid"] = false
-		report["warnings"].append("Deck profile save cannot be loaded.")
-		return report
-
-	var changed: bool = false
-	for profile_index in range(PROFILE_COUNT):
-		var id_key: String = "deck_ids_%d" % (profile_index + 1)
-		var legacy_key: String = "deck_%d" % (profile_index + 1)
-		var source_ids: Array = []
-		var had_profile: bool = false
-
-		if config.has_section_key("decks", id_key):
-			had_profile = true
-			var raw_ids = config.get_value("decks", id_key, PackedStringArray())
-			if raw_ids is PackedStringArray or raw_ids is Array:
-				for raw_id in raw_ids:
-					source_ids.append(StringName(str(raw_id)))
-		elif config.has_section_key("decks", legacy_key):
-			had_profile = true
-			var raw_indices = config.get_value(
-				"decks",
-				legacy_key,
-				PackedInt32Array()
-			)
-			if raw_indices is PackedInt32Array or raw_indices is Array:
-				for raw_index in raw_indices:
-					var legacy_card = null
-					if catalog.has_method("get_card_by_legacy_source_index"):
-						legacy_card = catalog.call(
-							"get_card_by_legacy_source_index",
-							int(raw_index)
-						)
-					elif catalog.has_method("get_card"):
-						legacy_card = catalog.call("get_card", int(raw_index))
-					if legacy_card != null:
-						source_ids.append(StringName(legacy_card.card_id))
-
-		if not had_profile:
-			continue
-
-		report["profiles_checked"] += 1
-		var clean_ids: Array = []
-		var seen: Dictionary = {}
-		var running_cost: int = 0
-
-		for raw_id in source_ids:
-			var card_id := StringName(raw_id)
-			if seen.has(card_id):
-				report["repairs"] += 1
-				continue
-
-			var card = null
-			if catalog.has_method("get_card_by_id"):
-				card = catalog.call("get_card_by_id", card_id)
-			if card == null:
-				report["repairs"] += 1
-				continue
-
-			if not _player_owns_id(player_collection, card_id):
-				report["repairs"] += 1
-				continue
-
-			if not _card_usable_at_rank(card, player_rank, acquisition_policy):
-				report["repairs"] += 1
-				continue
-
-			if clean_ids.size() >= HAND_SIZE:
-				report["repairs"] += 1
-				continue
-
-			var card_cost: int = maxi(0, int(card.deck_cost))
-			if running_cost + card_cost > maxi(5, budget_limit):
-				report["repairs"] += 1
-				continue
-
-			clean_ids.append(card_id)
-			seen[card_id] = true
-			running_cost += card_cost
-
-		var clean_packed := PackedStringArray()
-		for card_id in clean_ids:
-			clean_packed.append(String(card_id))
-
-		var current_packed := PackedStringArray()
-		if config.has_section_key("decks", id_key):
-			var current = config.get_value("decks", id_key, PackedStringArray())
-			if current is PackedStringArray or current is Array:
-				for raw_id in current:
-					current_packed.append(str(raw_id))
-
-		if current_packed != clean_packed:
-			config.set_value("decks", id_key, clean_packed)
-			changed = true
-
-	if not config.has_section("meta"):
-		changed = true
-
-	var last_profile: int = clampi(
-		int(config.get_value("meta", "last_profile", 0)),
-		0,
-		PROFILE_COUNT - 1
-	)
-	if int(config.get_value("meta", "last_profile", 0)) != last_profile:
-		report["repairs"] += 1
-		changed = true
-	config.set_value("meta", "last_profile", last_profile)
-	config.set_value("meta", "version", DECK_SAVE_VERSION)
-	config.set_value("meta", "integrity_version", SAVE_SCHEMA_VERSION)
-
-	if changed:
-		var save_error: Error = config.save(DECKS_PATH)
-		if save_error != OK:
-			report["valid"] = false
-			report["warnings"].append("Deck profile repairs could not be saved.")
-
-	return report
+func _audit_player_decks(catalog: Resource, player_collection, budget_limit: int, player_rank: int, acquisition_policy: Resource = null) -> Dictionary:
+	return DeckStore.audit_profiles(catalog, player_collection, budget_limit, player_rank, acquisition_policy)
 
 
 func _audit_all_opponents(catalog: Resource) -> Dictionary:
