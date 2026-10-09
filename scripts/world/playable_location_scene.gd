@@ -1,5 +1,7 @@
 extends Node3D
 
+@export var development_tools_enabled := true
+
 @export var location_context: PlayableLocationContext
 
 func _enter_tree() -> void:
@@ -10,6 +12,9 @@ func _enter_tree() -> void:
 	get_node("World/FishZone_V2").fishing_spot = location_context.fishing_spot
 
 func _ready() -> void:
+	if OS.is_debug_build() and development_tools_enabled:
+		var tools = load("res://scripts/development/fishing_development_layer.gd")
+		tools.ensure(SessionComposition.acquire(get_tree())).mount_game(self)
 	if location_context == null:
 		return
 	var label := Label.new()

@@ -3,6 +3,7 @@ class_name DeveloperPlaytestService
 ## Transient access policy. Never writes progression or inventory on toggle.
 signal mode_changed(enabled: bool)
 const ACCESS_KEYS := [&"travel", &"cards", &"economy", &"mastery", &"world_interactions"]
+var session: Node
 var enabled := false
 var indicator: Label
 var _isolated_mobile_save_authorized := false
@@ -13,7 +14,7 @@ func authorize_isolated_mobile_save(isolated: bool) -> void:
 
 static func current() -> DeveloperPlaytestService:
 	var tree := Engine.get_main_loop() as SceneTree
-	return tree.root.get_node_or_null("FishingSessionServices/DeveloperPlaytestService") if tree != null else null
+	return RuntimeAccessPolicy.current() as DeveloperPlaytestService if tree != null else null
 
 static func allows(key: StringName) -> bool:
 	var service := current()
@@ -49,6 +50,7 @@ func set_enabled(value: bool) -> void:
 	mode_changed.emit(enabled)
 
 func _ready() -> void:
+	RuntimeAccessPolicy.bind(self)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var locations := get_node_or_null("/root/WorldLocations")
 	if locations != null: locations.configure_developer_access(self)
@@ -74,7 +76,7 @@ func can_mutate_test_save() -> bool:
 func grant_loadout(kind: String) -> Dictionary:
 	if not can_mutate_test_save():
 		return {"success": false, "reason": "Blocked: loadouts require isolated MobilePortraitPlaytest save + DEV"}
-	var session := get_parent()
+	var session = self.session if self.session != null else get_parent()
 	match kind:
 		"fishing":
 			var catalog = preload("res://data/bof4/catalogs/all_content.tres")
@@ -90,3 +92,13 @@ func grant_loadout(kind: String) -> Dictionary:
 		_:
 			return {"success": false, "reason": "Unknown loadout"}
 	return {"success": true, "reason": "Granted %s in isolated test save" % kind}
+
+func allows_access(key: StringName) -> bool:
+	return enabled and ACCESS_KEYS.has(key)
+
+func build_practice_deck(catalog: Resource, owned: Array, policy: Resource, rank: int, budget: int) -> Array:
+	return card_test_deck(catalog, owned, policy, rank, budget)
+
+func _exit_tree() -> void:
+	set_enabled(false)
+	RuntimeAccessPolicy.unbind(self)

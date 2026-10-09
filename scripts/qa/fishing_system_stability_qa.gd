@@ -6,7 +6,8 @@ class_name FishingSystemStabilityQA
 ## This intentionally checks integration/ownership only. It does not mutate saves,
 ## grant rewards, learn mastery techniques, catch fish, or alter runtime balance.
 
-static func run(session: Node) -> Dictionary:
+static func run(session: Node, qa: Node = null) -> Dictionary:
+	if qa == null and session != null: qa = FishingSessionQA.reports(session)
 	var failures := PackedStringArray()
 	var passed := 0
 	var tests := 0
@@ -136,51 +137,51 @@ static func run(session: Node) -> Dictionary:
 		failures.append("save integrity report contains errors")
 
 	tests += 1
-	if _qa_report_passed(session.get("mastery_qa_report")):
+	if _qa_report_passed(qa.get("mastery_qa_report")):
 		passed += 1
 	else:
 		failures.append("mastery QA did not report a clean pass")
 
 	tests += 1
-	if _qa_report_passed(session.get("fight_combat_qa_report")):
+	if _qa_report_passed(qa.get("fight_combat_qa_report")):
 		passed += 1
 	else:
 		failures.append("fishing fight QA did not report a clean pass")
 
 	tests += 1
-	if _qa_report_passed(session.get("presentation_qa_report")):
+	if _qa_report_passed(qa.get("presentation_qa_report")):
 		passed += 1
 	else:
 		failures.append("fishing presentation QA did not report a clean pass")
 
 	tests += 1
-	if _qa_report_passed(session.get("cephalopod_shadow_qa_report")):
+	if _qa_report_passed(qa.get("cephalopod_shadow_qa_report")):
 		passed += 1
 	else:
 		failures.append("cephalopod shadow QA did not report a clean pass")
 
 	tests += 1
-	if _qa_report_passed(session.get("master_gyosil_qa_report")):
+	if _qa_report_passed(qa.get("master_gyosil_qa_report")):
 		passed += 1
 	else:
 		failures.append("Master Gyosil QA did not report a clean pass")
 
 	tests += 1
-	if _qa_report_passed(session.get("dialogue_qa_report")):
+	if _qa_report_passed(qa.get("dialogue_qa_report")):
 		passed += 1
 	else:
 		failures.append("dialogue QA did not report a clean pass")
 
 	tests += 1
-	if _qa_report_passed(session.get("master_drift_angler_qa_report")):
+	if _qa_report_passed(qa.get("master_drift_angler_qa_report")):
 		passed += 1
 	else:
 		failures.append("Drift Angler QA did not report a clean pass")
 
 	tests += 1
 	var qa_health: Dictionary = {}
-	if session.has_method("get_debug_qa_dependency_health"):
-		qa_health = session.call("get_debug_qa_dependency_health")
+	if qa != null and qa.has_method("get_debug_qa_dependency_health"):
+		qa_health = qa.call("get_debug_qa_dependency_health")
 	if bool(qa_health.get("ready", false)) and int(qa_health.get("failure_count", 1)) == 0:
 		passed += 1
 	else:

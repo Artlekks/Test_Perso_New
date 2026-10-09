@@ -53,7 +53,7 @@ const PHASE_SURRENDER_CONFIRM := SessionControllerScript.PHASE_SURRENDER_CONFIRM
 @export_range(1, 10, 1) var prototype_max_level: int = 3
 @export_range(0.0, 2.0, 0.05) var ai_delay_seconds: float = 0.75
 ## Debug builds only. Pure backend QA; does not touch player save files.
-@export var run_backend_qa_on_startup: bool = true
+@export var run_backend_qa_on_startup: bool = false
 
 @export_category("Developer Balance")
 ## Runs an offline AI-vs-AI balance suite after backend startup. Disabled by
@@ -82,7 +82,7 @@ const PHASE_SURRENDER_CONFIRM := SessionControllerScript.PHASE_SURRENDER_CONFIRM
 @onready var transition_fade: ColorRect = $Root/TransitionFade
 @onready var animation_director = $AnimationDirector
 @onready var ai_timer: Timer = $AITimer
-@onready var debug_menu = $TripleTriadDebugMenu
+@onready var debug_menu = get_node_or_null("TripleTriadDebugMenu")
 @onready var deck_setup = $Root/TripleTriadDeckSetup
 
 var _composition_root = CompositionRootScript.new()
@@ -260,8 +260,8 @@ func _install_composition_result(result: Dictionary) -> void:
 
 	var services: Dictionary = result.get("services", {})
 	_collection_backend = services.get("collection_backend")
-	_world_gateway.developer_access = func(): return DeveloperPlaytestService.allows(&"cards")
-	var developer := DeveloperPlaytestService.current()
+	_world_gateway.developer_access = func(): return RuntimeAccessPolicy.allows(&"cards")
+	var developer := RuntimeAccessPolicy.current()
 	if developer != null and not developer.mode_changed.is_connected(_on_developer_mode_changed):
 		developer.mode_changed.connect(_on_developer_mode_changed)
 	_progression = services.get("progression")
@@ -378,7 +378,7 @@ func get_collection_snapshot() -> Array:
 	return _runtime_state.get_collection_snapshot()
 
 func grant_development_card_loadout() -> Dictionary:
-	var developer := DeveloperPlaytestService.current()
+	var developer := RuntimeAccessPolicy.current()
 	if developer == null or not developer.can_mutate_test_save():
 		return {"success": false, "reason": "Isolated test save required"}
 	if not _backend_ready or _collection_backend == null or card_catalog == null:
@@ -630,7 +630,7 @@ func _on_developer_mode_changed(_enabled: bool) -> void:
 func _bind_developer_mode() -> void:
 	# Session services can become ready after this UI composes. Resolve the
 	# live owner after scene readiness, and again at the match entry boundary.
-	var developer := DeveloperPlaytestService.current()
+	var developer := RuntimeAccessPolicy.current()
 	if developer != null and not developer.mode_changed.is_connected(_on_developer_mode_changed):
 		developer.mode_changed.connect(_on_developer_mode_changed)
 
@@ -949,7 +949,7 @@ func open_game(opponent_profile_override: Resource = null) -> void:
 	if _progression != null:
 		active_player_budget = int(_progression.get_deck_budget(player_deck_budget))
 		active_player_rank = int(_progression.get_rank_number())
-	deck_setup.developer_deck_provider = func(owned: Array, rank: int, budget: int): return DeveloperPlaytestService.card_test_deck(card_catalog, owned, acquisition_policy, rank, budget)
+	deck_setup.developer_deck_provider = func(owned: Array, rank: int, budget: int): return RuntimeAccessPolicy.card_test_deck(card_catalog, owned, acquisition_policy, rank, budget)
 	_ui_flow.open_deck_setup(
 		card_catalog,
 		active_player_budget,
@@ -1010,7 +1010,7 @@ func _input(event: InputEvent) -> void:
 	# F10 belongs to the card-game QA overlay while Triple Triad is open. The
 	# overlay is intentionally available only in stable phases so applying a
 	# profile cannot collide with an in-flight placement/deal coroutine.
-	if debug_menu.is_open():
+	if debug_menu != null and debug_menu.is_open():
 		var close_requested: bool = bool(debug_menu.handle_input(event))
 		if close_requested:
 			debug_menu.close_menu()
@@ -1019,6 +1019,7 @@ func _input(event: InputEvent) -> void:
 
 	if (
 		action == InputControllerScript.ACTION_DEBUG
+		and debug_menu != null
 		and _input_controller.can_open_debug_overlay(_session.phase)
 	):
 		debug_menu.open_menu(

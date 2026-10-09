@@ -275,7 +275,7 @@ func _run_regressions() -> void:
 	for failure in result.failures:
 		push_error(str(failure))
 	for property in ["campaign_loop_qa_report", "campaign_progression_director_qa_report", "campaign_qa_guide_qa_report", "campaign_presentation_qa_report", "fresh_save_rehearsal_qa_report", "system_stability_qa_report"]:
-		var report: Dictionary = session.get(property)
+		var report: Dictionary = FishingSessionQA.reports(session).get(property)
 		print(property, ": ", report.passed_count, "/", report.test_count)
 		check(report.passed_count == report.test_count, property)
 

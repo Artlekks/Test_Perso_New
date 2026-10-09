@@ -312,7 +312,7 @@ func run() -> void:
 	await test_runtime_contracts(scene)
 	var session := root.get_node("FishingSessionServices")
 	for property in ["fight_combat_qa_report", "presentation_qa_report", "system_stability_qa_report", "weather_sense_qa_report", "tide_sense_qa_report", "master_current_reader_qa_report", "master_drift_angler_qa_report", "master_weather_watcher_qa_report", "master_tide_reader_qa_report"]:
-		var report: Dictionary = session.get(property)
+		var report: Dictionary = FishingSessionQA.reports(session).get(property)
 		print(property, ": ", report.passed_count, "/", report.test_count)
 		check(report.passed_count == report.test_count, property)
 	scene.queue_free()

@@ -356,7 +356,7 @@ func run_existing_regressions() -> void:
 		await process_frame
 	var session := root.get_node("FishingSessionServices")
 	for property in ["fight_combat_qa_report", "presentation_qa_report", "system_stability_qa_report"]:
-		var report: Dictionary = session.get(property)
+		var report: Dictionary = FishingSessionQA.reports(session).get(property)
 		print(property, ": ", report.passed_count, "/", report.test_count)
 		check(report.passed_count == report.test_count, property)
 	var harness = load("res://scripts/fishing_regression_harness.gd").new()

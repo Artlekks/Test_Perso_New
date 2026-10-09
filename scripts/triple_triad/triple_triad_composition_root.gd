@@ -15,7 +15,7 @@ const WorldGatewayScript = preload("res://scripts/triple_triad/triple_triad_worl
 const CompetitionControllerScript = preload("res://scripts/triple_triad/triple_triad_competition_controller.gd")
 const RuntimeRecoveryControllerScript = preload("res://scripts/triple_triad/triple_triad_runtime_recovery_controller.gd")
 const BackendBootstrapScript = preload("res://scripts/triple_triad/triple_triad_backend_bootstrap.gd")
-const DeveloperToolsControllerScript = preload("res://scripts/triple_triad/triple_triad_developer_tools_controller.gd")
+const DeveloperToolsControllerScript = preload("res://scripts/triple_triad/triple_triad_runtime_observer.gd")
 const MatchContextControllerScript = preload("res://scripts/triple_triad/triple_triad_match_context_controller.gd")
 const RuntimeStateControllerScript = preload("res://scripts/triple_triad/triple_triad_runtime_state_controller.gd")
 const LiveMatchControllerScript = preload("res://scripts/triple_triad/triple_triad_live_match_controller.gd")
@@ -45,7 +45,6 @@ const REQUIRED_NODE_KEYS := [
 	"transition_fade",
 	"animation_director",
 	"ai_timer",
-	"debug_menu",
 	"deck_setup",
 ]
 
@@ -233,7 +232,7 @@ func compose(
 		"reward_view": nodes["reward_view"],
 		"transition_fade": nodes["transition_fade"],
 		"animation_director": nodes["animation_director"],
-		"debug_menu": nodes["debug_menu"],
+		"debug_menu": nodes.get("debug_menu"),
 		"deck_setup": nodes["deck_setup"],
 		"player_hand_container": nodes["player_hand_container"],
 	})
@@ -250,7 +249,8 @@ func compose(
 	_connect_once(nodes["ai_timer"].timeout, callbacks["on_ai_timer_timeout"])
 	_connect_once(nodes["reward_view"].reward_selected, callbacks["on_reward_selected"])
 	_connect_once(nodes["reward_view"].completed, callbacks["on_reward_completed"])
-	_connect_once(nodes["debug_menu"].apply_requested, callbacks["on_qa_profile_apply_requested"])
+	if nodes.get("debug_menu") != null:
+		_connect_once(nodes["debug_menu"].apply_requested, callbacks["on_qa_profile_apply_requested"])
 	_connect_once(nodes["deck_setup"].deck_confirmed, callbacks["on_deck_confirmed"])
 	_connect_once(nodes["deck_setup"].cancelled, callbacks["on_deck_cancelled"])
 

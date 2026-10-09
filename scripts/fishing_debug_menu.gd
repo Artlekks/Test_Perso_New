@@ -71,6 +71,7 @@ var _profile_database: Array[FishingQAProfile] = []
 var _spot_index: int = -1
 var _fish_index: int = 0
 var _economy_telemetry: Node = null
+var _telemetry_provider := Callable()
 var _telemetry_button: Button
 var _telemetry_status := ""
 var _playtest_page := false
@@ -119,6 +120,10 @@ func _ready() -> void:
 		fitter.configure(root)
 
 
+func configure_economy_telemetry_provider(provider: Callable) -> void:
+	_telemetry_provider = provider
+	_update_telemetry_button()
+
 func configure_economy_telemetry(telemetry: Node) -> void:
 	_economy_telemetry = telemetry
 	_update_telemetry_button()
@@ -126,12 +131,14 @@ func configure_economy_telemetry(telemetry: Node) -> void:
 
 func _update_telemetry_button() -> void:
 	if _telemetry_button != null:
-		_telemetry_button.disabled = _economy_telemetry == null
+		_telemetry_button.disabled = _economy_telemetry == null and not _telemetry_provider.is_valid()
 		_telemetry_button.text = ("> " if _selected_row == Row.TELEMETRY else "") + ("Stop Recording & Save Report" if _economy_telemetry != null and _economy_telemetry.recorder.active else "Start Economy Playtest Recording")
 		_telemetry_button.tooltip_text = _telemetry_status
 
 
 func _toggle_economy_recording() -> void:
+	if _economy_telemetry == null and _telemetry_provider.is_valid():
+		_economy_telemetry = _telemetry_provider.call()
 	if _economy_telemetry == null:
 		return
 	if _economy_telemetry.recorder.active:

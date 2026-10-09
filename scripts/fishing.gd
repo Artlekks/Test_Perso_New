@@ -4,9 +4,6 @@ const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 const FishingSessionServicesScript = preload(
 	"res://scripts/fishing_session_services.gd"
 )
-const FishingDebugControllerScript = preload(
-	"res://scripts/fishing_debug_controller.gd"
-)
 const FishingPauseControllerScript = preload(
 	"res://scripts/fishing_pause_controller.gd"
 )
@@ -123,7 +120,7 @@ var fish_resisting: bool = false
 var caught_fish: FishInstance = null
 var lure_selector_open: bool = false
 var session_services: FishingSessionServices = null
-var debug_controller: FishingDebugController = null
+var debug_controller: Node = null
 var technique_detector: FishingTechniqueDetector = null
 var technique_view: FishingTechniqueView = null
 var fishing_progress: FishingProgress = null
@@ -333,21 +330,6 @@ func _ready() -> void:
 	_setup_fishing_menu()
 	_setup_fishing_economy_menu()
 
-	debug_controller = FishingDebugControllerScript.new()
-	debug_controller.name = "FishingDebugController"
-	add_child(debug_controller)
-	debug_controller.configure(
-		game_mode,
-		encounter,
-		aim,
-		loadout,
-		fishing_progress,
-		fishing_journal_service,
-		fishing_unlock_state,
-		fishing_reward_service,
-		fishing_session_modifier_service
-	)
-
 	technique_detector = FishingTechniqueDetectorScript.new()
 	add_child(technique_detector)
 	technique_detector.technique_triggered.connect(
@@ -363,11 +345,6 @@ func _ready() -> void:
 
 		_on_rod_changed(loadout.get_selected_rod())
 
-	if OS.is_debug_build():
-		var telemetry := session_services.get_economy_playtest_telemetry()
-		if telemetry != null:
-			telemetry.bind_runtime(self)
-			debug_controller.debug_menu.configure_economy_telemetry(telemetry)
 	var screen_bounds_script = preload("res://scripts/fishing_screen_water_bounds.gd")
 	var screen_bounds = screen_bounds_script.new()
 	screen_bounds.name = "ScreenWaterBounds"
@@ -882,31 +859,7 @@ func get_fishing_journal_service() -> FishingJournalService:
 
 
 func _get_or_create_session_services() -> FishingSessionServices:
-	var tree_root := get_tree().root
-	var existing := tree_root.get_node_or_null(
-		"FishingSessionServices"
-	)
-	# Publish the pending owner before initialization/deferred attachment. A
-	# second fishing scene becoming ready in this frame must reuse that owner.
-	if existing == null and tree_root.has_meta("pending_fishing_session_services"):
-		var pending = tree_root.get_meta("pending_fishing_session_services", null)
-		if pending is WeakRef:
-			existing = pending.get_ref()
-
-	if existing is FishingSessionServices:
-		var existing_services := existing as FishingSessionServices
-		existing_services.initialize()
-		return existing_services
-
-	var services := FishingSessionServicesScript.new() as FishingSessionServices
-	services.name = "FishingSessionServices"
-	tree_root.set_meta("pending_fishing_session_services", weakref(services))
-
-	# Initialize before deferred tree attachment. This gives Fishing immediate
-	# access while keeping the SceneTree-root mutation safe during _ready().
-	services.initialize()
-	tree_root.add_child.call_deferred(services)
-	return services
+	return SessionComposition.acquire(get_tree())
 
 
 func _on_technique_triggered(level: int) -> void:

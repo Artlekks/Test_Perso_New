@@ -50,7 +50,7 @@ func _ready() -> void:
 		if not tree.is_connected("node_added", callback):
 			tree.connect("node_added", callback)
 	call_deferred("_refresh")
-	var developer := DeveloperPlaytestService.current()
+	var developer := RuntimeAccessPolicy.current()
 	if developer != null: developer.mode_changed.connect(_on_developer_mode_changed)
 
 func _on_developer_mode_changed(_enabled: bool) -> void:
@@ -152,7 +152,7 @@ func _apply_feature_states() -> void:
 func _set_interaction_enabled(target: Node, enabled: bool) -> void:
 	if target == null:
 		return
-	enabled = enabled or DeveloperPlaytestService.allows(&"world_interactions")
+	enabled = enabled or RuntimeAccessPolicy.allows(&"world_interactions")
 
 	# Keep the world object/NPC visible and animated. Campaign staging only
 	# controls whether it advertises/accepts its prototype interaction yet.

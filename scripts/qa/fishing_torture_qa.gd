@@ -272,7 +272,7 @@ static func _test_live_baseline(
 		report,
 		"Existing stability gate is green before torture testing",
 		_report_passed(
-			session.get(
+			FishingSessionQA.reports(session).get(
 				"system_stability_qa_report"
 			)
 		),

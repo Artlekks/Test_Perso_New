@@ -174,7 +174,7 @@ func test_salmon_hook() -> Dictionary:
 	encounter.reset_cast_session()
 	var session := root.get_node("FishingSessionServices")
 	for property in ["campaign_loop_qa_report", "campaign_progression_director_qa_report", "campaign_qa_guide_qa_report", "campaign_presentation_qa_report", "fresh_save_rehearsal_qa_report", "system_stability_qa_report"]:
-		var report: Dictionary = session.get(property)
+		var report: Dictionary = FishingSessionQA.reports(session).get(property)
 		print(property, ": ", report.passed_count, "/", report.test_count)
 	scene.queue_free()
 	session.queue_free()

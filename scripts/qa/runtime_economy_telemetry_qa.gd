@@ -130,9 +130,9 @@ func _runtime_checks() -> void:
 	await process_frame
 	var session = root.get_node("FishingSessionServices")
 	var runtime = current_scene.get_node("Game/Fishing")
-	var telemetry = session.get_economy_playtest_telemetry()
+	var telemetry = FishingDevelopmentLayer.ensure(session).get_economy_playtest_telemetry()
 	check(not telemetry.recorder.active and not telemetry.is_processing(), "runtime recorder and processing disabled by default")
-	check(session.campaign_loop_qa_report.valid and session.fresh_save_rehearsal_qa_report.valid, "structural startup remains green")
+	check(FishingSessionQA.reports(session).campaign_loop_qa_report.valid and FishingSessionQA.reports(session).fresh_save_rehearsal_qa_report.valid, "structural startup remains green")
 	var snapshot: Dictionary = session.inventory.create_transaction_snapshot()
 	var progress: Dictionary = session.progress.get_progression_snapshot()
 	var saved := {}

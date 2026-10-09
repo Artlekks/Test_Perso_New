@@ -12,6 +12,12 @@ var _guide: CanvasLayer = null
 var _preset_service = PresetServiceScript.new()
 var _previous_pause: bool = false
 
+func _exit_tree() -> void:
+	if is_instance_valid(_guide):
+		if _guide.is_open(): _close_guide()
+		_guide.queue_free()
+	_guide = null
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS

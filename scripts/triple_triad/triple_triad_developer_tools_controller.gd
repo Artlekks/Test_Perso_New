@@ -18,6 +18,12 @@ var _campaign_qa_harness = CampaignQAHarnessScript.new()
 var _campaign_qa_menu: CanvasLayer = null
 var _playtest_recorder = PlaytestRecorderScript.new()
 
+func dispose() -> void:
+	if is_instance_valid(_campaign_qa_menu):
+		_campaign_qa_menu.close_menu()
+		_campaign_qa_menu.queue_free()
+	_campaign_qa_menu = null
+
 
 func initialize(
 	host: Node,

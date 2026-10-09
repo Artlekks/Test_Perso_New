@@ -130,7 +130,7 @@ func run() -> void:
 		check(preview_ref.get_ref() == null, "catalogue preview hierarchy released")
 	# Warm all scene/resource/menu caches before comparing like-for-like Beach samples.
 	for cycle in range(6):
-		var telemetry = session.get_economy_playtest_telemetry()
+		var telemetry = FishingDevelopmentLayer.ensure(session).get_economy_playtest_telemetry()
 		check(telemetry.start_recording(), "telemetry starts isolated recording")
 		for destination in [&"wyndia_ocean_outpost", &"lyp_lake_outpost", &"river_fishing_outpost", &"chiqua_supply_outpost", &"river_fishing_outpost", &"lyp_lake_outpost", &"wyndia_ocean_outpost", &"beach"]:
 			await exercise_scene()

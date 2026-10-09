@@ -43,8 +43,8 @@ const WORLD_MAP_PATH := (
 const MAIN_SCENE_PATH := "res://actors/FishingTestScene_V2.tscn"
 
 
-static func run(session: Node) -> Dictionary:
-	DeveloperPlaytestService.force_normal_for_qa()
+static func run(session: Node, qa: Node = null) -> Dictionary:
+	if qa == null and session != null: qa = FishingSessionQA.reports(session)
 	var report := {
 		"test_count": 0,
 		"passed_count": 0,
@@ -66,7 +66,7 @@ static func run(session: Node) -> Dictionary:
 	var live_mastery_before: Dictionary = _live_mastery_snapshot(session)
 	var live_reward_before: Array = _live_reward_statuses(session)
 
-	_test_preconditions(report, session, plan, economy_config)
+	_test_preconditions(report, session, plan, economy_config, qa)
 	_test_fresh_save_contract(report, plan, economy_config)
 	_test_starter_case(report)
 	_rehearse_campaign_spine(report, plan)
@@ -106,7 +106,8 @@ static func _test_preconditions(
 	report: Dictionary,
 	session: Node,
 	plan: Dictionary,
-	economy_config
+	economy_config,
+	qa: Node
 ) -> void:
 	_record(
 		report,
@@ -124,10 +125,10 @@ static func _test_preconditions(
 	_record(
 		report,
 		"Cross-system stability gate is green",
-		_report_passed(session.get("system_stability_qa_report")),
+		_report_passed(qa.get("system_stability_qa_report")),
 		"The fresh-save rehearsal should only run on top of a stable integrated stack."
 	)
-	var campaign_contract: Dictionary = session.get("campaign_loop_qa_report")
+	var campaign_contract: Dictionary = qa.get("campaign_loop_qa_report")
 	var economy_health: Dictionary = campaign_contract.get("simulator_structural_health", {})
 	report["balance_alerts"] = campaign_contract.get("balance_alerts", []).duplicate(true)
 	_record(
@@ -139,13 +140,13 @@ static func _test_preconditions(
 	_record(
 		report,
 		"Card Maker QA is green",
-		_report_passed(session.get("card_maker_qa_report")),
+		_report_passed(qa.get("card_maker_qa_report")),
 		"The fish-to-card bridge must be healthy before end-to-end rehearsal."
 	)
 	_record(
 		report,
 		"Mastery QA is green",
-		_report_passed(session.get("mastery_qa_report")),
+		_report_passed(qa.get("mastery_qa_report")),
 		"The technique catalog must be healthy before testing its full path."
 	)
 

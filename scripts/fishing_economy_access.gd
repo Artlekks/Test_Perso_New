@@ -497,7 +497,7 @@ func _runtime_availability(offer) -> Dictionary:
 	var result := _availability.duplicate(true)
 	# Override the progression tag only after provider/context scope validation.
 	# Prices, authored IDs, unique ownership, costs and consumption stay backend-owned.
-	if DeveloperPlaytestService.allows(&"economy") and _shop_allowed(offer.shop_id) and offer.availability_tag != &"":
+	if RuntimeAccessPolicy.allows(&"economy") and _shop_allowed(offer.shop_id) and offer.availability_tag != &"":
 		result[offer.availability_tag] = true
 	return result
 

@@ -7,7 +7,6 @@ const PolicyScript = preload(
 
 
 static func run() -> Dictionary:
-	DeveloperPlaytestService.force_normal_for_qa()
 	var failures := PackedStringArray()
 	var passed: int = 0
 

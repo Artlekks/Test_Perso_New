@@ -30,7 +30,6 @@ const REQUIRED_WORLD_SCENES := [
 
 
 static func run(economy_config: FishingEconomyConfig) -> Dictionary:
-	DeveloperPlaytestService.force_normal_for_qa()
 	var report := {
 		"test_count": 0,
 		"passed_count": 0,

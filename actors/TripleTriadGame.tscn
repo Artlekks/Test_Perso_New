@@ -8,7 +8,6 @@
 [ext_resource type="Script" uid="uid://bpix55ufnymse" path="res://scripts/triple_triad/triple_triad_animation_director.gd" id="6_animation"]
 [ext_resource type="Resource" path="res://data/triple_triad/regions/prototype_coast.tres" id="7_region"]
 [ext_resource type="Resource" uid="uid://davpdabdae32q" path="res://data/triple_triad/ai/balanced.tres" id="8_ai"]
-[ext_resource type="PackedScene" path="res://actors/TripleTriadDebugMenu.tscn" id="9_debug"]
 [ext_resource type="Texture2D" uid="uid://cdn7bk8rfiynx" path="res://assets/ui/fishing_menu/Menu_Background_Solo.png" id="10_menu_bg"]
 [ext_resource type="Texture2D" uid="uid://di1q1piieg3ye" path="res://assets/ui/triple_triad/triple_triad_info_panel.png" id="11_info_panel"]
 [ext_resource type="Script" uid="uid://hcvmop3q460c" path="res://scripts/bitmap_text.gd" id="12_bitmap"]
@@ -239,5 +238,3 @@ script = ExtResource("6_animation")
 [node name="AITimer" type="Timer" parent="." unique_id=1838617062]
 wait_time = 0.75
 one_shot = true
-
-[node name="TripleTriadDebugMenu" parent="." unique_id=1417762534 instance=ExtResource("9_debug")]

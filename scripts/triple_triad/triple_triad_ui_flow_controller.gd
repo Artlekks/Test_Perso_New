@@ -44,6 +44,9 @@ var _reward_view = null
 var _transition_fade: ColorRect = null
 var _animation_director = null
 var _debug_menu = null
+
+func bind_optional_overlay(overlay: Node) -> void:
+	_debug_menu = overlay
 var _deck_setup = null
 var _player_hand_container: Control = null
 

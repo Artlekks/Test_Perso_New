@@ -20,7 +20,7 @@ var _unlocks: FishingUnlockState
 func get_all_locations() -> Array:
 	return LOCATIONS.duplicate()
 
-func configure_developer_access(service: DeveloperPlaytestService) -> void:
+func configure_developer_access(service: Node) -> void:
 	if not service.mode_changed.is_connected(_on_developer_mode_changed):
 		service.mode_changed.connect(_on_developer_mode_changed)
 
@@ -59,7 +59,7 @@ func get_access_snapshot(id: StringName, inventory = null) -> Dictionary:
 		return {"unlocked": false, "reason": "unknown_location"}
 	# Explicit inventory snapshots are progression queries, including the flag
 	# discovery loop above. A runtime access override must never grant flags.
-	if inventory == null and DeveloperPlaytestService.allows(&"travel"):
+	if inventory == null and RuntimeAccessPolicy.allows(&"travel"):
 		return {"location_id": id, "unlocked": true, "missing_item_ids": PackedStringArray(), "unlock_hint": location.unlock_hint, "developer_access": true}
 	if inventory == null and is_instance_valid(_unlocks) and location.unlock_flag != &"" and _unlocks.has_flag(location.unlock_flag):
 		return {"location_id": id, "unlocked": true, "missing_item_ids": PackedStringArray(), "unlock_hint": location.unlock_hint}
@@ -111,7 +111,7 @@ func get_unlocked_destinations(location_id: StringName = &"", inventory = null) 
 	if location == null:
 		return destinations
 	var candidates: PackedStringArray = location.destinations
-	if inventory == null and DeveloperPlaytestService.allows(&"travel"):
+	if inventory == null and RuntimeAccessPolicy.allows(&"travel"):
 		candidates = PackedStringArray()
 		for authored in LOCATIONS:
 			if authored.location_id != location.location_id: candidates.append(String(authored.location_id))
@@ -159,7 +159,7 @@ func request_travel(destination: StringName) -> Dictionary:
 	var target := get_location(destination)
 	if target == null or target.scene_path.is_empty() or not ResourceLoader.exists(target.scene_path):
 		return {"success": false, "reason": "scene_unavailable"}
-	if not current_location.destinations.has(String(destination)) and not DeveloperPlaytestService.allows(&"travel"):
+	if not current_location.destinations.has(String(destination)) and not RuntimeAccessPolicy.allows(&"travel"):
 		return {"success": false, "reason": "no_route"}
 	if not get_access_snapshot(destination).get("unlocked", false):
 		return {"success": false, "reason": "destination_locked"}

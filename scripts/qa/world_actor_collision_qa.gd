@@ -260,7 +260,7 @@ func test_runtime_modes() -> void:
 	menu.close_menu()
 	check(not paused, "trade UI correctly releases pause")
 	for property in ["presentation_qa_report", "system_stability_qa_report"]:
-		var report: Dictionary = session.get(property)
+		var report: Dictionary = FishingSessionQA.reports(session).get(property)
 		print(property, ": ", report.passed_count, "/", report.test_count)
 		check(report.passed_count == report.test_count, property)
 	fixture.queue_free()
