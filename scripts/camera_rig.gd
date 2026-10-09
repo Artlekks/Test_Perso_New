@@ -45,6 +45,8 @@ var fishing_follow_right_x_ratio: float = 0.76
 var fishing_follow_top_y_ratio: float = 0.28
 @export_range(0.1, 2.0, 0.05)
 var quick_cancel_camera_return_time: float = 0.85
+## Return uses the tracker's existing exponential neutral response, not a duration.
+@export_range(0.01, 0.2, 0.01) var retrieve_yaw_stop_degrees: float = 0.05
 
 @export_category("Fight Camera Tracking")
 @export_range(0.0, 0.9, 0.01) var fight_safe_left: float = 0.20
@@ -115,6 +117,9 @@ var fishing_player_camera_locked: bool = false
 var fishing_follow_returning: bool = false
 var _fishing_follow_return_tween: Tween = null
 var fishing_camera_frozen: bool = false
+var _retrieve_yaw_return_active := false
+var _retrieve_base_transform: Transform3D
+var _retrieve_yaw: float = 0.0
 
 func _ready() -> void:
 	var camera: Camera3D = $Camera3D
@@ -158,6 +163,7 @@ func _process(_delta: float) -> void:
 		_last_heading_yaw = rotation.y
 		heading_changed.emit(rotation.y)
 
+	_update_retrieve_yaw(_delta)
 	_update_fight_camera_tracking(_delta)
 
 
@@ -346,13 +352,16 @@ func reset_fishing_follow() -> void:
 		global_position = target.global_position
 
 
-func return_fishing_follow_to_target() -> void:
-	_clear_fight_camera_tracking()
+func return_fishing_follow_to_target(completed_retrieve: bool = false) -> void:
+	var return_yaw: float = fight_camera_tracking.yaw
+	var return_base := _fight_base_camera_transform
+	var return_orbit := completed_retrieve and _fight_base_valid
+	_clear_fight_camera_tracking(not return_orbit)
 	fishing_player_camera_locked = false
 
-	# Quick-cancel path: stop tracking the discarded lure, but preserve the
-	# current camera position and glide the rig back to Ryu instead of
-	# snapping there in a single frame.
+	# Reuse the existing return owner. Quick cancel retains its translation
+	# behavior; full retrieve additionally glides the tracked child-camera yaw
+	# back to its captured base pose. Neither keeps a discarded bait target.
 	_clear_fishing_follow_state()
 	_stop_fishing_follow_return(false)
 
@@ -361,27 +370,26 @@ func return_fishing_follow_to_target() -> void:
 
 	var destination := target.global_position
 
-	if quick_cancel_camera_return_time <= 0.0:
+	if completed_retrieve:
 		global_position = destination
+		if return_orbit:
+			_retrieve_base_transform = return_base
+			_retrieve_yaw = return_yaw
+			_retrieve_yaw_return_active = absf(return_yaw) > deg_to_rad(retrieve_yaw_stop_degrees)
+			fishing_follow_returning = _retrieve_yaw_return_active
+			if not _retrieve_yaw_return_active:
+				$Camera3D.transform = return_base
 		return
 
-	if global_position.distance_squared_to(destination) <= 0.000001:
+	if quick_cancel_camera_return_time <= 0.0 or global_position.distance_squared_to(destination) <= 0.000001:
 		global_position = destination
 		return
-
 	fishing_follow_returning = true
-
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(
-		self,
-		"global_position",
-		destination,
-		quick_cancel_camera_return_time
-	)
+	tween.tween_property(self, "global_position", destination, quick_cancel_camera_return_time)
 	tween.tween_callback(_finish_fishing_follow_return)
-
 	_fishing_follow_return_tween = tween
 
 
@@ -416,7 +424,17 @@ func _lock_fishing_camera_to_player() -> void:
 		global_position = target.global_position
 
 
+func _update_retrieve_yaw(delta: float) -> void:
+	if not _retrieve_yaw_return_active:
+		return
+	_retrieve_yaw = lerpf(_retrieve_yaw, 0.0, 1.0 - exp(-fight_yaw_return_response * delta))
+	$Camera3D.transform = _fight_orbit_transform(_retrieve_base_transform, Vector3.ZERO, _retrieve_yaw)
+	if absf(_retrieve_yaw) <= deg_to_rad(retrieve_yaw_stop_degrees):
+		_finish_fishing_follow_return()
+
+
 func _finish_fishing_follow_return() -> void:
+	_finish_retrieve_yaw_return()
 	fishing_follow_returning = false
 	_fishing_follow_return_tween = null
 
@@ -424,7 +442,17 @@ func _finish_fishing_follow_return() -> void:
 		global_position = target.global_position
 
 
-func _stop_fishing_follow_return(snap_to_target: bool) -> void:
+func _finish_retrieve_yaw_return() -> void:
+	if _retrieve_yaw_return_active:
+		$Camera3D.transform = _retrieve_base_transform
+		_retrieve_yaw_return_active = false
+
+
+func _stop_fishing_follow_return(snap_to_target: bool, restore_yaw: bool = true) -> void:
+	if restore_yaw:
+		_finish_retrieve_yaw_return()
+	else:
+		_retrieve_yaw_return_active = false
 	if (
 		_fishing_follow_return_tween != null
 		and _fishing_follow_return_tween.is_valid()
@@ -1154,6 +1182,7 @@ func enter_fishing_view() -> void:
 
 
 func exit_fishing_view() -> void:
+	_stop_fishing_follow_return(false, false)
 	# Keep the current tracked pose as the start of the existing exit tween.
 	_clear_fight_camera_tracking(false)
 	var camera: Camera3D = $Camera3D

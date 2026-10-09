@@ -1917,9 +1917,13 @@ func twitch_side(direction: float) -> void:
 func set_reel_speed_multiplier(value: float) -> void:
 	reel_speed_multiplier = maxf(value, 0.0)
 
-func show_ripple() -> void:
-	ripple_view.show_ripple()
+func show_ripple(opportunity_duration: float = 0.0) -> void:
+	ripple_view.show_ripple(opportunity_duration)
 
 
-func hide_ripple() -> void:
-	ripple_view.hide_ripple()
+func show_bite_splash() -> void:
+	ripple_view.show_bite_splash()
+
+
+func hide_ripple(preserve_committed_splash: bool = false) -> void:
+	ripple_view.hide_ripple(preserve_committed_splash)

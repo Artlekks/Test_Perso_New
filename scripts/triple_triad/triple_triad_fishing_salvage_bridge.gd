@@ -28,6 +28,12 @@ const STARTER_SEARCH_COUNTER_ID: StringName = &"fishing_salvage:starter_case_sea
 const STARTER_SEARCH_MIN_CATCHES := 3
 const STARTER_SEARCH_MAX_CATCHES := 5
 const STARTER_SPARKLE_TRIGGER_RADIUS := 0.95
+# Authored coastal water offsets, within the Wooden Rod cast envelope.
+const STARTER_SPARKLE_OFFSETS: Array[Vector3] = [
+	Vector3(-0.65, 0.08, -1.50),
+	Vector3(0.15, 0.08, -1.70),
+	Vector3(0.65, 0.08, -1.50),
+]
 
 const COAST_SALVAGE_SOURCE_ID: StringName = &"coast_shallows"
 const COAST_ADVANCED_SALVAGE_SOURCE_ID: StringName = &"coast_deeper"
@@ -354,19 +360,14 @@ func _spawn_starter_sparkle() -> void:
 	if water_surface is Node3D:
 		anchor = water_surface as Node3D
 
-	var offsets := [
-		Vector3(-1.55, 0.08, -3.35),
-		Vector3(0.15, 0.08, -4.05),
-		Vector3(1.45, 0.08, -3.55),
-	]
-	var offset_index: int = _rng.randi_range(0, offsets.size() - 1)
+	var offset_index: int = _rng.randi_range(0, STARTER_SPARKLE_OFFSETS.size() - 1)
 	var sparkle = SalvageSparkleScript.new()
 	sparkle.name = "StarterCardSalvageSparkle"
 	(world_parent as Node3D).add_child(sparkle)
 	if sparkle.has_method("configure"):
 		sparkle.call(
 			"configure",
-			anchor.global_position + offsets[offset_index],
+			anchor.global_position + STARTER_SPARKLE_OFFSETS[offset_index],
 			STARTER_SPARKLE_TRIGGER_RADIUS
 		)
 	_starter_sparkle = sparkle as Node3D

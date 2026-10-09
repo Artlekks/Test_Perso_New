@@ -157,6 +157,55 @@ func test_runtime_contracts(scene: Node) -> void:
 	physical.state = physical.State.IN_WATER
 	check(physical.ripple_view.process_priority > bounds.process_priority, "surface ripple updates after screen constraint")
 	caster.active_bait = physical
+	var old_phase: int = fishing.phase
+	fishing.phase = fishing.Phase.IN_WATER
+	var ripple = physical.ripple_view
+	physical.global_position = camera.project_position(root.get_visible_rect().size * Vector2(0.5, 0.55), 12.0)
+	ripple.configure(physical, physical.global_position.y)
+	for cycle in range(3):
+		fishing._on_bite_opportunity_started()
+		check(ripple.active and ripple.ripple_sprite.animation == &"Ripple", "nibble uses ripple, not splash cycle %d" % cycle)
+		var texture: Texture2D = ripple.ripple_sprite.sprite_frames.get_frame_texture(&"Ripple", 0)
+		var authored = load("res://actors/bait_V2.tscn").instantiate()
+		var source: AtlasTexture = authored.get_node("RippleView/RippleSprite").sprite_frames.get_frame_texture(&"Ripple", 0)
+		var source_image: Image = source.atlas.get_image()
+		if source_image.is_compressed(): source_image.decompress()
+		check(texture.get_image().get_data() == source_image.get_region(Rect2i(source.region)).get_data() and source.atlas.resource_path.ends_with("fish_ripple.png"), "nibble preserves exact authored ripple pixels in Web-safe frame textures")
+		authored.free()
+		check(is_equal_approx(ripple.ripple_sprite.pixel_size, ripple.ripple_pixel_size), "ripple uses readable surface cue sizing")
+		physical.global_position += Vector3(0.1, 0, 0)
+		ripple._process(0.0)
+		var projected_bait := camera.unproject_position(physical.global_position)
+		check(camera.unproject_position(ripple.global_position).distance_to(projected_bait) < 0.01,
+			"surface effect follows authoritative physical bait projection")
+		fishing._on_bite_missed()
+		check(not ripple.active and not ripple.visible and not ripple.ripple_sprite.is_playing(), "miss clears nibble effect")
+		fishing._on_bite_opportunity_started()
+		fishing._on_bite_commit_ready({})
+		check(ripple.active and ripple.ripple_sprite.animation == &"Ripple", "hook-ready cue retains ripple throughout opportunity")
+		check(not fishing.bite_opportunity_animation_active and fishing.bite_animation_active,
+			"committed bite retains strong character presentation")
+		fishing._on_bite_triggered()
+		check(ripple.active and ripple.ripple_sprite.animation == &"BiteSplash", "hook keeps committed splash without duplicate ripple/replay")
+		var splash_frames: SpriteFrames = ripple.ripple_sprite.sprite_frames
+		var splash_duration: float = splash_frames.get_frame_count(&"BiteSplash") / splash_frames.get_animation_speed(&"BiteSplash")
+		await create_timer(splash_duration + 0.1).timeout
+		check(not ripple.active and not ripple.visible and not ripple.ripple_sprite.is_playing(), "committed splash expires without stale effects")
+		fishing._on_bite_missed()
+	# Exercise the actual full-retrieve coordinator after a missed nibble.
+	var rig = fishing.camera_rig
+	rig.reset_fishing_follow()
+	rig.set_fishing_fight_tracking(true, physical)
+	rig._update_fight_camera_tracking(0.2)
+	var tracked: Transform3D = camera.transform
+	fishing._on_bait_returned()
+	check(fishing.phase == fishing.Phase.AIM and not rig._fight_tracking_active and rig._fight_tracking_target == null,
+		"miss -> full retrieve releases tracking while AIM resumes; centered shot needs no unwind")
+	check(camera.transform.is_equal_approx(tracked), "full-retrieve coordinator does not snap camera")
+	check(not ripple.active and not fishing.bite_opportunity_animation_active, "missed retrieve leaves no surface/character nibble ownership")
+	rig.reset_fishing_follow()
+	fishing.aim.stop()
+	fishing.phase = old_phase
 	var previous_phase: int = fishing.phase
 	for phase in [fishing.Phase.IN_WATER, fishing.Phase.FIGHT, fishing.Phase.BAIT_FLYING, fishing.Phase.LANDING, fishing.Phase.INACTIVE]:
 		encounter.lifecycle.finish_cast()
@@ -260,7 +309,7 @@ func run() -> void:
 	current_scene = scene
 	for frame in range(6):
 		await process_frame
-	test_runtime_contracts(scene)
+	await test_runtime_contracts(scene)
 	var session := root.get_node("FishingSessionServices")
 	for property in ["fight_combat_qa_report", "presentation_qa_report", "system_stability_qa_report", "weather_sense_qa_report", "tide_sense_qa_report", "master_current_reader_qa_report", "master_drift_angler_qa_report", "master_weather_watcher_qa_report", "master_tide_reader_qa_report"]:
 		var report: Dictionary = session.get(property)

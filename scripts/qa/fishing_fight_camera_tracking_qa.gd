@@ -328,6 +328,9 @@ func run() -> void:
 			camera.get_camera_projection(), player.global_position, fish.global_position)
 		check(measured.distance_to(projected) < 0.00001,
 			"projection math matches active Camera3D including authored h/v offsets")
+	await test_complete_retrieve()
+	put_fish(Vector2(0.94, 0.4))
+	tick(120)
 	# Full exploration exit retains the tracked start shot and uses its existing tween.
 	var exit_start := camera.transform
 	rig.exploration_camera_transform_before_fishing = base
@@ -374,3 +377,61 @@ func run_existing_regressions() -> void:
 			var orphan = instance_from_id(id)
 			if is_instance_valid(orphan):
 				orphan.free()
+
+
+func test_complete_retrieve() -> void:
+	for x in [0.08, 0.94, 0.5, 0.08, 0.94]:
+		put_fish(Vector2(x, 0.4))
+		tick(120)
+		var start := camera.transform
+		var start_yaw: float = rig.fight_camera_tracking.yaw
+		var physical := fish.global_position
+		var distance := camera.position.length()
+		var pitch := camera.basis.z.y
+		var fov := camera.fov
+		rig.return_fishing_follow_to_target(true)
+		check(camera.transform.is_equal_approx(start), "retrieve x=%s starts without a snap" % x)
+		check(not rig._fight_tracking_active and rig._fight_tracking_target == null and rig.fishing_follow_target == null,
+			"retrieve releases physical tracking target immediately")
+		check(rig.fishing_follow_returning == (absf(start_yaw) > deg_to_rad(rig.retrieve_yaw_stop_degrees)), "retrieve has one return owner; center does not drift")
+		# Simulate production AIM synchronization while the existing tween runs.
+		rig.set_fishing_fight_tracking(false)
+		tick(21)
+		if absf(start_yaw) > 0.001:
+			check(not camera.transform.is_equal_approx(start) and not camera.transform.is_equal_approx(base),
+				"left/right retrieve has an intermediate orbit, not a delayed snap")
+		check(is_equal_approx(rig._retrieve_yaw, start_yaw * exp(-rig.fight_yaw_return_response * 0.35)) if absf(start_yaw) > 0.001 else not rig.fishing_follow_returning, "return reuses exponential tracker damping, not fixed duration")
+		check(is_equal_approx(camera.position.length(), distance) and is_equal_approx(camera.basis.z.y, pitch)
+			and is_equal_approx(camera.fov, fov), "retrieve preserves radius/pitch/FOV")
+		tick(360)
+		check(camera.transform.is_equal_approx(base), "retrieve completes at original cast-ready pose")
+		check(not rig.fishing_follow_returning and not rig._retrieve_yaw_return_active and not rig._fight_base_valid,
+			"repeat retrieve leaves no return/tracking ownership")
+		check(fish.global_position.is_equal_approx(physical), "retrieve return never changes physical bait")
+	var settle_counts: Array[int] = []
+	for degrees in [5.0, 55.0]:
+		rig.reset_fishing_follow()
+		camera.transform = base
+		rig.set_fishing_fight_tracking(true, fish)
+		rig.fight_camera_tracking.yaw = deg_to_rad(degrees)
+		camera.transform = rig._fight_orbit_transform(base, Vector3.ZERO, deg_to_rad(degrees))
+		rig.return_fishing_follow_to_target(true)
+		var frames := 0
+		while rig.fishing_follow_returning and frames < 600:
+			tick()
+			frames += 1
+		settle_counts.append(frames)
+	check(settle_counts[1] > settle_counts[0], "large yaw naturally takes longer to settle than tiny yaw")
+	print("RETURN SETTLE 5deg/55deg seconds: ", settle_counts[0]/60.0, "/",settle_counts[1]/60.0)
+	# Exiting fishing midway must hand its current shot to the original exit tween.
+	put_fish(Vector2(0.94, 0.4))
+	tick(120)
+	rig.return_fishing_follow_to_target(true)
+	tick(6)
+	var interrupted := camera.transform
+	rig.exploration_camera_transform_before_fishing = base
+	rig.exit_fishing_view()
+	check(camera.transform.is_equal_approx(interrupted), "exit during retrieve preserves transition start")
+	check(not rig.fishing_follow_returning, "exit cancels retrieve tween to avoid competing rotations")
+	await create_timer(0.8).timeout
+	check(camera.transform.is_equal_approx(base), "interrupted retrieve uses original exploration restoration")

@@ -1332,7 +1332,7 @@ func _on_bait_returned() -> void:
 	):
 		camera_rig.return_fishing_follow_to_target()
 	else:
-		camera_rig.reset_fishing_follow()
+		camera_rig.return_fishing_follow_to_target(true)
 
 	cast_power_locked = false
 	locked_cast_power = 0.0
@@ -1681,7 +1681,7 @@ func _on_bite_commit_ready(_snapshot: Dictionary) -> void:
 	bite_animation_active = true
 	current_reel_animation = &"Reel_Bite_Strong"
 
-	caster.show_bait_ripple()
+	# The opportunity remains a ripple until the physical hook is confirmed.
 	sprite_director.play(&"Reel_Bite_Strong")
 
 
@@ -1689,7 +1689,7 @@ func _on_bite_triggered() -> void:
 	if phase != Phase.IN_WATER:
 		return
 
-	caster.hide_bait_ripple()
+	caster.show_bait_bite_splash()
 
 	# The strong take is now the pre-hook recognition cue, so a successful K
 	# should not replay it a second time. If the one-shot is still running it owns
@@ -1711,7 +1711,7 @@ func _on_bite_opportunity_started() -> void:
 	bite_opportunity_animation_active = true
 	current_reel_animation = &"Reel_Front"
 
-	caster.show_bait_ripple()
+	caster.show_bait_ripple(float(encounter.get_bite_timing_snapshot().get("total_window", encounter.base_bite_window_time)))
 	sprite_director.play(&"Reel_Front")
 	
 func _on_bite_missed() -> void:
@@ -1943,7 +1943,7 @@ func _on_result_screen_covered() -> void:
 		encounter.reset_cast_session()
 
 	camera_rig.set_fishing_camera_frozen(false)
-	camera_rig.reset_fishing_follow()
+	camera_rig.return_fishing_follow_to_target(true)
 
 	power_meter_view.reset_to_aim()
 	depth_meter_view.reset_to_aim()
@@ -1975,7 +1975,7 @@ func _on_catch_view_dismissed() -> void:
 		encounter.reset_cast_session()
 
 	camera_rig.set_fishing_camera_frozen(false)
-	camera_rig.reset_fishing_follow()
+	camera_rig.return_fishing_follow_to_target(true)
 
 	power_meter_view.reset_to_aim()
 	depth_meter_view.reset_to_aim()

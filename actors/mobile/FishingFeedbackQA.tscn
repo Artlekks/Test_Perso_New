@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/qa/fishing_feedback_v1_qa.gd" id="1"]
+
+[node name="FishingFeedbackQA" type="Node"]
+script = ExtResource("1")

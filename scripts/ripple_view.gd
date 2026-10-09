@@ -3,6 +3,8 @@ extends Node3D
 @onready var ripple_sprite: AnimatedSprite3D = $RippleSprite
 
 @export var surface_offset: float = 0.02
+## Fixed-size surface cue: explicitly readable at native/mobile viewport sizes.
+@export var ripple_pixel_size: float = 0.0035
 
 @export_category("Bite Surface Sprite")
 @export var bite_sheet: Texture2D = preload(
@@ -22,6 +24,8 @@ var follow_target: Node3D = null
 var surface_y: float = 0.0
 var active: bool = false
 var _frames_ready: bool = false
+var _surface_frames: SpriteFrames
+static var _ripple_frames_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -30,6 +34,27 @@ func _ready() -> void:
 	process_priority = 105
 	visible = false
 	set_process(false)
+	var authored := ripple_sprite.sprite_frames
+	var cache_key := authored.resource_path
+	if _ripple_frames_cache.has(cache_key):
+		_surface_frames = _ripple_frames_cache[cache_key].duplicate()
+	else:
+		_surface_frames = authored.duplicate(true)
+		_surface_frames.set_animation_loop(&"Ripple", false)
+		# Slice after decompression: AtlasTexture.get_image() cannot crop the
+		# VRAM-compressed source on rendered backends. Small frame textures also
+		# avoid depending on the 11904px sheet fitting a mobile GPU's atlas limit.
+		var first: AtlasTexture = _surface_frames.get_frame_texture(&"Ripple", 0)
+		var sheet_image := first.atlas.get_image()
+		if sheet_image.is_compressed():
+			sheet_image.decompress()
+		for index in _surface_frames.get_frame_count(&"Ripple"):
+			var texture: AtlasTexture = _surface_frames.get_frame_texture(&"Ripple", index)
+			var image := sheet_image.get_region(Rect2i(texture.region))
+			_surface_frames.set_frame(&"Ripple", index, ImageTexture.create_from_image(image),
+				_surface_frames.get_frame_duration(&"Ripple", index))
+		_ripple_frames_cache[cache_key] = _surface_frames.duplicate()
+	ripple_sprite.animation_finished.connect(hide_ripple)
 	_setup_sprite()
 	_ensure_frames()
 
@@ -44,7 +69,7 @@ func configure(
 	_update_position()
 
 
-func show_ripple() -> void:
+func show_ripple(opportunity_duration: float = 0.0) -> void:
 	if not is_instance_valid(follow_target):
 		return
 
@@ -55,16 +80,48 @@ func show_ripple() -> void:
 	set_process(true)
 
 	_update_position()
+	ripple_sprite.stop()
+	ripple_sprite.frame = 0
+	ripple_sprite.speed_scale = 1.0
+	if opportunity_duration > 0.0:
+		ripple_sprite.speed_scale = get_authored_ripple_duration() / opportunity_duration
+	ripple_sprite.pixel_size = ripple_pixel_size
 	ripple_sprite.play(&"Ripple")
 
 
-func hide_ripple() -> void:
+func show_bite_splash() -> void:
+	if not is_instance_valid(follow_target):
+		return
+	_ensure_frames()
+	active = true
+	visible = true
+	set_process(true)
+	_update_position()
+	ripple_sprite.stop()
+	ripple_sprite.frame = 0
+	ripple_sprite.speed_scale = 1.0
+	ripple_sprite.pixel_size = bite_pixel_size
+	ripple_sprite.play(&"BiteSplash")
+
+
+func hide_ripple(preserve_committed_splash: bool = false) -> void:
+	if preserve_committed_splash and active and ripple_sprite.animation == &"BiteSplash":
+		return
 	active = false
 	visible = false
 	set_process(false)
 
 	ripple_sprite.stop()
 	ripple_sprite.frame = 0
+	ripple_sprite.speed_scale = 1.0
+
+
+func get_authored_ripple_duration() -> float:
+	var frames := ripple_sprite.sprite_frames
+	var duration := 0.0
+	for index in frames.get_frame_count(&"Ripple"):
+		duration += frames.get_frame_duration(&"Ripple", index)
+	return duration / frames.get_animation_speed(&"Ripple")
 
 
 func _process(_delta: float) -> void:
@@ -143,15 +200,17 @@ func _ensure_frames() -> void:
 	if bite_sheet == null:
 		return
 
-	var frames := SpriteFrames.new()
-	frames.add_animation(&"Ripple")
-	frames.set_animation_speed(&"Ripple", bite_animation_fps)
-	frames.set_animation_loop(&"Ripple", true)
+	# Preserve the authored fish_ripple.png animation; the stronger sheet is
+	# a separate, non-looping committed-bite cue, never a nibble replacement.
+	var frames := _surface_frames
+	frames.add_animation(&"BiteSplash")
+	frames.set_animation_speed(&"BiteSplash", bite_animation_fps)
+	frames.set_animation_loop(&"BiteSplash", false)
 
 	for frame_texture in _slice_sheet_to_frames(bite_sheet):
-		frames.add_frame(&"Ripple", frame_texture)
+		frames.add_frame(&"BiteSplash", frame_texture)
 
-	if frames.get_frame_count(&"Ripple") <= 0:
+	if frames.get_frame_count(&"BiteSplash") <= 0:
 		return
 
 	ripple_sprite.sprite_frames = frames

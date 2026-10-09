@@ -708,11 +708,16 @@ func set_bait_frozen(active: bool) -> void:
 	if is_instance_valid(active_bait):
 		active_bait.set_simulation_frozen(active)
 
-func show_bait_ripple() -> void:
+func show_bait_ripple(opportunity_duration: float = 0.0) -> void:
 	if is_instance_valid(active_bait):
-		active_bait.show_ripple()
+		active_bait.show_ripple(opportunity_duration)
 
 
-func hide_bait_ripple() -> void:
+func show_bait_bite_splash() -> void:
 	if is_instance_valid(active_bait):
-		active_bait.hide_ripple()
+		active_bait.show_bite_splash()
+
+
+func hide_bait_ripple(preserve_committed_splash: bool = false) -> void:
+	if is_instance_valid(active_bait):
+		active_bait.hide_ripple(preserve_committed_splash)
