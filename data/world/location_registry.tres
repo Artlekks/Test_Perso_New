@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/content/playable_location_registry.gd" id="1"]
+[ext_resource type="Resource" path="res://data/world/locations/beach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/world/locations/wyndia_ocean_outpost.tres" id="3"]
+[ext_resource type="Resource" path="res://data/world/locations/lyp_lake_outpost.tres" id="4"]
+[ext_resource type="Resource" path="res://data/world/locations/river_fishing_outpost.tres" id="5"]
+[ext_resource type="Resource" path="res://data/world/locations/chiqua_supply_outpost.tres" id="6"]
+
+[resource]
+script = ExtResource("1")
+locations = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

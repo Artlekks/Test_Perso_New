@@ -1,0 +1,612 @@
+{
+  "schema_version": 1,
+  "purpose": "Validation metadata only; never grants gameplay access. Economy availability and fish spots remain in WorldLocations.",
+  "providers": [
+    {
+      "path": "World/OceanTravel",
+      "refs": {
+        "destination_id": "wyndia_ocean_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/OceanTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/FishZone_V2",
+      "refs": {},
+      "script": "res://scripts/fish_zone_v2.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishZone_V2",
+      "provider_type": "fish_zone_v2",
+      "note": "Spot is bound from authoritative location_context in _enter_tree before child _ready."
+    },
+    {
+      "path": "World/BeachMerchantNPC",
+      "refs": {
+        "economy_context": "res://data/economy/contexts/beach_merchant.tres"
+      },
+      "script": "res://scripts/beach_merchant_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachMerchantNPC",
+      "provider_type": "beach_merchant_npc"
+    },
+    {
+      "path": "World/TripleTriadOpponentNPC",
+      "refs": {
+        "opponent_id": "beach_trader",
+        "opponent_profile": "res://data/triple_triad/opponents/beach_trader.tres"
+      },
+      "script": "res://scripts/triple_triad/triple_triad_opponent_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/TripleTriadOpponentNPC",
+      "provider_type": "triple_triad_opponent_npc"
+    },
+    {
+      "path": "World/BeachCrafterNPC",
+      "refs": {},
+      "script": "res://scripts/beach_crafter_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachCrafterNPC",
+      "provider_type": "beach_crafter_npc",
+      "catalogs": [
+        "res://data/crafting/beach/beach_vertical_slice_catalog.tres"
+      ]
+    },
+    {
+      "path": "World/FishingCardMakerNPC",
+      "refs": {},
+      "script": "res://scripts/economy/fishing_card_maker_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingCardMakerNPC",
+      "provider_type": "fishing_card_maker_npc",
+      "catalogs": [
+        "res://data/economy/card_maker/card_maker_catalog_v1.tres"
+      ]
+    },
+    {
+      "path": "World/HarborLockbox",
+      "refs": {
+        "event_id": "beach_demo_harbor_lockbox_01",
+        "source_id": "harbor_lockbox"
+      },
+      "script": "res://scripts/triple_triad/triple_triad_world_reward_trigger_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/HarborLockbox",
+      "provider_type": "triple_triad_world_reward_trigger_3d"
+    },
+    {
+      "path": "World/HarborRequestBoard",
+      "refs": {
+        "request_id": "beach_demo_harbor_errand_01",
+        "required_opponent_id": "beach_trader"
+      },
+      "script": "res://scripts/triple_triad/triple_triad_harbor_request_board.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/HarborRequestBoard",
+      "provider_type": "triple_triad_harbor_request_board"
+    },
+    {
+      "path": "World/RegionalChampionshipRegistrar",
+      "refs": {
+        "competition_id": "regional_championship"
+      },
+      "script": "res://scripts/triple_triad/triple_triad_competition_interaction_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/RegionalChampionshipRegistrar",
+      "provider_type": "triple_triad_competition_interaction_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Driftwood01",
+      "refs": {
+        "material_id": "driftwood"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Driftwood01",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Shell01",
+      "refs": {
+        "material_id": "shell"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Shell01",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Seaweed01",
+      "refs": {
+        "material_id": "seaweed_fibre"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Seaweed01",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Driftwood02",
+      "refs": {
+        "material_id": "driftwood"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Driftwood02",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/IronScrap01",
+      "refs": {
+        "material_id": "iron_scrap"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/IronScrap01",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/SeaGlass01",
+      "refs": {
+        "material_id": "sea_glass"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/SeaGlass01",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/IronScrap02",
+      "refs": {
+        "material_id": "iron_scrap"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/IronScrap02",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Shell02",
+      "refs": {
+        "material_id": "shell"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Shell02",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Driftwood03",
+      "refs": {
+        "material_id": "driftwood"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Driftwood03",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/Seaweed02",
+      "refs": {
+        "material_id": "seaweed_fibre"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/Seaweed02",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/CoastalHerb01",
+      "refs": {
+        "material_id": "coastal_herb"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/CoastalHerb01",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/BeachGatheringCircuit/CoastalHerb02",
+      "refs": {
+        "material_id": "coastal_herb"
+      },
+      "script": "res://scripts/beach_gathering_node_3d.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/BeachGatheringCircuit/CoastalHerb02",
+      "provider_type": "beach_gathering_node_3d"
+    },
+    {
+      "path": "World/FishingMasterStillWaterNPC",
+      "refs": {},
+      "script": "res://scripts/mastery/fishing_master_still_water_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterStillWaterNPC",
+      "provider_type": "fishing_master_still_water_npc",
+      "constants": {
+        "TECHNIQUE_ID": "quiet_approach",
+        "TEACHER_ID": "master_still_water"
+      }
+    },
+    {
+      "path": "World/FishingMasterCurrentReaderNPC",
+      "refs": {
+        "teacher_id": "master_current_reader",
+        "technique_id": "read_current"
+      },
+      "script": "res://scripts/mastery/fishing_master_current_reader_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterCurrentReaderNPC",
+      "provider_type": "fishing_master_current_reader_npc"
+    },
+    {
+      "path": "World/FishingMasterDepthReaderNPC",
+      "refs": {
+        "teacher_id": "master_depth_reader",
+        "technique_id": "read_depth"
+      },
+      "script": "res://scripts/mastery/fishing_master_depth_reader_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterDepthReaderNPC",
+      "provider_type": "fishing_master_depth_reader_npc"
+    },
+    {
+      "path": "World/FishingMasterStructureHunterNPC",
+      "refs": {
+        "teacher_id": "master_structure_hunter",
+        "technique_id": "read_structure"
+      },
+      "script": "res://scripts/mastery/fishing_master_structure_hunter_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterStructureHunterNPC",
+      "provider_type": "fishing_master_structure_hunter_npc"
+    },
+    {
+      "path": "World/FishingMasterLineFighterNPC",
+      "refs": {
+        "teacher_id": "master_line_fighter",
+        "technique_id": "line_feel"
+      },
+      "script": "res://scripts/mastery/fishing_master_line_fighter_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterLineFighterNPC",
+      "provider_type": "fishing_master_line_fighter_npc"
+    },
+    {
+      "path": "World/FishingMasterDeepwaterVeteranNPC",
+      "refs": {
+        "teacher_id": "master_deepwater_veteran",
+        "technique_id": "deep_water_control"
+      },
+      "script": "res://scripts/mastery/fishing_master_deepwater_veteran_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterDeepwaterVeteranNPC",
+      "provider_type": "fishing_master_deepwater_veteran_npc"
+    },
+    {
+      "path": "World/FishingMasterSurfaceAnglerNPC",
+      "refs": {
+        "teacher_id": "master_surface_angler",
+        "technique_id": "surface_control"
+      },
+      "script": "res://scripts/mastery/fishing_master_surface_angler_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterSurfaceAnglerNPC",
+      "provider_type": "fishing_master_surface_angler_npc"
+    },
+    {
+      "path": "World/FishingMasterLandingGuideNPC",
+      "refs": {
+        "teacher_id": "master_landing_guide",
+        "technique_id": "landing_technique"
+      },
+      "script": "res://scripts/mastery/fishing_master_landing_guide_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterLandingGuideNPC",
+      "provider_type": "fishing_master_landing_guide_npc"
+    },
+    {
+      "path": "World/FishingMasterWeatherWatcherNPC",
+      "refs": {
+        "teacher_id": "master_weather_watcher",
+        "technique_id": "weather_sense"
+      },
+      "script": "res://scripts/mastery/fishing_master_weather_watcher_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterWeatherWatcherNPC",
+      "provider_type": "fishing_master_weather_watcher_npc"
+    },
+    {
+      "path": "World/FishingMasterTideReaderNPC",
+      "refs": {
+        "teacher_id": "master_tide_reader",
+        "technique_id": "tide_sense"
+      },
+      "script": "res://scripts/mastery/fishing_master_tide_reader_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterTideReaderNPC",
+      "provider_type": "fishing_master_tide_reader_npc"
+    },
+    {
+      "path": "World/FishingMasterSignReaderNPC",
+      "refs": {
+        "teacher_id": "master_sign_reader",
+        "technique_id": "read_fish_sign"
+      },
+      "script": "res://scripts/mastery/fishing_master_sign_reader_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterSignReaderNPC",
+      "provider_type": "fishing_master_sign_reader_npc"
+    },
+    {
+      "path": "World/FishingMasterNatureGuideNPC",
+      "refs": {
+        "teacher_id": "master_nature_guide",
+        "technique_id": "one_with_nature"
+      },
+      "script": "res://scripts/mastery/fishing_master_nature_guide_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterNatureGuideNPC",
+      "provider_type": "fishing_master_nature_guide_npc"
+    },
+    {
+      "path": "World/FishingMasterDriftAnglerNPC",
+      "refs": {
+        "teacher_id": "master_drift_angler",
+        "technique_id": "drift_casting"
+      },
+      "script": "res://scripts/mastery/fishing_master_drift_angler_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterDriftAnglerNPC",
+      "provider_type": "fishing_master_drift_angler_npc"
+    },
+    {
+      "path": "World/FishingMasterGyosilNPC",
+      "refs": {},
+      "script": "res://scripts/progression/fishing_master_gyosil_npc.gd",
+      "location_id": "beach",
+      "provider_id": "beach:World/FishingMasterGyosilNPC",
+      "provider_type": "fishing_master_gyosil_npc",
+      "catalogs": [
+        "res://data/bof4/rewards/all_rewards.tres"
+      ]
+    },
+    {
+      "path": "World/FishZone_V2",
+      "refs": {},
+      "script": "res://scripts/fish_zone_v2.gd",
+      "location_id": "wyndia_ocean_outpost",
+      "provider_id": "wyndia_ocean_outpost:World/FishZone_V2",
+      "provider_type": "fish_zone_v2",
+      "note": "Spot is bound from authoritative location_context in _enter_tree before child _ready."
+    },
+    {
+      "path": "World/ManilloTrader",
+      "refs": {
+        "economy_context": "res://data/economy/contexts/wyndia_outpost.tres"
+      },
+      "script": "res://scripts/world/manillo_trader_npc.gd",
+      "location_id": "wyndia_ocean_outpost",
+      "provider_id": "wyndia_ocean_outpost:World/ManilloTrader",
+      "provider_type": "manillo_trader_npc"
+    },
+    {
+      "path": "World/ReturnTravel",
+      "refs": {
+        "destination_id": "beach"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "wyndia_ocean_outpost",
+      "provider_id": "wyndia_ocean_outpost:World/ReturnTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/LakeTravel",
+      "refs": {
+        "destination_id": "lyp_lake_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "wyndia_ocean_outpost",
+      "provider_id": "wyndia_ocean_outpost:World/LakeTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/FishZone_V2",
+      "refs": {},
+      "script": "res://scripts/fish_zone_v2.gd",
+      "location_id": "lyp_lake_outpost",
+      "provider_id": "lyp_lake_outpost:World/FishZone_V2",
+      "provider_type": "fish_zone_v2",
+      "note": "Spot is bound from authoritative location_context in _enter_tree before child _ready."
+    },
+    {
+      "path": "World/ManilloTrader",
+      "refs": {
+        "economy_context": "res://data/economy/contexts/lyp_outpost.tres"
+      },
+      "script": "res://scripts/world/manillo_trader_npc.gd",
+      "location_id": "lyp_lake_outpost",
+      "provider_id": "lyp_lake_outpost:World/ManilloTrader",
+      "provider_type": "manillo_trader_npc"
+    },
+    {
+      "path": "World/ReturnTravel",
+      "refs": {
+        "destination_id": "wyndia_ocean_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "lyp_lake_outpost",
+      "provider_id": "lyp_lake_outpost:World/ReturnTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/LypItemShop",
+      "refs": {
+        "economy_context": "res://data/economy/contexts/lyp_item_shop.tres"
+      },
+      "script": "res://scripts/world/manillo_trader_npc.gd",
+      "location_id": "lyp_lake_outpost",
+      "provider_id": "lyp_lake_outpost:World/LypItemShop",
+      "provider_type": "manillo_trader_npc"
+    },
+    {
+      "path": "World/RiverTravel",
+      "refs": {
+        "destination_id": "river_fishing_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "lyp_lake_outpost",
+      "provider_id": "lyp_lake_outpost:World/RiverTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/FishZone_V2",
+      "refs": {},
+      "script": "res://scripts/fish_zone_v2.gd",
+      "location_id": "river_fishing_outpost",
+      "provider_id": "river_fishing_outpost:World/FishZone_V2",
+      "provider_type": "fish_zone_v2",
+      "note": "Spot is bound from authoritative location_context in _enter_tree before child _ready."
+    },
+    {
+      "path": "World/ManilloTrader",
+      "refs": {},
+      "script": "res://scripts/world/manillo_trader_npc.gd",
+      "location_id": "river_fishing_outpost",
+      "provider_id": "river_fishing_outpost:World/ManilloTrader",
+      "provider_type": "manillo_trader_npc",
+      "disabled_exception": "Inherited outpost template; no River trade authored. Must stay hidden, PROCESS_MODE_DISABLED and have disabled body collider."
+    },
+    {
+      "path": "World/ReturnTravel",
+      "refs": {
+        "destination_id": "lyp_lake_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "river_fishing_outpost",
+      "provider_id": "river_fishing_outpost:World/ReturnTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/ChiquaTravel",
+      "refs": {
+        "destination_id": "chiqua_supply_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "river_fishing_outpost",
+      "provider_id": "river_fishing_outpost:World/ChiquaTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "path": "World/FishZone_V2",
+      "refs": {},
+      "script": "res://scripts/fish_zone_v2.gd",
+      "location_id": "chiqua_supply_outpost",
+      "provider_id": "chiqua_supply_outpost:World/FishZone_V2",
+      "provider_type": "fish_zone_v2",
+      "note": "Spot is bound from authoritative location_context in _enter_tree before child _ready."
+    },
+    {
+      "path": "World/ManilloTrader",
+      "refs": {
+        "economy_context": "res://data/economy/contexts/chiqua_item_shop.tres"
+      },
+      "script": "res://scripts/world/manillo_trader_npc.gd",
+      "location_id": "chiqua_supply_outpost",
+      "provider_id": "chiqua_supply_outpost:World/ManilloTrader",
+      "provider_type": "manillo_trader_npc"
+    },
+    {
+      "path": "World/ReturnTravel",
+      "refs": {
+        "destination_id": "river_fishing_outpost"
+      },
+      "script": "res://scripts/world/location_travel_point.gd",
+      "location_id": "chiqua_supply_outpost",
+      "provider_id": "chiqua_supply_outpost:World/ReturnTravel",
+      "provider_type": "location_travel_point"
+    },
+    {
+      "provider_id": "beach:World/BeachCrafterNPC/RequestSource",
+      "location_id": "beach",
+      "path": "World/BeachCrafterNPC/RequestSource",
+      "script": "res://scripts/quests/beach_crafter_request_source.gd",
+      "provider_type": "request",
+      "refs": {
+        "request_id": "beach_demo_crafter_sea_glass_01"
+      }
+    },
+    {
+      "provider_id": "beach:World/FishingCardMakerNPC/RequestSource",
+      "location_id": "beach",
+      "path": "World/FishingCardMakerNPC/RequestSource",
+      "script": "res://scripts/quests/card_maker_fishing_request_source.gd",
+      "provider_type": "request",
+      "refs": {
+        "request_id": "beach_demo_card_maker_sea_bass_01"
+      }
+    }
+  ],
+  "deferred_world_content": [
+    {
+      "domain": "opponent",
+      "id": "ash_champion",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "dock_bruiser",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "gearwright",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "highland_keeper",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "lantern_gambler",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "marsh_keeper",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "pier_apprentice",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "storm_captain",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "tide_oracle",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "opponent",
+      "id": "wandering_sage",
+      "reason": "Authored card roster/acquisition and QA/debug encounter; no physical world encounter is placed in this five-location slice."
+    },
+    {
+      "domain": "mastery",
+      "id": "structure_fighting",
+      "reason": "Authored capability/prerequisite data exists; Structure Hunter currently teaches Read Structure only. No delivered world lesson for this technique."
+    },
+    {
+      "domain": "mastery",
+      "id": "snag_escape",
+      "reason": "Authored capability/prerequisite data exists; Structure Hunter currently teaches Read Structure only. No delivered world lesson for this technique."
+    }
+  ]
+}

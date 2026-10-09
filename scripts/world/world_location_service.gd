@@ -4,13 +4,8 @@ const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 signal location_changed(location: Resource)
 signal access_changed
 const ContextScript = preload("res://scripts/world/playable_location_context.gd")
-const LOCATIONS = [
-	preload("res://data/world/locations/beach.tres"),
-	preload("res://data/world/locations/wyndia_ocean_outpost.tres"),
-	preload("res://data/world/locations/lyp_lake_outpost.tres"),
-	preload("res://data/world/locations/river_fishing_outpost.tres"),
-	preload("res://data/world/locations/chiqua_supply_outpost.tres"),
-]
+const LOCATION_REGISTRY = preload("res://data/world/location_registry.tres")
+
 var current_location: ContextScript = null
 var _scene_ref: WeakRef
 var transitioning := false
@@ -18,7 +13,7 @@ var _progress_inventory: FishingInventory
 var _unlocks: FishingUnlockState
 
 func get_all_locations() -> Array:
-	return LOCATIONS.duplicate()
+	return LOCATION_REGISTRY.locations.duplicate()
 
 func configure_developer_access(service: Node) -> void:
 	if not service.mode_changed.is_connected(_on_developer_mode_changed):
@@ -38,13 +33,13 @@ func configure_progression(inventory: FishingInventory, unlocks: FishingUnlockSt
 func _refresh_unlocks() -> void:
 	if not is_instance_valid(_progress_inventory) or not is_instance_valid(_unlocks):
 		return
-	for location in LOCATIONS:
+	for location in LOCATION_REGISTRY.locations:
 		if location.unlock_flag != &"" and get_access_snapshot(location.location_id, _progress_inventory).unlocked:
 			_unlocks.grant_flag(location.unlock_flag)
 	access_changed.emit()
 
 func get_location(id: StringName) -> ContextScript:
-	for location in LOCATIONS:
+	for location in LOCATION_REGISTRY.locations:
 		if location.location_id == id:
 			return location
 	return null
@@ -113,7 +108,7 @@ func get_unlocked_destinations(location_id: StringName = &"", inventory = null) 
 	var candidates: PackedStringArray = location.destinations
 	if inventory == null and RuntimeAccessPolicy.allows(&"travel"):
 		candidates = PackedStringArray()
-		for authored in LOCATIONS:
+		for authored in LOCATION_REGISTRY.locations:
 			if authored.location_id != location.location_id: candidates.append(String(authored.location_id))
 	for destination in candidates:
 		var target := get_location(StringName(destination))

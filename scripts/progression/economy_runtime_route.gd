@@ -64,7 +64,7 @@ func source_location(purchase: Dictionary, acquired: Dictionary, origin: StringN
 		if parts.size() != 2:
 			continue
 		var location = null
-		for candidate in World.LOCATIONS:
+		for candidate in World.LOCATION_REGISTRY.locations:
 			if String(candidate.location_id) == parts[0]:
 				location = candidate
 				break
@@ -83,7 +83,7 @@ func population(purchase: Dictionary, acquired: Dictionary, bank: Dictionary, or
 			wanted = species
 	var spot = null
 	var fishing_location := ""
-	for location in World.LOCATIONS:
+	for location in World.LOCATION_REGISTRY.locations:
 		if location.location_id == origin and reachable_data.location_ids.has(String(origin)):
 			spot = location.fishing_spot
 			fishing_location = String(origin)
@@ -91,7 +91,7 @@ func population(purchase: Dictionary, acquired: Dictionary, bank: Dictionary, or
 		for entry in candidate.fish_population:
 			if entry.fish != null and entry.fish.get_stable_species_id() == wanted and entry.get_base_bite_weight() > 0.0:
 				spot = candidate
-				for location in World.LOCATIONS:
+				for location in World.LOCATION_REGISTRY.locations:
 					if location.fishing_spot == spot and reachable_data.location_ids.has(String(location.location_id)):
 						fishing_location = String(location.location_id)
 				break
@@ -116,7 +116,7 @@ func population(purchase: Dictionary, acquired: Dictionary, bank: Dictionary, or
 func audit() -> Dictionary:
 	var issues: Array = []
 	var chain: Array = []
-	for location in World.LOCATIONS:
+	for location in World.LOCATION_REGISTRY.locations:
 		if location.economy_contexts.size() != location.economy_provider_paths.size():
 			issues.append({"location_id": String(location.location_id), "reason": "provider_metadata_missing", "contexts": location.economy_contexts.size(), "providers": location.economy_provider_paths.size()})
 		if location.location_id != &"beach" and location.destinations.is_empty():
@@ -132,7 +132,7 @@ func audit() -> Dictionary:
 	for target in targets():
 		var row: Dictionary = target.duplicate(true)
 		row.locations = []
-		for location in World.LOCATIONS:
+		for location in World.LOCATION_REGISTRY.locations:
 			for context in location.economy_contexts:
 				if source_matches(context, target):
 					row.locations.append({"location_id": String(location.location_id), "required_lures": location.required_lure_ids, "required_rods": location.required_rod_ids})
