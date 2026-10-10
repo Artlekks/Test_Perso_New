@@ -65,13 +65,15 @@ func run() -> void:
 	if mobile:
 		var layout: Dictionary = fixture.scene.get_layout_rects(Rect2(0,47,390,763))
 		check(layout.resolution == Surface.SIZE, "phone cannot change game geometry")
-		check(layout.gameplay.size.is_equal_approx(Vector2(390,292.5)), "iPhone game 390x292.5 CSS pixels")
-		check(layout.controls.position.y == layout.gameplay.end.y and layout.controls.end.y == 810, "touch shell separate and safe")
+		check(layout.gameplay.size.is_equal_approx(Vector2(378,283.5)), "reference framed iPhone game 378x283.5 CSS pixels")
+		check(is_equal_approx(layout.controls.position.y,layout.gameplay.end.y+6) and layout.controls.end.y == 810, "touch shell separate and safe")
 		for hit in fixture.scene.controls.buttons.values(): check(hit.size.x >= 44 and hit.size.y >= 44, "phone practical touch target")
 		var short: Dictionary = fixture.scene.get_layout_rects(Rect2(0,47,390,583))
 		check(short.resolution == Surface.SIZE and short.controls.size.x == 390, "short Safari keeps canonical pixels and full-width controls")
-		check(short.gameplay.size.is_equal_approx(Vector2(390,292.5)) and short.display.size.is_equal_approx(Vector2(390,292.5)), "short Safari uses full uncropped 4:3 world")
+		check(short.gameplay.size.is_equal_approx(Vector2(378,283.5)) and short.display.size.is_equal_approx(Vector2(378,283.5)), "short Safari uses full uncropped 4:3 world")
 		var original_controls: Vector2 = fixture.scene.controls.size
+		var original_landscape: bool = fixture.scene.controls.landscape
+		fixture.scene.controls.landscape = false
 		fixture.scene.controls.size = short.controls.size
 		fixture.scene.controls._layout()
 		for label in fixture.scene.controls.buttons:
@@ -79,6 +81,7 @@ func run() -> void:
 				if label < other: check(not fixture.scene.controls.buttons[label].intersects(fixture.scene.controls.buttons[other]), "short Safari touch targets separated: " + label + "/" + other)
 		for hit in fixture.scene.controls.buttons.values():
 			check(hit.size.x >= 44 and hit.size.y >= 44 and Rect2(Vector2.ZERO, short.controls.size).encloses(hit), "short Safari retains contained 44px targets")
+		fixture.scene.controls.landscape = original_landscape
 		fixture.scene.controls.size = original_controls
 		fixture.scene.controls._layout()
 	DeveloperPlaytestService.current().set_enabled(true)

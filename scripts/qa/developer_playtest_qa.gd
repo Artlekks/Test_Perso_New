@@ -23,6 +23,7 @@ func run() -> void:
 	shell = load("res://actors/mobile/MobilePortraitHarness.tscn").instantiate()
 	shell.isolated_playtest_save = false
 	root.add_child(shell)
+	preload("res://scripts/qa/mobile_qa_canvas.gd").prepare(self)
 	current_scene = shell
 	await settle()
 	var developer := DeveloperPlaytestService.current()
@@ -98,9 +99,7 @@ func run() -> void:
 		shell.controls.touch_end(87)
 		await create_timer(0.6).timeout
 		check(game.deck_setup._deck.size() == 5, "real mobile A selects fifth card before START")
-		shell.controls.touch_begin(89, shell.controls.buttons.START.get_center())
-		await settle()
-		shell.controls.touch_end(89)
+		shell.shell.shortcut.pressed.emit()
 		await settle()
 		check(game._session.phase != game.PHASE_DECK_SETUP, "temporary deck starts normal match")
 		check(game._live_match.get_starting_player_cards().size() == 5, "normal match uses five borrowed cards")
@@ -131,12 +130,12 @@ func run() -> void:
 		await settle()
 		check(locations.current_location.location_id == id and developer.enabled, "scene handoff retains session mode " + String(id))
 	var aim_before: bool = shell.game.get_node("Game/Fishing").debug_controller._aim.active
-	shell.controls.touch_begin(80, shell.controls.buttons.SELECT.get_center())
-	await process_frame
-	shell.controls.touch_end(80)
+	shell.request_shell_menu("Settings")
+	await settle()
+	shell.game.get_node("Game/Fishing").fishing_menu.options_page.get_node("PlaytestTools").pressed.emit()
 	await settle()
 	var menu: Node = shell.game.get_node("Game/Fishing").debug_controller.debug_menu
-	check(menu.is_open() and paused, "SELECT opens modal existing F10 menu during exploration")
+	check(menu.is_open() and paused, "Settings tools opens modal existing F10 menu during exploration")
 	check(menu._playtest_page and menu._playtest_rows[0].text.contains("Developer Mode: ON"), "Developer Mode is initial top entry")
 	shell.controls.touch_begin(83, shell.controls.buttons.A.get_center())
 	await process_frame
@@ -155,20 +154,18 @@ func run() -> void:
 	back.physical_keycode = KEY_I
 	back.pressed = true
 	check(not menu.handle_input(back) and not menu._travel_submenu and menu.is_open(), "B backs out of travel without closing F10")
-	shell.controls.touch_begin(81, shell.controls.buttons.START.get_center())
-	await process_frame
-	shell.controls.touch_end(81)
+	shell.shell.shortcut.pressed.emit()
 	await settle()
 	check(not menu._playtest_page, "START switches PLAYTEST to existing FISHING QA")
 	menu._toggle_playtest_page()
 	if OS.get_cmdline_user_args().has("--rendered"):
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("build/developer-playtest-menu.png")
-	shell.controls.touch_begin(82, shell.controls.buttons.SELECT.get_center())
+	shell.controls.touch_begin(82, shell.controls.buttons.B.get_center())
 	await process_frame
 	shell.controls.touch_end(82)
 	await settle()
-	check(not menu.is_open() and not paused, "SELECT closes F10 and restores exploration")
+	check(not menu.is_open() and not paused, "B closes F10 and restores exploration")
 	check(shell.game.get_node("Game/Fishing").debug_controller._aim.active == aim_before, "exploration debug modal preserves fishing aim state")
 	# Explicit loadout QA only after access-purity checks, in this unique save.
 	developer.authorize_isolated_mobile_save(true)

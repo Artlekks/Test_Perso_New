@@ -10,6 +10,9 @@ signal action_requested(event: InputEventAction)
 const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "C": KEY_C, "MENU": KEY_J, "SELECT": KEY_F10, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
 const MOVEMENT := {KEY_A: &"move_left", KEY_D: &"move_right", KEY_W: &"move_forward", KEY_S: &"move_back"}
 const STEERING := {KEY_A: &"ds_left", KEY_D: &"ds_right"}
+const ART := {"A":preload("res://assets/ui/seaside_shell/a.png"),"B":preload("res://assets/ui/seaside_shell/b.png"),"C":preload("res://assets/ui/seaside_shell/c.png"),"L":preload("res://assets/ui/seaside_shell/l.png"),"R":preload("res://assets/ui/seaside_shell/r.png")}
+const LANDSCAPE_SHOULDERS := {"L":preload("res://assets/ui/seaside_shell/landscape_l.png"),"R":preload("res://assets/ui/seaside_shell/landscape_r.png")}
+var landscape := false
 var buttons: Dictionary = {}
 var button_visuals: Dictionary = {}
 var stick_zone := Rect2()
@@ -32,22 +35,27 @@ func _layout() -> void:
 	release_all()
 	var w := size.x
 	var h := size.y
-	stick_zone = Rect2(Vector2(0, h * 0.24), Vector2(w * 0.51, h * 0.56))
-	buttons = {
-		"A": Rect2(Vector2(w * 0.80, h * 0.305), Vector2(w * 0.19, w * 0.19)),
-		"B": Rect2(Vector2(w * 0.57, h * 0.49), Vector2(w * 0.19, w * 0.19)),
-		"C": Rect2(Vector2(w * 0.53, maxf(h * 0.203, w * 48.0 / 390.0)), Vector2(w * 0.15, w * 0.15)),
-		"MENU": Rect2(Vector2(w * 0.015, h - maxf(h * 0.13, w * 44.0 / 390.0)), Vector2(w * 0.19, maxf(h * 0.13, w * 44.0 / 390.0))),
-		"SELECT": Rect2(Vector2(w * 0.56, h - maxf(h * 0.13, w * 44.0 / 390.0)), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
-		"START": Rect2(Vector2(w * 0.78, h - maxf(h * 0.13, w * 44.0 / 390.0)), Vector2(w * 0.20, maxf(h * 0.13, w * 44.0 / 390.0))),
-		"L": Rect2(Vector2.ZERO, Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
-		"R": Rect2(Vector2(w * 0.71, 0), Vector2(w * 0.29, maxf(h * 0.12, w * 44.0 / 390.0))),
-	}
+	if landscape:
+		var layout := preload("res://scripts/ui/seaside_shell_layout.gd").mobile(Rect2(Vector2.ZERO,size))
+		var right: Rect2 = layout.right
+		stick_zone = layout.left
+		var r := maxf(64,right.size.x*.4)
+		var small := maxf(44,r*.7)
+		buttons = {"A":Rect2(right.position+Vector2(right.size.x*.5,right.size.y*.12),Vector2(r,r)),"B":Rect2(right.position+Vector2(right.size.x*.06,right.size.y*.24),Vector2(small,small)),"C":Rect2(right.position+Vector2(right.size.x*.12,right.size.y*.02),Vector2(small,small)),"L":Rect2(6,6,w*.12,maxf(44,h*.13)),"R":Rect2(w*.88,6,w*.11,maxf(44,h*.13))}
+
+	else:
+		stick_zone = Rect2(0,h*.20,w*.49,h*.53)
+		var a := minf(w*.21,maxf(44,h*.30))
+		var b := minf(w*.18,maxf(44,h*.26))
+		var c := minf(w*.16,maxf(44,h*.22))
+		var cy := maxf(52,h*.22)
+		buttons = {"A":Rect2(w*.75,h*.41,a,a),"B":Rect2(w*.54,maxf(cy+c+4,h*.47),b,b),"C":Rect2(w*(.65 if h>=340 else .54),cy,c,c),"L":Rect2(w*.05,h*.025,w*.23,maxf(44,h*.14)),"R":Rect2(w*.72,h*.025,w*.23,maxf(44,h*.14))}
 	button_visuals = buttons.duplicate()
-	for label in ["L", "R", "MENU", "SELECT", "START"]:
-		var hit: Rect2 = buttons[label]
-		var height := w * 22.0 / 390.0
-		button_visuals[label] = Rect2(hit.position + Vector2(0, (hit.size.y - height) * 0.5), Vector2(hit.size.x, height))
+	if not landscape:
+		for label in ["L","R"]:
+			var hit: Rect2 = buttons[label]
+			var visual_height := minf(hit.size.y,hit.size.x*60.0/153.0)
+			button_visuals[label] = Rect2(hit.position+Vector2(0,(hit.size.y-visual_height)*.5),Vector2(hit.size.x,visual_height))
 	queue_redraw()
 
 func _process(_delta: float) -> void:
@@ -189,31 +197,13 @@ func _input(event: InputEvent) -> void:
 			touch_drag(-2, point)
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color("c5c5c5"))
 	for label in buttons:
 		var rect: Rect2 = button_visuals[label]
-		var pressed := touches.values().has(label)
-		var color := Color("666666") if pressed else Color("343434")
-		if label in ["A", "B", "C"]:
-			draw_circle(rect.get_center(), rect.size.x * 0.5, Color.BLACK)
-			draw_circle(rect.get_center(), rect.size.x * 0.44, color)
-		else:
-			draw_style_box(_button_style(color), rect)
-		var text: String = label
-		var font_size := 24 if label in ["A", "B"] else (20 if label == "C" else 13)
-		var text_size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-		draw_string(_font, rect.get_center() + Vector2(-text_size.x * 0.5, font_size * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
-	var title := "TOUCH PLAYTEST"
-	draw_string(_font, Vector2(size.x * 0.33, 20 * size.x / 390.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("292929"))
-	if stick_touch != -1:
-		draw_circle(stick_origin, stick_radius, Color(0.12, 0.12, 0.12, 0.6))
-		draw_arc(stick_origin, stick_radius, 0, TAU, 48, Color.BLACK, 2, true)
-		draw_circle(stick_origin + stick_vector * stick_radius, stick_radius * 0.4, Color("777777"))
-	else:
-		draw_string(_font, stick_zone.get_center() + Vector2(-45, 0), "TOUCH + DRAG", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("666666"))
-
-func _button_style(color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.set_corner_radius_all(12)
-	return style
+		var texture: Texture2D = LANDSCAPE_SHOULDERS[label] if landscape and label in ["L","R"] else ART[label]
+		draw_texture_rect(texture,rect,false,Color(.75,.75,.75) if touches.values().has(label) else Color.WHITE)
+	var center := stick_origin if stick_touch != -1 else stick_zone.get_center()
+	var radius := minf(stick_radius,stick_zone.size.x*.39)
+	draw_circle(center,radius+4,Color("35202d"))
+	draw_circle(center,radius,Color("2c2d36"))
+	draw_arc(center,radius*.83,0,TAU,48,Color("dca76a"),3,true)
+	draw_circle(center+stick_vector*radius,radius*.44,Color("ad966e"))

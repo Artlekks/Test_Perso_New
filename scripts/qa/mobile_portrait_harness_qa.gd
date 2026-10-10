@@ -44,9 +44,20 @@ func capture(label: String) -> void:
 		image.save_png(capture_dir.path_join(label + ".png"))
 		var point: Vector2 = root.get_final_transform() * (controls.get_global_transform_with_canvas() * (controls.size * Vector2(0.95, 0.75)))
 		var pixel := image.get_pixel(int(point.x), int(point.y))
-		check(pixel.r > 0.6 and pixel.g > 0.6 and pixel.b > 0.6, "touch panel pixels remain visible in " + label)
+		check(pixel.r > 0.7 and pixel.g > 0.5 and pixel.b > 0.2, "reference cream touch panel remains visible in " + label)
 
 func button(label: String, index := 10) -> void:
+	if label == "MENU":
+		harness.shell.utility.Menu.pressed.emit()
+		await settle(5)
+		return
+	if label in ["START","SELECT"]:
+		# The reference replaces Start with utility buttons; retain keyboard pause QA.
+		controls._emit_key(KEY_SPACE if label == "START" else KEY_F10,true)
+		await settle(2)
+		controls._emit_key(KEY_SPACE if label == "START" else KEY_F10,false)
+		await settle(3)
+		return
 	controls.touch_begin(index, controls.buttons[label].get_center())
 	await settle(2)
 	controls.touch_end(index)
@@ -63,9 +74,11 @@ func run() -> void:
 	harness.developer_playtest_default_enabled = false
 	harness.isolated_playtest_save = false
 	root.add_child(harness)
+	preload("res://scripts/qa/mobile_qa_canvas.gd").prepare(self)
 	current_scene = harness
 	await settle(30)
 	controls = harness.controls
+	print("MOBILE GEOMETRY: root=",root.size," shell=",harness.size," controls=",controls.size," landscape=",controls.landscape," buttons=",controls.buttons)
 	controls.key_requested.connect(func(event):
 		if event.pressed:
 			observed_keys.append(event.physical_keycode))
@@ -90,18 +103,18 @@ func run() -> void:
 	var hardware: Rect2 = harness.get_safe_rect(Vector2(390, 844), Rect2(0, 141, 1170, 2289), Vector2(1170, 2532))
 	check(hardware.position.is_equal_approx(Vector2(0, 47)) and hardware.size.is_equal_approx(Vector2(390, 763)), "physical safe area converts to logical portrait units")
 	var reference: Dictionary = harness.get_layout_rects(hardware)
-	check(reference.resolution == Vector2i(640, 480) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference retains canonical 640x480 game geometry")
-	check(reference.gameplay.size.is_equal_approx(Vector2(390,292.5)) and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference scales canonical game surface and keeps 34-point home inset")
+	check(reference.resolution == Vector2i(640, 480) and reference.gameplay.position.is_equal_approx(Vector2(6,158.3)), "iPhone reference retains canonical 640x480 game geometry")
+	check(reference.gameplay.size.is_equal_approx(Vector2(378,283.5)) and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference scales canonical game surface and keeps 34-point home inset")
 	for dimensions in [Vector2(390, 844), Vector2(390, 664), Vector2(393, 852), Vector2(844, 390)]:
 		var available: Rect2 = harness.get_safe_rect(dimensions)
 		var layout: Dictionary = harness.get_layout_rects(available)
 		check(available.encloses(layout.display) and available.encloses(layout.controls), "game display and controls stay in safe area %s" % dimensions)
 		check(is_equal_approx(layout.gameplay.size.x / 640.0, layout.gameplay.size.y / layout.resolution.y), "uniform uncropped taller display scale %s" % dimensions)
-		check(is_equal_approx(layout.display.position.y, available.position.y) and is_equal_approx(layout.controls.position.y, layout.display.end.y) and is_equal_approx(layout.controls.end.y, available.end.y), "no top/game/control gap and bottom safe inset retained %s" % dimensions)
+		check(layout.info.position.y == available.position.y and available.encloses(layout.frame) and is_equal_approx(layout.controls.end.y, available.end.y), "reference header/frame and bottom safe inset retained %s" % dimensions)
 		if dimensions.x < dimensions.y:
-			check(is_equal_approx(layout.gameplay.size.x, available.size.x), "portrait texture fills entire safe width %s" % dimensions)
-	check(harness.gameplay_window.position.is_equal_approx(harness.safe_rect.position) and is_equal_approx(harness.gameplay_image.size.y / harness.gameplay_viewport.size.y, harness.gameplay_image.size.x / 640.0), "live game display has no side bars or distortion")
-	check(is_equal_approx(controls.position.y, harness.gameplay_window.position.y + harness.gameplay_window.size.y), "live controls immediately follow clipped display")
+			check(is_equal_approx(layout.gameplay.size.x, available.size.x-12), "portrait texture fills entire safe width %s" % dimensions)
+	check(harness.safe_rect.encloses(Rect2(harness.gameplay_window.position,harness.gameplay_window.size)) and is_equal_approx(harness.gameplay_image.size.y / harness.gameplay_viewport.size.y, harness.gameplay_image.size.x / 640.0), "live game display has no side bars or distortion")
+	check(controls.landscape or is_equal_approx(controls.position.y, harness.gameplay_window.position.y + harness.gameplay_window.size.y+6), "live controls immediately follow clipped display")
 	check(harness.safe_rect.encloses(Rect2(controls.position, controls.size)), "control panel inside safe region")
 	for label in controls.buttons:
 		check(Rect2(Vector2.ZERO, controls.size).encloses(controls.buttons[label]), label + " hit region contained")
@@ -296,7 +309,7 @@ func run() -> void:
 	# Reserved SELECT produces no key; L/R retain existing Q/E behavior.
 	var before := observed_keys.size()
 	await button("SELECT")
-	check(observed_keys.size() > before and observed_keys.has(KEY_F10), "SELECT uses canonical F10")
+	check(observed_keys.size() > before and observed_keys.has(KEY_F10), "canonical F10 path remains unchanged")
 	await button("SELECT")
 	await button("L")
 	await button("R")

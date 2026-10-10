@@ -47,7 +47,7 @@ func inspect_view(view: ResponsiveMenuSurface, label: String) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.index = 95
 	touch.pressed = true
-	touch.position = shell.gameplay_window.global_position + shell.gameplay_window.size * Vector2(0.90, 0.35)
+	touch.position = shell.gameplay_window.global_position + shell.gameplay_window.size * Vector2(1.0 - 10.0 / shell.gameplay_window.size.x, 0.35)
 	shell._unhandled_input(touch)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 95
@@ -66,6 +66,7 @@ func run() -> void:
 	shell = Shell.instantiate()
 	shell.isolated_playtest_save = false
 	root.add_child(shell)
+	preload("res://scripts/qa/mobile_qa_canvas.gd").prepare(self)
 	current_scene = shell
 	await settle()
 	await create_timer(1).timeout

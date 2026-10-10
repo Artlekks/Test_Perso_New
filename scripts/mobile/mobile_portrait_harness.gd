@@ -11,6 +11,7 @@ const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
 var _developer_mode_initialized := false
 var gameplay_viewport: SubViewport
 var game: Node
+var shell: Control
 var controls: Control
 var gameplay_image: TextureRect
 var gameplay_window: Control
@@ -39,11 +40,11 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
 	if OS.get_name() not in ["iOS", "Android", "Web"] and DisplayServer.get_name() != "headless":
 		get_window().size = reference_size
-	get_window().content_scale_size = reference_size
-	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	get_window().content_scale_size = Vector2i.ZERO
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	if OS.get_name() in ["iOS", "Android"]:
-		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
+		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR)
 	var presentation := CanvasLayer.new()
 	presentation.name = "PortraitShellPresentation"
 	presentation.layer = 128
@@ -53,6 +54,9 @@ func _ready() -> void:
 	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	presentation.add_child(black)
+	shell = preload("res://scripts/ui/seaside_shell_view.gd").new()
+	shell.host = self
+	presentation.add_child(shell)
 	gameplay_viewport = SubViewport.new()
 	gameplay_viewport.name = "GameplayViewport"
 	gameplay_viewport.size = Surface.SIZE
@@ -116,24 +120,16 @@ func get_safe_rect(view_size: Vector2, device_safe: Rect2 = Rect2(), device_size
 	if device_safe.has_area() and device_size.x > 0 and device_size.y > 0:
 		var scale := view_size / device_size
 		return Rect2(device_safe.position * scale, device_safe.size * scale).intersection(Rect2(Vector2.ZERO, view_size))
+	if view_size.x > view_size.y:
+		return Rect2(Vector2(47,0),Vector2(maxf(0,view_size.x-94),maxf(0,view_size.y-21)))
 	return Rect2(Vector2(fallback_safe_insets.x, fallback_safe_insets.y), Vector2(maxf(view_size.x - fallback_safe_insets.x - fallback_safe_insets.z, 0), maxf(view_size.y - fallback_safe_insets.y - fallback_safe_insets.w, 0)))
 
 func get_layout_rects(available: Rect2) -> Dictionary:
-	var column := available
-	# Retain the existing narrow control column only for landscape windows.
-	# Portrait uses all safe width, including when Safari chrome reduces height.
-	if column.size.x > column.size.y:
-		var reference_safe_height := maxf(float(reference_size.y) - fallback_safe_insets.y - fallback_safe_insets.w, 1.0)
-		var column_width := minf(column.size.x, column.size.y * float(reference_size.x) / reference_safe_height)
-		column.position.x += (column.size.x - column_width) * 0.5
-		column.size.x = column_width
-	# The uncropped 4:3 world fills safe width. Tall menus scroll separately.
-	var scale := column.size.x / 640.0
-	var width := 640.0 * scale
-	var image := Rect2(column.position, Vector2(width, float(Surface.SIZE.y) * scale))
-	var display := Rect2(column.position, Vector2(width, image.size.y))
-	var panel := Rect2(column.position + Vector2(0, display.size.y), Vector2(column.size.x, column.size.y - display.size.y))
-	return {"safe": column, "gameplay": image, "display": display, "controls": panel, "resolution": Surface.SIZE}
+	var layout := preload("res://scripts/ui/seaside_shell_layout.gd").mobile(available)
+	layout.gameplay = layout.world
+	layout.display = layout.world
+	layout.resolution = Surface.SIZE
+	return layout
 
 func _layout() -> void:
 	if not is_instance_valid(controls):
@@ -153,6 +149,8 @@ func _layout() -> void:
 			device_safe = Rect2(Vector2(values[0], values[1]), device_size - Vector2(values[0] + values[2], values[1] + values[3]))
 	var layout := get_layout_rects(get_safe_rect(size, device_safe, device_size))
 	safe_rect = layout.safe
+	shell.size = size
+	shell.configure(layout)
 	gameplay_window.position = layout.display.position
 	gameplay_window.size = layout.display.size
 	gameplay_image.size = layout.gameplay.size
@@ -164,6 +162,7 @@ func _layout() -> void:
 	hud_image.size = layout.gameplay.size
 	hud_viewport.size = layout.resolution
 	hud_image.position = Vector2.ZERO
+	controls.landscape = layout.variant == "mobile_landscape"
 	controls.position = layout.controls.position
 	controls.size = layout.controls.size
 	gameplay_viewport.size = layout.resolution
@@ -404,3 +403,6 @@ func _exit_tree() -> void:
 						child.offset_bottom = old.w
 						child.remove_meta("mobile_original_vertical_layout")
 			layer.reparent(original_parent)
+
+func request_shell_menu(id: String) -> void:
+	preload("res://scripts/ui/seaside_shell_actions.gd").request(self,id)

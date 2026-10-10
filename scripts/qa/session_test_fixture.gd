@@ -21,6 +21,7 @@ func mount(target: SceneTree, mobile: bool = false, development: bool = false) -
 		var menu := cards.get_node_or_null("TripleTriadDebugMenu")
 		if not development and menu != null: menu.free()
 	tree.root.add_child(scene)
+	if mobile: preload("res://scripts/qa/mobile_qa_canvas.gd").prepare(tree)
 	tree.current_scene = scene
 	session = SessionComposition.acquire(tree)
 	owns_session = previous == null

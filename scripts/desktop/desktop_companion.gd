@@ -24,6 +24,7 @@ var _expanded_rect := Rect2i()
 var _platform_poll := 0.0
 var _request_pending := false
 var _floating_restore_rect := Rect2i()
+var _pending_shell_fullscreen := false
 var _pending_float_decoration := false
 var _float_client_rect := Rect2i()
 var _dock_drag := false
@@ -34,6 +35,7 @@ var gameplay_viewport: SubViewport
 var menu_viewport: SubViewport
 var menu_image: TextureRect
 var image: TextureRect
+var shell: Control
 var shell_fill: ColorRect
 var status: Label
 var toggle: Button
@@ -57,6 +59,9 @@ func _ready() -> void:
 	shell_fill.color = SHELL_COLOR
 	shell_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shell_fill)
+	shell = preload("res://scripts/ui/seaside_shell_view.gd").new()
+	shell.host = self
+	add_child(shell)
 	dock_width = clampi(default_dock_width,min_dock_width,max_dock_width)
 	gameplay_viewport = SubViewport.new()
 	gameplay_viewport.name = "GameplayViewport"
@@ -283,18 +288,25 @@ func _restore_float_decoration() -> void:
 	get_window().min_size = Vector2i(min_dock_width,400)
 	get_window().size = _float_client_rect.size
 	get_window().position = _float_client_rect.position
+	if _pending_shell_fullscreen:
+		_pending_shell_fullscreen = false
+		get_window().mode = Window.MODE_FULLSCREEN
 func _layout() -> void:
 	if image == null or keyboard_strip == null: return
 	var collapsed := window_state == WindowState.COLLAPSED
 	shell_fill.size = Vector2(get_window().size)
-	image.position = Vector2(0,CHROME_HEIGHT)
-	image.size = Vector2(get_window().size.x, minf(float(get_window().size.x)*SURFACE.y/SURFACE.x, maxi(1,get_window().size.y-CHROME_HEIGHT-KEYBOARD_HEIGHT)))
+	var geometry := preload("res://scripts/ui/seaside_shell_layout.gd").desktop(Vector2(get_window().size))
+	shell.size = Vector2(get_window().size)
+	shell.visible = not collapsed
+	shell.configure(geometry)
+	image.position = geometry.world.position
+	image.size = geometry.world.size
 	image.visible = not collapsed
 	menu_image.position = Vector2(0,CHROME_HEIGHT)
 	menu_image.size = Vector2(get_window().size)-Vector2(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
 	menu_image.visible = not collapsed
-	keyboard_strip.position = Vector2(4,get_window().size.y-KEYBOARD_HEIGHT)
-	keyboard_strip.size = Vector2(get_window().size.x-8,KEYBOARD_HEIGHT)
+	keyboard_strip.position = geometry.controls.position+Vector2(12,30)
+	keyboard_strip.size = geometry.controls.size-Vector2(24,40)
 	keyboard_strip.visible = not collapsed
 	var labels := ["Float","Dock Left","Dock Right","Collapse"]
 	for i in range(labels.size()):
@@ -315,7 +327,12 @@ func _layout() -> void:
 	status.position = Vector2(3,70 if collapsed else 50)
 	status.visible = collapsed and passive != null and passive.is_ready()
 	status.text = "!" if passive != null and passive.is_ready() else ("Focus" if mode == Mode.PASSIVE else "Active")
+	for id in buttons:
+		buttons[id].visible = collapsed and id == "Collapse"
 	passive.layout_timer(gameplay_display_rect())
+	if not collapsed and is_instance_valid(passive.timer_entry):
+		passive.timer_entry.position = geometry.world.position + Vector2(geometry.world.size.x*.35,12)
+		passive.timer_entry.size = Vector2(geometry.world.size.x*.3,44)
 	divider.visible = docked and not collapsed
 	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
 	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
@@ -359,3 +376,20 @@ func gameplay_display_rect() -> Rect2:
 	var factor := minf(image.size.x / SURFACE.x, image.size.y / SURFACE.y)
 	var footprint := Vector2(SURFACE) * factor
 	return Rect2(image.position + (image.size-footprint)*0.5, footprint)
+
+func request_shell_menu(id: String) -> void:
+	preload("res://scripts/ui/seaside_shell_actions.gd").request(self,id)
+
+func toggle_shell_fullscreen() -> void:
+	if docked:
+		_pending_shell_fullscreen = true
+		set_window_state(WindowState.FLOATING)
+	else:
+		get_window().mode = Window.MODE_WINDOWED if get_window().mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
+
+func dock_from_shell(next: int) -> void:
+	if get_window().mode == Window.MODE_FULLSCREEN:
+		get_window().mode = Window.MODE_WINDOWED
+		set_window_state.call_deferred(next)
+	else:
+		set_window_state(next)
