@@ -116,9 +116,9 @@ class AppBar:
                             callback=self.callback, edge=2)
 
     def window_proc(self, hwnd, msg, wp, lp):
-        if msg == self.callback and wp == 1:  # ABN_POSCHANGED
+        if msg == self.callback and wp == 1 and self.registered:  # ABN_POSCHANGED
             self.dirty = True
-        if msg in (0x7E, 0x2E0, 0x1A):  # display/DPI/work-area changed
+        if msg in (0x7E, 0x2E0, 0x1A) and (self.registered or self.command.get("widget", False)):  # display/DPI/work-area changed
             self.dirty = True
         return u.DefWindowProcW(hwnd, msg, wp, lp)
 
@@ -145,14 +145,16 @@ class AppBar:
                 u.SetWindowPos(target, w.HWND(-1), x, y, width, height, 0x10)
             else:
                 if self.target_style is not None:
-                    u.SetWindowLongPtrW(target, -20, self.target_style)
+                    # Floating is an ordinary application, never a dock tool window.
+                    u.SetWindowLongPtrW(target, -20, (self.target_style & ~0x08000080) | 0x40000)
                 # Float releases ownership without restoring a historic rectangle.
-                u.SetWindowPos(target, w.HWND(-2), 0, 0, 0, 0, 0x13)
+                u.SetWindowPos(target, w.HWND(-2), 0, 0, 0, 0, 0x33)
                 if command.get("restore_rect"):
                     x, y, width, height = map(int, command["restore_rect"])
                     # Ordered with widget commands, avoiding a late widget resize
                     # overwriting a Godot-side floating expansion.
                     u.SetWindowPos(target, None, x, y, width, height, 0x14)
+                self.dirty = False  # Float is a one-shot release, never a geometry loop.
             return self.status(target)
         info = monitor_info(target)
         if self.target_style is None:

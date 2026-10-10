@@ -30,23 +30,16 @@ func step(delta: float, project: Callable, outer: Rect2, hysteresis: float,
 	var margin := Vector2(horizontal_margin,vertical_margin)
 	var inner := Rect2(outer.position+margin,outer.size-margin*2.0)
 	var point: Vector2 = project.call(yaw)
-	# Each edge owns its own latch. Vertical clearance influences the orbit
-	# search; central safe-rectangle entry always releases the pan. A point
-	# below the HUD-safe boundary is still unsafe and retains vertical protection.
-	var vertical_unsafe := point.y < outer.position.y or point.y > outer.end.y
-	if inside(point, outer):
+	# Active water yaw is exclusively horizontal. Vertical edges cannot tilt
+	# or influence the heading search; CameraRig owns bounded ground translation.
+	if point.x >= outer.position.x-0.00001 and point.x <= outer.end.x+0.00001:
 		pan_state = PanState.HOLD
 		tracking = false
 		limited = false
 		requested_yaw = yaw
 		return yaw
-	if point.x < outer.position.x - 0.000001 or (vertical_unsafe and point.x <= inner.position.x):
-		pan_state = PanState.PAN_LEFT
-	elif point.x > outer.end.x + 0.000001 or (vertical_unsafe and point.x >= inner.end.x):
-		pan_state = PanState.PAN_RIGHT
-	elif not vertical_unsafe and ((pan_state == PanState.PAN_LEFT and point.x >= inner.position.x) \
-			or (pan_state == PanState.PAN_RIGHT and point.x <= inner.end.x)):
-		pan_state = PanState.HOLD
+	if point.x < outer.position.x: pan_state = PanState.PAN_LEFT
+	elif point.x > outer.end.x: pan_state = PanState.PAN_RIGHT
 	tracking = pan_state != PanState.HOLD
 	limited = false
 	requested_yaw = yaw
@@ -62,7 +55,7 @@ func step(delta: float, project: Callable, outer: Rect2, hysteresis: float,
 	var best := yaw
 	# Aim a subpixel inside the stop region so exponential convergence actually
 	# crosses it, rather than approaching the boundary indefinitely.
-	var goal := inner.grow(-0.0001)
+	var goal := Rect2(inner.position.x+0.0001,-10000.0,inner.size.x-0.0002,20000.0)
 	var best_error := violation(point, goal)
 	var best_distance := INF
 	var found_safe := false

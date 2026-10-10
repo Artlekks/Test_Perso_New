@@ -64,8 +64,11 @@ func put_fish(pixel: Vector2, depth := 12.0) -> void:
 	camera.transform = base
 	var logical_pixel := pixel * Vector2(640, 480)
 	logical_pixel.y += float(viewport.size.y - 480) * 0.5
-	fish.global_position = camera.project_position(logical_pixel, depth)
+	var physical := camera.project_position(logical_pixel, depth)
+	fish.global_position = camera.project_position(Vector2(320,220),depth)
 	rig.set_fishing_fight_tracking(true, fish)
+	tick()
+	fish.global_position = physical
 
 func tick(count := 1) -> void:
 	for frame in range(count):
@@ -108,6 +111,7 @@ func test_visibility_independence() -> void:
 		fish.global_position = camera.get_camera_transform() * Vector3(side * 8.0, 0.0, 1.0)
 		fish.visible = false
 		rig.set_fishing_fight_tracking(true, fish)
+		rig.fishing_camera_state = rig.FishingCameraPresentationState.ANCHORED
 		tick()
 		check(rig.fight_camera_tracking.requested_yaw * side < 0.0,
 			"hidden physical target behind optical plane retains corrective side")
@@ -126,6 +130,7 @@ func test_visibility_independence() -> void:
 	fish.visible = false
 	fish.global_position = submerged_position
 	rig.set_fishing_fight_tracking(true, fish)
+	rig.fishing_camera_state = rig.FishingCameraPresentationState.ANCHORED
 	tick()
 	check(is_equal_approx(submerged_request, rig.fight_camera_tracking.requested_yaw)
 		and camera.transform.is_equal_approx(submerged_transform),
@@ -156,6 +161,11 @@ func test_water_state_coverage() -> void:
 			# Clear the direct fixture owner/base so water entry must acquire it.
 			rig.reset_fishing_follow()
 			fish.visible = visible
+			var physical := fish.global_position
+			fish.global_position = camera.project_position(Vector2(320,220),12)
+			coordinator._sync_fight_camera_tracking()
+			tick()
+			fish.global_position = physical
 			coordinator._sync_fight_camera_tracking()
 			tick()
 			check(rig._fight_tracking_active and rig._fight_tracking_target == fish,
@@ -212,7 +222,6 @@ func run() -> void:
 	var fish_before := fish.global_transform
 	var distance_before := camera.global_position.distance_to(player.global_position)
 	var pitch_before := camera.global_basis.z.y
-	var player_pixel_before := camera.unproject_position(player.global_position)
 	var fov_before := camera.fov
 	tick()
 	check(rig.fight_camera_tracking.requested_yaw < 0.0, "right edge requests camera yaw right (negative world Y)")
@@ -223,7 +232,7 @@ func run() -> void:
 	check(is_equal_approx(distance_before, camera.global_position.distance_to(player.global_position)), "physical pivot distance preserved")
 	check(is_equal_approx(pitch_before, camera.global_basis.z.y), "world pitch preserved")
 	check(is_equal_approx(camera.fov, fov_before), "FOV preserved")
-	check(camera.unproject_position(player.global_position).distance_to(player_pixel_before) < 0.01, "physical player screen framing preserved")
+	check(rig.fight_camera_tracking.inside(camera.unproject_position(fish.global_position)/Vector2(viewport.size),rig.fishing_safe_region(),0.001), "hard containment takes priority over unchanged optical player framing only outside bounds")
 	check(is_zero_approx(rig.rotation.y), "rig heading untouched")
 	var settled: float = rig.fight_camera_tracking.yaw
 	tick(240)
@@ -241,11 +250,11 @@ func run() -> void:
 	put_fish(Vector2(1.5, 0.4))
 	tick(240)
 	check(absf(rig.fight_camera_tracking.yaw) <= deg_to_rad(5.0), "maximum yaw respected")
-	check(rig.fight_camera_tracking.limited, "infeasible yaw-only shot reports limit")
+	check(rig.fight_camera_tracking.limited and rig.safe_containment_failures>0, "infeasible capped yaw reports failure rather than moving player framing or increasing cap")
 	rig.fight_max_yaw_degrees = 55.0
-	put_fish(Vector2(0.90, 0.82))
+	put_fish(Vector2(0.90, 0.705),2.0)
 	tick(240)
-	check(camera.unproject_position(fish.global_position).y < rig.fight_safe_bottom * viewport.size.y, "lateral fish descending toward HUD gets vertical clearance from orbit")
+	check(camera.unproject_position(fish.global_position).y <= rig.fight_safe_bottom * viewport.size.y + 0.5, "lateral fish descending toward HUD stops at legal boundary with vertical clearance")
 	var held := camera.transform
 	rig.set_fishing_fight_tracking(false)
 	tick(60)
@@ -315,14 +324,13 @@ func run() -> void:
 	check(found_pose, "QA loads current authored fishing camera pose")
 	for x in [0.08, 0.94]:
 		put_fish(Vector2(x, 0.4))
-		var initial_player_pixel := camera.unproject_position(player.global_position)
 		var initial_distance := camera.global_position.length()
 		var initial_pitch := camera.global_basis.z.y
 		tick(240)
 		var projected := camera.unproject_position(fish.global_position) / Vector2(viewport.size)
 		check(projected.x >= rig.fight_safe_left - .001 and projected.x <= rig.fight_safe_right + .001, "authored pose tracks lateral fish into safe region")
-		check(camera.unproject_position(player.global_position).distance_to(initial_player_pixel) < 0.01,
-			"authored lower-left player framing preserved")
+		check(not camera.is_position_behind(fish.global_position) and rig.fight_camera_tracking.inside(projected,rig.fishing_safe_region(),0.001),
+			"authored camera contains physical target with minimal boundary framing")
 		check(is_equal_approx(camera.global_position.length(), initial_distance) and is_equal_approx(camera.global_basis.z.y, initial_pitch),
 			"authored pose pitch/distance preserved")
 		var measured: Vector2 = rig._project_fight_orbit(0.0, camera.get_camera_transform(),
@@ -330,6 +338,7 @@ func run() -> void:
 		check(measured.distance_to(projected) < 0.00001,
 			"projection math matches active Camera3D including authored h/v offsets")
 	await test_complete_retrieve()
+	test_vertical_retrieve()
 	put_fish(Vector2(0.94, 0.4))
 	tick(120)
 	# Full exploration exit retains the tracked start shot and uses its existing tween.
@@ -471,3 +480,23 @@ func test_complete_retrieve() -> void:
 	check(not rig.fishing_follow_returning, "exit cancels retrieve tween to avoid competing rotations")
 	await create_timer(0.8).timeout
 	check(camera.transform.is_equal_approx(base), "interrupted retrieve uses original exploration restoration")
+
+
+func test_vertical_retrieve() -> void:
+	for endpoint in [Vector2(.5,.705),Vector2(.90,.705)]:
+		put_fish(endpoint,2.0)
+		tick(180)
+		var physical := fish.global_position
+		var offsets := Vector2(camera.h_offset,camera.v_offset)
+		var pose := camera.transform
+		var neutral: Vector2 = rig._fight_base_offsets
+		var initial_pan: Vector2 = rig._water_pan
+		rig.return_fishing_follow_to_target(true)
+		check(camera.transform.is_equal_approx(pose) and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(offsets),"vertical/corner retrieve starts without optical or pose snap")
+		check(rig.fishing_follow_returning,"vertical-only framing uses existing retrieve owner even at zero yaw")
+		tick(21)
+		check(rig._retrieve_pan.length()<initial_pan.length() and rig._retrieve_pan.length()>0.00001 if initial_pan.length()>0.00001 else is_zero_approx(rig._retrieve_pan.length()),"ground pan unwinds only when the solved framing needed pan")
+		tick(600)
+		check(camera.transform.is_equal_approx(base) and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(neutral),"vertical/corner retrieve restores exact post-aim shot")
+		check(not rig.fishing_follow_returning and not rig._retrieve_yaw_return_active,"no stale framing return owner")
+		check(fish.global_position.is_equal_approx(physical),"framing return never changes physical bait")

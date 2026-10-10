@@ -174,18 +174,22 @@ func passive_camera_drift() -> void:
 		check(camera.global_transform.is_equal_approx(shot),"real Passive physical drift does not micro-rotate side %d" % side)
 	for side in [-1,1]:
 		var held := camera.global_transform
+		var held_offsets := Vector2(camera.h_offset,camera.v_offset)
 		for x in ([.5,.25,.181] if side < 0 else [.5,.75,.819]):
 			bait.global_position = camera.project_position(Vector2(x,.45)*Vector2(shell.gameplay_viewport.size),12)
 			for frame in range(3): await process_frame
-			check(camera.global_transform == held,"Passive safe journey holds exact yaw")
+			check(camera.global_transform == held and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(held_offsets),"Passive safe journey holds yaw and optical framing")
+		var before_yaw: float = rig.fight_camera_tracking.yaw
 		bait.global_position = camera.project_position(Vector2(.08 if side < 0 else .94,.45)*Vector2(shell.gameplay_viewport.size),12)
-		for frame in range(3): await process_frame
-		check(rig.fight_camera_tracking.tracking and (rig.fight_camera_tracking.requested_yaw-rig.fight_camera_tracking.yaw)*side<0,"Passive opposite edge exclusively requests correct yaw")
+		for frame in range(90): await process_frame
+		check((rig.fight_camera_tracking.yaw-before_yaw)*side<0,"Passive opposite edge applies correct yaw before immediate containment/hold")
+		check(rig.fight_camera_tracking.inside(camera.unproject_position(bait.global_position),rig.fishing_safe_region_pixels(),0.5),"Passive edge cannot remain outside rectangle")
 		var panned := camera.global_transform
+		var panned_offsets := Vector2(camera.h_offset,camera.v_offset)
 		for x in [.181,.5,.819]:
 			bait.global_position = camera.project_position(Vector2(x,.45)*Vector2(shell.gameplay_viewport.size),12)
 			for frame in range(3): await process_frame
-			check(camera.global_transform == panned,"Passive safe reentry and cross-center freeze yaw immediately")
+			check(camera.global_transform == panned and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(panned_offsets),"Passive safe reentry and cross-center freeze yaw/framing immediately")
 	check(not fishing.encounter.bite_active,"drift test cannot bypass focus opportunity timer")
 	bait.global_transform=original
 	bait.process_mode=original_mode

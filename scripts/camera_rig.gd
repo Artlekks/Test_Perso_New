@@ -1,5 +1,6 @@
 extends Node3D
 
+const GroundFraming = preload("res://scripts/fishing_camera_framing.gd")
 const FightCameraTracking = preload("res://scripts/fishing_fight_camera_tracking.gd")
 
 signal fishing_view_ready
@@ -55,7 +56,7 @@ var quick_cancel_camera_return_time: float = 0.85
 @export_range(0.0, 0.9, 0.01) var fight_safe_top: float = 0.22
 ## HUD begins around y=405/480; leave clearance for the fish sprite above it.
 @export_range(0.1, 1.0, 0.01) var fight_safe_bottom: float = 0.70
-## Small per-edge latch. Central band 0.14 / 0.90 always holds the current yaw.
+## Search margin only; entering the legal rectangle immediately holds the shot.
 @export_range(0.0, 0.2, 0.005) var fight_tracking_hysteresis: float = 0.02
 ## Preserve vertical HUD clearance independently of the wider lateral band.
 @export_range(0.0, 0.1, 0.005) var fight_vertical_tracking_hysteresis: float = 0.025
@@ -66,6 +67,42 @@ var quick_cancel_camera_return_time: float = 0.85
 var fight_camera_tracking = FightCameraTracking.new()
 var _fight_tracking_active := false
 var _fight_tracking_target: Node3D
+var _fight_base_offsets := Vector2.ZERO
+enum FishingCameraPresentationState { TRAVEL, ANCHORED, RETRIEVE_RETURN }
+var fishing_camera_state := FishingCameraPresentationState.TRAVEL
+@export_category("Two-stage Fishing Framing")
+## Travel gets more bottom room, still above the HUD's ~405/480 start.
+@export var travel_safe_frame := Rect2(0.18,0.22,0.64,0.56)
+## Anchor is the physical player's projection in the authored post-aim shot.
+## This offset tunes that shared reference without a shell-specific magic point.
+@export var player_anchor_offset := Vector2.ZERO
+@export var player_anchor_tolerance := Vector2(0.04,0.045)
+@export_range(0.0,30.0,0.1) var travel_translation_limit := 6.0
+@export_range(0.0,5.0,0.05) var anchored_translation_limit := 0.75
+## Bounded sightline translation, a fraction of the authored optical distance.
+## Unlike ground-only pan this preserves the exact player pixel at vertical edges.
+@export_range(0.0,0.5,0.01) var anchored_dolly_limit := 0.25
+@export_range(0.1,10.0,0.1) var fishing_correction_grace_seconds := 2.0
+var fishing_player_anchor := Vector2.ZERO
+var _water_pan := Vector2.ZERO
+var _anchored_pan := Vector2.ZERO
+var _retrieve_pan := Vector2.ZERO
+var _water_dolly := 0.0
+var _retrieve_dolly := 0.0
+var framing_constraints_feasible := true
+var fishing_rotation_failures := 0
+var fishing_anchor_failures := 0
+var fishing_hud_failures := 0
+var fishing_hud_geometry: Array[CanvasItem] = []
+var _hud_failure_reported := false
+var _retrieve_start_offsets := Vector2.ZERO
+var _retrieve_end_offsets := Vector2.ZERO
+var _safe_violation_time := 0.0
+var _safe_failure_reported := false
+var safe_containment_failures := 0
+@export var fishing_safe_debug_visible := true
+const SAFE_TOLERANCE_PIXELS := 0.5
+var _safe_overlay: Control
 var _fight_base_valid := false
 var _fight_base_camera_transform: Transform3D
 
@@ -127,6 +164,13 @@ var _retrieve_yaw: float = 0.0
 
 func _ready() -> void:
 	var camera: Camera3D = $Camera3D
+	var layer := CanvasLayer.new()
+	layer.name = "FishingSafeRegionDebug"
+	layer.layer = 4
+	add_child(layer)
+	_safe_overlay = preload("res://scripts/ui/fishing_safe_region_debug.gd").new()
+	_safe_overlay.rig = self
+	layer.add_child(_safe_overlay)
 
 	exploration_h_offset = camera.h_offset
 	exploration_v_offset = camera.v_offset
@@ -140,12 +184,8 @@ func _process(_delta: float) -> void:
 	if target == null:
 		return
 
-	# The original cast/return controller always evaluates its original shot.
-	# A child-camera overlay cannot change the rig's heading or movement rail.
-	if _fight_base_valid and _fight_tracking_active:
-		$Camera3D.transform = _fight_base_camera_transform
-
-	var follow_controls_position := _update_fishing_follow()
+	# Water has one composition owner; the airborne rail never writes through it.
+	var follow_controls_position := false if _fight_tracking_active else _update_fishing_follow()
 
 	# A quick-cancel return tween owns the rig position until it finishes.
 	# Without this guard the normal target-follow line below would overwrite
@@ -167,7 +207,7 @@ func _process(_delta: float) -> void:
 		_last_heading_yaw = rotation.y
 		heading_changed.emit(rotation.y)
 
-	_update_retrieve_yaw(_delta)
+	if not _fight_tracking_active: _update_retrieve_yaw(_delta)
 	_update_fight_camera_tracking(_delta)
 
 
@@ -180,12 +220,25 @@ func set_fishing_fight_tracking(active: bool, hooked_target: Node3D = null) -> v
 			_fight_tracking_active = false
 			return
 		_fight_base_camera_transform = camera.transform
+		_fight_base_offsets = Vector2(camera.h_offset,camera.v_offset)
+		_water_pan = Vector2(global_position.x-target.global_position.x,global_position.z-target.global_position.z)
+		_water_dolly = 0.0
+		_anchored_pan = Vector2.ZERO
+		framing_constraints_feasible = true
+		fishing_camera_state = FishingCameraPresentationState.TRAVEL
+		var authored := global_transform*_fight_base_camera_transform
+		authored.origin -= Vector3(_water_pan.x,0,_water_pan.y)
+		authored.origin += authored.basis.x*camera.h_offset+authored.basis.y*camera.v_offset
+		fishing_player_anchor = _project_fight_orbit(0.0,authored,camera.get_camera_projection(),target.global_position,target.global_position)+player_anchor_offset
+		_safe_violation_time = 0.0
+		_safe_failure_reported = false
 		_fight_base_valid = true
 		fight_camera_tracking.reset()
-		# Hooked mechanics, not any sprite/notifier, own the entire fight.
-		# Retain the existing distance-driven return rail, but prevent the cast
-		# controller from translating the rig until Ryu happens to be visible.
-		begin_fishing_player_return()
+		# Water composition replaces the airborne rail, without snapping its pan.
+		fishing_follow_armed = false
+		fishing_follow_active = false
+		fishing_player_return_active = false
+		fishing_player_camera_locked = true
 	# Inactive means hold the last shot for landing/result animations. Reset
 	# belongs exclusively to the existing follow reset / exploration exit.
 
@@ -224,38 +277,220 @@ func _project_fight_orbit(yaw: float, view_base: Transform3D, projection: Projec
 	return Vector2(clip.x / clip.w * 0.5 + 0.5, -clip.y / clip.w * 0.5 + 0.5)
 
 
+func _water_base(pan: Vector2) -> Transform3D:
+	var base := global_transform*_fight_base_camera_transform
+	base.origin += Vector3(pan.x,0,pan.y)
+	var camera: Camera3D = $Camera3D
+	var sightline := base.origin+base.basis.x*camera.h_offset+base.basis.y*camera.v_offset-target.global_position
+	base.origin += sightline*_water_dolly
+	return base
+
+func _optical_pose(base: Transform3D, camera: Camera3D) -> Transform3D:
+	base.origin += base.basis.x*camera.h_offset+base.basis.y*camera.v_offset
+	return base
+
+func player_anchor_region() -> Rect2:
+	# Even an unusually authored anchor must not authorize panning the feet off-screen.
+	return Rect2(fishing_player_anchor-player_anchor_tolerance,player_anchor_tolerance*2.0).intersection(Rect2(.02,.02,.96,.96))
+
+func fishing_safe_frames() -> Array[Rect2]:
+	return [travel_safe_frame,Rect2(Vector2(fight_safe_left,fight_safe_top),Vector2(fight_safe_right-fight_safe_left,fight_safe_bottom-fight_safe_top))]
+
+func fishing_safe_region() -> Rect2:
+	return fishing_safe_frames()[0 if fishing_camera_state == FishingCameraPresentationState.TRAVEL else 1]
+
+func fishing_safe_region_pixels() -> Rect2:
+	var size: Vector2 = $Camera3D.get_viewport().get_visible_rect().size
+	var region := fishing_safe_region()
+	return Rect2(region.position*size,region.size*size)
+
+func set_fishing_hud_geometry(power_view: Node, depth_view: Node) -> void:
+	fishing_hud_geometry.clear()
+	if is_instance_valid(power_view):
+		var background := power_view.get_node_or_null("Root/PowerBarBG") as CanvasItem
+		if background != null: fishing_hud_geometry.append(background)
+	if is_instance_valid(depth_view):
+		var frame := depth_view.get_node_or_null("Frame") as CanvasItem
+		if frame != null: fishing_hud_geometry.append(frame)
+
+func fishing_hud_regions_pixels() -> Array[Rect2]:
+	var regions: Array[Rect2] = []
+	for visual in fishing_hud_geometry:
+		if not is_instance_valid(visual) or not visual.is_visible_in_tree(): continue
+		if visual.get_viewport() != $Camera3D.get_viewport(): continue
+		var rect: Rect2
+		if visual is Sprite2D: rect = visual.get_rect()
+		elif visual is Control: rect = Rect2(Vector2.ZERO,visual.size)
+		else: continue
+		regions.append(visual.get_global_transform_with_canvas()*rect)
+	return regions
+
 func _update_fight_camera_tracking(delta: float) -> void:
-	if not _fight_tracking_active or not is_instance_valid(_fight_tracking_target):
-		return
+	if not _fight_tracking_active or not is_instance_valid(_fight_tracking_target): return
 	var camera := get_node_or_null("Camera3D") as Camera3D
-	if camera == null or not camera.current or not _fight_base_valid:
-		return
-	var viewport_size := camera.get_viewport().get_visible_rect().size
-	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
-		return
-	var base := global_transform * _fight_base_camera_transform
-	var pivot := target.global_position
-	# The fight shadow projects through this exact bait position onto water;
-	# projecting its raw water-plane X/Z instead would measure the wrong pixel.
-	# Use the neutral optical pose even when this method is evaluated more than
-	# once between process frames. An already-orbited camera would double yaw.
-	var optical_base := base
-	optical_base.origin += base.basis.x * camera.h_offset + base.basis.y * camera.v_offset
-	var project := _project_fight_orbit.bind(optical_base,
-		camera.get_camera_projection(), pivot, _fight_tracking_target.global_position)
-	var region := Rect2(Vector2(fight_safe_left, fight_safe_top),
-		Vector2(maxf(0.01, fight_safe_right - fight_safe_left),
-		maxf(0.01, fight_safe_bottom - fight_safe_top)))
-	var yaw: float = fight_camera_tracking.step(delta, project, region,
-		fight_tracking_hysteresis, deg_to_rad(fight_max_yaw_degrees),
-		fight_yaw_response, fight_yaw_return_response, fight_vertical_tracking_hysteresis)
-	camera.global_transform = _fight_orbit_transform(base, pivot, yaw)
+	if camera == null or not camera.current or not _fight_base_valid: return
+	var size := camera.get_viewport().get_visible_rect().size
+	if size.x <= 0.0 or size.y <= 0.0: return
+	var physical := _fight_tracking_target.global_position
+	var player_world := target.global_position
+	var was_travel := fishing_camera_state == FishingCameraPresentationState.TRAVEL
+	var base := _water_base(_water_pan)
+	var yaw: float = 0.0 if was_travel else fight_camera_tracking.yaw
+	if not was_travel:
+		var project := _project_fight_orbit.bind(_optical_pose(base,camera),camera.get_camera_projection(),player_world,physical)
+		# Horizontal violations alone request yaw. Vertical framing is separate.
+		yaw = fight_camera_tracking.step(delta,project,fishing_safe_region(),fight_tracking_hysteresis,deg_to_rad(fight_max_yaw_degrees),fight_yaw_response,fight_yaw_return_response,0.0)
+	var pose := _fight_orbit_transform(base,player_world,yaw)
+	var point := _project_fight_orbit(0.0,_optical_pose(pose,camera),camera.get_camera_projection(),player_world,physical)
+	var region := fishing_safe_region()
+	if not fight_camera_tracking.inside(point,region,0.00001):
+		# ANCHORED never translates for a horizontal edge: that belongs to yaw.
+		var translate := was_travel or point.y < region.position.y or point.y > region.end.y
+		if translate:
+			if not was_travel: pose = _bounded_anchor_dolly(pose,camera,physical)
+			var remaining := _project_fight_orbit(0.0,_optical_pose(pose,camera),camera.get_camera_projection(),player_world,physical)
+			if was_travel or remaining.y < region.position.y-0.00001 or remaining.y > region.end.y+0.00001:
+				pose = _bounded_ground_pan(pose,camera,physical,was_travel,delta)
+	# One final production composition. No pitch, roll, optical offset or bait writes.
+	camera.global_transform = pose
+	if was_travel:
+		var projected_player := camera.unproject_position(player_world)/size
+		if fight_camera_tracking.inside(projected_player,player_anchor_region(),0.00001):
+			fishing_camera_state = FishingCameraPresentationState.ANCHORED
+			_anchored_pan = _water_pan
+	check_fishing_safe_invariant(camera.unproject_position(physical),delta,camera.is_position_behind(physical))
+	# Compare orientation in the base yaw frame rather than Euler angles.
+	var expected := Basis(Vector3.UP,yaw)*(global_transform*_fight_base_camera_transform).basis
+	if not camera.global_basis.is_equal_approx(expected):
+		fishing_rotation_failures += 1
+		if OS.is_debug_build(): push_error("FISHING TRACKING PITCH/ROLL VIOLATION")
+	if fishing_camera_state == FishingCameraPresentationState.ANCHORED and not fight_camera_tracking.inside(camera.unproject_position(player_world)/size,player_anchor_region(),0.001):
+		fishing_anchor_failures += 1
+		if OS.is_debug_build(): push_error("FISHING PLAYER ANCHOR VIOLATION")
+
+func _bounded_anchor_dolly(pose: Transform3D, camera: Camera3D, physical: Vector3) -> Transform3D:
+	var optical := _optical_pose(pose,camera)
+	var axis := (optical.origin-target.global_position)/(1.0+_water_dolly)
+	var inverse := optical.affine_inverse()
+	var local := inverse*physical
+	var direction := inverse.basis*(-axis)
+	var projection := camera.get_camera_projection()
+	var origin := projection*Vector4(local.x,local.y,local.z,1)
+	var slope := projection*Vector4(direction.x,direction.y,direction.z,0)
+	var frame := fishing_safe_region()
+	var low := -anchored_dolly_limit-_water_dolly
+	var high := anchored_dolly_limit-_water_dolly
+	var allowed_low := low
+	var allowed_high := high
+	for plane: Vector4 in [Vector4(0,1,0,frame.position.y*2-1),Vector4(0,-1,0,1-frame.end.y*2),Vector4(0,0,0,-1)]:
+		var coefficient := plane.dot(slope)
+		var bound := -plane.dot(origin)-(0.05 if plane == Vector4(0,0,0,-1) else 0.0)
+		if absf(coefficient)<0.000001:
+			if bound < 0: return pose
+		elif coefficient > 0: high = minf(high,bound/coefficient)
+		else: low = maxf(low,bound/coefficient)
+	var correction := 0.0
+	if low <= high:
+		correction = clampf(0.0,low,high)
+	else:
+		# A bounded dolly may provide only part of the required clearance.
+		# Use that improvement before solving the remaining bounded ground pan.
+		var current := _project_fight_orbit(0.0,optical,projection,target.global_position,physical)
+		var error := absf(current.y-clampf(current.y,frame.position.y,frame.end.y))
+		for candidate in [allowed_low,allowed_high]:
+			var trial := pose
+			trial.origin += axis*candidate
+			var point := _project_fight_orbit(0.0,_optical_pose(trial,camera),projection,target.global_position,physical)
+			var candidate_error := absf(point.y-clampf(point.y,frame.position.y,frame.end.y))
+			if candidate_error < error: correction = candidate; error = candidate_error
+	pose.origin += axis*correction
+	_water_dolly += correction
+	framing_constraints_feasible = true
+	return pose
+
+func _bounded_ground_pan(pose: Transform3D, camera: Camera3D, physical: Vector3, travel: bool, delta: float) -> Transform3D:
+	var limit := travel_translation_limit if travel else anchored_translation_limit
+	var reference := Vector2.ZERO if travel else _anchored_pan
+	# Pan is stored before yaw, then rotated with the player-pivot composition.
+	var scale := 1.0+_water_dolly
+	var remaining_min := (reference-Vector2.ONE*limit-_water_pan)*scale
+	var remaining_max := (reference+Vector2.ONE*limit-_water_pan)*scale
+	var yaw: float = fight_camera_tracking.yaw
+	var rotation_2d := Transform2D(-yaw,Vector2.ZERO)
+	var polygon: Array[Vector2] = [rotation_2d*remaining_min,rotation_2d*Vector2(remaining_max.x,remaining_min.y),rotation_2d*remaining_max,rotation_2d*Vector2(remaining_min.x,remaining_max.y)]
+	var optical := _optical_pose(pose,camera)
+	var projection := camera.get_camera_projection()
+	if not travel:
+		polygon = GroundFraming.screen_constraints(polygon,optical,projection,target.global_position,player_anchor_region())
+	var player_safe := polygon.duplicate()
+	var frame := fishing_safe_region()
+	# Vertical-only constraints in ANCHORED; yaw owns horizontal edges.
+	polygon = GroundFraming.screen_constraints(polygon,optical,projection,physical,frame,not travel)
+	framing_constraints_feasible = not polygon.is_empty()
+	if travel and not polygon.is_empty():
+		# When one bounded pan can satisfy bait clearance and bring Ryu into
+		# the authored anchor, choose that path. Otherwise travel with the bait.
+		# The transition still depends on the actual resulting player projection.
+		var anchored_path := GroundFraming.screen_constraints(polygon,optical,projection,target.global_position,player_anchor_region().grow(-.001))
+		if not anchored_path.is_empty(): polygon = anchored_path
+	if polygon.is_empty():
+		# Preserve player/translation bounds. The containment firewall reports the
+		# unsatisfiable physical state rather than tilting or moving gameplay actors.
+		polygon = player_safe
+		if polygon.is_empty(): return pose
+		var best := Vector2.ZERO
+		var error := INF
+		for candidate in polygon:
+			var trial := pose
+			trial.origin += Vector3(candidate.x,0,candidate.y)
+			var p := _project_fight_orbit(0.0,_optical_pose(trial,camera),projection,target.global_position,physical)
+			var e: float = fight_camera_tracking.violation(p,fishing_safe_region())
+			if e < error: best = candidate; error = e
+		pose.origin += Vector3(best.x,0,best.y)
+		_water_pan += rotation_2d.affine_inverse()*best/scale
+		return pose
+	# Travel's feasible pan progresses toward the authored player shot, even
+	# before the complete anchor region becomes reachable. Never pan while safe.
+	var wanted := rotation_2d*(-_water_pan) if travel else Vector2.ZERO
+	var correction := GroundFraming.nearest(polygon,wanted)
+	# Reuse the established exponential response for the initial pan. Anchored
+	# vertical clearance remains immediate and bounded; its player pixel holds.
+	if travel: correction *= 1.0-exp(-fight_yaw_response*delta)
+	pose.origin += Vector3(correction.x,0,correction.y)
+	_water_pan += rotation_2d.affine_inverse()*correction/scale
+	return pose
+
+func check_fishing_safe_invariant(point: Vector2, delta: float, behind := false) -> void:
+	# Live HUD geometry, not duplicated shell pixel constants. HUD overlap is
+	# immediate; only a safe-frame edge gets the bounded correction grace.
+	var overlaps_hud := false
+	for hud in fishing_hud_regions_pixels():
+		if hud.grow(2.0).has_point(point): overlaps_hud = true
+	if overlaps_hud and not _hud_failure_reported:
+		fishing_hud_failures += 1
+		if OS.is_debug_build(): push_error("FISHING HUD OVERLAP VIOLATION: projected=%s" % point)
+	_hud_failure_reported = overlaps_hud
+	var region := fishing_safe_region_pixels()
+	if behind or not fight_camera_tracking.inside(point,region,SAFE_TOLERANCE_PIXELS):
+		_safe_violation_time += delta
+		if _safe_violation_time >= fishing_correction_grace_seconds and not _safe_failure_reported:
+			_safe_failure_reported = true
+			safe_containment_failures += 1
+			if OS.is_debug_build(): push_error("FISHING SAFE REGION VIOLATION: state=%s target=%s projected=%s region=%s yaw=%s feasible=%s" % [FishingCameraPresentationState.keys()[fishing_camera_state],_fight_tracking_target,point,region,fight_camera_tracking.yaw,framing_constraints_feasible])
+	else:
+		_safe_violation_time = 0.0
+		_safe_failure_reported = false
 
 
 func _clear_fight_camera_tracking(restore_pose: bool = true) -> void:
 	var camera := get_node_or_null("Camera3D") as Camera3D
 	if restore_pose and _fight_base_valid and camera != null:
 		camera.transform = _fight_base_camera_transform
+		camera.h_offset = _fight_base_offsets.x
+		camera.v_offset = _fight_base_offsets.y
+	_water_pan = Vector2.ZERO
+	_water_dolly = 0.0
+	_anchored_pan = Vector2.ZERO
 	_fight_base_valid = false
 	_fight_tracking_active = false
 	_fight_tracking_target = null
@@ -363,6 +598,10 @@ func reset_fishing_follow() -> void:
 func return_fishing_follow_to_target(completed_retrieve: bool = false) -> void:
 	var return_yaw: float = fight_camera_tracking.yaw
 	var return_base := _fight_base_camera_transform
+	var return_offsets := Vector2($Camera3D.h_offset,$Camera3D.v_offset)
+	var return_end_offsets := _fight_base_offsets
+	var return_pan := _water_pan
+	var return_dolly := _water_dolly
 	var return_orbit := completed_retrieve and _fight_base_valid
 	_clear_fight_camera_tracking(not return_orbit)
 	fishing_player_camera_locked = false
@@ -383,7 +622,12 @@ func return_fishing_follow_to_target(completed_retrieve: bool = false) -> void:
 		if return_orbit:
 			_retrieve_base_transform = return_base
 			_retrieve_yaw = return_yaw
-			_retrieve_yaw_return_active = absf(return_yaw) > deg_to_rad(retrieve_yaw_stop_degrees)
+			_retrieve_start_offsets = return_offsets
+			_retrieve_end_offsets = return_end_offsets
+			_retrieve_pan = return_pan
+			_retrieve_dolly = return_dolly
+			fishing_camera_state = FishingCameraPresentationState.RETRIEVE_RETURN
+			_retrieve_yaw_return_active = absf(return_yaw) > deg_to_rad(retrieve_yaw_stop_degrees) or return_offsets.distance_to(return_end_offsets)>0.0001 or return_pan.length()>0.0001 or absf(return_dolly)>0.00001
 			fishing_follow_returning = _retrieve_yaw_return_active
 			if not _retrieve_yaw_return_active:
 				$Camera3D.transform = return_base
@@ -436,8 +680,17 @@ func _update_retrieve_yaw(delta: float) -> void:
 	if not _retrieve_yaw_return_active:
 		return
 	_retrieve_yaw = lerpf(_retrieve_yaw, 0.0, 1.0 - exp(-fight_yaw_return_response * delta))
-	$Camera3D.transform = _fight_orbit_transform(_retrieve_base_transform, Vector3.ZERO, _retrieve_yaw)
-	if absf(_retrieve_yaw) <= deg_to_rad(retrieve_yaw_stop_degrees):
+	var factor := 1.0-exp(-fight_yaw_return_response*delta)
+	_retrieve_start_offsets = _retrieve_start_offsets.lerp(_retrieve_end_offsets,factor)
+	_retrieve_pan = _retrieve_pan.lerp(Vector2.ZERO,factor)
+	_retrieve_dolly = lerpf(_retrieve_dolly,0.0,factor)
+	var pose := _retrieve_base_transform
+	pose.origin += global_basis.inverse()*Vector3(_retrieve_pan.x,0,_retrieve_pan.y)
+	pose.origin += (pose.origin+pose.basis.x*_retrieve_end_offsets.x+pose.basis.y*_retrieve_end_offsets.y)*_retrieve_dolly
+	$Camera3D.transform = _fight_orbit_transform(pose, Vector3.ZERO, _retrieve_yaw)
+	$Camera3D.h_offset = _retrieve_start_offsets.x
+	$Camera3D.v_offset = _retrieve_start_offsets.y
+	if absf(_retrieve_yaw) <= deg_to_rad(retrieve_yaw_stop_degrees) and _retrieve_start_offsets.distance_to(_retrieve_end_offsets)<0.0001 and _retrieve_pan.length()<0.0001 and absf(_retrieve_dolly)<0.00001:
 		_finish_fishing_follow_return()
 
 
@@ -453,6 +706,8 @@ func _finish_fishing_follow_return() -> void:
 func _finish_retrieve_yaw_return() -> void:
 	if _retrieve_yaw_return_active:
 		$Camera3D.transform = _retrieve_base_transform
+		$Camera3D.h_offset = _retrieve_end_offsets.x
+		$Camera3D.v_offset = _retrieve_end_offsets.y
 		_retrieve_yaw_return_active = false
 
 

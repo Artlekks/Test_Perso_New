@@ -90,15 +90,15 @@ func run() -> void:
 			if shell.platform.supported() and DisplayServer.get_name() != "headless":
 				shell.toggle_shell_fullscreen()
 				await settle()
-				check(root.mode == Window.MODE_FULLSCREEN,"reference maximize uses fullscreen")
+				check(root.mode == Window.MODE_MAXIMIZED,"reference maximize uses normal Windows maximization")
 				shell.dock_from_shell(shell.WindowState.DOCK_LEFT)
 				var dock_deadline := Time.get_ticks_msec()+8000
 				while (not shell.platform.read_status().get("registered",false) or shell._request_pending) and Time.get_ticks_msec()<dock_deadline: await process_frame
-				check(shell.docked and root.mode == Window.MODE_WINDOWED,"fullscreen can dock through existing platform path")
+				check(shell.docked and root.mode == Window.MODE_WINDOWED,"maximized can dock through existing platform path")
 				shell.toggle_shell_fullscreen()
 				dock_deadline = Time.get_ticks_msec()+8000
-				while root.mode != Window.MODE_FULLSCREEN and Time.get_ticks_msec()<dock_deadline: await process_frame
-				check(root.mode == Window.MODE_FULLSCREEN and not shell.platform.read_status().get("registered",false),"maximize from dock releases AppBar first")
+				while root.mode != Window.MODE_MAXIMIZED and Time.get_ticks_msec()<dock_deadline: await process_frame
+				check(root.mode == Window.MODE_MAXIMIZED and not shell.platform.read_status().get("registered",false),"maximize from dock releases AppBar first")
 				shell.toggle_shell_fullscreen()
 		shell.queue_free()
 		await settle()

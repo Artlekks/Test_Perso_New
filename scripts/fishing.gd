@@ -176,6 +176,9 @@ var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
 
 func _ready() -> void:
+	# Read-only camera exclusion geometry; presentation/mechanics are unchanged.
+	if camera_rig != null and camera_rig.has_method("set_fishing_hud_geometry"):
+		camera_rig.set_fishing_hud_geometry(power_meter_view,depth_meter_view)
 	var pause_controller := FishingPauseControllerScript.new()
 	pause_controller.name = "FishingPauseController"
 	add_child(pause_controller)

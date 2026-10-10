@@ -285,12 +285,13 @@ func _restore_float_decoration() -> void:
 	# work area can otherwise be relocated by Windows during the transition.
 	_pending_float_decoration = false
 	get_window().borderless = false
+	get_window().unresizable = false
 	get_window().min_size = Vector2i(min_dock_width,400)
 	get_window().size = _float_client_rect.size
 	get_window().position = _float_client_rect.position
 	if _pending_shell_fullscreen:
 		_pending_shell_fullscreen = false
-		get_window().mode = Window.MODE_FULLSCREEN
+		get_window().mode = Window.MODE_MAXIMIZED
 func _layout() -> void:
 	if image == null or keyboard_strip == null: return
 	var collapsed := window_state == WindowState.COLLAPSED
@@ -385,10 +386,10 @@ func toggle_shell_fullscreen() -> void:
 		_pending_shell_fullscreen = true
 		set_window_state(WindowState.FLOATING)
 	else:
-		get_window().mode = Window.MODE_WINDOWED if get_window().mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
+		get_window().mode = Window.MODE_WINDOWED if get_window().mode in [Window.MODE_MAXIMIZED,Window.MODE_FULLSCREEN] else Window.MODE_MAXIMIZED
 
 func dock_from_shell(next: int) -> void:
-	if get_window().mode == Window.MODE_FULLSCREEN:
+	if get_window().mode in [Window.MODE_FULLSCREEN,Window.MODE_MAXIMIZED]:
 		get_window().mode = Window.MODE_WINDOWED
 		set_window_state.call_deferred(next)
 	else:
