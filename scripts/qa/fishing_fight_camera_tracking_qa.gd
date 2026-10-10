@@ -218,7 +218,7 @@ func run() -> void:
 	check(rig.fight_camera_tracking.requested_yaw < 0.0, "right edge requests camera yaw right (negative world Y)")
 	check(absf(rig.fight_camera_tracking.yaw) < absf(rig.fight_camera_tracking.requested_yaw), "response is smoothed, not snapped")
 	tick(180)
-	check(camera.unproject_position(fish.global_position).x <= (rig.fight_safe_right - rig.fight_tracking_hysteresis + .001) * 640, "right run returns inside safe edge")
+	check(camera.unproject_position(fish.global_position).x <= (rig.fight_safe_right + .001) * 640, "right run returns inside safe edge")
 	check(fish.global_transform.is_equal_approx(fish_before), "tracking never moves the fish")
 	check(is_equal_approx(distance_before, camera.global_position.distance_to(player.global_position)), "physical pivot distance preserved")
 	check(is_equal_approx(pitch_before, camera.global_basis.z.y), "world pitch preserved")
@@ -236,7 +236,7 @@ func run() -> void:
 	tick()
 	check(rig.fight_camera_tracking.requested_yaw > 0.0, "left edge requests camera yaw left (positive world Y)")
 	tick(180)
-	check(camera.unproject_position(fish.global_position).x >= (rig.fight_safe_left + rig.fight_tracking_hysteresis - .001) * 640, "left run returns inside safe edge")
+	check(camera.unproject_position(fish.global_position).x >= (rig.fight_safe_left - .001) * 640, "left run returns inside safe edge")
 	rig.fight_max_yaw_degrees = 5.0
 	put_fish(Vector2(1.5, 0.4))
 	tick(240)
@@ -259,7 +259,7 @@ func run() -> void:
 	check(latch.tracking, "outer threshold starts tracking")
 	for x in [0.84, 0.86, 0.84]:
 		latch.step(0.016, func(_yaw): return Vector2(x, 0.4), outer, 0.025, 1.0, 6.0, 2.0)
-		check(latch.tracking, "hysteresis keeps tracking within boundary band")
+		check(latch.tracking == (x > outer.end.x), "safe entry holds immediately; outside edge reactivates")
 	latch.step(0.016, func(_yaw): return Vector2(0.82, 0.4), outer, 0.025, 1.0, 6.0, 2.0)
 	check(not latch.tracking, "inner threshold stops tracking")
 	for phase in [Fishing.Phase.AIM, Fishing.Phase.THROW, Fishing.Phase.BAIT_FLYING]:
@@ -320,7 +320,7 @@ func run() -> void:
 		var initial_pitch := camera.global_basis.z.y
 		tick(240)
 		var projected := camera.unproject_position(fish.global_position) / Vector2(viewport.size)
-		check(projected.x >= rig.fight_safe_left + rig.fight_tracking_hysteresis - .001 and projected.x <= rig.fight_safe_right - rig.fight_tracking_hysteresis + .001, "authored pose tracks lateral fish into safe region")
+		check(projected.x >= rig.fight_safe_left - .001 and projected.x <= rig.fight_safe_right + .001, "authored pose tracks lateral fish into safe region")
 		check(camera.unproject_position(player.global_position).distance_to(initial_player_pixel) < 0.01,
 			"authored lower-left player framing preserved")
 		check(is_equal_approx(camera.global_position.length(), initial_distance) and is_equal_approx(camera.global_basis.z.y, initial_pitch),
@@ -349,29 +349,29 @@ func run() -> void:
 func test_wide_dead_zone() -> void:
 	var outer := Rect2(rig.fight_safe_left,rig.fight_safe_top,rig.fight_safe_right-rig.fight_safe_left,rig.fight_safe_bottom-rig.fight_safe_top)
 	var margin: float = rig.fight_tracking_hysteresis
-	check(is_equal_approx(outer.position.x,0.12) and is_equal_approx(outer.end.x,0.92),"outer starts are deliberately wider than prior 20/85 percent")
-	check(is_equal_approx(outer.position.x+margin,0.14) and is_equal_approx(outer.end.x-margin,0.90),"inner horizontal stops are centralized 14/90 percent")
-	for x in [0.12,0.15,0.19,0.20,0.5,0.84,0.85,0.89,0.92]:
+	check(is_equal_approx(outer.position.x,0.18) and is_equal_approx(outer.end.x,0.82),"canonical 4:3 safe edges are 18/82 percent")
+	check(is_equal_approx(outer.position.x+margin,0.20) and is_equal_approx(outer.end.x-margin,0.80),"inner horizontal stops are centralized 20/80 percent")
+	for x in [0.18,0.19,0.20,0.5,0.79,0.80,0.82]:
 		put_fish(Vector2(x,0.4))
 		tick(120)
 		check(not rig.fight_camera_tracking.tracking and is_zero_approx(rig.fight_camera_tracking.yaw),"visible bait including old/exact outer boundary holds camera: %s" % x)
 	for side in [-1,1]:
 		var latch = load("res://scripts/fishing_fight_camera_tracking.gd").new()
-		var point := [Vector2(0.115 if side<0 else 0.925,0.4)]
+		var point := [Vector2(0.175 if side<0 else 0.825,0.4)]
 		var projection := func(_yaw): return point[0]
 		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
 		check(latch.tracking,"clear outer crossing starts tracking on side %d" % side)
-		point[0].x=0.13 if side<0 else 0.91
+		point[0].x=0.179 if side<0 else 0.821
 		for frame in range(120): latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
 		check(latch.tracking,"slight inward movement keeps tracking latched on side %d" % side)
-		point[0].x=0.205 if side<0 else 0.835
+		point[0].x=0.205 if side<0 else 0.795
 		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
 		check(not latch.tracking,"sufficient inner crossing stops side %d" % side)
 		latch.yaw=deg_to_rad(15)*side
 		var held: float = latch.yaw
 		# Slow current / passive drift and edge noise use the same projection.
 		for frame in range(600):
-			point[0].x=(0.205 if side<0 else 0.835)+sin(frame*.03)*.025
+			point[0].x=(0.205 if side<0 else 0.795)+sin(frame*.03)*.005
 			latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
 		check(not latch.tracking and is_equal_approx(latch.yaw,held),"current/passive drift has no reactivation or micro-unwind on side %d" % side)
 		point[0]=Vector2(0.5,0.77)

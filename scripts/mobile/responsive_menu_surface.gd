@@ -181,7 +181,8 @@ func _process(_delta: float) -> void:
 	_mask_authored()
 	if kind == "inventory": controller.selector_layer.modulate = Color(1, 1, 1, 0)
 	position = Vector2(16,12)
-	size = get_viewport().get_visible_rect().size - Vector2(32,24)
+	var canvas: Viewport = controller.custom_viewport if controller is CanvasLayer and controller.custom_viewport != null else get_viewport()
+	size = canvas.get_visible_rect().size - Vector2(32,24)
 	if fixed_stack != null:
 		scroll.size = Vector2(size.x, 224)
 		fixed_stack.position = Vector2(0, 236)

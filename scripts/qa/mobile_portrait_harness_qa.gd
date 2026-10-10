@@ -75,12 +75,12 @@ func run() -> void:
 	var fishing: Node = game.get_node("Game/Fishing")
 	var session := root.get_node("FishingSessionServices")
 	check(SceneRoot.resolve(self) == game and current_scene == harness, "wrapper resolves authoritative gameplay root")
-	check(harness.gameplay_viewport.size.x == 640 and harness.gameplay_viewport.size.y > 480, "mobile retains logical width and reveals extra vertical gameplay")
+	check(harness.gameplay_viewport.size.x == 640 and harness.gameplay_viewport.size.y == 480, "mobile retains canonical 4:3 gameplay")
 	check(harness.gameplay_image.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, "gameplay scaling remains nearest neighbor")
 	for camera in game.find_children("*", "Camera3D", true, false):
 		var original: Dictionary = camera.get_meta("mobile_original_projection")
 		var desktop_projection := Projection.create_perspective(original.fov, 640.0 / 480.0, camera.near, camera.far, original.aspect == Camera3D.KEEP_WIDTH)
-		check(camera.keep_aspect == Camera3D.KEEP_WIDTH and is_equal_approx(camera.get_camera_projection().x.x, desktop_projection.x.x), "mobile camera preserves authored horizontal projection: " + camera.name)
+		check(camera.keep_aspect == original.aspect and is_equal_approx(camera.get_camera_projection().x.x, desktop_projection.x.x), "mobile camera preserves authored horizontal projection: " + camera.name)
 	check(game.get_viewport() == harness.gameplay_viewport and harness.gameplay_viewport.get_camera_3d() != null, "game/camera inside top viewport")
 	check(session.dialogue_controller.get_view().get_viewport() == harness.gameplay_viewport, "persistent dialogue presentation contained")
 	check(game.is_ancestor_of(fishing.fishing_menu) and fishing.fishing_menu.get_viewport() == harness.gameplay_viewport, "existing menu contained in actual game")
@@ -90,8 +90,8 @@ func run() -> void:
 	var hardware: Rect2 = harness.get_safe_rect(Vector2(390, 844), Rect2(0, 141, 1170, 2289), Vector2(1170, 2532))
 	check(hardware.position.is_equal_approx(Vector2(0, 47)) and hardware.size.is_equal_approx(Vector2(390, 763)), "physical safe area converts to logical portrait units")
 	var reference: Dictionary = harness.get_layout_rects(hardware)
-	check(reference.resolution == Vector2i(640, 864) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference retains canonical 640x864 game geometry")
-	check(reference.gameplay.size.is_equal_approx(Vector2(390,526.5)) and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference scales canonical game surface and keeps 34-point home inset")
+	check(reference.resolution == Vector2i(640, 480) and reference.gameplay.position.is_equal_approx(Vector2(0, 47)), "iPhone reference retains canonical 640x480 game geometry")
+	check(reference.gameplay.size.is_equal_approx(Vector2(390,292.5)) and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference scales canonical game surface and keeps 34-point home inset")
 	for dimensions in [Vector2(390, 844), Vector2(390, 664), Vector2(393, 852), Vector2(844, 390)]:
 		var available: Rect2 = harness.get_safe_rect(dimensions)
 		var layout: Dictionary = harness.get_layout_rects(available)
@@ -266,7 +266,7 @@ func run() -> void:
 	var responsive := economy.root.get_node("ResponsiveMenuSurface") as ResponsiveMenuSurface
 	for binding in responsive.bindings:
 		check(binding.label.get_theme_font_size("font_size") == 18, "common menu uses approved dialogue body baseline")
-	check(responsive.size.x == 608 and responsive.size.y == harness.gameplay_viewport.size.y - 24, "merchant presentation reflows to actual portrait gameplay dimensions")
+	check(responsive.size.x == 608 and responsive.size.y == harness.overlay_viewport.size.y - 24, "merchant presentation retains separate tall menu canvas")
 	await capture("mobile-portrait-merchant")
 	await button("B")
 	check(not economy.is_open() and not paused, "B closes real merchant menu with original pause ownership")

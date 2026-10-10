@@ -117,7 +117,7 @@ func run() -> void:
 				check(fishing.can_process() and not get_tree().paused, "companion mode never pauses fishing")
 				check(fishing.caster.active_bait.get_instance_id() == bait, "companion mode preserves physical bait")
 				check(session.get_instance_id() == session_id, "companion mode preserves session")
-				check(shell.gameplay_viewport.size == Vector2i(640,864), "companion mode preserves canonical surface")
+				check(shell.gameplay_viewport.size == Vector2i(640,480), "companion mode preserves canonical surface")
 		if cycle > 0:
 			fishing.encounter.debug_settings = ForcedFish.new()
 			fishing.encounter.bite_timer.start(0.05)
@@ -193,7 +193,7 @@ func camera_dead_zone(cycle: int) -> void:
 	var camera: Camera3D = rig.get_node("Camera3D")
 	for side in [-1,1,1,-1,-1,1]:
 		var held := camera.global_transform
-		for x in ([0.5,0.20,0.15,0.125] if side<0 else [0.5,0.85,0.89,0.915]):
+		for x in ([0.5,0.25,0.20,0.181] if side<0 else [0.5,0.75,0.79,0.819]):
 			bait.global_position=camera.project_position(Vector2(x,.4)*Vector2(shell.gameplay_viewport.size),12)
 			await get_tree().create_timer(.12).timeout
 			check(not rig.fight_camera_tracking.tracking and camera.global_transform.is_equal_approx(held),"rendered visible drift/old boundary holds shot on side %d" % side)
@@ -203,11 +203,11 @@ func camera_dead_zone(cycle: int) -> void:
 		await get_tree().process_frame
 		check(rig.fight_camera_tracking.tracking and (rig.fight_camera_tracking.requested_yaw-rig.fight_camera_tracking.yaw)*side<0,"rendered clear outer crossing requests correct yaw")
 		check(absf(rig.fight_camera_tracking.yaw)<absf(rig.fight_camera_tracking.requested_yaw),"rendered correction retains slow exponential response")
-		bait.global_position=camera.project_position(Vector2(.13 if side<0 else .91,.4)*Vector2(shell.gameplay_viewport.size),12)
+		bait.global_position=camera.project_position(Vector2(.179 if side<0 else .821,.4)*Vector2(shell.gameplay_viewport.size),12)
 		await get_tree().process_frame
 		check(rig.fight_camera_tracking.tracking,"rendered slight return keeps latch")
 		var edge_pose := camera.global_transform
-		bait.global_position=camera.project_position(Vector2(.5,.5)*Vector2(shell.gameplay_viewport.size),12)
+		bait.global_position=camera.project_position(Vector2(.181 if side < 0 else .819,.5)*Vector2(shell.gameplay_viewport.size),12)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		check(not rig.fight_camera_tracking.tracking and camera.global_transform == edge_pose,"rendered active latch stops immediately on central safe-rectangle entry")
@@ -217,7 +217,7 @@ func camera_dead_zone(cycle: int) -> void:
 		check(not rig.fight_camera_tracking.tracking,"rendered inner return stops latch")
 		var stopped := camera.global_transform
 		for frame in range(60):
-			bait.global_position=camera.project_position(Vector2(0.5+sin(frame*.1)*.15,.4)*Vector2(shell.gameplay_viewport.size),12)
+			bait.global_position=camera.project_position(Vector2(lerpf(.181,.819,float(frame)/59.0),.4)*Vector2(shell.gameplay_viewport.size),12)
 			await get_tree().process_frame
 			check(camera.global_transform == stopped, "central drift frame keeps exact camera transform %d" % frame)
 		check(camera.global_transform.is_equal_approx(stopped),"rendered current/passive-style drift holds shot without micro-rotation")

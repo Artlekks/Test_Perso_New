@@ -34,6 +34,12 @@ func step(delta: float, project: Callable, outer: Rect2, hysteresis: float,
 	# search; central safe-rectangle entry always releases the pan. A point
 	# below the HUD-safe boundary is still unsafe and retains vertical protection.
 	var vertical_unsafe := point.y < outer.position.y or point.y > outer.end.y
+	if inside(point, outer):
+		pan_state = PanState.HOLD
+		tracking = false
+		limited = false
+		requested_yaw = yaw
+		return yaw
 	if point.x < outer.position.x - 0.000001 or (vertical_unsafe and point.x <= inner.position.x):
 		pan_state = PanState.PAN_LEFT
 	elif point.x > outer.end.x + 0.000001 or (vertical_unsafe and point.x >= inner.end.x):

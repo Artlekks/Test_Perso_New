@@ -1,6 +1,7 @@
 extends RefCounted
 ## Shared presentation only. Controllers retain input, transactions and ownership.
-const SIZE := Vector2i(640, 864)
+## Menu canvas only; the physical world renders CanonicalGameSurface.SIZE.
+const SIZE := preload("res://scripts/ui/canonical_game_surface.gd").MENU_SIZE
 const FONT = preload("res://assets/fonts/BOF_Font_Refined.fnt")
 const PANEL = preload("res://assets/ui/Panel.png")
 const PanelStyle = preload("res://scripts/dialogue/dialogue_panel_style.gd")

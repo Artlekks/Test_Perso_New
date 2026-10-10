@@ -1,5 +1,6 @@
 extends Control
 
+const Surface = preload("res://scripts/ui/canonical_game_surface.gd")
 const TouchControls = preload("res://scripts/mobile/mobile_touch_controls.gd")
 @export_file("*.tscn") var gameplay_scene: String = "res://actors/FishingTestScene_V2.tscn"
 @export var reference_size := Vector2i(390, 844)
@@ -54,7 +55,7 @@ func _ready() -> void:
 	presentation.add_child(black)
 	gameplay_viewport = SubViewport.new()
 	gameplay_viewport.name = "GameplayViewport"
-	gameplay_viewport.size = Vector2i(640, 864)
+	gameplay_viewport.size = Surface.SIZE
 	gameplay_viewport.own_world_3d = true
 	gameplay_viewport.world_2d = World2D.new()
 	gameplay_viewport.handle_input_locally = true
@@ -73,7 +74,7 @@ func _ready() -> void:
 	gameplay_window.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	presentation.add_child(gameplay_window)
 	gameplay_window.add_child(gameplay_image)
-	# World crop is immutable across overlays. Independent transparent canvases
+	# World framing is immutable across overlays. Independent transparent canvases
 	# let large menus scroll without moving the world or its camera/HUD.
 	overlay_viewport = _make_overlay_viewport("OverlayViewport")
 	overlay_image = _make_overlay_image(overlay_viewport)
@@ -94,7 +95,7 @@ func _ready() -> void:
 func _make_overlay_viewport(label: String) -> SubViewport:
 	var viewport := SubViewport.new()
 	viewport.name = label
-	viewport.size = Vector2i(640,864)
+	viewport.size = Surface.MENU_SIZE
 	viewport.transparent_bg = true
 	viewport.disable_3d = true
 	viewport.world_2d = World2D.new()
@@ -126,15 +127,13 @@ func get_layout_rects(available: Rect2) -> Dictionary:
 		var column_width := minf(column.size.x, column.size.y * float(reference_size.x) / reference_safe_height)
 		column.position.x += (column.size.x - column_width) * 0.5
 		column.size.x = column_width
-	# Width is authoritative. Short Safari windows clip spare world sky rather
-	# than shrink the canonical surface; menus can scroll the display vertically.
-	var controls_min := minimum_controls_height * column.size.x / float(reference_size.x)
+	# The uncropped 4:3 world fills safe width. Tall menus scroll separately.
 	var scale := column.size.x / 640.0
 	var width := 640.0 * scale
-	var image := Rect2(column.position, Vector2(width, 864.0 * scale))
-	var display := Rect2(column.position, Vector2(width, minf(image.size.y, maxf(1.0,column.size.y-controls_min))))
+	var image := Rect2(column.position, Vector2(width, float(Surface.SIZE.y) * scale))
+	var display := Rect2(column.position, Vector2(width, image.size.y))
 	var panel := Rect2(column.position + Vector2(0, display.size.y), Vector2(column.size.x, column.size.y - display.size.y))
-	return {"safe": column, "gameplay": image, "display": display, "controls": panel, "resolution": Vector2i(640, 864)}
+	return {"safe": column, "gameplay": image, "display": display, "controls": panel, "resolution": Surface.SIZE}
 
 func _layout() -> void:
 	if not is_instance_valid(controls):
@@ -157,12 +156,13 @@ func _layout() -> void:
 	gameplay_window.position = layout.display.position
 	gameplay_window.size = layout.display.size
 	gameplay_image.size = layout.gameplay.size
-	_surface_scroll_max = maxf(0,layout.gameplay.size.y-layout.display.size.y)
+	_surface_scroll_max = maxf(0,float(Surface.MENU_SIZE.y) * layout.gameplay.size.x / 640.0-layout.display.size.y)
 	_surface_scroll = clampf(_surface_scroll,0,_surface_scroll_max) if _has_surface_modal() else _surface_scroll_max
-	gameplay_image.position = Vector2(0,-_surface_scroll_max)
-	overlay_image.size = layout.gameplay.size
+	gameplay_image.position = Vector2.ZERO
+	overlay_image.size = Vector2(layout.gameplay.size.x, float(Surface.MENU_SIZE.y) * layout.gameplay.size.x / 640.0)
 	overlay_image.position = Vector2(0,-_surface_scroll)
 	hud_image.size = layout.gameplay.size
+	hud_viewport.size = layout.resolution
 	hud_image.position = Vector2.ZERO
 	controls.position = layout.controls.position
 	controls.size = layout.controls.size
@@ -257,21 +257,19 @@ func _bind_overlay_layers() -> void:
 		if not is_instance_valid(layer) or not layer.is_node_ready(): continue
 		if layer == game.get_node_or_null("UI/ExplorationHud"):
 			_set_layer_viewport(layer,hud_viewport)
-			# Restore the top HUD independently of the world sky crop. Its bottom
-			# help panel retains the original physical screen placement and tween home.
+			# HUD and world share the same uncropped 4:3 canvas.
 			var help: Control = layer.help_panel
 			if not help.has_meta("shell_help_home"): help.set_meta("shell_help_home",layer.help_panel_home)
 			var home: Vector2 = help.get_meta("shell_help_home")
-			var crop := _surface_scroll_max * 640.0 / maxf(gameplay_image.size.x,1.0)
-			var desired := home - Vector2(0,crop)
+			var desired := home
 			if layer.help_panel_home != desired:
 				var delta_home: Vector2 = desired-layer.help_panel_home
 				help.position += delta_home
 				layer.help_panel_home = desired
-		elif layer is DialogueView or layer.has_method("is_open") or layer.name in ["FishingCatchView","FishingLureSelectorView"]:
-			if layer.name == "FishingCatchView":
-				var logical_height := gameplay_window.size.y * 640.0 / gameplay_image.size.x
-				layer.set_meta("gameplay_presentation_rect", Rect2(0, 0, 640, logical_height))
+		elif layer is DialogueView or layer.name == "FishingCatchView":
+			layer.set_meta("gameplay_presentation_rect", Rect2(0, 0, 640, 480))
+			_set_layer_viewport(layer,hud_viewport)
+		elif layer.has_method("is_open") or layer.name == "FishingLureSelectorView":
 			_set_layer_viewport(layer,overlay_viewport)
 
 func _set_layer_viewport(layer: CanvasLayer, viewport: Viewport) -> void:
@@ -286,6 +284,7 @@ func _set_layer_viewport(layer: CanvasLayer, viewport: Viewport) -> void:
 	parent.add_child(layer)
 	parent.move_child(layer,index)
 	layer.owner = scene_owner
+	if layer.has_method("_fit_menu_canvas"): layer._fit_menu_canvas()
 
 func _has_surface_modal() -> bool:
 	# Read published presentation visibility, not SceneTree.paused: manual pause
@@ -311,7 +310,7 @@ func _adapt_mobile_presentation() -> void:
 			if layer.get_parent() != controls: layer.reparent(controls)
 			_set_layer_viewport(layer,get_viewport())
 			layer.offset = controls.global_position + Vector2(controls.size.x * 0.78, controls.size.y * 0.60)
-		elif layer.name == "DeveloperIndicator": layer.offset = Vector2(0, 840)
+		elif layer.name == "DeveloperIndicator": layer.offset = Vector2(0, 456)
 
 func _bind_session_layers() -> void:
 	var session := get_tree().root.get_node_or_null("FishingSessionServices")

@@ -113,6 +113,8 @@ var _developer_test_match := false
 
 
 func _ready() -> void:
+	get_viewport().size_changed.connect(_fit_menu_canvas)
+	_fit_menu_canvas.call_deferred()
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var composition_result: Dictionary = _composition_root.compose(
 		self,
@@ -1389,3 +1391,12 @@ func _accept_input() -> void:
 	var viewport: Viewport = get_viewport()
 	if viewport != null:
 		viewport.set_input_as_handled()
+
+func _fit_menu_canvas() -> void:
+	if custom_viewport != null:
+		transform = Transform2D.IDENTITY
+		return
+	var canvas := get_viewport().get_visible_rect().size
+	var logical := Vector2(preload("res://scripts/ui/canonical_game_surface.gd").MENU_SIZE)
+	var factor := minf(canvas.x/logical.x, canvas.y/logical.y)
+	transform = Transform2D(0,Vector2.ONE*factor,0,(canvas-logical*factor)*0.5)

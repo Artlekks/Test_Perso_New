@@ -50,11 +50,11 @@ var quick_cancel_camera_return_time: float = 0.85
 
 @export_category("Fight Camera Tracking")
 ## Outer activation edges, normalized to the active fishing viewport.
-@export_range(0.0, 0.9, 0.01) var fight_safe_left: float = 0.12
-@export_range(0.1, 1.0, 0.01) var fight_safe_right: float = 0.92
-@export_range(0.0, 0.9, 0.01) var fight_safe_top: float = 0.08
+@export_range(0.0, 0.9, 0.01) var fight_safe_left: float = 0.18
+@export_range(0.1, 1.0, 0.01) var fight_safe_right: float = 0.82
+@export_range(0.0, 0.9, 0.01) var fight_safe_top: float = 0.22
 ## HUD begins around y=405/480; leave clearance for the fish sprite above it.
-@export_range(0.1, 1.0, 0.01) var fight_safe_bottom: float = 0.75
+@export_range(0.1, 1.0, 0.01) var fight_safe_bottom: float = 0.70
 ## Small per-edge latch. Central band 0.14 / 0.90 always holds the current yaw.
 @export_range(0.0, 0.2, 0.005) var fight_tracking_hysteresis: float = 0.02
 ## Preserve vertical HUD clearance independently of the wider lateral band.

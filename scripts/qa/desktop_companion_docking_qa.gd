@@ -67,7 +67,7 @@ func run() -> void:
 			check(state.work_area[0] == state.reservation[2] if edge == shell.WindowState.DOCK_LEFT else state.work_area[2] == state.reservation[0],"ordinary desktop excludes selected edge")
 			check(state.window[0] == state.reservation[0] and state.window[2] == state.reservation[2],"companion remains attached")
 			check(shell.game.get_instance_id() == game_id and root.get_node("FishingSessionServices").get_instance_id() == session_id,"same session through resizing")
-			check(shell.gameplay_viewport.size == Vector2i(640,864) and not paused,"canonical session retained")
+			check(shell.gameplay_viewport.size == Vector2i(640,480) and not paused,"canonical session retained")
 			check(shell.gameplay_viewport.get_camera_3d().global_transform == camera,"windowing leaves camera unchanged")
 			await check_result_center(("left-" if edge == shell.WindowState.DOCK_LEFT else "right-")+str(width))
 		# Sample every engine frame during continuous commanded resize, not just

@@ -32,22 +32,22 @@ func capture(label: String) -> void:
 
 func inspect_view(view: ResponsiveMenuSurface, label: String) -> void:
 	await settle()
-	check(view.size.x == 608 and view.size.y == shell.gameplay_viewport.size.y - 24, label + " uses available gameplay viewport")
+	check(view.size.x == 608 and view.size.y == shell.overlay_viewport.size.y - 24, label + " uses independent menu viewport")
 	for binding in view.bindings:
 		var text: Label = binding.label
 		check(text.get_theme_font_size("font_size") >= 18 and text.get_theme_font("font") == view.FONT, label + " approved type " + str(text.get_index()))
 		check(text.scale.is_equal_approx(Vector2.ONE), label + " type never scaled down")
 	check(view.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, label + " nearest artwork/filter")
 	check(view.stack.get_child(0).get_theme_stylebox("panel") is StyleBoxTexture, label + " shared tiled Panel.png")
-	var original_size: Vector2i = shell.gameplay_viewport.size
-	shell.gameplay_viewport.size = Vector2i(640, 360)
+	var original_size: Vector2i = shell.overlay_viewport.size
+	shell.overlay_viewport.size = Vector2i(640, 360)
 	await settle()
 	check(view.scroll.get_v_scroll_bar().max_value > view.scroll.size.y, label + " short viewport scrolls instead of shrinking fonts")
 	var scroll_before := view.scroll.scroll_vertical
 	var touch := InputEventScreenTouch.new()
 	touch.index = 95
 	touch.pressed = true
-	touch.position = shell.overlay_image.global_position + shell.overlay_image.size * Vector2(0.90, 0.7)
+	touch.position = shell.gameplay_window.global_position + shell.gameplay_window.size * Vector2(0.90, 0.35)
 	shell._unhandled_input(touch)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 95
@@ -57,7 +57,7 @@ func inspect_view(view: ResponsiveMenuSurface, label: String) -> void:
 	check(view.scroll.scroll_vertical > scroll_before, label + " real shell touch gutter reaches shared scrolling")
 	touch.pressed = false
 	shell._unhandled_input(touch)
-	shell.gameplay_viewport.size = original_size
+	shell.overlay_viewport.size = original_size
 	await settle()
 	view.scroll.scroll_vertical = 0
 	await capture(label)
@@ -72,7 +72,7 @@ func run() -> void:
 	var game: Node = shell.game
 	var fishing: Node = game.get_node("Game/Fishing")
 	var reference: Dictionary = shell.get_layout_rects(shell.get_safe_rect(Vector2(390,844)))
-	check(reference.resolution == Vector2i(640,864), "iPhone 13 Pro uses fixed canonical 640x864 gameplay")
+	check(reference.resolution == Vector2i(640,480), "iPhone 13 Pro uses fixed canonical 640x480 gameplay")
 	check(reference.controls.size.y >= 236 and reference.controls.end.y == 810, "comfortable controls and home clearance")
 	for key in shell.controls.buttons:
 		var hit: Rect2 = shell.controls.buttons[key]
@@ -173,8 +173,8 @@ func run() -> void:
 
 func inspect_desktop() -> void:
 	current_scene = null
-	root.content_scale_size = Vector2i(640,864)
-	root.size = Vector2i(640,864)
+	root.content_scale_size = Vector2i(640,480)
+	root.size = Vector2i(640,480)
 	var desktop: Node = load("res://actors/FishingTestScene_V2.tscn").instantiate()
 	root.add_child(desktop)
 	current_scene = desktop
@@ -182,7 +182,7 @@ func inspect_desktop() -> void:
 	var economy: Node = desktop.get_node("Game/Fishing").fishing_economy_menu
 	economy.open_debug_full_catalog_menu()
 	await settle()
-	check(economy.root.has_node("ResponsiveMenuSurface") and economy.root.get_node("ResponsiveMenuSurface").size == Vector2(608,840), "desktop merchant uses same canonical portrait geometry")
+	check(economy.root.has_node("ResponsiveMenuSurface") and economy.root.get_node("ResponsiveMenuSurface").size == Vector2(608,456), "desktop merchant fits 4:3 overlay; shell menus retain a separate canvas")
 	await capture("desktop-merchant")
 	economy.close_menu()
 	var crafter: Node = desktop.get_node("World/BeachCrafterNPC/BeachCraftingMenu")

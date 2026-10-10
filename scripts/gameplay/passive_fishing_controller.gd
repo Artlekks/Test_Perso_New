@@ -124,7 +124,7 @@ func _process(delta: float) -> void:
 			timer_entry.text = _clock(focus_seconds)
 			timer_entry.editable = true
 			timer_entry.show()
-			reason = "Click timer; Enter/K starts focus"
+			reason = "Click timer; Enter starts focus (K takes control)"
 	elif state == State.CONFIGURING:
 		if fishing.phase != fishing.Phase.IN_WATER: cancel("cast ended",false)
 	elif state == State.FOCUS:
@@ -137,6 +137,7 @@ func _process(delta: float) -> void:
 				timer_entry.hide()
 				state = State.READY
 				reason = "FISH READY — switch Active and confirm to hook"
+				host.set_mode(host.Mode.ACTIVE)
 				opportunity_ready.emit()
 			else: cancel("No eligible fish for this lure/depth at this spot",false)
 func _exit_tree() -> void: cancel("shutdown",false)
@@ -175,13 +176,13 @@ func layout_timer(game_rect: Rect2) -> void:
 		timer_entry.hide()
 		return
 	var factor := game_rect.size.x / 640.0
-	timer_entry.position = game_rect.position + Vector2(220, 650) * factor
+	timer_entry.position = game_rect.position + Vector2(220, 500) * factor
 	timer_entry.size = Vector2(200, 60) * factor
 	timer_entry.add_theme_font_size_override("font_size", maxi(18, roundi(32 * factor)))
 	timer_entry.visible = state in [State.CONFIGURING,State.FOCUS] and host.window_state != host.WindowState.COLLAPSED
 
 func _input(event: InputEvent) -> void:
 	if state != State.CONFIGURING: return
-	if event.is_action_pressed("enter_fishing") or event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("ui_accept") and not event.is_action_pressed("enter_fishing"):
 		confirm_focus(timer_entry.text)
 		get_viewport().set_input_as_handled()

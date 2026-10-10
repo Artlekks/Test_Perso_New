@@ -1,4 +1,5 @@
 extends SceneTree
+const Surface = preload("res://scripts/ui/canonical_game_surface.gd")
 const UI = preload("res://scripts/ui/portrait_ui.gd")
 var checks := 0
 var failures: Array[String] = []
@@ -37,35 +38,39 @@ func fonts(surface: Node, label: String) -> void:
 		if text.get_meta("portrait_authored_hidden", false): continue
 		check(text.get_theme_font_size("font_size") >= 18, label + " >=18px " + str(text.get_path()))
 		check(text.scale == Vector2.ONE, label + " unscaled text " + str(text.name))
-		check(text.get_global_transform_with_canvas().get_scale().is_equal_approx(Vector2.ONE), label + " native effective text scale " + str(text.name))
+		var effective: Vector2 = text.get_global_transform_with_canvas().get_scale()
+		check(is_equal_approx(effective.x,effective.y), label + " uniform effective text scale " + str(text.name))
 
 func cards_inside(views: Array, surface: Node, label: String) -> void:
+	var ancestor := surface
+	while ancestor != null and not ancestor is CanvasLayer: ancestor = ancestor.get_parent()
+	var canvas: Viewport = ancestor.custom_viewport if ancestor is CanvasLayer and ancestor.custom_viewport != null else surface.get_viewport()
 	for card in views:
 		if not card.visible: continue
 		var transform: Transform2D = card.get_global_transform_with_canvas()
 		var rect := Rect2(transform.origin, card.size * transform.get_scale())
-		check(Rect2(Vector2.ZERO, Vector2(UI.SIZE)).encloses(rect), label + " unclipped " + str(card.name) + str(rect))
-		check(transform.get_scale().is_equal_approx(Vector2.ONE), label + " native uniform card pixels")
+		check(Rect2(Vector2.ZERO, canvas.get_visible_rect().size).encloses(rect), label + " unclipped " + str(card.name) + str(rect))
+		check(is_equal_approx(transform.get_scale().x,transform.get_scale().y), label + " uniform card pixels")
 
 func run() -> void:
 	if not mobile:
-		root.content_scale_size = UI.SIZE
+		root.content_scale_size = Surface.SIZE
 		root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
-		root.size = UI.SIZE
+		root.size = Surface.SIZE
 	fixture = SessionTestFixture.new()
 	fixture.mount(self, mobile, true)
 	await settle(30)
 	var game: Node = fixture.scene.game if mobile else fixture.scene
-	check(game.get_viewport().get_visible_rect().size == Vector2(UI.SIZE), "authoritative 640x864")
+	check(game.get_viewport().get_visible_rect().size == Vector2(Surface.SIZE), "authoritative 640x480 world")
 	if mobile:
 		var layout: Dictionary = fixture.scene.get_layout_rects(Rect2(0,47,390,763))
-		check(layout.resolution == UI.SIZE, "phone cannot change game geometry")
-		check(layout.gameplay.size.is_equal_approx(Vector2(390,526.5)), "iPhone game 390x526.5 CSS pixels")
+		check(layout.resolution == Surface.SIZE, "phone cannot change game geometry")
+		check(layout.gameplay.size.is_equal_approx(Vector2(390,292.5)), "iPhone game 390x292.5 CSS pixels")
 		check(layout.controls.position.y == layout.gameplay.end.y and layout.controls.end.y == 810, "touch shell separate and safe")
 		for hit in fixture.scene.controls.buttons.values(): check(hit.size.x >= 44 and hit.size.y >= 44, "phone practical touch target")
 		var short: Dictionary = fixture.scene.get_layout_rects(Rect2(0,47,390,583))
-		check(short.resolution == UI.SIZE and short.controls.size.x == 390, "short Safari keeps canonical pixels and full-width controls")
-		check(short.gameplay.size.is_equal_approx(Vector2(390,526.5)) and short.display.size.is_equal_approx(Vector2(390,347)), "short Safari fills width with deliberate 179.5px sky crop")
+		check(short.resolution == Surface.SIZE and short.controls.size.x == 390, "short Safari keeps canonical pixels and full-width controls")
+		check(short.gameplay.size.is_equal_approx(Vector2(390,292.5)) and short.display.size.is_equal_approx(Vector2(390,292.5)), "short Safari uses full uncropped 4:3 world")
 		var original_controls: Vector2 = fixture.scene.controls.size
 		fixture.scene.controls.size = short.controls.size
 		fixture.scene.controls._layout()
@@ -145,19 +150,19 @@ func run() -> void:
 		for window_size in [Vector2i(1280,864),Vector2i(1920,1080)]:
 			root.size = window_size
 			await settle()
-			check(root.get_visible_rect().size == Vector2(UI.SIZE), "wide/fullscreen retains same logical composition")
+			check(root.get_visible_rect().size == Vector2(Surface.SIZE), "wide/fullscreen retains same logical composition")
 			var scale := root.get_final_transform().get_scale()
 			check(is_equal_approx(scale.x, scale.y), "fullscreen uniform letterboxing")
 		await capture(game, "wide-window")
 		if rendered:
 			root.mode = Window.MODE_FULLSCREEN
 			await settle(20)
-			check(root.get_visible_rect().size == Vector2(UI.SIZE), "actual fullscreen retains canonical canvas")
+			check(root.get_visible_rect().size == Vector2(Surface.SIZE), "actual fullscreen retains canonical canvas")
 			var scale := root.get_final_transform().get_scale()
 			# Godot rounds the letterboxed render rectangle to whole output pixels.
 			# Its two reported scale factors may differ by that one pixel only.
 			print("FULLSCREEN SCALE: ", scale, "; logical=", root.get_visible_rect().size)
-			check(absf(scale.x - scale.y) * 864.0 <= 1.0, "actual fullscreen uniform within one output-pixel quantization")
+			check(absf(scale.x - scale.y) * 480.0 <= 1.0, "actual fullscreen uniform within one output-pixel quantization")
 			await capture(game, "fullscreen")
 			root.mode = Window.MODE_WINDOWED
 	fixture.release()
@@ -169,7 +174,9 @@ func run() -> void:
 func menu(game: Node, authored: Control, label: String) -> void:
 	await settle()
 	var view: Control = authored.get_node("ResponsiveMenuSurface")
-	check(view.size == Vector2(608,840), label + " shared portrait sections")
+	var layer: CanvasLayer = authored.get_parent()
+	var canvas: Viewport = layer.custom_viewport if layer.custom_viewport != null else game.get_viewport()
+	check(view.size == canvas.get_visible_rect().size - Vector2(32,24), label + " fits independent menu canvas")
 	check(view.is_set_as_top_level(), label + " does not inherit legacy root animation transforms")
 	fonts(view, label)
 	check(view.stack.get_child(0).get_theme_stylebox("panel") == UI.panel_style(), label + " shared Panel.png")
@@ -186,7 +193,10 @@ func deck_edit_contract(game: Node, triad: Node) -> void:
 	for card in candidates.slice(0,15): collection.acquire_card(card,1,false)
 	check(collection.save_state() == OK, "isolated owned-card fixture committed")
 	var editor: Control = load("res://actors/TripleTriadDeckSetup.tscn").instantiate()
-	game.get_viewport().add_child(editor)
+	var game_ui: Control = triad.get_node("Root")
+	var was_visible := game_ui.visible
+	game_ui.add_child(editor)
+	game_ui.show()
 	editor.open_setup(triad.card_catalog,30,6,collection,triad.acquisition_policy)
 	editor._enter_collection_for_profile(0)
 	editor._deck = candidates.slice(0,5)
@@ -218,6 +228,7 @@ func deck_edit_contract(game: Node, triad: Node) -> void:
 	check(editor._deck[2] == candidates[5], "reopening reproduces saved replacement")
 	editor.close_setup()
 	editor.free()
+	game_ui.visible = was_visible
 
 func key(code: Key) -> InputEventKey:
 	var event := InputEventKey.new()

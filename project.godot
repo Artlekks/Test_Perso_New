@@ -28,8 +28,9 @@ WorldLocations="*res://scripts/world/world_location_service.gd"
 [display]
 
 window/size/viewport_width=640
-window/size/viewport_height=864
+window/size/viewport_height=480
 window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 window/size/viewport_width.mobile_portrait=390
 window/size/viewport_height.mobile_portrait=844
 window/handheld/orientation.mobile_portrait=1

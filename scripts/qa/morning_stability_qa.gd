@@ -179,9 +179,9 @@ func run() -> void:
 	await create_timer(0.3).timeout
 	check(passive.elapsed == 0 and not fishing.encounter.bite_active,"unconfirmed timer never starts focus or opportunity")
 	passive.timer_entry.text = "00:03"
-	key(KEY_K,true); key(KEY_K,false)
+	key(KEY_ENTER,true); key(KEY_ENTER,false)
 	await frames()
-	check(passive.state == passive.State.FOCUS and passive.focus_seconds == 3,"context K confirms selected focus duration")
+	check(passive.state == passive.State.FOCUS and passive.focus_seconds == 3,"Enter confirms selected focus duration; K is takeover")
 	var ripple: Node = fishing.caster.active_bait.ripple_view
 	ripple.show_ripple(1.2)
 	check(is_equal_approx(ripple.ripple_sprite.pixel_size,0.00175) and ripple.ripple_sprite.animation == &"Ripple","authored ripple is half-size, not splash")

@@ -2,7 +2,9 @@ extends Control
 ## Window presentation and gameplay activity are deliberately independent.
 enum Mode { ACTIVE, PASSIVE }
 enum WindowState { FLOATING, DOCK_LEFT, DOCK_RIGHT, COLLAPSED }
-const SURFACE := Vector2i(640,864)
+const Surface = preload("res://scripts/ui/canonical_game_surface.gd")
+const SURFACE := Surface.SIZE
+const SHELL_SURFACE := Surface.MENU_SIZE
 const CHROME_HEIGHT := 68
 const KEYBOARD_HEIGHT := 60
 @export_file("*.tscn") var gameplay_scene := "res://actors/FishingTestScene_V2.tscn"
@@ -29,6 +31,8 @@ var _drag_x := 0
 var _drag_width := 0
 var game: Node
 var gameplay_viewport: SubViewport
+var menu_viewport: SubViewport
+var menu_image: TextureRect
 var image: TextureRect
 var shell_fill: ColorRect
 var status: Label
@@ -69,6 +73,21 @@ func _ready() -> void:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(image)
+	menu_viewport = SubViewport.new()
+	menu_viewport.name = "MenuViewport"
+	menu_viewport.size = Surface.MENU_SIZE
+	menu_viewport.transparent_bg = true
+	menu_viewport.disable_3d = true
+	menu_viewport.world_2d = World2D.new()
+	menu_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(menu_viewport)
+	menu_image = TextureRect.new()
+	menu_image.texture = menu_viewport.get_texture()
+	menu_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	menu_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	menu_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	menu_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(menu_image)
 	for label in ["Float","Dock Left","Dock Right","Collapse","Mode","X"]:
 		var button := Button.new()
 		button.text = label
@@ -109,7 +128,7 @@ func _ready() -> void:
 	get_tree().node_added.connect(_node_added)
 	var usable := DisplayServer.screen_get_usable_rect(get_window().current_screen)
 	if not usable.has_area(): usable = Rect2i(Vector2i.ZERO,Vector2i(1280,1024))
-	get_window().size = Vector2i(Vector2(SURFACE)*active_scale)+Vector2i(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
+	get_window().size = Vector2i(Vector2(SHELL_SURFACE)*active_scale)+Vector2i(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
 	get_window().position = usable.position+Vector2i(maxi(0,usable.size.x-get_window().size.x),maxi(0,(usable.size.y-get_window().size.y)/2))
 	_layout()
 	load_gameplay_scene(gameplay_scene)
@@ -126,14 +145,33 @@ func _replace_game(packed: PackedScene) -> void:
 	preload("res://scripts/ui/canonical_game_surface.gd").prepare(game)
 	gameplay_viewport.add_child(game)
 	_bind_session_layers()
+	_bind_menu_layers()
 func _node_added(node: Node) -> void:
-	if node is CanvasLayer: _bind_session_layers.call_deferred()
+	if node is CanvasLayer:
+		_bind_session_layers.call_deferred()
+		_bind_menu_layers.call_deferred()
 func _bind_session_layers() -> void:
 	var session := get_node_or_null("/root/FishingSessionServices")
 	if session == null: return
 	for layer in session.find_children("*","CanvasLayer",true,false):
 		if not _bound_layers.has(layer.get_instance_id()): _bound_layers[layer.get_instance_id()] = {"node":weakref(layer),"parent":weakref(layer.get_parent())}
 		if layer.get_parent() != gameplay_viewport: layer.reparent(gameplay_viewport)
+func _bind_menu_layers() -> void:
+	if not is_instance_valid(game) or menu_viewport == null: return
+	for layer in gameplay_viewport.find_children("*","CanvasLayer",true,false):
+		if layer is DialogueView or layer.name == "FishingCatchView": continue
+		if not layer.has_method("is_open"): continue
+		if layer.custom_viewport == menu_viewport: continue
+		var parent := layer.get_parent()
+		var index := layer.get_index()
+		var saved_owner := layer.owner
+		parent.remove_child(layer)
+		layer.custom_viewport = menu_viewport
+		parent.add_child(layer)
+		parent.move_child(layer,index)
+		layer.owner = saved_owner
+		if layer.has_method("_fit_menu_canvas"): layer._fit_menu_canvas()
+
 func cycle_mode() -> void: set_mode(Mode.PASSIVE if mode == Mode.ACTIVE else Mode.ACTIVE)
 func set_mode(next: int) -> void:
 	# Invalid legacy COLLAPSED mode values recover to Active without geometry.
@@ -198,7 +236,7 @@ func set_dock_width(value: int) -> void:
 	if docked and window_state != WindowState.COLLAPSED: _apply_dock_size()
 func _desired_dock_size() -> Vector2i:
 	var width := collapsed_width if window_state == WindowState.COLLAPSED else dock_width
-	var height := 200 if window_state == WindowState.COLLAPSED else roundi(float(width)*SURFACE.y/SURFACE.x)+CHROME_HEIGHT+KEYBOARD_HEIGHT
+	var height := 200 if window_state == WindowState.COLLAPSED else roundi(float(width)*SHELL_SURFACE.y/SHELL_SURFACE.x)+CHROME_HEIGHT+KEYBOARD_HEIGHT
 	return Vector2i(width,mini(height,DisplayServer.screen_get_size(get_window().current_screen).y))
 func _apply_dock_size() -> void:
 	_request_pending = true
@@ -250,8 +288,11 @@ func _layout() -> void:
 	var collapsed := window_state == WindowState.COLLAPSED
 	shell_fill.size = Vector2(get_window().size)
 	image.position = Vector2(0,CHROME_HEIGHT)
-	image.size = Vector2(get_window().size)-Vector2(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
+	image.size = Vector2(get_window().size.x, minf(float(get_window().size.x)*SURFACE.y/SURFACE.x, maxi(1,get_window().size.y-CHROME_HEIGHT-KEYBOARD_HEIGHT)))
 	image.visible = not collapsed
+	menu_image.position = Vector2(0,CHROME_HEIGHT)
+	menu_image.size = Vector2(get_window().size)-Vector2(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
+	menu_image.visible = not collapsed
 	keyboard_strip.position = Vector2(4,get_window().size.y-KEYBOARD_HEIGHT)
 	keyboard_strip.size = Vector2(get_window().size.x-8,KEYBOARD_HEIGHT)
 	keyboard_strip.visible = not collapsed
@@ -279,6 +320,14 @@ func _layout() -> void:
 	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
 	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
 func _input(event: InputEvent) -> void:
+	if mode == Mode.PASSIVE and event.is_action_pressed("enter_fishing") and not event.is_echo() and not get_tree().paused:
+		set_mode(Mode.ACTIVE)
+		# Consume the shell event; forward this same intent exactly once.
+		get_viewport().set_input_as_handled()
+		_forwarding = true
+		gameplay_viewport.push_input(event,true)
+		_forwarding = false
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F12 and event.ctrl_pressed and event.shift_pressed:
 		cycle_mode()
 		get_viewport().set_input_as_handled()
@@ -300,7 +349,11 @@ func _exit_tree() -> void:
 	for entry in _bound_layers.values():
 		var layer = entry.node.get_ref()
 		var parent = entry.parent.get_ref()
-		if is_instance_valid(layer) and is_instance_valid(parent): layer.reparent(parent)
+		if is_instance_valid(layer) and is_instance_valid(parent):
+			var scene_parent: Node = layer.get_parent()
+			scene_parent.remove_child(layer)
+			layer.custom_viewport = parent.get_viewport()
+			parent.add_child(layer)
 
 func gameplay_display_rect() -> Rect2:
 	var factor := minf(image.size.x / SURFACE.x, image.size.y / SURFACE.y)
