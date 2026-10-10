@@ -12,7 +12,7 @@ const OWNER_OPPONENT := 2
 const PHASE_SELECT_CARD := SessionControllerScript.PHASE_SELECT_CARD
 const PHASE_SELECT_CELL := SessionControllerScript.PHASE_SELECT_CELL
 
-const HAND_STEP_Y := 140.0
+const HAND_STEP_Y := 39.6 # 30% of the approved 132px card height.
 const HAND_SELECTED_X_OFFSET := -8.0
 const PREVIEW_GHOST_ALPHA := 0.72
 const PREVIEW_INFLUENCE_COLOR := Color(1.0, 0.76, 0.18, 0.28)

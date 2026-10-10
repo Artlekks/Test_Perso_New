@@ -1,6 +1,6 @@
 """Windows-only companion AppBar sidecar. Never changes SPI_SETWORKAREA.
 
-Owns the shell registration in its own message-pumped HWND; watches the game
+Owns shell registration for the companion HWND and a sidecar message pump; watches the game
 process handle so a crashed/terminated game releases the reservation as well.
 Commands/status are atomic JSON files, scoped to one game PID. No game data.
 """
@@ -11,6 +11,9 @@ import json
 import os
 from pathlib import Path
 import time
+import msvcrt
+
+COMMAND_POLL_SECONDS = 0.008 # Respond within one 60 Hz drag frame; no game-side interpolation.
 
 u = c.WinDLL("user32", use_last_error=True)
 s = c.WinDLL("shell32", use_last_error=True)
@@ -38,6 +41,10 @@ u.MonitorFromWindow.restype = w.HANDLE
 u.MonitorFromWindow.argtypes = [w.HWND, w.DWORD]
 u.GetMonitorInfoW.argtypes = [w.HANDLE, c.POINTER(Monitor)]
 u.SetWindowPos.argtypes = [w.HWND, w.HWND, c.c_int, c.c_int, c.c_int, c.c_int, w.UINT]
+u.GetWindowLongPtrW.argtypes = [w.HWND, c.c_int]
+u.GetWindowLongPtrW.restype = c.c_ssize_t
+u.SetWindowLongPtrW.argtypes = [w.HWND, c.c_int, c.c_ssize_t]
+u.SetWindowLongPtrW.restype = c.c_ssize_t
 u.GetWindowRect.argtypes = [w.HWND, c.POINTER(w.RECT)]
 u.IsWindow.argtypes = [w.HWND]
 u.DestroyWindow.argtypes = [w.HWND]
@@ -49,6 +56,18 @@ k.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
 k.OpenProcess.restype = w.HANDLE
 k.WaitForSingleObject.argtypes = [w.HANDLE, w.DWORD]
 k.CloseHandle.argtypes = [w.HANDLE]
+k.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, c.c_void_p, w.DWORD, w.DWORD, w.HANDLE]
+k.CreateFileW.restype = w.HANDLE
+
+def read_command(path):
+    # Allow atomic replacement while this read is open. Ordinary Python CRT
+    # reads can deny FILE_SHARE_DELETE and sporadically reject Godot's rename.
+    handle = k.CreateFileW(str(path), 0x80000000, 7, None, 3, 0x80, None)
+    if handle == c.c_void_p(-1).value:
+        raise FileNotFoundError(path)
+    descriptor = msvcrt.open_osfhandle(handle, os.O_RDONLY)
+    with os.fdopen(descriptor, encoding="utf-8") as stream:
+        return json.load(stream)
 
 def rect_value(r):
     return [r.left, r.top, r.right, r.bottom]
@@ -80,6 +99,7 @@ class AppBar:
         self.dirty = False
         self.command = {}
         self.baseline = None
+        self.target_style = None
         self.callback = u.RegisterWindowMessageW("FishingCompanionAppBar")
         self.proc = WNDPROC(self.window_proc)
         self.cls = WindowClass(proc=self.proc, name="FishingCompanionReservation")
@@ -98,7 +118,7 @@ class AppBar:
     def window_proc(self, hwnd, msg, wp, lp):
         if msg == self.callback and wp == 1:  # ABN_POSCHANGED
             self.dirty = True
-        if msg in (0x7E, 0x2E0):  # display/DPI changed
+        if msg in (0x7E, 0x2E0, 0x1A):  # display/DPI/work-area changed
             self.dirty = True
         return u.DefWindowProcW(hwnd, msg, wp, lp)
 
@@ -115,10 +135,38 @@ class AppBar:
             raise RuntimeError("Companion HWND is no longer valid")
         if not command.get("docked", False):
             self.release()
+            if command.get("widget", False):
+                info = monitor_info(target)
+                width, height = int(command["width"]), int(command["height"])
+                left = command.get("edge") == "left"
+                x = info.monitor.left if left else info.monitor.right - width
+                y = info.work.top + (info.work.bottom - info.work.top - height) // 2
+                # A tiny topmost overlay, not a full-height shell reservation.
+                u.SetWindowPos(target, w.HWND(-1), x, y, width, height, 0x10)
+            else:
+                if self.target_style is not None:
+                    u.SetWindowLongPtrW(target, -20, self.target_style)
+                # Float releases ownership without restoring a historic rectangle.
+                u.SetWindowPos(target, w.HWND(-2), 0, 0, 0, 0, 0x13)
+                if command.get("restore_rect"):
+                    x, y, width, height = map(int, command["restore_rect"])
+                    # Ordered with widget commands, avoiding a late widget resize
+                    # overwriting a Godot-side floating expansion.
+                    u.SetWindowPos(target, None, x, y, width, height, 0x14)
             return self.status(target)
         info = monitor_info(target)
+        if self.target_style is None:
+            self.target_style = u.GetWindowLongPtrW(target, -20)
+        # Dock/widget chrome is a tool window. Desktop work-area rearrangement
+        # applies to ordinary application windows, not floating tool surfaces.
+        u.SetWindowLongPtrW(target, -20, self.target_style | 0x80)
         if not self.registered:
             self.baseline = rect_value(info.work)
+            # Register the visible companion, not the message-pump window.
+            # Otherwise Windows treats the game as an ordinary window and
+            # moves it into the newly reduced work area during ABM_SETPOS,
+            # creating a visible intermediate jump before SetWindowPos.
+            self.data.hWnd = target
             if not s.SHAppBarMessage(0, c.byref(self.data)):
                 raise RuntimeError("Shell rejected ABM_NEW")
             self.registered = True
@@ -134,8 +182,6 @@ class AppBar:
             self.data.rect.left = self.data.rect.right - width
         s.SHAppBarMessage(3, c.byref(self.data))
         r = self.data.rect
-        u.SetWindowPos(self.hwnd, None, r.left, r.top, width, r.bottom-r.top, 0x14)
-        u.ShowWindow(self.hwnd, 4)
         height = min(int(command["height"]), r.bottom-r.top)
         # Borderless Godot client = full native outer footprint. No DPI conversion
         # guess: both processes are per-monitor aware and operate in physical px.
@@ -174,16 +220,16 @@ def main():
                 u.TranslateMessage(c.byref(message))
                 u.DispatchMessageW(c.byref(message))
             try:
-                command = json.loads(options.command.read_text(encoding="utf-8"))
+                command = read_command(options.command)
             except (FileNotFoundError, json.JSONDecodeError, PermissionError):
-                time.sleep(.05)
+                time.sleep(COMMAND_POLL_SECONDS)
                 continue
             if command.get("close"):
                 break
             if command != last or bar.dirty:
                 atomic_json(options.status, bar.apply(command))
                 last = command
-            time.sleep(.05)
+            time.sleep(COMMAND_POLL_SECONDS)
     except Exception as error:
         options.status.with_suffix(".error.txt").write_text(repr(error), encoding="utf-8")
         atomic_json(options.status, {"registered": False, "error": str(error)})

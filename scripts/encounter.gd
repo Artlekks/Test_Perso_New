@@ -128,10 +128,8 @@ var direct_hit_chance: float = 0.5
 var max_bite_chance_per_check: float = 1.0
 
 @export_category("Visible Fish Shadows")
-## A visible interested fish near the lure is a genuine bite candidate, but
-## never a guaranteed bite. Invisible fish continue to use the normal system.
-@export_range(1.0, 2.0, 0.05)
-var shadow_bite_chance_multiplier: float = 1.30
+## Only ready INSPECT shadows qualify; ambient nearby shadows do not.
+@export_range(0.0, 1.0, 0.01) var engaged_bite_opportunity_chance := 0.70
 
 @export_range(0.0, 1.0, 0.05)
 var shadow_species_selection_chance: float = 0.75
@@ -480,7 +478,7 @@ func _on_bite_timer_timeout() -> void:
 		)
 
 		if shadow_candidate != null:
-			bite_chance *= shadow_bite_chance_multiplier
+			bite_chance = resolve_bite_opportunity_chance(bite_chance, true)
 
 		bite_chance = clampf(
 			bite_chance,
@@ -3540,3 +3538,6 @@ func _reset_cast_runtime(clear_bait_data: bool) -> void:
 		last_spatial_context.clear()
 
 	_reset_technique()
+
+func resolve_bite_opportunity_chance(ambient_chance: float, engaged: bool) -> float:
+	return clampf(engaged_bite_opportunity_chance if engaged else ambient_chance, 0.0, 1.0)

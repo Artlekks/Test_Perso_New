@@ -417,6 +417,7 @@ func _setup_fishing_economy_menu() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not ModalInputOwnership.gameplay_accepts(self, event): return
 	if not game_mode.is_fishing():
 		return
 

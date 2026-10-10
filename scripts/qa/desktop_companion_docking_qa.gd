@@ -24,9 +24,24 @@ func status_ready(registered: bool) -> Dictionary:
 		await process_frame
 	check(false,"native helper acknowledges request")
 	return {}
+func check_result_center(label: String) -> void:
+	var view: Node = shell.game.get_node("Game/Fishing").fishing_catch_view
+	var specimen := FishInstance.new()
+	specimen.species = load("res://data/bof4/fish/sea_bream.tres")
+	view.show_catch(specimen,{"fishing_points":120,"rank_id":"novice"})
+	await create_timer(view.slide_time + 0.1).timeout
+	var display: Rect2 = shell.gameplay_display_rect()
+	var logical: Vector2 = view.root.position + view.composed_result_rect().get_center()
+	var physical: Vector2 = display.position + logical * display.size / Vector2(shell.SURFACE)
+	check(physical.distance_to(display.get_center()) < 0.01,label+" catch group centered excluding chrome/letterbox")
+	if label.ends_with("360") or label.ends_with("620"):
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://build/desktop-docking/catch-"+label+".png")
+	view.hide_catch()
 func run() -> void:
 	shell = load("res://actors/desktop/DesktopCompanion.tscn").instantiate()
 	root.add_child(shell)
+	shell.passive.require_focus_confirmation = false
 	current_scene = shell
 	await settle()
 	check(shell.platform.supported(),"native Windows adapter available")
@@ -34,6 +49,7 @@ func run() -> void:
 	var game_id: int = shell.game.get_instance_id()
 	var camera: Transform3D = shell.gameplay_viewport.get_camera_3d().global_transform
 	var floating := Rect2i(root.position,root.size)
+	await check_result_center("floating")
 	shell.set_docked(true)
 	var initial := await status_ready(true)
 	if initial.is_empty(): shell.set_docked(false); shell.platform.close(); quit(1); return
@@ -53,14 +69,29 @@ func run() -> void:
 			check(shell.game.get_instance_id() == game_id and root.get_node("FishingSessionServices").get_instance_id() == session_id,"same session through resizing")
 			check(shell.gameplay_viewport.size == Vector2i(640,864) and not paused,"canonical session retained")
 			check(shell.gameplay_viewport.get_camera_3d().global_transform == camera,"windowing leaves camera unchanged")
+			await check_result_center(("left-" if edge == shell.WindowState.DOCK_LEFT else "right-")+str(width))
+		# Sample every engine frame during continuous commanded resize, not just
+		# the final acknowledgement. Physical outer edge must never flip sides.
+		var monitor: Array = shell.platform.read_status().monitor
+		for frame in range(150):
+			if frame % 3 == 0: shell.set_dock_width(roundi(480+140*sin(frame*.09)))
+			await process_frame
+			var edge_x := root.position.x if edge == shell.WindowState.DOCK_LEFT else root.position.x+root.size.x
+			check(shell.docked and shell.window_state == edge,"resize keeps exclusive native geometry ownership on frame %d" % frame)
+			# Window position/size are separate cached WM_MOVE/WM_SIZE fields.
+			# Physical per-frame edge is sampled atomically with GetWindowRect
+			# by verify_companion_docking.py, not by combining stale cached fields.
+		shell.set_dock_width(480)
+		await status_ready(true)
 		var before := Rect2i(root.position,root.size)
 		shell.set_mode(99)
 		check(Rect2i(root.position,root.size)==before and shell.mode==shell.Mode.ACTIVE,"invalid legacy mode recovers without shrinking")
 		shell.toggle_collapse()
 		await settle()
-		var collapsed := await status_ready(true)
+		var collapsed := await status_ready(false)
 		if collapsed.is_empty(): shell.queue_free(); quit(1); return
-		check(collapsed.reservation[2]-collapsed.reservation[0]==shell.collapsed_width,"collapse reserves narrow strip")
+		check(collapsed.work_area == baseline and not collapsed.registered,"collapse releases full work area")
+		check(collapsed.window[2]-collapsed.window[0] == shell.collapsed_width and collapsed.window[3]-collapsed.window[1] == shell.WIDGET_HEIGHT,"collapse leaves only tiny edge widget")
 		check(shell.effective_window_state()==edge,"collapse remembers edge")
 		shell.toggle_collapse()
 		await settle()
@@ -97,11 +128,12 @@ func run() -> void:
 	if OS.get_cmdline_user_args().has("--hold-docked"):
 		print("DOCK QA HOLD READY")
 		await create_timer(30).timeout
+	var dock_geometry := Rect2i(root.position,root.size)
 	shell.set_docked(false)
 	var released := await status_ready(false)
 	await settle()
 	check(released.get("work_area",[]) == baseline,"Undock restores native work area exactly")
-	check(Rect2i(root.position,root.size) == floating,"Undock restores floating geometry")
+	check(Rect2i(root.position,root.size) == dock_geometry,"Float preserves current dock geometry")
 	# Prove a live remapping updates only the reminder, not a fake gameplay path.
 	var original := InputMap.action_get_events(&"world_card_challenge")
 	InputMap.action_erase_events(&"world_card_challenge")

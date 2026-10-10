@@ -10,22 +10,27 @@ const KEYBOARD_HEIGHT := 60
 @export var min_dock_width := 320
 @export var default_dock_width := 480
 @export var max_dock_width := 900
-@export var collapsed_width := 80
+@export var collapsed_width := 28
+const WIDGET_HEIGHT := 96
+const SHELL_COLOR := Color(0.16, 0.16, 0.18)
+const PLATFORM_STATUS_INTERVAL := 0.05
 var mode := Mode.ACTIVE
 var window_state := WindowState.FLOATING
 var dock_width := 480
 var _expanded_state := WindowState.FLOATING
 var _expanded_rect := Rect2i()
-var _floating_rect := Rect2i()
-var _pending_float_restore := false
 var _platform_poll := 0.0
 var _request_pending := false
+var _floating_restore_rect := Rect2i()
+var _pending_float_decoration := false
+var _float_client_rect := Rect2i()
 var _dock_drag := false
 var _drag_x := 0
 var _drag_width := 0
 var game: Node
 var gameplay_viewport: SubViewport
 var image: TextureRect
+var shell_fill: ColorRect
 var status: Label
 var toggle: Button
 var keyboard_strip: Control
@@ -36,13 +41,18 @@ var passive: Node
 var _forwarding := false
 var _bound_layers: Dictionary = {}
 var docked: bool:
-	get: return effective_window_state() in [WindowState.DOCK_LEFT,WindowState.DOCK_RIGHT]
+	get: return window_state in [WindowState.DOCK_LEFT,WindowState.DOCK_RIGHT]
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_window().content_scale_size = Vector2i.ZERO
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	get_window().unresizable = false
 	get_window().min_size = Vector2i(min_dock_width,400)
+	get_window().borderless = false
+	shell_fill = ColorRect.new()
+	shell_fill.color = SHELL_COLOR
+	shell_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shell_fill)
 	dock_width = clampi(default_dock_width,min_dock_width,max_dock_width)
 	gameplay_viewport = SubViewport.new()
 	gameplay_viewport.name = "GameplayViewport"
@@ -89,7 +99,7 @@ func _ready() -> void:
 	passive.cancelled.connect(func(_reason): mode = Mode.ACTIVE; _layout())
 	passive.opportunity_ready.connect(_layout)
 	divider = ColorRect.new()
-	divider.color = Color(0.55,0.55,0.55,0.8)
+	divider.color = Color.TRANSPARENT
 	divider.mouse_default_cursor_shape = Control.CURSOR_HSIZE
 	divider.gui_input.connect(_divider_input)
 	add_child(divider)
@@ -142,32 +152,46 @@ func set_window_state(next: int) -> void:
 	if next not in [WindowState.FLOATING,WindowState.DOCK_LEFT,WindowState.DOCK_RIGHT]: next = WindowState.FLOATING
 	if next != WindowState.FLOATING and not platform.supported(): return
 	if window_state == next: return
-	if window_state == WindowState.FLOATING: _floating_rect = Rect2i(get_window().position,get_window().size)
+	var current_rect := Rect2i(get_window().position,get_window().size)
 	window_state = next
 	_expanded_state = next
-	get_window().min_size = Vector2i(min_dock_width,400)
-	get_window().borderless = docked
+	_pending_float_decoration = false
+	if docked: get_window().borderless = true
+	# Decoration changes occur only on mode transitions. The native adapter
+	# owns all dock/widget rectangles; resizing never toggles decoration.
 	if docked: _apply_dock_size()
 	else:
-		_pending_float_restore = true
+		_float_client_rect = current_rect
+		_pending_float_decoration = true
 		var error: Error = platform.request(false,get_window(),"right")
-		if error != OK or platform.helper_pid <= 0 or not OS.is_process_running(platform.helper_pid): _restore_floating()
+		if error != OK:
+			status.text = error_string(error)
+			_request_pending = true
+		if not platform.supported() or platform.helper_pid <= 0: _restore_float_decoration()
 	_layout()
 func toggle_collapse() -> void:
 	if window_state == WindowState.COLLAPSED:
 		window_state = _expanded_state
-		get_window().min_size = Vector2i(min_dock_width,400)
-		if docked: _apply_dock_size()
+		if docked: _request_pending = true
 		else:
-			get_window().size = _expanded_rect.size
-			get_window().position = _expanded_rect.position
+			if platform.supported():
+				_floating_restore_rect = _expanded_rect
+				_float_client_rect = _expanded_rect
+				_pending_float_decoration = true
+				_request_pending = true
+			else:
+				get_window().borderless = false
+				get_window().size = _expanded_rect.size
+				get_window().position = _expanded_rect.position
 	else:
 		_expanded_state = window_state
 		_expanded_rect = Rect2i(get_window().position,get_window().size)
 		window_state = WindowState.COLLAPSED
-		get_window().min_size = Vector2i(collapsed_width,180)
-		get_window().size = Vector2i(collapsed_width,200)
-		if docked: _request_pending = true
+		_pending_float_decoration = false
+		get_window().borderless = true
+		get_window().min_size = Vector2i(collapsed_width,WIDGET_HEIGHT)
+		_request_pending = platform.supported()
+		if not platform.supported(): get_window().size = Vector2i(collapsed_width,WIDGET_HEIGHT)
 	_layout()
 func set_dock_width(value: int) -> void:
 	dock_width = clampi(value,min_dock_width,max_dock_width)
@@ -177,17 +201,10 @@ func _desired_dock_size() -> Vector2i:
 	var height := 200 if window_state == WindowState.COLLAPSED else roundi(float(width)*SURFACE.y/SURFACE.x)+CHROME_HEIGHT+KEYBOARD_HEIGHT
 	return Vector2i(width,mini(height,DisplayServer.screen_get_size(get_window().current_screen).y))
 func _apply_dock_size() -> void:
-	get_window().size = _desired_dock_size()
 	_request_pending = true
-func _restore_floating() -> void:
-	_pending_float_restore = false
-	if _floating_rect.has_area():
-		get_window().size = _floating_rect.size
-		get_window().position = _floating_rect.position
-	_layout()
 func _on_resize() -> void:
 	_layout()
-	if docked: _request_pending = true
+	# Native acknowledgements are outputs, never new width commands.
 func _divider_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_dock_drag = event.pressed
@@ -200,23 +217,38 @@ func _process(delta: float) -> void:
 			var dx := DisplayServer.mouse_get_position().x-_drag_x
 			set_dock_width(_drag_width + (dx if effective_window_state() == WindowState.DOCK_LEFT else -dx))
 	_platform_poll += delta
-	if _platform_poll < 0.05: return
+	# Publish a changed width every rendered drag frame. Status polling remains
+	# bounded when idle; two serial 50 ms gates made physical dragging stepped.
+	if not _request_pending and _platform_poll < PLATFORM_STATUS_INTERVAL: return
 	_platform_poll = 0
 	if _request_pending:
 		_request_pending = false
 		# Native acknowledgements can resize the client asynchronously. They must
 		# never overwrite the user's desired width with an older acknowledged size.
-		var error: Error = platform.request(docked,get_window(),"left" if effective_window_state() == WindowState.DOCK_LEFT else "right",_desired_dock_size() if docked else Vector2i.ZERO)
-		if error != OK: status.text = error_string(error); set_window_state(WindowState.FLOATING)
+		var error: Error = platform.request(docked,get_window(),"left" if effective_window_state() == WindowState.DOCK_LEFT else "right",Vector2i(collapsed_width,WIDGET_HEIGHT) if window_state == WindowState.COLLAPSED else (_desired_dock_size() if docked else Vector2i.ZERO), window_state == WindowState.COLLAPSED, _floating_restore_rect)
+		if error != OK:
+			status.text = error_string(error)
+			_request_pending = true # Keep current edge; retry transport, never float.
+		else: _floating_restore_rect = Rect2i()
 	var state: Dictionary = platform.read_status()
-	if _pending_float_restore and state.get("sequence",-1) == platform.sequence and not state.get("registered",true): _restore_floating()
+	if _pending_float_decoration and state.get("sequence",-1) == platform.sequence and not state.get("registered",false):
+		_restore_float_decoration()
 	if docked and not str(state.get("error","")).is_empty():
 		status.text = str(state.error)
 		set_window_state(WindowState.FLOATING)
 	_layout()
+func _restore_float_decoration() -> void:
+	# Release AppBar first: a normal decorated window inside the old reserved
+	# work area can otherwise be relocated by Windows during the transition.
+	_pending_float_decoration = false
+	get_window().borderless = false
+	get_window().min_size = Vector2i(min_dock_width,400)
+	get_window().size = _float_client_rect.size
+	get_window().position = _float_client_rect.position
 func _layout() -> void:
 	if image == null or keyboard_strip == null: return
 	var collapsed := window_state == WindowState.COLLAPSED
+	shell_fill.size = Vector2(get_window().size)
 	image.position = Vector2(0,CHROME_HEIGHT)
 	image.size = Vector2(get_window().size)-Vector2(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
 	image.visible = not collapsed
@@ -228,20 +260,24 @@ func _layout() -> void:
 		var button: Button = buttons[labels[i]]
 		button.visible = not collapsed or labels[i] == "Collapse"
 		button.position = Vector2(i*float(get_window().size.x)/4,0) if not collapsed else Vector2.ZERO
-		button.size = Vector2(float(get_window().size.x)/4,32) if not collapsed else Vector2(get_window().size.x,40)
-	buttons.Collapse.text = "Expand" if collapsed else "Collapse"
+		button.size = Vector2(float(get_window().size.x)/4,32) if not collapsed else Vector2(get_window().size.x,WIDGET_HEIGHT)
+	buttons.Collapse.tooltip_text = "FISH READY - restore and switch Active" if passive != null and passive.is_ready() else "Restore companion"
+	buttons.Collapse.text = (" > " if effective_window_state() == WindowState.DOCK_LEFT else " < ") if collapsed else "Collapse"
+	buttons.Mode.visible = not collapsed
+	buttons.X.visible = not collapsed
 	buttons.Mode.text = "Active" if mode == Mode.ACTIVE else "Passive"
 	buttons.Mode.tooltip_text = passive.reason if passive != null else ""
 	buttons.Mode.position = Vector2(0,40 if collapsed else 34)
 	buttons.Mode.size = Vector2(get_window().size.x-28,28)
 	buttons.X.position = Vector2(get_window().size.x-28,40 if collapsed else 34)
 	buttons.X.size = Vector2(28,28)
-	status.position = Vector2(3,80 if collapsed else 50)
-	status.visible = collapsed
-	status.text = "!\nFISH" if passive != null and passive.is_ready() else ("Focus" if mode == Mode.PASSIVE else "Active")
+	status.position = Vector2(3,70 if collapsed else 50)
+	status.visible = collapsed and passive != null and passive.is_ready()
+	status.text = "!" if passive != null and passive.is_ready() else ("Focus" if mode == Mode.PASSIVE else "Active")
+	passive.layout_timer(gameplay_display_rect())
 	divider.visible = docked and not collapsed
-	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-6,CHROME_HEIGHT)
-	divider.size = Vector2(6,maxi(1,get_window().size.y-CHROME_HEIGHT))
+	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
+	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F12 and event.ctrl_pressed and event.shift_pressed:
 		cycle_mode()
@@ -265,3 +301,8 @@ func _exit_tree() -> void:
 		var layer = entry.node.get_ref()
 		var parent = entry.parent.get_ref()
 		if is_instance_valid(layer) and is_instance_valid(parent): layer.reparent(parent)
+
+func gameplay_display_rect() -> Rect2:
+	var factor := minf(image.size.x / SURFACE.x, image.size.y / SURFACE.y)
+	var footprint := Vector2(SURFACE) * factor
+	return Rect2(image.position + (image.size-footprint)*0.5, footprint)

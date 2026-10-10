@@ -22,6 +22,7 @@ run/main_scene.mobile_portrait="res://actors/mobile/MobilePortraitHarness.tscn"
 
 [autoload]
 
+ModalInputGate="*res://scripts/ui/modal_input_ownership.gd"
 WorldLocations="*res://scripts/world/world_location_service.gd"
 
 [display]

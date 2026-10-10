@@ -17,9 +17,15 @@ Defaults exported on the controller:
 | focus_seconds | 1200 (20 minutes) |
 | opportunity_seconds | 300 (5 minutes) |
 | cast_power | 0.65 |
+| timer_entry_delay | 1 second after water settles |
+| require_focus_confirmation | true |
 
-After physical water entry, a monotonic wall-clock timer schedules one opportunity
-at `focus_seconds + RNG[0, opportunity_seconds]`. RNG can be seeded in QA.
+After physical water entry, wait one second and display the editable focus timer
+in the lower-middle gameplay area, above the power bar. Click to edit; `20`
+means 20 minutes and `MM:SS` is supported. Enter or K confirms only in this
+context. The clock does not start until confirmation. Then a monotonic wall-clock
+timer schedules one opportunity at `focus_seconds + RNG[0, opportunity_seconds]`.
+RNG can be seeded in QA; accelerated fixtures explicitly disable confirmation.
 The ordinary encounter bite timer is stopped while the lease is owned, and stale
 ordinary timer callbacks cannot bypass the lease. Ambient presentation continues.
 When paused, delivery waits until gameplay resumes. No timer or readiness is saved.
@@ -30,7 +36,8 @@ is no eligible fish, Passive cancels with an explanation rather than fabricating
 one. A successful opportunity uses the production bite lifecycle but leaves a
 persistent hook-ready response: no short timeout, no automatic catch/reward.
 
-Expanded and collapsed shells show FISH READY. Expand does not change activity.
+Expanded shells show FISH READY; the tiny collapsed tab shows `!` with that tooltip.
+Expand does not change activity.
 Switch Active, then confirm normally to hook. The existing fight, landing, result
 and reward/save pipeline resolves the opportunity. Switching Active early cancels
 the passive schedule and resumes normal bite scheduling. I cancels Passive/ready

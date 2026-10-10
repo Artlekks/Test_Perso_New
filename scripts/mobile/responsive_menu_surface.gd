@@ -10,6 +10,7 @@ var controller: Node
 var authored: Control
 var kind: String
 var scroll: ScrollContainer
+var fixed_stack: VBoxContainer
 var stack: VBoxContainer
 var bindings: Array[Dictionary] = []
 var originals: Dictionary = {}
@@ -70,7 +71,7 @@ func _mask_authored() -> void:
 func _section(title: String) -> VBoxContainer:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Portrait.panel_style())
-	stack.add_child(panel)
+	(fixed_stack if fixed_stack != null else stack).add_child(panel)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]: margin.add_theme_constant_override("margin_" + side, 12)
 	panel.add_child(margin)
@@ -90,6 +91,19 @@ func _line(parent: Node, paths: Array, fallback := "", selection := -1, group :=
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.y = 28 if selection < 0 else 54
 	parent.add_child(label)
+	var selector := NinePatchRect.new()
+	selector.name = "SelectionOverlay"
+	selector.texture = preload("res://assets/ui/fishing_menu/Menu_Hint_Panel_Selector.png")
+	selector.draw_center = false
+	selector.patch_margin_left = 4
+	selector.patch_margin_right = 4
+	selector.patch_margin_top = 4
+	selector.patch_margin_bottom = 4
+	selector.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	selector.z_index = 2
+	label.add_child(selector)
+	selector.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	selector.hide()
 	bindings.append({"label": label, "paths": paths, "fallback": fallback, "index": selection, "group": group})
 	return label
 
@@ -115,12 +129,16 @@ func _economy() -> void:
 	_line(_section("CONFIRM"), ["ConfirmPanel/Prompt", "ConfirmPanel/Choice"], "", -1, "confirm")
 
 func _crafting() -> void:
-	_line(_section("LURE CRAFTING"), ["LiveRecipeNameLabel", "RecipeCounterLabel"])
+	_line(_section("LURE CRAFTING"), ["LiveRecipeNameLabel", "RecipeCounterLabel"], "", 0, "recipe")
+	_line(_section("ACTION"), [], "K: Craft    I: Back    J: Customize\nUp/Down: Recipe or material\nLeft/Right: Material slot")
+	fixed_stack = VBoxContainer.new()
+	fixed_stack.name = "FixedRecipeDetails"
+	fixed_stack.add_theme_constant_override("separation", 12)
+	add_child(fixed_stack)
 	var detail := _section("RECIPE / MATERIALS")
 	for path in ["Panel/RecipeLabel", "Panel/SlotsLabel", "Panel/CostLabel"]: _line(detail, [path])
 	var preview := _section("RESULT / INVENTORY")
 	for path in ["Panel/PreviewLabel", "Panel/ComparisonLabel", "Panel/InventoryLabel", "Panel/StatusLabel"]: _line(preview, [path])
-	_line(_section("ACTION"), [], "K: Craft    I: Back    J: Customize\nUp/Down: Recipe or material\nLeft/Right: Material slot")
 
 func _card_maker() -> void:
 	_line(_section("CARD CRAFTING"), ["Panel/ZennyLabel"])
@@ -164,6 +182,10 @@ func _process(_delta: float) -> void:
 	if kind == "inventory": controller.selector_layer.modulate = Color(1, 1, 1, 0)
 	position = Vector2(16,12)
 	size = get_viewport().get_visible_rect().size - Vector2(32,24)
+	if fixed_stack != null:
+		scroll.size = Vector2(size.x, 224)
+		fixed_stack.position = Vector2(0, 236)
+		fixed_stack.size = Vector2(size.x, size.y - 236)
 	_sync()
 
 func _sync() -> void:
@@ -194,6 +216,7 @@ func _sync() -> void:
 		var index: int = binding.index
 		match binding.group:
 			"mode": text = ["BUY", "SELL", "FISH TRADE"][controller._mode]
+			"recipe": selected = true
 			"rows":
 				selected = index == int(controller.get("_row_index") if kind == "economy" else controller.get("_index"))
 				text = "   ".join(parts)
@@ -212,12 +235,13 @@ func _sync() -> void:
 		text = text.replace("\u2014", "-").replace("\u00d7", "x").replace("\u2192", "->")
 		binding.label.text = ("> " if selected else "") + Portrait.hints(self, text)
 		binding.label.visible = not text.is_empty()
+		binding.label.get_node("SelectionOverlay").visible = selected and (not confirming or binding.group == "confirm")
 		if selected and (not confirming or binding.group == "confirm"):
 			focus = binding.group + str(index) + str(text)
 			focused = binding.label
 	if focus != last_focus and focused != null:
 		last_focus = focus
-		scroll.ensure_control_visible.call_deferred(focused)
+		if fixed_stack == null or not fixed_stack.is_ancestor_of(focused): scroll.ensure_control_visible.call_deferred(focused)
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree(): return

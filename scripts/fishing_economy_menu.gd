@@ -195,6 +195,7 @@ func close_menu() -> void:
 
 	var tree := get_tree()
 	if tree != null:
+		ModalInputOwnership.release_modal(self)
 		tree.paused = _previous_pause
 
 	closed.emit()

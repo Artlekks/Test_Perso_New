@@ -50,11 +50,13 @@ func close_journal() -> void:
 		return
 	_is_open = false
 	root.visible = false
+	ModalInputOwnership.release_modal(self)
 	get_tree().paused = _pause_was_active
 
 
 func _exit_tree() -> void:
 	if _is_open and get_tree() != null:
+		ModalInputOwnership.release_modal(self)
 		get_tree().paused = _pause_was_active
 
 

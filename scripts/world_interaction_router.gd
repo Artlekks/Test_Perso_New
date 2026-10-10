@@ -26,6 +26,7 @@ func _input(event: InputEvent) -> void:
 
 
 func handle_event(event: InputEvent) -> bool:
+	var accepts := ModalInputOwnership.gameplay_accepts(self, event)
 	var card_action := event.is_action(&"world_card_challenge")
 	if not (event is InputEventKey) and not card_action:
 		return false
@@ -36,6 +37,7 @@ func handle_event(event: InputEvent) -> bool:
 	if not event.is_pressed():
 		_claimed_keys.erase(key)
 		return false
+	if not accepts: return false
 	var tree := get_tree()
 	if tree == null or not is_instance_valid(_player) or _player.is_queued_for_deletion():
 		return false

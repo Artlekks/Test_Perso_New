@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import time
+import threading
 import windows_appbar as native
 
 def wait_for(predicate, seconds=20):
@@ -36,6 +37,10 @@ def main():
         "res://build/desktop-docking/witness-game.log","--","--hold-docked"],creationflags=subprocess.CREATE_NO_WINDOW)
     witness = None
     checks = []
+    sampling = threading.Event()
+    samples = []
+    edge_errors = []
+    sampler = None
     try:
         info = wait_for(lambda: json.loads(fixture.read_text()) if fixture.exists() else None)
         status_path = Path(info["status"])
@@ -46,6 +51,26 @@ def main():
                 return state if ready and state.get("registered") and state.get("edge") == "right" else None
             except (FileNotFoundError,json.JSONDecodeError,PermissionError):
                 return None
+        def sample_edges():
+            while not sampling.is_set():
+                try:
+                    command = native.read_command(Path(info["command"]))
+                    snapshot = json.loads(status_path.read_text())
+                    if command.get("docked") and snapshot.get("registered") and command["edge"] == snapshot.get("edge"):
+                        physical = native.w.RECT()
+                        if not native.u.GetWindowRect(command["hwnd"],c.byref(physical)):
+                            # The crash-cleanup test intentionally destroys this HWND.
+                            continue
+                        monitor = snapshot["monitor"]
+                        outer = physical.left if command["edge"] == "left" else physical.right
+                        expected = monitor[0] if command["edge"] == "left" else monitor[2]
+                        samples.append(outer)
+                        if outer != expected: edge_errors.append({"actual":native.rect_value(physical),"edge":command["edge"],"expected":expected})
+                except (OSError,ValueError,KeyError):
+                    pass
+                sampling.wait(.002)
+        sampler = threading.Thread(target=sample_edges,daemon=True)
+        sampler.start()
         state = wait_for(active,120)
         witness = native.u.CreateWindowExW(0,"STATIC","Companion QA Normal Window",0x00CF0000,
             state["work_area"][0]+20,state["work_area"][1]+20,600,400,None,None,None,None)
@@ -76,10 +101,16 @@ def main():
         assert process.wait(timeout=120) == 0
         wait_for(restored,8)
         checks.append({"check":"normal docked game close releases AppBar", "restored_work_area":baseline})
+        sampling.set()
+        sampler.join(timeout=3)
+        assert len(samples)>100 and not edge_errors,(len(samples),edge_errors[:5])
+        checks.append({"check":"physical outer edge remains pixel-stable during continuous resizing", "native_samples":len(samples),"failures":edge_errors})
         (output/"native-witness-report.json").write_text(json.dumps(checks,indent=2))
-        print("Windows AppBar Witness QA: 3/3")
+        print("Windows AppBar Witness QA: 4/4")
         print(json.dumps(checks))
     finally:
+        sampling.set()
+        if sampler is not None: sampler.join(timeout=3)
         if process.poll() is None:
             process.terminate()
             process.wait(timeout=8)

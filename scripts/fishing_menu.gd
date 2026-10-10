@@ -403,6 +403,7 @@ func close_menu() -> void:
 	_hide_all_selector_overlays()
 	root.visible = false
 	_restore_gameplay_hud()
+	ModalInputOwnership.release_modal(self)
 	get_tree().paused = _pause_was_active
 	closed.emit()
 

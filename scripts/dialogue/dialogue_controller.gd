@@ -145,6 +145,7 @@ func _disconnect_service() -> void:
 func _restore_pause_state() -> void:
 	var tree := get_tree()
 	if tree != null and _pause_owned:
+		ModalInputOwnership.release_modal(self)
 		tree.paused = _previous_tree_paused
 	_pause_owned = false
 	_previous_tree_paused = false

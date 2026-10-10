@@ -36,6 +36,7 @@ func _process(_delta: float) -> void:
 	cast_availability_changed.emit(cast_available)
 	
 func _unhandled_input(event: InputEvent) -> void:
+	if not ModalInputOwnership.gameplay_accepts(self, event): return
 	if game_mode == null:
 		return
 

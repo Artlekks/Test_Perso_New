@@ -374,7 +374,7 @@ func run() -> void:
 	check(current_scene == harness and harness.game.get_viewport() == harness.gameplay_viewport and locations.current_location.location_id == &"wyndia_ocean_outpost", "actual Ocean travel remains inside shell")
 	check(session.dialogue_controller.get_view().get_viewport() == harness.gameplay_viewport, "session UI persists through authoritative travel")
 	controls.release_all()
-	print("MOBILE PORTRAIT HARNESS QA: %d/%d" % [checks - failures.size(), checks])
+	print("MOBILE PORTRAIT HARNESS QA: %d/%d; failures=%s" % [checks - failures.size(), checks, failures])
 	current_scene = null
 	harness.queue_free()
 	await settle(3)

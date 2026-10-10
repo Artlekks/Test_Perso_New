@@ -22,13 +22,13 @@ The bootstrap still composes scene-owned backends. This pass does not relocate u
 
 ## Root causes and fixes
 
-1. **P1 — incompatible deck reconstruction.** DeckSetup allowed 5–50 profiles; StateAPI and SaveIntegrity iterated six and clamped active index to five. Integrity stamped deck version 1 while UI wrote version 2. Fix: one DeckStore count/active/schema policy; the existing complete ID/ownership/rank/cost/five-card sanitizer moved into it. Both UI and integrity use that sanitizer. Profile 7 and legacy profile 50 are covered.
-2. **P1 — successful-looking failed ownership writes.** Collection.acquire/remove/set_quantity ignored `_save` errors; AcquisitionService ignored collection/state errors and recorded successful grants/claims. Fix: direct writes roll back live quantities on failure. Acquisitions commit a recoverable absolute ownership/history intent before collection/history, then clear intent only on success. A failed grant returns `save_failed`; unresolved intent blocks another grant.
-3. **P1 — corrupt save silently replaced by new-game defaults.** Collection.initialize treated every load error like file-not-found and seeded/re-saved. Fix: missing file alone is a fresh save. Truncated/invalid primary can recover a committed backup. Unrecoverable payload, invalid quantity/version or newer collection schema remains untouched and blocks writes. Unknown validly typed card IDs are sanitized against the catalogue as before.
-4. **P1 — result retry could transfer twice.** MatchResolutionController recomputed desired quantities from current ownership; Journal.record_selection overwrote the prior selection and reset committed flags. Fix: retained selection is immutable; identical result retry reconciles original absolute counts. A different selection is rejected. A callback after journal clear is rejected. Ownership transfer requires a pending result when the production resolution journal exists.
-5. **P1 — stale backend overwrites.** A previously loaded Collection could re-save obsolete quantities after another backend committed newer ownership. Fix: hash revision checked against the canonical file before commit; mismatch returns ERR_BUSY without overwriting. Acquisition state uses the same stale-writer check, and acquisition/transfer entry validates the collection before journaling stale quantities. This is not a cross-process locking service; the project remains a single-process writer.
-6. **P2 — direct/truncating multi-file writes.** Collection, decks, opponent ownership, acquisition history/state and transfer/result journals used direct ConfigFile.save. Fix: shared ConfigStore stages a same-directory file, reloads and compares it, then renames over primary. Committed backups are refreshed through separate staging. `.tmp` is never promoted as recovery truth. Integrity no longer edits collection files behind the backend.
-7. **P2 — reset ignored deletion failure/staging.** Reset removed primary/backup only and unconditionally reported success. Fix: delete all four canonical artifacts and propagate the real deletion result.
+1. **P1 â€” incompatible deck reconstruction.** DeckSetup allowed 5â€“50 profiles; StateAPI and SaveIntegrity iterated six and clamped active index to five. Integrity stamped deck version 1 while UI wrote version 2. Fix: one DeckStore count/active/schema policy; the existing complete ID/ownership/rank/cost/five-card sanitizer moved into it. Both UI and integrity use that sanitizer. Profile 7 and legacy profile 50 are covered.
+2. **P1 â€” successful-looking failed ownership writes.** Collection.acquire/remove/set_quantity ignored `_save` errors; AcquisitionService ignored collection/state errors and recorded successful grants/claims. Fix: direct writes roll back live quantities on failure. Acquisitions commit a recoverable absolute ownership/history intent before collection/history, then clear intent only on success. A failed grant returns `save_failed`; unresolved intent blocks another grant.
+3. **P1 â€” corrupt save silently replaced by new-game defaults.** Collection.initialize treated every load error like file-not-found and seeded/re-saved. Fix: missing file alone is a fresh save. Truncated/invalid primary can recover a committed backup. Unrecoverable payload, invalid quantity/version or newer collection schema remains untouched and blocks writes. Unknown validly typed card IDs are sanitized against the catalogue as before.
+4. **P1 â€” result retry could transfer twice.** MatchResolutionController recomputed desired quantities from current ownership; Journal.record_selection overwrote the prior selection and reset committed flags. Fix: retained selection is immutable; identical result retry reconciles original absolute counts. A different selection is rejected. A callback after journal clear is rejected. Ownership transfer requires a pending result when the production resolution journal exists.
+5. **P1 â€” stale backend overwrites.** A previously loaded Collection could re-save obsolete quantities after another backend committed newer ownership. Fix: hash revision checked against the canonical file before commit; mismatch returns ERR_BUSY without overwriting. Acquisition state uses the same stale-writer check, and acquisition/transfer entry validates the collection before journaling stale quantities. This is not a cross-process locking service; the project remains a single-process writer.
+6. **P2 â€” direct/truncating multi-file writes.** Collection, decks, opponent ownership, acquisition history/state and transfer/result journals used direct ConfigFile.save. Fix: shared ConfigStore stages a same-directory file, reloads and compares it, then renames over primary. Committed backups are refreshed through separate staging. `.tmp` is never promoted as recovery truth. Integrity no longer edits collection files behind the backend.
+7. **P2 â€” reset ignored deletion failure/staging.** Reset removed primary/backup only and unconditionally reported success. Fix: delete all four canonical artifacts and propagate the real deletion result.
 
 ## Compatibility, corruption and failure behavior
 
@@ -96,3 +96,17 @@ The mobile lifecycle SCRIPT ERROR is an outstanding, out-of-scope verification f
 ## Final Web publication
 
 `& .\tools\mobile\build_mobile_playtest.ps1` completed using the existing Linux/WSL Godot 4.7.2 builder and unchanged `Mobile Portrait Web Playtest` preset. Published PCK **32,025,204 bytes**; `project.binary` **9,944 bytes**, valid **ECFG** header. Export validated before publication. Safari can refresh at the existing HTTPS address; server/certificates were not touched. No physical Safari persistence acceptance is claimed.
+# Morning Stability v1 interaction update
+
+Deck selection is slot-first. Confirming a filled or empty slot identifies that
+exact edit target while the collection has its own selector. Independent sibling
+yellow outlines at z=1000 render above card images, dimming and cost overlays.
+Confirming the source card again removes only deck membership; Back cancels
+unchanged. Short decks preserve exact replacement of filled slots. The existing
+compact save format packs remaining cards left after removal; trailing slots are
+empty. All six profiles, ownership and legality continue through the existing backend.
+
+Modal close arms the shared ModalInputGate before restoring pause ownership.
+Exploration requires release and a fresh press; queued/held closing K/I/C input
+cannot start fishing. Match hand cards keep 116Ã—132 dimensions and existing
+animation speed, with a 39.6-pixel vertical step (30% of height).

@@ -7,8 +7,8 @@ signal dismissed
 @export var slide_padding_px: float = 30.0
 @export var king_name_prefix: String = "KING "
 @export_category("Record Result")
-@export var record_text_position: Vector2 = Vector2(28.0, 310.0)
-@export var record_text_size: Vector2 = Vector2(230.0, 88.0)
+@export var record_text_position: Vector2 = Vector2(280.0, 310.0)
+@export var record_text_size: Vector2 = Vector2(105.0, 24.0)
 @export var record_text_scale: Vector2 = Vector2(1.6, 1.6)
 @onready var root: Control = $Root
 @onready var fish_portrait: TextureRect = $Root/FishPortrait
@@ -39,6 +39,7 @@ func show_catch(
 	record_result: Dictionary = {}
 ) -> void:
 	_kill_move_tween()
+	_center_composed_result()
 
 	# Prepare the frame offscreen to the right.
 	root.position = _get_offscreen_right_position()
@@ -87,6 +88,16 @@ func show_catch(
 	)
 
 	_move_tween.tween_callback(_on_show_finished)
+
+func composed_result_rect() -> Rect2:
+	var frame := root.get_node("CatchFrame") as TextureRect
+	return Rect2(frame.position, frame.size * frame.scale)
+
+func _center_composed_result() -> void:
+	# The shell can publish its visible gameplay rectangle (never its controls
+	# or chrome). Move the common Root once; retain every child's composition.
+	var surface: Rect2 = get_meta("gameplay_presentation_rect", Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size))
+	_rest_position = surface.get_center() - composed_result_rect().get_center()
 
 
 func _create_record_label() -> void:

@@ -121,6 +121,8 @@ var _nav_zone: int = NAV_COLLECTION
 var _profile_nav_index: int = 0
 var _deck_cursor_index: int = 0
 var _slot_replacement_requested := -1
+var _collection_outlines: Array[Panel] = []
+var _deck_outlines: Array[Panel] = []
 var _sort_cursor_index: int = 0
 
 
@@ -142,6 +144,13 @@ func _ready() -> void:
 		$DeckList/Deck4Button, $DeckList/Deck5Button,
 	]
 	_build_views()
+	# Fixed pools: ownership/page growth must not add presentation nodes during
+	# later scene/menu cycles, nor retain selectors from the previous page.
+	for index in range(_collection_views.size()):
+		var view: Control = _collection_views[index]
+		_outline(_collection_outlines, collection_root, index, Vector2.ZERO, view.size, false)
+	for index in range(_deck_views.size()):
+		_outline(_deck_outlines, deck_root, index, Vector2.ZERO, DECK_SLOT_SIZE, false)
 	for index in range(_profile_buttons.size()):
 		_profile_buttons[index].pressed.connect(_on_profile_row_pressed.bind(index))
 	new_deck_button.pressed.connect(_on_new_deck_pressed)
@@ -530,7 +539,8 @@ func _refresh_collection() -> void:
 			view.position = base_position + (
 				Vector2(0.0, COLLECTION_FOCUS_Y) if is_replace_source else Vector2.ZERO
 			)
-			view.set_selected(is_cursor or is_replace_source)
+			view.set_selected(false)
+			_outline(_collection_outlines, collection_root, local_index, view.position, view.size * view.scale, is_cursor or is_replace_source)
 			if is_cursor or is_replace_source:
 				# Keep navigation feedback outside the card view itself.
 				# Locked cards are darkened with modulate, which also darkens
@@ -545,6 +555,7 @@ func _refresh_collection() -> void:
 					arrow_local.y * collection_root.scale.y
 				)
 		else:
+			_collection_outlines[local_index].hide()
 			view.modulate = Color.WHITE
 			_refresh_cost_label(view, null, false)
 			view.visible = false
@@ -554,11 +565,12 @@ func _refresh_deck() -> void:
 	for index in range(_deck_views.size()):
 		var view: Control = _deck_views[index]
 		view.pivot_offset = Vector2.ZERO
-		var is_replace_target: bool = (_state == STATE_REPLACE and index == _replace_slot_index) or (_nav_zone == NAV_DECK and index == _deck_cursor_index)
+		var is_replace_target: bool = (_state == STATE_REPLACE and index == _replace_slot_index) or (_nav_zone == NAV_DECK and index == _deck_cursor_index) or index == _slot_replacement_requested
 		view.position = DECK_CARD_OFFSET + Vector2(
 			float(index) * DECK_STEP_X + (DECK_SELECTED_X_OFFSET if is_replace_target else 0.0),
 			0.0
 		)
+		_outline(_deck_outlines, deck_root, index, view.position, DECK_SLOT_SIZE, is_replace_target)
 		if index < _deck.size():
 			view.visible = true
 			view.configure(_deck[index], OWNER_PLAYER, false)
@@ -782,7 +794,7 @@ func _activate_navigation_target() -> void:
 		NAV_DECK:
 			_slot_replacement_requested = _deck_cursor_index
 			_nav_zone = NAV_COLLECTION
-			_status_text = "Choose a card for slot %d." % (_deck_cursor_index + 1)
+			_status_text = "Choose card; current card removes. I: Back."
 			_refresh_all()
 		NAV_PROFILES:
 			if _profile_nav_index < 0:
@@ -930,16 +942,24 @@ func _select_cursor_card() -> void:
 		_refresh_labels()
 		return
 	if _deck_has_card(card):
-		if _slot_replacement_requested >= 0:
-			_status_text = "Already in this deck. Choose an unused card."
+		if _slot_replacement_requested >= 0 and _deck_index_of(card) != _slot_replacement_requested:
+			_status_text = "Already in another slot. Choose an unused card."
 			_refresh_labels()
 			return
 		var deck_index: int = _deck_index_of(card)
 		if deck_index >= 0:
 			_deck.remove_at(deck_index)
 			_save_current_profile()
-			_status_text = "Removed from deck."
+			_finish_slot_navigation()
+			_status_text = "Removed from deck; collection unchanged."
 			_refresh_all()
+		return
+
+	if _slot_replacement_requested >= 0 and _slot_replacement_requested < _deck.size():
+		_replace_card = card
+		_replace_source_index = _cursor_index
+		_replace_slot_index = _slot_replacement_requested
+		_confirm_replacement()
 		return
 
 	if _deck.size() < HAND_SIZE:
@@ -1820,3 +1840,21 @@ func _accept_input() -> void:
 	var viewport: Viewport = get_viewport()
 	if viewport != null:
 		viewport.set_input_as_handled()
+
+func _outline(outlines: Array[Panel], parent: Control, index: int, at: Vector2, footprint: Vector2, active: bool) -> void:
+	while outlines.size() <= index:
+		var border := Panel.new()
+		border.name = "SelectionOutline%d" % outlines.size()
+		border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		border.z_index = 1000
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color.TRANSPARENT
+		style.border_color = Color(1.0, 0.88, 0.30)
+		style.set_border_width_all(3)
+		border.add_theme_stylebox_override("panel", style)
+		parent.add_child(border)
+		outlines.append(border)
+	var border := outlines[index]
+	border.position = at
+	border.size = footprint
+	border.visible = active

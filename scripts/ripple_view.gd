@@ -4,7 +4,7 @@ extends Node3D
 
 @export var surface_offset: float = 0.02
 ## Fixed-size surface cue: explicitly readable at native/mobile viewport sizes.
-@export var ripple_pixel_size: float = 0.0035
+@export var ripple_pixel_size: float = 0.00175
 
 @export_category("Bite Surface Sprite")
 @export var bite_sheet: Texture2D = preload(

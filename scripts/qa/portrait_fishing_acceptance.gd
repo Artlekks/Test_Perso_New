@@ -19,10 +19,19 @@ func check(ok: bool, label: String) -> void:
 	checks += 1
 	if not ok: failures.append(label); push_error(label)
 func wait_for(predicate: Callable, label: String, seconds := 12.0) -> bool:
-	var until := Time.get_ticks_msec() + int(seconds * 1000)
-	while not predicate.call() and Time.get_ticks_msec() < until:
+	# Web background rendering can throttle frame delivery. Animation contracts
+	# use simulation time, with a separate wall watchdog for a genuinely stalled host.
+	var remaining := seconds
+	var until := Time.get_ticks_msec() + int(seconds * (10.0 if OS.has_feature("web") else 2.0) * 1000)
+	while not predicate.call() and remaining > 0 and Time.get_ticks_msec() < until:
 		await get_tree().process_frame
+		remaining -= get_process_delta_time()
 	var ok: bool = predicate.call()
+	if not ok and is_instance_valid(fishing):
+		var actor: AnimatedSprite3D = fishing.sprite_director.sprite
+		print("ACCEPTANCE TIMEOUT: phase=", fishing.phase, " paused=", get_tree().paused,
+			" animation=",actor.animation," frame=",actor.frame," playing=",actor.is_playing(),
+			" process=",actor.can_process()," completed=",finished_animations)
 	check(ok, label)
 	return ok
 func tap(label: String) -> void:
@@ -74,11 +83,11 @@ func run() -> void:
 	var session_id := session.get_instance_id()
 	fishing.player.rotation.y = PI
 	fishing.game_mode.enter_fishing(shell.game.get_node("World/FishZone_V2"))
-	if not await wait_for(func(): return fishing.phase == fishing.Phase.AIM, "entry reaches AIM through camera and animation callbacks"): return finish()
+	if not await wait_for(func(): return fishing.phase == fishing.Phase.AIM, "entry reaches AIM through camera and animation callbacks"): await finish(); return
 	await get_tree().create_timer(0.15).timeout
 	for cycle in range(3):
 		print("ACCEPTANCE CYCLE ", cycle)
-		if not await cast(): return finish()
+		if not await cast(): await finish(); return
 		if test_camera_dead_zone:
 			await camera_dead_zone(cycle)
 		if not companion and cycle == 0:
@@ -112,25 +121,30 @@ func run() -> void:
 		if cycle > 0:
 			fishing.encounter.debug_settings = ForcedFish.new()
 			fishing.encounter.bite_timer.start(0.05)
-			if not await wait_for(func(): return fishing.encounter.bite_active, "real bite timer opens opportunity"): return finish()
+			if not await wait_for(func(): return fishing.encounter.bite_active, "real bite timer opens opportunity"): await finish(); return
 			check(fishing.caster.active_bait.ripple_view.active, "opportunity ripple active")
 			if cycle == 1:
-				if not await wait_for(func(): return not fishing.encounter.bite_active, "missed opportunity resolves by timer"): return finish()
+				if not await wait_for(func(): return not fishing.encounter.bite_active, "missed opportunity resolves by timer"): await finish(); return
 				check(not fishing.bite_opportunity_animation_active, "miss releases opportunity animation")
 			else:
-				if not await wait_for(func(): return fishing.encounter.bite_hook_ready, "hook timing becomes ready"): return finish()
+				if not await wait_for(func(): return fishing.encounter.bite_hook_ready, "hook timing becomes ready"): await finish(); return
 				await tap("A")
 				check(fishing.phase == fishing.Phase.FIGHT, "touch hooks through production path")
 				# Deterministic landing fixture uses the real returned-bait boundary;
 				# this validates result animations/ownership, not fight balancing.
 				fishing.caster._on_bait_returned()
-				if not await wait_for(func(): return fishing.phase == fishing.Phase.WAIT_RESULT, "landing and catch animations reach result", 15.0): return finish()
+				if not await wait_for(func(): return fishing.phase == fishing.Phase.WAIT_RESULT, "landing and catch animations reach result", 15.0): await finish(); return
+				var result_view: Node = fishing.fishing_catch_view
+				var result_rect: Rect2 = result_view.composed_result_rect()
+				var result_center: Vector2 = result_view.root.position + result_rect.get_center()
+				var surface: Rect2 = result_view.get_meta("gameplay_presentation_rect",Rect2(Vector2.ZERO,Vector2(shell.gameplay_viewport.size)))
+				check(result_center.distance_to(surface.get_center()) < 0.01,"rendered composed catch group centered in actual gameplay presentation")
 				check(fishing.last_outcome_result.get("catch_committed", false), "catch commits through existing persistence boundary")
 				if not companion: check(is_zero_approx(shell._surface_scroll), "real catch-result header is not cropped")
 				await tap("A")
-				if not await wait_for(func(): return fishing.phase == fishing.Phase.AIM, "touch dismisses catch through existing return"): return finish()
+				if not await wait_for(func(): return fishing.phase == fishing.Phase.AIM, "touch dismisses catch through existing return"): await finish(); return
 				continue
-		if not await retrieve(): return finish()
+		if not await retrieve(): await finish(); return
 	check(casts == 3, "exactly one cast-start notification per cast")
 	await tap("B")
 	await wait_for(func(): return fishing.game_mode.is_exploration(), "normal cancel exits fishing", 15.0)
@@ -151,7 +165,7 @@ func run() -> void:
 		check(cards.is_open(), "card match starts after companion restore")
 		cards.close_game()
 		check(not get_tree().paused, "card close restores pause ownership")
-	finish()
+	await finish()
 func finish() -> void:
 	var report := {"passed": checks - failures.size(), "total": checks, "failures": failures, "casts": casts, "renderer": DisplayServer.get_name()}
 	print("PORTRAIT FISHING ACCEPTANCE: ", JSON.stringify(report))
@@ -177,9 +191,7 @@ func camera_dead_zone(cycle: int) -> void:
 	fishing.encounter.bite_timer.stop()
 	var rig: Node = fishing.camera_rig
 	var camera: Camera3D = rig.get_node("Camera3D")
-	for side in [-1,1]:
-		rig.fight_camera_tracking.reset()
-		camera.transform=rig._fight_base_camera_transform
+	for side in [-1,1,1,-1,-1,1]:
 		var held := camera.global_transform
 		for x in ([0.5,0.20,0.15,0.125] if side<0 else [0.5,0.85,0.89,0.915]):
 			bait.global_position=camera.project_position(Vector2(x,.4)*Vector2(shell.gameplay_viewport.size),12)
@@ -189,23 +201,30 @@ func camera_dead_zone(cycle: int) -> void:
 		var physical := bait.global_position
 		await get_tree().process_frame
 		await get_tree().process_frame
-		check(rig.fight_camera_tracking.tracking and rig.fight_camera_tracking.requested_yaw*side<0,"rendered clear outer crossing requests correct yaw")
+		check(rig.fight_camera_tracking.tracking and (rig.fight_camera_tracking.requested_yaw-rig.fight_camera_tracking.yaw)*side<0,"rendered clear outer crossing requests correct yaw")
 		check(absf(rig.fight_camera_tracking.yaw)<absf(rig.fight_camera_tracking.requested_yaw),"rendered correction retains slow exponential response")
-		bait.global_position=camera.project_position(Vector2(.15 if side<0 else .89,.4)*Vector2(shell.gameplay_viewport.size),12)
+		bait.global_position=camera.project_position(Vector2(.13 if side<0 else .91,.4)*Vector2(shell.gameplay_viewport.size),12)
 		await get_tree().process_frame
 		check(rig.fight_camera_tracking.tracking,"rendered slight return keeps latch")
-		bait.global_position=camera.project_position(Vector2(.205 if side<0 else .835,.4)*Vector2(shell.gameplay_viewport.size),12)
+		var edge_pose := camera.global_transform
+		bait.global_position=camera.project_position(Vector2(.5,.5)*Vector2(shell.gameplay_viewport.size),12)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(not rig.fight_camera_tracking.tracking and camera.global_transform == edge_pose,"rendered active latch stops immediately on central safe-rectangle entry")
+		bait.global_position=camera.project_position(Vector2(.5,.4)*Vector2(shell.gameplay_viewport.size),12)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		check(not rig.fight_camera_tracking.tracking,"rendered inner return stops latch")
 		var stopped := camera.global_transform
 		for frame in range(60):
-			bait.global_position=camera.project_position(Vector2((.205 if side<0 else .835)+sin(frame*.1)*.025,.4)*Vector2(shell.gameplay_viewport.size),12)
+			bait.global_position=camera.project_position(Vector2(0.5+sin(frame*.1)*.15,.4)*Vector2(shell.gameplay_viewport.size),12)
 			await get_tree().process_frame
+			check(camera.global_transform == stopped, "central drift frame keeps exact camera transform %d" % frame)
 		check(camera.global_transform.is_equal_approx(stopped),"rendered current/passive-style drift holds shot without micro-rotation")
 		var projected := camera.unproject_position(bait.global_position)
-		var displayed: Vector2 = shell.gameplay_image.global_position+projected*shell.gameplay_image.size/Vector2(shell.gameplay_viewport.size)
-		check(shell.gameplay_window.get_global_rect().has_point(displayed),"rendered physical bait remains inside visible mobile crop after stopping")
+		var display: Rect2 = shell.gameplay_display_rect() if companion else shell.gameplay_window.get_global_rect()
+		var displayed: Vector2 = display.position + projected * display.size / Vector2(shell.gameplay_viewport.size) if companion else shell.gameplay_image.global_position+projected*shell.gameplay_image.size/Vector2(shell.gameplay_viewport.size)
+		check(display.has_point(displayed),"rendered physical bait remains inside visible host gameplay after stopping")
 		check(physical!=original.origin,"fixture explicitly exercises physical target, not visibility gating")
 		print("RENDERED DEAD ZONE: cycle=",cycle," side=",side," yaw=",rig.fight_camera_tracking.yaw," screen=",camera.unproject_position(bait.global_position)/Vector2(shell.gameplay_viewport.size))
 	bait.global_transform=original

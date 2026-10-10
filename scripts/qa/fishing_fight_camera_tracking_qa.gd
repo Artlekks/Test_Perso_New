@@ -218,7 +218,7 @@ func run() -> void:
 	check(rig.fight_camera_tracking.requested_yaw < 0.0, "right edge requests camera yaw right (negative world Y)")
 	check(absf(rig.fight_camera_tracking.yaw) < absf(rig.fight_camera_tracking.requested_yaw), "response is smoothed, not snapped")
 	tick(180)
-	check(camera.unproject_position(fish.global_position).x < 0.85 * 640, "right run returns inside safe edge")
+	check(camera.unproject_position(fish.global_position).x <= (rig.fight_safe_right - rig.fight_tracking_hysteresis + .001) * 640, "right run returns inside safe edge")
 	check(fish.global_transform.is_equal_approx(fish_before), "tracking never moves the fish")
 	check(is_equal_approx(distance_before, camera.global_position.distance_to(player.global_position)), "physical pivot distance preserved")
 	check(is_equal_approx(pitch_before, camera.global_basis.z.y), "world pitch preserved")
@@ -236,7 +236,7 @@ func run() -> void:
 	tick()
 	check(rig.fight_camera_tracking.requested_yaw > 0.0, "left edge requests camera yaw left (positive world Y)")
 	tick(180)
-	check(camera.unproject_position(fish.global_position).x > 0.20 * 640, "left run returns inside safe edge")
+	check(camera.unproject_position(fish.global_position).x >= (rig.fight_safe_left + rig.fight_tracking_hysteresis - .001) * 640, "left run returns inside safe edge")
 	rig.fight_max_yaw_degrees = 5.0
 	put_fish(Vector2(1.5, 0.4))
 	tick(240)
@@ -320,7 +320,7 @@ func run() -> void:
 		var initial_pitch := camera.global_basis.z.y
 		tick(240)
 		var projected := camera.unproject_position(fish.global_position) / Vector2(viewport.size)
-		check(projected.x >= 0.2 and projected.x <= 0.85, "authored pose tracks lateral fish into safe region")
+		check(projected.x >= rig.fight_safe_left + rig.fight_tracking_hysteresis - .001 and projected.x <= rig.fight_safe_right - rig.fight_tracking_hysteresis + .001, "authored pose tracks lateral fish into safe region")
 		check(camera.unproject_position(player.global_position).distance_to(initial_player_pixel) < 0.01,
 			"authored lower-left player framing preserved")
 		check(is_equal_approx(camera.global_position.length(), initial_distance) and is_equal_approx(camera.global_basis.z.y, initial_pitch),
@@ -350,7 +350,7 @@ func test_wide_dead_zone() -> void:
 	var outer := Rect2(rig.fight_safe_left,rig.fight_safe_top,rig.fight_safe_right-rig.fight_safe_left,rig.fight_safe_bottom-rig.fight_safe_top)
 	var margin: float = rig.fight_tracking_hysteresis
 	check(is_equal_approx(outer.position.x,0.12) and is_equal_approx(outer.end.x,0.92),"outer starts are deliberately wider than prior 20/85 percent")
-	check(is_equal_approx(outer.position.x+margin,0.20) and is_equal_approx(outer.end.x-margin,0.84),"inner horizontal stops are centralized 20/84 percent")
+	check(is_equal_approx(outer.position.x+margin,0.14) and is_equal_approx(outer.end.x-margin,0.90),"inner horizontal stops are centralized 14/90 percent")
 	for x in [0.12,0.15,0.19,0.20,0.5,0.84,0.85,0.89,0.92]:
 		put_fish(Vector2(x,0.4))
 		tick(120)
@@ -361,7 +361,7 @@ func test_wide_dead_zone() -> void:
 		var projection := func(_yaw): return point[0]
 		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
 		check(latch.tracking,"clear outer crossing starts tracking on side %d" % side)
-		point[0].x=0.15 if side<0 else 0.89
+		point[0].x=0.13 if side<0 else 0.91
 		for frame in range(120): latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
 		check(latch.tracking,"slight inward movement keeps tracking latched on side %d" % side)
 		point[0].x=0.205 if side<0 else 0.835
@@ -376,7 +376,12 @@ func test_wide_dead_zone() -> void:
 		check(not latch.tracking and is_equal_approx(latch.yaw,held),"current/passive drift has no reactivation or micro-unwind on side %d" % side)
 		point[0]=Vector2(0.5,0.77)
 		latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
-		check(latch.tracking,"horizontal tuning retains lower HUD protection")
+		check(not latch.tracking and is_equal_approx(latch.yaw,held),"vertical bounds cannot rotate bait through horizontal center")
+		for y in [lerpf(outer.position.y,outer.end.y,0.25),lerpf(outer.position.y,outer.end.y,0.75)]:
+			latch.pan_state = latch.PanState.PAN_LEFT if side < 0 else latch.PanState.PAN_RIGHT
+			point[0] = Vector2(0.5,y)
+			latch.step(1.0/60.0,projection,outer,margin,deg_to_rad(55),6,2)
+			check(not latch.tracking and latch.yaw == held,"already active edge latch stops on central safe-rectangle entry")
 	rig.reset_fishing_follow()
 
 func run_existing_regressions() -> void:

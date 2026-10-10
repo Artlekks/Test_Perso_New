@@ -5,14 +5,15 @@ Window presentation and gameplay activity have independent state machines.
 `ACTIVE`, `PASSIVE` describe gameplay. Mode never writes window geometry.
 Legacy invalid activity values recover to Active without resizing.
 
-Float uses a normal decorated, movable, resizable window and releases AppBar
+Float releases AppBar, then restores normal movable/resizable decoration at the current client rectangle
 reservation. Dock Left/Right use the existing Windows AppBar sidecar on the
 selected monitor edge. Maximized applications respect the reserved work area.
 The sidecar watches the game process and removes its AppBar after normal close
 or forced termination. X and the ordinary Windows close action remain available.
 
-The inner divider changes dock width while held: left edge for Dock Right,
-right edge for Dock Left. Requests coalesce at 50 ms. Desired dock dimensions
+The invisible 8-pixel inner resize target changes dock width while held: left edge for Dock Right,
+right edge for Dock Left. Changed widths publish once per rendered drag frame;
+the helper polls at 8 ms, while idle status polling remains 50 ms. Desired dock dimensions
 are authoritative: late native resize acknowledgements cannot replace a newer
 user width. Both processes use physical, per-monitor-DPI coordinates. No game
 scene, viewport, session or camera is recreated while resizing.
@@ -24,12 +25,27 @@ Inspector controls on DesktopCompanion:
 | min_dock_width | 320 |
 | default_dock_width | 480 |
 | max_dock_width | 900 |
-| collapsed_width | 80 |
+| collapsed_width | 28 |
 
-Collapse retains activity, session, edge, floating rectangle and dock width.
-Expand restores the previous presentation. A collapsed passive opportunity
-shows `! FISH`; it remains recoverable through Expand, Active and X.
+Collapse releases the entire AppBar reservation and overlays a 28×96 edge tab.
+It retains activity, session, edge, floating rectangle and expanded dock width.
+The arrow restores the previous presentation. A collapsed passive opportunity
+shows `!` with a FISH READY tooltip; restore and switch Active to respond.
 Ctrl+Shift+F12 toggles activity only.
+
+The native adapter is the only dock/widget geometry writer. Docked Windows
+tool-window classification prevents ordinary work-area rearrangement from
+moving the companion before its AppBar rectangle is applied. The sidecar
+registers the actual companion HWND, watches work-area/display changes, and
+releases registration on shutdown or process death. Godot acknowledges native
+resize outputs without feeding them back as new size requests. Widget restore
+is ordered in the same command stream, including restore to Float. IPC reads
+allow atomic file replacement; a transient publish lock retries without floating.
+Unused shell space is dark gray; intentional game-world void remains unchanged.
+
+Morning Stability v1 validation and current acceptance status are recorded in
+`docs/qa/morning_stability_ux_v1.md`. The dated table below describes the earlier
+v2 baseline, not the current pass.
 
 The keyboard strip is 60 pixels outside the canonical 640×864 game surface.
 It uses BOF_Font_Refined at 16, nearest filtering, white text and no outline.

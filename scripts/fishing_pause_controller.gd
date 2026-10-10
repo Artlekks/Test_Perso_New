@@ -43,6 +43,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if _pause_owned:
+		ModalInputOwnership.release_modal(self)
 		tree.paused = false
 		_pause_owned = false
 		_set_pause_presentation_visible(false)
@@ -67,6 +68,7 @@ func _exit_tree() -> void:
 		var tree := get_tree()
 
 		if tree != null:
+			ModalInputOwnership.release_modal(self)
 			tree.paused = false
 
 	_pause_owned = false

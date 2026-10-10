@@ -36,7 +36,7 @@ remain unchanged.
 
 The old shell reserved 236 CSS pixels for controls, then reduced the game scale
 to fit the remaining height. This caused horizontal pillarboxing in short Safari
-windows. The shared logical game surface remains **640 × 864**.
+windows. The shared logical game surface remains **640 Ã— 864**.
 
 Portrait now uses `safe_width / 640` uniformly, with nearest filtering. A clipped
 display window retains the bottom part of world play, including the fishing HUD.
@@ -56,30 +56,30 @@ Reference geometry with 47 top / 34 bottom CSS-pixel safe insets:
 
 | Window | Before: image | After: full image | After: visible display | Controls |
 |---|---:|---:|---:|---:|
-| 390 × 844 | 390 × 526.5 | 390 × 526.5 | 390 × 526.5 | 390 × 236.5 |
-| 390 × 664 | 257.04 × 347 | 390 × 526.5 | 390 × 347 | 390 × 236 |
+| 390 Ã— 844 | 390 Ã— 526.5 | 390 Ã— 526.5 | 390 Ã— 526.5 | 390 Ã— 236.5 |
+| 390 Ã— 664 | 257.04 Ã— 347 | 390 Ã— 526.5 | 390 Ã— 347 | 390 Ã— 236 |
 
 At the short reference size, 179.5 CSS pixels are cropped from the top during
 world play. Actual Safari safe insets and browser chrome determine the live
 visible height. Native simulated short-window output has fractional/whole-pixel
 stretch quantization and uses fallback safe insets; it is not a physical Safari
-measurement. The rendered Web fixture was also run with a 390 × 664 CSS viewport.
+measurement. The rendered Web fixture was also run with a 390 Ã— 664 CSS viewport.
 
 ## Controls and cards
 
-Triple Triad cards are still native **116 × 132**, preserving the five effective
+Triple Triad cards are still native **116 Ã— 132**, preserving the five effective
 card widths. No card or menu controller was redesigned in this pass.
 
-Button hit-box origins for a 390 × 236 control section (CSS-equivalent pixels):
+Button hit-box origins for a 390 Ã— 236 control section (CSS-equivalent pixels):
 
 | Button | Origin | Size |
 |---|---:|---:|
-| A | 312, 71.98 | 74.1 × 74.1 |
-| B | 222.3, 115.64 | 74.1 × 74.1 |
-| C | 206.7, 48 | 58.5 × 58.5 |
-| MENU | 5.85, 192 | 74.1 × 44 |
-| SELECT | 218.4, 192 | 78 × 44 |
-| START | 304.2, 192 | 78 × 44 |
+| A | 312, 71.98 | 74.1 Ã— 74.1 |
+| B | 222.3, 115.64 | 74.1 Ã— 74.1 |
+| C | 206.7, 48 | 58.5 Ã— 58.5 |
+| MENU | 5.85, 192 | 74.1 Ã— 44 |
+| SELECT | 218.4, 192 | 78 Ã— 44 |
+| START | 304.2, 192 | 78 Ã— 44 |
 
 Existing hit sizes, mappings, stick ownership and L/R are unchanged. A/B/C form
 a spaced triangle; SELECT/START form the right-hand footer group. Only origins
@@ -117,7 +117,7 @@ Commands below were run with `--path .`; rendered checks also used
 | Command / suite | Result |
 |---|---:|
 | `--script scripts/qa/portrait_fishing_acceptance_runner.gd` (rendered mobile, short window) | 47/47; three casts |
-| Same fixture in Linux-generated rendered Web, browser CSS 390 × 664 | 47/47; three casts; no script errors |
+| Same fixture in Linux-generated rendered Web, browser CSS 390 Ã— 664 | 47/47; three casts; no script errors |
 | Same runner `-- --companion` (rendered) | 91/91; three casts, mode cycles, menus/card match |
 | `--script scripts/qa/mobile_portrait_layout_qa.gd` (rendered) | 44/44 |
 | `--script scripts/qa/canonical_portrait_surface_qa.gd -- --rendered --mobile` | 572/572 |
@@ -190,3 +190,27 @@ It validates `project.binary`/ECFG before publication. HTTPS was not restarted.
 Final published build validation: PCK **32,183,368 bytes**;
 `project.binary` **9,887 bytes**, header **ECFG**. The final acceptance export is
 separate from `export/`; it does not replace the normal phone entry scene.
+# Morning Stability v1 presentation contracts
+
+The canonical surface remains 640Ã—864. Catch Data, rank and points use one
+composed group centered in the visible gameplay rectangle. Mobile crop height
+is published by the harness; touch controls are excluded. Desktop letterbox,
+header and keyboard strip are excluded. Existing item/card notices retain their
+own presentation rather than being converted into fish Data panels.
+
+Responsive merchant, crafting, Card Maker and inventory row selectors reuse
+`Menu_Hint_Panel_Selector.png`, nearest-filtered and drawn above row text/dimming.
+Crafting recipe navigation scrolls separately from the fixed material/detail
+stack; selection changes cannot translate the detail panel.
+
+Fishing camera edge state is HOLD / PAN_LEFT / PAN_RIGHT. Outer thresholds are
+12% / 92%; per-edge stop thresholds are 14% / 90%. A bait in the central safe
+rectangle keeps the exact current yaw, with no neutral-return chasing. Vertical
+HUD clearance remains part of the orbit solver. Â±55Â°, response 6, retrieve
+return response 2, A/D aim and physical bait movement are preserved.
+
+The authored `fish_ripple.png` presentation uses pixel size .00175 (50% of
+.0035); source art and stronger splash size are unchanged. Ripple represents
+the entire hook opportunity; only committed take uses splash. Ready INSPECT
+engagement uses exported `engaged_bite_opportunity_chance=.70`; an ambient
+nearby shadow alone retains ordinary polling probability.

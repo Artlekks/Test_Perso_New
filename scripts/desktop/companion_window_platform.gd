@@ -10,12 +10,13 @@ var requested_at := 0
 func supported() -> bool:
 	return OS.get_name() == "Windows" and DisplayServer.get_name() != "headless" and not OS.has_feature("web")
 
-func request(docked: bool, window: Window, edge := "right", requested_size := Vector2i.ZERO) -> Error:
+func request(docked: bool, window: Window, edge := "right", requested_size := Vector2i.ZERO, widget := false, restore_rect := Rect2i()) -> Error:
 	if not supported(): return ERR_UNAVAILABLE
 	var target_size: Vector2i = requested_size if requested_size!=Vector2i.ZERO else window.size
-	var next := {"docked": docked, "edge":edge, "hwnd": DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE, window.get_window_id()), "width": target_size.x, "height": target_size.y}
+	var next := {"docked": docked, "widget":widget, "edge":edge, "hwnd": DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE, window.get_window_id()), "width": target_size.x, "height": target_size.y}
+	if restore_rect.has_area(): next.restore_rect = [restore_rect.position.x, restore_rect.position.y, restore_rect.size.x, restore_rect.size.y]
 	if next == last_request and helper_pid > 0 and OS.is_process_running(helper_pid): return OK
-	last_request = next.duplicate()
+	var desired := next.duplicate()
 	sequence += 1
 	requested_at = Time.get_ticks_msec()
 	next.sequence = sequence
@@ -28,8 +29,11 @@ func request(docked: bool, window: Window, edge := "right", requested_size := Ve
 		status_path = directory.path_join("status.json")
 	var error := _write(next)
 	if error != OK: return error
+	# Deduplicate only successfully published commands. A transient sharing lock
+	# must not make the next retry look like an already-delivered resize.
+	last_request = desired
 	if helper_pid <= 0 or not OS.is_process_running(helper_pid):
-		if not docked: return OK
+		if not docked and not widget: return OK
 		var python := OS.get_environment("FISHING_COMPANION_PYTHON")
 		if python.is_empty():
 			python = OS.get_environment("USERPROFILE").path_join(".cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe")
@@ -45,8 +49,12 @@ func read_status() -> Dictionary:
 		if helper_pid > 0 and Time.get_ticks_msec()-requested_at > 8000:
 			return {"error":"Windows AppBar helper did not acknowledge startup."}
 		return {}
-	var value = JSON.parse_string(FileAccess.get_file_as_string(status_path))
-	return value if value is Dictionary else {}
+	var file := FileAccess.open(status_path, FileAccess.READ)
+	if file == null: return {} # Atomic publisher may briefly hold the file.
+	var parser := JSON.new()
+	var error := parser.parse(file.get_as_text())
+	file.close()
+	return parser.data if error == OK and parser.data is Dictionary else {}
 
 func _write(payload: Dictionary) -> Error:
 	var temp := command_path + ".tmp"

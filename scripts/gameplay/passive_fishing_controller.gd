@@ -2,7 +2,10 @@ extends Node
 ## Runtime-only scheduling/orchestration. Encounter owns selection and rewards.
 signal cancelled(reason: String)
 signal opportunity_ready
-enum State { IDLE, STARTING, FOCUS, READY, HANDOFF }
+enum State { IDLE, STARTING, FOCUS, READY, HANDOFF, SETTLING, CONFIGURING }
+@export var require_focus_confirmation := true
+@export var timer_entry_delay := 1.0
+var timer_entry: LineEdit
 @export var focus_seconds := 1200.0
 @export var opportunity_seconds := 300.0
 @export_range(0.1,0.9,0.05) var cast_power := 0.65
@@ -21,6 +24,17 @@ var _start_time := 0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	rng.randomize()
+	timer_entry = LineEdit.new()
+	timer_entry.name = "PassiveFocusTimer"
+	timer_entry.text = "20:00"
+	timer_entry.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	timer_entry.placeholder_text = "minutes or MM:SS"
+	timer_entry.add_theme_font_override("font", preload("res://assets/fonts/BOF_Font_Refined.fnt"))
+	timer_entry.add_theme_font_size_override("font_size", 32)
+	timer_entry.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	timer_entry.text_submitted.connect(confirm_focus)
+	host.add_child(timer_entry)
+	timer_entry.hide()
 func current() -> Node:
 	return _fishing.get_ref() if _fishing != null else null
 func is_ready() -> bool: return state in [State.READY,State.HANDOFF]
@@ -74,6 +88,8 @@ func cancel(why: String, discard_cast := false) -> void:
 	if is_instance_valid(fishing):
 		fishing.encounter.release_opportunity_schedule(self,not discard_cast)
 		if discard_cast and fishing.phase == fishing.Phase.IN_WATER: fishing._cancel_water_cast_to_aim()
+	if is_instance_valid(timer_entry): timer_entry.hide()
+	if is_instance_valid(timer_entry) and timer_entry.is_inside_tree(): timer_entry.release_focus()
 	_fishing = null
 	state = State.IDLE
 	reason = why
@@ -95,21 +111,77 @@ func _process(delta: float) -> void:
 		if fishing.phase != _last_phase: _last_phase = fishing.phase; _phase_time = 0
 		_phase_time += delta
 		if fishing.phase == fishing.Phase.IN_WATER:
-			state = State.FOCUS
+			state = State.SETTLING
 			_water_started = Time.get_ticks_msec()
-			scheduled_at = maxf(0,focus_seconds)+rng.randf_range(0,maxf(0,opportunity_seconds))
-			reason = "Focus"
+			reason = "Waiting for focus duration"
+			if not require_focus_confirmation: _start_focus(focus_seconds)
 		elif fishing.phase == fishing.Phase.AIM and _phase_time > 0.15: fishing.request_cast_confirm()
 		elif fishing.phase == fishing.Phase.CHARGE and fishing.power.value >= cast_power: fishing.request_cast_confirm()
 		elif fishing.phase == fishing.Phase.CURVE and _phase_time > 0.2: fishing.request_cast_confirm()
+	elif state == State.SETTLING:
+		if float(Time.get_ticks_msec()-_water_started)/1000.0 >= timer_entry_delay:
+			state = State.CONFIGURING
+			timer_entry.text = _clock(focus_seconds)
+			timer_entry.editable = true
+			timer_entry.show()
+			reason = "Click timer; Enter/K starts focus"
+	elif state == State.CONFIGURING:
+		if fishing.phase != fishing.Phase.IN_WATER: cancel("cast ended",false)
 	elif state == State.FOCUS:
 		if fishing.phase != fishing.Phase.IN_WATER: cancel("cast ended",false); return
 		elapsed = float(Time.get_ticks_msec()-_water_started)/1000.0
+		if timer_entry.visible: timer_entry.text = _clock(maxf(0, focus_seconds-elapsed))
 		if elapsed >= scheduled_at and not get_tree().paused:
 			opportunities += 1
 			if fishing.encounter.request_persistent_opportunity(self):
+				timer_entry.hide()
 				state = State.READY
 				reason = "FISH READY — switch Active and confirm to hook"
 				opportunity_ready.emit()
 			else: cancel("No eligible fish for this lure/depth at this spot",false)
 func _exit_tree() -> void: cancel("shutdown",false)
+
+static func parse_focus(text: String) -> float:
+	var parts := text.strip_edges().split(":")
+	if parts.size() == 1 and parts[0].is_valid_float(): return maxf(0, parts[0].to_float() * 60.0)
+	if parts.size() == 2 and parts[0].is_valid_int() and parts[1].is_valid_int():
+		var seconds := parts[1].to_int()
+		if parts[0].to_int() >= 0 and seconds >= 0 and seconds < 60: return parts[0].to_int() * 60.0 + seconds
+	return -1.0
+
+func confirm_focus(text: String) -> void:
+	if state != State.CONFIGURING: return
+	var seconds := parse_focus(text)
+	if seconds < 0: reason = "Use minutes or MM:SS"; return
+	_start_focus(seconds)
+	timer_entry.editable = false
+	timer_entry.release_focus()
+
+func _start_focus(seconds: float) -> void:
+	focus_seconds = seconds
+	elapsed = 0
+	_water_started = Time.get_ticks_msec()
+	scheduled_at = focus_seconds + rng.randf_range(0,maxf(0,opportunity_seconds))
+	state = State.FOCUS
+	reason = "Focus"
+
+static func _clock(seconds: float) -> String:
+	var whole := ceili(seconds)
+	return "%02d:%02d" % [whole / 60, whole % 60]
+
+func layout_timer(game_rect: Rect2) -> void:
+	if not is_instance_valid(timer_entry): return
+	if host.window_state == host.WindowState.COLLAPSED:
+		timer_entry.hide()
+		return
+	var factor := game_rect.size.x / 640.0
+	timer_entry.position = game_rect.position + Vector2(220, 650) * factor
+	timer_entry.size = Vector2(200, 60) * factor
+	timer_entry.add_theme_font_size_override("font_size", maxi(18, roundi(32 * factor)))
+	timer_entry.visible = state in [State.CONFIGURING,State.FOCUS] and host.window_state != host.WindowState.COLLAPSED
+
+func _input(event: InputEvent) -> void:
+	if state != State.CONFIGURING: return
+	if event.is_action_pressed("enter_fishing") or event.is_action_pressed("ui_accept"):
+		confirm_focus(timer_entry.text)
+		get_viewport().set_input_as_handled()

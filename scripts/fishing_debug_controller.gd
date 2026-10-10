@@ -170,6 +170,7 @@ func close(resume_aim: bool) -> void:
 	_open = false
 	if _exploration_pause_owned:
 		_exploration_pause_owned = false
+		ModalInputOwnership.release_modal(self)
 		get_tree().paused = false
 
 	if (

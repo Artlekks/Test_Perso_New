@@ -22,6 +22,7 @@ func wait_for(predicate: Callable,label: String,seconds := 15.0) -> bool:
 func run() -> void:
 	shell = load("res://actors/desktop/DesktopCompanion.tscn").instantiate()
 	root.add_child(shell)
+	shell.passive.require_focus_confirmation = false
 	current_scene = shell
 	await create_timer(1).timeout
 	fishing = shell.game.get_node("Game/Fishing")
@@ -51,13 +52,14 @@ func run() -> void:
 	check(shell.mode==shell.Mode.PASSIVE and fishing.caster.active_bait.get_instance_id()==bait_id,"collapse preserves activity and bait")
 	if not await wait_for(func(): return shell.passive.is_ready(),"exactly one ready opportunity"): quit(1); return
 	check(shell.passive.opportunities==1 and fishing.encounter.bite_hook_ready,"one production hook-ready opportunity")
-	check(shell.status.text.contains("FISH"),"collapsed strip signals readiness")
+	check(shell.status.visible and shell.status.text == "!" and shell.buttons.Collapse.tooltip_text.contains("FISH READY"),"collapsed strip signals readiness")
 	await create_timer(2.0).timeout
 	check(fishing.encounter.bite_active and fishing.encounter.bite_window_timer.is_stopped(),"readiness survives multiple normal bite-window durations")
 	check(shell.passive.opportunities==1,"no duplicate opportunity")
 	var before_expand: int = shell.mode
 	shell.toggle_collapse()
 	check(shell.mode==before_expand,"expand never changes activity")
+	await wait_for(func(): return not shell._request_pending and not shell._pending_float_decoration and Rect2i(root.position,root.size)==geometry,"expand completes ordered native restoration")
 	shell.set_mode(shell.Mode.ACTIVE)
 	check(Rect2i(root.position,root.size)==geometry,"Active preserves geometry")
 	check(fishing.encounter.bite_active,"handoff retains persistent opportunity")

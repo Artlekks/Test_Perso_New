@@ -269,6 +269,9 @@ func _bind_overlay_layers() -> void:
 				help.position += delta_home
 				layer.help_panel_home = desired
 		elif layer is DialogueView or layer.has_method("is_open") or layer.name in ["FishingCatchView","FishingLureSelectorView"]:
+			if layer.name == "FishingCatchView":
+				var logical_height := gameplay_window.size.y * 640.0 / gameplay_image.size.x
+				layer.set_meta("gameplay_presentation_rect", Rect2(0, 0, 640, logical_height))
 			_set_layer_viewport(layer,overlay_viewport)
 
 func _set_layer_viewport(layer: CanvasLayer, viewport: Viewport) -> void:

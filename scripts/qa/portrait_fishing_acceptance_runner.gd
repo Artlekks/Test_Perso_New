@@ -5,5 +5,6 @@ func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
 	var fixture = load("res://actors/mobile/PortraitFishingAcceptance.tscn").instantiate()
+	fixture.test_camera_dead_zone = OS.get_cmdline_user_args().has("--edge-pan")
 	fixture.companion = OS.get_cmdline_user_args().has("--companion")
 	root.add_child(fixture)

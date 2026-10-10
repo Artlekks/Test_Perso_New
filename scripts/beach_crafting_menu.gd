@@ -85,6 +85,7 @@ func close_menu() -> void:
 	_remember_current_selection()
 	_save_recipe_selections()
 	root.hide()
+	ModalInputOwnership.release_modal(self)
 	get_tree().paused = _previous_tree_paused
 
 

@@ -977,6 +977,7 @@ func close_game() -> void:
 	_opponent_collection_backend = null
 	var tree: SceneTree = get_tree()
 	if tree != null:
+		ModalInputOwnership.release_modal(self)
 		tree.paused = restore_pause
 	closed.emit()
 

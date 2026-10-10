@@ -55,8 +55,8 @@ var quick_cancel_camera_return_time: float = 0.85
 @export_range(0.0, 0.9, 0.01) var fight_safe_top: float = 0.08
 ## HUD begins around y=405/480; leave clearance for the fish sprite above it.
 @export_range(0.1, 1.0, 0.01) var fight_safe_bottom: float = 0.75
-## Inward horizontal stop margin: defaults produce inner edges 0.20 / 0.84.
-@export_range(0.0, 0.2, 0.005) var fight_tracking_hysteresis: float = 0.08
+## Small per-edge latch. Central band 0.14 / 0.90 always holds the current yaw.
+@export_range(0.0, 0.2, 0.005) var fight_tracking_hysteresis: float = 0.02
 ## Preserve vertical HUD clearance independently of the wider lateral band.
 @export_range(0.0, 0.1, 0.005) var fight_vertical_tracking_hysteresis: float = 0.025
 @export_range(0.1, 20.0, 0.1) var fight_yaw_response: float = 6.0
@@ -237,7 +237,11 @@ func _update_fight_camera_tracking(delta: float) -> void:
 	var pivot := target.global_position
 	# The fight shadow projects through this exact bait position onto water;
 	# projecting its raw water-plane X/Z instead would measure the wrong pixel.
-	var project := _project_fight_orbit.bind(camera.get_camera_transform(),
+	# Use the neutral optical pose even when this method is evaluated more than
+	# once between process frames. An already-orbited camera would double yaw.
+	var optical_base := base
+	optical_base.origin += base.basis.x * camera.h_offset + base.basis.y * camera.v_offset
+	var project := _project_fight_orbit.bind(optical_base,
 		camera.get_camera_projection(), pivot, _fight_tracking_target.global_position)
 	var region := Rect2(Vector2(fight_safe_left, fight_safe_top),
 		Vector2(maxf(0.01, fight_safe_right - fight_safe_left),
