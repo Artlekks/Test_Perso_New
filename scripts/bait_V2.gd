@@ -99,6 +99,9 @@ var fight_return_pull_threshold: float = 0.12
 @export_range(0.55, 0.90, 0.01) var free_reel_bottom_limit: float = 0.77
 ## A/D gently retrieves even without K. Holding K retains the full reel speed.
 @export_range(0.05, 1.0, 0.05) var free_steering_retrieve_ratio: float = 0.45
+## Scale orthogonal empty-lure contributions independently; K alone is unchanged.
+@export_range(0.5, 2.0, 0.025) var free_steering_lateral_multiplier: float = 1.175
+@export_range(0.5, 2.0, 0.025) var free_steering_inward_multiplier: float = 1.10
 ## Finish close to Ryu's reachable point at the waterline, never simply
 ## because the lure touched a screen edge. World units (metres).
 @export_range(0.05, 0.60, 0.01) var free_retrieve_shore_finish_radius: float = 0.25
@@ -474,12 +477,12 @@ func _physics_process(delta: float) -> void:
 			# Do not change hooked-fish counter-steering or the K input state.
 			var steering_retrieve: bool = (
 				not fight_mode
-				and absf(reel_steering_target) > 0.01
+				and absf(reel_steering) > 0.001
 			)
 			if reeling or steering_retrieve:
 				_update_reeling(
 					delta,
-					1.0 if reeling else free_steering_retrieve_ratio
+					1.0 if reeling else free_steering_retrieve_ratio * absf(reel_steering)
 				)
 			elif not fight_mode:
 				_update_sinking(delta)
@@ -911,16 +914,17 @@ func _update_reeling(delta: float, speed_scale: float = 1.0) -> void:
 		forward
 		+ side * reel_steering * steering_strength * steering_fade
 	).normalized()
+	var free_component_speed: float = 1.0
 	if not fight_mode:
-		reel_direction = FishingScreenLateral.retrieve_direction(
-			get_viewport().get_camera_3d(), _free_lure_surface_position(global_position),
-			forward, reel_steering, steering_strength
-		)
+		var free_motion := _free_retrieve_motion(forward, steering_strength)
+		free_component_speed = free_motion.length()
+		reel_direction = free_motion.normalized()
 
 	var reel_speed: float = data.reel_speed * reel_speed_multiplier * maxf(speed_scale, 0.0)
 
 	if not fight_mode:
 		reel_speed *= minf(maxf(free_reel_speed_multiplier, 0.0), maxf(free_reel_speed_cap, 0.0))
+		reel_speed *= free_component_speed
 	
 	if fight_mode:
 		var multiplier := lerpf(
@@ -971,6 +975,20 @@ func _update_reeling(delta: float, speed_scale: float = 1.0) -> void:
 # Screen limits control physical free-lure travel, NOT where the camera points.
 # Project at the water SURFACE, even for a sinking lure, so depth does not
 # accidentally move it through the lower edge. Never edit the fishing camera.
+func _free_retrieve_motion(inward: Vector3, strength: float) -> Vector3:
+	if absf(reel_steering) <= 0.001:
+		return inward
+	# Resolve the established full-input arc first. Relax its lateral component
+	# smoothly instead of retaining projection compensation until release snaps.
+	var full_arc := FishingScreenLateral.retrieve_direction(
+		get_viewport().get_camera_3d(), _free_lure_surface_position(global_position),
+		inward, signf(reel_steering), strength
+	)
+	var relaxed := inward.lerp(full_arc, absf(reel_steering))
+	var radial := inward * relaxed.dot(inward)
+	return radial * free_steering_inward_multiplier + (relaxed-radial) * free_steering_lateral_multiplier
+
+
 func is_free_lure_framing_active() -> bool:
 	return not fight_mode and (state == State.IN_WATER or state == State.SINKING)
 
@@ -1179,7 +1197,7 @@ func _free_lure_reached_screen_return(_from_position: Vector3, _unclamped: Vecto
 	# Only reaching Ryu's physically reachable water-side landing point does.
 	if fight_mode or reel_target == null:
 		return false
-	if not reeling and absf(reel_steering_target) <= 0.01:
+	if not reeling and absf(reel_steering) <= 0.001:
 		return false
 	var water_destination: Vector3 = _free_lure_landing_point()
 	var from_flat: Vector2 = Vector2(global_position.x, global_position.z)
@@ -1389,7 +1407,12 @@ func _update_reel_steering_response(delta: float) -> void:
 	# An empty lure begins curving as soon as A or D is pressed. The
 	# fight steering keeps its established rod-dependent smoothing.
 	if not fight_mode and (state == State.SINKING or state == State.IN_WATER):
-		reel_steering = reel_steering_target
+		if absf(reel_steering_target) > 0.001:
+			reel_steering = reel_steering_target
+		else:
+			reel_steering *= exp(-maxf(reel_steering_return_speed, 0.0) * maxf(rod_steering_response_multiplier, 0.01) * delta)
+			if absf(reel_steering) <= 0.001:
+				reel_steering = 0.0
 		return
 	var response_multiplier: float = maxf(
 		rod_steering_response_multiplier,

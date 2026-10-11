@@ -79,6 +79,107 @@ func run() -> void:
 	fishing.camera_rig.set_process(false)
 	base_pose = camera.global_transform
 	print("CAMERA viewport=",camera.get_viewport().get_visible_rect()," transform=",camera.global_transform)
+	for action in [&"ds_left", &"ds_right"]:
+		# Compare identical physical starts with the verified baseline component
+		# multipliers, without editing authored lure/rod resources or persistence.
+		spawn(Vector2(320,150))
+		var start := bait.global_position
+		var inward: Vector3 = bait._free_lure_landing_point()-start
+		inward.y = 0.0
+		inward = inward.normalized()
+		var tangent := FishingScreenLateralForQA(camera,start,inward)
+		var lateral_gain: float = bait.free_steering_lateral_multiplier
+		var inward_gain: float = bait.free_steering_inward_multiplier
+		bait.free_steering_lateral_multiplier = 1.0
+		bait.free_steering_inward_multiplier = 1.0
+		press(action,true)
+		bait._physics_process(STEP)
+		var baseline := bait.global_position-start
+		bait.global_position = start
+		bait.free_steering_lateral_multiplier = lateral_gain
+		bait.free_steering_inward_multiplier = inward_gain
+		bait._physics_process(STEP)
+		var tuned := bait.global_position-start
+		var measured_lateral: float = tuned.dot(tangent)/baseline.dot(tangent)
+		var measured_inward: float = tuned.dot(inward)/baseline.dot(inward)
+		print("TUNING ",action," lateral_gain=",measured_lateral," inward_gain=",measured_inward)
+		# Sub-centimetre world displacement subtraction has float32 rounding.
+		check(absf(measured_lateral-1.175) < 0.001, "A/D lateral displacement increases 17.5 percent")
+		check(absf(measured_inward-1.10) < 0.001, "A/D inward contribution increases 10 percent")
+		var arc_speed := tuned.length()
+		press(action,false)
+		bait.set_reel_steering(0.0)
+		bait.reel_steering = 0.0
+		bait.global_position = start
+		press(&"enter_fishing",true)
+		bait._physics_process(STEP)
+		check((bait.global_position-start).length() > arc_speed, "K remains faster than tuned A/D retrieval")
+		press(&"enter_fishing",false)
+		for held_frames in [1,12,90]:
+			spawn(Vector2(320,150))
+			press(action,true)
+			for frame in range(held_frames): bait._physics_process(STEP)
+			check(absf(bait.reel_steering) == 1.0, "short taps and holds respond immediately at full steering")
+			press(action,false)
+			# Exercise the real idle input poll that clears the released target.
+			fishing._process(STEP)
+			var previous: float = absf(bait.reel_steering)
+			var tail_frames := 0
+			var progress := true
+			var decays := true
+			var relaxes := true
+			var previous_ratio := INF
+			for frame in range(600):
+				var goal: Vector3 = bait._free_lure_landing_point()
+				var before := bait.global_position
+				bait._physics_process(STEP)
+				var amount: float = absf(bait.reel_steering)
+				if amount == 0.0: break
+				decays = decays and amount > 0.0 and amount < previous
+				progress = progress and bait.global_position.distance_to(goal) < before.distance_to(goal)
+				var radial := goal-before
+				radial.y = 0.0
+				radial = radial.normalized()
+				var motion: Vector3 = bait._free_retrieve_motion(radial,bait.data.reel_steer_strength*bait.rod_steering_strength_multiplier)
+				var ratio: float = (motion-radial*motion.dot(radial)).length()/motion.dot(radial)
+				relaxes = relaxes and ratio < previous_ratio
+				previous_ratio = ratio
+				previous = amount
+				tail_frames += 1
+			check(tail_frames > 1, "release retains a smooth multi-frame momentum tail")
+			check(decays, "release steering relaxes monotonically without sign reversal")
+			check(relaxes, "release arc continuously relaxes toward ordinary inward trajectory")
+			check(progress, "every release-tail frame continues inward")
+			check(bait.reel_steering == 0.0, "release settles with no stale steering")
+			press(action,true)
+			bait._physics_process(STEP)
+			check(absf(bait.reel_steering) == 1.0, "first re-press after relaxation responds immediately")
+			press(action,false)
+		# Release close to shore must retain motion rather than suddenly switch
+		# to the idle sink path or a straight convergence fade.
+		spawn(Vector2(320,150))
+		var shore_goal: Vector3 = bait._free_lure_landing_point()
+		var offshore: Vector3 = bait.global_position-shore_goal
+		offshore.y = 0.0
+		bait.global_position = shore_goal+offshore.normalized()*1.2
+		bait.global_position.y = bait.water_y
+		press(action,true)
+		bait._physics_process(STEP)
+		press(action,false)
+		fishing._process(STEP)
+		var shore_progress := true
+		var curved_frames := 0
+		for frame in range(20):
+			var before := bait.global_position
+			var radial := shore_goal-before
+			radial.y = 0.0
+			radial = radial.normalized()
+			bait._physics_process(STEP)
+			shore_progress = shore_progress and bait.global_position.distance_to(shore_goal) < before.distance_to(shore_goal)
+			var delta_world := bait.global_position-before
+			if (delta_world-radial*delta_world.dot(radial)).length() > 0.000001: curved_frames += 1
+		check(shore_progress, "near-shore release maintains uninterrupted inward progress")
+		check(curved_frames == 20, "near-shore release remains curved throughout relaxation")
 	for pixel in [Vector2(320,150), Vector2(205,150), Vector2(470,150), Vector2(320,40), Vector2(470,380)]:
 		for action in [&"ds_left", &"ds_right"]:
 			spawn(pixel)
