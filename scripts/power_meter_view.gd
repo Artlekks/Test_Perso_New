@@ -45,6 +45,13 @@ var _authored_rest := Vector2.ZERO
 var _authored_depth_rest := Vector2.ZERO
 var _layout_size := Vector2.ZERO
 var _slide_progress := 0.0
+@export_category("Responsive Fishing Composition")
+## Character-to-bar clearance, expressed in power-bar heights. Independent
+## of shell/breakpoint and animation-frame padding or rod pose.
+@export_range(0.1,1.0,0.05) var character_to_bar_gap_ratio := 0.25
+var _stance_actor: Node3D
+var _stance_pixels := Vector2.ZERO
+var _last_stance_right := -INF
 
 func _ready() -> void:
 	full_scale_x = fill.scale.x
@@ -86,17 +93,59 @@ func _update_viewport_layout() -> void:
 	var viewport := custom_viewport as Viewport
 	if viewport == null: viewport = get_viewport()
 	var dimensions := viewport.get_visible_rect().size
-	if dimensions == _layout_size: return
+	var stance_right := fishing_stance_right_pixels()
+	if dimensions == _layout_size and absf(stance_right-_last_stance_right)<.01: return
 	_layout_size = dimensions
-	# One owner for both gauges: preserve artwork scale and the authored gap,
-	# anchoring the vertical gauge at its reference normalized horizontal X.
-	var reference_x := _authored_depth_rest.x if _authored_depth_rest != Vector2.ZERO else _authored_rest.x
-	var shift_x := reference_x*(dimensions.x/REFERENCE_VIEWPORT.x-1.0)
+	_last_stance_right = stance_right
+	# Both gauges share a player-relative translation. The 640 reference only
+	# supplies authored artwork spacing and Y; it never anchors X to a screen edge.
+	var background := $Root/PowerBarBG as Sprite2D
+	var bar_height := background.get_rect().size.y*root.scale.y*background.scale.y
+	var wanted_x := stance_right+bar_height*character_to_bar_gap_ratio
+	var group_right := _authored_rest.x+background.get_rect().end.x*root.scale.x
+	var depth := get_node_or_null("DepthMeter")
+	if depth != null:
+		var frame := depth.get_node("Frame") as Control
+		group_right = maxf(group_right,_authored_depth_rest.x+frame.get_rect().end.x*depth.scale.x)
+	# Constrain the intact group only when space is physically unavailable.
+	var margin := bar_height*character_to_bar_gap_ratio
+	var shift_x := clampf(wanted_x-_authored_rest.x,-_authored_rest.x+margin,dimensions.x-margin-group_right)
 	_rest_position = Vector2(_authored_rest.x+shift_x,_authored_rest.y*dimensions.y/REFERENCE_VIEWPORT.y)
 	_set_slide_progress(_slide_progress)
-	var depth := get_node_or_null("DepthMeter")
 	if depth != null and depth.has_method("set_layout_rest"):
 		depth.set_layout_rest(Vector2(_authored_depth_rest.x+shift_x,_authored_depth_rest.y*dimensions.y/REFERENCE_VIEWPORT.y),dimensions)
+
+func fishing_stance_right_pixels() -> float:
+	if not is_instance_valid(caster) or not is_instance_valid(caster.reel_target): return _authored_rest.x
+	var actor := caster.reel_target as Node3D
+	# ReelEndPoint is a physical child, not the visual actor root.
+	while actor != null and not actor.has_node("GroundPresentation"):
+		actor=actor.get_parent() as Node3D
+	if actor == null: return _authored_rest.x
+	var camera := caster.get_viewport().get_camera_3d() as Camera3D
+	var presentation := actor.get_node_or_null("GroundPresentation")
+	if camera == null or presentation == null: return _authored_rest.x
+	var sprite := presentation.sprite as AnimatedSprite3D
+	if sprite == null or sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(&"Fishing_Idle"): return _authored_rest.x
+	if actor != _stance_actor:
+		# Sample the reference stance's lower body once, excluding rod/hair and
+		# transparent sheet padding. Never follow a bite/reel animation's bounds.
+		var image := sprite.sprite_frames.get_frame_texture(&"Fishing_Idle",0).get_image()
+		if image == null: return _authored_rest.x
+		if image.is_compressed() and image.decompress()!=OK: return _authored_rest.x
+		var feet_y: float = image.get_height()-presentation.profile.feet_from_bottom_px
+		var feet_x: float = presentation.profile.feet_from_left_px
+		if feet_x<0.0: feet_x=image.get_width()*.5
+		var body_top := maxi(0,int(feet_y-image.get_height()*.25))
+		var right := feet_x
+		for y in range(body_top,mini(image.get_height(),int(feet_y)+1)):
+			for x in range(image.get_width()):
+				if image.get_pixel(x,y).a>.1: right=maxf(right,x+1.0)
+		_stance_pixels=Vector2(right-feet_x,(feet_y-body_top)*.5)
+		_stance_actor = actor
+	var scale_xy := sprite.global_basis.get_scale()
+	var stance := sprite.global_position+camera.global_basis.x*_stance_pixels.x*sprite.pixel_size*scale_xy.x+camera.global_basis.y*_stance_pixels.y*sprite.pixel_size*scale_xy.y
+	return camera.unproject_position(stance).x
 
 func _set_slide_progress(value: float) -> void:
 	_slide_progress = value

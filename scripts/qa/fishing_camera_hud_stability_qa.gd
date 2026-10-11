@@ -50,10 +50,20 @@ func stable(reference: Dictionary) -> bool:
 	return absf(now.distance-reference.distance)<.0001 and now.fov==reference.fov and now.size==reference.size and absf(now.pitch_axis-reference.pitch_axis)<.00001 and absf(now.roll_axis-reference.roll_axis)<.00001 and now.unorbited_offset.distance_to(reference.unorbited_offset)<.0001 and now.optical_offsets==reference.optical_offsets and now.player.distance_to(reference.player)<.00001
 
 func run() -> void:
-	DirAccess.make_dir_recursive_absolute("res://build/mobile-web/camera-hud-stability")
+	var desktop := OS.get_cmdline_user_args().has("--desktop")
+	var sizes: Array = [Vector2i(1280,900),Vector2i(640,900)] if desktop else SIZES
+	var output_dir := "res://build/mobile-web/hud-spacing/"+("desktop" if desktop else "mobile")
+	DirAccess.make_dir_recursive_absolute(output_dir)
 	root.size = SIZES[0]
 	fixture = SessionTestFixture.new()
-	var host: Control = fixture.mount(self,true)
+	var host: Control
+	if desktop:
+		OS.set_environment("FISHING_COMPANION_IPC",ProjectSettings.globalize_path("res://build/mobile-web/hud-spacing/desktop-ipc"))
+		host=load("res://actors/desktop/DesktopCompanion.tscn").instantiate()
+		root.add_child(host); current_scene=host
+		fixture.tree=self; fixture.scene=host
+		fixture.session=SessionComposition.acquire(self); fixture.owns_session=true
+	else: host=fixture.mount(self,true)
 	await settle()
 	fishing = host.game.get_node("Game/Fishing")
 	rig = fishing.camera_rig
@@ -78,15 +88,16 @@ func run() -> void:
 	fishing.encounter.bite_timer.stop(); fishing.encounter.bite_window_timer.stop()
 	fishing.set_process(false); rig.set_process(false)
 	var landing: Vector3 = bait.global_position
-	for dimensions in SIZES:
+	for dimensions in sizes:
 		root.size = dimensions; await settle(); host._layout(); await settle()
 		var size := Vector2(host.gameplay_viewport.size)
 		var power: Node = fishing.power_meter_view
+		check(is_instance_valid(power._stance_actor),"HUD resolved actor root above reel endpoint; no fallback")
 		var depth: Node = fishing.depth_meter_view
 		var power_rect := visual_rect(power.get_node("Root/PowerBarBG"))
 		var depth_rect := visual_rect(depth.get_node("Frame"))
 		check(Rect2(Vector2.ZERO,size).encloses(power_rect) and Rect2(Vector2.ZERO,size).encloses(depth_rect),"HUD entirely inside actual world viewport")
-		check(absf(depth.rest_position.x/size.x-532.0/640.0)<.00001,"meter reference anchor scales with gameplay width")
+		check(absf(power_rect.position.x-power.fishing_stance_right_pixels()-power_rect.size.y*power.character_to_bar_gap_ratio)<.01,"HUD follows stable player stance with the same bar-height ratio")
 		check(absf(depth.rest_position.x-power._rest_position.x-357.0)<.0001,"approved gauge gap and artwork scale preserved")
 		check(power.root.scale == Vector2(.35,.35) and depth.scale == Vector2(.36,.36),"no independent texture stretch")
 		var metrics := pose_metrics()
@@ -129,6 +140,7 @@ func run() -> void:
 		bait.set_fight_mode(false); bait.global_position = landing
 		var sprite: AnimatedSprite3D = fishing.player.get_node("GroundPresentation/VisualAnchor/AnimatedSprite3D")
 		var sprite_rect := Rect2()
+		var body_right := -INF
 		if DisplayServer.get_name() != "headless":
 			# Measure the actually rendered sprite, including shader billboarding
 			# and transparent atlas margins, rather than guessing a world quad.
@@ -148,15 +160,23 @@ func run() -> void:
 					if count == 0: sprite_rect = Rect2(Vector2(x,y),Vector2.ONE)
 					else: sprite_rect = sprite_rect.expand(Vector2(x,y))
 					count += 1
+					if y>=power_rect.position.y and y<=power_rect.end.y: body_right=maxf(body_right,x+1.0)
 			check(count > 0,"rendered actor silhouette measured")
+			check(is_finite(body_right) and power_rect.position.x-body_right>=4.0,"actual visible body stays clear of power bar at HUD height")
 			sprite.visible = true
 			RenderingServer.force_draw(false,0.0)
 			paused = false
-		measurements.append({"css":dimensions,"world":size,"camera":pose_metrics(),"sprite_frame_rect":Rect2(sprite_rect.position/size,sprite_rect.size/size),"power":Rect2(power_rect.position/size,power_rect.size/size),"depth":Rect2(depth_rect.position/size,depth_rect.size/size)})
+		var stance_right: float = power.fishing_stance_right_pixels()
+		var former_power_x: float = 175.0+532.0*(size.x/640.0-1.0)
+		measurements.append({"css":dimensions,"world":size,"camera":pose_metrics(),"sprite_frame_rect":Rect2(sprite_rect.position/size,sprite_rect.size/size),"power":Rect2(power_rect.position/size,power_rect.size/size),"depth":Rect2(depth_rect.position/size,depth_rect.size/size),"stance_right_px":stance_right,"character_gap_before":former_power_x-stance_right,"character_gap_after":power_rect.position.x-stance_right,"bar_meter_gap":depth_rect.position.x-power_rect.end.x})
+		if is_finite(body_right):
+			measurements[-1]["visible_body_right_at_hud_px"]=body_right
+			measurements[-1]["visible_body_gap_before"]=former_power_x-body_right
+			measurements[-1]["visible_body_gap_after"]=power_rect.position.x-body_right
 		if DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
-			root.get_texture().get_image().save_png("res://build/mobile-web/camera-hud-stability/fishing-%dx%d.png" % [dimensions.x,dimensions.y])
-	var file := FileAccess.open("res://build/mobile-web/camera-hud-stability/measurements.json",FileAccess.WRITE)
+			root.get_texture().get_image().save_png(output_dir+"/fishing-%dx%d.png" % [dimensions.x,dimensions.y])
+	var file := FileAccess.open(output_dir+"/measurements.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(measurements,"  ")); file.close()
 	fixture.release(); await settle()
 	print("CAMERA HUD STABILITY QA: ",checks-failures.size(),"/",checks," failures=",failures)
