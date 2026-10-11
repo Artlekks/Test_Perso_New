@@ -53,6 +53,8 @@ var micro_lateral_strength: float = 0.16
 @export_category("Input Smoothing")
 @export var reel_steering_response_speed: float = 8.0
 @export var reel_steering_return_speed: float = 10.0
+## Empty-lure taps retain a slightly longer arc; hooked-fish response is unchanged.
+@export var free_steering_return_speed: float = 8.0
 @export var twitch_speed: float = 1.8
 @export var twitch_acceleration: float = 10.0
 @export var twitch_target_decay: float = 5.0
@@ -1410,7 +1412,7 @@ func _update_reel_steering_response(delta: float) -> void:
 		if absf(reel_steering_target) > 0.001:
 			reel_steering = reel_steering_target
 		else:
-			reel_steering *= exp(-maxf(reel_steering_return_speed, 0.0) * maxf(rod_steering_response_multiplier, 0.01) * delta)
+			reel_steering *= exp(-maxf(free_steering_return_speed, 0.0) * maxf(rod_steering_response_multiplier, 0.01) * delta)
 			if absf(reel_steering) <= 0.001:
 				reel_steering = 0.0
 		return

@@ -18,7 +18,7 @@ func run() -> void:
 		var area := Rect2(Vector2.ZERO,dimensions)
 		var r := Layout.mobile(area)
 		check(area.encloses(r.world),"mobile world safe "+str(dimensions))
-		check(is_equal_approx(r.world.size.x/r.world.size.y,4.0/3),"mobile uniform world")
+		check(is_equal_approx(r.world.size.x/r.world.size.y,float(r.resolution.x)/r.resolution.y),"mobile uniform orientation world")
 		check(r.variant == ("mobile_landscape" if dimensions.x>dimensions.y else "mobile_portrait"),"orientation variant")
 	for dimensions in [Vector2(480,776),Vector2(899,1000),Vector2(900,800),Vector2(1200,860)]:
 		var r := Layout.desktop(dimensions)
@@ -43,7 +43,7 @@ func run() -> void:
 			shell._layout()
 			check(game.get_instance_id() == original_instance,"layout preserves session instance")
 			check(camera.fov == original_fov,"layout preserves camera FOV")
-			check(shell.gameplay_viewport.size == Vector2i(640,480),"layout preserves world canvas")
+			check(shell.gameplay_viewport.size == (shell.shell.regions.resolution if mobile else Vector2i(640,480)),"layout preserves orientation world canvas")
 			check(shell.shell.utility.Settings.visible,"real utility buttons visible")
 			if mobile:
 				check(shell.controls.BUTTON_KEYS.C == KEY_C,"C mapping preserved")
@@ -55,8 +55,13 @@ func run() -> void:
 			if DisplayServer.get_name() != "headless":
 				await RenderingServer.frame_post_draw
 				root.get_texture().get_image().save_png("res://build/mobile-web/shell-layout/%s-%dx%d.png" % ["mobile" if mobile else "desktop",dimensions.x,dimensions.y])
+		# Both mobile orientations have Y and the Select drawer.
+		# The responsive fixture exercises those paths; test real gear here.
+		if mobile:
+			root.size = Vector2i(390,844)
+			await settle()
 		var menu: FishingMenu = game.find_child("FishingMenu",true,false)
-		for id in ["Inventory","Journal","Settings"]:
+		for id in (["Settings"] if mobile else ["Inventory","Journal","Settings"]):
 			var button: Button = shell.shell.utility[id]
 			var touch := InputEventScreenTouch.new()
 			touch.index = 77

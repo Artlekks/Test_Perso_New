@@ -253,8 +253,9 @@ func run() -> void:
 	check(rig.fight_camera_tracking.limited and rig.safe_containment_failures>0, "infeasible capped yaw reports failure rather than moving player framing or increasing cap")
 	rig.fight_max_yaw_degrees = 55.0
 	put_fish(Vector2(0.90, 0.705),2.0)
+	var anchored_distance: float = camera.global_position.distance_to(player.global_position)
 	tick(240)
-	check(camera.unproject_position(fish.global_position).y <= rig.fight_safe_bottom * viewport.size.y + 0.5, "lateral fish descending toward HUD stops at legal boundary with vertical clearance")
+	check(absf(camera.global_position.distance_to(player.global_position)-anchored_distance)<.00001 and not rig.framing_constraints_feasible,"incompatible descending target remains diagnosed without zooming the anchored camera")
 	var held := camera.transform
 	rig.set_fishing_fight_tracking(false)
 	tick(60)
@@ -493,7 +494,7 @@ func test_vertical_retrieve() -> void:
 		var initial_pan: Vector2 = rig._water_pan
 		rig.return_fishing_follow_to_target(true)
 		check(camera.transform.is_equal_approx(pose) and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(offsets),"vertical/corner retrieve starts without optical or pose snap")
-		check(rig.fishing_follow_returning,"vertical-only framing uses existing retrieve owner even at zero yaw")
+		check(rig.fishing_follow_returning == (absf(rig._retrieve_yaw)>deg_to_rad(rig.retrieve_yaw_stop_degrees)),"retrieve only unwinds actual yaw; vertical violation creates no dolly return")
 		tick(21)
 		check(rig._retrieve_pan.length()<initial_pan.length() and rig._retrieve_pan.length()>0.00001 if initial_pan.length()>0.00001 else is_zero_approx(rig._retrieve_pan.length()),"ground pan unwinds only when the solved framing needed pan")
 		tick(600)

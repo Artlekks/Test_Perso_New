@@ -37,6 +37,15 @@ func settle(seconds := 0.2) -> void:
 	await get_tree().create_timer(seconds).timeout
 
 func touch(shell: Node, label: String) -> void:
+	# F10 is a keyboard/debug path, not the landscape Select equipment action.
+	if label == "F10" or (label == "START" and not shell.controls.buttons.has("START")):
+		var key := KEY_F10 if label == "F10" else KEY_SPACE
+		shell.controls._emit_key(key,true)
+		await settle()
+		shell.controls._emit_key(key,false)
+		await settle()
+		return
+	if label == "C" and shell.controls.buttons.has("X"): label = "X"
 	var event := InputEventScreenTouch.new()
 	event.index = 12
 	event.position = root.get_final_transform() * shell.controls.get_global_transform_with_canvas() * shell.controls.buttons[label].get_center()
@@ -65,6 +74,7 @@ func run() -> void:
 	shell.developer_playtest_default_enabled = false
 	shell.isolated_playtest_save = false
 	root.add_child(shell)
+	preload("res://scripts/qa/mobile_qa_canvas.gd").prepare(get_tree())
 	current_scene = shell
 	await settle(1.0)
 	var game: Node = shell.game
@@ -103,6 +113,9 @@ func run() -> void:
 		if triad.deck_setup.developer_test_deck.size() == 5:
 			check(triad._collection_backend.get_owned_cards().size() < 5, "Web fallback leaves real ownership separate")
 			triad.deck_setup._enter_collection_for_profile(0)
+			# Profile entry now focuses the deck rail. Explicitly prepare the
+			# collection cursor that this remove/re-add test intends to exercise.
+			triad.deck_setup._return_to_collection()
 			triad.deck_setup._cursor_index = 4
 			await touch(shell, "A")
 			await settle(0.6)
@@ -115,9 +128,9 @@ func run() -> void:
 			check(triad._session.phase != triad.PHASE_DECK_SETUP, "Web temporary deck starts actual match")
 		triad.close_game()
 	await settle()
-	await touch(shell, "SELECT")
+	await touch(shell, "F10")
 	var debug_menu = game.get_node("Game/Fishing").debug_controller.debug_menu
-	check(debug_menu.is_open(), "Web SELECT opens same F10 menu")
+	check(debug_menu.is_open(), "Web existing F10 path opens debug menu")
 	check(debug_menu._playtest_page and debug_menu._playtest_rows[0].text.contains("Developer Mode: ON"), "Web F10 starts with visible Developer Mode")
 	await touch(shell, "A")
 	check(not developer.enabled, "Web DOM A toggles DEV OFF")
@@ -128,8 +141,12 @@ func run() -> void:
 	check(debug_menu._travel_submenu, "Web DOM A opens Travel To")
 	await touch(shell, "B")
 	check(not debug_menu._travel_submenu and debug_menu.is_open(), "Web DOM B backs out of travel")
-	await touch(shell, "SELECT")
-	check(not debug_menu.is_open(), "Web SELECT closes same F10 menu")
+	await touch(shell, "F10")
+	check(not debug_menu.is_open(), "Web existing F10 path closes debug menu")
+	# F10 here is injected as a keyboard shortcut, with no DOM pointer release.
+	# World input deliberately requires an observed release after modal closure.
+	# Supply the real Back press/release before testing a fresh card challenge.
+	await touch(shell, "B")
 	developer.set_enabled(false)
 	await settle(0.8)
 	card_action_events.clear()
@@ -169,6 +186,13 @@ func run() -> void:
 		check(locations.current_location.location_id == destination and locations.is_current_scene(shell.game), "Web route binds actual destination " + String(destination))
 	print("MOBILE WEB PARITY QA: %d/%d" % [checks - failures.size(), checks])
 	if OS.get_name() != "Web":
+		# Tear down the host while its original viewports are still live, as
+		# normal scene replacement does; immediate engine quit removes them first.
+		current_scene = null
+		shell.queue_free()
+		await settle()
+		session.queue_free()
+		await settle()
 		get_tree().quit(0 if failures.is_empty() else 1)
 
 func web_shadow_orbits(game: Node, shell: Node) -> void:

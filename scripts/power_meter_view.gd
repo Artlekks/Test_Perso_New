@@ -40,10 +40,19 @@ var _rest_position: Vector2 = Vector2.ZERO
 var _slide_tween: Tween = null
 var _cancel_to_aim_pending: bool = false
 var fight_tension_active: bool = false
+const REFERENCE_VIEWPORT := Vector2(640.0,480.0)
+var _authored_rest := Vector2.ZERO
+var _authored_depth_rest := Vector2.ZERO
+var _layout_size := Vector2.ZERO
+var _slide_progress := 0.0
 
 func _ready() -> void:
 	full_scale_x = fill.scale.x
-	_rest_position = root.position
+	_authored_rest = Vector2(root.offset_left,root.offset_top) + Vector2(root.anchor_left,root.anchor_top)*REFERENCE_VIEWPORT
+	root.set_anchors_preset(Control.PRESET_TOP_LEFT,true)
+	var depth := get_node_or_null("DepthMeter") as Control
+	if depth != null: _authored_depth_rest = depth.position
+	_update_viewport_layout()
 
 	power.power_changed.connect(_on_power_changed)
 	power.started.connect(_on_power_started)
@@ -69,6 +78,29 @@ func _on_bait_distance_changed(distance_meters: float) -> void:
 
 	distance_value.set_text(str(whole))
 	distance_decimal.set_text(str(decimal))
+
+func _process(_delta: float) -> void:
+	_update_viewport_layout()
+
+func _update_viewport_layout() -> void:
+	var viewport := custom_viewport as Viewport
+	if viewport == null: viewport = get_viewport()
+	var dimensions := viewport.get_visible_rect().size
+	if dimensions == _layout_size: return
+	_layout_size = dimensions
+	# One owner for both gauges: preserve artwork scale and the authored gap,
+	# anchoring the vertical gauge at its reference normalized horizontal X.
+	var reference_x := _authored_depth_rest.x if _authored_depth_rest != Vector2.ZERO else _authored_rest.x
+	var shift_x := reference_x*(dimensions.x/REFERENCE_VIEWPORT.x-1.0)
+	_rest_position = Vector2(_authored_rest.x+shift_x,_authored_rest.y*dimensions.y/REFERENCE_VIEWPORT.y)
+	_set_slide_progress(_slide_progress)
+	var depth := get_node_or_null("DepthMeter")
+	if depth != null and depth.has_method("set_layout_rest"):
+		depth.set_layout_rest(Vector2(_authored_depth_rest.x+shift_x,_authored_depth_rest.y*dimensions.y/REFERENCE_VIEWPORT.y),dimensions)
+
+func _set_slide_progress(value: float) -> void:
+	_slide_progress = value
+	root.position = _rest_position.lerp(_get_offscreen_bottom_position(),value)
 
 func _on_power_started() -> void:
 	distance_value.set_text("0")
@@ -201,18 +233,16 @@ func _set_fill(value: float) -> void:
 func _slide_in_from_bottom() -> void:
 	_kill_slide_tween()
 
-	var start_position := _get_offscreen_bottom_position()
-
-	root.position = start_position
+	_set_slide_progress(1.0)
 	root.visible = true
 
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(
-		root,
-		"position",
-		_rest_position,
+	tween.tween_method(
+		_set_slide_progress,
+		1.0,
+		0.0,
 		slide_time
 	)
 
@@ -224,18 +254,16 @@ func _slide_out_to_bottom() -> void:
 
 	if not root.visible:
 		_cancel_to_aim_pending = false
-		root.position = _rest_position
+		_set_slide_progress(0.0)
 		return
-
-	var end_position := _get_offscreen_bottom_position()
 
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN)
-	tween.tween_property(
-		root,
-		"position",
-		end_position,
+	tween.tween_method(
+		_set_slide_progress,
+		_slide_progress,
+		1.0,
 		slide_time
 	)
 	tween.tween_callback(_finish_cancel_slide_out)
@@ -245,7 +273,7 @@ func _slide_out_to_bottom() -> void:
 
 func _finish_cancel_slide_out() -> void:
 	root.visible = false
-	root.position = _rest_position
+	_set_slide_progress(0.0)
 	_cancel_to_aim_pending = false
 	_slide_tween = null
 
@@ -253,7 +281,7 @@ func _finish_cancel_slide_out() -> void:
 func _hide_immediate() -> void:
 	_kill_slide_tween()
 	root.visible = false
-	root.position = _rest_position
+	_set_slide_progress(0.0)
 
 
 func _kill_slide_tween() -> void:
@@ -266,16 +294,8 @@ func _kill_slide_tween() -> void:
 func _get_offscreen_bottom_position() -> Vector2:
 	# Work from the approved resting position, even if a tween is
 	# currently part-way through.
-	var current_position := root.position
-	root.position = _rest_position
-	var rest_global_y := root.global_position.y
-	root.position = current_position
-
-	var viewport_rect := get_viewport().get_visible_rect()
-	var viewport_bottom := (
-		float(viewport_rect.position.y)
-		+ float(viewport_rect.size.y)
-	)
+	var rest_global_y := _rest_position.y
+	var viewport_bottom := _layout_size.y
 
 	var visual_height := maxf(root.size.y, 1.0)
 	var shift_y := (

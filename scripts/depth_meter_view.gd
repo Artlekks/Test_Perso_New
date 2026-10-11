@@ -33,6 +33,8 @@ var radar_max_dots: int = 14
 var rest_position: Vector2
 var slide_tween: Tween
 var is_shown: bool = false
+var _layout_viewport_size := Vector2.ZERO
+var _slide_progress := 0.0
 
 var _radar_layer: Control = null
 var _radar_dots: Array[ColorRect] = []
@@ -66,6 +68,18 @@ func _on_depth_changed(
 	_update_depth_strip(total_depth)
 	_update_arrow(current_depth, total_depth)
 	_update_fish_radar_if_due(total_depth)
+
+func set_layout_rest(value: Vector2, viewport_size: Vector2) -> void:
+	# PowerMeterView owns the shared resting composition; this view owns only
+	# its presentation progress. Resize cannot leave an absolute tween target.
+	rest_position = value
+	_layout_viewport_size = viewport_size
+	_set_slide_progress(_slide_progress)
+
+func _set_slide_progress(value: float) -> void:
+	_slide_progress = value
+	var width := _layout_viewport_size.x if _layout_viewport_size.x > 0.0 else get_viewport_rect().size.x
+	position = rest_position.lerp(Vector2(width+slide_padding,rest_position.y),value)
 
 
 func _update_depth_strip(total_depth: float) -> void:
@@ -145,20 +159,16 @@ func _slide_in() -> void:
 	is_shown = true
 	visible = true
 
-	var viewport_width := get_viewport_rect().size.x
-	position = Vector2(
-		viewport_width + slide_padding,
-		rest_position.y
-	)
+	_set_slide_progress(1.0)
 
 	slide_tween = create_tween()
 	slide_tween.set_trans(Tween.TRANS_SINE)
 	slide_tween.set_ease(Tween.EASE_OUT)
 
-	slide_tween.tween_property(
-		self,
-		"position",
-		rest_position,
+	slide_tween.tween_method(
+		_set_slide_progress,
+		1.0,
+		0.0,
 		slide_time
 	)
 
@@ -172,20 +182,14 @@ func _slide_out() -> void:
 
 	is_shown = false
 
-	var viewport_width := get_viewport_rect().size.x
-	var offscreen_position := Vector2(
-		viewport_width + slide_padding,
-		rest_position.y
-	)
-
 	slide_tween = create_tween()
 	slide_tween.set_trans(Tween.TRANS_SINE)
 	slide_tween.set_ease(Tween.EASE_IN)
 
-	slide_tween.tween_property(
-		self,
-		"position",
-		offscreen_position,
+	slide_tween.tween_method(
+		_set_slide_progress,
+		_slide_progress,
+		1.0,
 		slide_time
 	)
 
@@ -194,7 +198,7 @@ func _slide_out() -> void:
 
 func _finish_slide_out() -> void:
 	visible = false
-	position = rest_position
+	_set_slide_progress(0.0)
 
 func reset_to_aim() -> void:
 	_clear_fish_radar()
@@ -205,7 +209,7 @@ func reset_to_aim() -> void:
 	slide_tween = null
 	is_shown = false
 	visible = false
-	position = rest_position
+	_set_slide_progress(0.0)
 
 
 

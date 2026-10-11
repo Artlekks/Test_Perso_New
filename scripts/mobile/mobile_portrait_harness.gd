@@ -13,6 +13,8 @@ var gameplay_viewport: SubViewport
 var game: Node
 var shell: Control
 var controls: Control
+var controls_scroll: ScrollContainer
+var controls_content: Control
 var gameplay_image: TextureRect
 var gameplay_window: Control
 var overlay_viewport: SubViewport
@@ -24,6 +26,8 @@ var _surface_scroll := 0.0
 var _surface_scroll_max := 0.0
 var _surface_drag := -1
 var _surface_drag_y := 0.0
+var _controls_drag := -1
+var _controls_drag_y := 0.0
 var _surface_was_modal := false
 var _surface_modal_layers: Array[WeakRef] = []
 var safe_rect := Rect2()
@@ -89,9 +93,18 @@ func _ready() -> void:
 	controls.name = "TouchControls"
 	controls.key_requested.connect(_send_key)
 	controls.action_requested.connect(_queue_action)
-	presentation.add_child(controls)
+	controls_scroll = ScrollContainer.new()
+	controls_scroll.name = "MobileControlSurface"
+	controls_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	presentation.add_child(controls_scroll)
+	controls_content = Control.new()
+	controls_content.mouse_filter = Control.MOUSE_FILTER_PASS
+	controls_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	controls_scroll.add_child(controls_content)
+	controls_content.add_child(controls)
 	resized.connect(_layout)
 	get_window().focus_exited.connect(controls.release_all)
+	get_window().size_changed.connect(_layout)
 	get_tree().node_added.connect(_node_added)
 	_layout()
 	call_deferred("_mount_game")
@@ -128,7 +141,7 @@ func get_layout_rects(available: Rect2) -> Dictionary:
 	var layout := preload("res://scripts/ui/seaside_shell_layout.gd").mobile(available)
 	layout.gameplay = layout.world
 	layout.display = layout.world
-	layout.resolution = Surface.SIZE
+	layout.resolution = Surface.MOBILE_LANDSCAPE_SIZE if layout.variant == "mobile_landscape" else Surface.SIZE
 	return layout
 
 func _layout() -> void:
@@ -147,25 +160,39 @@ func _layout() -> void:
 		if values is Array and values.size() == 6:
 			device_size = Vector2(values[4], values[5])
 			device_safe = Rect2(Vector2(values[0], values[1]), device_size - Vector2(values[0] + values[2], values[1] + values[3]))
-	var layout := get_layout_rects(get_safe_rect(size, device_safe, device_size))
+	var logical_size := size
+	if OS.has_feature("web") and device_size.x > 0 and device_size.y > 0:
+		Surface.configure_css_window(get_window(),Vector2i(device_size))
+		logical_size = device_size
+	var layout := get_layout_rects(get_safe_rect(logical_size, device_safe, device_size))
 	safe_rect = layout.safe
-	shell.size = size
+	shell.size = logical_size
 	shell.configure(layout)
 	gameplay_window.position = layout.display.position
 	gameplay_window.size = layout.display.size
 	gameplay_image.size = layout.gameplay.size
-	_surface_scroll_max = maxf(0,float(Surface.MENU_SIZE.y) * layout.gameplay.size.x / 640.0-layout.display.size.y)
+	_surface_scroll_max = maxf(0,float(Surface.MENU_SIZE.y) * layout.gameplay.size.y / 480.0-layout.display.size.y)
 	_surface_scroll = clampf(_surface_scroll,0,_surface_scroll_max) if _has_surface_modal() else _surface_scroll_max
 	gameplay_image.position = Vector2.ZERO
-	overlay_image.size = Vector2(layout.gameplay.size.x, float(Surface.MENU_SIZE.y) * layout.gameplay.size.x / 640.0)
-	overlay_image.position = Vector2(0,-_surface_scroll)
+	overlay_image.size = Vector2(Surface.MENU_SIZE) * layout.gameplay.size.y / 480.0
+	overlay_image.position = Vector2((layout.gameplay.size.x-overlay_image.size.x)*.5,-_surface_scroll)
 	hud_image.size = layout.gameplay.size
 	hud_viewport.size = layout.resolution
 	hud_image.position = Vector2.ZERO
 	controls.landscape = layout.variant == "mobile_landscape"
-	controls.position = layout.controls.position
+	controls_scroll.position = layout.controls.position
+	controls_scroll.size = Vector2(layout.controls.size.x,minf(layout.controls.size.y,maxf(0,layout.safe.end.y-layout.controls.position.y)))
+	controls_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO if layout.get("fallback","") == "scroll_controls" else ScrollContainer.SCROLL_MODE_DISABLED
+	controls_content.custom_minimum_size = layout.controls.size
+	controls_content.size = layout.controls.size
+	controls.position = Vector2.ZERO
 	controls.size = layout.controls.size
-	gameplay_viewport.size = layout.resolution
+	var control_geometry := preload("res://scripts/ui/seaside_shell_layout.gd").landscape_controls(layout)
+	for id in ["Settings","Equipment"]:
+		var button: Button = shell.utility[id]
+		if button.get_parent() != controls_content: button.reparent(controls_content)
+		button.position = control_geometry["settings" if id == "Settings" else "select"].position-layout.controls.position
+	Surface.resize_mobile_world(game,gameplay_viewport,layout.resolution)
 	_adapt_mobile_presentation()
 	_bind_overlay_layers()
 
@@ -177,12 +204,40 @@ func _process(_delta: float) -> void:
 		_surface_scroll = 0.0 if modal else _surface_scroll_max
 		if overlay_image != null: overlay_image.position.y = -_surface_scroll
 
+func _control_scroll_seam_clear(point: Vector2) -> bool:
+	var local := point-controls.global_position
+	if controls.stick_zone.has_point(local): return false
+	for target in controls.buttons.values():
+		if target.has_point(local): return false
+	for id in ["Settings","Equipment"]:
+		if shell.utility.has(id) and shell.utility[id].get_global_rect().has_point(point): return false
+	return true
+
 func _input(event: InputEvent) -> void:
+	# On short portraits, an empty center seam scrolls the lower control
+	# surface. Never claim a stick/button gesture or emit gameplay input.
+	if shell.regions.get("fallback", "") == "scroll_controls":
+		if event is InputEventScreenTouch:
+			var box := controls_scroll.get_global_rect()
+			if event.pressed and box.has_point(event.position) and absf(event.position.x-box.get_center().x) <= 10 and _control_scroll_seam_clear(event.position):
+				_controls_drag = event.index
+				_controls_drag_y = event.position.y
+				get_viewport().set_input_as_handled()
+				return
+			elif not event.pressed and event.index == _controls_drag:
+				_controls_drag = -1
+				get_viewport().set_input_as_handled()
+				return
+		elif event is InputEventScreenDrag and event.index == _controls_drag:
+			controls_scroll.scroll_vertical += int(round(_controls_drag_y-event.position.y))
+			_controls_drag_y = event.position.y
+			get_viewport().set_input_as_handled()
+			return
 	# A narrow right-edge gutter scrolls the display window, independently of
 	# each canonical menu's own content scrolling. No gameplay state is changed.
 	if _surface_scroll_max <= 0 or not _has_surface_modal(): return
 	if event is InputEventScreenTouch:
-		var box := gameplay_window.get_global_rect()
+		var box := Rect2(overlay_image.global_position,Vector2(overlay_image.size.x,gameplay_window.size.y))
 		if event.pressed and box.has_point(event.position) and event.position.x >= box.end.x - 20:
 			_surface_drag = event.index
 			_surface_drag_y = event.position.y
@@ -256,7 +311,7 @@ func _bind_overlay_layers() -> void:
 		if not is_instance_valid(layer) or not layer.is_node_ready(): continue
 		if layer == game.get_node_or_null("UI/ExplorationHud"):
 			_set_layer_viewport(layer,hud_viewport)
-			# HUD and world share the same uncropped 4:3 canvas.
+			# HUD and world share the active uncropped canvas, including wide landscape.
 			var help: Control = layer.help_panel
 			if not help.has_meta("shell_help_home"): help.set_meta("shell_help_home",layer.help_panel_home)
 			var home: Vector2 = help.get_meta("shell_help_home")
@@ -266,7 +321,7 @@ func _bind_overlay_layers() -> void:
 				help.position += delta_home
 				layer.help_panel_home = desired
 		elif layer is DialogueView or layer.name == "FishingCatchView":
-			layer.set_meta("gameplay_presentation_rect", Rect2(0, 0, 640, 480))
+			layer.set_meta("gameplay_presentation_rect", Rect2(Vector2.ZERO,Vector2(gameplay_viewport.size)))
 			_set_layer_viewport(layer,hud_viewport)
 		elif layer.has_method("is_open") or layer.name == "FishingLureSelectorView":
 			_set_layer_viewport(layer,overlay_viewport)
@@ -302,6 +357,7 @@ func _has_surface_modal() -> bool:
 func _adapt_mobile_presentation() -> void:
 	if not is_instance_valid(game): return
 	preload("res://scripts/ui/canonical_game_surface.gd").prepare(game)
+	preload("res://scripts/mobile/mobile_world_ground_extension.gd").ensure(game,gameplay_viewport.size.x == 960)
 	for entry in _bound_layers.values():
 		var layer = entry.node.get_ref()
 		if not is_instance_valid(layer): continue

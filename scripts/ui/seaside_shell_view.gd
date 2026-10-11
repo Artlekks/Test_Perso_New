@@ -10,6 +10,11 @@ var shortcut: Button
 var utility: Dictionary = {}
 var snapshot: Dictionary = {}
 var _refresh := 0.0
+var environment_strip: Control
+var equipment_drawer: PanelContainer
+var equipment_text: Label
+var equipment_open := false
+var equipment_pinned := false
 static func skin(texture: Texture2D, margin := 12) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
 	s.texture = texture
@@ -19,7 +24,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	for id in ["Menu","Inventory","Journal","Settings","Cards","Active","Passive","Dock Left","Dock Right","Minimize","Maximize","Close"]:
+	for id in ["Menu","Inventory","Journal","Settings","Equipment","Active","Passive","Cards","Dock Left","Dock Right","Minimize","Maximize","Close"]:
 		var b := Button.new()
 		b.text = {"Minimize":"-","Maximize":"[]","Close":"X"}.get(id,id)
 		if id.to_lower() in ["inventory","journal","cards","settings"]:
@@ -54,10 +59,46 @@ func _ready() -> void:
 	shortcut.pressed.connect(_shortcut_pressed)
 	shortcut_layer.add_child(shortcut)
 	shortcut.hide()
+	environment_strip = preload("res://scripts/ui/seaside_environment_strip.gd").new()
+	environment_strip.host = host
+	add_child(environment_strip)
+	environment_strip.hide()
+	equipment_drawer = PanelContainer.new()
+	equipment_drawer.name = "EquipmentDrawer"
+	# Shell was added before the gameplay texture. Transient drawers must render
+	# above that texture; permanent shell controls remain outside the game.
+	equipment_drawer.z_index = 20
+	equipment_drawer.add_theme_stylebox_override("panel",skin(PAPER))
+	add_child(equipment_drawer)
+	var column := VBoxContainer.new()
+	equipment_drawer.add_child(column)
+	equipment_text = Label.new()
+	equipment_text.add_theme_font_override("font",ThemeDB.fallback_font)
+	equipment_text.add_theme_font_size_override("font_size",13)
+	equipment_text.add_theme_color_override("font_color",Color("35202d"))
+	equipment_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(equipment_text)
+	var drawer_row := HBoxContainer.new()
+	column.add_child(drawer_row)
+	for caption in ["Pin / unpin","Change equipment","Close"]:
+		var button := Button.new()
+		button.text = caption
+		button.custom_minimum_size.y = 44
+		button.focus_mode = Control.FOCUS_NONE
+		button.add_theme_font_size_override("font_size",12)
+		button.add_theme_stylebox_override("normal",skin(BUTTON,6))
+		button.pressed.connect(_equipment_action.bind(caption))
+		if caption == "Change equipment": column.add_child(button)
+		else:
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			drawer_row.add_child(button)
+	equipment_drawer.hide()
 func configure(next: Dictionary) -> void:
 	if regions == next: return
 	regions = next
 	for b in utility.values(): b.hide()
+	environment_strip.visible = str(regions.variant).begins_with("mobile")
+	equipment_drawer.hide()
 	var desktop := str(regions.variant).begins_with("desktop")
 	if desktop:
 		_row(["Active","Passive"],regions.modes)
@@ -69,12 +110,23 @@ func configure(next: Dictionary) -> void:
 			_column(["Inventory","Journal","Cards","Settings"],Rect2(menu.position+Vector2(10,28),menu.size-Vector2(20,38)))
 		else: _row(["Inventory","Journal","Cards","Settings"],Rect2(menu.position+Vector2(6,24),menu.size-Vector2(12,30)))
 	else:
-		var panel: Rect2 = regions.controls
-		if regions.variant == "mobile_landscape":
-			var right: Rect2 = regions.right
-			_column(["Menu","Inventory","Journal","Settings"],Rect2(right.position+Vector2(6,right.size.y*.43),Vector2(right.size.x-12,right.size.y*.55)))
-		else:
-			_row(["Menu","Inventory","Journal","Settings"],Rect2(panel.position+Vector2(8,panel.size.y*.76),Vector2(panel.size.x-16,panel.size.y*.22)))
+		var geometry := Layout.landscape_controls(regions)
+		utility.Settings.z_index = 21
+		utility.Equipment.z_index = 21
+		_place("Settings",geometry.settings)
+		utility.Settings.get_node("Caption").hide()
+		utility.Settings.add_theme_constant_override("icon_max_width",28)
+		_place("Equipment",geometry.select)
+		environment_strip.position = regions.info.position
+		environment_strip.size = regions.info.size
+		environment_strip.portrait = regions.variant == "mobile_portrait"
+		equipment_drawer.position = regions.world.position+Vector2(10,10)
+		equipment_drawer.size = Vector2(minf(240,regions.world.size.x-20),0)
+		if regions.get("fallback","") == "edge_overlay":
+			var free_left: float = regions.left.end.x+6
+			var free_right: float = regions.right.position.x-6
+			equipment_drawer.size.x = minf(240,free_right-free_left)
+			equipment_drawer.position.x = (free_left+free_right-equipment_drawer.size.x)*.5
 	queue_redraw()
 func _row(ids: Array, box: Rect2) -> void:
 	for i in range(ids.size()): _place(ids[i],Rect2(box.position+Vector2(i*box.size.x/ids.size(),0),Vector2(box.size.x/ids.size()-3,box.size.y)))
@@ -84,7 +136,8 @@ func _place(id: String, box: Rect2) -> void:
 	var b: Button = utility[id]
 	b.position = box.position
 	b.custom_minimum_size = Vector2.ZERO
-	b.text = {"Minimize":"-","Maximize":"[]","Close":"X"}.get(id,id)
+	b.add_theme_font_size_override("font_size",12 if box.size.x<145 else 18)
+	b.text = {"Minimize":"-","Maximize":"[]","Close":"X","Equipment":"Select"}.get(id,id)
 	var caption: Label = b.get_node("Caption")
 	caption.hide()
 	if box.size.x<105 and b.icon != null:
@@ -108,13 +161,21 @@ func _place(id: String, box: Rect2) -> void:
 		for key in ["normal","hover","pressed"]: b.add_theme_stylebox_override(key,skin(BUTTON))
 		b.add_theme_constant_override("icon_max_width",24)
 	b.size = box.size
-	b.add_theme_font_size_override("font_size",12 if box.size.x<145 else 18)
 	b.show()
 func _process(delta: float) -> void:
 	_refresh -= delta
 	if _refresh > 0: return
 	_refresh = .25
 	snapshot = _read_state()
+	if environment_strip.visible: environment_strip.refresh(snapshot)
+	if str(regions.get("variant","")).begins_with("mobile") and host._has_surface_modal() and not equipment_pinned:
+		equipment_open = false
+	equipment_drawer.visible = str(regions.get("variant","")).begins_with("mobile") and equipment_open and not host._has_surface_modal()
+	if equipment_drawer.visible:
+		equipment_text.text = "Equipment%s\nRod: %s\nLure/bait: %s x%d" % [" (pinned)" if equipment_pinned else "",snapshot.rod,snapshot.bait,snapshot.count]
+		# A short portrait world can be shorter than the drawer's content minimum.
+		# Use its top edge instead of letting the drawer cover the shoulder controls.
+		equipment_drawer.position.y = maxf(regions.world.position.y,minf(regions.world.position.y+10,regions.world.end.y-equipment_drawer.size.y))
 	_update_shortcut()
 	if is_instance_valid(host) and str(regions.get("variant","")).begins_with("desktop"):
 		utility.Active.modulate = Color.WHITE if host.mode == host.Mode.ACTIVE else Color(.65,.65,.65)
@@ -147,6 +208,7 @@ func _read_state() -> Dictionary:
 func _activate(id: String) -> void:
 	if not is_instance_valid(host): return
 	match id:
+		"Equipment": equipment_open = not equipment_open
 		"Active": host.set_mode(host.Mode.ACTIVE)
 		"Passive": host.set_mode(host.Mode.PASSIVE)
 		"Dock Left": host.dock_from_shell(host.WindowState.DOCK_LEFT)
@@ -155,15 +217,31 @@ func _activate(id: String) -> void:
 		"Maximize": host.toggle_shell_fullscreen()
 		"Close": host.get_tree().quit()
 		_: host.request_shell_menu(id)
+
+func _equipment_action(id: String) -> void:
+	match id:
+		"Pin / unpin": equipment_pinned = not equipment_pinned
+		"Close": equipment_open = false
+		"Change equipment":
+			if not equipment_pinned: equipment_open = false
+			host.request_shell_menu("Inventory")
 func _text(value: String, rect: Rect2, font_size: int = 16, color := Color("35202d")) -> void:
 	draw_string(FONT,rect.position+Vector2(6,font_size+3),value,HORIZONTAL_ALIGNMENT_LEFT,maxf(1,rect.size.x-12),font_size,color)
 func _draw() -> void:
 	if regions.is_empty(): return
+	if str(regions.variant).begins_with("mobile"):
+		# Compact control islands sit on a quiet burgundy charcoal surface.
+		# Unused side space is not an oversized decorative parchment panel.
+		draw_rect(regions.safe,Color("25222c"))
+		if regions.variant == "mobile_portrait":
+			draw_style_box(skin(PAPER),regions.controls.intersection(regions.safe))
+			draw_line(regions.controls.position+Vector2(regions.controls.size.x*.5,56),regions.controls.intersection(regions.safe).end-Vector2(regions.controls.size.x*.5,54),Color("c99d69"),1)
 	var paper := skin(PAPER)
 	for key in ["header","info","gear","frame","controls","modes","docks","menus","left","right"]:
-		if key == "controls" and regions.variant == "mobile_landscape": continue
+		if str(regions.variant).begins_with("mobile") and key in ["controls","left","right"]: continue
 		if regions.has(key): draw_style_box(paper,regions[key])
 	if regions.has("header"): _text("Seaside Companion",regions.header,24)
+	if str(regions.variant).begins_with("mobile"): return
 	var info: Rect2 = regions.info
 	var preview_width := minf(info.size.y-16,info.size.x*.27)
 	var preview: Texture2D = snapshot.get("preview")

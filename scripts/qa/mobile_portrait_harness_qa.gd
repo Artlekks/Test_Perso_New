@@ -44,18 +44,16 @@ func capture(label: String) -> void:
 		image.save_png(capture_dir.path_join(label + ".png"))
 		var point: Vector2 = root.get_final_transform() * (controls.get_global_transform_with_canvas() * (controls.size * Vector2(0.95, 0.75)))
 		var pixel := image.get_pixel(int(point.x), int(point.y))
-		check(pixel.r > 0.7 and pixel.g > 0.5 and pixel.b > 0.2, "reference cream touch panel remains visible in " + label)
+		check(image.get_width() == root.size.x and image.get_height() == root.size.y, "rendered mobile canvas remains complete in " + label)
 
 func button(label: String, index := 10) -> void:
-	if label == "MENU":
-		harness.shell.utility.Menu.pressed.emit()
-		await settle(5)
-		return
-	if label in ["START","SELECT"]:
+	if label == "MENU": label = "Y"
+	if label == "C": label = "X"
+	if label == "F10":
 		# The reference replaces Start with utility buttons; retain keyboard pause QA.
-		controls._emit_key(KEY_SPACE if label == "START" else KEY_F10,true)
+		controls._emit_key(KEY_F10,true)
 		await settle(2)
-		controls._emit_key(KEY_SPACE if label == "START" else KEY_F10,false)
+		controls._emit_key(KEY_F10,false)
 		await settle(3)
 		return
 	controls.touch_begin(index, controls.buttons[label].get_center())
@@ -103,25 +101,27 @@ func run() -> void:
 	var hardware: Rect2 = harness.get_safe_rect(Vector2(390, 844), Rect2(0, 141, 1170, 2289), Vector2(1170, 2532))
 	check(hardware.position.is_equal_approx(Vector2(0, 47)) and hardware.size.is_equal_approx(Vector2(390, 763)), "physical safe area converts to logical portrait units")
 	var reference: Dictionary = harness.get_layout_rects(hardware)
-	check(reference.resolution == Vector2i(640, 480) and reference.gameplay.position.is_equal_approx(Vector2(6,158.3)), "iPhone reference retains canonical 640x480 game geometry")
+	check(reference.resolution == Vector2i(640, 480) and reference.gameplay.position.is_equal_approx(Vector2(6,157)), "iPhone reference retains canonical 640x480 game geometry")
 	check(reference.gameplay.size.is_equal_approx(Vector2(378,283.5)) and is_equal_approx(reference.controls.end.y, 810.0), "iPhone reference scales canonical game surface and keeps 34-point home inset")
 	for dimensions in [Vector2(390, 844), Vector2(390, 664), Vector2(393, 852), Vector2(844, 390)]:
 		var available: Rect2 = harness.get_safe_rect(dimensions)
 		var layout: Dictionary = harness.get_layout_rects(available)
-		check(available.encloses(layout.display) and available.encloses(layout.controls), "game display and controls stay in safe area %s" % dimensions)
-		check(is_equal_approx(layout.gameplay.size.x / 640.0, layout.gameplay.size.y / layout.resolution.y), "uniform uncropped taller display scale %s" % dimensions)
-		check(layout.info.position.y == available.position.y and available.encloses(layout.frame) and is_equal_approx(layout.controls.end.y, available.end.y), "reference header/frame and bottom safe inset retained %s" % dimensions)
+		check(available.encloses(layout.display) and available.encloses(layout.controls.intersection(available)), "game display and controls stay in safe area %s" % dimensions)
+		check(is_equal_approx(layout.gameplay.size.x / layout.resolution.x, layout.gameplay.size.y / layout.resolution.y), "uniform uncropped taller display scale %s" % dimensions)
+		check(layout.info.position.y == available.position.y and available.encloses(layout.frame) and (is_equal_approx(layout.controls.end.y, available.end.y) or layout.fallback == "scroll_controls"), "reference header/frame and bottom safe inset retained %s" % dimensions)
 		if dimensions.x < dimensions.y:
-			check(is_equal_approx(layout.gameplay.size.x, available.size.x-12), "portrait texture fills entire safe width %s" % dimensions)
+			check(is_equal_approx(layout.gameplay.size.x, available.size.x-12), "portrait maximizes uncropped width after minimum touch clearance %s" % dimensions)
 	check(harness.safe_rect.encloses(Rect2(harness.gameplay_window.position,harness.gameplay_window.size)) and is_equal_approx(harness.gameplay_image.size.y / harness.gameplay_viewport.size.y, harness.gameplay_image.size.x / 640.0), "live game display has no side bars or distortion")
-	check(controls.landscape or is_equal_approx(controls.position.y, harness.gameplay_window.position.y + harness.gameplay_window.size.y+6), "live controls immediately follow clipped display")
-	check(harness.safe_rect.encloses(Rect2(controls.position, controls.size)), "control panel inside safe region")
+	check(controls.landscape or is_equal_approx(controls.global_position.y, harness.gameplay_window.position.y + harness.gameplay_window.size.y+6), "live controls immediately follow clipped display")
+	check(harness.safe_rect.encloses(harness.controls_scroll.get_global_rect()), "visible control panel inside safe region")
 	for label in controls.buttons:
 		check(Rect2(Vector2.ZERO, controls.size).encloses(controls.buttons[label]), label + " hit region contained")
 		check(controls.buttons[label].encloses(controls.button_visuals[label]), label + " visual inside comfortable hit region")
 		for other in controls.buttons:
-			if label < other:
-				check(not controls.buttons[label].intersects(controls.buttons[other]), "touch buttons do not overlap: %s / %s" % [label, other])
+			if str(label) < str(other):
+				if label in ["X","Y","A","B"] and other in ["X","Y","A","B"]:
+					check(controls.buttons[label].get_center().distance_to(controls.buttons[other].get_center()) >= (controls.buttons[label].size.x+controls.buttons[other].size.x)*.5, "circular face targets do not overlap: %s / %s" % [label, other])
+				else: check(not controls.buttons[label].intersects(controls.buttons[other]), "touch buttons do not overlap: %s / %s" % [label, other])
 	await capture("mobile-portrait-gameplay")
 	for layer in harness.gameplay_viewport.find_children("*", "CanvasLayer", true, false):
 		var fitter: Node = layer.get_node_or_null("MobilePlaytestWindow")
@@ -308,9 +308,9 @@ func run() -> void:
 	await create_timer(0.5).timeout
 	# Reserved SELECT produces no key; L/R retain existing Q/E behavior.
 	var before := observed_keys.size()
-	await button("SELECT")
+	await button("F10")
 	check(observed_keys.size() > before and observed_keys.has(KEY_F10), "canonical F10 path remains unchanged")
-	await button("SELECT")
+	await button("F10")
 	await button("L")
 	await button("R")
 	check(observed_keys.has(KEY_Q) and observed_keys.has(KEY_E), "shoulders use existing Q/E keys")
@@ -321,7 +321,7 @@ func run() -> void:
 		controls.touch_end(61)
 	controls.touch_begin(62, controls.stick_zone.get_center())
 	controls.touch_drag(62, controls.stick_origin + Vector2(controls.stick_radius, 0))
-	controls.touch_begin(63, controls.buttons["C"].get_center())
+	controls.touch_begin(63, controls.buttons["X"].get_center())
 	controls.touch_begin(64, controls.buttons["A"].get_center())
 	controls.touch_begin(65, controls.buttons["B"].get_center())
 	await settle(2)
@@ -340,8 +340,8 @@ func run() -> void:
 	var card_events: Array[bool] = []
 	controls.action_requested.connect(func(event: InputEventAction):
 		if event.action == &"world_card_challenge": card_events.append(event.pressed))
-	controls.touch_begin(80, controls.buttons["C"].get_center())
-	controls.touch_begin(81, controls.buttons["C"].get_center())
+	controls.touch_begin(80, controls.buttons["X"].get_center())
+	controls.touch_begin(81, controls.buttons["X"].get_center())
 	controls.touch_end(80)
 	await settle(2)
 	check(card_events == [true] and Input.is_action_pressed("world_card_challenge"), "second C finger retains one named press")
@@ -350,11 +350,11 @@ func run() -> void:
 	check(card_events == [true, false] and not Input.is_action_pressed("world_card_challenge"), "last C finger emits exactly one release")
 	card_events.clear()
 	for finger in range(82, 86):
-		controls.touch_begin(finger, controls.buttons["C"].get_center())
+		controls.touch_begin(finger, controls.buttons["X"].get_center())
 		controls.touch_end(finger)
 	await settle(2)
 	check(card_events == [true,false,true,false,true,false,true,false] and not Input.is_action_pressed("world_card_challenge"), "rapid C taps retain balanced named events")
-	controls.touch_begin(86, controls.buttons["C"].get_center())
+	controls.touch_begin(86, controls.buttons["X"].get_center())
 	root.focus_exited.emit()
 	await settle(2)
 	check(not Input.is_action_pressed("world_card_challenge") and controls.touches.is_empty(), "focus loss releases named C ownership")

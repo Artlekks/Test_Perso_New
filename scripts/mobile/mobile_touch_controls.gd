@@ -7,7 +7,7 @@ signal action_requested(event: InputEventAction)
 @export var stick_radius: float = 56.0
 @export_range(0.05, 0.5, 0.01) var stick_deadzone: float = 0.18
 @export var mouse_testing: bool = true
-const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "C": KEY_C, "MENU": KEY_J, "SELECT": KEY_F10, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
+const BUTTON_KEYS := {"A": KEY_K, "B": KEY_I, "C": KEY_C, "X": KEY_C, "Y": KEY_J, "MENU": KEY_J, "SELECT": KEY_F10, "START": KEY_SPACE, "L": KEY_Q, "R": KEY_E}
 const MOVEMENT := {KEY_A: &"move_left", KEY_D: &"move_right", KEY_W: &"move_forward", KEY_S: &"move_back"}
 const STEERING := {KEY_A: &"ds_left", KEY_D: &"ds_right"}
 const ART := {"A":preload("res://assets/ui/seaside_shell/a.png"),"B":preload("res://assets/ui/seaside_shell/b.png"),"C":preload("res://assets/ui/seaside_shell/c.png"),"L":preload("res://assets/ui/seaside_shell/l.png"),"R":preload("res://assets/ui/seaside_shell/r.png")}
@@ -33,29 +33,19 @@ func _ready() -> void:
 
 func _layout() -> void:
 	release_all()
-	var w := size.x
-	var h := size.y
+	if size.x <= 0 or size.y <= 0: return
+	var layout_api = preload("res://scripts/ui/seaside_shell_layout.gd")
+	var geometry: Dictionary
 	if landscape:
-		var layout := preload("res://scripts/ui/seaside_shell_layout.gd").mobile(Rect2(Vector2.ZERO,size))
-		var right: Rect2 = layout.right
-		stick_zone = layout.left
-		var r := maxf(64,right.size.x*.4)
-		var small := maxf(44,r*.7)
-		buttons = {"A":Rect2(right.position+Vector2(right.size.x*.5,right.size.y*.12),Vector2(r,r)),"B":Rect2(right.position+Vector2(right.size.x*.06,right.size.y*.24),Vector2(small,small)),"C":Rect2(right.position+Vector2(right.size.x*.12,right.size.y*.02),Vector2(small,small)),"L":Rect2(6,6,w*.12,maxf(44,h*.13)),"R":Rect2(w*.88,6,w*.11,maxf(44,h*.13))}
-
+		geometry = layout_api.landscape_controls(layout_api.mobile(Rect2(Vector2.ZERO,size)))
 	else:
-		stick_zone = Rect2(0,h*.20,w*.49,h*.53)
-		var a := minf(w*.21,maxf(44,h*.30))
-		var b := minf(w*.18,maxf(44,h*.26))
-		var c := minf(w*.16,maxf(44,h*.22))
-		var cy := maxf(52,h*.22)
-		buttons = {"A":Rect2(w*.75,h*.41,a,a),"B":Rect2(w*.54,maxf(cy+c+4,h*.47),b,b),"C":Rect2(w*(.65 if h>=340 else .54),cy,c,c),"L":Rect2(w*.05,h*.025,w*.23,maxf(44,h*.14)),"R":Rect2(w*.72,h*.025,w*.23,maxf(44,h*.14))}
+		geometry = layout_api.portrait_controls(Rect2(Vector2.ZERO,size))
+	stick_zone = geometry.stick
+	buttons = geometry.buttons
 	button_visuals = buttons.duplicate()
 	if not landscape:
-		for label in ["L","R"]:
-			var hit: Rect2 = buttons[label]
-			var visual_height := minf(hit.size.y,hit.size.x*60.0/153.0)
-			button_visuals[label] = Rect2(hit.position+Vector2(0,(hit.size.y-visual_height)*.5),Vector2(hit.size.x,visual_height))
+		for id in ["L","R"]:
+			button_visuals[id] = buttons[id].grow_individual(0,-6,0,-6)
 	queue_redraw()
 
 func _process(_delta: float) -> void:
@@ -102,10 +92,17 @@ func _release(key: int) -> void:
 		_held_keys[key] = count - 1
 
 func touch_begin(index: int, point: Vector2) -> bool:
+	# Global input callbacks must not activate clipped/off-screen scroll content.
+	var scroller := get_parent().get_parent() as ScrollContainer
+	if scroller != null and not scroller.get_global_rect().has_point(global_position+point): return false
 	if touches.has(index):
 		return true
 	for label in buttons:
 		if buttons[label].has_point(point):
+			# Diamond corners share bounding boxes, but circular face targets never
+			# share a hit area. A finger still has exactly one input owner.
+			if label in ["X","Y","A","B"] and point.distance_to(buttons[label].get_center()) > buttons[label].size.x*.5:
+				continue
 			touches[index] = label
 			if BUTTON_KEYS.has(label):
 				_hold(BUTTON_KEYS[label])
@@ -199,10 +196,18 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	for label in buttons:
 		var rect: Rect2 = button_visuals[label]
-		var texture: Texture2D = LANDSCAPE_SHOULDERS[label] if landscape and label in ["L","R"] else ART[label]
+		if label == "START":
+			draw_style_box(preload("res://scripts/ui/seaside_shell_view.gd").skin(preload("res://assets/ui/seaside_shell/button.png"),6),rect)
+			draw_string(_font,rect.position+Vector2(7,28),"Start",HORIZONTAL_ALIGNMENT_CENTER,rect.size.x-14,14,Color("fff0bd"))
+			continue
+		var art_label: String = {"X":"C","Y":"B"}.get(label,label)
+		var texture: Texture2D = LANDSCAPE_SHOULDERS[label] if label in ["L","R"] else ART[art_label]
 		draw_texture_rect(texture,rect,false,Color(.75,.75,.75) if touches.values().has(label) else Color.WHITE)
+		if label in ["X","Y"]:
+			draw_circle(rect.get_center(),rect.size.x*.29,Color("235684") if label == "X" else Color("873548"))
+			draw_string(_font,rect.position+Vector2(0,rect.size.y*.67),label,HORIZONTAL_ALIGNMENT_CENTER,rect.size.x,int(rect.size.y*.48),Color("fff0bd"))
 	var center := stick_origin if stick_touch != -1 else stick_zone.get_center()
-	var radius := minf(stick_radius,stick_zone.size.x*.39)
+	var radius := minf(65,stick_zone.size.x*.5-4)
 	draw_circle(center,radius+4,Color("35202d"))
 	draw_circle(center,radius,Color("2c2d36"))
 	draw_arc(center,radius*.83,0,TAU,48,Color("dca76a"),3,true)

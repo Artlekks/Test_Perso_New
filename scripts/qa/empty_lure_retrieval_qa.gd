@@ -115,6 +115,23 @@ func run() -> void:
 		bait._physics_process(STEP)
 		check((bait.global_position-start).length() > arc_speed, "K remains faster than tuned A/D retrieval")
 		press(&"enter_fishing",false)
+		spawn(Vector2(320,150))
+		var taps_start := bait.global_position
+		var taps_inward: Vector3 = (bait._free_lure_landing_point()-taps_start).normalized()
+		var taps_side := FishingScreenLateralForQA(camera,taps_start,taps_inward)
+		for tap in range(5):
+			press(action,true); bait._physics_process(STEP)
+			press(action,false); fishing._process(STEP)
+			for frame in range(3): bait._physics_process(STEP)
+		var taps_delta := bait.global_position-taps_start
+		check(taps_delta.dot(taps_side)*(-1.0 if action == &"ds_left" else 1.0)>0.0001,"consecutive short taps accumulate requested lateral influence")
+		check(taps_delta.dot(taps_inward)>0.0001,"consecutive taps maintain inward progress")
+		check(absf(bait.reel_steering)>exp(-10.0*3.0*STEP),"empty-lure release has a longer readable tail than old 10/s damping")
+		bait.fight_mode = true
+		bait.reel_steering = 1.0; bait.set_reel_steering(0.0)
+		bait._update_reel_steering_response(STEP)
+		check(is_equal_approx(bait.reel_steering,1.0-bait.reel_steering_return_speed*bait.rod_steering_response_multiplier*STEP),"hooked-fish steering release retains original response")
+		bait.fight_mode = false
 		for held_frames in [1,12,90]:
 			spawn(Vector2(320,150))
 			press(action,true)
@@ -211,6 +228,11 @@ func run() -> void:
 			var initial_player: Vector3 = fishing.player.global_position
 			var target: Vector3 = bait._free_lure_landing_point()
 			var initial_camera_player := camera.unproject_position(initial_player)
+			var initial_distance := camera.global_position.distance_to(initial_player)
+			var initial_fov := camera.fov
+			var initial_pitch_axis := camera.global_basis.z.y
+			var initial_roll_axis := camera.global_basis.x.y
+			var camera_stable := true
 			var returned := [false]
 			bait.returned.connect(func(): returned[0] = true, CONNECT_ONE_SHOT)
 			press(action, true)
@@ -231,8 +253,10 @@ func run() -> void:
 					var tangent := FishingScreenLateralForQA(camera,before,inward)
 					if absf((after-before).dot(tangent)) > 0.00001: near_arc_samples += 1
 				fishing.camera_rig._process(STEP)
+				camera_stable = camera_stable and absf(camera.global_position.distance_to(initial_player)-initial_distance)<.0001 and camera.fov==initial_fov and absf(camera.global_basis.z.y-initial_pitch_axis)<.00001 and absf(camera.global_basis.x.y-initial_roll_axis)<.00001
 			check(returned[0], "%s %s completes retrieval rather than sticking at edge" % [action,pixel])
 			check(stalled == 0, "%s %s makes inward progress every physics tick" % [action,pixel])
+			check(camera_stable,"full retrieval including near shore preserves distance/FOV/pitch/roll")
 			if action != &"enter_fishing": check(near_arc_samples > 5, "near-shore retrieval retains curved movement")
 			check(fishing.player.global_position.is_equal_approx(initial_player), "retrieve cannot move physical player")
 			check(camera.unproject_position(initial_player).distance_to(initial_camera_player) < 2.0, "yaw orbit preserves player composition")

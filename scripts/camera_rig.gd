@@ -440,14 +440,13 @@ func _update_fight_camera_tracking(delta: float) -> void:
 	var pose := _fight_orbit_transform(base,player_world,yaw)
 	var point := _project_fight_orbit(0.0,_optical_pose(pose,camera),camera.get_camera_projection(),player_world,physical)
 	var region := fishing_safe_region()
-	if not fight_camera_tracking.inside(point,region,0.00001):
-		# ANCHORED never translates for a horizontal edge: that belongs to yaw.
-		var translate := was_travel or point.y < region.position.y or point.y > region.end.y
-		if translate:
-			if not was_travel: pose = _bounded_anchor_dolly(pose,camera,physical)
-			var remaining := _project_fight_orbit(0.0,_optical_pose(pose,camera),camera.get_camera_projection(),player_world,physical)
-			if was_travel or remaining.y < region.position.y-0.00001 or remaining.y > region.end.y+0.00001:
-				pose = _bounded_ground_pan(pose,camera,physical,was_travel,delta)
+	if was_travel and not fight_camera_tracking.inside(point,region,0.00001):
+		pose = _bounded_ground_pan(pose,camera,physical,true,delta)
+	# Once ANCHORED, depth/shore/HUD violations must not change distance or
+	# translate the shot. Preserve diagnostics when yaw alone cannot frame it.
+	if not was_travel:
+		framing_constraints_feasible = fight_camera_tracking.inside(
+			_project_fight_orbit(0.0,_optical_pose(pose,camera),camera.get_camera_projection(),player_world,physical),region,0.001)
 	# One final production composition. No pitch, roll, optical offset or bait writes.
 	camera.global_transform = pose
 	if was_travel:
@@ -481,7 +480,8 @@ func _update_free_lure_camera_tracking(delta: float) -> void:
 	var player_world: Vector3 = target.global_position
 	var surface_bait: Vector3 = _fishing_tracking_position()
 	var region: Rect2 = fishing_safe_region()
-	var base: Transform3D = _water_base(Vector2.ZERO)
+	# Keep the same latched pan if a resolved fight hands back an empty lure.
+	var base: Transform3D = _water_base(_water_pan)
 	var projection: Projection = camera.get_camera_projection()
 	var project: Callable = _project_fight_orbit.bind(
 		_optical_pose(base,camera),projection,player_world,surface_bait

@@ -23,7 +23,7 @@ func begin() -> void:
 	tick()
 	check(rig.fishing_camera_state == rig.FishingCameraPresentationState.ANCHORED,"actual player projection latches authored anchor without timer")
 func run() -> void:
-	viewport = SubViewport.new(); viewport.size = Vector2i(640,480); root.add_child(viewport)
+	viewport = SubViewport.new(); viewport.size = Vector2i(960 if OS.get_cmdline_user_args().has("--wide") else 640,480); root.add_child(viewport)
 	player = Node3D.new(); viewport.add_child(player)
 	bait = Node3D.new(); viewport.add_child(bait)
 	rig = Rig.new(); camera = Camera3D.new(); camera.name = "Camera3D"; rig.add_child(camera)
@@ -34,7 +34,7 @@ func run() -> void:
 	for cycle in range(4):
 		for x in [0.12,0.88]:
 			begin()
-			bait.global_position = camera.project_position(Vector2(x*640,220),8)
+			bait.global_position = camera.project_position(Vector2(x*viewport.size.x,220),8)
 			var physical := bait.global_transform
 			var anchor := camera.unproject_position(player.global_position)
 			var pitch := camera.global_basis.z.y
@@ -56,21 +56,23 @@ func run() -> void:
 			check(camera.global_transform.is_equal_approx(pose),"retrieve starts without snapping")
 			tick(600)
 			check(camera.transform.is_equal_approx(neutral) and not rig.fishing_follow_returning,"same exponential return restores exact post-aim pose")
-	# Small vertical violations are solved by ground-plane pan within the anchor.
+	# Established fishing is yaw-only. Old dolly/pan expectations violated the
+	# approved distance contract; retain and expose vertical framing failures.
 	for y in [0.215,0.705]:
 		begin()
 		bait.global_position = camera.project_position(Vector2(320,y*480),8)
 		var physical := bait.global_transform
 		var basis := camera.global_basis
 		var anchor := camera.unproject_position(player.global_position)
+		var pose := camera.global_transform
 		tick(30)
-		check(rig.framing_constraints_feasible,"near-edge vertical constraints are jointly feasible")
+		check(not rig.framing_constraints_feasible,"vertical-only anchored framing incompatibility remains visible")
 		check(camera.global_basis.is_equal_approx(basis),"vertical containment never changes any orientation axis")
-		check(rig.fight_camera_tracking.inside(camera.unproject_position(bait.global_position),rig.fishing_safe_region_pixels(),0.5),"vertical pan keeps bait above HUD/below top")
-		check(rig.fight_camera_tracking.inside(camera.unproject_position(player.global_position)/Vector2(640,480),rig.player_anchor_region(),0.001),"bounded pan preserves player anchor tolerance")
+		check(camera.global_transform.is_equal_approx(pose),"vertical target cannot zoom or translate anchored camera")
+		check(rig.fight_camera_tracking.inside(camera.unproject_position(player.global_position)/Vector2(viewport.size),rig.player_anchor_region(),0.001),"bounded pan preserves player anchor tolerance")
 		check(bait.global_transform == physical,"vertical pan cannot alter physics")
 		check(camera.unproject_position(player.global_position).distance_to(anchor)<0.01,"sightline vertical correction preserves the exact player anchor pixel")
-		check(absf(rig._water_dolly)<=rig.anchored_dolly_limit+.00001,"sightline correction remains within its explicit bound")
+		check(rig._water_dolly == 0.0 and rig._water_pan == Vector2.ZERO,"no anchored sightline or ground correction")
 		rig.return_fishing_follow_to_target(true); tick(600)
 		check(camera.transform.is_equal_approx(neutral),"pan uses approved retrieve response")
 	# Travel starts with an airborne displacement and retains it until an edge.
