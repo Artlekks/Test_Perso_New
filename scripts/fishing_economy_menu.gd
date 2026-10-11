@@ -121,13 +121,13 @@ func open_sell_menu() -> void:
 	_open_menu_in_mode(MODE_SELL)
 
 
-func open_merchant_menu(context: ContextScript, owner: Node, mode: int = MODE_BUY) -> bool:
-	if context == null or owner == null:
+func open_merchant_menu(context: ContextScript, merchant_owner: Node, mode: int = MODE_BUY) -> bool:
+	if context == null or merchant_owner == null:
 		return false
 	var locations := get_node_or_null("/root/WorldLocations")
-	if locations != null and locations.is_current_scene(GameplaySceneRoot.resolve(get_tree())) and not locations.context_belongs_here(context, owner):
+	if locations != null and locations.is_current_scene(GameplaySceneRoot.resolve(get_tree())) and not locations.context_belongs_here(context, merchant_owner):
 		return false
-	return _open_menu_in_mode(mode, context, owner)
+	return _open_menu_in_mode(mode, context, merchant_owner)
 
 
 func open_debug_full_catalog_menu() -> bool:
@@ -135,12 +135,12 @@ func open_debug_full_catalog_menu() -> bool:
 	return _open_menu_in_mode(MODE_BUY, null, null, true)
 
 
-func close_for_merchant(owner: Node) -> void:
-	if _context_owner != null and _context_owner.get_ref() == owner:
+func close_for_merchant(merchant_owner: Node) -> void:
+	if _context_owner != null and _context_owner.get_ref() == merchant_owner:
 		close_menu()
 
 
-func _open_menu_in_mode(mode: int, context: ContextScript = null, owner: Node = null, debug_full: bool = false) -> bool:
+func _open_menu_in_mode(mode: int, context: ContextScript = null, merchant_owner: Node = null, debug_full: bool = false) -> bool:
 	if _open or _access == null or not _can_open():
 		return false
 
@@ -155,7 +155,7 @@ func _open_menu_in_mode(mode: int, context: ContextScript = null, owner: Node = 
 		_access.enable_vertical_slice_full_access()
 	else:
 		_access.clear_access_context()
-	_context_owner = weakref(owner) if owner != null else null
+	_context_owner = weakref(merchant_owner) if merchant_owner != null else null
 
 	_previous_pause = tree.paused
 	_open = true

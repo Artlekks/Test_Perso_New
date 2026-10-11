@@ -51,10 +51,10 @@ func get_fishing_covered_bottom_ratio() -> float:
 	# never changes the available water area underneath an existing lure.
 	var bottom := 0.0
 	for control in [root.get_node("InfoFrame"), message_label]:
-		var transform: Transform2D = control.get_global_transform_with_canvas()
+		var canvas_transform: Transform2D = control.get_global_transform_with_canvas()
 		var rest_shift: Vector2 = root.get_global_transform_with_canvas().basis_xform(_fishing_rest_position - root.position)
 		for corner in [Vector2.ZERO, Vector2(control.size.x, 0), control.size, Vector2(0, control.size.y)]:
-			bottom = maxf(bottom, (transform * corner + rest_shift).y)
+			bottom = maxf(bottom, (canvas_transform * corner + rest_shift).y)
 	return bottom / maxf(get_viewport().get_visible_rect().size.y, 1.0)
 
 

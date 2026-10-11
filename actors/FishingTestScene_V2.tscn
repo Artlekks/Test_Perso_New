@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://bbthseaubq6v1" path="res://assets/ui/fishing_hud/Compass_Face.png" id="14_lu0sf"]
 [ext_resource type="Texture2D" uid="uid://cod3yh2ba75hv" path="res://assets/ui/fishing_hud/Compass_Needle.png" id="15_04ybk"]
 [ext_resource type="Script" uid="uid://boqng0bhxpde6" path="res://scripts/caster.gd" id="15_hrkbp"]
+[ext_resource type="Shader" uid="uid://x1eatirecbnv" path="res://assets/shaders/world_contact_shadow.gdshader" id="15_txgjr"]
 [ext_resource type="Texture2D" uid="uid://dw03tio5j4wnt" path="res://assets/ui/fishing_hud/bar-bar.png" id="16_0e2yj"]
 [ext_resource type="PackedScene" uid="uid://b55g00mjd4bs" path="res://actors/bait_V2.tscn" id="16_cxlon"]
 [ext_resource type="Texture2D" uid="uid://bibjd1xybubtb" path="res://assets/ui/fishing_hud/Compass_Face_Fish.png" id="16_pua6c"]
@@ -96,13 +97,12 @@
 [ext_resource type="Script" uid="uid://rv8ugppryiry" path="res://scripts/world_actor_presentation.gd" id="96_world_actor_presentation"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterDriftAnglerNPC.tscn" id="97_drift_angler_master"]
 [ext_resource type="PackedScene" path="res://actors/FishingMasterGyosilNPC.tscn" id="98_gyosil_master"]
+[ext_resource type="PackedScene" path="res://actors/npc/encounters/pier_apprentice.tscn" id="delivery_pier_apprentice"]
 [ext_resource type="Resource" path="res://data/world/locations/beach.tres" id="location_context"]
 [ext_resource type="Script" uid="uid://t3mpbps4ct73" path="res://scripts/world/playable_location_scene.gd" id="location_script"]
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_14bf342a.tscn" id="population_0"]
 [ext_resource type="PackedScene" path="res://actors/npc/catalog/NPC_placeholder_cac2bbc2.tscn" id="population_1"]
 [ext_resource type="PackedScene" path="res://actors/locations/LocationTravelPoint.tscn" id="travel_point"]
-
-[ext_resource type="PackedScene" path="res://actors/npc/encounters/pier_apprentice.tscn" id="delivery_pier_apprentice"]
 
 [sub_resource type="Environment" id="Environment_l3qxs"]
 background_mode = 1
@@ -147,6 +147,182 @@ albedo_color = Color(0.33489877, 0.20385107, 0.09913743, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_shore_blocker"]
 size = Vector3(19, 4, 0.35)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kt4qy"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blob"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_dlr72"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rdhg8"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_koyid"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nitc7"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_cmetb"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_i4bsw"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1pbgi"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_y5516"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_2je2w"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yq0rd"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4ll8x"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cmgg1"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_k1a05"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_swraw"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ywtl2"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ute8f"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_u362m"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_v1qqd"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_e0qkl"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_g1j0k"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_lypwq"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_y0x53"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4b0sm"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4nddp"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_vvbh6"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hkuew"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_07gd8"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_eluh3"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_fub5q"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0rgj1"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_a61d1"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cdtvi"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.6
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_2ynu6"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.1, 0.1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5sulg"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.6
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_6y3vj"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.1, 0.1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tdihq"]
+render_priority = -120
+shader = ExtResource("15_txgjr")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_tshws"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.33, 0.33)
 
 [sub_resource type="Animation" id="Animation_lu0sf"]
 length = 0.001
@@ -208,7 +384,6 @@ inner_radius = 0.1
 outer_radius = 0.13
 rings = 24
 ring_segments = 24
-
 
 [node name="FishingTestScene_V2" type="Node3D" unique_id=2114470757]
 script = ExtResource("location_script")
@@ -284,9 +459,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.949, 0, 0.609)
 [node name="TripleTriadOpponentNPC" parent="World" unique_id=523790509 instance=ExtResource("73_triad_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0, 0.033282578)
 
-[node name="GroundPresentation" parent="World/TripleTriadOpponentNPC" index="0"]
-process_mode = 3
-process_priority = 240
+[node name="WorldBlobShadow" parent="World/TripleTriadOpponentNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.006, 0.033282578)
+material_override = SubResource("ShaderMaterial_kt4qy")
+mesh = SubResource("PlaneMesh_dlr72")
 
 [node name="BodyCollider" parent="World/TripleTriadOpponentNPC" index="1" unique_id=1090408400]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07442939, 0)
@@ -301,6 +477,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0, 0.6531534)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/BeachCrafterNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/BeachCrafterNPC/GroundPresentation/VisualAnchor" index="0" unique_id=1763916120]
+offset = Vector2(0, 22)
+
+[node name="WorldBlobShadow" parent="World/BeachCrafterNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.006, 0.6531534)
+material_override = SubResource("ShaderMaterial_rdhg8")
+mesh = SubResource("PlaneMesh_koyid")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/BeachCrafterNPC" index="1" unique_id=1538002036]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -313,6 +502,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.78892124, 0, 0.51951283)
 [node name="GroundPresentation" parent="World/FishingCardMakerNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingCardMakerNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingCardMakerNPC/GroundPresentation/VisualAnchor" index="0" unique_id=437527995]
+offset = Vector2(0, 29.5)
+
+[node name="WorldBlobShadow" parent="World/FishingCardMakerNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.78892124, 0.006, 0.51951283)
+material_override = SubResource("ShaderMaterial_nitc7")
+mesh = SubResource("PlaneMesh_cmetb")
+width = 0.5
+depth = 0.5
 
 [node name="CollisionShape3D" parent="World/FishingCardMakerNPC" index="1" unique_id=1054673134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12546021, 0)
@@ -377,6 +579,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterCurrentReaderNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterCurrentReaderNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(-8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterCurrentReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_i4bsw")
+mesh = SubResource("PlaneMesh_1pbgi")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterCurrentReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -389,6 +604,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0, -0.1)
 [node name="GroundPresentation" parent="World/FishingMasterDepthReaderNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingMasterDepthReaderNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterDepthReaderNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterDepthReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_y5516")
+mesh = SubResource("PlaneMesh_2je2w")
+width = 0.5
+depth = 0.5
 
 [node name="BodyCollider" parent="World/FishingMasterDepthReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -403,6 +631,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterStructureHunterNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterStructureHunterNPC/GroundPresentation/VisualAnchor" index="0" unique_id=986316712]
+offset = Vector2(-8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterStructureHunterNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_yq0rd")
+mesh = SubResource("PlaneMesh_4ll8x")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterStructureHunterNPC" index="1" unique_id=78913514]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -415,6 +656,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0, -0.1)
 [node name="GroundPresentation" parent="World/FishingMasterLineFighterNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingMasterLineFighterNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterLineFighterNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterLineFighterNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_cmgg1")
+mesh = SubResource("PlaneMesh_k1a05")
+width = 0.5
+depth = 0.5
 
 [node name="BodyCollider" parent="World/FishingMasterLineFighterNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -429,6 +683,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterDeepwaterVeteranNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterDeepwaterVeteranNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterDeepwaterVeteranNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_swraw")
+mesh = SubResource("PlaneMesh_ywtl2")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterDeepwaterVeteranNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -441,6 +708,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0, -0.1)
 [node name="GroundPresentation" parent="World/FishingMasterSurfaceAnglerNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingMasterSurfaceAnglerNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterSurfaceAnglerNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterSurfaceAnglerNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_ute8f")
+mesh = SubResource("PlaneMesh_u362m")
+width = 0.5
+depth = 0.5
 
 [node name="BodyCollider" parent="World/FishingMasterSurfaceAnglerNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -455,6 +735,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterLandingGuideNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterLandingGuideNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterLandingGuideNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_v1qqd")
+mesh = SubResource("PlaneMesh_e0qkl")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterLandingGuideNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -467,6 +760,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.9, 0, -0.1)
 [node name="GroundPresentation" parent="World/FishingMasterWeatherWatcherNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingMasterWeatherWatcherNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterWeatherWatcherNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(-8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterWeatherWatcherNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.9, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_g1j0k")
+mesh = SubResource("PlaneMesh_lypwq")
+width = 0.5
+depth = 0.5
 
 [node name="BodyCollider" parent="World/FishingMasterWeatherWatcherNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -481,6 +787,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.45, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterTideReaderNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterTideReaderNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterTideReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.45, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_y0x53")
+mesh = SubResource("PlaneMesh_4b0sm")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterTideReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -493,6 +812,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, -0.1)
 [node name="GroundPresentation" parent="World/FishingMasterSignReaderNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingMasterSignReaderNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterSignReaderNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(-8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterSignReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_4nddp")
+mesh = SubResource("PlaneMesh_vvbh6")
+width = 0.5
+depth = 0.5
 
 [node name="BodyCollider" parent="World/FishingMasterSignReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -507,6 +839,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterNatureGuideNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterNatureGuideNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(-8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterNatureGuideNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_hkuew")
+mesh = SubResource("PlaneMesh_07gd8")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterNatureGuideNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -520,6 +865,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0, -0.1)
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/FishingMasterDriftAnglerNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterDriftAnglerNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(-8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterDriftAnglerNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_eluh3")
+mesh = SubResource("PlaneMesh_fub5q")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" parent="World/FishingMasterDriftAnglerNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
 
@@ -532,6 +890,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9062995, 0, -0.1)
 [node name="GroundPresentation" parent="World/FishingMasterGyosilNPC" index="0"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="World/FishingMasterGyosilNPC/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/FishingMasterGyosilNPC/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(8, 21)
+
+[node name="WorldBlobShadow" parent="World/FishingMasterGyosilNPC/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9062995, 0.006, -0.1)
+material_override = SubResource("ShaderMaterial_0rgj1")
+mesh = SubResource("PlaneMesh_a61d1")
+width = 0.5
+depth = 0.5
 
 [node name="BodyCollider" parent="World/FishingMasterGyosilNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -549,6 +920,20 @@ move_speed = 0.19
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/BeachCritter/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/BeachCritter/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(0, 5)
+
+[node name="WorldBlobShadow" parent="World/BeachCritter/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, 0.006, 0.12)
+material_override = SubResource("ShaderMaterial_cdtvi")
+mesh = SubResource("PlaneMesh_2ynu6")
+width = 0.1
+depth = 0.1
+opacity = 0.6
+
 [node name="ProximityArea" parent="World/BeachCritter" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.055645004, 0)
 
@@ -565,6 +950,20 @@ move_speed = 0.19
 process_mode = 3
 process_priority = 240
 
+[node name="VisualAnchor" parent="World/BeachCritter2/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="World/BeachCritter2/GroundPresentation/VisualAnchor" index="0"]
+offset = Vector2(0, 5)
+
+[node name="WorldBlobShadow" parent="World/BeachCritter2/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6136692, 0.006, 0.344522)
+material_override = SubResource("ShaderMaterial_5sulg")
+mesh = SubResource("PlaneMesh_6y3vj")
+width = 0.1
+depth = 0.1
+opacity = 0.6
+
 [node name="ProximityArea" parent="World/BeachCritter2" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.055645004, 0)
 
@@ -577,6 +976,10 @@ metadata/profile_owned_collision = true
 
 [node name="PopulationResident" parent="World" unique_id=1488736 instance=ExtResource("population_1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.45, 0, 1.1)
+metadata/profile_owned_collision = true
+
+[node name="CardsPierApprentice" parent="World" unique_id=1341945928 instance=ExtResource("delivery_pier_apprentice")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 0, 0.55)
 metadata/profile_owned_collision = true
 
 [node name="NPCAnimationAutoplay" type="Node" parent="." unique_id=907469643]
@@ -596,6 +999,20 @@ collision_layer = 1
 [node name="GroundPresentation" parent="Player/CharacterBody3D" index="1"]
 process_mode = 3
 process_priority = 240
+
+[node name="VisualAnchor" parent="Player/CharacterBody3D/GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" parent="Player/CharacterBody3D/GroundPresentation/VisualAnchor" index="0" unique_id=477032395]
+offset = Vector2(0, 10)
+
+[node name="WorldBlobShadow" parent="Player/CharacterBody3D/GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = SubResource("ShaderMaterial_tdihq")
+mesh = SubResource("PlaneMesh_tshws")
+width = 0.33
+depth = 0.33
+ground_offset = 0.05
 
 [node name="BaitSpawner" parent="Player/CharacterBody3D" index="3" unique_id=175473048 node_paths=PackedStringArray("anchor", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
@@ -1204,28 +1621,44 @@ screen_transition = NodePath("../../../UI/FishingHud/ScreenTransition")
 [editable path="World/FishZone_V2"]
 [editable path="World/beach"]
 [editable path="World/TripleTriadOpponentNPC"]
+[editable path="World/TripleTriadOpponentNPC/GroundPresentation"]
 [editable path="World/BeachCrafterNPC"]
+[editable path="World/BeachCrafterNPC/GroundPresentation"]
 [editable path="World/FishingCardMakerNPC"]
+[editable path="World/FishingCardMakerNPC/GroundPresentation"]
 [editable path="World/HarborLockbox"]
 [editable path="World/HarborRequestBoard"]
 [editable path="World/RegionalChampionshipRegistrar"]
 [editable path="World/FishingMasterCurrentReaderNPC"]
+[editable path="World/FishingMasterCurrentReaderNPC/GroundPresentation"]
 [editable path="World/FishingMasterDepthReaderNPC"]
+[editable path="World/FishingMasterDepthReaderNPC/GroundPresentation"]
 [editable path="World/FishingMasterStructureHunterNPC"]
+[editable path="World/FishingMasterStructureHunterNPC/GroundPresentation"]
 [editable path="World/FishingMasterLineFighterNPC"]
+[editable path="World/FishingMasterLineFighterNPC/GroundPresentation"]
 [editable path="World/FishingMasterDeepwaterVeteranNPC"]
+[editable path="World/FishingMasterDeepwaterVeteranNPC/GroundPresentation"]
 [editable path="World/FishingMasterSurfaceAnglerNPC"]
+[editable path="World/FishingMasterSurfaceAnglerNPC/GroundPresentation"]
 [editable path="World/FishingMasterLandingGuideNPC"]
+[editable path="World/FishingMasterLandingGuideNPC/GroundPresentation"]
 [editable path="World/FishingMasterWeatherWatcherNPC"]
+[editable path="World/FishingMasterWeatherWatcherNPC/GroundPresentation"]
 [editable path="World/FishingMasterTideReaderNPC"]
+[editable path="World/FishingMasterTideReaderNPC/GroundPresentation"]
 [editable path="World/FishingMasterSignReaderNPC"]
+[editable path="World/FishingMasterSignReaderNPC/GroundPresentation"]
 [editable path="World/FishingMasterNatureGuideNPC"]
+[editable path="World/FishingMasterNatureGuideNPC/GroundPresentation"]
 [editable path="World/FishingMasterDriftAnglerNPC"]
+[editable path="World/FishingMasterDriftAnglerNPC/GroundPresentation"]
 [editable path="World/FishingMasterGyosilNPC"]
+[editable path="World/FishingMasterGyosilNPC/GroundPresentation"]
 [editable path="World/BeachCritter"]
+[editable path="World/BeachCritter/GroundPresentation"]
 [editable path="World/BeachCritter2"]
+[editable path="World/BeachCritter2/GroundPresentation"]
 [editable path="Player/CharacterBody3D"]
+[editable path="Player/CharacterBody3D/GroundPresentation"]
 [editable path="UI/FishingHud/PowerMeter"]
-
-[node name="CardsPierApprentice" parent="World" instance=ExtResource("delivery_pier_apprentice")]
-position = Vector3(-2.75, 0, 0.55)

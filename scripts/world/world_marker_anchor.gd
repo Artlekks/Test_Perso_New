@@ -14,10 +14,10 @@ var source_labels: Array[Label3D] = []
 var visuals: Array[Label] = []
 var canvas: CanvasLayer
 
-func configure(owner_actor: Node3D, profile: WorldActorPresentationProfile) -> void:
+func configure(owner_actor: Node3D, visual_profile: WorldActorPresentationProfile) -> void:
 	actor = owner_actor
-	self.profile = profile
-	height = profile.marker_height
+	self.profile = visual_profile
+	height = visual_profile.marker_height
 	if canvas != null:
 		update_anchor()
 		return

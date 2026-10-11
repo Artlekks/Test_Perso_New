@@ -118,8 +118,8 @@ func _make_overlay_image(viewport: SubViewport) -> TextureRect:
 
 func get_safe_rect(view_size: Vector2, device_safe: Rect2 = Rect2(), device_size: Vector2 = Vector2.ZERO) -> Rect2:
 	if device_safe.has_area() and device_size.x > 0 and device_size.y > 0:
-		var scale := view_size / device_size
-		return Rect2(device_safe.position * scale, device_safe.size * scale).intersection(Rect2(Vector2.ZERO, view_size))
+		var safe_scale := view_size / device_size
+		return Rect2(device_safe.position * safe_scale, device_safe.size * safe_scale).intersection(Rect2(Vector2.ZERO, view_size))
 	if view_size.x > view_size.y:
 		return Rect2(Vector2(47,0),Vector2(maxf(0,view_size.x-94),maxf(0,view_size.y-21)))
 	return Rect2(Vector2(fallback_safe_insets.x, fallback_safe_insets.y), Vector2(maxf(view_size.x - fallback_safe_insets.x - fallback_safe_insets.z, 0), maxf(view_size.y - fallback_safe_insets.y - fallback_safe_insets.w, 0)))

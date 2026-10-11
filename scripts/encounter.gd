@@ -260,21 +260,21 @@ var _opportunity_owner: WeakRef
 var _external_opportunity_request := false
 var _persistent_opportunity := false
 
-func acquire_opportunity_schedule(owner: Node) -> bool:
-	if owner == null or lifecycle.is_hooked() or bite_active: return false
-	if _opportunity_owner != null and _opportunity_owner.get_ref() != null and _opportunity_owner.get_ref() != owner: return false
-	_opportunity_owner = weakref(owner)
+func acquire_opportunity_schedule(requester: Node) -> bool:
+	if requester == null or lifecycle.is_hooked() or bite_active: return false
+	if _opportunity_owner != null and _opportunity_owner.get_ref() != null and _opportunity_owner.get_ref() != requester: return false
+	_opportunity_owner = weakref(requester)
 	bite_timer.stop()
 	return true
 
-func release_opportunity_schedule(owner: Node, resume_normal := true) -> void:
-	if _opportunity_owner == null or _opportunity_owner.get_ref() != owner: return
+func release_opportunity_schedule(requester: Node, resume_normal := true) -> void:
+	if _opportunity_owner == null or _opportunity_owner.get_ref() != requester: return
 	_opportunity_owner = null
 	_external_opportunity_request = false
 	if resume_normal and lifecycle.is_waiting_for_bite(): bite_timer.start(first_bite_delay)
 
-func request_persistent_opportunity(owner: Node) -> bool:
-	if _opportunity_owner == null or _opportunity_owner.get_ref() != owner or not lifecycle.is_waiting_for_bite(): return false
+func request_persistent_opportunity(requester: Node) -> bool:
+	if _opportunity_owner == null or _opportunity_owner.get_ref() != requester or not lifecycle.is_waiting_for_bite(): return false
 	_external_opportunity_request = true
 	_on_bite_timer_timeout()
 	_external_opportunity_request = false
@@ -293,7 +293,9 @@ var fish_population: Array[FishSpawnEntry] = []
 var fish_zone: Node = null
 var last_spatial_context: Dictionary = {}
 var pending_fish_entry: FishSpawnEntry = null
-var pending_shadow: Node = null
+# A selected ambient shadow may expire or be rebuilt while the bite window is
+# open. Never retain a strong Node reference across that asynchronous interval.
+var pending_shadow: WeakRef = null
 var active_fight_shadow: Node = null
 var active_bait_data: BaitData = null
 var debug_settings = null
@@ -503,7 +505,7 @@ func _on_bite_timer_timeout() -> void:
 				pending_fish_entry = FishSpawnEntry.new()
 				pending_fish_entry.fish = shadow_fish
 				pending_fish_entry.weight = 1.0
-				pending_shadow = shadow_candidate
+				pending_shadow = weakref(shadow_candidate)
 
 		if pending_fish_entry == null:
 			pending_fish_entry = fish_selector.choose(
@@ -681,7 +683,9 @@ func _confirm_hit() -> bool:
 	# from a visible pre-bite fish, that same shadow becomes the fight shadow.
 	# Invisible bites spawn one at the lure so the fish remains readable through
 	# the entire retrieve.
-	_start_active_fight_shadow(pending_shadow)
+	# The selected fish specimen survives even if its ambient visual has expired.
+	# The fight-shadow owner will create a replacement when this resolves to null.
+	_start_active_fight_shadow(_resolve_pending_shadow())
 
 	pending_shadow = null
 	pending_fish_entry = null
@@ -732,9 +736,9 @@ func _resolve_bite_miss(reason: StringName) -> bool:
 	active_bite_timing["hook_ready"] = false
 	active_bite_timing["miss_reason"] = reason
 
-	if is_instance_valid(pending_shadow):
-		if pending_shadow.has_method("abandon_bait_and_dive"):
-			pending_shadow.abandon_bait_and_dive()
+	var interested_shadow: FishShadowActor = _resolve_pending_shadow()
+	if interested_shadow != null:
+		interested_shadow.abandon_bait_and_dive()
 
 	pending_shadow = null
 	pending_fish_entry = null
@@ -845,6 +849,21 @@ func _has_active_visible_pre_bite() -> bool:
 	return false
 
 
+# Resolve the weak link only at the moment it is used. The ambient population
+# can be rebuilt during a bite window, or the actor can have queued deletion.
+# Both cases must fall back to a new fight shadow, not interrupt hooking.
+func _resolve_pending_shadow() -> FishShadowActor:
+	if pending_shadow == null:
+		return null
+	var candidate: Object = pending_shadow.get_ref()
+	if not is_instance_valid(candidate):
+		return null
+	var shadow: FishShadowActor = candidate as FishShadowActor
+	if shadow == null or shadow.is_queued_for_deletion() or not shadow.is_inside_tree():
+		return null
+	return shadow
+
+
 func _start_active_fight_shadow(existing_shadow: Node = null) -> void:
 	var bait := get_tree().get_first_node_in_group("bait") as Node3D
 	if not is_instance_valid(bait) or active_fish == null or active_fish.species == null:
@@ -857,11 +876,17 @@ func _start_active_fight_shadow(existing_shadow: Node = null) -> void:
 		preferred_presence = typed_existing.get_parent()
 
 	if (
-		preferred_presence == null
+		not is_instance_valid(preferred_presence)
+		or preferred_presence.is_queued_for_deletion()
 		or not preferred_presence.has_method("start_fight_shadow")
 	):
+		preferred_presence = null
 		for presence in get_tree().get_nodes_in_group("fish_shadow_presence"):
-			if is_instance_valid(presence) and presence.has_method("start_fight_shadow"):
+			if (
+				is_instance_valid(presence)
+				and not presence.is_queued_for_deletion()
+				and presence.has_method("start_fight_shadow")
+			):
 				preferred_presence = presence
 				break
 

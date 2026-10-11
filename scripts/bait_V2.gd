@@ -1,5 +1,7 @@
 extends Node3D
 
+const FishingScreenLateral = preload("res://scripts/fishing_screen_lateral.gd")
+
 const LureActionRuntimeScript = preload(
 	"res://scripts/lure_action_runtime.gd"
 )
@@ -83,6 +85,29 @@ var fight_return_pull_threshold: float = 0.12
 
 @export_category("Free Reeling")
 @export var free_reel_speed_multiplier: float = 2.5
+## The existing bait scene overrides free_reel_speed_multiplier to 10.0.
+## This runtime ceiling slows *unhooked* retrieval without changing the scene,
+## authored rod/lure stats, or the hooked-fish fight reel.
+@export_range(0.5, 12.0, 0.5) var free_reel_speed_cap: float = 7.0
+## The lure works within a BOF-style visible retrieve corridor, away from
+## the upper-left beach and the bottom power bar. This is not a brick wall:
+## outgoing steering is redirected into travel toward the player instead.
+## The hooked-fish combat solver keeps its own movement rules.
+@export_range(0.025, 0.45, 0.01) var free_reel_left_limit: float = 0.10
+@export_range(0.55, 0.975, 0.01) var free_reel_right_limit: float = 0.90
+@export_range(0.05, 0.55, 0.01) var free_reel_top_limit: float = 0.05
+@export_range(0.55, 0.90, 0.01) var free_reel_bottom_limit: float = 0.77
+## A/D gently retrieves even without K. Holding K retains the full reel speed.
+@export_range(0.05, 1.0, 0.05) var free_steering_retrieve_ratio: float = 0.45
+## Finish close to Ryu's reachable point at the waterline, never simply
+## because the lure touched a screen edge. World units (metres).
+@export_range(0.05, 0.60, 0.01) var free_retrieve_shore_finish_radius: float = 0.25
+## Only close to the shoreline, the lure may enter Ryu's left-side return
+## pocket instead of vanishing at the normal open-water lateral limit.
+@export_range(0.5, 4.0, 0.1) var free_retrieve_near_shore_distance: float = 2.0
+## Internal guard prevents single-pixel spillover at a hard edge.
+const FREE_LURE_GUARD: float = 0.006
+var free_lure_region_provider := Callable()
 
 @export_category("Lure Presentation")
 ## Reference speed used to normalize how quickly the player is working the lure.
@@ -411,6 +436,7 @@ func _physics_process(delta: float) -> void:
 	if simulation_frozen:
 		return
 
+	var before_water_motion: Vector3 = global_position
 	_update_reel_steering_response(delta)
 
 	if state == State.SINKING or state == State.IN_WATER:
@@ -444,8 +470,17 @@ func _physics_process(delta: float) -> void:
 			_update_flying(delta)
 
 		State.SINKING, State.IN_WATER:
-			if reeling:
-				_update_reeling(delta)
+			# BOF-style A/D is a small retrieve, not endless sideways travel.
+			# Do not change hooked-fish counter-steering or the K input state.
+			var steering_retrieve: bool = (
+				not fight_mode
+				and absf(reel_steering_target) > 0.01
+			)
+			if reeling or steering_retrieve:
+				_update_reeling(
+					delta,
+					1.0 if reeling else free_steering_retrieve_ratio
+				)
 			elif not fight_mode:
 				_update_sinking(delta)
 	
@@ -461,6 +496,20 @@ func _physics_process(delta: float) -> void:
 	
 	_enforce_fight_distance()
 	_enforce_shore_boundary()
+
+	# This is a motion redirect, not a hard stop. A/D cannot strand the lure
+	# against the rectangle: when an edge blocks sideways travel, preserve
+	# inward travel (or complete the retrieve at the shoreward boundary).
+	if not fight_mode and (state == State.SINKING or state == State.IN_WATER):
+		var requested_position: Vector3 = global_position
+		if requested_position.distance_squared_to(before_water_motion) > 0.0000000001:
+			var safe_position: Vector3 = _clamp_free_lure_to_screen(
+				before_water_motion, requested_position
+			)
+			global_position.x = safe_position.x
+			global_position.z = safe_position.z
+		if _free_lure_reached_screen_return(before_water_motion, requested_position):
+			_finish_return(reel_target.global_position)
 	
 func _update_current_drift(delta: float) -> void:
 	if (
@@ -817,11 +866,11 @@ func _get_sink_target_y() -> float:
 		depth_ratio
 	)
 
-func _update_reeling(delta: float) -> void:
+func _update_reeling(delta: float, speed_scale: float = 1.0) -> void:
 	if data == null or reel_target == null:
 		return
 
-	var target_position := reel_target.global_position
+	var target_position: Vector3 = reel_target.global_position if fight_mode else _free_lure_landing_point()
 
 	var to_target := Vector3(
 		target_position.x - global_position.x,
@@ -838,11 +887,11 @@ func _update_reeling(delta: float) -> void:
 	var forward := to_target.normalized()
 	var side := Vector3.UP.cross(forward).normalized()
 
-	# Near the player, lateral authority progressively disappears. Far away,
-	# steering is unchanged; close in, the reel direction becomes purely
-	# toward the target.
-	var convergence := _get_reel_convergence(distance)
-	var steering_fade := 1.0 - convergence
+	# The convergence fade is ONLY for hooked fish. An empty lure must
+	# continue its A/D arc right through the near-shore return pocket;
+	# otherwise it suddenly straightens toward Ryu at 2.2 m.
+	var convergence: float = _get_reel_convergence(distance) if fight_mode else 0.0
+	var steering_fade: float = 1.0 - convergence
 
 	var steering_strength := (
 		data.reel_steer_strength
@@ -862,11 +911,16 @@ func _update_reeling(delta: float) -> void:
 		forward
 		+ side * reel_steering * steering_strength * steering_fade
 	).normalized()
-
-	var reel_speed := data.reel_speed * reel_speed_multiplier
-	
 	if not fight_mode:
-		reel_speed *= free_reel_speed_multiplier
+		reel_direction = FishingScreenLateral.retrieve_direction(
+			get_viewport().get_camera_3d(), _free_lure_surface_position(global_position),
+			forward, reel_steering, steering_strength
+		)
+
+	var reel_speed: float = data.reel_speed * reel_speed_multiplier * maxf(speed_scale, 0.0)
+
+	if not fight_mode:
+		reel_speed *= minf(maxf(free_reel_speed_multiplier, 0.0), maxf(free_reel_speed_cap, 0.0))
 	
 	if fight_mode:
 		var multiplier := lerpf(
@@ -881,14 +935,17 @@ func _update_reeling(delta: float) -> void:
 		reel_speed * delta,
 		distance
 	)
-	var proposed_position := (
-		global_position
-		+ reel_direction * move_distance
-	)
-
-	proposed_position = _constrain_waterborne_shore_position(
-		proposed_position
-	)
+	if not fight_mode:
+		# Finite arc steps must also reduce radius (not just their tangent).
+		# This matters near shore and during long/low-FPS Web physics ticks.
+		move_distance = minf(move_distance,distance*maxf(reel_direction.dot(forward),0.0))
+	var proposed_position: Vector3 = global_position + reel_direction * move_distance
+	# On a free retrieve, solve the camera corridor BEFORE the shore plane
+	# removes a lateral move. Otherwise A/D can lodge the lure against the
+	# shore with zero motion, even though it still has room to reel in.
+	if not fight_mode:
+		proposed_position = _clamp_free_lure_to_screen(global_position, proposed_position)
+	proposed_position = _constrain_waterborne_shore_position(proposed_position)
 
 	global_position.x = proposed_position.x
 	global_position.z = proposed_position.z
@@ -910,6 +967,228 @@ func _update_reeling(delta: float) -> void:
 	if _can_complete_active_return(remaining_distance):
 		_finish_return(target_position)
 	
+# -- Screen-space water lure envelope ----------------------------------------
+# Screen limits control physical free-lure travel, NOT where the camera points.
+# Project at the water SURFACE, even for a sinking lure, so depth does not
+# accidentally move it through the lower edge. Never edit the fishing camera.
+func is_free_lure_framing_active() -> bool:
+	return not fight_mode and (state == State.IN_WATER or state == State.SINKING)
+
+
+func _free_lure_screen_region() -> Rect2:
+	var left: float = free_reel_left_limit + FREE_LURE_GUARD
+	var right: float = free_reel_right_limit - FREE_LURE_GUARD
+	var top: float = free_reel_top_limit + FREE_LURE_GUARD
+	var bottom: float = free_reel_bottom_limit - FREE_LURE_GUARD
+	if reel_target != null and not fight_mode:
+		var landing: Vector3 = _free_lure_landing_point()
+		var flat: Vector2 = Vector2(global_position.x, global_position.z)
+		var shore: Vector2 = Vector2(landing.x, landing.z)
+		var distance: float = flat.distance_to(shore)
+		var release_ratio: float = clampf(
+			(free_retrieve_near_shore_distance-distance)
+			/ maxf(free_retrieve_near_shore_distance-0.3, 0.1),
+			0.0, 1.0
+		)
+		# Near Ryu, the water return pocket is left of the power meter.
+		# Far offshore, the original upper-left limit still applies.
+		# Expansion must never narrow the already legal region. The old 19%
+		# pocket moved the left edge rightward when using wider framing bounds.
+		var camera := get_viewport().get_camera_3d()
+		var landing_left := left
+		if camera != null:
+			var viewport_size := camera.get_viewport().get_visible_rect().size
+			if viewport_size.x > 0.0:
+				landing_left = clampf(camera.unproject_position(landing).x / viewport_size.x - FREE_LURE_GUARD, 0.025, left)
+		left = lerpf(left, landing_left, release_ratio)
+	var region := Rect2(Vector2(left, top), Vector2(maxf(right-left, 0.001), maxf(bottom-top, 0.001)))
+	if free_lure_region_provider.is_valid():
+		region = region.intersection(free_lure_region_provider.call())
+	return region
+
+
+func _free_lure_surface_position(world_position: Vector3) -> Vector3:
+	return Vector3(world_position.x, water_y + 0.025, world_position.z)
+
+
+func _free_lure_screen_point(camera: Camera3D, world_position: Vector3, viewport_size: Vector2) -> Vector2:
+	return camera.unproject_position(_free_lure_surface_position(world_position)) / viewport_size
+
+
+func _screen_point_on_water(camera: Camera3D, viewport_point: Vector2) -> Vector3:
+	var ray_origin: Vector3 = camera.project_ray_origin(viewport_point)
+	var ray_direction: Vector3 = camera.project_ray_normal(viewport_point)
+	if absf(ray_direction.y) < 0.00001:
+		return Vector3.INF
+	var distance: float = (water_y + 0.025 - ray_origin.y) / ray_direction.y
+	if distance <= 0.0:
+		return Vector3.INF
+	return ray_origin + ray_direction * distance
+
+
+func _free_lure_landing_point() -> Vector3:
+	# The actual player is on land; the lure must approach the reachable
+	# water-side projection rather than chasing a point through the beach.
+	if reel_target == null:
+		return global_position
+	var destination: Vector3 = reel_target.global_position
+	if shore_boundary != null and shore_boundary.has_method("get_water_side_projection"):
+		destination = shore_boundary.get_water_side_projection(destination)
+	return destination
+
+
+func _free_lure_screen_error(screen: Vector2, region: Rect2) -> float:
+	var dx: float = screen.x - clampf(screen.x, region.position.x, region.end.x)
+	var dy: float = screen.y - clampf(screen.y, region.position.y, region.end.y)
+	return Vector2(dx, dy).length_squared()
+
+
+func _free_lure_retrieve_candidate(
+	camera: Camera3D, viewport_size: Vector2, region: Rect2,
+	from_position: Vector3, proposed_position: Vector3,
+	landing_point: Vector3, requested_direction: Vector2,
+	best_position: Vector3, best_rating: Vector2
+) -> Dictionary:
+	# Return the best legal candidate plus its rating. Ratings sort by
+	# screen-envelope violation first, then proximity to the requested arc.
+	# Reject candidates that do not advance toward the actual landing point.
+	var adjusted: Vector3 = _constrain_waterborne_shore_position(proposed_position)
+	var from_flat: Vector2 = Vector2(from_position.x, from_position.z)
+	var landing_flat: Vector2 = Vector2(landing_point.x, landing_point.z)
+	var adjusted_flat: Vector2 = Vector2(adjusted.x, adjusted.z)
+	var start_distance: float = from_flat.distance_to(landing_flat)
+	var new_distance: float = adjusted_flat.distance_to(landing_flat)
+	if new_distance >= start_distance - 0.000001:
+		return {"point":best_position, "rating":best_rating}
+	var adjusted_surface: Vector3 = _free_lure_surface_position(adjusted)
+	if camera.is_position_behind(adjusted_surface):
+		return {"point":best_position, "rating":best_rating}
+	var projected: Vector2 = _free_lure_screen_point(camera, adjusted, viewport_size)
+	var violation: float = _free_lure_screen_error(projected, region)
+	var achieved_flat: Vector2 = adjusted_flat-from_flat
+	# At a hard edge, substantial inward motion matters more than matching
+	# the old A/D heading. Both factors remain nonzero, preserving the arc.
+	var arc_preference: float = (
+		0.55 * clampf((start_distance-new_distance) / maxf(requested_direction.length(), 0.000001), 0.0, 1.0)
+		+ 0.45 * achieved_flat.normalized().dot(requested_direction.normalized())
+	)
+	var rating: Vector2 = Vector2(-violation, arc_preference)
+	if rating.x > best_rating.x + 0.0000000001 or (
+		absf(rating.x-best_rating.x) <= 0.0000000001 and rating.y > best_rating.y
+	):
+		return {"point":adjusted, "rating":rating}
+	return {"point":best_position, "rating":best_rating}
+
+
+func _clamp_free_lure_to_screen(from_position: Vector3, proposed_position: Vector3) -> Vector3:
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera == null or not camera.current or reel_target == null:
+		return proposed_position
+	var size: Vector2 = camera.get_viewport().get_visible_rect().size
+	if size.x < 1.0 or size.y < 1.0:
+		return proposed_position
+	var region: Rect2 = _free_lure_screen_region()
+	var intended: Vector3 = _constrain_waterborne_shore_position(proposed_position)
+	var intended_surface: Vector3 = _free_lure_surface_position(intended)
+	if not camera.is_position_behind(intended_surface):
+		var intended_screen: Vector2 = _free_lure_screen_point(camera, intended, size)
+		if region.has_point(intended_screen):
+			return intended
+
+	var landing_point: Vector3 = _free_lure_landing_point()
+	var planned_flat: Vector2 = Vector2(
+			proposed_position.x-from_position.x, proposed_position.z-from_position.z
+	)
+	var step_length: float = planned_flat.length()
+	if step_length < 0.000001:
+		return from_position
+	var from_flat: Vector2 = Vector2(from_position.x, from_position.z)
+	var goal_flat: Vector2 = Vector2(landing_point.x, landing_point.z)
+	var inward_flat: Vector2 = goal_flat-from_flat
+	if inward_flat.length_squared() < 0.0000001:
+		return from_position
+	var start_screen: Vector2 = _free_lure_screen_point(camera, from_position, size)
+	var start_error: float = _free_lure_screen_error(start_screen, region)
+	var best_position: Vector3 = from_position
+	var best_rating: Vector2 = Vector2(-start_error, -2.0)
+
+	# Blend away A/D authority BEFORE it becomes a brick wall. Every
+	# candidate consumes the same reel distance and advances inward.
+	# A/D makes an arc while there is room; at the side boundary, the arc
+	# naturally curves back instead of parking the bait at a corner.
+	for index in range(9):
+		var blend: float = float(index) / 8.0
+		var direction: Vector2 = planned_flat.normalized().lerp(
+			inward_flat.normalized(), blend
+		).normalized()
+		if direction.length_squared() < 0.000001:
+			continue
+		var trial: Vector3 = from_position + Vector3(
+			direction.x*step_length, 0.0, direction.y*step_length
+		)
+		var candidate: Dictionary = _free_lure_retrieve_candidate(
+			camera, size, region, from_position, trial, landing_point,
+			planned_flat, best_position, best_rating
+		)
+		best_position = candidate["point"] as Vector3
+		best_rating = candidate["rating"] as Vector2
+
+	# If both forward and steering push toward a blocked projected corner,
+	# test water-plane tangents to that edge. This is the missing behaviour:
+	# sliding inward along the upper-left or lower-right boundary instead of
+	# clipping the whole move to zero. The hard shore plane is tested too.
+	var goal_screen: Vector2 = _free_lure_screen_point(camera, landing_point, size)
+	var screen_directions: Array[Vector2] = [
+		goal_screen-start_screen,
+		Vector2(1.0,0.0), Vector2(-1.0,0.0),
+		Vector2(0.0,1.0), Vector2(0.0,-1.0)
+	]
+	for screen_direction in screen_directions:
+		if screen_direction.length_squared() < 0.0000001:
+			continue
+		# One screen pixel is a *direction probe* only; the physical motion
+		# is still limited to the exact world-space reel distance this frame.
+		var probe_screen: Vector2 = start_screen + screen_direction.normalized() * (1.0 / maxf(size.x,size.y))
+		var probe_water: Vector3 = _screen_point_on_water(camera, probe_screen*size)
+		if not probe_water.is_finite():
+			continue
+		var trial_delta: Vector2 = Vector2(
+			probe_water.x-from_position.x, probe_water.z-from_position.z
+		)
+		if trial_delta.length_squared() < 0.0000001:
+			continue
+		var trial_direction: Vector2 = trial_delta.normalized() * step_length
+		var trial: Vector3 = from_position + Vector3(trial_direction.x, 0.0, trial_direction.y)
+		var candidate: Dictionary = _free_lure_retrieve_candidate(
+			camera, size, region, from_position, trial, landing_point,
+			planned_flat, best_position, best_rating
+		)
+		best_position = candidate["point"] as Vector3
+		best_rating = candidate["rating"] as Vector2
+
+	# An already out-of-bounds landing or camera yaw is allowed to converge
+	# over subsequent frames; never teleport the bait across the beach.
+	# Normal in-bounds movement never creates a new screen violation.
+	if best_rating.x < -start_error - 0.0000000001:
+		return from_position
+	return best_position
+
+
+func _free_lure_reached_screen_return(_from_position: Vector3, _unclamped: Vector3) -> bool:
+	# Reaching x=34%, y=77%, or a right-hand corner NEVER finishes a cast.
+	# Only reaching Ryu's physically reachable water-side landing point does.
+	if fight_mode or reel_target == null:
+		return false
+	if not reeling and absf(reel_steering_target) <= 0.01:
+		return false
+	var water_destination: Vector3 = _free_lure_landing_point()
+	var from_flat: Vector2 = Vector2(global_position.x, global_position.z)
+	var destination_flat: Vector2 = Vector2(water_destination.x, water_destination.z)
+	return from_flat.distance_to(destination_flat) <= maxf(
+		free_retrieve_shore_finish_radius, 0.05
+	)
+
+
 func queue_manual_pull() -> void:
 	if state != State.SINKING and state != State.IN_WATER:
 		return
@@ -1107,6 +1386,11 @@ func _update_manual_pull(delta: float) -> bool:
 
 
 func _update_reel_steering_response(delta: float) -> void:
+	# An empty lure begins curving as soon as A or D is pressed. The
+	# fight steering keeps its established rod-dependent smoothing.
+	if not fight_mode and (state == State.SINKING or state == State.IN_WATER):
+		reel_steering = reel_steering_target
+		return
 	var response_multiplier: float = maxf(
 		rod_steering_response_multiplier,
 		0.01
@@ -1357,7 +1641,7 @@ func get_presentation_snapshot() -> Dictionary:
 	if reeling and not fight_mode:
 		continuous_speed = (
 			maxf(data.reel_speed, 0.0)
-			* maxf(free_reel_speed_multiplier, 0.0)
+			* minf(maxf(free_reel_speed_multiplier, 0.0), maxf(free_reel_speed_cap, 0.0))
 			* maxf(reel_speed_multiplier, 0.0)
 		)
 
@@ -1624,8 +1908,21 @@ func _finish_return(
 		# teleport it onto Ryu/dry land just because the return threshold fired.
 		_enforce_shore_boundary()
 	else:
-		global_position.x = target_position.x
-		global_position.z = target_position.z
+		# For an actual screen-edge return, leave the bait at its last valid
+		# water pixel until Caster removes it. The player's feet are outside
+		# the legal lure envelope and must never flash beneath the power bar.
+		var camera: Camera3D = get_viewport().get_camera_3d()
+		var safe_to_snap: bool = camera == null or not camera.current
+		if not safe_to_snap:
+			var size: Vector2 = camera.get_viewport().get_visible_rect().size
+			if size.x > 0.0 and size.y > 0.0:
+				var target_surface: Vector3 = _free_lure_surface_position(target_position)
+				safe_to_snap = not camera.is_position_behind(target_surface) and _free_lure_screen_region().has_point(
+					_free_lure_screen_point(camera, target_position, size)
+				)
+		if safe_to_snap:
+			global_position.x = target_position.x
+			global_position.z = target_position.z
 
 	reel_steering = 0.0
 	reel_steering_target = 0.0
@@ -1881,6 +2178,14 @@ func twitch_side(direction: float) -> void:
 			return
 
 		_presentation_twitch_age = 0.0
+		# Free lure A/D is a continuous, screen-relative arc handled by
+		# _update_reeling(). The old separate world-space key-down twitch
+		# could make the FIRST press point away from that arc; the second
+		# press then seemed to correct it. Keep snag and presentation signals,
+		# but never layer an inconsistent physical impulse on a free lure.
+		twitch_target_velocity = Vector3.ZERO
+		twitch_velocity = Vector3.ZERO
+		return
 
 	var toward_player := reel_target.global_position - global_position
 	toward_player.y = 0.0

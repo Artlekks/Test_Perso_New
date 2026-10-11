@@ -3,9 +3,22 @@
 [ext_resource type="Script" uid="uid://df2co5hd6wn06" path="res://scripts/triple_triad/triple_triad_opponent_npc.gd" id="1_script"]
 [ext_resource type="SpriteFrames" uid="uid://bvvlfxvfifk6h" path="res://assets/animations/beach_merchant_frames.tres" id="2_frames"]
 [ext_resource type="Resource" uid="uid://duxb3uhvvld7y" path="res://data/triple_triad/opponents/beach_trader.tres" id="4_profile"]
-
+[ext_resource type="Shader" uid="uid://x1eatirecbnv" path="res://assets/shaders/world_contact_shadow.gdshader" id="5_xlwt4"]
 [ext_resource type="PackedScene" path="res://actors/WorldGroundPresentation.tscn" id="ground_component"]
-[ext_resource type="Resource" path="res://data/presentation/merchant.tres" id="ground_profile"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_td5ea"]
+render_priority = -120
+shader = ExtResource("5_xlwt4")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blob"]
+render_priority = -120
+shader = ExtResource("5_xlwt4")
+shader_parameter/opacity = 0.65
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_0o6m6"]
+material = SubResource("ShaderMaterial_blob")
+size = Vector2(0.5, 0.5)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.16
@@ -19,10 +32,15 @@ script = ExtResource("1_script")
 opponent_id = &"beach_trader"
 opponent_profile = ExtResource("4_profile")
 
-[node name="GroundPresentation" parent="." instance=ExtResource("ground_component")]
-profile = ExtResource("ground_profile")
+[node name="GroundPresentation" parent="." unique_id=656712963 instance=ExtResource("ground_component")]
+process_mode = 3
+process_priority = 240
 
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" unique_id=370317126]
+[node name="VisualAnchor" parent="GroundPresentation" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="GroundPresentation/VisualAnchor" index="0" unique_id=370317126]
+offset = Vector2(-8, 21)
 flip_h = true
 billboard = 1
 alpha_cut = 1
@@ -31,7 +49,15 @@ sprite_frames = ExtResource("2_frames")
 animation = &"Stand_Interest"
 autoplay = "Stand_Interest"
 
+[node name="WorldBlobShadow" parent="GroundPresentation/ShadowAnchor" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+material_override = SubResource("ShaderMaterial_td5ea")
+mesh = SubResource("PlaneMesh_0o6m6")
+width = 0.5
+depth = 0.5
+
 [node name="BodyCollider" type="StaticBody3D" parent="." unique_id=1090408400]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05983545, 0.13458091, 0.014434427)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="BodyCollider" unique_id=1748222169]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)

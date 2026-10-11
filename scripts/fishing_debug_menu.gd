@@ -211,7 +211,6 @@ func _refresh_playtest() -> void:
 	var locations := get_node_or_null("/root/WorldLocations")
 	var authored: Array = locations.get_all_locations() if locations != null else []
 	_travel_index = clampi(_travel_index, 0, maxi(0, authored.size() - 1))
-	var destination: String = authored[_travel_index].display_name if not authored.is_empty() else "No authored locations"
 	var rows := ["Developer Mode: %s" % ("ON" if developer != null and developer.enabled else "OFF"), "Travel To...", "Grant Fishing Test Loadout", "Grant Card Test Loadout", "Grant Economy Test Wallet", "Economy Recording...", "Other Debug Pages..."]
 	if _travel_submenu:
 		rows.clear()

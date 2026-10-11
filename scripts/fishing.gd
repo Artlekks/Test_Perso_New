@@ -176,6 +176,7 @@ var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
 
 func _ready() -> void:
+	caster.set_free_lure_region_provider(camera_rig.free_lure_viewport_region)
 	# Read-only camera exclusion geometry; presentation/mechanics are unchanged.
 	if camera_rig != null and camera_rig.has_method("set_fishing_hud_geometry"):
 		camera_rig.set_fishing_hud_geometry(power_meter_view,depth_meter_view)
@@ -630,12 +631,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 		if event.is_action_pressed("ds_left"):
+			# Match the held-input arc on the very first key-down frame.
+			caster.set_reel_steering(-1.0)
 			technique_detector.record_pulse(&"left")
 			caster.twitch_bait(-1.0)
 			encounter.add_lure_tension(0.05)
 			return
 
 		if event.is_action_pressed("ds_right"):
+			caster.set_reel_steering(1.0)
 			technique_detector.record_pulse(&"right")
 			caster.twitch_bait(1.0)
 			encounter.add_lure_tension(0.05)

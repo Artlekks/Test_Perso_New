@@ -67,9 +67,9 @@ func _build_visual() -> void:
 	bottle.name = "OrangeSalvageBottle"
 	bottle.texture = SALVAGE_BOTTLE_TEXTURE
 	bottle.pixel_size = 0.009
-	bottle.billboard = 1
-	bottle.texture_filter = 0
-	bottle.alpha_cut = 1
+	bottle.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	bottle.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	bottle.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	bottle.alpha_scissor_threshold = 0.5
 	bottle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	bottle.position = Vector3(0.0, 0.035, 0.0)

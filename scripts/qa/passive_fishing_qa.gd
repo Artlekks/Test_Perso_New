@@ -152,22 +152,38 @@ func run() -> void:
 	print("Passive Fishing QA: %d/%d; failures=%s" % [checks-failures.size(),checks,failures])
 	quit(0 if failures.is_empty() else 1)
 
+class DriftCurrent extends FishingCurrentService:
+	var velocity := Vector3.ZERO
+	func smooth_current_velocity(_previous: Vector3, _world: Vector3, _delta: float) -> Vector3:
+		return velocity
+
+func water_point(camera: Camera3D, bait: Node3D, pixel: Vector2) -> Vector3:
+	var origin := camera.project_ray_origin(pixel)
+	var direction := camera.project_ray_normal(pixel)
+	var point: Vector3 = origin+direction*((bait.water_y+0.025-origin.y)/direction.y)
+	point.y = bait.global_position.y
+	return point
+
 func passive_camera_drift() -> void:
 	var bait: Node3D = fishing.caster.active_bait
+	var rig: Node3D = fishing.camera_rig
+	var camera: Camera3D = rig.get_node("Camera3D")
 	var original := bait.global_transform
 	var original_mode := bait.process_mode
-	bait.process_mode=Node.PROCESS_MODE_DISABLED
-	var rig: Node = fishing.camera_rig
-	var camera: Camera3D = rig.get_node("Camera3D")
+	var original_current = bait.current_service
+	var original_action = bait.lure_action_runtime
+	bait.process_mode = Node.PROCESS_MODE_DISABLED
+	bait.lure_action_runtime = null
+	var size := Vector2(shell.gameplay_viewport.size)
 	rig.fight_camera_tracking.reset()
-	camera.transform=rig._fight_base_camera_transform
+	camera.transform = rig._fight_base_camera_transform
 	var shot := camera.global_transform
+	# Empty-lure camera comfort/physical visibility differ from hooked-fish
+	# framing. Use points on the actual water plane, not aerial depth-12 rays.
 	for side in [-1,1]:
 		for frame in range(60):
-			# Deterministic physical drift inside the wider outer threshold,
-			# with the real Passive lease and IN_WATER owner continuously active.
-			var x: float = (.23 if side<0 else .77)+sin(frame*.1)*.02
-			bait.global_position=camera.project_position(Vector2(x,.4)*Vector2(shell.gameplay_viewport.size),12)
+			var x: float = (.23 if side<0 else .60)+sin(frame*.1)*.02
+			bait.global_position = water_point(camera,bait,Vector2(x,.4)*size)
 			await process_frame
 		check(shell.mode==shell.Mode.PASSIVE and shell.passive.state==shell.passive.State.FOCUS,"Passive drift retains activity/focus")
 		check(rig._fight_tracking_active and not rig.fight_camera_tracking.tracking,"Passive water owner remains active without dead-zone correction")
@@ -175,21 +191,34 @@ func passive_camera_drift() -> void:
 	for side in [-1,1]:
 		var held := camera.global_transform
 		var held_offsets := Vector2(camera.h_offset,camera.v_offset)
-		for x in ([.5,.25,.181] if side < 0 else [.5,.75,.819]):
-			bait.global_position = camera.project_position(Vector2(x,.45)*Vector2(shell.gameplay_viewport.size),12)
+		for x in ([.5,.25,.18] if side<0 else [.5,.60,.65]):
+			bait.global_position = water_point(camera,bait,Vector2(x,.45)*size)
 			for frame in range(3): await process_frame
-			check(camera.global_transform == held and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(held_offsets),"Passive safe journey holds yaw and optical framing")
+			check(camera.global_transform==held and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(held_offsets),"Passive safe journey holds yaw and optical framing")
+		var drift := DriftCurrent.new()
+		fishing.add_child(drift)
+		bait.current_service = drift
+		bait.global_position = water_point(camera,bait,Vector2(.12 if side<0 else .84,.45)*size)
 		var before_yaw: float = rig.fight_camera_tracking.yaw
-		bait.global_position = camera.project_position(Vector2(.08 if side < 0 else .94,.45)*Vector2(shell.gameplay_viewport.size),12)
-		for frame in range(90): await process_frame
-		check((rig.fight_camera_tracking.yaw-before_yaw)*side<0,"Passive opposite edge applies correct yaw before immediate containment/hold")
-		check(rig.fight_camera_tracking.inside(camera.unproject_position(bait.global_position),rig.fishing_safe_region_pixels(),0.5),"Passive edge cannot remain outside rectangle")
+		var escaped := false
+		for frame in range(90):
+			drift.velocity = preload("res://scripts/fishing_screen_lateral.gd").right(camera,bait.get_surface_position(),Vector3.RIGHT)*float(side)*0.35
+			bait._physics_process(1.0/60.0)
+			await process_frame
+			var pixel := camera.unproject_position(bait.get_surface_position())/size
+			if not rig.free_lure_viewport_region().has_point(pixel): escaped = true
+		check((rig.fight_camera_tracking.yaw-before_yaw)*side<0 if side>0 else is_equal_approx(rig.fight_camera_tracking.yaw,before_yaw),"Passive uses modest right yaw and retains quiet left framing")
+		check(not escaped,"Passive current cannot push physical lure out of viewport/HUD guard")
+		bait.current_service = original_current
+		drift.free()
 		var panned := camera.global_transform
 		var panned_offsets := Vector2(camera.h_offset,camera.v_offset)
-		for x in [.181,.5,.819]:
-			bait.global_position = camera.project_position(Vector2(x,.45)*Vector2(shell.gameplay_viewport.size),12)
+		for x in [.18,.5,.65]:
+			bait.global_position = water_point(camera,bait,Vector2(x,.45)*size)
 			for frame in range(3): await process_frame
-			check(camera.global_transform == panned and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(panned_offsets),"Passive safe reentry and cross-center freeze yaw/framing immediately")
+			check(camera.global_transform==panned and Vector2(camera.h_offset,camera.v_offset).is_equal_approx(panned_offsets),"Passive safe reentry and cross-center freeze yaw/framing immediately")
 	check(not fishing.encounter.bite_active,"drift test cannot bypass focus opportunity timer")
-	bait.global_transform=original
-	bait.process_mode=original_mode
+	bait.current_service = original_current
+	bait.lure_action_runtime = original_action
+	bait.global_transform = original
+	bait.process_mode = original_mode

@@ -152,7 +152,7 @@ func _apply_authored_sprite() -> void:
 	# Ground pickups are decals/objects on the beach plane, never upright
 	# billboards. Keep them a few millimetres above the authored node origin
 	# to avoid z-fighting while still reading as physically on the sand.
-	gather_sprite.billboard = 0
+	gather_sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	# Ground objects share the transparent queue with billboard bodies. Draw
 	# before the global character priority range (-90..90), without writing
 	# opaque/scissor depth that would cut holes in those bodies.

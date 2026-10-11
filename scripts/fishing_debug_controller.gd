@@ -13,9 +13,10 @@ const FishingDebugSettingsScript = preload(
 const FishingRegressionHarnessScript = preload(
 	"res://scripts/fishing_regression_harness.gd"
 )
-const FishingDebugMenuScene = preload(
-	"res://actors/FishingDebugMenu.tscn"
-)
+## Load the optional development scene at composition time. Preloading its
+## script-bearing PackedScene while editor scripts are being recompiled can
+## re-enter FishingDebugMenu's script load and invalidate the scene as Busy.
+const FishingDebugMenuPath := "res://actors/FishingDebugMenu.tscn"
 
 var settings = null
 var regression_harness: FishingRegressionHarness = null
@@ -78,7 +79,11 @@ func configure(
 	if _encounter != null and _encounter.has_method("set_debug_settings"):
 		_encounter.set_debug_settings(settings)
 
-	debug_menu = FishingDebugMenuScene.instantiate()
+	var menu_scene: PackedScene = load(FishingDebugMenuPath)
+	if menu_scene == null:
+		push_error("FishingDebugController: development menu scene could not load")
+		return
+	debug_menu = menu_scene.instantiate()
 	add_child(debug_menu)
 	debug_menu.configure(
 		_loadout,

@@ -71,8 +71,8 @@ func update_directional_view() -> void:
 		var prefix: String = profile.directional_animation_prefixes.get(directional_pose, "")
 		_directions = ViewDirection.animation_map(animated.sprite_frames, prefix, profile.directional_aliases.get(directional_pose, {}))
 	var camera := get_viewport().get_camera_3d()
-	var basis := camera.global_basis if camera != null else Basis.IDENTITY
-	var selected := ViewDirection.resolve(_directions, ViewDirection.sector(world_facing, basis))
+	var camera_basis := camera.global_basis if camera != null else Basis.IDENTITY
+	var selected := ViewDirection.resolve(_directions, ViewDirection.sector(world_facing, camera_basis))
 	if selected.is_empty(): return
 	var animation := StringName(selected.animation)
 	animated.flip_h = selected.get("flip_h", false)

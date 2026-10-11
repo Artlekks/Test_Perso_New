@@ -74,6 +74,11 @@ var current_total_depth: float = 0.0
 var active_rod_data: RodData = null
 var current_service: FishingCurrentService = null
 var mastery_service = null
+var free_lure_region_provider := Callable()
+
+func set_free_lure_region_provider(provider: Callable) -> void:
+	free_lure_region_provider = provider
+	if is_instance_valid(active_bait): active_bait.free_lure_region_provider = provider
 
 # During a successful hooked return, keep the bait node alive for a brief
 # landing presentation instead of deleting it the instant it reaches Ryu.
@@ -173,6 +178,7 @@ func perform_cast(
 
 	active_bait = bait_scene.instantiate()
 	add_child(active_bait)
+	active_bait.free_lure_region_provider = free_lure_region_provider
 
 	if bait_data != null:
 		active_bait.set_data(bait_data)

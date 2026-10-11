@@ -31,9 +31,9 @@ static func card_test_deck(catalog: Resource, owned: Array, policy: Resource, ra
 		if policy.can_use_card(card, rank): legal.append(card)
 	legal.sort_custom(func(a, b): return int(a.deck_cost) < int(b.deck_cost))
 	if legal.size() >= 5:
-		var cost := 0
-		for index in range(5): cost += int(legal[index].deck_cost)
-		if cost <= budget: return [] # Preserve the real collection/deck workflow.
+		var existing_cost := 0
+		for index in range(5): existing_cost += int(legal[index].deck_cost)
+		if existing_cost <= budget: return [] # Preserve the real collection/deck workflow.
 	var candidates: Array = policy.build_starting_collection(catalog)
 	candidates = candidates.filter(func(card): return policy.can_use_card(card, rank))
 	if candidates.size() < 5: return []
@@ -69,20 +69,20 @@ func _ready() -> void:
 
 func can_mutate_test_save() -> bool:
 	# Explicit allowlist, rather than assuming all custom userdata is disposable.
-	var name := str(ProjectSettings.get_setting("application/config/custom_user_dir_name", ""))
-	var known_test_name := name == "FishingGame-MobilePortraitPlaytest" or name.begins_with("CodexDeveloperPlaytestQA-")
-	return enabled and _isolated_mobile_save_authorized and ProjectSettings.get_setting("application/config/use_custom_user_dir", false) and known_test_name and (OS.get_name() == "Web" or OS.get_user_data_dir().get_file() == name)
+	var user_dir_name := str(ProjectSettings.get_setting("application/config/custom_user_dir_name", ""))
+	var known_test_name := user_dir_name == "FishingGame-MobilePortraitPlaytest" or user_dir_name.begins_with("CodexDeveloperPlaytestQA-")
+	return enabled and _isolated_mobile_save_authorized and ProjectSettings.get_setting("application/config/use_custom_user_dir", false) and known_test_name and (OS.get_name() == "Web" or OS.get_user_data_dir().get_file() == user_dir_name)
 
 func grant_loadout(kind: String) -> Dictionary:
 	if not can_mutate_test_save():
 		return {"success": false, "reason": "Blocked: loadouts require isolated MobilePortraitPlaytest save + DEV"}
-	var session = self.session if self.session != null else get_parent()
+	var active_session = self.session if self.session != null else get_parent()
 	match kind:
 		"fishing":
 			var catalog = preload("res://data/bof4/catalogs/all_content.tres")
-			for lure in catalog.tackle.lure_catalog.lures: session.inventory.grant_lure(lure, 2, true)
-			for rod in catalog.tackle.rods: session.inventory.grant_rod(rod, 1, true)
-		"wallet": session.inventory.set_zenny(10000, true)
+			for lure in catalog.tackle.lure_catalog.lures: active_session.inventory.grant_lure(lure, 2, true)
+			for rod in catalog.tackle.rods: active_session.inventory.grant_rod(rod, 1, true)
+		"wallet": active_session.inventory.set_zenny(10000, true)
 		"cards":
 			var scene = preload("res://scripts/gameplay_scene_root.gd").resolve(get_tree())
 			var game = scene.find_child("TripleTriadGame", true, false) if scene != null else null

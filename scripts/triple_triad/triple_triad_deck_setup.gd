@@ -1843,17 +1843,17 @@ func _accept_input() -> void:
 
 func _outline(outlines: Array[Panel], parent: Control, index: int, at: Vector2, footprint: Vector2, active: bool) -> void:
 	while outlines.size() <= index:
-		var border := Panel.new()
-		border.name = "SelectionOutline%d" % outlines.size()
-		border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		border.z_index = 1000
+		var created_border := Panel.new()
+		created_border.name = "SelectionOutline%d" % outlines.size()
+		created_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		created_border.z_index = 1000
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color.TRANSPARENT
 		style.border_color = Color(1.0, 0.88, 0.30)
 		style.set_border_width_all(3)
-		border.add_theme_stylebox_override("panel", style)
-		parent.add_child(border)
-		outlines.append(border)
+		created_border.add_theme_stylebox_override("panel", style)
+		parent.add_child(created_border)
+		outlines.append(created_border)
 	var border := outlines[index]
 	border.position = at
 	border.size = footprint

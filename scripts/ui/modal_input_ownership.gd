@@ -10,12 +10,12 @@ var _await_release := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-static func release_modal(owner: Node) -> void:
-	var gate := owner.get_node_or_null("/root/ModalInputGate")
+static func release_modal(caller: Node) -> void:
+	var gate := caller.get_node_or_null("/root/ModalInputGate")
 	if gate != null: gate.arm()
 	# Consume before unpausing: the closing event must not resume traversal in
 	# exploration in this same dispatch, including SubViewport forwarding.
-	owner.get_viewport().set_input_as_handled()
+	caller.get_viewport().set_input_as_handled()
 
 func arm() -> void:
 	_closed_frame = Engine.get_process_frames()
@@ -42,9 +42,9 @@ func observe_release(event: InputEvent) -> void:
 		_await_release = false
 		_held.clear()
 
-static func gameplay_accepts(owner: Node, event: InputEvent) -> bool:
-	var gate := owner.get_node_or_null("/root/ModalInputGate")
-	if gate == null: return not owner.get_tree().paused
+static func gameplay_accepts(caller: Node, event: InputEvent) -> bool:
+	var gate := caller.get_node_or_null("/root/ModalInputGate")
+	if gate == null: return not caller.get_tree().paused
 	gate.observe_release(event)
-	return not owner.get_tree().paused and not gate._await_release \
+	return not caller.get_tree().paused and not gate._await_release \
 		and gate._closed_frame != Engine.get_process_frames()

@@ -8,16 +8,16 @@ var campaign_guide: Node
 var _controllers: Array[WeakRef] = []
 var _card_hosts: Array[WeakRef] = []
 
-static func ensure(owner: Node) -> Node:
-	var layer := owner.get_node_or_null("DevelopmentLayer")
+static func ensure(game_owner: Node) -> Node:
+	var layer := game_owner.get_node_or_null("DevelopmentLayer")
 	if layer == null:
 		layer = load("res://scripts/development/fishing_development_layer.gd").new()
 		layer.name = "DevelopmentLayer"
-		layer.session = owner
-		owner.add_child(layer)
+		layer.session = game_owner
+		game_owner.add_child(layer)
 		var developer = load("res://scripts/developer_playtest_service.gd").new()
 		developer.name = "DeveloperPlaytestService"
-		developer.session = owner
+		developer.session = game_owner
 		layer.add_child(developer)
 		RuntimeAccessPolicy.bind(developer)
 	return layer
