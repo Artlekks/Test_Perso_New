@@ -14,7 +14,7 @@ const KEYBOARD_HEIGHT := 60
 @export var max_dock_width := 900
 @export var collapsed_width := 28
 const WIDGET_HEIGHT := 96
-const SHELL_COLOR := Color(0.16, 0.16, 0.18)
+const SHELL_COLOR := Color("493343") # desktop parchment/burgundy shell backing
 const PLATFORM_STATUS_INTERVAL := 0.05
 var mode := Mode.ACTIVE
 var window_state := WindowState.FLOATING
@@ -47,6 +47,11 @@ var buttons: Dictionary = {}
 var platform = preload("res://scripts/desktop/companion_window_platform.gd").new()
 var passive: Node
 var _forwarding := false
+# Tracks only the placement of an already-owned FishingMenu surface; no menu
+# controller or gameplay state is duplicated here.
+var _lower_menu_active := false
+var _last_menu_state := false
+var _last_menu_page := -1
 var _bound_layers: Dictionary = {}
 var docked: bool:
 	get: return window_state in [WindowState.DOCK_LEFT,WindowState.DOCK_RIGHT]
@@ -278,6 +283,17 @@ func _divider_input(event: InputEvent) -> void:
 		_drag_x = DisplayServer.mouse_get_position().x
 		_drag_width = dock_width
 func _process(delta: float) -> void:
+	# The menu's own controller emits/owns its navigation. Reconfigure only
+	# when its visibility changes; do not resize or move the world every frame.
+	var fishing_menu := _fishing_menu()
+	var menu_open := fishing_menu != null and fishing_menu.is_open()
+	var menu_page := int(fishing_menu._page) if menu_open else -1
+	# Changing Equip/Data/Options also changes the right-sized presentation;
+	# no world camera or gameplay state is recomputed except at real resize.
+	if menu_open != _last_menu_state or menu_page != _last_menu_page:
+		_last_menu_state = menu_open
+		_last_menu_page = menu_page
+		_layout()
 	if _dock_drag:
 		if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT): _dock_drag = false
 		else:
@@ -331,12 +347,31 @@ func _layout() -> void:
 	shell.visible = not collapsed
 	Surface.resize_mobile_world(game,gameplay_viewport,geometry.resolution)
 	if is_instance_valid(game): preload("res://scripts/mobile/mobile_world_ground_extension.gd").ensure(game,geometry.resolution.x == 960)
+	# A lower contextual menu is possible only when both its width and its
+	# height are useful. Short/small windows retain the established overlay.
+	_lower_menu_active = _is_fishing_menu_open() and bool(geometry.lower_menu_available) and not collapsed
+	geometry["context_menu"] = _lower_menu_active
 	shell.configure(geometry)
 	image.position = geometry.world.position
 	image.size = geometry.world.size
 	image.visible = not collapsed
-	menu_image.position = Vector2.ZERO
-	menu_image.size = Vector2(get_window().size)
+	if _is_fishing_menu_open() and not collapsed:
+		var menu_rect: Rect2 = geometry.menu if _lower_menu_active else geometry.world
+		var active_menu := _fishing_menu()
+		var authored := active_menu != null and active_menu._page != FishingMenu.Page.OPTIONS
+		# Authored menu is 640x480; the options editor uses the taller
+		# scrollable canvas. The skin covers the whole destination, with no
+		# arbitrarily centered beige margins.
+		var target_size := Vector2i(640,480) if authored else Surface.MENU_SIZE
+		if menu_viewport.size != target_size: menu_viewport.size = target_size
+		menu_image.stretch_mode = TextureRect.STRETCH_SCALE
+		menu_image.position = menu_rect.position
+		menu_image.size = menu_rect.size
+	else:
+		if menu_viewport.size != Surface.MENU_SIZE: menu_viewport.size = Surface.MENU_SIZE
+		menu_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		menu_image.position = Vector2.ZERO
+		menu_image.size = Vector2(get_window().size)
 	menu_image.visible = not collapsed
 	keyboard_strip.hide()
 	var labels := ["Float","Dock Left","Dock Right","Collapse"]
@@ -369,9 +404,11 @@ func _layout() -> void:
 	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
 func _input(event: InputEvent) -> void:
 	if menu_image != null and menu_image.is_visible_in_tree():
-		var factor := minf(menu_image.size.x/menu_viewport.size.x,menu_image.size.y/menu_viewport.size.y)
-		var footprint := Vector2(menu_viewport.size)*factor
-		var display := Rect2(menu_image.global_position+(menu_image.size-footprint)*.5,footprint)
+		var display := Rect2(menu_image.global_position,menu_image.size)
+		if menu_image.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED:
+			var factor := minf(menu_image.size.x/menu_viewport.size.x,menu_image.size.y/menu_viewport.size.y)
+			var footprint := Vector2(menu_viewport.size)*factor
+			display = Rect2(menu_image.global_position+(menu_image.size-footprint)*.5,footprint)
 		if preload("res://scripts/input/controls_settings.gd").route_pointer(self,event,display,display): return
 	if get_node("/root/InputBindings").capture_action != &"": return
 	if mode == Mode.PASSIVE and event.is_action_pressed("enter_fishing") and not event.is_echo() and not get_tree().paused:
@@ -434,6 +471,14 @@ func dock_from_shell(next: int) -> void:
 func _world_shape_locked() -> bool:
 	var fishing := game.get_node_or_null("Game/Fishing") if is_instance_valid(game) else null
 	return fishing != null and fishing.game_mode != null and fishing.game_mode.is_fishing()
+
+func _fishing_menu() -> FishingMenu:
+	if not is_instance_valid(game): return null
+	return game.find_child("FishingMenu",true,false) as FishingMenu
+
+func _is_fishing_menu_open() -> bool:
+	var fishing_menu := _fishing_menu()
+	return fishing_menu != null and fishing_menu.is_open()
 
 func _has_surface_modal() -> bool:
 	if not is_instance_valid(game): return false

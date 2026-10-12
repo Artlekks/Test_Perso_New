@@ -6,6 +6,7 @@ var host: Node
 var state := {}
 var portrait := false
 var desktop_compact := false
+var desktop_mode := false
 var readable_font: FontFile = FONT.duplicate()
 
 func _ready() -> void:
@@ -101,6 +102,9 @@ func icon(index: int, center: Vector2) -> void:
 
 func _draw() -> void:
 	if state.is_empty(): return
+	if desktop_mode:
+		_draw_desktop()
+		return
 	if not portrait:
 		_draw_landscape()
 		return
@@ -168,3 +172,47 @@ func _draw_landscape() -> void:
 		if i == 4 and readable_font.get_string_size(value,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x > text_box.size.x-6:
 			value = value.replace("m/s","")
 		line(value,text_box,19,14)
+
+func _draw_desktop() -> void:
+	# Environmental order and available values are identical to mobile.
+	# Compact desktop uses two rows rather than crushing names into pixels.
+	var boxes := cells()
+	if desktop_compact:
+		var top_end := size.x-8.0
+		draw_line(Vector2(8,44),Vector2(top_end,44),Color("b99571"),1.0)
+		for i in range(1,3):
+			draw_line(Vector2(boxes[i].position.x,6),Vector2(boxes[i].position.x,37),Color("b99571"),1.0)
+		for i in range(4,6):
+			draw_line(Vector2(boxes[i].position.x,47),Vector2(boxes[i].position.x,79),Color("b99571"),1.0)
+	else:
+		for i in range(1,6):
+			draw_line(Vector2(boxes[i].position.x,7),Vector2(boxes[i].position.x,size.y-7),Color("b99571"),1.0)
+	var location := boxes[0]
+	if state.preview != null:
+		var side := 31.0 if desktop_compact else 40.0
+		draw_texture_rect(state.preview,Rect2(location.position,Vector2(side,side)),false)
+		location.position.x += side+5.0
+		location.size.x -= side+5.0
+	var place: String = str(state.spot)
+	var area: String = str(state.location)
+	if desktop_compact:
+		line(place,location,14,15)
+		line(area,location,30,14)
+	else:
+		line(place,location,20,18)
+		line(area,location,41,15)
+	for i in range(1,6):
+		var box := boxes[i]
+		var center := box.position+Vector2(11,12 if desktop_compact else 19)
+		if i == 2:
+			draw_circle(center,7,Color("873548"),false,1)
+			draw_line(center,center+Vector2(0,-5),Color("873548"),1)
+			draw_line(center,center+Vector2(4,0),Color("873548"),1)
+		else: icon({1:1,3:2,4:3,5:4}[i],center)
+		var value := str(state.get({1:"weather",2:"clock",3:"wind",4:"current",5:"tide"}[i],"N/A"))
+		if i == 4: value = value.replace(" m/s","m/s")
+		if i == 5:
+			value = "None" if value == "No Tide" else value.trim_suffix(" Tide")
+			if box.size.x < 95: value = {"Incoming":"In","Outgoing":"Out"}.get(value,value)
+		var text_box := Rect2(box.position+Vector2(24,0),box.size-Vector2(24,0))
+		line(value,text_box,19 if desktop_compact else 30,15 if desktop_compact else 17)

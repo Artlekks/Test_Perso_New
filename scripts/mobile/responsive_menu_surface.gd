@@ -182,8 +182,23 @@ func _inventory_outputs() -> Dictionary:
 	var selected := source.get_selected_items()
 	return {"list": source, "index": int(selected[0]) if not selected.is_empty() else 0, "detail": detail, "page": page}
 
+func _desktop_uses_authored_menu() -> bool:
+	# The original J-menu scene already contains real Equip, Data and Help
+	# panels, selectors and fish artwork. Do not replace it with a second,
+	# generic, text-only UI on native keyboard desktop. Mobile keeps the
+	# touch-friendly responsive surface. Settings keeps its input editor.
+	return kind == "inventory" and not Portrait.mobile(controller) and (
+		not controller.is_open() or controller._page != FishingMenu.Page.OPTIONS
+	)
+
 func _process(_delta: float) -> void:
 	if authored == null: return
+	if _desktop_uses_authored_menu():
+		restore_authored()
+		controller.selector_layer.modulate = Color.WHITE
+		if visible: hide()
+		return
+	if not visible: show()
 	_mask_authored()
 	if kind == "inventory": controller.selector_layer.modulate = Color(1, 1, 1, 0)
 	position = Vector2(16,12)

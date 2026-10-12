@@ -21,6 +21,12 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# The original menu is a separate CanvasLayer, while Input.get_vector()
+	# polls *global* keyboard state. Even if a scene overrides process mode,
+	# UI navigation must never move the fisherman under a modal menu.
+	if get_tree().paused:
+		velocity = Vector3.ZERO
+		return
 	# Movement is disabled during Fishing,
 	# but Ryu still needs to visually react to camera rotation.
 	if not movement_enabled:

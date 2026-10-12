@@ -119,7 +119,9 @@ func configure(next: Dictionary) -> void:
 	if desktop:
 		dashboard.position = regions.dashboard.position
 		dashboard.size = regions.dashboard.size
-		dashboard.visible = regions.dashboard.size.y >= 150 and (host.docked or regions.resolution.x == 640)
+		# A requested Equip/Data/J menu replaces the compact information area;
+		# it never renders on top of the protected gameplay rectangle.
+		dashboard.visible = regions.dashboard.size.y >= 70
 		var window_width := 84.0 if regions.compact else 132.0
 		environment_strip.size.x=regions.info.size.x-window_width
 		var window_box := Rect2(regions.info.end-Vector2(window_width,regions.info.size.y),Vector2(window_width,regions.info.size.y))
@@ -128,16 +130,12 @@ func configure(next: Dictionary) -> void:
 		utility["Dock Left"].text="< Dock" if regions.compact else "<"
 		utility["Dock Right"].text="> Dock" if regions.compact else ">"
 		utility.Float.text="Float" if not host.docked else "Undock" if regions.compact else "Out"
-		var ids := ["Mode","Window","Equipment","Menu","Settings"]
+		var ids := ["Active","Passive","Equipment","Menu","Settings"]
 		var toolbar: Rect2 = regions.toolbar
-		if regions.compact:
-			_row(ids,Rect2(toolbar.position,Vector2(toolbar.size.x,34)))
-			desktop_actions.position=toolbar.position+Vector2(0,38)
-			desktop_actions.size=Vector2(toolbar.size.x,28)
-		else:
-			_row(ids,toolbar)
-			desktop_actions.position=Vector2(6,toolbar.position.y)
-			desktop_actions.size=Vector2(minf(192,toolbar.position.x-12),28)
+		var control_width := minf(toolbar.size.x,400.0)
+		_row(ids,Rect2(toolbar.end-Vector2(control_width,toolbar.size.y-3),Vector2(control_width,toolbar.size.y-3)))
+		desktop_actions.position = toolbar.position
+		desktop_actions.size = Vector2(maxf(1.0,toolbar.size.x-control_width),30)
 		# Only show this optional strip when explicitly enabled. Its actions,
 		# user-configured key labels, and click/hold behavior remain intact.
 		desktop_actions.visible = show_desktop_shortcuts
@@ -150,6 +148,7 @@ func configure(next: Dictionary) -> void:
 		environment_strip.size = Vector2(regions.info.size.x-window_width,regions.info.size.y)
 		environment_strip.portrait = false
 		environment_strip.desktop_compact = regions.compact
+		environment_strip.desktop_mode = true
 		equipment_drawer.position = Vector2(regions.world.end.x-minf(240,regions.world.size.x-20)-10,regions.world.position.y+10)
 		equipment_drawer.size = Vector2(minf(240,regions.world.size.x-20),0)
 	else:
@@ -163,6 +162,7 @@ func configure(next: Dictionary) -> void:
 		environment_strip.position = regions.info.position
 		environment_strip.size = regions.info.size
 		environment_strip.portrait = regions.variant == "mobile_portrait"
+		environment_strip.desktop_mode = false
 		equipment_drawer.position = regions.world.position+Vector2(10,10)
 		equipment_drawer.size = Vector2(minf(240,regions.world.size.x-20),0)
 		if regions.get("fallback","") == "edge_overlay":
@@ -281,9 +281,17 @@ func _draw() -> void:
 			draw_style_box(skin(PAPER),regions.controls.intersection(regions.safe))
 			draw_line(regions.controls.position+Vector2(regions.controls.size.x*.5,56),regions.controls.intersection(regions.safe).end-Vector2(regions.controls.size.x*.5,54),Color("c99d69"),1)
 	var paper := skin(PAPER)
+	if str(regions.variant).begins_with("desktop"):
+		# Fill only the shell backing, never the world texture. The parchment
+		# also covers spare client space when the window is unusually tall.
+		draw_style_box(paper, Rect2(Vector2(0,regions.info.end.y),
+			Vector2(regions.safe.size.x,maxf(0,regions.safe.size.y-regions.info.end.y))))
 	for key in ["header","info","gear","frame","controls","modes","docks","menus","left","right","toolbar"]:
 		if str(regions.variant).begins_with("mobile") and key in ["controls","left","right"]: continue
 		if regions.has(key): draw_style_box(paper,regions[key])
+	if str(regions.get("variant","")).begins_with("desktop") and bool(regions.get("context_menu",false)) and regions.menu.has_area():
+		# Full-width menu host. The authored J canvas is composited on top.
+		draw_style_box(paper,regions.menu)
 	if regions.has("header"): _text("Seaside Companion",regions.header,24)
 	if str(regions.variant).begins_with("mobile"): return
 
