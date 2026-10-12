@@ -181,16 +181,4 @@ func _is_player_body(body: Node) -> bool:
 
 
 func _is_confirm(event: InputEvent) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return (
-		key_event.pressed
-		and not key_event.echo
-		and (
-			key_event.keycode == KEY_K
-			or key_event.physical_keycode == KEY_K
-			or key_event.keycode == KEY_ENTER
-			or key_event.physical_keycode == KEY_ENTER
-		)
-	)
+	return event.is_pressed() and not event.is_echo() and (UniversalInput.matches_key(event,KEY_K) or UniversalInput.matches_key(event,KEY_ENTER))

@@ -428,10 +428,7 @@ func _pressed(event: InputEvent) -> bool:
 
 
 func _is_key(event: InputEvent, keycode: int) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return key_event.keycode == keycode or key_event.physical_keycode == keycode
+	return UniversalInput.matches_key(event,keycode)
 
 
 func _is_confirm(event: InputEvent) -> bool:

@@ -15,6 +15,8 @@ var equipment_drawer: PanelContainer
 var equipment_text: Label
 var equipment_open := false
 var equipment_pinned := false
+var dashboard: Control
+var desktop_actions: Control
 static func skin(texture: Texture2D, margin := 12) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
 	s.texture = texture
@@ -24,8 +26,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	for id in ["Menu","Inventory","Journal","Settings","Equipment","Active","Passive","Cards","Dock Left","Dock Right","Minimize","Maximize","Close"]:
-		var b := Button.new()
+	for id in ["Menu","Inventory","Journal","Settings","Equipment","Active","Passive","Cards","Dock Left","Dock Right","Minimize","Maximize","Close","Float","Collapse","Mode","Window"]:
+		var b: Button = MenuButton.new() if id == "Window" else Button.new()
 		b.text = {"Minimize":"-","Maximize":"[]","Close":"X"}.get(id,id)
 		if id.to_lower() in ["inventory","journal","cards","settings"]:
 			b.icon = load("res://assets/ui/seaside_shell/"+id.to_lower()+".png")
@@ -45,7 +47,11 @@ func _ready() -> void:
 		caption.add_theme_font_size_override("font_size",11)
 		b.add_child(caption)
 		b.tooltip_text = id
-		b.pressed.connect(_activate.bind(id))
+		if id == "Window":
+			var popup := (b as MenuButton).get_popup()
+			for title in ["Dock Left","Dock Right","Float","Collapse"]: popup.add_item(title)
+			popup.id_pressed.connect(func(index: int): _activate(["Dock Left","Dock Right","Float","Collapse"][index]))
+		else: b.pressed.connect(_activate.bind(id))
 		utility[id] = b
 		add_child(b)
 	var shortcut_layer := CanvasLayer.new()
@@ -93,22 +99,52 @@ func _ready() -> void:
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			drawer_row.add_child(button)
 	equipment_drawer.hide()
+	if host.get("window_state") != null:
+		dashboard = preload("res://scripts/desktop/companion_dashboard.gd").new()
+		dashboard.host = host
+		add_child(dashboard)
+		desktop_actions=preload("res://scripts/input/desktop_action_controls.gd").new()
+		desktop_actions.host=host; add_child(desktop_actions)
 func configure(next: Dictionary) -> void:
 	if regions == next: return
 	regions = next
 	for b in utility.values(): b.hide()
-	environment_strip.visible = str(regions.variant).begins_with("mobile")
+	environment_strip.visible = true
 	equipment_drawer.hide()
 	var desktop := str(regions.variant).begins_with("desktop")
 	if desktop:
-		_row(["Active","Passive"],regions.modes)
-		_row(["Dock Left","Dock Right"],regions.docks)
-		var header: Rect2 = regions.header
-		_row(["Minimize","Maximize","Close"],Rect2(header.end-Vector2(100,header.size.y),Vector2(100,header.size.y)))
-		var menu: Rect2 = regions.menus
-		if regions.variant == "desktop_wide":
-			_column(["Inventory","Journal","Cards","Settings"],Rect2(menu.position+Vector2(10,28),menu.size-Vector2(20,38)))
-		else: _row(["Inventory","Journal","Cards","Settings"],Rect2(menu.position+Vector2(6,24),menu.size-Vector2(12,30)))
+		dashboard.position = regions.dashboard.position
+		dashboard.size = regions.dashboard.size
+		dashboard.visible = regions.dashboard.size.y >= 150 and (host.docked or regions.resolution.x == 640)
+		var window_width := 84.0 if regions.compact else 132.0
+		environment_strip.size.x=regions.info.size.x-window_width
+		var window_box := Rect2(regions.info.end-Vector2(window_width,regions.info.size.y),Vector2(window_width,regions.info.size.y))
+		if regions.compact: _column(["Dock Left","Dock Right","Float"],window_box)
+		else: _row(["Dock Left","Dock Right","Float"],window_box)
+		utility["Dock Left"].text="< Dock" if regions.compact else "<"
+		utility["Dock Right"].text="> Dock" if regions.compact else ">"
+		utility.Float.text="Float" if not host.docked else "Undock" if regions.compact else "Out"
+		var ids := ["Mode","Window","Equipment","Menu","Settings"]
+		var toolbar: Rect2 = regions.toolbar
+		if regions.compact:
+			_row(ids,Rect2(toolbar.position,Vector2(toolbar.size.x,34)))
+			desktop_actions.position=toolbar.position+Vector2(0,38)
+			desktop_actions.size=Vector2(toolbar.size.x,28)
+		else:
+			_row(ids,toolbar)
+			desktop_actions.position=Vector2(6,toolbar.position.y)
+			desktop_actions.size=Vector2(minf(192,toolbar.position.x-12),28)
+		# Native caption buttons retain minimize/maximize/close; collapse is
+		# available in the toolbar without replacing Windows decorations.
+		utility.Collapse.text = "Hide"
+		utility.Window.text = "Dock"
+		utility.Mode.text = "Active" if host.mode == host.Mode.ACTIVE else "Passive"
+		environment_strip.position = regions.info.position
+		environment_strip.size = Vector2(regions.info.size.x-window_width,regions.info.size.y)
+		environment_strip.portrait = false
+		environment_strip.desktop_compact = regions.compact
+		equipment_drawer.position = Vector2(regions.world.end.x-minf(240,regions.world.size.x-20)-10,regions.world.position.y+10)
+		equipment_drawer.size = Vector2(minf(240,regions.world.size.x-20),0)
 	else:
 		var geometry := Layout.landscape_controls(regions)
 		utility.Settings.z_index = 21
@@ -137,7 +173,7 @@ func _place(id: String, box: Rect2) -> void:
 	b.position = box.position
 	b.custom_minimum_size = Vector2.ZERO
 	b.add_theme_font_size_override("font_size",12 if box.size.x<145 else 18)
-	b.text = {"Minimize":"-","Maximize":"[]","Close":"X","Equipment":"Select"}.get(id,id)
+	b.text = {"Minimize":"-","Maximize":"[]","Close":"X","Equipment":"Gear" if str(regions.get("variant","")).begins_with("desktop") else "Select"}.get(id,id)
 	var caption: Label = b.get_node("Caption")
 	caption.hide()
 	if box.size.x<105 and b.icon != null:
@@ -147,13 +183,8 @@ func _place(id: String, box: Rect2) -> void:
 		caption.size = Vector2(box.size.x,18)
 		caption.show()
 	if id in ["Active","Passive"]:
-		b.text = ""
-		caption.text = "Active\nPlay in real-time" if id == "Active" else "Passive\nFish while you work"
-		caption.position = Vector2(3,box.size.y*.19)
-		caption.size = box.size-Vector2(6,6)
-		caption.add_theme_font_size_override("font_size",12 if box.size.x<145 else 16)
-		caption.show()
-	if box.size.x<60:
+		b.text = id
+	if box.size.x<60 or box.size.y<40:
 		caption.hide()
 		for key in ["normal","hover","pressed"]: b.add_theme_stylebox_override(key,skin(BUTTON,6))
 		b.add_theme_constant_override("icon_max_width",16)
@@ -168,9 +199,9 @@ func _process(delta: float) -> void:
 	_refresh = .25
 	snapshot = _read_state()
 	if environment_strip.visible: environment_strip.refresh(snapshot)
-	if str(regions.get("variant","")).begins_with("mobile") and host._has_surface_modal() and not equipment_pinned:
+	if host._has_surface_modal() and not equipment_pinned:
 		equipment_open = false
-	equipment_drawer.visible = str(regions.get("variant","")).begins_with("mobile") and equipment_open and not host._has_surface_modal()
+	equipment_drawer.visible = equipment_open and not host._has_surface_modal()
 	if equipment_drawer.visible:
 		equipment_text.text = "Equipment%s\nRod: %s\nLure/bait: %s x%d" % [" (pinned)" if equipment_pinned else "",snapshot.rod,snapshot.bait,snapshot.count]
 		# A short portrait world can be shorter than the drawer's content minimum.
@@ -178,13 +209,14 @@ func _process(delta: float) -> void:
 		equipment_drawer.position.y = maxf(regions.world.position.y,minf(regions.world.position.y+10,regions.world.end.y-equipment_drawer.size.y))
 	_update_shortcut()
 	if is_instance_valid(host) and str(regions.get("variant","")).begins_with("desktop"):
+		utility.Mode.text = "Active" if host.mode == host.Mode.ACTIVE else "Passive"
 		utility.Active.modulate = Color.WHITE if host.mode == host.Mode.ACTIVE else Color(.65,.65,.65)
 		utility.Passive.modulate = Color.WHITE if host.mode == host.Mode.PASSIVE else Color(.65,.65,.65)
 		utility["Dock Left"].disabled = not host.platform.supported()
 		utility["Dock Right"].disabled = not host.platform.supported()
 	queue_redraw()
 func _read_state() -> Dictionary:
-	var result := {"location":"No location","spot":"","rod":"No rod","bait":"No bait","count":0,"time":Time.get_time_string_from_system().left(5)}
+	var result := {"location":"No location","spot":"","rod":"No rod","bait":"No bait","count":0,"time":"N/A"}
 	var locations := get_node_or_null("/root/WorldLocations")
 	if locations != null and locations.current_location != null:
 		var c = locations.current_location
@@ -208,7 +240,12 @@ func _read_state() -> Dictionary:
 func _activate(id: String) -> void:
 	if not is_instance_valid(host): return
 	match id:
-		"Equipment": equipment_open = not equipment_open
+		"Float": host.set_window_state(host.WindowState.FLOATING)
+		"Collapse": host.toggle_collapse()
+		"Equipment":
+			equipment_open = not equipment_open
+			equipment_drawer.visible = equipment_open and not host._has_surface_modal()
+		"Mode": host.cycle_mode()
 		"Active": host.set_mode(host.Mode.ACTIVE)
 		"Passive": host.set_mode(host.Mode.PASSIVE)
 		"Dock Left": host.dock_from_shell(host.WindowState.DOCK_LEFT)
@@ -237,39 +274,11 @@ func _draw() -> void:
 			draw_style_box(skin(PAPER),regions.controls.intersection(regions.safe))
 			draw_line(regions.controls.position+Vector2(regions.controls.size.x*.5,56),regions.controls.intersection(regions.safe).end-Vector2(regions.controls.size.x*.5,54),Color("c99d69"),1)
 	var paper := skin(PAPER)
-	for key in ["header","info","gear","frame","controls","modes","docks","menus","left","right"]:
+	for key in ["header","info","gear","frame","controls","modes","docks","menus","left","right","toolbar"]:
 		if str(regions.variant).begins_with("mobile") and key in ["controls","left","right"]: continue
 		if regions.has(key): draw_style_box(paper,regions[key])
 	if regions.has("header"): _text("Seaside Companion",regions.header,24)
 	if str(regions.variant).begins_with("mobile"): return
-	var info: Rect2 = regions.info
-	var preview_width := minf(info.size.y-16,info.size.x*.27)
-	var preview: Texture2D = snapshot.get("preview")
-	if preview != null: draw_texture_rect(preview,Rect2(info.position+Vector2(8,8),Vector2(preview_width,info.size.y-16)),false)
-	var x := info.position.x+preview_width+10
-	var fs := 24 if info.size.x > 500 else 12
-	_text(str(snapshot.get("spot","")),Rect2(x,info.position.y+maxf(4,info.size.y*.06),info.end.x-x,28),fs)
-	_text(str(snapshot.get("location","")),Rect2(x,info.position.y+info.size.y*.36,info.end.x-x,28),fs)
-	_text("Local " + str(snapshot.get("time","")),Rect2(x,info.position.y+info.size.y*.67,info.end.x-x,28),12)
-	var gear: Rect2 = regions.gear
-	_text("ROD",gear,12)
-	_text("BAIT",Rect2(gear.position+Vector2(gear.size.x*.5,0),gear.size*.5),12)
-	var half := gear.size.x*.5
-	var icon_size := minf(half-20,maxf(0,gear.size.y*.66-20))
-	if icon_size>12:
-		draw_texture_rect(preload("res://assets/ui/seaside_shell/rod.png"),Rect2(gear.position+Vector2(10,24),Vector2(icon_size,icon_size)),false)
-		var bait_icon: Texture2D = snapshot.get("bait_icon")
-		if bait_icon != null: draw_texture_rect(bait_icon,Rect2(gear.position+Vector2(half+10,24),Vector2(icon_size,icon_size)),false)
-	_gear_caption(str(snapshot.get("rod","")),Rect2(gear.position+Vector2(0,gear.size.y*.72),Vector2(half,gear.size.y*.28)))
-	_gear_caption(str(snapshot.get("bait","")),Rect2(gear.position+Vector2(half,gear.size.y*.72),Vector2(half,gear.size.y*.28)))
-	var count := str(snapshot.get("count",0))
-	var badge_width := ThemeDB.fallback_font.get_string_size(count,HORIZONTAL_ALIGNMENT_LEFT,-1,12).x+6
-	var badge := Rect2(gear.position+Vector2(gear.size.x-badge_width-8,maxf(20,gear.size.y*.48)),Vector2(badge_width,18))
-	draw_rect(badge,Color("292a32"))
-	draw_string(ThemeDB.fallback_font,badge.position+Vector2(3,14),count,HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("fff0bd"))
-	if regions.has("menus"): _text("Menu",regions.menus,12)
-	if regions.has("controls") and str(regions.variant).begins_with("desktop"):
-		_text("Controls",regions.controls,12)
 
 func _shortcut_key() -> int:
 	if not is_instance_valid(host) or not is_instance_valid(host.game): return 0

@@ -219,8 +219,5 @@ func _is_down(event: InputEvent) -> bool:
 	return _is_key(event, KEY_S) or _is_key(event, KEY_DOWN)
 
 
-func _is_key(event: InputEvent, key: Key) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return key_event.keycode == key or key_event.physical_keycode == key
+func _is_key(event: InputEvent, key: int) -> bool:
+	return UniversalInput.matches_key(event,key)

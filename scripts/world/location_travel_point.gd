@@ -33,7 +33,7 @@ func _exit_tree() -> void:
 			_locations.access_changed.disconnect(_refresh_label)
 
 func is_world_interaction_available(event: InputEvent) -> bool:
-	if not (event is InputEventKey) or not event.pressed or event.echo or event.keycode not in [KEY_K, KEY_ENTER]:
+	if not event.is_pressed() or event.is_echo() or not (UniversalInput.matches_key(event,KEY_K) or UniversalInput.matches_key(event,KEY_ENTER)):
 		return false
 	var service := get_node("/root/WorldLocations")
 	if service.transitioning or not service.get_unlocked_destinations().has(String(destination_id)):

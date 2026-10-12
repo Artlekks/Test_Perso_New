@@ -214,6 +214,7 @@ func _control_scroll_seam_clear(point: Vector2) -> bool:
 	return true
 
 func _input(event: InputEvent) -> void:
+	if overlay_image != null and preload("res://scripts/input/controls_settings.gd").route_pointer(self,event,overlay_image.get_global_rect(),gameplay_window.get_global_rect()): return
 	# On short portraits, an empty center seam scrolls the lower control
 	# surface. Never claim a stick/button gesture or emit gameplay input.
 	if shell.regions.get("fallback", "") == "scroll_controls":
@@ -378,7 +379,7 @@ func _bind_session_layers() -> void:
 		if not layer.has_meta("development_status") and layer.get_parent() != gameplay_viewport: layer.reparent(gameplay_viewport)
 
 func _send_key(event: InputEventKey) -> void:
-	if event.physical_keycode in [KEY_W, KEY_A, KEY_S, KEY_D]:
+	if event.get_meta("canonical_key",event.physical_keycode) in [KEY_W, KEY_A, KEY_S, KEY_D]:
 		# Stick analog actions are owned by the adapter. Dispatch their canonical
 		# keys for legacy navigation without adding a full-strength digital source.
 		get_viewport().push_input(event, true)
@@ -404,7 +405,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event is InputEventScreenTouch and not event.pressed: _window_touches.erase(event.index)
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventKey and not _forwarding:
+	if (event is InputEventKey or event is InputEventAction or event is InputEventJoypadButton or event is InputEventJoypadMotion) and not _forwarding:
 		_forwarding = true
 		gameplay_viewport.push_input(event, true)
 		_forwarding = false
@@ -415,6 +416,7 @@ func _queue_action(event: InputEventAction) -> void:
 	_dispatch_action.call_deferred(event)
 
 func _dispatch_action(event: InputEventAction) -> void:
+	if get_node("/root/InputBindings").consume_virtual_action(event): return
 	if event.pressed:
 		Input.action_press(event.action, event.strength)
 	else:

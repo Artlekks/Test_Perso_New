@@ -20,7 +20,7 @@ static func mobile(node: Node) -> bool:
 	return OS.has_feature("web") or OS.get_name() in ["iOS", "Android"]
 
 static func hints(node: Node, text: String) -> String:
-	if not mobile(node): return text
+	if not mobile(node): return UniversalInput.format_action_hints(text)
 	return text.replace("ENTER", "START").replace("K:", "A:").replace("I:", "B:").replace("J:", "MENU:").replace("Q/E", "L/R").replace("WASD", "Stick")
 
 static func rect(node: Control, box: Rect2) -> void:

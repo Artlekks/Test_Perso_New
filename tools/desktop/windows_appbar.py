@@ -45,6 +45,9 @@ u.GetWindowLongPtrW.argtypes = [w.HWND, c.c_int]
 u.GetWindowLongPtrW.restype = c.c_ssize_t
 u.SetWindowLongPtrW.argtypes = [w.HWND, c.c_int, c.c_ssize_t]
 u.SetWindowLongPtrW.restype = c.c_ssize_t
+u.GetClientRect.argtypes = [w.HWND, c.POINTER(w.RECT)]
+u.GetDpiForWindow.argtypes = [w.HWND]
+u.GetDpiForWindow.restype = w.UINT
 u.GetWindowRect.argtypes = [w.HWND, c.POINTER(w.RECT)]
 u.IsWindow.argtypes = [w.HWND]
 u.DestroyWindow.argtypes = [w.HWND]
@@ -184,10 +187,10 @@ class AppBar:
             self.data.rect.left = self.data.rect.right - width
         s.SHAppBarMessage(3, c.byref(self.data))
         r = self.data.rect
-        height = min(int(command["height"]), r.bottom-r.top)
+        height = r.bottom-r.top
         # Borderless Godot client = full native outer footprint. No DPI conversion
         # guess: both processes are per-monitor aware and operate in physical px.
-        u.SetWindowPos(target, None, r.left, r.top+(r.bottom-r.top-height)//2,
+        u.SetWindowPos(target, None, r.left, r.top,
                        width, height, 0x14)
         self.dirty = False  # ignore notifications from our own negotiation
         return self.status(target)
@@ -196,7 +199,9 @@ class AppBar:
         info = monitor_info(target)
         actual = w.RECT()
         u.GetWindowRect(target, c.byref(actual))
-        return {"registered": self.registered, "work_area": rect_value(info.work),
+        client = w.RECT()
+        u.GetClientRect(target, c.byref(client))
+        return {"client": rect_value(client), "dpi": u.GetDpiForWindow(target), "registered": self.registered, "work_area": rect_value(info.work),
                 "monitor": rect_value(info.monitor), "reservation": rect_value(self.data.rect),
                 "window": rect_value(actual), "baseline": self.baseline,
                 "sequence": self.command.get("sequence", 0), "edge":self.command.get("edge","right"), "error": ""}

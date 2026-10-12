@@ -34,9 +34,9 @@ const COMMAND_SURRENDER_CANCEL := &"surrender_cancel"
 func action_for_event(event: InputEvent, allow_campaign_qa: bool) -> StringName:
 	if not is_pressed_event(event):
 		return ACTION_NONE
-	var key_event := event as InputEventKey
+	var key_event := event
 	if _matches_key(key_event, KEY_F10):
-		if allow_campaign_qa and key_event.shift_pressed:
+		if allow_campaign_qa and key_event is InputEventKey and key_event.shift_pressed:
 			return ACTION_CAMPAIGN_QA
 		return ACTION_DEBUG
 	if _matches_key(key_event, KEY_K) or _matches_key(key_event, KEY_ENTER):
@@ -60,9 +60,9 @@ func action_for_event(event: InputEvent, allow_campaign_qa: bool) -> StringName:
 
 func is_pressed_event(event: InputEvent) -> bool:
 	return (
-		event is InputEventKey
-		and (event as InputEventKey).pressed
-		and not (event as InputEventKey).echo
+		event.is_pressed()
+		and not event.is_echo()
+		and (event is InputEventKey or event is InputEventAction or event is InputEventJoypadButton)
 	)
 
 
@@ -171,5 +171,5 @@ func route_surrender_confirmation(
 	return COMMAND_NONE
 
 
-func _matches_key(event: InputEventKey, key: Key) -> bool:
-	return event.keycode == key or event.physical_keycode == key
+func _matches_key(event: InputEvent, key: int) -> bool:
+	return UniversalInput.matches_key(event,key)

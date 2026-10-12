@@ -34,7 +34,7 @@ func check_result_center(label: String) -> void:
 	var logical: Vector2 = view.root.position + view.composed_result_rect().get_center()
 	var physical: Vector2 = display.position + logical * display.size / Vector2(shell.SURFACE)
 	check(physical.distance_to(display.get_center()) < 0.01,label+" catch group centered excluding chrome/letterbox")
-	if label.ends_with("360") or label.ends_with("620"):
+	if label.ends_with("360") or label.ends_with("620") or label.ends_with("320") or label.ends_with("900"):
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://build/desktop-docking/catch-"+label+".png")
 	view.hide_catch()
@@ -57,7 +57,7 @@ func run() -> void:
 	FileAccess.open("res://build/desktop-docking/native-fixture.json",FileAccess.WRITE).store_string(JSON.stringify({"command":shell.platform.command_path,"status":shell.platform.status_path,"baseline":baseline,"pid":OS.get_process_id()}))
 	for edge in [shell.WindowState.DOCK_RIGHT,shell.WindowState.DOCK_LEFT,shell.WindowState.DOCK_RIGHT]:
 		shell.set_window_state(edge)
-		for width in [480,620,360,540,480]:
+		for width in [320,480,620,900,360,540,480]:
 			shell.set_dock_width(width)
 			await settle()
 			var state := await status_ready(true)
@@ -65,6 +65,7 @@ func run() -> void:
 			print("NATIVE APPBAR SAMPLE: ",JSON.stringify(state))
 			check(state.reservation[2]-state.reservation[0] == width,"live dock width %d" % width)
 			check(state.work_area[0] == state.reservation[2] if edge == shell.WindowState.DOCK_LEFT else state.work_area[2] == state.reservation[0],"ordinary desktop excludes selected edge")
+			check(state.window[1] == state.reservation[1] and state.window[3] == state.reservation[3],"dock fills negotiated work-area height")
 			check(state.window[0] == state.reservation[0] and state.window[2] == state.reservation[2],"companion remains attached")
 			check(shell.game.get_instance_id() == game_id and root.get_node("FishingSessionServices").get_instance_id() == session_id,"same session through resizing")
 			check(shell.gameplay_viewport.size == Vector2i(640,480) and not paused,"canonical session retained")
@@ -84,6 +85,7 @@ func run() -> void:
 		shell.set_dock_width(480)
 		await status_ready(true)
 		var before := Rect2i(root.position,root.size)
+		var before_resolution: Vector2i = shell.gameplay_viewport.size
 		shell.set_mode(99)
 		check(Rect2i(root.position,root.size)==before and shell.mode==shell.Mode.ACTIVE,"invalid legacy mode recovers without shrinking")
 		shell.toggle_collapse()
@@ -93,6 +95,7 @@ func run() -> void:
 		check(collapsed.work_area == baseline and not collapsed.registered,"collapse releases full work area")
 		check(collapsed.window[2]-collapsed.window[0] == shell.collapsed_width and collapsed.window[3]-collapsed.window[1] == shell.WIDGET_HEIGHT,"collapse leaves only tiny edge widget")
 		check(shell.effective_window_state()==edge,"collapse remembers edge")
+		check(shell.gameplay_viewport.size == before_resolution,"collapse preserves world shape")
 		shell.toggle_collapse()
 		await settle()
 		var expanded := await status_ready(true)
@@ -115,6 +118,15 @@ func run() -> void:
 		shell.set_mode(shell.Mode.ACTIVE)
 		check(Rect2i(root.position,root.size)==activity_rect,"Active preserves dock geometry")
 		check(shell.window_state==edge and shell.platform.read_status().get("registered",false),"activity keeps edge and reservation")
+		var live_bait: Node = shell.game.get_node("Game/Fishing").caster.active_bait
+		var live_id: int = live_bait.get_instance_id()
+		for width in [320,900]:
+			shell.set_dock_width(width); await status_ready(true); await settle()
+			check(shell.mode == shell.Mode.ACTIVE and shell.game.get_node("Game/Fishing").caster.active_bait.get_instance_id() == live_id,"active fishing survives min/max dock resize")
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png("res://build/desktop-docking/fishing-%s-%d.png" % ["left" if edge == shell.WindowState.DOCK_LEFT else "right",width])
+			FileAccess.open("res://build/desktop-docking/fishing-%s-%d.json" % ["left" if edge == shell.WindowState.DOCK_LEFT else "right",width],FileAccess.WRITE).store_string(JSON.stringify(shell.platform.read_status()))
+		shell.set_dock_width(480); await status_ready(true)
 		var fishing: Node = shell.game.get_node("Game/Fishing")
 		if fishing.phase==fishing.Phase.IN_WATER: fishing._cancel_water_cast_to_aim()
 		await create_timer(.3).timeout

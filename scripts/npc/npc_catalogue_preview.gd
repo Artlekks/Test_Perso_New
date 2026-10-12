@@ -51,7 +51,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_SPACE:
 			for actor in actors: actor.set_preview_pose("walk")
-		if event.keycode == KEY_I:
+		if UniversalInput.matches_key(event,KEY_I):
 			for actor in actors: actor.set_preview_pose("idle")
 		if event.keycode in [KEY_EQUAL, KEY_MINUS]:
 			$Camera3D.size = clampf($Camera3D.size + (-0.5 if event.keycode == KEY_EQUAL else 0.5), 2, 32)
@@ -69,7 +69,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				var sprite: AnimatedSprite3D = actor.get_node("GroundPresentation/VisualAnchor/AnimatedSprite3D")
 				var names := sprite.sprite_frames.get_animation_names()
 				sprite.play(names[posmod(names.find(sprite.animation) + 1, names.size())])
-		if event.keycode == KEY_C:
+		if UniversalInput.matches_key(event,KEY_C):
 			for actor in actors:
 				var mesh := actor.get_node_or_null("ColliderPreview") as MeshInstance3D
 				if mesh != null: mesh.visible = not mesh.visible

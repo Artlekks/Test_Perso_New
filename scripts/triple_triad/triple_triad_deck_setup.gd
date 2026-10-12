@@ -1829,11 +1829,8 @@ func _is_page_next(event: InputEvent) -> bool:
 	return _key_matches(event, KEY_E) or _key_matches(event, KEY_PAGEDOWN)
 
 
-func _key_matches(event: InputEvent, key: Key) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return key_event.keycode == key or key_event.physical_keycode == key
+func _key_matches(event: InputEvent, key: int) -> bool:
+	return UniversalInput.matches_key(event,key)
 
 
 func _accept_input() -> void:

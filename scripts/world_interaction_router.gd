@@ -19,6 +19,8 @@ func configure(player: Node3D, game_mode: Node) -> void:
 func _ready() -> void:
 	# Observe releases during modal pauses, but never dispatch paused input.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var bindings := get_node_or_null("/root/InputBindings")
+	if bindings != null: bindings.bindings_changed.connect(_on_bindings_changed)
 
 
 func _input(event: InputEvent) -> void:
@@ -28,10 +30,10 @@ func _input(event: InputEvent) -> void:
 func handle_event(event: InputEvent) -> bool:
 	var accepts := ModalInputOwnership.gameplay_accepts(self, event)
 	var card_action := event.is_action(&"world_card_challenge")
-	if not (event is InputEventKey) and not card_action:
+	if not (event is InputEventKey) and not card_action and not event.is_action(&"enter_fishing"):
 		return false
 	var key_event := event as InputEventKey
-	var key: int = KEY_C if card_action else key_event.physical_keycode
+	var key: int = KEY_C if card_action else KEY_K if key_event == null else key_event.physical_keycode
 	if key == 0:
 		key = key_event.keycode
 	if not event.is_pressed():
@@ -51,7 +53,7 @@ func handle_event(event: InputEvent) -> bool:
 		return true
 	if tree.paused or event.is_echo():
 		return false
-	if not card_action and key_event.keycode not in [KEY_K, KEY_ENTER] and key_event.physical_keycode not in [KEY_K, KEY_ENTER]:
+	if not card_action and not (UniversalInput.matches_key(event,KEY_K) or UniversalInput.matches_key(event,KEY_ENTER)):
 		return false
 	var target := select_target(
 		_player, tree.get_nodes_in_group(TARGET_GROUP), event
@@ -114,3 +116,6 @@ static func select_target(player: Node3D, candidates: Array, event: InputEvent) 
 			best_distance = distance
 			best_alignment = alignment
 	return best
+
+func _on_bindings_changed() -> void:
+	_claimed_keys.clear()

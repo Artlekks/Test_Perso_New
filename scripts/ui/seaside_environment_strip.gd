@@ -5,6 +5,7 @@ const CATALOG = preload("res://data/bof4/environment/all_environment_conditions.
 var host: Node
 var state := {}
 var portrait := false
+var desktop_compact := false
 var readable_font: FontFile = FONT.duplicate()
 
 func _ready() -> void:
@@ -48,7 +49,13 @@ func refresh(shell_state: Dictionary) -> void:
 
 func cells() -> Array[Rect2]:
 	var result: Array[Rect2] = []
-	if portrait:
+	if desktop_compact:
+		var widths := [size.x*.50-8,size.x*.25,size.x*.25-8]
+		var x := 8.0
+		for width in widths:
+			result.append(Rect2(x,6,width,30)); x += width
+		for i in range(3): result.append(Rect2(8+(size.x-16)*i/3,46,(size.x-16)/3,30))
+	elif portrait:
 		var width := size.x-16
 		result.append(Rect2(8,8,width*.57,42))
 		result.append(Rect2(8+width*.57,8,width*.43,42))

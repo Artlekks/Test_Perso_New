@@ -300,11 +300,5 @@ func _is_shift_f10(event: InputEvent) -> bool:
 	)
 
 
-func _is_key(event: InputEvent, key: Key) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return (
-		key_event.keycode == key
-		or key_event.physical_keycode == key
-	)
+func _is_key(event: InputEvent, key: int) -> bool:
+	return UniversalInput.matches_key(event,key)

@@ -23,8 +23,8 @@ func run() -> void:
 	for dimensions in [Vector2(480,776),Vector2(899,1000),Vector2(900,800),Vector2(1200,860)]:
 		var r := Layout.desktop(dimensions)
 		check(Rect2(Vector2.ZERO,dimensions).encloses(r.world),"desktop world safe")
-		check(is_equal_approx(r.world.size.x/r.world.size.y,4.0/3),"desktop uniform world")
-		check(r.variant == ("desktop_wide" if dimensions.x>=900 else "desktop_narrow"),"breakpoint")
+		check(is_equal_approx(r.world.size.x/r.world.size.y,float(r.resolution.x)/r.resolution.y),"desktop uniform world")
+		check(not r.has("gear") and not r.has("menus"),"desktop has no permanent sidebar")
 	for mobile in [true,false]:
 		var shell: Control = load("res://actors/mobile/MobilePortraitHarness.tscn" if mobile else "res://actors/desktop/DesktopCompanion.tscn").instantiate()
 		if mobile: shell.isolated_playtest_save = false
@@ -43,7 +43,7 @@ func run() -> void:
 			shell._layout()
 			check(game.get_instance_id() == original_instance,"layout preserves session instance")
 			check(camera.fov == original_fov,"layout preserves camera FOV")
-			check(shell.gameplay_viewport.size == (shell.shell.regions.resolution if mobile else Vector2i(640,480)),"layout preserves orientation world canvas")
+			check(shell.gameplay_viewport.size == shell.shell.regions.resolution,"layout preserves orientation world canvas")
 			check(shell.shell.utility.Settings.visible,"real utility buttons visible")
 			if mobile:
 				check(shell.controls.BUTTON_KEYS.C == KEY_C,"C mapping preserved")
@@ -62,15 +62,19 @@ func run() -> void:
 			await settle()
 		var menu: FishingMenu = game.find_child("FishingMenu",true,false)
 		for id in (["Settings"] if mobile else ["Inventory","Journal","Settings"]):
-			var button: Button = shell.shell.utility[id]
-			var touch := InputEventScreenTouch.new()
-			touch.index = 77
-			touch.position = root.get_final_transform() * (button.get_global_transform_with_canvas() * (button.size*.5))
-			touch.pressed = true
-			Input.parse_input_event(touch)
-			await process_frame
-			touch.pressed = false
-			Input.parse_input_event(touch)
+			if not mobile and id != "Settings":
+				# These pages now live behind J rather than permanent shell buttons.
+				shell.request_shell_menu(id)
+			else:
+				var button: Button = shell.shell.utility[id]
+				var touch := InputEventScreenTouch.new()
+				touch.index = 77
+				touch.position = root.get_final_transform() * (button.get_global_transform_with_canvas() * (button.size*.5))
+				touch.pressed = true
+				Input.parse_input_event(touch)
+				await process_frame
+				touch.pressed = false
+				Input.parse_input_event(touch)
 			await create_timer(.6).timeout
 			check(menu.is_open(),id+" uses existing menu modal")
 			check(menu._page == {"Inventory":FishingMenu.Page.EQUIP,"Journal":FishingMenu.Page.DATA,"Settings":FishingMenu.Page.OPTIONS}[id],id+" existing page")

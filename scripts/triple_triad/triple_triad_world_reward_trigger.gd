@@ -84,7 +84,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key_event: InputEventKey = event as InputEventKey
 	if not key_event.pressed or key_event.echo:
 		return
-	if key_event.keycode != interaction_key:
+	if not UniversalInput.matches_key(key_event,interaction_key):
 		return
 	claim()
 	get_viewport().set_input_as_handled()

@@ -832,19 +832,8 @@ func _pressed(event: InputEvent) -> bool:
 	)
 
 
-func _pressed_key(event: InputEvent, key: Key) -> bool:
-	if not (event is InputEventKey):
-		return false
-
-	var key_event := event as InputEventKey
-	return (
-		key_event.pressed
-		and not key_event.echo
-		and (
-			key_event.keycode == key
-			or key_event.physical_keycode == key
-		)
-	)
+func _pressed_key(event: InputEvent, key: int) -> bool:
+	return event.is_pressed() and not event.is_echo() and UniversalInput.matches_key(event,key)
 
 
 func _accept_input() -> void:

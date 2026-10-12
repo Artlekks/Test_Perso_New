@@ -133,7 +133,7 @@ func _ready() -> void:
 	get_tree().node_added.connect(_node_added)
 	var usable := DisplayServer.screen_get_usable_rect(get_window().current_screen)
 	if not usable.has_area(): usable = Rect2i(Vector2i.ZERO,Vector2i(1280,1024))
-	get_window().size = Vector2i(Vector2(SHELL_SURFACE)*active_scale)+Vector2i(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
+	get_window().size = Vector2i(800,560)
 	get_window().position = usable.position+Vector2i(maxi(0,usable.size.x-get_window().size.x),maxi(0,(usable.size.y-get_window().size.y)/2))
 	_layout()
 	load_gameplay_scene(gameplay_scene)
@@ -240,9 +240,11 @@ func set_dock_width(value: int) -> void:
 	dock_width = clampi(value,min_dock_width,max_dock_width)
 	if docked and window_state != WindowState.COLLAPSED: _apply_dock_size()
 func _desired_dock_size() -> Vector2i:
-	var width := collapsed_width if window_state == WindowState.COLLAPSED else dock_width
-	var height := 200 if window_state == WindowState.COLLAPSED else roundi(float(width)*SHELL_SURFACE.y/SHELL_SURFACE.x)+CHROME_HEIGHT+KEYBOARD_HEIGHT
-	return Vector2i(width,mini(height,DisplayServer.screen_get_size(get_window().current_screen).y))
+	if window_state == WindowState.COLLAPSED: return Vector2i(collapsed_width,WIDGET_HEIGHT)
+	# Native AppBar negotiation owns the final rectangle. Never reserve a full
+	# edge while requesting a content-height window within that reservation.
+	var usable := DisplayServer.screen_get_usable_rect(get_window().current_screen)
+	return Vector2i(dock_width,maxi(1,usable.size.y))
 func _apply_dock_size() -> void:
 	_request_pending = true
 func _on_resize() -> void:
@@ -296,19 +298,19 @@ func _layout() -> void:
 	if image == null or keyboard_strip == null: return
 	var collapsed := window_state == WindowState.COLLAPSED
 	shell_fill.size = Vector2(get_window().size)
-	var geometry := preload("res://scripts/ui/seaside_shell_layout.gd").desktop(Vector2(get_window().size))
+	var geometry := preload("res://scripts/ui/seaside_shell_layout.gd").desktop(Vector2(get_window().size),gameplay_viewport.size,docked,_world_shape_locked() or collapsed)
 	shell.size = Vector2(get_window().size)
 	shell.visible = not collapsed
+	Surface.resize_mobile_world(game,gameplay_viewport,geometry.resolution)
+	if is_instance_valid(game): preload("res://scripts/mobile/mobile_world_ground_extension.gd").ensure(game,geometry.resolution.x == 960)
 	shell.configure(geometry)
 	image.position = geometry.world.position
 	image.size = geometry.world.size
 	image.visible = not collapsed
-	menu_image.position = Vector2(0,CHROME_HEIGHT)
-	menu_image.size = Vector2(get_window().size)-Vector2(0,CHROME_HEIGHT+KEYBOARD_HEIGHT)
+	menu_image.position = Vector2.ZERO
+	menu_image.size = Vector2(get_window().size)
 	menu_image.visible = not collapsed
-	keyboard_strip.position = geometry.controls.position+Vector2(12,30)
-	keyboard_strip.size = geometry.controls.size-Vector2(24,40)
-	keyboard_strip.visible = not collapsed
+	keyboard_strip.hide()
 	var labels := ["Float","Dock Left","Dock Right","Collapse"]
 	for i in range(labels.size()):
 		var button: Button = buttons[labels[i]]
@@ -338,6 +340,12 @@ func _layout() -> void:
 	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
 	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
 func _input(event: InputEvent) -> void:
+	if menu_image != null and menu_image.is_visible_in_tree():
+		var factor := minf(menu_image.size.x/menu_viewport.size.x,menu_image.size.y/menu_viewport.size.y)
+		var footprint := Vector2(menu_viewport.size)*factor
+		var display := Rect2(menu_image.global_position+(menu_image.size-footprint)*.5,footprint)
+		if preload("res://scripts/input/controls_settings.gd").route_pointer(self,event,display,display): return
+	if get_node("/root/InputBindings").capture_action != &"": return
 	if mode == Mode.PASSIVE and event.is_action_pressed("enter_fishing") and not event.is_echo() and not get_tree().paused:
 		set_mode(Mode.ACTIVE)
 		# Consume the shell event; forward this same intent exactly once.
@@ -356,7 +364,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_layout()
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and not _forwarding and mode == Mode.ACTIVE:
+	if (event is InputEventKey or event is InputEventAction or event is InputEventJoypadButton or event is InputEventJoypadMotion) and not _forwarding and mode == Mode.ACTIVE:
 		_forwarding = true
 		gameplay_viewport.push_input(event,true)
 		_forwarding = false
@@ -374,8 +382,8 @@ func _exit_tree() -> void:
 			parent.add_child(layer)
 
 func gameplay_display_rect() -> Rect2:
-	var factor := minf(image.size.x / SURFACE.x, image.size.y / SURFACE.y)
-	var footprint := Vector2(SURFACE) * factor
+	var factor := minf(image.size.x / gameplay_viewport.size.x, image.size.y / gameplay_viewport.size.y)
+	var footprint := Vector2(gameplay_viewport.size) * factor
 	return Rect2(image.position + (image.size-footprint)*0.5, footprint)
 
 func request_shell_menu(id: String) -> void:
@@ -394,3 +402,13 @@ func dock_from_shell(next: int) -> void:
 		set_window_state.call_deferred(next)
 	else:
 		set_window_state(next)
+
+func _world_shape_locked() -> bool:
+	var fishing := game.get_node_or_null("Game/Fishing") if is_instance_valid(game) else null
+	return fishing != null and fishing.game_mode != null and fishing.game_mode.is_fishing()
+
+func _has_surface_modal() -> bool:
+	if not is_instance_valid(game): return false
+	for layer in gameplay_viewport.find_children("*","CanvasLayer",true,false):
+		if layer.has_method("is_open") and layer.is_open(): return true
+	return get_tree().paused

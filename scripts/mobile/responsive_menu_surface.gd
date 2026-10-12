@@ -19,6 +19,7 @@ var drag_index := -1
 var drag_y := 0.0
 var _was_visible := false
 var previews: Array[Dictionary] = []
+var controls_editor: Control
 
 static func attach(menu: Node, root_control: Control, menu_kind: String) -> ResponsiveMenuSurface:
 	var existing := root_control.get_node_or_null("ResponsiveMenuSurface") as ResponsiveMenuSurface
@@ -57,7 +58,12 @@ func _build() -> void:
 		"economy": _economy()
 		"crafting": _crafting()
 		"card_maker": _card_maker()
-		"inventory": _inventory()
+		"inventory":
+			_inventory()
+			# Own one Controls editor in the visible shared menu surface, rather
+			# than building a second editor behind the authored-menu mask.
+			controls_editor=controller.keybinding_controls
+			controls_editor.reparent(self)
 	_sync()
 
 func _mask_authored() -> void:
@@ -187,6 +193,10 @@ func _process(_delta: float) -> void:
 		scroll.size = Vector2(size.x, 224)
 		fixed_stack.position = Vector2(0, 236)
 		fixed_stack.size = Vector2(size.x, size.y - 236)
+	if controls_editor != null:
+		controls_editor.position=Vector2.ZERO; controls_editor.size=size
+		controls_editor.visible=controller._page == 5
+		scroll.visible=controller._page != 5
 	_sync()
 
 func _sync() -> void:

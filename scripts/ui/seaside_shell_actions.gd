@@ -52,8 +52,5 @@ static func send_key(host: Node, key: int) -> void:
 		host.controls._emit_key(key,false)
 	else:
 		for pressed in [true,false]:
-			var event := InputEventKey.new()
-			event.physical_keycode = key
-			event.keycode = key
-			event.pressed = pressed
-			host.gameplay_viewport.push_input(event,true)
+			var event := UniversalInput.event_for_key(key,pressed)
+			Input.parse_input_event(event)

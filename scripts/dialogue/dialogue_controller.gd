@@ -41,10 +41,8 @@ func get_view() -> DialogueView:
 func _input(event: InputEvent) -> void:
 	if _service == null or not _service.is_active():
 		return
-	if not (event is InputEventKey):
-		return
-	var key_event := event as InputEventKey
-	if not key_event.pressed or key_event.echo:
+	var key_event := event
+	if not event.is_pressed() or event.is_echo():
 		return
 
 	# Do not consume the K press that opened the dialogue if this controller is
@@ -156,5 +154,5 @@ func _exit_tree() -> void:
 	_disconnect_service()
 
 
-func _is_key(event: InputEventKey, key: Key) -> bool:
-	return event.keycode == key or event.physical_keycode == key
+func _is_key(event: InputEvent, key: int) -> bool:
+	return UniversalInput.matches_key(event,key)

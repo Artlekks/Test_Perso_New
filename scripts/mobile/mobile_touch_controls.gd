@@ -20,6 +20,7 @@ var stick_touch := -1
 var stick_origin := Vector2.ZERO
 var stick_vector := Vector2.ZERO
 var touches: Dictionary = {}
+var _dispatched_keys: Dictionary = {}
 var _held_keys: Dictionary = {}
 var _stick_keys: Dictionary = {}
 var _font: Font = ThemeDB.fallback_font
@@ -29,6 +30,8 @@ func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(_layout)
+	get_node("/root/InputBindings").bindings_changed.connect(release_all)
+	get_node("/root/InputBindings").capture_changed.connect(_capture_changed)
 	_layout()
 
 func _layout() -> void:
@@ -71,10 +74,11 @@ func _emit_key(key: int, pressed: bool) -> void:
 		Input.action_release(MOVEMENT[key])
 		if STEERING.has(key):
 			Input.action_release(STEERING[key])
-	var event := InputEventKey.new()
-	event.physical_keycode = key
-	event.keycode = key
-	event.pressed = pressed
+	var event := UniversalInput.event_for_key(key,pressed)
+	if pressed: _dispatched_keys[key]=event.physical_keycode
+	elif _dispatched_keys.has(key):
+		event.physical_keycode=_dispatched_keys[key]; event.keycode=event.physical_keycode
+		_dispatched_keys.erase(key)
 	key_requested.emit(event)
 
 func _hold(key: int) -> void:
@@ -212,3 +216,6 @@ func _draw() -> void:
 	draw_circle(center,radius,Color("2c2d36"))
 	draw_arc(center,radius*.83,0,TAU,48,Color("dca76a"),3,true)
 	draw_circle(center+stick_vector*radius,radius*.44,Color("ad966e"))
+
+func _capture_changed() -> void:
+	if get_node("/root/InputBindings").capture_action != &"": release_all()

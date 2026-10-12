@@ -278,6 +278,7 @@ const DEFAULT_RANK_BADGE_PATH: String = "res://assets/ui/fishing_menu/ranks/Rank
 @onready var hints_scroll_arrow: Polygon2D = $Root/HintsPage/TextPanel/ScrollArrow
 
 @onready var options_page: Control = $Root/OptionsPage
+var keybinding_controls: Control
 @onready var exit_confirm: Control = $Root/ExitConfirm
 @onready var exit_panel: Control = $Root/ExitConfirm/Panel
 @onready var exit_selector: TextureRect = $SelectorLayer/YesNo
@@ -337,6 +338,11 @@ func _ready() -> void:
 	_reset_panel_positions()
 	_sync_selector_visibility()
 
+	var controls_settings := preload("res://scripts/input/controls_settings.gd").new()
+	keybinding_controls=controls_settings
+	controls_settings.name="ControlsSettings"
+	controls_settings.position=Vector2(8,8); controls_settings.size=Vector2(304,224)
+	options_page.get_node("Panel").hide(); options_page.add_child(controls_settings)
 	preload("res://scripts/mobile/responsive_menu_surface.gd").attach(self, root, "inventory")
 
 func configure(
@@ -413,6 +419,7 @@ func _process(delta: float) -> void:
 		_session_time_seconds += delta
 		return
 
+	if get_node("/root/InputBindings").capture_action != &"": return
 	_process_vertical_repeat(delta)
 	_update_visible_native_selectors()
 
@@ -442,6 +449,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _is_cancel(event):
 		_handle_cancel()
 		_reset_nav_repeat()
+		get_viewport().set_input_as_handled()
+		return
+
+	if _page == Page.OPTIONS and not exit_confirm.visible:
+		_handle_options_input(event)
 		get_viewport().set_input_as_handled()
 		return
 
@@ -670,7 +682,7 @@ func _set_page(page: int) -> void:
 			info_label.text = "Using the Fishing Controller"
 			_update_hint_text()
 		Page.OPTIONS:
-			info_label.text = "Fishing options are not implemented yet."
+			info_label.text = "Controls / Keybindings - scroll to choose an action."
 
 	_sync_selector_visibility()
 	page_changed.emit(_page_name(page))
@@ -774,10 +786,8 @@ func _handle_hints_input(event: InputEvent) -> void:
 
 
 
-func _handle_options_input(_event: InputEvent) -> void:
-	# Intentionally a placeholder. Keeping it as a page now means Options can be
-	# implemented later without changing the menu router or command layout.
-	pass
+func _handle_options_input(event: InputEvent) -> void:
+	keybinding_controls.handle(event)
 
 
 func _show_exit_confirm() -> void:
@@ -1773,12 +1783,7 @@ func _on_journal_changed() -> void:
 
 
 func _is_menu_toggle(event: InputEvent) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event: InputEventKey = event as InputEventKey
-	if not key_event.pressed or key_event.echo:
-		return false
-	return key_event.physical_keycode == KEY_J or key_event.keycode == KEY_J
+	return event.is_pressed() and not event.is_echo() and UniversalInput.matches_key(event,KEY_J)
 
 
 func _is_confirm(event: InputEvent) -> bool:

@@ -14,7 +14,7 @@ func _ready() -> void:
 	$PromptLabel3D.text = trader_name + ("\nK: Trade fish" if menu_mode == 2 else "\nK: Shop")
 
 func is_world_interaction_available(event: InputEvent) -> bool:
-	if not (event is InputEventKey) or not event.pressed or event.echo or event.keycode not in [KEY_K, KEY_ENTER]:
+	if not event.is_pressed() or event.is_echo() or not (UniversalInput.matches_key(event,KEY_K) or UniversalInput.matches_key(event,KEY_ENTER)):
 		return false
 	if not get_node("/root/WorldLocations").context_belongs_here(economy_context, self):
 		return false

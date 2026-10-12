@@ -1,6 +1,5 @@
 extends RefCounted
-## Shared geometry. Portrait/desktop stay 4:3; mobile landscape reveals a 2:1 world.
-const DESKTOP_WIDE_BREAKPOINT := 900.0
+## Shared geometry. World aspect comes from available space; controls never stretch it.
 static func fit_world(box: Rect2) -> Rect2:
 	var s := minf(box.size.x / 640.0, box.size.y / 480.0)
 	var footprint := Vector2(640,480) * maxf(0,s)
@@ -59,17 +58,22 @@ static func landscape_controls(layout: Dictionary) -> Dictionary:
 
 static func portrait_controls(area: Rect2) -> Dictionary:
 	return landscape_controls({"variant":"mobile_portrait","left":Rect2(area.position,Vector2(area.size.x*.5,area.size.y)),"right":Rect2(area.position+Vector2(area.size.x*.5,0),Vector2(area.size.x*.5,area.size.y))})
-static func desktop(view: Vector2) -> Dictionary:
-	var w := view.x
-	var h := view.y
-	var header := Rect2(6,6,w-12,42)
-	if w >= DESKTOP_WIDE_BREAKPOINT:
-		var side := w*.28
-		var left := w-side-18
-		var frame := Rect2(8,54,left,h-62-150)
-		var x := w-side-4
-		return {"variant":"desktop_wide","header":header,"frame":frame,"world":fit_world(frame.grow(-8)),"info":Rect2(x,54,side-4,112),"modes":Rect2(x,170,side-4,76),"docks":Rect2(x,250,side-4,42),"gear":Rect2(x,298,side-4,180),"menus":Rect2(x,484,side-4,maxf(120,h-492)),"controls":Rect2(8,frame.end.y+6,left,142)}
-	var top := 106.0
-	var frame := Rect2(8,54+top,w-16,minf((w-32)*.75+16,maxf(80,h-54-top-200)))
-	var bottom := Rect2(8,frame.end.y+6,w-16,maxf(80,h-frame.end.y-14))
-	return {"variant":"desktop_narrow","header":header,"frame":frame,"world":fit_world(frame.grow(-8)),"info":Rect2(8,54,w*.45-8,top-6),"modes":Rect2(w*.45+4,54,w*.55-12,58),"docks":Rect2(w*.45+4,116,w*.55-12,38),"controls":Rect2(bottom.position,Vector2(bottom.size.x*.49,bottom.size.y)),"gear":Rect2(bottom.position+Vector2(bottom.size.x*.51,0),Vector2(bottom.size.x*.49,bottom.size.y*.58)),"menus":Rect2(bottom.position+Vector2(bottom.size.x*.51,bottom.size.y*.60),Vector2(bottom.size.x*.49,bottom.size.y*.40))}
+const DESKTOP_WIDE_ENTER := 1.75
+const DESKTOP_WIDE_EXIT := 1.60
+static func desktop(view: Vector2, previous := Vector2i(640,480), docked := false, locked := false) -> Dictionary:
+	var compact := view.x < 600
+	var header_height := 84.0 if compact else 40.0
+	var toolbar_height := 72.0 if compact else 36.0
+	var available := Rect2(6,header_height+toolbar_height+12,maxf(1,view.x-12),maxf(1,view.y-header_height-toolbar_height-18))
+	var ratio := available.size.x/available.size.y
+	var resolution := previous
+	if not locked:
+		if docked: resolution = Vector2i(640,480)
+		elif previous.x == 960: resolution = Vector2i(640,480) if ratio < DESKTOP_WIDE_EXIT else previous
+		else: resolution = Vector2i(960,480) if ratio > DESKTOP_WIDE_ENTER else previous
+	var scale := minf(available.size.x/resolution.x,available.size.y/resolution.y)
+	var footprint := Vector2(resolution)*scale
+	var world := Rect2(available.position+Vector2((available.size.x-footprint.x)*.5,0),footprint)
+	return {"variant":"desktop_compact" if compact else "desktop_expanded" if resolution.x == 960 else "desktop_regular",
+		"resolution":resolution,"info":Rect2(0,0,view.x,header_height),"world":world,"frame":world.grow(4),
+		"toolbar":Rect2(maxf(4,view.x-404),header_height+4,minf(400,view.x-8),toolbar_height),"dashboard":Rect2(6,world.end.y+8,view.x-12,maxf(0,view.y-world.end.y-14)),"safe":Rect2(Vector2.ZERO,view),"compact":compact}
