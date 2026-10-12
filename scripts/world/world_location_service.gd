@@ -1,5 +1,7 @@
 extends Node
 const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
+const GameClockServiceScript = preload("res://scripts/world/game_clock_service.gd")
+const GameWindServiceScript = preload("res://scripts/world/game_wind_service.gd")
 
 signal location_changed(location: Resource)
 signal access_changed
@@ -11,6 +13,29 @@ var _scene_ref: WeakRef
 var transitioning := false
 var _progress_inventory: FishingInventory
 var _unlocks: FishingUnlockState
+
+
+func _ready() -> void:
+	# This autoload runs during SceneTree initialization. The root rejects a
+	# synchronous add_child here ("parent busy setting up children"). Defer
+	# mounting until its current child-setup operation has completed.
+	_mount_environment_services.call_deferred()
+
+
+func _mount_environment_services() -> void:
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null:
+		return
+	var root: Window = tree.root
+	if root.get_node_or_null("GameClock") == null:
+		var clock: Node = GameClockServiceScript.new()
+		clock.name = "GameClock"
+		root.add_child(clock)
+	if root.get_node_or_null("GameWind") == null:
+		var wind: Node = GameWindServiceScript.new()
+		wind.name = "GameWind"
+		root.add_child(wind)
+
 
 func get_all_locations() -> Array:
 	return LOCATION_REGISTRY.locations.duplicate()

@@ -1,5 +1,6 @@
 extends Control
-## Read-only projection of existing services. No clock, weather or wind simulation.
+## Shared read-only environmental header (desktop and mobile).
+## Location | Day/Time | Weather | Wind | Current | Tide on landscape/desktop.
 const FONT = preload("res://assets/fonts/BOF_Font_Refined.fnt")
 const CATALOG = preload("res://data/bof4/environment/all_environment_conditions.tres")
 var host: Node
@@ -17,7 +18,18 @@ func _ready() -> void:
 	readable_font.fixed_size_scale_mode = TextServer.FIXED_SIZE_SCALE_ENABLED
 
 func read_state(shell_state: Dictionary) -> Dictionary:
-	var result := {"spot":shell_state.get("spot",""),"location":shell_state.get("location","No location"),"preview":shell_state.get("preview"),"weather":"N/A","period":"N/A","wind":"N/A","current":"N/A","tide":"N/A"}
+	var result := {"spot":shell_state.get("spot",""),"location":shell_state.get("location","No location"),"preview":shell_state.get("preview"),"weather":"N/A","period":"N/A","clock":"N/A","clock_short":"N/A","wind":"N/A","current":"N/A","tide":"N/A"}
+	var clock: Node = get_node_or_null("/root/GameClock")
+	if clock != null and clock.has_method("get_clock_text"):
+		result.clock = str(clock.call("get_clock_text"))
+		result.clock_short = str(clock.call("get_short_clock_text"))
+		result.period = result.clock_short
+	var wind_service: Node = get_node_or_null("/root/GameWind")
+	if wind_service != null and wind_service.has_method("get_snapshot"):
+		var wind_data: Dictionary = wind_service.call("get_snapshot") as Dictionary
+		if bool(wind_data.get("available", false)):
+			result.wind = str(wind_data.get("display", "N/A"))
+			result.wind_short = str(wind_data.get("compact", "N/A"))
 	if not is_instance_valid(host) or not is_instance_valid(host.game): return result
 	var fishing: Node = host.game.get_node_or_null("Game/Fishing")
 	if fishing == null: return result
@@ -29,7 +41,7 @@ func read_state(shell_state: Dictionary) -> Dictionary:
 			if condition.stacking_group == &"weather":
 				result.weather = condition.display_name
 				result.weather_id = condition.condition_id
-			if condition.stacking_group == &"time": result.period = condition.display_name
+			if condition.stacking_group == &"time": result.time_condition = condition.display_name
 		var tide: Dictionary = environment.get_debug_snapshot().get("tide",{})
 		if not tide.is_empty(): result.tide = tide.get("phase_name","N/A")
 	var current: Node = fishing.fishing_current_service
@@ -63,13 +75,14 @@ func cells() -> Array[Rect2]:
 		for i in range(3): result.append(Rect2(8+width*i/3,56,width/3,40))
 	else:
 		var weather_width := readable_font.get_string_size(str(state.get("weather","N/A")),HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+27
-		var widths := [112.0,maxf(60,weather_width),56.0,56.0,85.0,56.0]
+		var widths := [112.0,90.0,maxf(60,weather_width),56.0,85.0,56.0]
 		var remaining: float = size.x-16
 		for width in widths: remaining -= width
-		var weights := [.55,.10,.05,.05,.15,.10]
+		var weights := [.50,.18,.10,.05,.12,.05]
 		var x := 8.0
+		var shrink: float = minf(1.0, (size.x - 16.0) / maxf(1.0, (size.x - 16.0) - remaining))
 		for i in range(6):
-			var width: float = widths[i]+maxf(0,remaining)*weights[i]
+			var width: float = widths[i] * shrink + maxf(0,remaining)*weights[i]
 			result.append(Rect2(x,6,width,size.y-12))
 			x += width
 	return result
@@ -127,7 +140,7 @@ func _draw() -> void:
 		match i:
 			1:
 				line(str(state.weather),text_box,18,16)
-				line("Day/time N/A",box,38,14)
+				line(str(state.get("clock", "N/A")),box,38,14)
 			2,3,4:
 				var value := str(state.get(["","","wind","current","tide"][i],"N/A"))
 				if i == 3: value = value.replace(" m/s","m/s")
@@ -155,12 +168,14 @@ func _draw_landscape() -> void:
 	for i in range(1,6):
 		var box := boxes[i]
 		var center := box.position+Vector2(10,14)
-		if i == 2:
-			draw_circle(center,7,Color("873548"),false,1)
+		if i == 1:
+			draw_arc(center,7,0,TAU,20,Color("873548"),1.0)
 			draw_line(center,center+Vector2(0,-5),Color("873548"),1)
 			draw_line(center,center+Vector2(4,0),Color("873548"),1)
-		else: icon({1:1,3:2,4:3,5:4}[i],center)
-		var value := str(state.get({1:"weather",2:"clock",3:"wind",4:"current",5:"tide"}[i],"N/A"))
+		else: icon({2:1,3:2,4:3,5:4}[i],center)
+		var value := str(state.get({1:"clock_short",2:"weather",3:"wind",4:"current",5:"tide"}[i],"N/A"))
+		if i == 3 and box.size.x < 84.0:
+			value = str(state.get("wind_short", value))
 		if i == 4: value = value.replace(" m/s","m/s")
 		if i == 5:
 			value = "None" if value == "No Tide" else value.trim_suffix(" Tide")
@@ -199,23 +214,30 @@ func _desktop_item(index: int, area: Rect2, is_compact := false, icons_only := f
 			_desktop_caption("%s / %s" % [place, zone], Rect2(area.position + Vector2(4, 23), Vector2(area.size.x - 8, 16)), fs)
 		return
 	var center := area.position + Vector2(area.size.x * 0.5 if icons_only else 15.0, h * 0.5)
-	if index == 2:
+	if index == 1:
 		draw_arc(center, 6, 0, TAU, 20, ink, 1.3)
 		draw_line(center, center + Vector2(0, -4), ink, 1.3)
 		draw_line(center, center + Vector2(3, 0), ink, 1.3)
 	else:
-		icon({1:1, 3:2, 4:3, 5:4}[index], center)
-	if icons_only:
-		# Compact layout: icons are centered and labels never collide with them.
+		icon({2:1, 3:2, 4:3, 5:4}[index], center)
+	if icons_only and index != 1:
+		# On minimum docks other details become icons, but time remains readable.
 		return
-	var key: String = {1:"weather", 2:"period", 3:"wind", 4:"current", 5:"tide"}[index]
+	var key: String = {1:"clock_short", 2:"weather", 3:"wind", 4:"current", 5:"tide"}[index]
 	var value := str(state.get(key,"N/A"))
+	if index == 1 and area.size.x >= 140.0 and not is_compact:
+		value = str(state.get("clock", value))
+	if index == 3 and area.size.x < 114.0:
+		value = str(state.get("wind_short", value))
 	if index == 4:
 		value = value.replace(" m/s", "m/s")
 		if area.size.x < 114.0: value = value.replace("m/s", "")
 	if index == 5:
 		value = "None" if value == "No Tide" else value.trim_suffix(" Tide")
 		if area.size.x < 90.0: value = {"Incoming":"In", "Outgoing":"Out"}.get(value, value)
+	if icons_only and index == 1:
+		_desktop_caption(value, Rect2(area.position + Vector2(2, h * 0.5 + 14), Vector2(maxf(1.0, area.size.x - 4), 14)), 10)
+		return
 	_desktop_caption(value, Rect2(area.position + Vector2(29, h * 0.5 + 5), Vector2(maxf(1.0, area.size.x - 34), 20)), fs)
 
 func _draw_desktop() -> void:
@@ -241,7 +263,7 @@ func _draw_desktop() -> void:
 			_desktop_item(i, Rect2(x, first_height, second_width, size.y - first_height), true, icon_only)
 			x += second_width
 		return
-	var weights := [0.26, 0.155, 0.125, 0.13, 0.185, 0.145]
+	var weights := [0.26, 0.18, 0.125, 0.125, 0.17, 0.14]
 	var start_x := 8.0
 	for i in range(6):
 		var width: float = area_width * weights[i]
