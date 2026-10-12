@@ -3,7 +3,10 @@ extends RefCounted
 static func request(host: Node, id: String) -> void:
 	if not is_instance_valid(host.game): return
 	if id == "Menu":
-		send_key(host,KEY_J)
+		if host.get("window_state") != null:
+			var desktop_menu := host.game.find_child("FishingMenu",true,false) as FishingMenu
+			if desktop_menu != null: desktop_menu.open_desktop_page(FishingMenu.Page.MAIN)
+		else: send_key(host,KEY_J)
 		return
 	if id == "Cards":
 		if host.get_tree().paused: return
@@ -18,10 +21,13 @@ static func request(host: Node, id: String) -> void:
 		return
 	var menu := host.game.find_child("FishingMenu",true,false) as FishingMenu
 	if menu == null: return
-	if id == "Settings" and host.get("window_state") != null:
-		# Desktop gear has its own toggle entry point, including while fishing.
-		# Do not relax J-menu or Triple Triad modal guards.
-		menu.open_settings()
+	if host.get("window_state") != null:
+		if id == "Settings":
+			menu.open_settings()
+		elif id == "Inventory":
+			menu.open_desktop_page(FishingMenu.Page.EQUIP)
+		elif id == "Journal":
+			menu.open_desktop_page(FishingMenu.Page.DATA)
 		return
 	if host.get_tree().paused and not menu.is_open(): return
 	menu.open_menu()

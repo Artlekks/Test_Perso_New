@@ -4,6 +4,9 @@ const Layout = preload("res://scripts/ui/seaside_shell_layout.gd")
 const FONT = preload("res://assets/fonts/BOF_Font_Refined.fnt")
 const PAPER = preload("res://assets/ui/seaside_shell/panel.png")
 const BUTTON = preload("res://assets/ui/seaside_shell/button.png")
+const DESKTOP_PARCHMENT := Color("d0c19e")
+const DESKTOP_INK := Color("563047")
+const DESKTOP_LINE := Color("aa9274")
 var host: Node
 var regions: Dictionary = {}
 var shortcut: Button
@@ -117,40 +120,53 @@ func configure(next: Dictionary) -> void:
 	equipment_drawer.hide()
 	var desktop := str(regions.variant).begins_with("desktop")
 	if desktop:
-		dashboard.position = regions.dashboard.position
-		dashboard.size = regions.dashboard.size
-		# A requested Equip/Data/J menu replaces the compact information area;
-		# it never renders on top of the protected gameplay rectangle.
-		dashboard.visible = regions.dashboard.size.y >= 70
-		var window_width := 84.0 if regions.compact else 132.0
-		environment_strip.size.x=regions.info.size.x-window_width
-		var window_box := Rect2(regions.info.end-Vector2(window_width,regions.info.size.y),Vector2(window_width,regions.info.size.y))
-		if regions.compact: _column(["Dock Left","Dock Right","Float"],window_box)
-		else: _row(["Dock Left","Dock Right","Float"],window_box)
-		utility["Dock Left"].text="< Dock" if regions.compact else "<"
-		utility["Dock Right"].text="> Dock" if regions.compact else ">"
-		utility.Float.text="Float" if not host.docked else "Undock" if regions.compact else "Out"
-		var ids := ["Active","Passive","Equipment","Menu","Settings"]
-		var toolbar: Rect2 = regions.toolbar
-		var control_width := minf(toolbar.size.x,400.0)
-		_row(ids,Rect2(toolbar.end-Vector2(control_width,toolbar.size.y-3),Vector2(control_width,toolbar.size.y-3)))
-		desktop_actions.position = toolbar.position
-		desktop_actions.size = Vector2(maxf(1.0,toolbar.size.x-control_width),30)
-		# Only show this optional strip when explicitly enabled. Its actions,
-		# user-configured key labels, and click/hold behavior remain intact.
-		desktop_actions.visible = show_desktop_shortcuts
-		# Native caption buttons retain minimize/maximize/close; collapse is
-		# available in the toolbar without replacing Windows decorations.
-		utility.Collapse.text = "Hide"
-		utility.Window.text = "Dock"
-		utility.Mode.text = "Active" if host.mode == host.Mode.ACTIVE else "Passive"
+		if dashboard != null:
+			dashboard.position = regions.dashboard.position
+			dashboard.size = regions.dashboard.size
+			dashboard.visible = regions.dashboard.size.y >= 70.0
+		# Three unobtrusive, icon-only native window actions at top right.
+		# These preserve the existing dock/undock implementation.
+		var window_width := 112.0
+		var dock_area := Rect2(
+			Vector2(regions.info.end.x - window_width, regions.info.position.y),
+			Vector2(window_width, regions.info.size.y))
+		_row(["Dock Left", "Dock Right", "Float"], dock_area)
+		for id in ["Dock Left", "Dock Right", "Float"]:
+			_desktop_flat_button(id, "")
+		utility["Dock Left"].tooltip_text = "Dock left"
+		utility["Dock Right"].tooltip_text = "Dock right"
+		utility["Float"].tooltip_text = "Float / undock"
+		# The second band follows the reference: Active / Passive left,
+		# equipment, original J menu and settings icons right.
+		var bar: Rect2 = regions.toolbar
+		var action_width := 46.0 if not regions.compact else 40.0
+		var mode_width := 92.0 if not regions.compact else 72.0
+		_place("Active", Rect2(bar.position + Vector2(12, 1), Vector2(mode_width, bar.size.y - 2)))
+		_place("Passive", Rect2(bar.position + Vector2(12 + mode_width, 1), Vector2(mode_width, bar.size.y - 2)))
+		_desktop_flat_button("Active", "Active")
+		_desktop_flat_button("Passive", "Passive")
+		var icons := ["Equipment", "Menu", "Settings"]
+		for i in range(icons.size()):
+			var id: String = icons[i]
+			var bx := bar.end.x - 10.0 - action_width * float(icons.size() - i)
+			_place(id, Rect2(Vector2(bx, bar.position.y + 1), Vector2(action_width, bar.size.y - 2)))
+			_desktop_flat_button(id, "")
+		utility["Equipment"].tooltip_text = "Equipment (existing Equip menu)"
+		utility["Menu"].tooltip_text = "Menu (J)"
+		utility["Settings"].tooltip_text = "Settings"
+		if desktop_actions != null:
+			desktop_actions.position = bar.position
+			desktop_actions.size = Vector2(maxf(1.0, bar.size.x - 140.0), 30)
+			desktop_actions.visible = false
 		environment_strip.position = regions.info.position
-		environment_strip.size = Vector2(regions.info.size.x-window_width,regions.info.size.y)
+		environment_strip.size = Vector2(maxf(1.0, regions.info.size.x - window_width), regions.info.size.y)
 		environment_strip.portrait = false
 		environment_strip.desktop_compact = regions.compact
 		environment_strip.desktop_mode = true
-		equipment_drawer.position = Vector2(regions.world.end.x-minf(240,regions.world.size.x-20)-10,regions.world.position.y+10)
-		equipment_drawer.size = Vector2(minf(240,regions.world.size.x-20),0)
+		# This transient mobile-style drawer is not used for desktop.
+		# All expanded desktop panels belong to FishingMenu below gameplay.
+		equipment_drawer.hide()
+
 	else:
 		var geometry := Layout.landscape_controls(regions)
 		utility.Settings.z_index = 21
@@ -200,6 +216,57 @@ func _place(id: String, box: Rect2) -> void:
 		b.add_theme_constant_override("icon_max_width",24)
 	b.size = box.size
 	b.show()
+func _desktop_flat_button(id: String, label_text: String) -> void:
+	var button: Button = utility[id]
+	button.icon = null
+	button.text = label_text
+	button.get_node("Caption").hide()
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.add_theme_font_override("font", ThemeDB.fallback_font)
+	button.add_theme_font_size_override("font_size", 16)
+	for color_name in ["font_color", "font_pressed_color", "font_hover_color", "font_focus_color"]:
+		button.add_theme_color_override(color_name, DESKTOP_INK)
+	var clear := StyleBoxFlat.new()
+	clear.bg_color = Color.TRANSPARENT
+	clear.set_content_margin_all(0.0)
+	var hover := clear.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.34, 0.19, 0.28, 0.07)
+	for name in ["normal", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(name, clear)
+	button.add_theme_stylebox_override("hover", hover)
+	button.show()
+
+func _desktop_symbol(id: String) -> void:
+	if not utility.has(id): return
+	var button: Button = utility[id]
+	if not button.visible: return
+	var c: Vector2 = button.position + button.size * 0.5
+	var ink := DESKTOP_INK
+	match id:
+		"Dock Left", "Dock Right":
+			draw_rect(Rect2(c - Vector2(9, 7), Vector2(18, 14)), ink, false, 1.5)
+			var line_x := c.x - 3.5 if id == "Dock Left" else c.x + 3.5
+			draw_line(Vector2(line_x, c.y - 7), Vector2(line_x, c.y + 7), ink, 1.5)
+		"Float":
+			draw_rect(Rect2(c - Vector2(9, 7), Vector2(18, 14)), ink, false, 1.5)
+			draw_line(c - Vector2(9, 2), c + Vector2(9, -2), ink, 1.5)
+			draw_rect(Rect2(c + Vector2(0, 1), Vector2(9, 6)), ink, false, 1.0)
+		"Equipment":
+			draw_rect(Rect2(c - Vector2(7, 4), Vector2(14, 12)), ink, false, 1.7)
+			draw_arc(c - Vector2(0, 4), 4.0, PI, TAU, 13, ink, 1.6)
+			draw_line(c - Vector2(4, 2), c + Vector2(4, -2), ink, 1.2)
+			for dx in [-3.0, 3.0]:
+				draw_line(c + Vector2(dx, 3), c + Vector2(dx, 7), ink, 1.3)
+		"Menu":
+			draw_polyline(PackedVector2Array([c + Vector2(-9, -6), c + Vector2(-2, -5), c + Vector2(0, -3), c + Vector2(0, 8), c + Vector2(-3, 6), c + Vector2(-9, 5), c + Vector2(-9, -6)]), ink, 1.6)
+			draw_polyline(PackedVector2Array([c + Vector2(0, -3), c + Vector2(3, -5), c + Vector2(9, -6), c + Vector2(9, 5), c + Vector2(3, 6), c + Vector2(0, 8)]), ink, 1.6)
+		"Settings":
+			draw_arc(c, 6.0, 0, TAU, 24, ink, 1.5)
+			draw_arc(c, 2.0, 0, TAU, 16, ink, 1.5)
+			for n in range(8):
+				var ray := Vector2.from_angle(float(n) * TAU / 8.0)
+				draw_line(c + ray * 7, c + ray * 10, ink, 1.6)
+
 func _process(delta: float) -> void:
 	_refresh -= delta
 	if _refresh > 0: return
@@ -250,8 +317,12 @@ func _activate(id: String) -> void:
 		"Float": host.set_window_state(host.WindowState.FLOATING)
 		"Collapse": host.toggle_collapse()
 		"Equipment":
-			equipment_open = not equipment_open
-			equipment_drawer.visible = equipment_open and not host._has_surface_modal()
+			if str(regions.get("variant","")).begins_with("desktop"):
+				var menu: FishingMenu = host._fishing_menu()
+				if menu != null: menu.open_desktop_page(FishingMenu.Page.EQUIP)
+			else:
+				equipment_open = not equipment_open
+				equipment_drawer.visible = equipment_open and not host._has_surface_modal()
 		"Mode": host.cycle_mode()
 		"Active": host.set_mode(host.Mode.ACTIVE)
 		"Passive": host.set_mode(host.Mode.PASSIVE)
@@ -271,6 +342,12 @@ func _equipment_action(id: String) -> void:
 			host.request_shell_menu("Inventory")
 func _text(value: String, rect: Rect2, font_size: int = 16, color := Color("35202d")) -> void:
 	draw_string(FONT,rect.position+Vector2(6,font_size+3),value,HORIZONTAL_ALIGNMENT_LEFT,maxf(1,rect.size.x-12),font_size,color)
+func _desktop_paper(rect: Rect2) -> void:
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0: return
+	# Deliberately flat, unframed parchment like the approved desktop mockup.
+	# Stretching the old 64px ornamented texture enlarged its pixels/borders.
+	draw_rect(rect, DESKTOP_PARCHMENT)
+
 func _draw() -> void:
 	if regions.is_empty(): return
 	if str(regions.variant).begins_with("mobile"):
@@ -282,16 +359,16 @@ func _draw() -> void:
 			draw_line(regions.controls.position+Vector2(regions.controls.size.x*.5,56),regions.controls.intersection(regions.safe).end-Vector2(regions.controls.size.x*.5,54),Color("c99d69"),1)
 	var paper := skin(PAPER)
 	if str(regions.variant).begins_with("desktop"):
-		# Fill only the shell backing, never the world texture. The parchment
-		# also covers spare client space when the window is unusually tall.
-		draw_style_box(paper, Rect2(Vector2(0,regions.info.end.y),
-			Vector2(regions.safe.size.x,maxf(0,regions.safe.size.y-regions.info.end.y))))
+		# A single uninterrupted beige field. The thin dividers are the
+		# ONLY lines; no ornate frames, extra bars or default Control borders.
+		_desktop_paper(Rect2(Vector2.ZERO, regions.safe.size))
+		draw_line(Vector2(12, regions.info.end.y), Vector2(regions.safe.size.x - 12, regions.info.end.y), DESKTOP_LINE, 1.0)
+		for id in ["Dock Left", "Dock Right", "Float", "Equipment", "Menu", "Settings"]:
+			_desktop_symbol(id)
+		return
 	for key in ["header","info","gear","frame","controls","modes","docks","menus","left","right","toolbar"]:
-		if str(regions.variant).begins_with("mobile") and key in ["controls","left","right"]: continue
+		if key in ["controls","left","right"]: continue
 		if regions.has(key): draw_style_box(paper,regions[key])
-	if str(regions.get("variant","")).begins_with("desktop") and bool(regions.get("context_menu",false)) and regions.menu.has_area():
-		# Full-width menu host. The authored J canvas is composited on top.
-		draw_style_box(paper,regions.menu)
 	if regions.has("header"): _text("Seaside Companion",regions.header,24)
 	if str(regions.variant).begins_with("mobile"): return
 

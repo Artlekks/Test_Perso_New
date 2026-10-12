@@ -173,46 +173,69 @@ func _draw_landscape() -> void:
 			value = value.replace("m/s","")
 		line(value,text_box,19,14)
 
+func _desktop_caption(message: String, area: Rect2, font_size := 14, secondary := false) -> void:
+	var ink := Color("563047") if not secondary else Color("76604e")
+	var font: Font = ThemeDB.fallback_font
+	if font == null: return
+	draw_string(font, area.position, message, HORIZONTAL_ALIGNMENT_LEFT, maxf(1.0, area.size.x), font_size, ink)
+
+func _desktop_item(index: int, area: Rect2, is_compact := false) -> void:
+	var ink := Color("563047")
+	var h := area.size.y
+	var fs := 12 if is_compact else 14
+	if index == 0:
+		var place := str(state.get("spot", "Ocean Spot 2"))
+		var zone := str(state.get("location", "Beach"))
+		if h > 32.0:
+			_desktop_caption(place, Rect2(area.position + Vector2(4, 17), Vector2(area.size.x - 8, 16)), fs)
+			_desktop_caption(zone, Rect2(area.position + Vector2(4, 34), Vector2(area.size.x - 8, 14)), fs - 1, true)
+		else:
+			_desktop_caption("%s / %s" % [place, zone], Rect2(area.position + Vector2(4, 23), Vector2(area.size.x - 8, 16)), fs)
+		return
+	var center := area.position + Vector2(15, h * 0.5)
+	if index == 2:
+		draw_arc(center, 6, 0, TAU, 20, ink, 1.3)
+		draw_line(center, center + Vector2(0, -4), ink, 1.3)
+		draw_line(center, center + Vector2(3, 0), ink, 1.3)
+	else:
+		icon({1:1, 3:2, 4:3, 5:4}[index], center)
+	var key: String = {1:"weather", 2:"period", 3:"wind", 4:"current", 5:"tide"}[index]
+	var value := str(state.get(key,"N/A"))
+	if index == 4:
+		value = value.replace(" m/s", "m/s")
+		if area.size.x < 114.0: value = value.replace("m/s", "")
+	if index == 5:
+		value = "None" if value == "No Tide" else value.trim_suffix(" Tide")
+		if area.size.x < 90.0: value = {"Incoming":"In", "Outgoing":"Out"}.get(value, value)
+	_desktop_caption(value, Rect2(area.position + Vector2(29, h * 0.5 + 5), Vector2(maxf(1.0, area.size.x - 34), 20)), fs)
+
 func _draw_desktop() -> void:
-	# Environmental order and available values are identical to mobile.
-	# Compact desktop uses two rows rather than crushing names into pixels.
-	var boxes := cells()
+	# Separate informational CELLS, not ornamental frames. Header is a single
+	# visual band on wide desktop, two data rows only on narrow docks.
+	var ink_line := Color("aa9274")
+	var area_width := maxf(1.0, size.x - 16.0)
 	if desktop_compact:
-		var top_end := size.x-8.0
-		draw_line(Vector2(8,44),Vector2(top_end,44),Color("b99571"),1.0)
-		for i in range(1,3):
-			draw_line(Vector2(boxes[i].position.x,6),Vector2(boxes[i].position.x,37),Color("b99571"),1.0)
-		for i in range(4,6):
-			draw_line(Vector2(boxes[i].position.x,47),Vector2(boxes[i].position.x,79),Color("b99571"),1.0)
-	else:
-		for i in range(1,6):
-			draw_line(Vector2(boxes[i].position.x,7),Vector2(boxes[i].position.x,size.y-7),Color("b99571"),1.0)
-	var location := boxes[0]
-	if state.preview != null:
-		var side := 31.0 if desktop_compact else 40.0
-		draw_texture_rect(state.preview,Rect2(location.position,Vector2(side,side)),false)
-		location.position.x += side+5.0
-		location.size.x -= side+5.0
-	var place: String = str(state.spot)
-	var area: String = str(state.location)
-	if desktop_compact:
-		line(place,location,14,15)
-		line(area,location,30,14)
-	else:
-		line(place,location,20,18)
-		line(area,location,41,15)
-	for i in range(1,6):
-		var box := boxes[i]
-		var center := box.position+Vector2(11,12 if desktop_compact else 19)
-		if i == 2:
-			draw_circle(center,7,Color("873548"),false,1)
-			draw_line(center,center+Vector2(0,-5),Color("873548"),1)
-			draw_line(center,center+Vector2(4,0),Color("873548"),1)
-		else: icon({1:1,3:2,4:3,5:4}[i],center)
-		var value := str(state.get({1:"weather",2:"clock",3:"wind",4:"current",5:"tide"}[i],"N/A"))
-		if i == 4: value = value.replace(" m/s","m/s")
-		if i == 5:
-			value = "None" if value == "No Tide" else value.trim_suffix(" Tide")
-			if box.size.x < 95: value = {"Incoming":"In","Outgoing":"Out"}.get(value,value)
-		var text_box := Rect2(box.position+Vector2(24,0),box.size-Vector2(24,0))
-		line(value,text_box,19 if desktop_compact else 30,15 if desktop_compact else 17)
+		var one := [0.50, 0.25, 0.25]
+		var x := 8.0
+		var first_height := size.y * 0.5
+		for i in range(3):
+			var first_width: float = area_width * float(one[i])
+			if i > 0: draw_line(Vector2(x, 5), Vector2(x, first_height - 5), ink_line, 1.0)
+			_desktop_item(i, Rect2(x, 0, first_width, first_height), true)
+			x += first_width
+		draw_line(Vector2(8, first_height), Vector2(size.x - 8, first_height), ink_line, 1.0)
+		x = 8.0
+		for i in range(3, 6):
+			var second_width: float = area_width / 3.0
+			if i > 3: draw_line(Vector2(x, first_height + 5), Vector2(x, size.y - 5), ink_line, 1.0)
+			_desktop_item(i, Rect2(x, first_height, second_width, size.y - first_height), true)
+			x += second_width
+		return
+	var weights := [0.30, 0.145, 0.12, 0.12, 0.18, 0.135]
+	var start_x := 8.0
+	for i in range(6):
+		var width: float = area_width * weights[i]
+		if i > 0:
+			draw_line(Vector2(start_x, 7), Vector2(start_x, size.y - 7), ink_line, 1.0)
+		_desktop_item(i, Rect2(start_x, 0, width, size.y))
+		start_x += width

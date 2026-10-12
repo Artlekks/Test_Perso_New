@@ -63,38 +63,35 @@ const DESKTOP_WIDE_EXIT := 1.60
 # Desktop shell presentation only. The world stays 640x480 or 960x480
 # and is uniformly scaled. The two top bars and two contextual summary
 # headers are always present; lower menu content receives remaining height.
-const DESKTOP_DASHBOARD_HEIGHT := 122.0
-const DESKTOP_MENU_MIN_HEIGHT := 260.0
-const DESKTOP_MENU_MIN_WIDTH := 370.0
+const DESKTOP_DASHBOARD_HEIGHT := 88.0
+const DESKTOP_MENU_MIN_HEIGHT := 236.0
+const DESKTOP_MENU_MIN_WIDTH := 300.0
+const DESKTOP_WIDE_MIN_WIDTH := 690.0
 static func desktop(view: Vector2, previous := Vector2i(640,480), docked := false, locked := false) -> Dictionary:
 	var compact := view.x < 600.0
-	var info_height := 90.0 if compact else 54.0
-	var toolbar_height := 60.0 if compact else 40.0
-	var side := 5.0
+	var info_height := 86.0 if compact else 46.0
+	var toolbar_height := 42.0 if compact else 36.0
+	var gap := 3.0
+	var side := 4.0
 	var summary_height := DESKTOP_DASHBOARD_HEIGHT
-	var gap := 5.0
-	var top := info_height+toolbar_height+gap
-	var inner_height := maxf(1.0,view.y-top-summary_height-gap*3.0)
-	var inner_width := maxf(1.0,view.x-side*2.0)
-	var available := Rect2(side,top,inner_width,inner_height)
-	var ratio := available.size.x/maxf(1.0,available.size.y)
-	var resolution := previous
-	if not locked:
-		if docked: resolution = Vector2i(640,480)
-		elif previous.x == 960: resolution = Vector2i(640,480) if ratio < DESKTOP_WIDE_EXIT else previous
-		else: resolution = Vector2i(960,480) if ratio > DESKTOP_WIDE_ENTER else previous
-	var scale := minf(available.size.x/float(resolution.x),available.size.y/float(resolution.y))
-	var footprint := Vector2(resolution)*maxf(0.01,scale)
-	# Balance the gameplay + summary stack, not just the gameplay itself.
-	# Do not reflow the world on menu open: menus only occupy free space.
-	var extra := maxf(0.0,available.size.y-footprint.y)
-	var world := Rect2(Vector2(side+(inner_width-footprint.x)*0.5,top+extra*0.5),footprint)
-	var summary := Rect2(Vector2(side,world.end.y+gap),Vector2(inner_width,summary_height))
-	var menu_top := summary.end.y+gap
-	var menu := Rect2(Vector2(side,menu_top),Vector2(inner_width,maxf(0.0,view.y-menu_top-gap)))
+	var header_bottom := info_height + toolbar_height + gap
+	var usable_height := maxf(1.0,view.y-header_bottom-summary_height-gap*3.0)
+	var usable_width := maxf(1.0,view.x-side*2.0)
+	# Width is the deciding factor: growing a window VERTICALLY must not
+	# flip the approved wide world to 4:3. Preserve the active fight's shape.
+	var resolution: Vector2i = Vector2i(960,480) if usable_width >= DESKTOP_WIDE_MIN_WIDTH else Vector2i(640,480)
+	if locked: resolution = previous
+	var scale := maxf(0.01,minf(usable_width/float(resolution.x),usable_height/float(resolution.y)))
+	var footprint := Vector2(resolution)*scale
+	var free_height := maxf(0.0,usable_height-footprint.y)
+	# World + compact summaries remain a vertically balanced group.
+	var world := Rect2(Vector2(side+(usable_width-footprint.x)*0.5,header_bottom+free_height*.5),footprint)
+	var summary := Rect2(Vector2(side,world.end.y+gap),Vector2(usable_width,summary_height))
+	var menu_top := summary.end.y + gap
+	var menu := Rect2(Vector2(side,menu_top),Vector2(usable_width,maxf(0.0,view.y-menu_top-gap)))
 	var lower_available := menu.size.x >= DESKTOP_MENU_MIN_WIDTH and menu.size.y >= DESKTOP_MENU_MIN_HEIGHT
-	var toolbar := Rect2(side,info_height,inner_width,toolbar_height)
 	return {"variant":"desktop_compact" if compact else "desktop_expanded" if resolution.x == 960 else "desktop_regular",
-		"resolution":resolution,"info":Rect2(0,0,view.x,info_height),"world":world,"frame":world.grow(3),
-		"toolbar":toolbar,"dashboard":summary,"menu":menu,"lower_menu_available":lower_available,
+		"resolution":resolution,"info":Rect2(0,0,view.x,info_height),"world":world,"frame":world.grow(2),
+		"toolbar":Rect2(side,info_height,usable_width,toolbar_height),"dashboard":summary,
+		"menu":menu,"lower_menu_available":lower_available,
 		"safe":Rect2(Vector2.ZERO,view),"compact":compact}

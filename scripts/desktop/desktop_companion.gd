@@ -14,7 +14,7 @@ const KEYBOARD_HEIGHT := 60
 @export var max_dock_width := 900
 @export var collapsed_width := 28
 const WIDGET_HEIGHT := 96
-const SHELL_COLOR := Color("493343") # desktop parchment/burgundy shell backing
+const SHELL_COLOR := Color("d0c19e") # approved clean desktop parchment
 const PLATFORM_STATUS_INTERVAL := 0.05
 var mode := Mode.ACTIVE
 var window_state := WindowState.FLOATING
@@ -36,6 +36,7 @@ var game: Node
 var gameplay_viewport: SubViewport
 var menu_viewport: SubViewport
 var menu_image: TextureRect
+var menu_backdrop: TextureRect
 var image: TextureRect
 var shell: Control
 var shell_fill: ColorRect
@@ -99,7 +100,16 @@ func _ready() -> void:
 	menu_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	menu_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	menu_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_backdrop = TextureRect.new()
+	menu_backdrop.name = "AuthoredMenuBackground"
+	menu_backdrop.texture = preload("res://assets/ui/fishing_menu/Menu_Background_Solo.png")
+	menu_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	menu_backdrop.stretch_mode = TextureRect.STRETCH_SCALE
+	menu_backdrop.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	menu_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(menu_backdrop)
 	add_child(menu_image)
+	menu_backdrop.hide()
 	for label in ["Float","Dock Left","Dock Right","Collapse","Mode","X"]:
 		var button := Button.new()
 		button.text = label
@@ -171,6 +181,8 @@ func _bind_session_layers() -> void:
 		if layer.get_parent() != gameplay_viewport: layer.reparent(gameplay_viewport)
 func _bind_menu_layers() -> void:
 	if not is_instance_valid(game) or menu_viewport == null: return
+	var fishing_menu := _fishing_menu()
+	if fishing_menu != null: fishing_menu.set_meta("desktop_companion_mode",true)
 	for layer in gameplay_viewport.find_children("*","CanvasLayer",true,false):
 		if layer is DialogueView or layer.name == "FishingCatchView": continue
 		if not layer.has_method("is_open"): continue
@@ -359,15 +371,25 @@ func _layout() -> void:
 		var menu_rect: Rect2 = geometry.menu if _lower_menu_active else geometry.world
 		var active_menu := _fishing_menu()
 		var authored := active_menu != null and active_menu._page != FishingMenu.Page.OPTIONS
-		# Authored menu is 640x480; the options editor uses the taller
-		# scrollable canvas. The skin covers the whole destination, with no
-		# arbitrarily centered beige margins.
 		var target_size := Vector2i(640,480) if authored else Surface.MENU_SIZE
 		if menu_viewport.size != target_size: menu_viewport.size = target_size
-		menu_image.stretch_mode = TextureRect.STRETCH_SCALE
+		# The real J-menu Background is separately stretched to cover the host.
+		# Individual authored subpanels stay at their original proportions.
+		if active_menu != null:
+			var native_background := active_menu.get_node_or_null("Root/Background") as CanvasItem
+			if native_background != null: native_background.hide()
+		menu_backdrop.visible = authored
+		menu_backdrop.position = menu_rect.position
+		menu_backdrop.size = menu_rect.size
+		menu_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		menu_image.position = menu_rect.position
 		menu_image.size = menu_rect.size
 	else:
+		var closed_menu := _fishing_menu()
+		if closed_menu != null:
+			var background := closed_menu.get_node_or_null("Root/Background") as CanvasItem
+			if background != null: background.show()
+		menu_backdrop.hide()
 		if menu_viewport.size != Surface.MENU_SIZE: menu_viewport.size = Surface.MENU_SIZE
 		menu_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		menu_image.position = Vector2.ZERO

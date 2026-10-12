@@ -379,10 +379,32 @@ func is_open() -> bool:
 func open_menu() -> void:
 	# Keep the existing J-menu guard: the normal gameplay menu cannot open
 	# during fishing or an active Triple Triad match.
-	if _is_open or not _can_open_menu():
+	if _is_open: return
+	if not _can_open_menu():
+		# Native desktop has a protected lower-menu/viewport presentation.
+		# Its keyboard J action may safely acquire menu focus during fishing.
+		if bool(get_meta("desktop_companion_mode",false)) and not _is_triple_triad_active():
+			_show_menu(Page.MAIN,false)
 		return
-	_show_menu(Page.MAIN, false)
+	_show_menu(Page.MAIN,false)
 
+
+func open_desktop_page(page: int) -> void:
+	# The docked/floating desktop has a protected contextual menu host.
+	# This explicit entry point is safe during fishing and leaves mobile's
+	# ordinary J-menu guard unchanged. Card battles still own their modal.
+	if _is_triple_triad_active(): return
+	if get_node("/root/InputBindings").capture_action != &"": return
+	if page not in [Page.MAIN,Page.EQUIP,Page.DATA,Page.HELP,Page.HINTS]: return
+	if _is_open:
+		if _page == page:
+			close_menu()
+		else:
+			_set_page(page)
+			_reset_panel_positions()
+			_refresh_all()
+		return
+	_show_menu(page,false)
 
 func open_settings() -> void:
 	# Settings is an explicit, safe exception to the normal fishing-menu
