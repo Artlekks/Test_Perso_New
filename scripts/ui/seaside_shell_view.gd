@@ -133,11 +133,11 @@ func configure(next: Dictionary) -> void:
 		var dock_area := Rect2(
 			Vector2(regions.info.end.x - window_width, regions.info.position.y),
 			Vector2(window_width, regions.info.size.y))
-		# Reserve actual space between the right-dock and float hit targets.
-		# Previous equally-sized cells put the icons virtually together.
-		_place("Dock Left", Rect2(dock_area.position + Vector2(7, 2), Vector2(31, dock_area.size.y - 4)))
-		_place("Dock Right", Rect2(dock_area.position + Vector2(43, 2), Vector2(31, dock_area.size.y - 4)))
-		_place("Float", Rect2(dock_area.position + Vector2(87, 2), Vector2(37, dock_area.size.y - 4)))
+		# Identical spacing (8px) between all three icon targets.
+		# 3 x 32px actions + 2 x 8px gaps = 112px inside 132px slot.
+		for i in range(3):
+			var action_name: String = ["Dock Left", "Dock Right", "Float"][i]
+			_place(action_name, Rect2(dock_area.position + Vector2(10.0 + float(i)*40.0, 2.0), Vector2(32.0, dock_area.size.y - 4.0)))
 		for id in ["Dock Left", "Dock Right", "Float"]:
 			_desktop_flat_button(id, "")
 		utility["Dock Left"].tooltip_text = "Dock left"
@@ -373,7 +373,7 @@ func _draw() -> void:
 		_desktop_paper(regions.toolbar)
 		_desktop_paper(regions.dashboard)
 		# Match the reference's understated single hairline separators.
-		draw_line(Vector2(12, regions.info.end.y), Vector2(regions.safe.size.x-12, regions.info.end.y), DESKTOP_LINE, 1.0)
+		draw_line(Vector2(regions.info.position.x+8.0, regions.info.end.y), Vector2(regions.info.end.x-8.0, regions.info.end.y), DESKTOP_LINE, 1.0)
 		# Gameplay sits on a narrow dark-gray outline rather than beige margins.
 		# The world texture is drawn above this shell frame by the host.
 		var world_border: Rect2 = regions.world.grow(2.0)

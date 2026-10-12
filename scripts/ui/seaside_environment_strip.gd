@@ -179,26 +179,35 @@ func _desktop_caption(message: String, area: Rect2, font_size := 14, secondary :
 	if font == null: return
 	draw_string(font, area.position, message, HORIZONTAL_ALIGNMENT_LEFT, maxf(1.0, area.size.x), font_size, ink)
 
-func _desktop_item(index: int, area: Rect2, is_compact := false) -> void:
+func _desktop_item(index: int, area: Rect2, is_compact := false, icons_only := false) -> void:
 	var ink := Color("563047")
 	var h := area.size.y
 	var fs := 12 if is_compact else 14
 	if index == 0:
 		var place := str(state.get("spot", "Ocean Spot 2"))
 		var zone := str(state.get("location", "Beach"))
+		if icons_only:
+			# Even a 320px dock retains two readable location lines.
+			place = place.replace(" Spot ", " ")
+			_desktop_caption(place, Rect2(area.position + Vector2(3, 15), Vector2(area.size.x - 4, 14)), 11)
+			_desktop_caption(zone, Rect2(area.position + Vector2(3, 29), Vector2(area.size.x - 4, 12)), 10, true)
+			return
 		if h > 32.0:
 			_desktop_caption(place, Rect2(area.position + Vector2(4, 17), Vector2(area.size.x - 8, 16)), fs)
 			_desktop_caption(zone, Rect2(area.position + Vector2(4, 34), Vector2(area.size.x - 8, 14)), fs - 1, true)
 		else:
 			_desktop_caption("%s / %s" % [place, zone], Rect2(area.position + Vector2(4, 23), Vector2(area.size.x - 8, 16)), fs)
 		return
-	var center := area.position + Vector2(15, h * 0.5)
+	var center := area.position + Vector2(area.size.x * 0.5 if icons_only else 15.0, h * 0.5)
 	if index == 2:
 		draw_arc(center, 6, 0, TAU, 20, ink, 1.3)
 		draw_line(center, center + Vector2(0, -4), ink, 1.3)
 		draw_line(center, center + Vector2(3, 0), ink, 1.3)
 	else:
 		icon({1:1, 3:2, 4:3, 5:4}[index], center)
+	if icons_only:
+		# Compact layout: icons are centered and labels never collide with them.
+		return
 	var key: String = {1:"weather", 2:"period", 3:"wind", 4:"current", 5:"tide"}[index]
 	var value := str(state.get(key,"N/A"))
 	if index == 4:
@@ -215,20 +224,21 @@ func _draw_desktop() -> void:
 	var ink_line := Color("aa9274")
 	var area_width := maxf(1.0, size.x - 16.0)
 	if desktop_compact:
+		var icon_only: bool = size.x < 345.0
 		var one := [0.50, 0.25, 0.25]
 		var x := 8.0
-		var first_height := size.y * 0.5
+		var first_height := size.y * 0.56
 		for i in range(3):
 			var first_width: float = area_width * float(one[i])
 			if i > 0: draw_line(Vector2(x, 5), Vector2(x, first_height - 5), ink_line, 1.0)
-			_desktop_item(i, Rect2(x, 0, first_width, first_height), true)
+			_desktop_item(i, Rect2(x, 0, first_width, first_height), true, icon_only)
 			x += first_width
 		draw_line(Vector2(8, first_height), Vector2(size.x - 8, first_height), ink_line, 1.0)
 		x = 8.0
 		for i in range(3, 6):
 			var second_width: float = area_width / 3.0
 			if i > 3: draw_line(Vector2(x, first_height + 5), Vector2(x, size.y - 5), ink_line, 1.0)
-			_desktop_item(i, Rect2(x, first_height, second_width, size.y - first_height), true)
+			_desktop_item(i, Rect2(x, first_height, second_width, size.y - first_height), true, icon_only)
 			x += second_width
 		return
 	var weights := [0.26, 0.155, 0.125, 0.13, 0.185, 0.145]

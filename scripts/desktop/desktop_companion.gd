@@ -427,14 +427,12 @@ func _layout() -> void:
 	divider.visible = docked and not collapsed
 	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
 	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
-# The standard authored cameras are composed at 960x480 on wide desktop.
-# When a tall client reveals another 240 world pixels vertically, change the
-# vertical field of view to keep HORIZONTAL world scale constant. Changing
-# the backing size alone would zoom/reframe the world, despite uniform UI size.
-# Cache the original projection once and restore it when leaving tall mode.
+# Every floating size uses one consistent horizontal world-density rule.
+# Gradually increase/decrease vertical camera coverage with the actual
+# SubViewport height rather than flipping between 960x480 and 960x720.
+# The standard 640x480 dock remains at its original authored camera lens.
 func _sync_extended_camera_projection(resolution: Vector2i) -> void:
 	if not is_instance_valid(game): return
-	var tall := resolution == Vector2i(960,720)
 	for item in game.find_children("*", "Camera3D", true, false):
 		var camera := item as Camera3D
 		if camera == null: continue
@@ -444,13 +442,9 @@ func _sync_extended_camera_projection(resolution: Vector2i) -> void:
 		if camera.keep_aspect != baseline.aspect:
 			camera.keep_aspect = baseline.aspect
 		var target_fov: float = float(baseline.fov)
-		if tall and int(baseline.aspect) == Camera3D.KEEP_HEIGHT:
-			# tan(vFOV/2) grows 1.5x: 960 horizontal pixels keep the same
-			# world density; 720 vertical pixels show 50% extra coverage.
-			var half_angle := deg_to_rad(target_fov) * 0.5
-			target_fov = rad_to_deg(2.0*atan(tan(half_angle)*1.5))
-		# Native window events can call _layout many times per second.
-		# Never reassign a live camera lens when it already has the target FOV.
+		if resolution.x == 960 and int(baseline.aspect) == Camera3D.KEEP_HEIGHT:
+			var half_angle: float = deg_to_rad(target_fov) * 0.5
+			target_fov = rad_to_deg(2.0*atan(tan(half_angle)*float(resolution.y)/480.0))
 		if not is_equal_approx(camera.fov, target_fov):
 			camera.fov = target_fov
 

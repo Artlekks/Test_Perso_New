@@ -66,12 +66,14 @@ func _arrange() -> void:
 		button.position = Vector2(0.0, float(i) * half)
 		button.size = Vector2(size.x, half)
 		var compact := size.x < 570.0
-		button.text = ("     " if compact else "      ") + ("Equipment" if i == 0 else "Fishing records")
+		# On narrow docks the row has a title ABOVE the summary. Keeping the
+		# original vertically-centered Button text caused the two to overlap.
+		button.text = "" if compact else "      " + ("Equipment" if i == 0 else "Fishing records")
 		button.add_theme_font_size_override("font_size", 15 if compact else 17)
 		if compact:
 			summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-			summary.position = Vector2(30.0, half * 0.49)
-			summary.size = Vector2(maxf(1.0, size.x - 36.0), half * 0.45)
+			summary.position = Vector2(30.0, 27.0)
+			summary.size = Vector2(maxf(1.0, size.x - 42.0), maxf(1.0, half - 29.0))
 			summary.add_theme_font_size_override("font_size", 12)
 		else:
 			summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -83,6 +85,12 @@ func _arrange() -> void:
 func _draw() -> void:
 	# Exactly one understated divider between the two parchment rows.
 	draw_line(Vector2(14.0, size.y * 0.5), Vector2(size.x - 14.0, size.y * 0.5), SEPARATOR, 1.0)
+	if size.x < 570.0:
+		var body_font: Font = ThemeDB.fallback_font
+		if body_font != null:
+			for row in range(2):
+				var caption: String = "Equipment" if row == 0 else "Fishing records"
+				draw_string(body_font, Vector2(30.0, size.y * (float(row) * 0.5) + 19.0), caption, HORIZONTAL_ALIGNMENT_LEFT, maxf(1.0,size.x - 40.0), 14, INK)
 	for i in range(2):
 		var y := size.y * (float(i) + 0.5) * 0.5
 		var expanded: bool = _equipment_expanded if i == 0 else _records_expanded
@@ -109,13 +117,18 @@ func _process(delta: float) -> void:
 	_records_expanded = page == FishingMenu.Page.DATA
 	queue_redraw()
 	var state: Dictionary = host.shell.snapshot
-	_equipment_summary.text = "%s  ·  %s x%d" % [str(state.get("rod", "Unavailable")), str(state.get("bait", "Unavailable")), int(state.get("count", 0))]
+	if size.x < 570.0:
+		_equipment_summary.text = "%s · %s x%d" % [str(state.get("rod", "Unavailable")), str(state.get("bait", "Unavailable")), int(state.get("count", 0))]
+	else:
+		_equipment_summary.text = "%s  ·  %s x%d" % [str(state.get("rod", "Unavailable")), str(state.get("bait", "Unavailable")), int(state.get("count", 0))]
 	var services := get_node_or_null("/root/FishingSessionServices")
 	if services == null or services.journal_service == null:
 		_records_summary.text = "Fishing records unavailable"
 		return
 	var summary: Dictionary = services.journal_service.get_summary()
-	if size.x < 570.0:
-		_records_summary.text = "%d catches  ·  %d/%d species  ·  %d pts" % [int(summary.total_catches), int(summary.discovered_species), int(summary.total_species), int(summary.fishing_points)]
+	if size.x < 365.0:
+		_records_summary.text = "%d catches · %d/%d species" % [int(summary.total_catches), int(summary.discovered_species), int(summary.total_species)]
+	elif size.x < 570.0:
+		_records_summary.text = "%d catches · %d/%d species · %d pts" % [int(summary.total_catches), int(summary.discovered_species), int(summary.total_species), int(summary.fishing_points)]
 	else:
 		_records_summary.text = "%d catches  ·  %d/%d species  ·  %d pts  ·  %s" % [int(summary.total_catches), int(summary.discovered_species), int(summary.total_species), int(summary.fishing_points), str(summary.rank_name)]
