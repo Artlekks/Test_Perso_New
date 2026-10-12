@@ -10,6 +10,7 @@ const LOCATION_FONT_FALLBACK := "res://assets/fonts/BOF_Font.fnt"
 @onready var compass: Control = $Root/Compass
 @onready var location: TextureRect = $Root/Location
 @onready var help_panel: Control = $Root/HelpPanel
+@onready var hud_root: Control = $Root
 
 @export_category("References")
 @export var exploration: Node
@@ -31,6 +32,10 @@ const LOCATION_FONT_FALLBACK := "res://assets/fonts/BOF_Font.fnt"
 @export var location_font_size: int = 12
 @export var location_text_offset: Vector2 = Vector2(-14.0, 1.0)
 
+# Preserve the original 640x480 artwork placement: scaled menu bottom at
+# y=455, 25 game-viewport pixels above the bottom. This is NOT a window margin.
+const HELP_MENU_BOTTOM_MARGIN: float = 25.0
+
 var compass_home: Vector2
 var location_home: Vector2
 var help_panel_home: Vector2
@@ -42,6 +47,13 @@ var _location_fish_zone: Node = null
 func _ready() -> void:
 	set_cast_available(false)
 	_setup_location_label()
+	# Anchor the two menu artwork variants to the bottom of the *gameplay*
+	# viewport. A fixed top offset was correct at 480px but drifted upward
+	# whenever the shared desktop shell enlarged the SubViewport vertically.
+	if not hud_root.resized.is_connected(_align_help_menu_to_bottom):
+		hud_root.resized.connect(_align_help_menu_to_bottom)
+	_align_help_menu_to_bottom()
+	_align_help_menu_to_bottom.call_deferred()
 
 
 	if exploration == null:
@@ -69,6 +81,33 @@ func _ready() -> void:
 	if game_mode != null:
 		game_mode.mode_changed.connect(_on_mode_changed)
 		
+static func help_menu_top_for_height(view_height: float, art_height: float, art_scale_y: float) -> float:
+	# The TextureRects in the original scene are scaled 2x. Account for
+	# their actual rendered height before positioning. No viewport aspect
+	# or window-width based discontinuity is introduced.
+	return maxf(0.0, view_height - HELP_MENU_BOTTOM_MARGIN - art_height * absf(art_scale_y))
+
+
+func _align_help_menu_to_bottom() -> void:
+	if not is_instance_valid(hud_root) or not is_instance_valid(help_panel):
+		return
+	var viewport_height: float = hud_root.size.y
+	if viewport_height <= 0.0:
+		return
+	_align_single_help_menu(menu, viewport_height)
+	_align_single_help_menu(menu_cast, viewport_height)
+
+
+func _align_single_help_menu(menu_art: TextureRect, viewport_height: float) -> void:
+	if not is_instance_valid(menu_art):
+		return
+	# HelpPanel itself only translates horizontally during fishing HUD
+	# transitions. Keep its transition coordinates and the sprite scale.
+	menu_art.position.y = help_menu_top_for_height(
+		viewport_height, menu_art.size.y, menu_art.scale.y
+	) - help_panel.position.y
+
+
 func _setup_location_label() -> void:
 	location_label = location.get_node_or_null("LocationLabel") as Label
 	var created_at_runtime := false

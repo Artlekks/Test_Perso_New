@@ -42,13 +42,43 @@ func read_state(shell_state: Dictionary) -> Dictionary:
 				result.weather = condition.display_name
 				result.weather_id = condition.condition_id
 			if condition.stacking_group == &"time": result.time_condition = condition.display_name
-		var tide: Dictionary = environment.get_debug_snapshot().get("tide",{})
-		if not tide.is_empty(): result.tide = tide.get("phase_name","N/A")
+	# During an active fishing session, use the live fishing services.
+	# Outside fishing, preview the actual current location without calling
+	# set_spot() or overwriting lure/encounter physics.
 	var current: Node = fishing.fishing_current_service
-	if is_instance_valid(current) and current.get_spot() != null:
-		var sample: Vector3 = current.sample_current_velocity(fishing.player.global_position)
-		if is_instance_valid(fishing.caster.active_bait): sample = current.sample_current_velocity(fishing.caster.active_bait.global_position)
-		result.current = "%s %.2f m/s" % [compass(Vector2(sample.x,sample.z)),sample.length()]
+	var active_spot: FishingSpotData = null
+	if is_instance_valid(current):
+		active_spot = current.get_spot()
+	var tide_service: Node = null
+	var services: Node = get_node_or_null("/root/FishingSessionServices")
+	if services != null and services.has_method("get_fishing_tide_service"):
+		tide_service = services.call("get_fishing_tide_service") as Node
+	var location_spot: FishingSpotData = null
+	if active_spot == null:
+		var locations: Node = get_node_or_null("/root/WorldLocations")
+		if locations != null and locations.current_location != null:
+			location_spot = locations.current_location.fishing_spot
+	var relevant_spot: FishingSpotData = active_spot if active_spot != null else location_spot
+	if is_instance_valid(tide_service):
+		var tide_data: Dictionary = {}
+		if active_spot != null:
+			tide_data = tide_service.get_snapshot()
+		elif tide_service.has_method("get_preview_snapshot"):
+			tide_data = tide_service.get_preview_snapshot(location_spot)
+		if bool(tide_data.get("active", false)):
+			result.tide = str(tide_data.get("phase_name", "N/A"))
+		elif relevant_spot != null:
+			result.tide = "No Tide"
+	if is_instance_valid(current) and relevant_spot != null:
+		var flat := Vector2.ZERO
+		if active_spot != null:
+			var sample: Vector3 = current.sample_current_velocity(fishing.player.global_position)
+			if is_instance_valid(fishing.caster.active_bait):
+				sample = current.sample_current_velocity(fishing.caster.active_bait.global_position)
+			flat = Vector2(sample.x, sample.z)
+		else:
+			flat = current.sample_spot_at_uv(location_spot)
+		result.current = "%s %.2f m/s" % [compass(flat), flat.length()]
 	return result
 
 static func compass(direction: Vector2) -> String:

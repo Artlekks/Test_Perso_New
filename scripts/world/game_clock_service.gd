@@ -10,7 +10,7 @@ signal day_changed(day_number: int)
 const VERSION: int = 1
 const MINUTES_PER_DAY: int = 1440
 const START_MINUTES: int = 8 * 60  # Day 1, 08:00.
-const REAL_SECONDS_PER_GAME_MINUTE: float = 2.0
+const REAL_SECONDS_PER_GAME_MINUTE: float = 5.0
 const AUTOSAVE_REAL_SECONDS: float = 15.0
 const DEFAULT_SAVE_PATH: String = "user://game_clock_v1.json"
 const MAX_SAVED_MINUTES: int = MINUTES_PER_DAY * 365 * 100

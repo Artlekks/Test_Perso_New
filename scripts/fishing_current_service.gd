@@ -74,18 +74,28 @@ func sample_current_at_uv(
 	uv: Vector2,
 	time_seconds: float = -1.0
 ) -> Vector2:
-	if _spot == null:
+	return sample_spot_at_uv(_spot, uv, time_seconds)
+
+
+func sample_spot_at_uv(
+	spot: FishingSpotData,
+	uv: Vector2 = Vector2(0.5, 0.5),
+	time_seconds: float = -1.0
+) -> Vector2:
+	## Read-only preview of the same authored current used for lure physics.
+	## Passing a world-location spot never modifies the active fishing spot.
+	if spot == null:
 		return Vector2.ZERO
 
-	var direction_2d: Vector2 = _spot.current_direction
+	var direction_2d: Vector2 = spot.current_direction
 	var velocity := Vector2.ZERO
 	if (
 		direction_2d.length_squared() > 0.000001
-		and _spot.current_speed > 0.0
+		and spot.current_speed > 0.0
 	):
-		velocity = direction_2d.normalized() * _spot.current_speed
+		velocity = direction_2d.normalized() * spot.current_speed
 
-	for field in _spot.current_fields:
+	for field in spot.current_fields:
 		if field == null or not field.is_valid_definition():
 			continue
 		velocity = field.apply_to_velocity(velocity, uv)
@@ -94,24 +104,23 @@ func sample_current_at_uv(
 	if phase_time < 0.0:
 		phase_time = float(Time.get_ticks_msec()) / 1000.0
 
-	if _spot.current_gust_strength > 0.0 and velocity.length_squared() > 0.000001:
-		var period := maxf(_spot.current_gust_period_seconds, 0.25)
+	if spot.current_gust_strength > 0.0 and velocity.length_squared() > 0.000001:
+		var period := maxf(spot.current_gust_period_seconds, 0.25)
 		var phase := (
 			phase_time / period * TAU
 			+ uv.x * 2.17
 			+ uv.y * 1.31
 		)
-		var multiplier := 1.0 + sin(phase) * _spot.current_gust_strength
+		var multiplier := 1.0 + sin(phase) * spot.current_gust_strength
 		velocity *= maxf(multiplier, 0.05)
 
-	if (
-		_tide_service != null
-		and _tide_service.has_method("get_current_multiplier")
-	):
+	if _tide_service != null and _tide_service.has_method("get_current_multiplier_for_spot"):
 		velocity *= maxf(
-			float(_tide_service.call("get_current_multiplier")),
+			float(_tide_service.call("get_current_multiplier_for_spot", spot)),
 			0.05
 		)
+	elif _tide_service != null and _tide_service.has_method("get_current_multiplier"):
+		velocity *= maxf(float(_tide_service.call("get_current_multiplier")), 0.05)
 
 	return velocity
 
