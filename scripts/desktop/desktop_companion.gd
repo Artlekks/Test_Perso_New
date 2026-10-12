@@ -14,7 +14,7 @@ const KEYBOARD_HEIGHT := 60
 @export var max_dock_width := 900
 @export var collapsed_width := 28
 const WIDGET_HEIGHT := 96
-const SHELL_COLOR := Color("d0c19e") # approved clean desktop parchment
+const SHELL_COLOR := Color("1f1f1f") # only empty desktop space; parchment belongs to bands
 const PLATFORM_STATUS_INTERVAL := 0.05
 var mode := Mode.ACTIVE
 var window_state := WindowState.FLOATING
@@ -169,6 +169,8 @@ func _replace_game(packed: PackedScene) -> void:
 	gameplay_viewport.add_child(game)
 	_bind_session_layers()
 	_bind_menu_layers()
+	# Match the projection to the initial world canvas once the game exists.
+	_layout()
 func _node_added(node: Node) -> void:
 	if node is CanvasLayer:
 		_bind_session_layers.call_deferred()
@@ -358,6 +360,7 @@ func _layout() -> void:
 	shell.size = Vector2(get_window().size)
 	shell.visible = not collapsed
 	Surface.resize_mobile_world(game,gameplay_viewport,geometry.resolution)
+	_sync_extended_camera_projection(geometry.resolution)
 	if is_instance_valid(game): preload("res://scripts/mobile/mobile_world_ground_extension.gd").ensure(game,geometry.resolution.x == 960)
 	# A lower contextual menu is possible only when both its width and its
 	# height are useful. Short/small windows retain the established overlay.
@@ -424,6 +427,33 @@ func _layout() -> void:
 	divider.visible = docked and not collapsed
 	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
 	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
+# The standard authored cameras are composed at 960x480 on wide desktop.
+# When a tall client reveals another 240 world pixels vertically, change the
+# vertical field of view to keep HORIZONTAL world scale constant. Changing
+# the backing size alone would zoom/reframe the world, despite uniform UI size.
+# Cache the original projection once and restore it when leaving tall mode.
+func _sync_extended_camera_projection(resolution: Vector2i) -> void:
+	if not is_instance_valid(game): return
+	var tall := resolution == Vector2i(960,720)
+	for item in game.find_children("*", "Camera3D", true, false):
+		var camera := item as Camera3D
+		if camera == null: continue
+		if not camera.has_meta("desktop_base_projection"):
+			camera.set_meta("desktop_base_projection", {"fov": camera.fov, "aspect": camera.keep_aspect})
+		var baseline: Dictionary = camera.get_meta("desktop_base_projection")
+		if camera.keep_aspect != baseline.aspect:
+			camera.keep_aspect = baseline.aspect
+		var target_fov: float = float(baseline.fov)
+		if tall and int(baseline.aspect) == Camera3D.KEEP_HEIGHT:
+			# tan(vFOV/2) grows 1.5x: 960 horizontal pixels keep the same
+			# world density; 720 vertical pixels show 50% extra coverage.
+			var half_angle := deg_to_rad(target_fov) * 0.5
+			target_fov = rad_to_deg(2.0*atan(tan(half_angle)*1.5))
+		# Native window events can call _layout many times per second.
+		# Never reassign a live camera lens when it already has the target FOV.
+		if not is_equal_approx(camera.fov, target_fov):
+			camera.fov = target_fov
+
 func _input(event: InputEvent) -> void:
 	if menu_image != null and menu_image.is_visible_in_tree():
 		var display := Rect2(menu_image.global_position,menu_image.size)

@@ -5,6 +5,9 @@ const FONT = preload("res://assets/fonts/BOF_Font_Refined.fnt")
 const PAPER = preload("res://assets/ui/seaside_shell/panel.png")
 const BUTTON = preload("res://assets/ui/seaside_shell/button.png")
 const DESKTOP_PARCHMENT := Color("d0c19e")
+const DESKTOP_EMPTY := Color("1f1f1f")
+const DESKTOP_EDGE := Color("404040")
+const DOCK_BUTTON_WIDTH := 132.0
 const DESKTOP_INK := Color("563047")
 const DESKTOP_LINE := Color("aa9274")
 var host: Node
@@ -126,11 +129,15 @@ func configure(next: Dictionary) -> void:
 			dashboard.visible = regions.dashboard.size.y >= 70.0
 		# Three unobtrusive, icon-only native window actions at top right.
 		# These preserve the existing dock/undock implementation.
-		var window_width := 112.0
+		var window_width := DOCK_BUTTON_WIDTH
 		var dock_area := Rect2(
 			Vector2(regions.info.end.x - window_width, regions.info.position.y),
 			Vector2(window_width, regions.info.size.y))
-		_row(["Dock Left", "Dock Right", "Float"], dock_area)
+		# Reserve actual space between the right-dock and float hit targets.
+		# Previous equally-sized cells put the icons virtually together.
+		_place("Dock Left", Rect2(dock_area.position + Vector2(7, 2), Vector2(31, dock_area.size.y - 4)))
+		_place("Dock Right", Rect2(dock_area.position + Vector2(43, 2), Vector2(31, dock_area.size.y - 4)))
+		_place("Float", Rect2(dock_area.position + Vector2(87, 2), Vector2(37, dock_area.size.y - 4)))
 		for id in ["Dock Left", "Dock Right", "Float"]:
 			_desktop_flat_button(id, "")
 		utility["Dock Left"].tooltip_text = "Dock left"
@@ -359,10 +366,25 @@ func _draw() -> void:
 			draw_line(regions.controls.position+Vector2(regions.controls.size.x*.5,56),regions.controls.intersection(regions.safe).end-Vector2(regions.controls.size.x*.5,54),Color("c99d69"),1)
 	var paper := skin(PAPER)
 	if str(regions.variant).begins_with("desktop"):
-		# A single uninterrupted beige field. The thin dividers are the
-		# ONLY lines; no ornate frames, extra bars or default Control borders.
-		_desktop_paper(Rect2(Vector2.ZERO, regions.safe.size))
-		draw_line(Vector2(12, regions.info.end.y), Vector2(regions.safe.size.x - 12, regions.info.end.y), DESKTOP_LINE, 1.0)
+		# The negative space is Photoshop-style charcoal, never beige.
+		# Only the actual information, action and dashboard bands use parchment.
+		draw_rect(regions.safe, DESKTOP_EMPTY)
+		_desktop_paper(regions.info)
+		_desktop_paper(regions.toolbar)
+		_desktop_paper(regions.dashboard)
+		# Match the reference's understated single hairline separators.
+		draw_line(Vector2(12, regions.info.end.y), Vector2(regions.safe.size.x-12, regions.info.end.y), DESKTOP_LINE, 1.0)
+		# Gameplay sits on a narrow dark-gray outline rather than beige margins.
+		# The world texture is drawn above this shell frame by the host.
+		var world_border: Rect2 = regions.world.grow(2.0)
+		draw_rect(world_border, DESKTOP_EDGE)
+		# Explicit one-line divider between environmental cells and dock tools.
+		var dock_separator: float = float(regions.info.end.x) - DOCK_BUTTON_WIDTH
+		draw_line(Vector2(dock_separator, regions.info.position.y+7), Vector2(dock_separator, regions.info.end.y-7), DESKTOP_LINE, 1.0)
+		# Expanded equipment, Data or settings menus retain their authored
+		# parchment backgrounds below the protected gameplay view.
+		if bool(regions.get("context_menu",false)):
+			_desktop_paper(regions.menu)
 		for id in ["Dock Left", "Dock Right", "Float", "Equipment", "Menu", "Settings"]:
 			_desktop_symbol(id)
 		return

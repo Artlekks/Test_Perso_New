@@ -67,6 +67,10 @@ const DESKTOP_DASHBOARD_HEIGHT := 88.0
 const DESKTOP_MENU_MIN_HEIGHT := 236.0
 const DESKTOP_MENU_MIN_WIDTH := 300.0
 const DESKTOP_WIDE_MIN_WIDTH := 690.0
+# On tall desktop windows reveal 50% more vertical world without making sprites larger.
+const DESKTOP_TALL_WORLD := Vector2i(960,720)
+const DESKTOP_SHORT_WORLD := Vector2i(960,480)
+const DESKTOP_TALL_MIN_SIDE_SPACE := 18.0
 static func desktop(view: Vector2, previous := Vector2i(640,480), docked := false, locked := false) -> Dictionary:
 	var compact := view.x < 600.0
 	var info_height := 86.0 if compact else 46.0
@@ -77,19 +81,43 @@ static func desktop(view: Vector2, previous := Vector2i(640,480), docked := fals
 	var header_bottom := info_height + toolbar_height + gap
 	var usable_height := maxf(1.0,view.y-header_bottom-summary_height-gap*3.0)
 	var usable_width := maxf(1.0,view.x-side*2.0)
-	# Width is the deciding factor: growing a window VERTICALLY must not
-	# flip the approved wide world to 4:3. Preserve the active fight's shape.
-	var resolution: Vector2i = Vector2i(960,480) if usable_width >= DESKTOP_WIDE_MIN_WIDTH else Vector2i(640,480)
+	# Keep the existing 2:1 view untouched for short / regular windows.
+	# Only a genuinely tall window gets a 960x720 camera canvas.  This
+	# preserves horizontal world units per pixel and reveals 240 MORE
+	# vertical world pixels (50%) without vertically stretching the image.
+	var resolution: Vector2i = DESKTOP_SHORT_WORLD if usable_width >= DESKTOP_WIDE_MIN_WIDTH else Vector2i(640,480)
+	var width_scale := usable_width / float(DESKTOP_SHORT_WORLD.x)
+	var tall_footprint := Vector2(DESKTOP_TALL_WORLD) * width_scale
+	var old_footprint := Vector2(DESKTOP_SHORT_WORLD) * width_scale
+	# Also require room for the old-view center anchor to keep the old
+	# gameplay lower edge in approximately the same screen position.
+	var old_top := header_bottom + (usable_height-old_footprint.y)*0.5
+	var proposed_top := old_top - (tall_footprint.y - old_footprint.y)
+	var can_extend := (
+		not docked
+		and not compact
+		and resolution == DESKTOP_SHORT_WORLD
+		and tall_footprint.y + DESKTOP_TALL_MIN_SIDE_SPACE <= usable_height
+		and proposed_top >= header_bottom + 2.0
+	)
+	if can_extend: resolution = DESKTOP_TALL_WORLD
+	# Do not change a live fishing session's viewport.  The active camera
+	# and its yaw/HUD safe framing remain identical until fishing ends.
 	if locked: resolution = previous
 	var scale := maxf(0.01,minf(usable_width/float(resolution.x),usable_height/float(resolution.y)))
 	var footprint := Vector2(resolution)*scale
 	var free_height := maxf(0.0,usable_height-footprint.y)
-	# World + compact summaries remain a vertically balanced group.
-	var world := Rect2(Vector2(side+(usable_width-footprint.x)*0.5,header_bottom+free_height*.5),footprint)
+	var y := header_bottom+free_height*.5
+	if resolution == DESKTOP_TALL_WORLD and is_equal_approx(scale,width_scale):
+		# Expand UP from the former 960x480 view's top: its lower edge
+		# remains stable while new sea/sky coverage appears above it.
+		y = maxf(header_bottom+2.0,old_top-(footprint.y-old_footprint.y))
+	var world := Rect2(Vector2(side+(usable_width-footprint.x)*0.5,y),footprint)
 	var summary := Rect2(Vector2(side,world.end.y+gap),Vector2(usable_width,summary_height))
 	var menu_top := summary.end.y + gap
 	var menu := Rect2(Vector2(side,menu_top),Vector2(usable_width,maxf(0.0,view.y-menu_top-gap)))
 	var lower_available := menu.size.x >= DESKTOP_MENU_MIN_WIDTH and menu.size.y >= DESKTOP_MENU_MIN_HEIGHT
+
 	return {"variant":"desktop_compact" if compact else "desktop_expanded" if resolution.x == 960 else "desktop_regular",
 		"resolution":resolution,"info":Rect2(0,0,view.x,info_height),"world":world,"frame":world.grow(2),
 		"toolbar":Rect2(side,info_height,usable_width,toolbar_height),"dashboard":summary,

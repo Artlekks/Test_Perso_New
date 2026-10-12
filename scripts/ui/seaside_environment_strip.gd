@@ -231,7 +231,7 @@ func _draw_desktop() -> void:
 			_desktop_item(i, Rect2(x, first_height, second_width, size.y - first_height), true)
 			x += second_width
 		return
-	var weights := [0.30, 0.145, 0.12, 0.12, 0.18, 0.135]
+	var weights := [0.26, 0.155, 0.125, 0.13, 0.185, 0.145]
 	var start_x := 8.0
 	for i in range(6):
 		var width: float = area_width * weights[i]
