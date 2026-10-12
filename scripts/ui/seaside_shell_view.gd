@@ -17,6 +17,9 @@ var equipment_open := false
 var equipment_pinned := false
 var dashboard: Control
 var desktop_actions: Control
+# Existing clickable controls remain implemented and QA-addressable, but are
+# not a mandatory permanent desktop toolbar. Can be enabled later by Settings.
+var show_desktop_shortcuts := false
 static func skin(texture: Texture2D, margin := 12) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
 	s.texture = texture
@@ -105,6 +108,7 @@ func _ready() -> void:
 		add_child(dashboard)
 		desktop_actions=preload("res://scripts/input/desktop_action_controls.gd").new()
 		desktop_actions.host=host; add_child(desktop_actions)
+		desktop_actions.hide()
 func configure(next: Dictionary) -> void:
 	if regions == next: return
 	regions = next
@@ -134,6 +138,9 @@ func configure(next: Dictionary) -> void:
 			_row(ids,toolbar)
 			desktop_actions.position=Vector2(6,toolbar.position.y)
 			desktop_actions.size=Vector2(minf(192,toolbar.position.x-12),28)
+		# Only show this optional strip when explicitly enabled. Its actions,
+		# user-configured key labels, and click/hold behavior remain intact.
+		desktop_actions.visible = show_desktop_shortcuts
 		# Native caption buttons retain minimize/maximize/close; collapse is
 		# available in the toolbar without replacing Windows decorations.
 		utility.Collapse.text = "Hide"

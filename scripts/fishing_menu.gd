@@ -291,6 +291,7 @@ var _journal: FishingJournalService = null
 var _tackle_catalog: FishingTackleCatalog = null
 
 var _is_open: bool = false
+var _direct_settings: bool = false # Only shell-requested Settings closes directly on Back.
 var _page: int = Page.MAIN
 var _command_index: int = 0
 var _equip_focus: int = EquipFocus.SLOT
@@ -376,17 +377,41 @@ func is_open() -> bool:
 
 
 func open_menu() -> void:
+	# Keep the existing J-menu guard: the normal gameplay menu cannot open
+	# during fishing or an active Triple Triad match.
 	if _is_open or not _can_open_menu():
 		return
+	_show_menu(Page.MAIN, false)
 
+
+func open_settings() -> void:
+	# Settings is an explicit, safe exception to the normal fishing-menu
+	# entry guard. Reuse the same Options page, input editor and pause owner.
+	if get_node("/root/InputBindings").capture_action != &"":
+		get_node("/root/InputBindings").cancel_capture()
+		return # First click cancels capture; next click toggles Settings.
+	if _is_open:
+		if _page == Page.OPTIONS:
+			close_menu()
+		else:
+			_direct_settings = true
+			_set_page(Page.OPTIONS)
+		return
+	if _is_triple_triad_active():
+		return # Never steal the card-game modal owner.
+	_show_menu(Page.OPTIONS, true)
+
+
+func _show_menu(initial_page: int, settings_entry: bool) -> void:
 	_is_open = true
+	_direct_settings = settings_entry
 	_pause_was_active = get_tree().paused
 	_hide_gameplay_hud()
 	selector_layer.visible = true
 	root.visible = true
 	_command_index = 0
 	main_equip_panel.visible = true
-	_set_page(Page.MAIN)
+	_set_page(initial_page)
 	_reset_panel_positions()
 	_refresh_all()
 	get_tree().paused = true
@@ -397,6 +422,7 @@ func close_menu() -> void:
 	if not _is_open:
 		return
 
+	_direct_settings = false
 	_is_open = false
 	_transitioning = false
 	_exit_closing = false
@@ -706,6 +732,11 @@ func _page_name(page: int) -> StringName:
 func _handle_cancel() -> void:
 	if exit_confirm.visible:
 		_hide_exit_confirm()
+		return
+	# A direct Settings request behaves like a conventional independent
+	# modal: Escape / the bound Back action closes it, not the J main menu.
+	if _direct_settings and _page == Page.OPTIONS:
+		close_menu()
 		return
 
 	if _page == Page.MAIN:
@@ -1791,7 +1822,9 @@ func _is_confirm(event: InputEvent) -> bool:
 
 
 func _is_cancel(event: InputEvent) -> bool:
-	return event.is_action_pressed("cancel_fishing")
+	if event.is_action_pressed("cancel_fishing"):
+		return true
+	return event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ESCAPE or event.physical_keycode == KEY_ESCAPE)
 
 
 func _vertical_step(event: InputEvent) -> int:

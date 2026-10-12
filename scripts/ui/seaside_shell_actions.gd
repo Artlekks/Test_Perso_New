@@ -18,8 +18,12 @@ static func request(host: Node, id: String) -> void:
 		return
 	var menu := host.game.find_child("FishingMenu",true,false) as FishingMenu
 	if menu == null: return
+	if id == "Settings" and host.get("window_state") != null:
+		# Desktop gear has its own toggle entry point, including while fishing.
+		# Do not relax J-menu or Triple Triad modal guards.
+		menu.open_settings()
+		return
 	if host.get_tree().paused and not menu.is_open(): return
-	if id == "Menu" and menu.is_open(): menu.close_menu(); return
 	menu.open_menu()
 	if not menu.is_open(): return
 	match id:

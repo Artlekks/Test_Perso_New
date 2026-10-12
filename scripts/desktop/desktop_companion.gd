@@ -27,6 +27,8 @@ var _floating_restore_rect := Rect2i()
 var _pending_shell_fullscreen := false
 var _pending_float_decoration := false
 var _float_client_rect := Rect2i()
+var _float_release_requested_ms := 0
+const FLOAT_ACK_TIMEOUT_MS := 5000
 var _dock_drag := false
 var _drag_x := 0
 var _drag_width := 0
@@ -135,6 +137,7 @@ func _ready() -> void:
 	if not usable.has_area(): usable = Rect2i(Vector2i.ZERO,Vector2i(1280,1024))
 	get_window().size = Vector2i(800,560)
 	get_window().position = usable.position+Vector2i(maxi(0,usable.size.x-get_window().size.x),maxi(0,(usable.size.y-get_window().size.y)/2))
+	_float_client_rect = Rect2i(get_window().position,get_window().size)
 	_layout()
 	load_gameplay_scene(gameplay_scene)
 func get_gameplay_scene() -> Node: return game
@@ -196,20 +199,34 @@ func set_window_state(next: int) -> void:
 	if next != WindowState.FLOATING and not platform.supported(): return
 	if window_state == next: return
 	var current_rect := Rect2i(get_window().position,get_window().size)
+	# Save a real floating rectangle BEFORE the native AppBar changes it.
+	# Dock/widget geometry must never overwrite the remembered float size.
+	if window_state == WindowState.FLOATING and current_rect.has_area() and not get_window().borderless:
+		_float_client_rect = current_rect
 	window_state = next
 	_expanded_state = next
 	_pending_float_decoration = false
+	_float_release_requested_ms = 0
 	if docked: get_window().borderless = true
 	# Decoration changes occur only on mode transitions. The native adapter
 	# owns all dock/widget rectangles; resizing never toggles decoration.
-	if docked: _apply_dock_size()
+	if docked:
+		_apply_dock_size()
 	else:
-		_float_client_rect = current_rect
+		if not _float_client_rect.has_area():
+			_float_client_rect = Rect2i(current_rect.position,Vector2i(800,560))
+		_floating_restore_rect = _float_client_rect
 		_pending_float_decoration = true
-		var error: Error = platform.request(false,get_window(),"right")
+		_float_release_requested_ms = Time.get_ticks_msec()
+		# Request release *with* the pre-dock float rectangle so the helper and
+		# Godot restore the same geometry, never the present dock rectangle.
+		var error: Error = platform.request(false,get_window(),"right",Vector2i.ZERO,false,_floating_restore_rect)
 		if error != OK:
 			status.text = error_string(error)
 			_request_pending = true
+		else:
+			_request_pending = false
+			_floating_restore_rect = Rect2i()
 		if not platform.supported() or platform.helper_pid <= 0: _restore_float_decoration()
 	_layout()
 func toggle_collapse() -> void:
@@ -221,6 +238,7 @@ func toggle_collapse() -> void:
 				_floating_restore_rect = _expanded_rect
 				_float_client_rect = _expanded_rect
 				_pending_float_decoration = true
+				_float_release_requested_ms = Time.get_ticks_msec()
 				_request_pending = true
 			else:
 				get_window().borderless = false
@@ -248,6 +266,10 @@ func _desired_dock_size() -> Vector2i:
 func _apply_dock_size() -> void:
 	_request_pending = true
 func _on_resize() -> void:
+	# An ordinary floating-window resize becomes the next dock -> float target.
+	if window_state == WindowState.FLOATING and not _pending_float_decoration and not get_window().borderless and get_window().mode == Window.MODE_WINDOWED:
+		var rect := Rect2i(get_window().position,get_window().size)
+		if rect.has_area(): _float_client_rect = rect
 	_layout()
 	# Native acknowledgements are outputs, never new width commands.
 func _divider_input(event: InputEvent) -> void:
@@ -276,8 +298,12 @@ func _process(delta: float) -> void:
 			_request_pending = true # Keep current edge; retry transport, never float.
 		else: _floating_restore_rect = Rect2i()
 	var state: Dictionary = platform.read_status()
-	if _pending_float_decoration and state.get("sequence",-1) == platform.sequence and not state.get("registered",false):
-		_restore_float_decoration()
+	if _pending_float_decoration:
+		if state.get("sequence",-1) == platform.sequence and not state.get("registered",false):
+			_restore_float_decoration()
+		elif _float_release_requested_ms > 0 and Time.get_ticks_msec()-_float_release_requested_ms > FLOAT_ACK_TIMEOUT_MS:
+			push_warning("Floating AppBar release acknowledgement timed out; restoring title bar locally. Check Windows reservation.")
+			_restore_float_decoration()
 	if docked and not str(state.get("error","")).is_empty():
 		status.text = str(state.error)
 		set_window_state(WindowState.FLOATING)
@@ -286,11 +312,13 @@ func _restore_float_decoration() -> void:
 	# Release AppBar first: a normal decorated window inside the old reserved
 	# work area can otherwise be relocated by Windows during the transition.
 	_pending_float_decoration = false
+	_float_release_requested_ms = 0
 	get_window().borderless = false
 	get_window().unresizable = false
 	get_window().min_size = Vector2i(min_dock_width,400)
-	get_window().size = _float_client_rect.size
-	get_window().position = _float_client_rect.position
+	if _float_client_rect.has_area():
+		get_window().size = _float_client_rect.size
+		get_window().position = _float_client_rect.position
 	if _pending_shell_fullscreen:
 		_pending_shell_fullscreen = false
 		get_window().mode = Window.MODE_MAXIMIZED
