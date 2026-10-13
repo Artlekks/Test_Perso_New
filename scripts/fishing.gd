@@ -175,7 +175,7 @@ var buffered_prep_power: float = -1.0
 var cast_power_locked: bool = false
 var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
-var _bite_alert: AnimatedSprite3D = null
+var _bite_alert: CanvasLayer = null
 
 
 func _show_bite_alert() -> void:
@@ -188,11 +188,13 @@ func _hide_bite_alert() -> void:
 		_bite_alert.call("hide_bite_window")
 
 func _ready() -> void:
-	# Attach once to the world-space player, not a fullscreen HUD overlay.
-	# The cue remains centered above Ryu regardless of facing or camera yaw.
+	# A camera-projected HUD cue follows Ryu's *actual* sprite head.
+	# Its CanvasLayer stays in the gameplay SubViewport during desktop docking.
+	# The existing Encounter bite-opportunity signal is the only trigger.
 	if is_instance_valid(player):
-		_bite_alert = FishingBiteAlertScript.new() as AnimatedSprite3D
+		_bite_alert = FishingBiteAlertScript.new() as CanvasLayer
 		_bite_alert.name = "BiteWindowExclamation"
+		_bite_alert.call("set_follow_targets", player, camera_rig.get_node_or_null("Camera3D"))
 		player.add_child(_bite_alert)
 	caster.set_free_lure_region_provider(camera_rig.free_lure_viewport_region)
 	# Read-only camera exclusion geometry; presentation/mechanics are unchanged.
