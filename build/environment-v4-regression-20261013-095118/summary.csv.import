@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dhuulqdrlf5db"
+
+[deps]
+
+files=["res://build/environment-v4-regression-20261013-095118/summary.ExitCode.translation", "res://build/environment-v4-regression-20261013-095118/summary.Log.translation", "res://build/environment-v4-regression-20261013-095118/summary.StderrLog.translation"]
+
+source_file="res://build/environment-v4-regression-20261013-095118/summary.csv"
+dest_files=["res://build/environment-v4-regression-20261013-095118/summary.ExitCode.translation", "res://build/environment-v4-regression-20261013-095118/summary.Log.translation", "res://build/environment-v4-regression-20261013-095118/summary.StderrLog.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

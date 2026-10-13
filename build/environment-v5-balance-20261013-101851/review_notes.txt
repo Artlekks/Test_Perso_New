@@ -1,0 +1,3 @@
+﻿REVIEW_ONLY|Dawn/night legacy condition tags are not clock-driven in production
+REVIEW_ONLY|Weather rain/tempest retain global bite, quality and tier bonuses; species-specific tuning remains incomplete
+REVIEW_ONLY|No angler safety gate is connected to unsafe_storm; do not interpret this as safe real-world guidance
