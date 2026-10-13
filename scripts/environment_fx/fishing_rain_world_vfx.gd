@@ -1,8 +1,8 @@
 extends Node3D
 ## Ambient rain is world-owned, independent of casting or fishing mode.
 ## Rain and water/ground impact visuals are presentation only.
-## Rainfall is drawn on camera-aligned planes so coverage and verticality are
-## stable during exploration, casting and camera movement. It remains 3D,
+## Rainfall is emitted ABOVE the camera frame and moves completely through it.
+## Screen-space speed and size remain stable when plane distance changes. It remains 3D,
 ## behind the 2D game UI; splashes continue to live on real world surfaces.
 ## All surface impacts use ONLY the small five-frame TOP ROW of RainImpact.png.
 
@@ -17,21 +17,28 @@ const POLL_SECONDS: float = 0.5
 @export_range(24, 600, 1) var drop_count: int = 220
 @export_range(0.002, 0.04, 0.001) var drop_width: float = 0.010
 @export_range(0.025, 0.28, 0.005) var drop_length: float = 0.095
-@export_range(0.05, 1.0, 0.05) var drop_opacity: float = 1.0
+@export_range(0.0, 1.0, 0.01) var drop_opacity: float = 1.0
 @export var rain_color: Color = Color("#D3ECFF")
-## A dark, subtle rim behind each pale drop preserves contrast on sand.
+## The dark rim shares the SAME overall opacity as the bright center.
 @export_range(0.0, 0.6, 0.01) var drop_edge_opacity: float = 0.27
 ## Emitter follows the camera frustum, rather than a world-space box.
 @export_range(1.0, 1.6, 0.05) var screen_coverage: float = 1.10
+## Rendering depth only; does NOT alter the perceived fall speed or streak length.
 @export_range(1.0, 4.0, 0.25) var rain_plane_distance: float = 2.0
-@export_range(0.5, 6.0, 0.1) var drop_fall_speed: float = 2.1
+## Viewport-heights per second: independent of length, width and plane distance.
+@export_range(0.25, 6.0, 0.05) var drop_fall_speed: float = 2.1
+@export_range(-50.0, 50.0, 1.0) var drop_angle_degrees: float = 0.0
+@export var follow_wind_direction: bool = false
+@export_range(0.0, 3.0, 0.05) var wind_angle_influence: float = 1.0
 @export_range(0.1, 0.9, 0.05) var distant_rain_share: float = 0.30
 
 @export_category("Surface Ripples - Top Row Only")
 @export_range(0.001, 0.04, 0.001) var splash_pixel_size: float = 0.003
 @export_range(1.0, 30.0, 1.0) var splash_fps: float = 12.0
 @export_range(1.0, 300.0, 1.0) var splash_rate_per_second: float = 80.0
-@export_range(1, 200, 1) var max_simultaneous_splashes: int = 100
+@export_range(1, 250, 1) var max_simultaneous_splashes: int = 100
+## Balance water/ground impacts when both surfaces are on screen.
+@export_range(0.0, 1.0, 0.05) var water_splash_share: float = 0.65
 @export var splash_color: Color = Color("#8E9DC4AB")
 @export_range(0.0, 1.0, 0.01) var splash_opacity: float = 0.38
 
@@ -46,6 +53,9 @@ var _last_rain_amounts: Vector2i = Vector2i(-1, -1)
 var _drop_texture: Texture2D = null
 var _beach: MeshInstance3D = null
 var _sea: MeshInstance3D = null
+var _sea_triangles: Array[PackedVector3Array] = []
+var _beach_triangles: Array[PackedVector3Array] = []
+var _last_splash_appearance: Array = []
 var _splash_frames: SpriteFrames = null
 var _splashes: Array[AnimatedSprite3D] = []
 var _splash_pool: Array[AnimatedSprite3D] = []
@@ -67,6 +77,7 @@ func _process(delta: float) -> void:
 	# Inspector edits also affect running previews; no restart needed for rain
 	# color, opacity, number, size or fall speed.
 	_sync_rain_appearance()
+	_sync_splash_appearance()
 	if not _raining:
 		return
 	_follow_camera()
@@ -112,7 +123,6 @@ func _poll_weather() -> void:
 		_rain_particles.emitting = _raining
 	if _distant_rain_particles != null:
 		_distant_rain_particles.emitting = _raining
-	_apply_wind_drift()
 
 func _create_rainfall() -> void:
 	_drop_texture = _create_drop_texture()
@@ -150,10 +160,10 @@ func _make_rain_layer(layer_name: StringName, depth_scale: float) -> GPUParticle
 	var layer: GPUParticles3D = GPUParticles3D.new()
 	layer.name = String(layer_name)
 	layer.amount = 1 # _sync_rain_appearance assigns the requested budget.
-	layer.lifetime = 1.0
-	layer.preprocess = 1.0
+	layer.lifetime = 0.70 # Updated from the viewport-height/speed relationship.
+	layer.preprocess = 0.70 # Fill the whole screen immediately on rain start.
 	layer.explosiveness = 0.0
-	layer.randomness = 0.20
+	layer.randomness = 0.0
 	# LOCAL coordinates are essential: the emitter planes travel with the
 	# camera, keeping already-living rain over the visible picture.
 	layer.local_coords = true
@@ -170,18 +180,18 @@ func _make_rain_layer(layer_name: StringName, depth_scale: float) -> GPUParticle
 	layer.draw_pass_2 = _make_streak_mesh(drop_width, drop_length, rain_color)
 	var processing: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	processing.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	processing.emission_box_extents = Vector3(1.0, 1.0, 0.015 * depth_scale)
-	# Camera-local DOWN gives an actual vertical screen path, regardless of
-	# perspective, camera pitch or the world wind heading.
+	processing.emission_box_extents = Vector3(1.0, 0.002, 0.015 * depth_scale)
+	# Spawn in a thin row ABOVE the top of the picture, then fall THROUGH
+	# the whole viewport. Rotation of the entire layer adds the wind slant.
 	processing.direction = Vector3.DOWN
-	processing.spread = 2.5
+	processing.spread = 0.0
 	processing.angle_min = 0.0
 	processing.angle_max = 0.0
 	processing.angular_velocity_min = 0.0
 	processing.angular_velocity_max = 0.0
-	processing.gravity = Vector3(0.0, -0.5, 0.0)
-	processing.initial_velocity_min = drop_fall_speed * (0.85 if depth_scale > 1.0 else 1.0)
-	processing.initial_velocity_max = drop_fall_speed * (1.10 if depth_scale > 1.0 else 1.25)
+	processing.gravity = Vector3.ZERO
+	processing.initial_velocity_min = 1.0 # Set per camera frustum below.
+	processing.initial_velocity_max = 1.1
 	layer.process_material = processing
 	add_child(layer)
 	return layer
@@ -197,7 +207,7 @@ func _sync_rain_appearance() -> void:
 		_distant_rain_particles.amount = distant_count
 		_last_rain_amounts = counts
 	var settings: Array = [drop_width, drop_length, drop_opacity, rain_color,
-		drop_edge_opacity, drop_fall_speed]
+		drop_edge_opacity, drop_fall_speed, drop_angle_degrees]
 	if settings == _last_rain_appearance:
 		return
 	_last_rain_appearance = settings.duplicate()
@@ -211,34 +221,24 @@ func _sync_rain_appearance() -> void:
 		highlight.size = Vector2(drop_width * scale_factor, drop_length * scale_factor)
 		var shadow_material: StandardMaterial3D = shadow.material as StandardMaterial3D
 		var highlight_material: StandardMaterial3D = highlight.material as StandardMaterial3D
+		var final_alpha: float = clampf(rain_color.a * drop_opacity * alpha_factor, 0.0, 1.0)
 		shadow_material.albedo_color = Color(0.09, 0.17, 0.28,
-			clampf(drop_edge_opacity * alpha_factor, 0.0, 1.0))
+			clampf(drop_edge_opacity * final_alpha, 0.0, 1.0))
 		highlight_material.albedo_color = Color(rain_color.r, rain_color.g,
-			rain_color.b, clampf(rain_color.a * drop_opacity * alpha_factor, 0.0, 1.0))
-		var processing: ParticleProcessMaterial = layer.process_material as ParticleProcessMaterial
-		processing.initial_velocity_min = drop_fall_speed * (0.85 if distant else 1.0)
-		processing.initial_velocity_max = drop_fall_speed * (1.10 if distant else 1.25)
+			rain_color.b, final_alpha)
 
-func _apply_wind_drift() -> void:
-	# Keep the rain mostly vertical, with only a tiny side-to-side drift.
-	var service: Node = get_tree().root.get_node_or_null("GameWind")
-	var drift: Vector2 = Vector2.ZERO
-	if service != null and service.has_method("get_snapshot"):
-		var state: Dictionary = service.call("get_snapshot") as Dictionary
-		if bool(state.get("available", false)):
-			drift = state.get("velocity_xz", Vector2.ZERO) as Vector2
-	var camera: Camera3D = get_viewport().get_camera_3d()
-	var screen_wind: float = 0.0
-	if camera != null:
-		screen_wind = Vector3(drift.x, 0.0, drift.y).dot(camera.global_basis.x)
-	screen_wind = clampf(screen_wind * 0.015, -0.13, 0.13)
-	for rain in [_rain_particles, _distant_rain_particles]:
-		if rain == null:
-			continue
-		var processing: ParticleProcessMaterial = rain.process_material as ParticleProcessMaterial
-		if processing != null:
-			processing.direction = Vector3(screen_wind, -1.0, 0.0).normalized()
-			processing.gravity = Vector3(screen_wind * 0.75, -0.5, 0.0)
+
+func _effective_drop_angle(camera: Camera3D) -> float:
+	var angle: float = drop_angle_degrees
+	if follow_wind_direction and camera != null:
+		var wind: Node = get_tree().root.get_node_or_null("GameWind")
+		if wind != null and wind.has_method("get_snapshot"):
+			var snapshot: Dictionary = wind.call("get_snapshot") as Dictionary
+			if bool(snapshot.get("available", false)):
+				var drift: Vector2 = snapshot.get("velocity_xz", Vector2.ZERO)
+				var rightward: float = Vector3(drift.x, 0.0, drift.y).dot(camera.global_basis.x)
+				angle += rightward * 5.0 * wind_angle_influence
+	return clampf(angle, -50.0, 50.0)
 
 func _build_splash_frames() -> void:
 	_splash_frames = SpriteFrames.new()
@@ -263,25 +263,131 @@ func _follow_camera() -> void:
 	if viewport_size.x < 2.0 or viewport_size.y < 2.0:
 		return
 	var basis: Basis = camera.global_transform.basis.orthonormalized()
-	# project_position automatically handles camera FOV, viewport aspect,
-	# orthographic cameras and Camera3D h_offset/v_offset.
+	var angle_radians: float = deg_to_rad(_effective_drop_angle(camera))
+	var rotation: Basis = Basis(Vector3.BACK, angle_radians)
+	# Positive angles mean rain moves to the right as it falls.
+	# The emitter is centered upstream to make both shoreline and open sea
+	# receive the same on-screen density, even during angled winds.
+	var top_x: float = viewport_size.x * 0.5 - tan(angle_radians) * viewport_size.y * 0.52
+	var top_screen: Vector2 = Vector2(top_x, -viewport_size.y * 0.10)
+	var ref_top: Vector3 = camera.project_position(Vector2(viewport_size.x * 0.5, 0.0), 2.0)
+	var ref_bottom: Vector3 = camera.project_position(Vector2(viewport_size.x * 0.5, viewport_size.y), 2.0)
+	var ref_height: float = maxf(ref_top.distance_to(ref_bottom), 0.001)
 	for layer in [_rain_particles, _distant_rain_particles]:
-		var distance: float = rain_plane_distance * (1.55 if layer == _distant_rain_particles else 1.0)
+		var distant: bool = layer == _distant_rain_particles
+		var distance: float = rain_plane_distance * (1.55 if distant else 1.0)
 		var top_left: Vector3 = camera.project_position(Vector2.ZERO, distance)
 		var top_right: Vector3 = camera.project_position(Vector2(viewport_size.x, 0.0), distance)
 		var bottom_left: Vector3 = camera.project_position(Vector2(0.0, viewport_size.y), distance)
-		var center: Vector3 = camera.project_position(viewport_size * 0.5, distance)
-		layer.global_transform = Transform3D(basis, center)
 		var screen_width: float = top_left.distance_to(top_right)
 		var screen_height: float = top_left.distance_to(bottom_left)
+		layer.global_transform = Transform3D(basis * rotation, camera.project_position(top_screen, distance))
 		var process_material: ParticleProcessMaterial = layer.process_material as ParticleProcessMaterial
-		# Emit evenly across the SCREEN, not over 24x24 world-space units.
-		# Slight overscan prevents uncovered edges when the camera moves.
-		process_material.emission_box_extents = Vector3(
-			screen_width * screen_coverage * 0.5,
-			screen_height * screen_coverage * 0.5,
-			0.025
-		)
+		var angled_width: float = screen_width + absf(tan(angle_radians)) * screen_height * 1.15
+		var volume: Vector3 = Vector3(angled_width * screen_coverage * 0.5, 0.002, 0.015)
+		if not process_material.emission_box_extents.is_equal_approx(volume):
+			process_material.emission_box_extents = volume
+		# World distance, mesh size and camera FOV no longer determine visual
+		# speed: always move the same share of the picture per second.
+		var speed_world: float = screen_height * drop_fall_speed / maxf(cos(angle_radians), 0.55)
+		var speed_min: float = speed_world * 0.94
+		var speed_max: float = speed_world * 1.06
+		# Raise max before min when accelerating; lower min before max
+		# when decelerating, so range constraints never clamp the new speed.
+		if speed_max > process_material.initial_velocity_max:
+			process_material.initial_velocity_max = speed_max
+		if not is_equal_approx(process_material.initial_velocity_min, speed_min):
+			process_material.initial_velocity_min = speed_min
+		if not is_equal_approx(process_material.initial_velocity_max, speed_max):
+			process_material.initial_velocity_max = speed_max
+		var travel_lifetime: float = 1.4 / maxf(drop_fall_speed, 0.25)
+		if absf(layer.lifetime - travel_lifetime) > 0.002:
+			layer.lifetime = travel_lifetime
+			layer.preprocess = travel_lifetime
+		# Width and length are evaluated at a constant reference depth, so
+		# increasing Rain Plane Distance never makes drops 'slower' or larger.
+		var view_scale: float = screen_height / ref_height
+		var depth_scale: float = 0.72 if distant else 1.0
+		var rim: QuadMesh = layer.draw_pass_1 as QuadMesh
+		var core: QuadMesh = layer.draw_pass_2 as QuadMesh
+		var rim_size: Vector2 = Vector2(drop_width * 1.8, drop_length * 1.05) * view_scale * depth_scale
+		var core_size: Vector2 = Vector2(drop_width, drop_length) * view_scale * depth_scale
+		if not rim.size.is_equal_approx(rim_size):
+			rim.size = rim_size
+		if not core.size.is_equal_approx(core_size):
+			core.size = core_size
+
+func _find_sea() -> MeshInstance3D:
+	if not is_instance_valid(_sea):
+		_sea = get_node_or_null("../beach/Sea") as MeshInstance3D
+		_sea_triangles.clear()
+	return _sea
+
+func _find_beach() -> MeshInstance3D:
+	if not is_instance_valid(_beach):
+		_beach = get_node_or_null("../beach/Beach") as MeshInstance3D
+		_beach_triangles.clear()
+	return _beach
+
+func _mesh_triangles(mesh_node: MeshInstance3D, water: bool) -> Array[PackedVector3Array]:
+	# The original GLB uses an uneven/sloped Sea mesh. Test its real
+	# triangles rather than intersecting an invented horizontal Y-plane.
+	if water and not _sea_triangles.is_empty():
+		return _sea_triangles
+	if not water and not _beach_triangles.is_empty():
+		return _beach_triangles
+	var triangles: Array[PackedVector3Array] = []
+	if mesh_node == null or mesh_node.mesh == null:
+		return triangles
+	var array_mesh: ArrayMesh = mesh_node.mesh as ArrayMesh
+	for surface in range(mesh_node.mesh.get_surface_count()):
+		if array_mesh != null and array_mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
+			continue
+		var arrays: Array = mesh_node.mesh.surface_get_arrays(surface)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		if indices.size() > 0:
+			for i in range(0, indices.size() - 2, 3):
+				triangles.append(PackedVector3Array([
+					vertices[indices[i]], vertices[indices[i + 1]], vertices[indices[i + 2]]
+				]))
+		else:
+			for i in range(0, vertices.size() - 2, 3):
+				triangles.append(PackedVector3Array([vertices[i], vertices[i + 1], vertices[i + 2]]))
+	if water:
+		_sea_triangles = triangles
+	else:
+		_beach_triangles = triangles
+	return triangles
+
+func _mesh_ray_hit(origin: Vector3, direction: Vector3, mesh_node: MeshInstance3D, water: bool) -> Vector3:
+	if mesh_node == null or mesh_node.mesh == null:
+		return Vector3.INF
+	var source: Vector3 = mesh_node.to_local(origin)
+	var vector: Vector3 = mesh_node.to_local(origin + direction) - source
+	var closest: float = INF
+	var result: Vector3 = Vector3.INF
+	for face in _mesh_triangles(mesh_node, water):
+		var edge_a: Vector3 = face[1] - face[0]
+		var edge_b: Vector3 = face[2] - face[0]
+		var cross_a: Vector3 = vector.cross(edge_b)
+		var determinant: float = edge_a.dot(cross_a)
+		if absf(determinant) < 0.0000001:
+			continue
+		var inverse: float = 1.0 / determinant
+		var offset: Vector3 = source - face[0]
+		var u: float = inverse * offset.dot(cross_a)
+		if u < -0.00001 or u > 1.00001:
+			continue
+		var cross_b: Vector3 = offset.cross(edge_a)
+		var v: float = inverse * vector.dot(cross_b)
+		if v < -0.00001 or u + v > 1.00001:
+			continue
+		var travel: float = inverse * edge_b.dot(cross_b)
+		if travel > 0.0001 and travel < closest:
+			closest = travel
+			result = mesh_node.to_global(source + vector * travel)
+	return result
 
 func _spawn_impact() -> void:
 	if _splashes.size() >= max_simultaneous_splashes:
@@ -290,68 +396,63 @@ func _spawn_impact() -> void:
 	if camera == null:
 		return
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+	if viewport_size.x < 2.0 or viewport_size.y < 2.0:
 		return
 	var sea: MeshInstance3D = _find_sea()
-	var sea_y: float = sea.global_position.y if sea != null else 0.0
-	for attempt in range(7):
+	var beach: MeshInstance3D = _find_beach()
+	var want_water: bool = _rng.randf() < water_splash_share
+	var fallback: Vector3 = Vector3.INF
+	var fallback_is_water: bool = false
+	# Sample the picture rather than arbitrary world coordinates. Prioritize
+	# both materials when visible so water ripples aren't lost in the sand.
+	for attempt in range(16):
 		var screen_point: Vector2 = Vector2(
-			_rng.randf_range(0.12, 0.88) * viewport_size.x,
-			_rng.randf_range(0.24, 0.86) * viewport_size.y
+			_rng.randf_range(0.04, 0.96) * viewport_size.x,
+			_rng.randf_range(0.06, 0.95) * viewport_size.y
 		)
-		var ray_origin: Vector3 = camera.project_ray_origin(screen_point)
-		var ray_direction: Vector3 = camera.project_ray_normal(screen_point)
-		if absf(ray_direction.y) < 0.01:
+		var origin: Vector3 = camera.project_ray_origin(screen_point)
+		var direction: Vector3 = camera.project_ray_normal(screen_point)
+		var on_sea: Vector3 = _mesh_ray_hit(origin, direction, sea, true)
+		var on_beach: Vector3 = _mesh_ray_hit(origin, direction, beach, false)
+		var water: bool = on_sea.x != INF and (
+			on_beach.x == INF or origin.distance_squared_to(on_sea) < origin.distance_squared_to(on_beach)
+		)
+		var hit: Vector3 = on_sea if water else on_beach
+		if hit.x == INF:
 			continue
-		var distance: float = (sea_y - ray_origin.y) / ray_direction.y
-		if distance <= 0.0 or distance > 300.0:
-			continue
-		var point: Vector3 = ray_origin + ray_direction * distance
-		var on_water: bool = _within_sea(point, sea)
-		if not on_water:
-			var ground: Vector3 = _ground_intersection(ray_origin, ray_direction)
-			if ground.x == INF:
-				continue
-			point = ground
-		_spawn_splash(point + Vector3.UP * 0.035, &"water" if on_water else &"ground")
-		return
+		if fallback.x == INF:
+			fallback = hit
+			fallback_is_water = water
+		if water == want_water:
+			_spawn_splash(hit + Vector3.UP * 0.012, &"water" if water else &"ground")
+			return
+	if fallback.x != INF:
+		_spawn_splash(fallback + Vector3.UP * 0.012, &"water" if fallback_is_water else &"ground")
 
 func _ground_intersection(origin: Vector3, direction: Vector3) -> Vector3:
-	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 200.0)
-	query.collision_mask = 0xFFFFFFFF
-	var result: Dictionary = space.intersect_ray(query)
-	if not result.is_empty():
-		return result["position"] as Vector3
-	# Some authored shore geometry is decorative and has no collider.
-	# Only use a height-plane fallback when the intersection lies inside
-	# the actual beach mesh footprint. Never make an impact in empty void.
-	if not is_instance_valid(_beach):
-		_beach = get_node_or_null("../beach/Beach") as MeshInstance3D
-	if _beach == null or _beach.mesh == null or absf(direction.y) < 0.01:
-		return Vector3(INF, INF, INF)
-	var target_y: float = _beach.global_position.y + 0.025
-	var travel: float = (target_y - origin.y) / direction.y
-	if travel <= 0.0 or travel > 200.0:
-		return Vector3(INF, INF, INF)
-	var point: Vector3 = origin + direction * travel
-	var local: Vector3 = _beach.to_local(point)
-	var bounds: AABB = _beach.get_aabb()
-	if local.x >= bounds.position.x and local.x <= bounds.end.x and local.z >= bounds.position.z and local.z <= bounds.end.z:
-		return point
-	return Vector3(INF, INF, INF)
+	# Kept for existing QA/external callers. Surface lookup uses the real
+	# authored Beach mesh rather than a generic collision hit (which might
+	# accidentally be an underwater floor or NPC collider).
+	return _mesh_ray_hit(origin, direction, _find_beach(), false)
 
-func _find_sea() -> MeshInstance3D:
-	if not is_instance_valid(_sea):
-		_sea = get_node_or_null("../beach/Sea") as MeshInstance3D
-	return _sea
+func _sync_splash_appearance() -> void:
+	var settings: Array = [splash_color, splash_opacity, splash_pixel_size, splash_fps]
+	if settings == _last_splash_appearance:
+		return
+	_last_splash_appearance = settings.duplicate()
+	if _splash_frames != null:
+		for name in [&"ground", &"water"]:
+			_splash_frames.set_animation_speed(name, splash_fps)
+	for sprite in _splashes:
+		if is_instance_valid(sprite):
+			_apply_splash_style(sprite)
 
-func _within_sea(point: Vector3, sea: MeshInstance3D) -> bool:
-	if sea == null or sea.mesh == null:
-		return false
-	var local: Vector3 = sea.to_local(point)
-	var bounds: AABB = sea.get_aabb()
-	return local.x >= bounds.position.x and local.x <= bounds.end.x and local.z >= bounds.position.z and local.z <= bounds.end.z
+func _apply_splash_style(sprite: AnimatedSprite3D) -> void:
+	sprite.pixel_size = splash_pixel_size
+	sprite.modulate = Color(
+		splash_color.r, splash_color.g, splash_color.b,
+		clampf(splash_color.a * splash_opacity, 0.0, 1.0)
+	)
 
 func _spawn_splash(at_position: Vector3, animation: StringName) -> void:
 	if _splashes.size() >= max_simultaneous_splashes:
@@ -371,11 +472,7 @@ func _spawn_splash(at_position: Vector3, animation: StringName) -> void:
 		sprite.animation_finished.connect(_recycle_splash.bind(sprite))
 	else:
 		sprite = _splash_pool.pop_back()
-	sprite.pixel_size = splash_pixel_size
-	sprite.modulate = Color(
-		splash_color.r, splash_color.g, splash_color.b,
-		clampf(splash_color.a * splash_opacity, 0.0, 1.0)
-	)
+	_apply_splash_style(sprite)
 	sprite.global_position = at_position
 	sprite.visible = true
 	_splashes.append(sprite)
