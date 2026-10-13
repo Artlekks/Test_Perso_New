@@ -5,6 +5,7 @@ class_name FishingCurrentSurfaceView
 ## continue to belong to their existing services. Purchased assets are local.
 
 const CurrentWorldVfxScene = preload("res://actors/FishingCurrentVFX.tscn")
+const WindWorldVfxScene = preload("res://actors/FishingWindVFX.tscn")
 const EnvironmentFxOverlayScript = preload("res://scripts/environment_fx/environment_overlay.gd")
 const CAPABILITY_READ_CURRENT: StringName = &"read_current"
 const CAPABILITY_DRIFT_CASTING: StringName = &"current_compensation"
@@ -28,6 +29,7 @@ func _ready() -> void:
 	# fishing HUD, this world effect stays alive during exploration. Also works
 	# if the user has already instanced it manually in the editor scene.
 	_ensure_world_current_vfx()
+	_ensure_world_wind_vfx()
 	_build_drift_markers()
 	_build_environment_overlay()
 	_refresh_visibility()
@@ -43,6 +45,19 @@ func _ensure_world_current_vfx() -> void:
 		push_error("Nolka world-current scene could not be instantiated.")
 		return
 	visual.name = "FishingCurrentVFX"
+	world.add_child(visual)
+
+func _ensure_world_wind_vfx() -> void:
+	# World-owned: remains active outside fishing, just like the current.
+	# A manually placed editor node wins; never add duplicates.
+	var world: Node3D = get_node_or_null("../../../World") as Node3D
+	if world == null or world.has_node("FishingWindVFX"):
+		return
+	var visual: Node3D = WindWorldVfxScene.instantiate() as Node3D
+	if visual == null:
+		push_error("Nolka wind VFX scene could not be instantiated.")
+		return
+	visual.name = "FishingWindVFX"
 	world.add_child(visual)
 
 func configure(current_service: FishingCurrentService, mastery_service: FishingMasteryService) -> void:

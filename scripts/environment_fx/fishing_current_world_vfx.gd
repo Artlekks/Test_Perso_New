@@ -26,22 +26,24 @@ extends Node3D
 @export_range(5.0, 25.0, 0.5) var reference_max_speed: float = 9.0
 
 @export_category("Nolka Current - Curves")
-@export_range(0.0, 10.0, 0.1) var reference_min_turbulence: float = 2.0
-@export_range(0.0, 15.0, 0.1) var reference_max_turbulence: float = 5.0
+@export_range(0.0, 10.0, 0.1) var reference_min_turbulence: float = 0.5
+@export_range(0.0, 15.0, 0.1) var reference_max_turbulence: float = 1.5
 @export_range(0.005, 0.03, 0.001) var reference_noise_domain: float = 0.008
 ## Short lines need more noise variation per metre to show clear curves.
 @export_range(1.0, 5.0, 0.1) var curvature_detail: float = 2.5
 
 @export_category("Nolka Current - Coverage")
 ## The sea mesh, not the much smaller FishSwimBounds, sets coverage.
+## Shoreline priority shifts the footprint toward the fishing shoreline.
 @export_range(0.25, 1.0, 0.05) var sea_coverage: float = 0.80
-@export_range(0.2, 1.5, 0.05) var playback_speed: float = 0.80
+@export var prioritize_shoreline: bool = true
+@export_range(0.2, 1.5, 0.05) var playback_speed: float = 0.30
 
 @export_category("Underwater Appearance")
 @export var submerge_lines: bool = true
 @export_range(0.005, 0.15, 0.005) var below_water_depth: float = 0.035
 @export_range(0.005, 0.2, 0.005) var above_water_offset: float = 0.055
-@export_range(0.60, 1.0, 0.01) var water_surface_opacity: float = 0.80
+@export_range(0.60, 1.0, 0.01) var water_surface_opacity: float = 0.85
 
 const SAMPLE_PERIOD: float = 1.0 / 12.0
 
@@ -135,6 +137,17 @@ func _get_coverage(heading: Vector3, fallback_bounds: FishSwimBounds, water_y: f
 	center.y = water_y
 	var width: float = maxf((max_across - min_across) * sea_coverage, 0.5)
 	var length: float = maxf((max_forward - min_forward) * sea_coverage, 0.5)
+	# Default 80% coverage used to clip 10% off BOTH ends, including the
+	# shoreline. Keep the same particle footprint but bias it to the near-shore
+	# side of the Sea when fishing bounds identify which edge is nearest.
+	if prioritize_shoreline and fallback_bounds != null and not corners.is_empty():
+		var shore_sample: Vector3 = fallback_bounds.normalized_uv_to_world(Vector2(0.5, 0.5), water_y)
+		var near_across: float = shore_sample.dot(across)
+		var near_forward: float = shore_sample.dot(heading)
+		var across_center: float = min_across + width * 0.5 if absf(near_across - min_across) <= absf(near_across - max_across) else max_across - width * 0.5
+		var forward_center: float = min_forward + length * 0.5 if absf(near_forward - min_forward) <= absf(near_forward - max_forward) else max_forward - length * 0.5
+		center = across * across_center + heading * forward_center
+		center.y = water_y
 	return {"center": center, "area": Vector3(width, 0.025, length)}
 
 func _update_flow() -> void:

@@ -98,6 +98,11 @@ func run() -> void:
 	var particles: GPUParticles3D = wind.get_node_or_null("SwayEmitter") as GPUParticles3D
 	check(particles != null, "original GPU emitter retained")
 	vfx.call("_update_flow")
+	check(absf(float(vfx.get("playback_speed")) - 0.30) < 0.001, "user playback setting is saved")
+	check(absf(float(vfx.get("reference_min_turbulence")) - 0.5) < 0.001, "user minimum turbulence is saved")
+	check(absf(float(vfx.get("reference_max_turbulence")) - 1.5) < 0.001, "user maximum turbulence is saved")
+	check(absf(float(vfx.get("sea_coverage")) - 0.8) < 0.001, "user sea coverage is saved")
+	check(bool(vfx.get("prioritize_shoreline")), "near-shore footprint is prioritized")
 	check(bool(vfx.call("is_current_display_running")), "current emits during exploration")
 	check(not bool(service.get_snapshot().get("active", false)), "no fishing session required")
 
@@ -109,8 +114,8 @@ func run() -> void:
 	check(absf(max_speed - 9.0 * scale) < 0.02, "Nolka maximum speed scaled")
 	check(max_speed * duration < 1.7, "trail length stays within character-scale range")
 	check(absf(float(wind.get("sway_thickness")) - 0.20 * scale) < 0.01, "ribbon width scales with motion")
-	check(absf(float(wind.get("min_turbulence_amplitude")) - 2.0 * scale) < 0.01, "minimum sway amplitude scales")
-	check(absf(float(wind.get("max_turbulence_amplitude")) - 5.0 * scale) < 0.01, "maximum sway amplitude scales")
+	check(absf(float(wind.get("min_turbulence_amplitude")) - 0.5 * scale) < 0.01, "minimum sway amplitude scales")
+	check(absf(float(wind.get("max_turbulence_amplitude")) - 1.5 * scale) < 0.01, "maximum sway amplitude scales")
 	check(float(wind.get("turbulence_domain_scale")) > 0.08, "short trails have sufficient curvature detail")
 	var tint: Color = wind.get("color")
 	check(tint.a < 0.5, "subtle line opacity")
@@ -128,7 +133,7 @@ func run() -> void:
 	var transparent: ShaderMaterial = sea.material_override as ShaderMaterial
 	check(transparent != null, "sea retains shader material")
 	if transparent != null:
-		check(absf(float(transparent.get_shader_parameter("current_water_opacity")) - 0.80) < 0.001, "sea opacity remains configurable")
+		check(absf(float(transparent.get_shader_parameter("current_water_opacity")) - 0.85) < 0.001, "sea opacity remains configurable")
 	vfx.set("display_current", false)
 	vfx.call("_update_flow")
 	check(not bool(vfx.call("is_current_display_running")), "visual off switch disables emission")
