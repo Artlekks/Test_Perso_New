@@ -14,6 +14,9 @@ const FishingWeatherSensePolicyScript = preload(
 const FishingTideSensePolicyScript = preload(
 	"res://scripts/fishing_tide_sense_policy.gd"
 )
+const FishingHabitatPresentationPolicyScript = preload(
+	"res://scripts/fishing_habitat_presentation_policy.gd"
+)
 const FishingEcologyPolicyScript = preload(
 	"res://scripts/fishing_ecology_policy.gd"
 )
@@ -74,28 +77,69 @@ func set_current_service(service: Node) -> void:
 	_current_service = service
 
 
-func get_ecology_snapshot() -> Dictionary:
+## Optional lure position uses the existing current service's spatial map.
+## Null remains the original center-of-spot behavior for every old caller.
+func get_ecology_snapshot(world_position: Variant = null) -> Dictionary:
 	var clock_state: Dictionary = {}
 	var wind_state: Dictionary = {}
 	var tide_state: Dictionary = {}
 	var sampled_current: Vector2 = Vector2.ZERO
-	var clock: Node = get_node_or_null("/root/GameClock")
+	# FishingSessionServices can request ecology before this Node has been
+	# attached to the active SceneTree. Absolute get_node() calls on a detached
+	# Node emit engine errors even when the global service actually exists.
+	var clock: Node = _get_global_environment_node("GameClock")
 	if clock != null and clock.has_method("get_snapshot"):
 		clock_state = clock.call("get_snapshot") as Dictionary
-	var wind: Node = get_node_or_null("/root/GameWind")
+	var wind: Node = _get_global_environment_node("GameWind")
 	if wind != null and wind.has_method("get_snapshot"):
 		wind_state = wind.call("get_snapshot") as Dictionary
 	if _tide_service != null and _tide_service.has_method("get_snapshot"):
 		tide_state = _tide_service.call("get_snapshot") as Dictionary
-	if _current_service != null and _current_service.has_method("sample_spot_at_uv") and _spot != null:
-		var sample: Variant = _current_service.call("sample_spot_at_uv", _spot, Vector2(0.5, 0.5), 0.0)
-		if typeof(sample) == TYPE_VECTOR2:
-			sampled_current = sample
+	if _current_service != null and _spot != null:
+		if typeof(world_position) == TYPE_VECTOR3 and _current_service.has_method("sample_current_velocity"):
+			# Deterministic field sample: no second random gust or wind added.
+			var local_velocity: Variant = _current_service.call("sample_current_velocity", world_position, 0.0)
+			if typeof(local_velocity) == TYPE_VECTOR3:
+				sampled_current = Vector2(local_velocity.x, local_velocity.z)
+		elif _current_service.has_method("sample_current_at_uv"):
+			var sample: Variant = _current_service.call("sample_current_at_uv", Vector2(0.5, 0.5), 0.0)
+			if typeof(sample) == TYPE_VECTOR2:
+				sampled_current = sample
 	var ecology: Dictionary = FishingEcologyPolicyScript.build_snapshot(
 		clock_state, wind_state, tide_state, sampled_current, get_active_tags(), _get_spot_id()
 	)
 	ecology["current_available"] = _spot != null and is_instance_valid(_current_service)
+	ecology["current_sample_scope"] = "local_lure" if typeof(world_position) == TYPE_VECTOR3 else "spot_center"
 	return ecology
+
+
+## Environmental lure feedback is independent of baseline input cadence.
+## This single read-only service is used by encounter bite rolls; no movement,
+## camera, casting power or weather/tide state is written here.
+func get_lure_environment_presentation_snapshot(
+	bait: BaitData,
+	lure_position: Vector3,
+	rod_position: Vector3,
+	presentation: Dictionary,
+	current_depth: float,
+	total_depth: float
+) -> Dictionary:
+	if bait == null:
+		return {"multiplier": 1.0, "available": false, "label": "NEUTRAL"}
+	var action: LureActionProfile = bait.get_action_profile()
+	return FishingHabitatPresentationPolicyScript.evaluate(
+		action, presentation, get_ecology_snapshot(lure_position),
+		lure_position, rod_position, current_depth, total_depth
+	)
+
+
+func _get_global_environment_node(service_name: String) -> Node:
+	# The SceneTree is available even if this service has not been added to
+	# the tree yet. Resolve from its root, not from the detached instance.
+	var scene_tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if scene_tree == null or scene_tree.root == null:
+		return null
+	return scene_tree.root.get_node_or_null(NodePath(service_name))
 
 
 func set_mastery_service(service: Node) -> void:
@@ -352,7 +396,7 @@ func get_tide_sense_snapshot() -> Dictionary:
 	return FishingTideSensePolicyScript.build_read_snapshot(tide_snapshot)
 
 
-func get_species_selection_multiplier(fish: FishData) -> float:
+func get_species_selection_multiplier(fish: FishData, ecology_snapshot: Dictionary = {}) -> float:
 	if fish == null:
 		return 0.0
 	var species_id: String = fish.get_stable_species_id().strip_edges().to_lower()
@@ -376,24 +420,26 @@ func get_species_selection_multiplier(fish: FishData) -> float:
 	# Opt-in ecology refines a species' own opportunity, without introducing
 	# another universal rain/storm bite or quality multiplier.
 	multiplier *= FishingEcologyPolicyScript.species_activity_multiplier(
-		fish, get_ecology_snapshot()
+		fish, ecology_snapshot if not ecology_snapshot.is_empty() else get_ecology_snapshot()
 	)
 	return clampf(multiplier, 0.0, MAX_SPECIES_WEIGHT_MULTIPLIER)
 
 
-func get_selection_context(entries: Array = []) -> Dictionary:
+func get_selection_context(entries: Array = [], world_position: Variant = null) -> Dictionary:
 	var species_multipliers: Dictionary = {}
+	var ecology: Dictionary = get_ecology_snapshot(world_position)
 	for raw_entry in entries:
 		if raw_entry == null or raw_entry.fish == null:
 			continue
 		var species_id: String = raw_entry.fish.get_stable_species_id().strip_edges().to_lower()
-		species_multipliers[species_id] = get_species_selection_multiplier(raw_entry.fish)
+		species_multipliers[species_id] = get_species_selection_multiplier(raw_entry.fish, ecology)
 	var tide_snapshot: Dictionary = {}
 	if _tide_service != null and _tide_service.has_method("get_snapshot"):
 		tide_snapshot = _tide_service.call("get_snapshot") as Dictionary
 	return {
 		"active_condition_ids": get_active_condition_ids(),
 		"active_environment_tags": get_active_tags(),
+		"ecology_current_sample_scope": ecology.get("current_sample_scope", "spot_center"),
 		"species_multipliers": species_multipliers,
 		"spot_id": _get_spot_id(),
 		"tide_phase_id": tide_snapshot.get("phase_id", &"none"),

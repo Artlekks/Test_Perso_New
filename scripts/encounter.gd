@@ -466,6 +466,28 @@ func _on_bite_timer_timeout() -> void:
 				2.0
 			)
 
+		# Environmental presentation is independent of the existing A/D/K lure
+		# cadence score. It reads local current/wind/light without moving the bait.
+		var water_presentation_multiplier: float = 1.0
+		if (
+			environment_service != null
+			and active_bait_data != null
+			and caster.has_method("get_active_bait_world_position")
+			and caster.has_method("get_active_bait_presentation_snapshot")
+			and environment_service.has_method("get_lure_environment_presentation_snapshot")
+		):
+			var water_presentation: Dictionary = environment_service.get_lure_environment_presentation_snapshot(
+				active_bait_data,
+				caster.get_active_bait_world_position(),
+				caster.global_position,
+				caster.get_active_bait_presentation_snapshot(),
+				caster.get_current_bait_depth(),
+				caster.get_current_total_depth()
+			)
+			water_presentation_multiplier = clampf(
+				float(water_presentation.get("multiplier", 1.0)), 0.88, 1.12
+			)
+
 		var bite_chance := (
 			attraction
 			* max_bite_chance_per_check
@@ -474,6 +496,7 @@ func _on_bite_timer_timeout() -> void:
 			* prepared_bait_multiplier
 			* environment_bite_multiplier
 			* presentation_multiplier
+			* water_presentation_multiplier
 			* _get_spatial_bite_density_multiplier(
 				spatial_context
 			)
@@ -2792,6 +2815,12 @@ func _get_environment_selection_context() -> Dictionary:
 		or not environment_service.has_method("get_selection_context")
 	):
 		return {}
+	# The four authored ecology profiles should see flow at the actual lure,
+	# not the geographical center. All unprofiled fish remain neutral.
+	if caster != null and caster.has_method("get_active_bait_world_position"):
+		return environment_service.get_selection_context(
+			fish_population, caster.get_active_bait_world_position()
+		)
 	return environment_service.get_selection_context(fish_population)
 
 

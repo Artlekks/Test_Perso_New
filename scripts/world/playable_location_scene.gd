@@ -9,10 +9,12 @@ func _enter_tree() -> void:
 	if location_context == null:
 		return
 	get_node("/root/WorldLocations").bind_location(location_context, self)
-	# Bind the authored population before zone/ambient/fishing child readiness.
-	get_node("World/FishZone_V2").fishing_spot = location_context.fishing_spot
+	# The location is bound before the zone's _ready(), so its fish population
+	# can read the authored context. Do not access child nodes here: some
+	# runtime scene compositions add them after this parent's _enter_tree().
 
 func _ready() -> void:
+	_bind_fishing_spot_after_children_are_ready()
 	if OS.is_debug_build() and development_tools_enabled:
 		var tools = load("res://scripts/development/fishing_development_layer.gd")
 		tools.ensure(SessionComposition.acquire(get_tree())).mount_game(self)
@@ -26,6 +28,31 @@ func _ready() -> void:
 	layer.layer = 5
 	add_child(layer)
 	layer.add_child(label)
+
+func _bind_fishing_spot_after_children_are_ready() -> void:
+	if location_context == null or location_context.fishing_spot == null:
+		return
+
+	# Prefer the authored path. On alternate location scenes the zone may
+	# live elsewhere, but must still belong to *this* location scene.
+	var fish_zone: Node = get_node_or_null("World/FishZone_V2")
+	if fish_zone == null:
+		for candidate in get_tree().get_nodes_in_group("world_fishing_spots"):
+			if is_ancestor_of(candidate):
+				fish_zone = candidate
+				break
+
+	if fish_zone == null:
+		push_warning("PlayableLocationScene: No fishing zone was found in '%s'. Check this scene's FishZone_V2 instance; fishing requires a configured zone." % name)
+		return
+	if not fish_zone.has_method("get_fishing_spot"):
+		push_warning("PlayableLocationScene: '%s' is not a valid fishing zone; the location's fishing spot was not applied." % fish_zone.get_path())
+		return
+
+	# Set the authored property directly, preserving the existing behavior.
+	# Calling set_fishing_spot() here would incorrectly enable debug override.
+	fish_zone.set("fishing_spot", location_context.fishing_spot)
+
 
 func _exit_tree() -> void:
 	get_node("/root/WorldLocations").unbind_location(self)

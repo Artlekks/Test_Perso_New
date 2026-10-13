@@ -148,7 +148,7 @@ albedo_color = Color(0.33489877, 0.20385107, 0.09913743, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_shore_blocker"]
 size = Vector3(19, 4, 0.35)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_kt4qy"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_txgjr"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
@@ -158,169 +158,169 @@ render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_dlr72"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_kt4qy"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_rdhg8"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dlr72"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_koyid"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_rdhg8"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_nitc7"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_koyid"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_cmetb"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_nitc7"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_i4bsw"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cmetb"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_1pbgi"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_i4bsw"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_y5516"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1pbgi"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_2je2w"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_y5516"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_yq0rd"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2je2w"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_4ll8x"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_yq0rd"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_cmgg1"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4ll8x"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_k1a05"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_cmgg1"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_swraw"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_k1a05"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_ywtl2"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_swraw"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ute8f"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ywtl2"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_u362m"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_ute8f"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_v1qqd"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_u362m"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_e0qkl"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_v1qqd"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_g1j0k"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_e0qkl"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_lypwq"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_g1j0k"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_y0x53"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lypwq"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_4b0sm"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_y0x53"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_4nddp"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4b0sm"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_vvbh6"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_4nddp"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_hkuew"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vvbh6"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_07gd8"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_hkuew"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_eluh3"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_07gd8"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_fub5q"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_eluh3"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_0rgj1"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fub5q"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_a61d1"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_0rgj1"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_cdtvi"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_a61d1"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.6
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_2ynu6"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_cdtvi"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.1, 0.1)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_5sulg"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2ynu6"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.6
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_6y3vj"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_5sulg"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.1, 0.1)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_tdihq"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6y3vj"]
 render_priority = -120
 shader = ExtResource("15_txgjr")
 shader_parameter/opacity = 0.65
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_tshws"]
+[sub_resource type="PlaneMesh" id="PlaneMesh_tdihq"]
 material = SubResource("ShaderMaterial_blob")
 size = Vector2(0.33, 0.33)
 
@@ -461,8 +461,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0, 0.033282578)
 
 [node name="WorldBlobShadow" parent="World/TripleTriadOpponentNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.006, 0.033282578)
-material_override = SubResource("ShaderMaterial_kt4qy")
-mesh = SubResource("PlaneMesh_dlr72")
+material_override = SubResource("ShaderMaterial_txgjr")
+mesh = SubResource("PlaneMesh_kt4qy")
 
 [node name="BodyCollider" parent="World/TripleTriadOpponentNPC" index="1" unique_id=1090408400]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07442939, 0)
@@ -485,8 +485,8 @@ offset = Vector2(0, 22)
 
 [node name="WorldBlobShadow" parent="World/BeachCrafterNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.006, 0.6531534)
-material_override = SubResource("ShaderMaterial_rdhg8")
-mesh = SubResource("PlaneMesh_koyid")
+material_override = SubResource("ShaderMaterial_dlr72")
+mesh = SubResource("PlaneMesh_rdhg8")
 width = 0.5
 depth = 0.5
 
@@ -511,8 +511,8 @@ offset = Vector2(0, 29.5)
 
 [node name="WorldBlobShadow" parent="World/FishingCardMakerNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.78892124, 0.006, 0.51951283)
-material_override = SubResource("ShaderMaterial_nitc7")
-mesh = SubResource("PlaneMesh_cmetb")
+material_override = SubResource("ShaderMaterial_koyid")
+mesh = SubResource("PlaneMesh_nitc7")
 width = 0.5
 depth = 0.5
 
@@ -587,8 +587,8 @@ offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterCurrentReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_i4bsw")
-mesh = SubResource("PlaneMesh_1pbgi")
+material_override = SubResource("ShaderMaterial_cmetb")
+mesh = SubResource("PlaneMesh_i4bsw")
 width = 0.5
 depth = 0.5
 
@@ -613,8 +613,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterDepthReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_y5516")
-mesh = SubResource("PlaneMesh_2je2w")
+material_override = SubResource("ShaderMaterial_1pbgi")
+mesh = SubResource("PlaneMesh_y5516")
 width = 0.5
 depth = 0.5
 
@@ -639,8 +639,8 @@ offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterStructureHunterNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_yq0rd")
-mesh = SubResource("PlaneMesh_4ll8x")
+material_override = SubResource("ShaderMaterial_2je2w")
+mesh = SubResource("PlaneMesh_yq0rd")
 width = 0.5
 depth = 0.5
 
@@ -665,8 +665,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterLineFighterNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_cmgg1")
-mesh = SubResource("PlaneMesh_k1a05")
+material_override = SubResource("ShaderMaterial_4ll8x")
+mesh = SubResource("PlaneMesh_cmgg1")
 width = 0.5
 depth = 0.5
 
@@ -691,8 +691,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterDeepwaterVeteranNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_swraw")
-mesh = SubResource("PlaneMesh_ywtl2")
+material_override = SubResource("ShaderMaterial_k1a05")
+mesh = SubResource("PlaneMesh_swraw")
 width = 0.5
 depth = 0.5
 
@@ -717,8 +717,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterSurfaceAnglerNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_ute8f")
-mesh = SubResource("PlaneMesh_u362m")
+material_override = SubResource("ShaderMaterial_ywtl2")
+mesh = SubResource("PlaneMesh_ute8f")
 width = 0.5
 depth = 0.5
 
@@ -743,8 +743,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterLandingGuideNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_v1qqd")
-mesh = SubResource("PlaneMesh_e0qkl")
+material_override = SubResource("ShaderMaterial_u362m")
+mesh = SubResource("PlaneMesh_v1qqd")
 width = 0.5
 depth = 0.5
 
@@ -769,8 +769,8 @@ offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterWeatherWatcherNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.9, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_g1j0k")
-mesh = SubResource("PlaneMesh_lypwq")
+material_override = SubResource("ShaderMaterial_e0qkl")
+mesh = SubResource("PlaneMesh_g1j0k")
 width = 0.5
 depth = 0.5
 
@@ -795,8 +795,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterTideReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.45, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_y0x53")
-mesh = SubResource("PlaneMesh_4b0sm")
+material_override = SubResource("ShaderMaterial_lypwq")
+mesh = SubResource("PlaneMesh_y0x53")
 width = 0.5
 depth = 0.5
 
@@ -821,8 +821,8 @@ offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterSignReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_4nddp")
-mesh = SubResource("PlaneMesh_vvbh6")
+material_override = SubResource("ShaderMaterial_4b0sm")
+mesh = SubResource("PlaneMesh_4nddp")
 width = 0.5
 depth = 0.5
 
@@ -847,8 +847,8 @@ offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterNatureGuideNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_hkuew")
-mesh = SubResource("PlaneMesh_07gd8")
+material_override = SubResource("ShaderMaterial_vvbh6")
+mesh = SubResource("PlaneMesh_hkuew")
 width = 0.5
 depth = 0.5
 
@@ -873,8 +873,8 @@ offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterDriftAnglerNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_eluh3")
-mesh = SubResource("PlaneMesh_fub5q")
+material_override = SubResource("ShaderMaterial_07gd8")
+mesh = SubResource("PlaneMesh_eluh3")
 width = 0.5
 depth = 0.5
 
@@ -899,8 +899,8 @@ offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterGyosilNPC/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9062995, 0.006, -0.1)
-material_override = SubResource("ShaderMaterial_0rgj1")
-mesh = SubResource("PlaneMesh_a61d1")
+material_override = SubResource("ShaderMaterial_fub5q")
+mesh = SubResource("PlaneMesh_0rgj1")
 width = 0.5
 depth = 0.5
 
@@ -928,8 +928,8 @@ offset = Vector2(0, 5)
 
 [node name="WorldBlobShadow" parent="World/BeachCritter/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.55, 0.006, 0.12)
-material_override = SubResource("ShaderMaterial_cdtvi")
-mesh = SubResource("PlaneMesh_2ynu6")
+material_override = SubResource("ShaderMaterial_a61d1")
+mesh = SubResource("PlaneMesh_cdtvi")
 width = 0.1
 depth = 0.1
 opacity = 0.6
@@ -958,8 +958,8 @@ offset = Vector2(0, 5)
 
 [node name="WorldBlobShadow" parent="World/BeachCritter2/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6136692, 0.006, 0.344522)
-material_override = SubResource("ShaderMaterial_5sulg")
-mesh = SubResource("PlaneMesh_6y3vj")
+material_override = SubResource("ShaderMaterial_2ynu6")
+mesh = SubResource("PlaneMesh_5sulg")
 width = 0.1
 depth = 0.1
 opacity = 0.6
@@ -1008,8 +1008,8 @@ offset = Vector2(0, 10)
 
 [node name="WorldBlobShadow" parent="Player/CharacterBody3D/GroundPresentation/ShadowAnchor" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
-material_override = SubResource("ShaderMaterial_tdihq")
-mesh = SubResource("PlaneMesh_tshws")
+material_override = SubResource("ShaderMaterial_6y3vj")
+mesh = SubResource("PlaneMesh_tdihq")
 width = 0.33
 depth = 0.33
 ground_offset = 0.05

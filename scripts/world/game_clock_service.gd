@@ -197,18 +197,26 @@ func _parse_save(path: String) -> Dictionary:
 	file.close()
 	if not (parsed is Dictionary):
 		return {}
-	if parsed.get("version", null) != VERSION:
+	# Godot's JSON parser represents JSON numbers as floats, including
+	# values that were originally stored as integers (e.g. total_minutes).
+	var version: Variant = parsed.get("version", null)
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) != float(VERSION):
 		return {}
-	var minutes = parsed.get("total_minutes", null)
-	var remainder = parsed.get("partial_seconds", null)
-	if typeof(minutes) != TYPE_INT:
+	var minutes: Variant = parsed.get("total_minutes", null)
+	var remainder: Variant = parsed.get("partial_seconds", null)
+	if typeof(minutes) not in [TYPE_INT, TYPE_FLOAT]:
 		return {}
 	if typeof(remainder) not in [TYPE_INT, TYPE_FLOAT]:
 		return {}
-	var fractional := float(remainder)
-	if minutes < 0 or minutes > MAX_SAVED_MINUTES or is_nan(fractional) or is_inf(fractional) or fractional < 0.0 or fractional >= REAL_SECONDS_PER_GAME_MINUTE:
+	var minute_number: float = float(minutes)
+	var fractional: float = float(remainder)
+	# Accept 480.0 (a valid JSON round-trip), but NOT 480.5 or other
+	# malformed values. Keep the original day/time and partial-second bounds.
+	if is_nan(minute_number) or is_inf(minute_number) or minute_number < 0.0 or minute_number > float(MAX_SAVED_MINUTES) or minute_number != floor(minute_number):
 		return {}
-	return {"total_minutes": minutes, "partial_seconds": fractional}
+	if is_nan(fractional) or is_inf(fractional) or fractional < 0.0 or fractional >= REAL_SECONDS_PER_GAME_MINUTE:
+		return {}
+	return {"total_minutes": int(minute_number), "partial_seconds": fractional}
 
 
 func _exit_tree() -> void:

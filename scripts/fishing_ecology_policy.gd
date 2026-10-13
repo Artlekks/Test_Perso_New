@@ -49,6 +49,9 @@ static func build_snapshot(
 		(0.12 + 0.88 * daylight) * (1.0 - clouds * 0.42), 0.0, 1.0
 	)
 	var turbidity_proxy: float = clampf(0.08 + rain * 0.22, 0.0, 1.0)
+	# Estimated visual detection combines illumination and clarity (weather only
+	# weakly influences the clarity proxy; it is NOT a real measured Secchi depth).
+	var visual_detection: float = clampf(visibility * (1.0 - 0.65 * turbidity_proxy), 0.0, 1.0)
 	var wind_speed: float = maxf(float(wind_snapshot.get("speed_mps", 0.0)), 0.0)
 	var wave_proxy: float = clampf(wind_speed / 12.0 + rain * 0.12, 0.0, 1.0)
 	var flow_speed: float = current_velocity.length()
@@ -65,6 +68,7 @@ static func build_snapshot(
 		"twilight_0_1": twilight,
 		"night_0_1": night,
 		"visual_light_0_1": visibility,
+		"visual_detection_0_1": visual_detection,
 		"rain_proxy_0_1": rain,
 		"turbidity_proxy_0_1": turbidity_proxy,
 		"wave_proxy_0_1": wave_proxy,
@@ -95,6 +99,9 @@ static func species_activity_multiplier(fish: FishData, ecology: Dictionary) -> 
 	# apparent day or slack-flow preference.
 	if not bool(ecology.get("clock_available", true)):
 		cycle = 0
+		# Darkness and visual foraging cannot be assessed from an absent clock;
+		# legacy weather bonuses remain untouched in the existing service.
+		visual_niche = 0
 	if not bool(ecology.get("current_available", true)):
 		flow_niche = 0
 	var multiplier: float = 1.0
@@ -113,7 +120,7 @@ static func species_activity_multiplier(fish: FishData, ecology: Dictionary) -> 
 	elif flow_niche == 3: # Strong flow specialist
 		multiplier *= lerpf(0.82, 1.14, flow)
 
-	var visibility: float = clampf(float(ecology.get("visual_light_0_1", 0.5)), 0.0, 1.0)
+	var visibility: float = clampf(float(ecology.get("visual_detection_0_1", ecology.get("visual_light_0_1", 0.5))), 0.0, 1.0)
 	if visual_niche == 1: # Bright/clear visual feeding
 		multiplier *= lerpf(0.86, 1.12, visibility)
 	elif visual_niche == 2: # Low-light specialist
