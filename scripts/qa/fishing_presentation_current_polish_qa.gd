@@ -111,26 +111,27 @@ func test_current() -> void:
 	view.set_process(false)
 	view.configure(service, null)
 	view._swim_bounds = swim
-	view._uvs[0] = Vector2(0.5, 0.5)
-	view._flows[0] = previous
-	view._update_streaks(1.0 / 60.0)
-	check(view._flows[0].is_equal_approx(bait._current_drift_velocity), "visual heading uses same canonical current/filter as bait")
-	var mesh_id := view._streaks[0].mesh.get_instance_id()
-	spot.current_direction = Vector2.RIGHT
-	view._flows[0] = Vector3(spot.current_speed, 0, 0)
-	view._uvs[0] = Vector2(0.5, 0.5)
-	var monotonic := true
-	var last_x := view._uvs[0].x
-	for frame in range(240):
-		view._update_streaks(1.0 / 60.0)
-		monotonic = monotonic and view._uvs[0].x > last_x
-		last_x = view._uvs[0].x
-	check(monotonic, "four seconds of flow has no old short-cycle reversal/reset")
-	check(view._streaks[0].mesh.get_instance_id() == mesh_id, "wave animation reuses mesh rather than rebuilding geometry")
-	view._uvs[0] = Vector2(0.99999, 0.5)
-	view._update_streaks(1.0 / 60.0)
-	var tint: Color = view._streaks[0].material_override.get_shader_parameter("tint")
-	check(tint.a < 0.005, "world-boundary wrap is faded instead of visibly snapping")
+	var adapter := view.get_node_or_null("CurrentLines")
+	check(adapter != null, "Nolka current adapter replaces legacy mesh wisps")
+	if adapter != null:
+		check(bool(adapter.call("has_effect")), "Nolka local asset pack provides the current wind-line emitter")
+		adapter.call("update_environment", service, swim, 0.0, 1.0 / 60.0)
+		var nolka: Node3D = adapter.get_node_or_null("NolkaCurrentLines") as Node3D
+		check(nolka != null, "actual LeavesInWind scene is mounted")
+		if nolka != null:
+			var expected := service.sample_current_velocity(swim.normalized_uv_to_world(Vector2(0.5, 0.5), 0.0))
+			var actual_heading: Vector3 = adapter.get("_last_heading")
+			check(actual_heading.is_equal_approx(expected.normalized()), "Nolka direction follows canonical live current")
+			check(not nolka.has_node("OrangeLeaves") and not nolka.has_node("GreenLeaves") and not nolka.has_node("RedLeaves"), "current has no floating leaves")
+			var original := nolka.get_node_or_null("Wind")
+			check(original != null, "purchased GPU emitter is preserved and reused")
+			if original != null:
+				var identity := original.get_instance_id()
+				spot.current_direction = Vector2.RIGHT
+				for frame in range(240):
+					adapter.call("update_environment", service, swim, 0.0, 1.0 / 60.0)
+				check(original.get_instance_id() == identity, "flow animation reuses GPU emitter without rebuilding instances")
+				check(nolka.global_position.y > 0.0 and nolka.global_position.y < 0.12, "effect stays near water surface")
 	view.free()
 	bait.free()
 	swim.free()

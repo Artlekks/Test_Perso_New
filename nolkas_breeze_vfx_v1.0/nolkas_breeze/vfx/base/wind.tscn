@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://dqtknu5ricckq"]
+
+[ext_resource type="Script" uid="uid://mawmbixrsm28" path="res://nolkas_breeze/internal/scripts/nlk_wind_emitter.gd" id="1_ll8a4"]
+[ext_resource type="Material" uid="uid://bp6yotd20w11f" path="res://nolkas_breeze/internal/configuration/wind_sway.material" id="2_aaff1"]
+[ext_resource type="Texture2D" uid="uid://r83tfwa1liq0" path="res://nolkas_breeze/internal/textures/wind/sway_2.png" id="2_kikyl"]
+[ext_resource type="Material" uid="uid://bnvm1f63rb44k" path="res://nolkas_breeze/internal/materials/wind_process.material" id="3_aaff1"]
+
+[sub_resource type="Curve" id="Curve_kikyl"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_kikyl"]
+fractal_type = 0
+domain_warp_enabled = true
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_hm1u7"]
+resource_local_to_scene = true
+shape = 0
+size = 0.25
+sections = 16
+
+[node name="Wind" type="Node3D" unique_id=715707794]
+script = ExtResource("1_ll8a4")
+sway_texture = ExtResource("2_kikyl")
+fade_curve = SubResource("Curve_kikyl")
+turbulence_noise = SubResource("FastNoiseLite_kikyl")
+area = Vector3(20, 20, 20)
+particles_amount = 42
+
+[node name="SwayEmitter" type="GPUParticles3D" parent="." unique_id=585919816]
+unique_name_in_owner = true
+material_override = ExtResource("2_aaff1")
+cast_shadow = 0
+amount = 42
+lifetime = 2.25
+preprocess = 1.3333333333333333
+randomness = 1.0
+fixed_fps = 120
+visibility_aabb = AABB(-10, -10, -10, 20, 20, 20)
+trail_enabled = true
+trail_lifetime = 0.5
+process_material = ExtResource("3_aaff1")
+draw_pass_1 = SubResource("RibbonTrailMesh_hm1u7")
+metadata/_edit_group_ = true

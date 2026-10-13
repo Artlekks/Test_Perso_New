@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://dhhkpd0dciq4a"]
+
+[ext_resource type="Script" uid="uid://d37x47ov4xahl" path="res://nolkas_breeze/internal/scripts/nlk_composite_wind_emitter.gd" id="1_fpa0q"]
+[ext_resource type="PackedScene" uid="uid://dqtknu5ricckq" path="res://nolkas_breeze/vfx/base/wind.tscn" id="2_qi8ps"]
+[ext_resource type="Texture2D" uid="uid://cc2h7786vr7pc" path="res://nolkas_breeze/internal/textures/wind/sway_1.png" id="3_htvkb"]
+[ext_resource type="PackedScene" uid="uid://bljph0s2jiw8g" path="res://nolkas_breeze/vfx/base/debris.tscn" id="3_mw05e"]
+[ext_resource type="Texture2D" uid="uid://bc74lstj88tmx" path="res://nolkas_breeze/internal/textures/snow/Six.png" id="4_xi5jk"]
+[ext_resource type="Texture2D" uid="uid://6tttglfbpjg4" path="res://nolkas_breeze/internal/textures/wind/dust.png" id="6_qi8ps"]
+
+[sub_resource type="Curve" id="Curve_cu1vj"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_qi8ps"]
+fractal_octaves = 2
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_l0wid"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1.1548615, 1.6084734, 2.126887, 0.8627451)
+albedo_texture = ExtResource("4_xi5jk")
+texture_filter = 5
+billboard_keep_scale = true
+
+[sub_resource type="QuadMesh" id="QuadMesh_6romc"]
+material = SubResource("StandardMaterial3D_l0wid")
+
+[sub_resource type="Curve" id="Curve_v08i4"]
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_vb87w"]
+fractal_type = 0
+domain_warp_enabled = true
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mw05e"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.8731508, 1.0434103, 1.1923875, 0.0627451)
+albedo_texture = ExtResource("6_qi8ps")
+billboard_mode = 1
+billboard_keep_scale = true
+
+[sub_resource type="QuadMesh" id="QuadMesh_xi5jk"]
+material = SubResource("StandardMaterial3D_mw05e")
+
+[sub_resource type="Curve" id="Curve_8s5cl"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.24858755, 0.31205672), 0.0, 0.0, 0, 0, Vector2(0.8079095, 0.27659577), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_trpol"]
+fractal_type = 0
+domain_warp_enabled = true
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2
+
+[node name="Blizzard" type="Node3D" unique_id=221381023]
+unique_name_in_owner = true
+script = ExtResource("1_fpa0q")
+
+[node name="Wind" parent="." unique_id=715707794 instance=ExtResource("2_qi8ps")]
+color = Color(1.4583663, 1.8508725, 2.478, 0.376)
+sway_texture = ExtResource("3_htvkb")
+sway_thickness = 0.46
+sway_duration = 0.31
+fade_curve = SubResource("Curve_cu1vj")
+min_speed = 15.0
+max_speed = 60.0
+turbulence_noise = SubResource("FastNoiseLite_qi8ps")
+turbulence_domain_scale = 0.005
+max_turbulence_amplitude = 4.5
+particles_amount = 50
+
+[node name="SnowFlakes" parent="." unique_id=627078700 instance=ExtResource("3_mw05e")]
+mesh = SubResource("QuadMesh_6romc")
+particle_scale = 0.5
+fade_curve = SubResource("Curve_v08i4")
+max_speed = 20.0
+turbulence_noise = SubResource("FastNoiseLite_vb87w")
+
+[node name="SnowDust" parent="." unique_id=2114268783 instance=ExtResource("3_mw05e")]
+mesh = SubResource("QuadMesh_xi5jk")
+particle_scale = 8.0
+fade_curve = SubResource("Curve_8s5cl")
+min_speed = 25.0
+max_speed = 30.0
+turbulence_noise = SubResource("FastNoiseLite_trpol")
+max_turbulence_amplitude = 2.0
+particles_amount = 305

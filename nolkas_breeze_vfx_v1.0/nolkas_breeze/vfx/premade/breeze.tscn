@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://o1duq05bhdwc"]
+
+[ext_resource type="PackedScene" uid="uid://dqtknu5ricckq" path="res://nolkas_breeze/vfx/base/wind.tscn" id="1_rnjaa"]
+[ext_resource type="Texture2D" uid="uid://r83tfwa1liq0" path="res://nolkas_breeze/internal/textures/wind/sway_2.png" id="2_v5egp"]
+[ext_resource type="Shader" uid="uid://cpxfk0khk6sac" path="res://nolkas_breeze/internal/shaders/wind.gdshader" id="3_6qfvy"]
+
+[sub_resource type="Curve" id="Curve_qvpp2"]
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_1i6br"]
+fractal_type = 0
+domain_warp_enabled = true
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cnbkd"]
+resource_local_to_scene = true
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 0.70980394)
+albedo_texture = ExtResource("2_v5egp")
+texture_filter = 4
+use_particle_trails = true
+proximity_fade_enabled = true
+
+[sub_resource type="CurveTexture" id="CurveTexture_ll8a4"]
+curve = SubResource("Curve_qvpp2")
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_jbbf2"]
+resource_local_to_scene = true
+noise = SubResource("FastNoiseLite_1i6br")
+seamless = true
+seamless_blend_skirt = 0.3
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sdmm5"]
+resource_local_to_scene = true
+shader = ExtResource("3_6qfvy")
+shader_parameter/emission_box = Vector3(20, 20, 20)
+shader_parameter/velocity_min = 5.0
+shader_parameter/velocity_max = 10.0
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_jbbf2")
+shader_parameter/domain_scale = 0.01
+shader_parameter/amplitude_min = 2.0
+shader_parameter/amplitude_max = 5.0
+shader_parameter/fade_texture = SubResource("CurveTexture_ll8a4")
+shader_parameter/fade_range = 1.0
+shader_parameter/alpha_min = 0.10000000475
+shader_parameter/alpha_max = 0.50000002375
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_st5vb"]
+resource_local_to_scene = true
+shape = 0
+size = 0.3
+sections = 16
+
+[node name="Breeze" unique_id=715707794 instance=ExtResource("1_rnjaa")]
+color = Color(1, 1, 1, 0.70980394)
+sway_thickness = 0.3
+sway_duration = 1.5
+fade_curve = SubResource("Curve_qvpp2")
+min_speed = 5.0
+max_speed = 10.0
+turbulence_noise = SubResource("FastNoiseLite_1i6br")
+emitting = true
+particles_amount = 20
+metadata/_edit_group_ = true
+
+[node name="SwayEmitter" parent="." index="0" unique_id=585919816]
+material_override = SubResource("StandardMaterial3D_cnbkd")
+amount = 20
+lifetime = 4.75
+preprocess = 2.0
+trail_lifetime = 1.5
+process_material = SubResource("ShaderMaterial_sdmm5")
+draw_pass_1 = SubResource("RibbonTrailMesh_st5vb")

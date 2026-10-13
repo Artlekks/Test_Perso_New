@@ -1,0 +1,6 @@
+[gd_resource type="Curve" format=3 uid="uid://bavipechd6dtq"]
+
+[resource]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4

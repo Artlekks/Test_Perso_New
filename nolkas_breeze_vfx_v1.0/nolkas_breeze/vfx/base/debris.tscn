@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://bljph0s2jiw8g"]
+
+[ext_resource type="Script" uid="uid://camvt7ewhj5nl" path="res://nolkas_breeze/internal/scripts/nlk_debris_emitter.gd" id="1_vb87w"]
+[ext_resource type="Material" uid="uid://b14f1kkg5vuup" path="res://nolkas_breeze/internal/materials/leaves_process.material" id="2_32ybp"]
+[ext_resource type="ArrayMesh" uid="uid://jgw55ug0y38m" path="res://nolkas_breeze/internal/meshes/leaf3.res" id="2_vb87w"]
+
+[sub_resource type="Curve" id="Curve_u6bwf"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_vb87w"]
+fractal_type = 0
+domain_warp_enabled = true
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2
+
+[node name="WindDebris" type="Node3D" unique_id=715707794]
+script = ExtResource("1_vb87w")
+mesh = ExtResource("2_vb87w")
+particle_scale = 2.0
+fade_curve = SubResource("Curve_u6bwf")
+turbulence_noise = SubResource("FastNoiseLite_vb87w")
+min_turbulence_amplitude = 1.0
+max_turbulence_amplitude = 3.0
+emitting = true
+area = Vector3(20, 20, 20)
+particles_amount = 200
+
+[node name="Emitter" type="GPUParticles3D" parent="." unique_id=585919816]
+unique_name_in_owner = true
+amount = 200
+lifetime = 2.0
+preprocess = 2.0
+randomness = 1.0
+fixed_fps = 120
+visibility_aabb = AABB(-10, -10, -10, 20, 20, 20)
+trail_lifetime = 0.5
+process_material = ExtResource("2_32ybp")
+draw_pass_1 = ExtResource("2_vb87w")
+metadata/_edit_group_ = true

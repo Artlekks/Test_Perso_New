@@ -1,0 +1,9 @@
+[gd_resource type="FastNoiseLite" format=3 uid="uid://dm3ionnxtecr7"]
+
+[resource]
+resource_local_to_scene = true
+fractal_type = 0
+domain_warp_enabled = true
+domain_warp_amplitude = 200.0
+domain_warp_frequency = 0.001
+domain_warp_fractal_octaves = 2

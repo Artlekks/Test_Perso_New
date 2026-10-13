@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://3pvcu61w7m16"]
+
+[ext_resource type="PackedScene" uid="uid://dhhkpd0dciq4a" path="res://nolkas_breeze_vfx_v1.0/nolkas_breeze/vfx/premade/blizzard.tscn" id="2_5hvwb"]
+[ext_resource type="PackedScene" uid="uid://o1duq05bhdwc" path="res://nolkas_breeze_vfx_v1.0/nolkas_breeze/vfx/premade/breeze.tscn" id="2_fqfls"]
+[ext_resource type="PackedScene" uid="uid://bs6fpa0nqlk1g" path="res://nolkas_breeze_vfx_v1.0/nolkas_breeze/vfx/premade/electric_wind.tscn" id="3_vd4p2"]
+[ext_resource type="PackedScene" uid="uid://blyvbv11p256w" path="res://nolkas_breeze_vfx_v1.0/nolkas_breeze/vfx/premade/leaves_in_wind.tscn" id="4_vd4p2"]
+[ext_resource type="PackedScene" uid="uid://byf4jkle044gl" path="res://nolkas_breeze_vfx_v1.0/nolkas_breeze/vfx/premade/fire_wind.tscn" id="4_vjfh5"]
+[ext_resource type="PackedScene" uid="uid://rev7potoeyns" path="res://nolkas_breeze_vfx_v1.0/nolkas_breeze/vfx/premade/sand_storm.tscn" id="5_vjfh5"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_cq028"]
+
+[sub_resource type="Sky" id="Sky_21hd7"]
+sky_material = SubResource("ProceduralSkyMaterial_cq028")
+
+[sub_resource type="Environment" id="Environment_okkdy"]
+background_mode = 2
+sky = SubResource("Sky_21hd7")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="Curve" id="Curve_pca8y"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[node name="Demo" type="Node3D" unique_id=221381023]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1789316153]
+environment = SubResource("Environment_okkdy")
+
+[node name="Breeze" parent="." unique_id=715707794 instance=ExtResource("2_fqfls")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -120, 10, 0)
+
+[node name="LeavesInWind" parent="." unique_id=1137177860 instance=ExtResource("4_vd4p2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80, 10, 0)
+visible = false
+
+[node name="ElectricWind" parent="." unique_id=1657706299 instance=ExtResource("3_vd4p2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 10, 0)
+visible = false
+fade_curve = SubResource("Curve_pca8y")
+area = Vector3(20, 20, 20)
+
+[node name="FireWind" parent="." unique_id=1897680606 instance=ExtResource("4_vjfh5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+visible = false
+area = Vector3(20, 20, 20)
+
+[node name="SandStorm" parent="." unique_id=373453256 instance=ExtResource("5_vjfh5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 10, 0)
+visible = false
+area = Vector3(20, 20, 20)
+
+[node name="Blizzard" parent="." unique_id=1513624022 instance=ExtResource("2_5hvwb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 10, 0)
+visible = false
+area = Vector3(20, 20, 20)

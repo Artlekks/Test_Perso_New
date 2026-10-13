@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://byf4jkle044gl"]
+
+[ext_resource type="Script" uid="uid://d37x47ov4xahl" path="res://nolkas_breeze/internal/scripts/nlk_composite_wind_emitter.gd" id="1_11x5e"]
+[ext_resource type="PackedScene" uid="uid://bljph0s2jiw8g" path="res://nolkas_breeze/vfx/base/debris.tscn" id="1_jmrww"]
+[ext_resource type="Texture2D" uid="uid://cxwfpl28vgqyg" path="res://nolkas_breeze/internal/textures/wind/sway_flat.png" id="2_d1yaq"]
+[ext_resource type="Texture2D" uid="uid://r83tfwa1liq0" path="res://nolkas_breeze/internal/textures/wind/sway_2.png" id="2_i0esj"]
+[ext_resource type="PackedScene" uid="uid://dqtknu5ricckq" path="res://nolkas_breeze/vfx/base/wind.tscn" id="6_810aw"]
+
+[sub_resource type="Curve" id="Curve_11x5e"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_c1q5p"]
+resource_local_to_scene = true
+noise_type = 0
+frequency = 0.0236
+fractal_octaves = 6
+fractal_lacunarity = 0.895
+fractal_gain = 1.705
+fractal_weighted_strength = 0.36
+domain_warp_amplitude = 200.0
+domain_warp_frequency = -0.005
+domain_warp_fractal_octaves = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4ny4l"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(2.385612, 1.1903676, 0, 1)
+albedo_texture = ExtResource("2_i0esj")
+
+[sub_resource type="QuadMesh" id="QuadMesh_jw4ni"]
+material = SubResource("StandardMaterial3D_4ny4l")
+
+[sub_resource type="Curve" id="Curve_joors"]
+resource_local_to_scene = true
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.2335165, 1), 0.0, 0.0, 0, 0, Vector2(0.75000006, 1), 0.0, 0.0, 0, 0, Vector2(0.99999, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[node name="FireWind" type="Node3D" unique_id=1897680606]
+script = ExtResource("1_11x5e")
+area = Vector3(10, 10, 10)
+
+[node name="Wind1" parent="." unique_id=1583391827 instance=ExtResource("6_810aw")]
+color = Color(1.9702168, 0.69205856, 0.33852544, 1)
+sway_texture = ExtResource("2_d1yaq")
+sway_thickness = 0.1
+sway_duration = 0.2
+fade_curve = SubResource("Curve_11x5e")
+min_speed = 20.0
+max_speed = 30.0
+turbulence_noise = SubResource("FastNoiseLite_c1q5p")
+turbulence_domain_scale = 0.005
+min_turbulence_amplitude = 2.5
+max_turbulence_amplitude = 10.0
+area = Vector3(10, 10, 10)
+particles_amount = 25
+
+[node name="WindDebris" parent="." unique_id=715707794 instance=ExtResource("1_jmrww")]
+mesh = SubResource("QuadMesh_jw4ni")
+particle_scale = 0.4
+fade_curve = SubResource("Curve_joors")
+area = Vector3(10, 10, 10)
