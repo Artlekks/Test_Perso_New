@@ -1,5 +1,5 @@
 extends SceneTree
-## Rain visual v3 regression: upright drops, top-row ripples only, no void splashes.
+## Rain visual regression: camera-plane drops, top-row ripples, no void splashes.
 ## Run with --headless --path . --script res://scripts/qa/environment_rain_visual_v3_qa.gd
 
 const RainScene: PackedScene = preload("res://actors/FishingRainVFX.tscn")
@@ -41,26 +41,32 @@ func run() -> void:
 	verify(near != null and far != null, "near and distant rain layers exist")
 	if near != null and far != null:
 		verify(near.amount + far.amount == int(rain.get("drop_count")), "particle count is divided between layers")
-		verify(near.transform_align == GPUParticles3D.TRANSFORM_ALIGN_Z_BILLBOARD, "near raindrop quads face camera upright")
-		verify(far.transform_align == GPUParticles3D.TRANSFORM_ALIGN_Z_BILLBOARD, "far raindrop quads face camera upright")
-		var near_mesh: QuadMesh = near.draw_pass_1 as QuadMesh
-		var far_mesh: QuadMesh = far.draw_pass_1 as QuadMesh
-		verify(near_mesh != null and far_mesh != null, "both layers render quad meshes")
+		verify(near.local_coords and far.local_coords, "rain follows moving camera without leaving gaps")
+		verify(near.transform_align == GPUParticles3D.TRANSFORM_ALIGN_DISABLED, "near rain is not independently billboard-rotated")
+		verify(far.transform_align == GPUParticles3D.TRANSFORM_ALIGN_DISABLED, "far rain is not independently billboard-rotated")
+		verify(near.draw_passes == 2 and far.draw_passes == 2, "rain has outline and bright streak passes")
+		var near_mesh: QuadMesh = near.draw_pass_2 as QuadMesh
+		var far_mesh: QuadMesh = far.draw_pass_2 as QuadMesh
+		verify(near_mesh != null and far_mesh != null, "bright rain quads exist")
 		if near_mesh != null and far_mesh != null:
-			verify(near_mesh.size.y < 0.14 and near_mesh.size.x < 0.02, "rain mesh is small at game scale")
-			verify(far_mesh.size.y < near_mesh.size.y, "distant streaks are shorter")
+			verify(near_mesh.size.y < 0.14 and near_mesh.size.x < 0.02, "near rain lines stay tiny")
+			verify(far_mesh.size.y < near_mesh.size.y, "far rain lines stay shorter")
 			var near_material: StandardMaterial3D = near_mesh.material as StandardMaterial3D
-			var far_material: StandardMaterial3D = far_mesh.material as StandardMaterial3D
-			verify(near_material != null and far_material != null, "both layers use textured transparent materials")
-			if near_material != null and far_material != null:
-				verify(near_material.billboard_mode == BaseMaterial3D.BILLBOARD_DISABLED, "avoid double billboard rotation")
-				verify(near_material.albedo_texture != null, "raindrop alpha-gradient texture exists")
-				verify(near_material.albedo_color.b > near_material.albedo_color.r, "drops are pale blue, not grey")
-				verify(far_material.albedo_color.a < near_material.albedo_color.a, "distant rain is less opaque")
+			verify(near_material != null, "near rain uses a material")
+			if near_material != null:
+				verify(near_material.billboard_mode == BaseMaterial3D.BILLBOARD_DISABLED, "no competing billboard rotation")
+				verify(near_material.no_depth_test, "rain remains visible over background scene geometry")
+				verify(near_material.albedo_texture != null, "tapered rain texture is loaded")
+				verify(near_material.albedo_color.b > near_material.albedo_color.r, "rain highlight is light blue")
+				verify(is_equal_approx(near_material.albedo_color.a, 1.0), "user-set drop opacity is honored")
+			var shadow_mesh: QuadMesh = near.draw_pass_1 as QuadMesh
+			verify(shadow_mesh != null and shadow_mesh.size.x > near_mesh.size.x, "dark contrast edge surrounds highlight")
+		var near_processing: ParticleProcessMaterial = near.process_material as ParticleProcessMaterial
+		verify(near_processing.direction.y < -0.9, "particle fall direction is locally vertical")
 	verify(ImpactAtlas.get_width() == 142 and ImpactAtlas.get_height() == 66, "original impact sheet preserved, only top row referenced")
-	verify(is_equal_approx(float(rain.get("splash_pixel_size")), 0.005), "small ripple size preset")
+	verify(is_equal_approx(float(rain.get("splash_pixel_size")), 0.003), "user tiny ripple size preset")
 	verify(int(rain.get("max_simultaneous_splashes")) >= 100, "100 simultaneous ripples can be configured")
-	verify(float(rain.get("splash_rate_per_second")) >= 150.0, "splash spawn rate allows dozens concurrently")
+	verify(is_equal_approx(float(rain.get("splash_rate_per_second")), 80.0), "user splash rate preset")
 	var frames: SpriteFrames = rain.get("_splash_frames") as SpriteFrames
 	verify(frames != null, "original rain impact animations loaded")
 	if frames != null:
@@ -74,8 +80,8 @@ func run() -> void:
 	verify(int(rain.call("get_active_splash_count")) == 1, "one-shot top-row water ripple spawns")
 	var sprite: AnimatedSprite3D = rain.get_node_or_null("RainSplash") as AnimatedSprite3D
 	if sprite != null:
-		verify(is_equal_approx(sprite.pixel_size, 0.005), "tiny ripple scale is applied")
-		verify(is_equal_approx(sprite.modulate.a, 0.8), "splash opacity is applied")
+		verify(is_equal_approx(sprite.pixel_size, 0.003), "tiny ripple scale is applied")
+		verify(is_equal_approx(sprite.modulate.a, (171.0 / 255.0) * 0.38), "user splash color alpha and opacity are combined")
 		rain.call("_recycle_splash", sprite)
 		verify(int(rain.call("get_active_splash_count")) == 0, "completed ripple returns to pool")
 	verify(not bool(rain.call("is_raining")), "clear weather does not emit rain")
@@ -85,8 +91,21 @@ func run() -> void:
 	if near != null and far != null:
 		verify(near.emitting and far.emitting, "both layers emit in rain")
 	rain.call("_follow_camera")
-	if near != null:
+	if near != null and far != null:
 		verify(near.global_position.distance_to(Vector3.ZERO) > 0.1, "rain follows the active camera")
+		verify(near.global_basis.y.normalized().dot(camera.global_basis.y.normalized()) > 0.99, "near droplet Y axes are screen-vertical")
+		verify(far.global_basis.y.normalized().dot(camera.global_basis.y.normalized()) > 0.99, "far droplet Y axes are screen-vertical")
+		var near_box: Vector3 = (near.process_material as ParticleProcessMaterial).emission_box_extents
+		verify(near_box.x > 0.1 and near_box.y > 0.1, "viewport-sized camera-relative emission area is calculated")
+		verify(near_box.z < 0.1, "thin screen-parallel rain plane prevents wide-world dilution")
+		var before_alpha: float = ((near.draw_pass_2 as QuadMesh).material as StandardMaterial3D).albedo_color.a
+		rain.set("drop_opacity", 0.4)
+		rain.call("_sync_rain_appearance")
+		var after_alpha: float = ((near.draw_pass_2 as QuadMesh).material as StandardMaterial3D).albedo_color.a
+		verify(after_alpha < before_alpha, "rain appearance updates from the live Inspector")
+		rain.set("drop_count", 300)
+		rain.call("_sync_rain_appearance")
+		verify(near.amount + far.amount == 300, "changing drop count updates active emitters")
 	var void_hit: Vector3 = rain.call("_ground_intersection", Vector3(200.0, 10.0, 200.0), Vector3.DOWN)
 	verify(void_hit.x == INF, "no splash is invented when no ground geometry exists")
 	rain.set("weather_mode", 1)

@@ -1,7 +1,8 @@
-[gd_scene format=3 uid="uid://cb52atmcibhw4"]
+[gd_scene format=3 uid="uid://bi8ogyml8epms"]
 
 [ext_resource type="Script" uid="uid://btov23p7suxju" path="res://scripts/environment_fx/fishing_rain_world_vfx.gd" id="1_rain"]
 
-[node name="FishingRainVFX" type="Node3D" unique_id=560914520]
+[node name="FishingRainVFX" type="Node3D" unique_id=1606123733]
 script = ExtResource("1_rain")
 weather_mode = 2
+splash_color = Color(0.5568628, 0.6156863, 0.7686275, 0.67058825)
