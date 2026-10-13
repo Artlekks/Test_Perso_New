@@ -475,6 +475,8 @@ func initialize() -> void:
 		environment_service.set_mastery_service(mastery_service)
 	if environment_service.has_method("set_tide_service"):
 		environment_service.set_tide_service(tide_service)
+	if environment_service.has_method("set_current_service"):
+		environment_service.set_current_service(current_service)
 
 	fish_consumable_service = FishingFishConsumableServiceScript.new()
 	fish_consumable_service.name = "FishingFishConsumableService"

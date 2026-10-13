@@ -14,6 +14,9 @@ const FishingWeatherSensePolicyScript = preload(
 const FishingTideSensePolicyScript = preload(
 	"res://scripts/fishing_tide_sense_policy.gd"
 )
+const FishingEcologyPolicyScript = preload(
+	"res://scripts/fishing_ecology_policy.gd"
+)
 
 const MAX_BITE_MULTIPLIER: float = 2.50
 const MAX_QUALITY_CHANCE: float = 0.50
@@ -27,6 +30,7 @@ var _catalog: EnvironmentCatalogScript = null
 var _spot: FishingSpotData = null
 var _mastery_service: Node = null
 var _tide_service: Node = null
+var _current_service: Node = null
 ## stacking_group -> condition resource
 var _active_by_group: Dictionary = {}
 
@@ -62,6 +66,36 @@ func set_tide_service(service: Node) -> void:
 	if _tide_service != null and _tide_service.has_method("set_spot"):
 		_tide_service.call("set_spot", _spot)
 	_emit_changed()
+
+
+func set_current_service(service: Node) -> void:
+	# The existing fishing-current service is the ONLY source of water velocity.
+	# Do not independently combine tide/wind here and count flow twice.
+	_current_service = service
+
+
+func get_ecology_snapshot() -> Dictionary:
+	var clock_state: Dictionary = {}
+	var wind_state: Dictionary = {}
+	var tide_state: Dictionary = {}
+	var sampled_current: Vector2 = Vector2.ZERO
+	var clock: Node = get_node_or_null("/root/GameClock")
+	if clock != null and clock.has_method("get_snapshot"):
+		clock_state = clock.call("get_snapshot") as Dictionary
+	var wind: Node = get_node_or_null("/root/GameWind")
+	if wind != null and wind.has_method("get_snapshot"):
+		wind_state = wind.call("get_snapshot") as Dictionary
+	if _tide_service != null and _tide_service.has_method("get_snapshot"):
+		tide_state = _tide_service.call("get_snapshot") as Dictionary
+	if _current_service != null and _current_service.has_method("sample_spot_at_uv") and _spot != null:
+		var sample: Variant = _current_service.call("sample_spot_at_uv", _spot, Vector2(0.5, 0.5), 0.0)
+		if typeof(sample) == TYPE_VECTOR2:
+			sampled_current = sample
+	var ecology: Dictionary = FishingEcologyPolicyScript.build_snapshot(
+		clock_state, wind_state, tide_state, sampled_current, get_active_tags(), _get_spot_id()
+	)
+	ecology["current_available"] = _spot != null and is_instance_valid(_current_service)
+	return ecology
 
 
 func set_mastery_service(service: Node) -> void:
@@ -339,6 +373,11 @@ func get_species_selection_multiplier(fish: FishData) -> float:
 			float(_tide_service.call("get_species_selection_multiplier", fish)),
 			0.0
 		)
+	# Opt-in ecology refines a species' own opportunity, without introducing
+	# another universal rain/storm bite or quality multiplier.
+	multiplier *= FishingEcologyPolicyScript.species_activity_multiplier(
+		fish, get_ecology_snapshot()
+	)
 	return clampf(multiplier, 0.0, MAX_SPECIES_WEIGHT_MULTIPLIER)
 
 
@@ -440,6 +479,7 @@ func get_debug_snapshot(current_depth: float = 0.0, total_depth: float = 1.0) ->
 		"spot_id": _get_spot_id(),
 		"active_condition_ids": get_active_condition_ids(),
 		"active_tags": get_active_tags(),
+		"ecology": get_ecology_snapshot(),
 		"bite_activity_multiplier": get_bite_activity_multiplier(current_depth, total_depth),
 		"quality_bonus_roll_chance": float(generation.get("environment_quality_bonus_chance", 0.0)),
 		"quality_bonus_rolls": int(generation.get("environment_quality_bonus_rolls", 0)),

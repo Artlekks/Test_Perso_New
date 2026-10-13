@@ -154,6 +154,22 @@ var out_of_depth_multiplier: float = 0.15
 @export_range(0.0, 1.0, 0.05)
 var approach_wariness: float = 0.55
 
+@export_category("Ecological Preferences (Opt-in)")
+## Defaults are neutral so legacy species and fishing balance do not change.
+## Populate only after matching a fish to documented habitat/feeding ecology.
+## 0=unspecified, 1=daylight, 2=twilight, 3=night.
+@export_enum("Unspecified", "Daylight", "Twilight", "Night")
+var ecological_activity_cycle: int = 0
+
+## Current intensity is a dimensionless authored index, not universal m/s.
+## 0=unspecified, 1=low flow, 2=moderate flow, 3=strong flow.
+@export_enum("Unspecified", "Low Flow", "Moderate Flow", "Strong Flow")
+var ecological_flow_niche: int = 0
+
+## 0=unspecified, 1=bright/clear sight forager, 2=low-light specialist.
+@export_enum("Unspecified", "Bright Visual", "Low Light")
+var ecological_visibility_niche: int = 0
+
 @export_category("Fight Behavior")
 @export var behavior_profile: FishBehaviorProfile
 
