@@ -36,6 +36,55 @@ var _tide_service: Node = null
 var _current_service: Node = null
 ## stacking_group -> condition resource
 var _active_by_group: Dictionary = {}
+var _last_synced_clock_minute: int = -1
+var _connected_clock: Node = null
+
+
+func _sync_time_condition_from_clock() -> bool:
+	# If GameClock is unavailable (e.g. isolated QA), authored/manual conditions
+	# retain their existing behavior. Never manufacture a time state.
+	if _catalog == null:
+		return false
+	var clock: Node = _get_global_environment_node("GameClock")
+	if clock == null or not clock.has_method("get_snapshot"):
+		return false
+	if _connected_clock != clock:
+		var callback: Callable = Callable(self, "_on_game_clock_changed")
+		if is_instance_valid(_connected_clock) and _connected_clock.is_connected("clock_changed", callback):
+			_connected_clock.disconnect("clock_changed", callback)
+		_connected_clock = clock
+		if clock.has_signal("clock_changed") and not clock.is_connected("clock_changed", callback):
+			clock.connect("clock_changed", callback)
+		_last_synced_clock_minute = -1
+	var snapshot: Dictionary = clock.call("get_snapshot") as Dictionary
+	if not snapshot.has("total_minutes"):
+		return false
+	var minute: int = int(snapshot.get("total_minutes", 0))
+	if minute == _last_synced_clock_minute:
+		return false
+	_last_synced_clock_minute = minute
+	var hour: int = floori(float(posmod(minute, 1440)) / 60.0)
+	var wanted: StringName = &""
+	if hour >= 20 or hour < 5:
+		wanted = &"night"
+	elif hour < 8:
+		wanted = &"dawn"
+	var previous: ConditionDefinitionScript = _active_by_group.get("time", null) as ConditionDefinitionScript
+	if wanted == &"" and previous == null:
+		return false
+	if previous != null and previous.condition_id == wanted:
+		return false
+	_active_by_group.erase("time")
+	if wanted != &"":
+		var authored: ConditionDefinitionScript = _catalog.get_condition_by_id(wanted)
+		if authored != null:
+			_active_by_group["time"] = authored
+	return true
+
+
+func _on_game_clock_changed(_snapshot: Dictionary) -> void:
+	if _sync_time_condition_from_clock():
+		_emit_changed()
 
 
 func configure(catalog: EnvironmentCatalogScript) -> void:
@@ -266,6 +315,7 @@ func clear_conditions() -> void:
 
 
 func get_active_condition_ids() -> PackedStringArray:
+	_sync_time_condition_from_clock()
 	var result: PackedStringArray = PackedStringArray()
 	for raw_condition in _active_by_group.values():
 		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
@@ -276,6 +326,7 @@ func get_active_condition_ids() -> PackedStringArray:
 
 
 func get_active_tags() -> PackedStringArray:
+	_sync_time_condition_from_clock()
 	var result: PackedStringArray = PackedStringArray()
 	for raw_condition in _active_by_group.values():
 		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
@@ -290,6 +341,7 @@ func get_active_tags() -> PackedStringArray:
 
 
 func get_active_condition_display_names() -> PackedStringArray:
+	_sync_time_condition_from_clock()
 	var result := PackedStringArray()
 	for raw_condition in _active_by_group.values():
 		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
@@ -304,6 +356,7 @@ func get_active_condition_display_names() -> PackedStringArray:
 
 
 func get_depth_activity_profile() -> Dictionary:
+	_sync_time_condition_from_clock()
 	var profile := _get_weather_depth_activity_profile()
 	var tide_profile := _get_tide_depth_activity_profile()
 	return {
@@ -338,6 +391,7 @@ func _get_tide_depth_activity_profile() -> Dictionary:
 
 
 func get_tier_activity_profile() -> PackedFloat32Array:
+	_sync_time_condition_from_clock()
 	var result := PackedFloat32Array([1.0, 1.0, 1.0, 1.0, 1.0])
 	for raw_condition in _active_by_group.values():
 		var condition: ConditionDefinitionScript = raw_condition as ConditionDefinitionScript
@@ -408,6 +462,7 @@ func get_tide_sense_snapshot() -> Dictionary:
 
 
 func get_species_selection_multiplier(fish: FishData, ecology_snapshot: Dictionary = {}) -> float:
+	_sync_time_condition_from_clock()
 	if fish == null:
 		return 0.0
 	var species_id: String = fish.get_stable_species_id().strip_edges().to_lower()
@@ -463,6 +518,7 @@ func get_selection_context(
 
 
 func get_bite_activity_multiplier(current_depth: float, total_depth: float) -> float:
+	_sync_time_condition_from_clock()
 	var depth_ratio: float = 0.5
 	if total_depth > 0.0:
 		depth_ratio = clampf(current_depth / total_depth, 0.0, 1.0)
@@ -490,6 +546,7 @@ func _get_weather_bite_activity_multiplier(current_depth: float, total_depth: fl
 
 
 func get_specimen_generation_context() -> Dictionary:
+	_sync_time_condition_from_clock()
 	var chance: float = 0.0
 	var rolls: int = 0
 	for raw_condition in _active_by_group.values():
@@ -509,6 +566,7 @@ func get_specimen_generation_context() -> Dictionary:
 
 
 func get_fight_modifiers() -> Dictionary:
+	_sync_time_condition_from_clock()
 	var stamina_drain: float = 1.0
 	var hook_delay: float = 1.0
 	var line_tolerance: float = 1.0

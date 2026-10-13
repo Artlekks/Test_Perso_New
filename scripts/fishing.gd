@@ -52,6 +52,7 @@ const FishingSurfaceSplashScene = preload(
 const FishingCurrentSurfaceViewScript = preload(
 	"res://scripts/fishing_current_surface_view.gd"
 )
+const FishingBiteAlertScript = preload("res://scripts/fishing_bite_alert.gd")
 
 
 enum Phase {
@@ -174,8 +175,25 @@ var buffered_prep_power: float = -1.0
 var cast_power_locked: bool = false
 var _quick_cast_cancel_active: bool = false
 var _fight_splash_cooldown_left: float = 0.0
+var _bite_alert: AnimatedSprite3D = null
+
+
+func _show_bite_alert() -> void:
+	if is_instance_valid(_bite_alert):
+		_bite_alert.call("show_bite_window")
+
+
+func _hide_bite_alert() -> void:
+	if is_instance_valid(_bite_alert):
+		_bite_alert.call("hide_bite_window")
 
 func _ready() -> void:
+	# Attach once to the world-space player, not a fullscreen HUD overlay.
+	# The cue remains centered above Ryu regardless of facing or camera yaw.
+	if is_instance_valid(player):
+		_bite_alert = FishingBiteAlertScript.new() as AnimatedSprite3D
+		_bite_alert.name = "BiteWindowExclamation"
+		player.add_child(_bite_alert)
 	caster.set_free_lure_region_provider(camera_rig.free_lure_viewport_region)
 	# Read-only camera exclusion geometry; presentation/mechanics are unchanged.
 	if camera_rig != null and camera_rig.has_method("set_fishing_hud_geometry"):
@@ -665,6 +683,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 	
 func _on_mode_changed(new_mode) -> void:
+	_hide_bite_alert()
 	var active: bool = new_mode == game_mode.Mode.FISHING
 
 	set_process_unhandled_input(active)
@@ -1254,6 +1273,7 @@ func _on_bait_landed(point: Vector3) -> void:
 		_enter_in_water()
 		
 func _enter_in_water() -> void:
+	_hide_bite_alert()
 	phase = Phase.IN_WATER
 	_sync_fight_camera_tracking()
 	technique_detector.reset()
@@ -1270,6 +1290,7 @@ func _enter_in_water() -> void:
 
 
 func _cancel_water_cast_to_aim() -> void:
+	_hide_bite_alert()
 	if phase != Phase.IN_WATER:
 		return
 
@@ -1294,6 +1315,7 @@ func _cancel_water_cast_to_aim() -> void:
 
 
 func _on_bait_returned() -> void:
+	_hide_bite_alert()
 	if phase != Phase.IN_WATER and phase != Phase.FIGHT:
 		return
 
@@ -1539,6 +1561,7 @@ func _process(delta: float) -> void:
 		_update_reel_animation()
 	
 func _on_fish_hooked() -> void:
+	_hide_bite_alert()
 	if phase != Phase.IN_WATER:
 		return
 
@@ -1669,6 +1692,7 @@ func _on_bite_triggered() -> void:
 	if phase != Phase.IN_WATER:
 		return
 
+	_hide_bite_alert()
 	caster.show_bait_bite_splash()
 
 	# The strong take is now the pre-hook recognition cue, so a successful K
@@ -1692,6 +1716,7 @@ func _on_bite_opportunity_started() -> void:
 	current_reel_animation = &"Reel_Front"
 
 	caster.show_bait_ripple(float(encounter.get_bite_timing_snapshot().get("total_window", encounter.base_bite_window_time)))
+	_show_bite_alert()
 	sprite_director.play(&"Reel_Front")
 	
 func _on_bite_missed() -> void:
@@ -1702,6 +1727,7 @@ func _on_bite_missed() -> void:
 		last_outcome_result = outcome_service.resolve_miss()
 
 	caster.hide_bait_ripple()
+	_hide_bite_alert()
 
 	# Release presentation ownership and immediately resolve back to the
 	# correct current state: Reel_Idle with no K, Reel while K is held.

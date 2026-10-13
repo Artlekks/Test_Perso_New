@@ -184,7 +184,7 @@ func run() -> void:
 	check(passive.state == passive.State.FOCUS and passive.focus_seconds == 3,"Enter confirms selected focus duration; K is takeover")
 	var ripple: Node = fishing.caster.active_bait.ripple_view
 	ripple.show_ripple(1.2)
-	check(is_equal_approx(ripple.ripple_sprite.pixel_size,0.00175) and ripple.ripple_sprite.animation == &"Ripple","authored ripple is half-size, not splash")
+	check(is_equal_approx(ripple.ripple_sprite.pixel_size,0.0013125) and ripple.ripple_sprite.animation == &"Ripple","surface ripple uses requested 75% presentation scale")
 	check(is_equal_approx(ripple.get_authored_ripple_duration()/ripple.ripple_sprite.speed_scale,1.2),"ripple presentation lifetime matches opportunity")
 	ripple.show_bite_splash()
 	check(ripple.ripple_sprite.animation == &"BiteSplash" and is_equal_approx(ripple.ripple_sprite.pixel_size,ripple.bite_pixel_size),"confirmed splash keeps stronger presentation size")
