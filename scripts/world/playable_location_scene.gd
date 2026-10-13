@@ -15,6 +15,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_bind_fishing_spot_after_children_are_ready()
+	_mount_ambient_vfx()
 	if OS.is_debug_build() and development_tools_enabled:
 		var tools = load("res://scripts/development/fishing_development_layer.gd")
 		tools.ensure(SessionComposition.acquire(get_tree())).mount_game(self)
@@ -28,6 +29,31 @@ func _ready() -> void:
 	layer.layer = 5
 	add_child(layer)
 	layer.add_child(label)
+
+## Ambient effects belong to the location World, NOT fishing mode.
+## Explicitly avoids modifying the authored scene or camera configuration.
+func _mount_ambient_vfx() -> void:
+	var world: Node3D = get_node_or_null("World") as Node3D
+	if world == null:
+		return
+	for entry in [
+		["FishingCurrentVFX", "res://actors/FishingCurrentVFX.tscn"],
+		["FishingWindVFX", "res://actors/FishingWindVFX.tscn"],
+		["FishingRainVFX", "res://actors/FishingRainVFX.tscn"]
+	]:
+		var node_name: String = entry[0]
+		if world.has_node(NodePath(node_name)):
+			continue
+		var scene: PackedScene = load(entry[1]) as PackedScene
+		if scene == null:
+			push_warning("Ambient VFX scene unavailable: " + String(entry[1]))
+			continue
+		var effect: Node3D = scene.instantiate() as Node3D
+		if effect == null:
+			continue
+		effect.name = node_name
+		world.add_child(effect)
+
 
 func _bind_fishing_spot_after_children_are_ready() -> void:
 	if location_context == null or location_context.fishing_spot == null:

@@ -18,6 +18,7 @@ extends Node3D
 ## default speed range, a complete ribbon spans about 0.8-1.5 world units.
 @export_range(0.25, 2.0, 0.05) var trail_duration: float = 0.75
 @export_range(0.05, 1.0, 0.01) var opacity: float = 0.36
+@export var current_tint: Color = Color(0.61, 0.84, 0.95, 1.0)
 @export_range(8, 160, 1) var particles: int = 54
 ## Thickness, speed, and turbulence below are the ORIGINAL Nolka units.
 ## Visual Scale reduces all of them before they reach the particle system.
@@ -55,6 +56,7 @@ var _sea_mesh: MeshInstance3D = null
 var _sea_original_material: Material = null
 var _sea_current_material: ShaderMaterial = null
 var _last_visual_settings: Array = []
+var _read_only_preview_service: FishingCurrentService = null
 
 func _enter_tree() -> void:
 	# Remove debris before Nolka's composite caches its children in _ready().
@@ -170,8 +172,12 @@ func _update_flow() -> void:
 	if controller != null:
 		service = controller.get("fishing_current_service") as FishingCurrentService
 	if service == null:
-		_set_emitting(false)
-		return
+		# Exploration may start before the Fishing session service has
+		# completed setup. The same read-only current sampler works from
+		# the authored spot, without starting a fishing session.
+		if _read_only_preview_service == null:
+			_read_only_preview_service = FishingCurrentService.new()
+		service = _read_only_preview_service
 	# Spot sampling works both during exploration and active fishing.
 	var sampled_flow: Vector2 = service.sample_spot_at_uv(spot, Vector2(0.5, 0.5))
 	var flow: Vector3 = Vector3(sampled_flow.x, 0.0, sampled_flow.y)
@@ -210,13 +216,13 @@ func _apply_appearance() -> void:
 	var effective_min_speed: float = maxf(1.0, reference_min_speed * visual_scale)
 	var effective_max_speed: float = maxf(effective_min_speed, reference_max_speed * visual_scale)
 	var effective_domain: float = reference_noise_domain / visual_scale * curvature_detail
-	var settings: Array = [visual_scale, trail_duration, opacity, particles, reference_line_width, reference_min_speed, reference_max_speed, reference_min_turbulence, reference_max_turbulence, reference_noise_domain, curvature_detail]
+	var settings: Array = [visual_scale, trail_duration, opacity, particles, reference_line_width, reference_min_speed, reference_max_speed, reference_min_turbulence, reference_max_turbulence, reference_noise_domain, curvature_detail, current_tint]
 	if settings == _last_visual_settings:
 		return
 	_last_visual_settings = settings.duplicate()
 	_wind.set("sway_thickness", reference_line_width * visual_scale)
 	_wind.set("sway_duration", trail_duration)
-	_wind.set("color", Color(0.73, 0.88, 0.94, opacity))
+	_wind.set("color", Color(current_tint.r, current_tint.g, current_tint.b, opacity * current_tint.a))
 	# Nolka clamps min_speed to its existing max_speed. Lower min first,
 	# then max, or reducing both from the vendor defaults cannot work.
 	_wind.set("min_speed", effective_min_speed)

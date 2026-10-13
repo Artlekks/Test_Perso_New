@@ -26,6 +26,9 @@ extends Node3D
 @export_category("Air Volume")
 @export_range(0.25, 8.0, 0.25) var height_above_sea: float = 2.5
 @export_range(0.5, 12.0, 0.25) var air_height: float = 3.5
+@export_range(5.0, 25.0, 0.5) var visible_width: float = 12.0
+@export_range(5.0, 25.0, 0.5) var visible_depth: float = 10.0
+@export_range(2.0, 16.0, 0.5) var forward_focus: float = 7.0
 @export_range(0.0, 10.0, 0.5) var shore_margin: float = 4.0
 
 const POLL_SECONDS: float = 0.25
@@ -84,41 +87,23 @@ func _update_from_snapshot(snapshot: Dictionary) -> void:
 		_emitter.set("speed_scale", playback)
 	_set_emitting(true)
 
-func _get_air_volume(heading: Vector3) -> Dictionary:
+func _get_air_volume(_heading: Vector3) -> Dictionary:
+	# Keep the author's original gust SIZE. Restrict only the emission volume
+	# to where the active camera is looking. The old sea-wide box caused only
+	# an occasional streak to cross the screen, especially in exploration.
 	if not is_instance_valid(_sea):
 		_sea = get_node_or_null(sea_mesh_path) as MeshInstance3D
-	if _sea == null or _sea.mesh == null:
-		return {"center": global_position + Vector3.UP * height_above_sea, "area": Vector3(18.0, air_height, 18.0)}
-	var bounds: AABB = _sea.get_aabb()
-	var across: Vector3 = Vector3(-heading.z, 0.0, heading.x)
-	var first: bool = true
-	var min_side: float = 0.0
-	var max_side: float = 0.0
-	var min_forward: float = 0.0
-	var max_forward: float = 0.0
-	var mean_y: float = 0.0
-	for x in [bounds.position.x, bounds.end.x]:
-		for z in [bounds.position.z, bounds.end.z]:
-			var world_point: Vector3 = _sea.to_global(Vector3(x, bounds.get_center().y, z))
-			mean_y += world_point.y * 0.25
-			var side: float = world_point.dot(across)
-			var forward: float = world_point.dot(heading)
-			if first:
-				min_side = side
-				max_side = side
-				min_forward = forward
-				max_forward = forward
-				first = false
-			else:
-				min_side = minf(min_side, side)
-				max_side = maxf(max_side, side)
-				min_forward = minf(min_forward, forward)
-				max_forward = maxf(max_forward, forward)
-	var center: Vector3 = across * ((min_side + max_side) * 0.5) + heading * ((min_forward + max_forward) * 0.5)
-	center.y = mean_y + height_above_sea
+	var surface_y: float = 0.0
+	if _sea != null and _sea.mesh != null:
+		surface_y = _sea.to_global(_sea.get_aabb().get_center()).y
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	var focus: Vector3 = global_position
+	if camera != null:
+		focus = camera.global_position - camera.global_basis.z * forward_focus
+	var center: Vector3 = Vector3(focus.x, surface_y + height_above_sea, focus.z)
 	return {
 		"center": center,
-		"area": Vector3(maxf(max_side - min_side + shore_margin * 2.0, 6.0), air_height, maxf(max_forward - min_forward + shore_margin * 2.0, 6.0))
+		"area": Vector3(visible_width, air_height, visible_depth)
 	}
 
 func _apply_appearance() -> void:

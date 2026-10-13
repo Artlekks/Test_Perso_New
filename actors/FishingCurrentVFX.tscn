@@ -5,6 +5,7 @@
 
 [node name="FishingCurrentVFX" type="Node3D"]
 script = ExtResource("1_current")
+current_tint = Color(0.61, 0.84, 0.95, 1)
 reference_min_turbulence = 0.5
 reference_max_turbulence = 1.5
 playback_speed = 0.3
@@ -17,7 +18,7 @@ area = Vector3(16, 0.025, 12)
 speed_scale = 0.3
 
 [node name="Wind" parent="NolkaCurrentLines" index="0"]
-color = Color(0.73, 0.88, 0.94, 0.36)
+color = Color(0.61, 0.84, 0.95, 0.36)
 sway_thickness = 0.044
 sway_duration = 0.75
 min_speed = 1.1
