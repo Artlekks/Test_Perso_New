@@ -1,6 +1,7 @@
-[gd_scene format=3 uid="uid://kdqtlvxh48xl"]
+[gd_scene format=3 uid="uid://cb52atmcibhw4"]
 
 [ext_resource type="Script" uid="uid://btov23p7suxju" path="res://scripts/environment_fx/fishing_rain_world_vfx.gd" id="1_rain"]
 
-[node name="FishingRainVFX" type="Node3D" unique_id=982741644]
+[node name="FishingRainVFX" type="Node3D" unique_id=560914520]
 script = ExtResource("1_rain")
+weather_mode = 2

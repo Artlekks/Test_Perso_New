@@ -57,10 +57,11 @@ func run() -> void:
 	var frames: SpriteFrames = rain.get("_splash_frames") as SpriteFrames
 	check(frames != null, "rain sprite animation resource generated")
 	if frames != null:
-		check(frames.get_frame_count(&"ground") == 5, "five original ground-impact frames")
-		check(frames.get_frame_count(&"water") == 5, "five original water-impact frames")
-		check(frames.get_frame_texture(&"ground", 0).get_width() == 18, "ground frames exclude pink sprite-sheet grid")
-		check(frames.get_frame_texture(&"water", 0).get_width() == 26, "water frames exclude pink sprite-sheet grid")
+		check(frames.get_frame_count(&"ground") == 5, "five small top-row ground-impact frames")
+		check(frames.get_frame_count(&"water") == 5, "five small top-row water-impact frames")
+		check(frames.get_frame_texture(&"ground", 0).get_width() == 18, "ground frames exclude sprite-sheet grid")
+		check(frames.get_frame_texture(&"water", 0).get_width() == 18, "water also uses only small top-row frames")
+		check((frames.get_frame_texture(&"water", 4) as AtlasTexture).region.end.y <= 22.0, "the bottom sprite row is never sampled")
 	check(rain.call("_resolve_weather", PackedStringArray(["rain"])) == "rain", "rain service condition activates rain")
 	check(rain.call("_resolve_weather", PackedStringArray(["tempest"])) == "storm", "storm condition activates strong rain")
 	rain.set("weather_mode", 2)
