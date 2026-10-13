@@ -1,0 +1,13 @@
+ERROR: Parse JSON failed. Error at line 0: Expected key
+   at: parse_string (core/io/json.cpp:629)
+   GDScript backtrace (most recent call first):
+       [0] _parse_save (res://scripts/world/game_clock_service.gd:196)
+       [1] load_from_disk (res://scripts/world/game_clock_service.gd:170)
+       [2] _ready (res://scripts/world/game_clock_service.gd:27)
+       [3] _run (res://scripts/qa/game_clock_service_qa.gd:63)
+ERROR: Parse JSON failed. Error at line 0: Expected key
+   at: parse_string (core/io/json.cpp:629)
+   GDScript backtrace (most recent call first):
+       [0] _parse_save (res://scripts/world/game_clock_service.gd:196)
+       [1] load_from_disk (res://scripts/world/game_clock_service.gd:170)
+       [2] _run (res://scripts/qa/game_clock_service_qa.gd:65)

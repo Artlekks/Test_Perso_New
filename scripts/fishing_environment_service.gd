@@ -79,7 +79,12 @@ func set_current_service(service: Node) -> void:
 
 ## Optional lure position uses the existing current service's spatial map.
 ## Null remains the original center-of-spot behavior for every old caller.
-func get_ecology_snapshot(world_position: Variant = null) -> Dictionary:
+## At runtime (-1), sample the same live current phase as physical lure drift.
+## Explicit time_seconds is for deterministic previews and regression tests.
+func get_ecology_snapshot(
+	world_position: Variant = null,
+	time_seconds: float = -1.0
+) -> Dictionary:
 	var clock_state: Dictionary = {}
 	var wind_state: Dictionary = {}
 	var tide_state: Dictionary = {}
@@ -97,12 +102,17 @@ func get_ecology_snapshot(world_position: Variant = null) -> Dictionary:
 		tide_state = _tide_service.call("get_snapshot") as Dictionary
 	if _current_service != null and _spot != null:
 		if typeof(world_position) == TYPE_VECTOR3 and _current_service.has_method("sample_current_velocity"):
-			# Deterministic field sample: no second random gust or wind added.
-			var local_velocity: Variant = _current_service.call("sample_current_velocity", world_position, 0.0)
+			# Use the current service's live phase (or caller-supplied test phase).
+			# No independent gust or wind is added here.
+			var local_velocity: Variant = _current_service.call(
+				"sample_current_velocity", world_position, time_seconds
+			)
 			if typeof(local_velocity) == TYPE_VECTOR3:
 				sampled_current = Vector2(local_velocity.x, local_velocity.z)
 		elif _current_service.has_method("sample_current_at_uv"):
-			var sample: Variant = _current_service.call("sample_current_at_uv", Vector2(0.5, 0.5), 0.0)
+			var sample: Variant = _current_service.call(
+				"sample_current_at_uv", Vector2(0.5, 0.5), time_seconds
+			)
 			if typeof(sample) == TYPE_VECTOR2:
 				sampled_current = sample
 	var ecology: Dictionary = FishingEcologyPolicyScript.build_snapshot(
@@ -122,13 +132,14 @@ func get_lure_environment_presentation_snapshot(
 	rod_position: Vector3,
 	presentation: Dictionary,
 	current_depth: float,
-	total_depth: float
+	total_depth: float,
+	time_seconds: float = -1.0
 ) -> Dictionary:
 	if bait == null:
 		return {"multiplier": 1.0, "available": false, "label": "NEUTRAL"}
 	var action: LureActionProfile = bait.get_action_profile()
 	return FishingHabitatPresentationPolicyScript.evaluate(
-		action, presentation, get_ecology_snapshot(lure_position),
+		action, presentation, get_ecology_snapshot(lure_position, time_seconds),
 		lure_position, rod_position, current_depth, total_depth
 	)
 
@@ -425,9 +436,13 @@ func get_species_selection_multiplier(fish: FishData, ecology_snapshot: Dictiona
 	return clampf(multiplier, 0.0, MAX_SPECIES_WEIGHT_MULTIPLIER)
 
 
-func get_selection_context(entries: Array = [], world_position: Variant = null) -> Dictionary:
+func get_selection_context(
+	entries: Array = [],
+	world_position: Variant = null,
+	time_seconds: float = -1.0
+) -> Dictionary:
 	var species_multipliers: Dictionary = {}
-	var ecology: Dictionary = get_ecology_snapshot(world_position)
+	var ecology: Dictionary = get_ecology_snapshot(world_position, time_seconds)
 	for raw_entry in entries:
 		if raw_entry == null or raw_entry.fish == null:
 			continue
