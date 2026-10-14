@@ -8,6 +8,7 @@ extends Node3D
 
 const SPLASH_ATLAS: Texture2D = preload("res://assets/ui/environment/RainImpact.png")
 const POLL_SECONDS: float = 0.5
+const WeatherPresentationPolicy = preload("res://scripts/environment_fx/environment_weather_presentation_policy.gd")
 
 @export_category("Rain Mode")
 @export_enum("Auto", "Clear", "Rain Preview", "Storm Preview") var weather_mode: int = 0
@@ -32,6 +33,13 @@ const POLL_SECONDS: float = 0.5
 @export_range(0.0, 3.0, 0.05) var wind_angle_influence: float = 1.0
 @export_range(0.1, 0.9, 0.05) var distant_rain_share: float = 0.30
 
+@export_category("Weather Transitions - Visual Only")
+## Transitions smooth the particles and ripple spawn rate; gameplay weather
+## remains authoritative and changes immediately at its scheduled boundary.
+@export_range(0.0, 15.0, 0.1) var rain_fade_in_seconds: float = 2.5
+@export_range(0.0, 15.0, 0.1) var rain_fade_out_seconds: float = 4.0
+@export_range(0.0, 15.0, 0.1) var storm_transition_seconds: float = 3.0
+
 @export_category("Surface Ripples - Top Row Only")
 @export_range(0.001, 0.04, 0.001) var splash_pixel_size: float = 0.003
 @export_range(1.0, 30.0, 1.0) var splash_fps: float = 12.0
@@ -46,6 +54,11 @@ var _weather_timer: float = 0.0
 var _impact_timer: float = 0.0
 var _raining: bool = false
 var _storm: bool = false
+var _weather_initialized: bool = false
+var _target_rain_level: float = 0.0
+var _target_storm_level: float = 0.0
+var _rain_level: float = 0.0
+var _storm_level: float = 0.0
 var _rain_particles: GPUParticles3D = null
 var _distant_rain_particles: GPUParticles3D = null
 var _last_rain_appearance: Array = []
@@ -74,17 +87,23 @@ func _process(delta: float) -> void:
 	if _weather_timer >= POLL_SECONDS:
 		_weather_timer = 0.0
 		_poll_weather()
+	# Gameplay weather changes immediately; only the presentation blends.
+	# The approved appearance remains identical once a normal rain settles.
+	_update_visual_weather(delta)
 	# Inspector edits also affect running previews; no restart needed for rain
 	# color, opacity, number, size or fall speed.
 	_sync_rain_appearance()
 	_sync_splash_appearance()
-	if not _raining:
+	if _rain_level <= 0.001:
+		_impact_timer = 0.0
 		return
 	_follow_camera()
-	# Five frames at 12 FPS last about 0.42 seconds; 80 starts/second
-	# yields roughly 33 simultaneous small impacts (more during storms).
-	# Accumulate elapsed time instead of resetting the timer each frame.
-	var rate: float = maxf(1.0, splash_rate_per_second) * (1.3 if _storm else 1.0)
+	# Ripples slow down with the outgoing rain instead of suddenly stopping.
+	# A settled storm retains its original 1.3x impact-rate behavior.
+	var rate: float = maxf(1.0, splash_rate_per_second) * WeatherPresentationPolicy.splash_rate_factor(_rain_level, _storm_level)
+	if rate <= 0.01:
+		_impact_timer = 0.0
+		return
 	var interval: float = 1.0 / rate
 	_impact_timer = minf(_impact_timer + delta, 0.25)
 	var spawn_budget: int = 12 # Prevent frame stalls when resuming after a pause.
@@ -108,21 +127,62 @@ func _resolve_weather(tags: PackedStringArray) -> String:
 		return "rain"
 	return "clear"
 
-func _poll_weather() -> void:
-	var tags: PackedStringArray = PackedStringArray()
-	var game: Node = get_parent().get_parent() if get_parent() != null else null
+func _weather_tags() -> PackedStringArray:
+	# The active gameplay environment takes precedence, including the
+	# intentional manual preview override from Environmental Integration v1.
+	var game: Node = get_parent().get_parent() if get_parent() != null and get_parent().get_parent() != null else null
 	var fishing: Node = game.get_node_or_null("Game/Fishing") if game != null else null
 	if fishing != null:
 		var environment: Node = fishing.get("fishing_environment_service") as Node
-		if environment != null and environment.has_method("get_active_tags"):
-			tags = environment.call("get_active_tags") as PackedStringArray
-	var state: String = _resolve_weather(tags)
+		if is_instance_valid(environment) and environment.has_method("get_active_tags"):
+			var gameplay_tags: PackedStringArray = environment.call("get_active_tags") as PackedStringArray
+			if not gameplay_tags.is_empty():
+				return gameplay_tags
+	# World effects may be active while the fishing controller isn't mounted
+	# (travel, initialization, stand-alone locations). Read the same world
+	# weather provider; never create a second weather simulation here.
+	if get_tree() != null:
+		var weather: Node = get_tree().root.get_node_or_null("GameWeather")
+		if is_instance_valid(weather) and weather.has_method("get_snapshot"):
+			var snapshot: Dictionary = weather.call("get_snapshot") as Dictionary
+			if bool(snapshot.get("available", false)):
+				return snapshot.get("tags", PackedStringArray()) as PackedStringArray
+	return PackedStringArray()
+
+
+func _poll_weather() -> void:
+	var state: String = _resolve_weather(_weather_tags())
 	_raining = state != "clear"
 	_storm = state == "storm"
-	if _rain_particles != null:
-		_rain_particles.emitting = _raining
-	if _distant_rain_particles != null:
-		_distant_rain_particles.emitting = _raining
+	var target: Vector2 = WeatherPresentationPolicy.target_levels(state)
+	_target_rain_level = target.x
+	_target_storm_level = target.y
+	if not _weather_initialized:
+		# Joining an already-raining location should NOT replay the fade-in.
+		_rain_level = _target_rain_level
+		_storm_level = _target_storm_level
+		_weather_initialized = true
+	_update_emission_state()
+
+
+func _update_visual_weather(delta: float) -> void:
+	_rain_level = WeatherPresentationPolicy.step_level(
+		_rain_level, _target_rain_level, delta,
+		rain_fade_in_seconds, rain_fade_out_seconds
+	)
+	_storm_level = WeatherPresentationPolicy.step_level(
+		_storm_level, _target_storm_level, delta,
+		storm_transition_seconds, storm_transition_seconds
+	)
+	_update_emission_state()
+
+
+func _update_emission_state() -> void:
+	var should_emit: bool = WeatherPresentationPolicy.should_emit(_rain_level, _target_rain_level)
+	if _rain_particles != null and _rain_particles.emitting != should_emit:
+		_rain_particles.emitting = should_emit
+	if _distant_rain_particles != null and _distant_rain_particles.emitting != should_emit:
+		_distant_rain_particles.emitting = should_emit
 
 func _create_rainfall() -> void:
 	_drop_texture = _create_drop_texture()
@@ -207,7 +267,8 @@ func _sync_rain_appearance() -> void:
 		_distant_rain_particles.amount = distant_count
 		_last_rain_amounts = counts
 	var settings: Array = [drop_width, drop_length, drop_opacity, rain_color,
-		drop_edge_opacity, drop_fall_speed, drop_angle_degrees]
+		drop_edge_opacity, drop_fall_speed, drop_angle_degrees,
+		snappedf(_rain_level, 0.01)]
 	if settings == _last_rain_appearance:
 		return
 	_last_rain_appearance = settings.duplicate()
@@ -221,7 +282,7 @@ func _sync_rain_appearance() -> void:
 		highlight.size = Vector2(drop_width * scale_factor, drop_length * scale_factor)
 		var shadow_material: StandardMaterial3D = shadow.material as StandardMaterial3D
 		var highlight_material: StandardMaterial3D = highlight.material as StandardMaterial3D
-		var final_alpha: float = clampf(rain_color.a * drop_opacity * alpha_factor, 0.0, 1.0)
+		var final_alpha: float = clampf(rain_color.a * drop_opacity * alpha_factor * _rain_level, 0.0, 1.0)
 		shadow_material.albedo_color = Color(0.09, 0.17, 0.28,
 			clampf(drop_edge_opacity * final_alpha, 0.0, 1.0))
 		highlight_material.albedo_color = Color(rain_color.r, rain_color.g,
