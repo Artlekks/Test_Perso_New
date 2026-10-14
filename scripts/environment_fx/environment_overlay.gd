@@ -14,6 +14,9 @@ extends Control
 @export_enum("auto", "clear", "rain", "storm", "snow", "sandstorm") var preview_weather: String = "auto"
 @export_range(0.0, 1.0, 0.05) var weather_opacity: float = 0.6
 @export_range(0, 120, 1) var weather_particle_count: int = 45
+## The world-owned 3D rain is authoritative. Keep this legacy renderer
+## available for future 2D-only scenes, but OFF in the fishing world.
+@export var draw_legacy_weather_particles: bool = false
 
 const CARD_BG := Color(0.06, 0.14, 0.19, 0.69)
 const CARD_BORDER := Color(0.81, 0.73, 0.57, 0.75)
@@ -114,7 +117,7 @@ func _seed_particles() -> void:
 		_speeds.append(rng.randf_range(0.66, 1.45))
 
 func _draw() -> void:
-	if _weather_mode != "clear":
+	if draw_legacy_weather_particles and _weather_mode != "clear":
 		_draw_weather()
 	if show_wind_readout:
 		_draw_wind_readout()

@@ -471,6 +471,9 @@ func initialize() -> void:
 	environment_service.name = "FishingEnvironmentService"
 	add_child(environment_service)
 	environment_service.configure(FishingEnvironmentCatalogResource)
+	# Production session follows the persistent world clock's weather schedule.
+	# Standalone QA instances of FishingEnvironmentService stay manually controlled.
+	environment_service.enable_live_weather()
 	if environment_service.has_method("set_mastery_service"):
 		environment_service.set_mastery_service(mastery_service)
 	if environment_service.has_method("set_tide_service"):

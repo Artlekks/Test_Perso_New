@@ -38,6 +38,149 @@ var _current_service: Node = null
 var _active_by_group: Dictionary = {}
 var _last_synced_clock_minute: int = -1
 var _connected_clock: Node = null
+var _live_weather_enabled: bool = false
+var _weather_source: Node = null
+var _weather_manual_override: bool = false
+var _weather_connect_retry_seconds: float = 0.0
+
+
+func _process(delta: float) -> void:
+	if not _live_weather_enabled or is_instance_valid(_weather_source):
+		return
+	_weather_connect_retry_seconds -= maxf(delta, 0.0)
+	if _weather_connect_retry_seconds <= 0.0:
+		_weather_connect_retry_seconds = 1.0
+		_bind_world_weather()
+
+
+func _exit_tree() -> void:
+	_disconnect_weather_source()
+
+
+## Opt-in ONLY for the actual fishing session. Detached QA fixtures and
+## authored/manual condition editing retain their original semantics.
+func enable_live_weather(enabled: bool = true) -> void:
+	_live_weather_enabled = enabled
+	if not enabled:
+		_disconnect_weather_source()
+		set_process(false)
+		return
+	set_process(true)
+	_bind_world_weather()
+
+
+func _bind_world_weather() -> void:
+	if not _live_weather_enabled:
+		return
+	var weather: Node = _get_global_environment_node("GameWeather")
+	if weather != null and weather.has_method("get_snapshot"):
+		set_weather_source(weather)
+
+
+func set_weather_source(source: Node) -> void:
+	# Explicit injection supports isolated tests and alternate world providers.
+	if _weather_source != source:
+		_weather_manual_override = false
+		_disconnect_weather_source()
+		_weather_source = source
+	if not is_instance_valid(_weather_source):
+		return
+	var callback: Callable = Callable(self, "_on_world_weather_changed")
+	if _weather_source.has_signal("weather_changed") and not _weather_source.is_connected("weather_changed", callback):
+		_weather_source.connect("weather_changed", callback)
+	if _sync_weather_condition_from_source():
+		_emit_changed()
+
+
+func _disconnect_weather_source() -> void:
+	if is_instance_valid(_weather_source):
+		var callback: Callable = Callable(self, "_on_world_weather_changed")
+		if _weather_source.has_signal("weather_changed") and _weather_source.is_connected("weather_changed", callback):
+			_weather_source.disconnect("weather_changed", callback)
+	_weather_source = null
+
+
+func _on_world_weather_changed(_snapshot: Dictionary) -> void:
+	# A developer's manual condition preview lasts until the next weather
+	# window; it must not accidentally become a permanent world override.
+	_weather_manual_override = false
+	if _sync_weather_condition_from_source():
+		_emit_changed()
+
+
+func _sync_weather_condition_from_source() -> bool:
+	if _weather_manual_override or _catalog == null or not is_instance_valid(_weather_source):
+		return false
+	if not _weather_source.has_method("get_snapshot"):
+		return false
+	var weather: Dictionary = _weather_source.call("get_snapshot") as Dictionary
+	if not bool(weather.get("available", false)):
+		return false
+	var condition_id: StringName = StringName(weather.get("condition_id", ""))
+	var authored: ConditionDefinitionScript = _catalog.get_condition_by_id(condition_id)
+	if authored == null or authored.stacking_group != &"weather":
+		return false
+	if _active_by_group.get("weather") == authored:
+		return false
+	_active_by_group["weather"] = authored
+	return true
+
+
+## Read-only state for UI, VFX and external environment consumers.
+## All physical ecology, lure drift and fish modifiers remain in their
+## existing services; nothing here applies another weather multiplier.
+func get_world_snapshot() -> Dictionary:
+	_sync_weather_condition_from_source()
+	_sync_time_condition_from_clock()
+	var clock_state: Dictionary = {}
+	var wind_state: Dictionary = {}
+	var weather_state: Dictionary = {}
+	var tide_state: Dictionary = {}
+	var clock: Node = _get_global_environment_node("GameClock")
+	var wind: Node = _get_global_environment_node("GameWind")
+	if clock != null and clock.has_method("get_snapshot"):
+		clock_state = clock.call("get_snapshot") as Dictionary
+	if wind != null and wind.has_method("get_snapshot"):
+		wind_state = wind.call("get_snapshot") as Dictionary
+	if is_instance_valid(_weather_source) and _weather_source.has_method("get_snapshot"):
+		weather_state = _weather_source.call("get_snapshot") as Dictionary
+	if is_instance_valid(_tide_service) and _tide_service.has_method("get_snapshot"):
+		tide_state = _tide_service.call("get_snapshot") as Dictionary
+	var active_weather: ConditionDefinitionScript = _active_by_group.get("weather", null) as ConditionDefinitionScript
+	if active_weather != null:
+		weather_state["condition_id"] = active_weather.condition_id
+		weather_state["display"] = active_weather.display_name
+	# Preview the authored location while the player is exploring. Do NOT call
+	# set_spot(): changing it would mutate lure physics and active encounters.
+	var current_state: Dictionary = {"available": false}
+	var current_spot: FishingSpotData = _spot
+	if current_spot == null:
+		var locations: Node = _get_global_environment_node("WorldLocations")
+		if locations != null:
+			var location: Variant = locations.get("current_location")
+			if location != null:
+				current_spot = location.get("fishing_spot") as FishingSpotData
+	if is_instance_valid(_current_service) and current_spot != null:
+		if _current_service.has_method("sample_spot_at_uv"):
+			var velocity: Vector2 = _current_service.call(
+				"sample_spot_at_uv", current_spot, Vector2(0.5, 0.5)
+			)
+			current_state = {
+				"available": true,
+				"velocity_xz": velocity,
+				"speed_mps": velocity.length(),
+				"scope": "spot_center",
+			}
+	return {
+		"clock": clock_state,
+		"wind": wind_state,
+		"weather": weather_state,
+		"tide": tide_state,
+		"current": current_state,
+		"active_condition_ids": get_active_condition_ids(),
+		"active_tags": get_active_tags(),
+		"spot_id": _get_spot_id(),
+	}
 
 
 func _sync_time_condition_from_clock() -> bool:
@@ -90,6 +233,7 @@ func _on_game_clock_changed(_snapshot: Dictionary) -> void:
 func configure(catalog: EnvironmentCatalogScript) -> void:
 	_catalog = catalog
 	reset_to_defaults()
+	_sync_weather_condition_from_source()
 
 
 func set_spot(spot: FishingSpotData) -> void:
@@ -243,6 +387,7 @@ func get_spot() -> FishingSpotData:
 
 
 func reset_to_defaults() -> void:
+	_weather_manual_override = false
 	_active_by_group.clear()
 	if _catalog != null:
 		var defaults: PackedStringArray = _catalog.default_condition_ids
@@ -252,6 +397,12 @@ func reset_to_defaults() -> void:
 
 
 func activate_condition(condition_id: StringName) -> bool:
+	# Direct weather activation is an explicit debug/preview choice. Keep it
+	# until the authoritative world provider reports its next change.
+	if is_instance_valid(_weather_source) and _catalog != null:
+		var selected: ConditionDefinitionScript = _catalog.get_condition_by_id(condition_id)
+		if selected != null and selected.stacking_group == &"weather":
+			_weather_manual_override = true
 	var changed: bool = _activate_without_emit(condition_id)
 	if changed:
 		_emit_changed()
@@ -308,6 +459,7 @@ func _restore_default_for_group(group_key: String) -> void:
 
 
 func clear_conditions() -> void:
+	_weather_manual_override = false
 	if _active_by_group.is_empty():
 		return
 	_active_by_group.clear()
@@ -315,6 +467,7 @@ func clear_conditions() -> void:
 
 
 func get_active_condition_ids() -> PackedStringArray:
+	_sync_weather_condition_from_source()
 	_sync_time_condition_from_clock()
 	var result: PackedStringArray = PackedStringArray()
 	for raw_condition in _active_by_group.values():
@@ -326,6 +479,7 @@ func get_active_condition_ids() -> PackedStringArray:
 
 
 func get_active_tags() -> PackedStringArray:
+	_sync_weather_condition_from_source()
 	_sync_time_condition_from_clock()
 	var result: PackedStringArray = PackedStringArray()
 	for raw_condition in _active_by_group.values():
@@ -341,6 +495,7 @@ func get_active_tags() -> PackedStringArray:
 
 
 func get_active_condition_display_names() -> PackedStringArray:
+	_sync_weather_condition_from_source()
 	_sync_time_condition_from_clock()
 	var result := PackedStringArray()
 	for raw_condition in _active_by_group.values():

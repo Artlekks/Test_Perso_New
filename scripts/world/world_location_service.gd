@@ -2,6 +2,7 @@ extends Node
 const GameplaySceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 const GameClockServiceScript = preload("res://scripts/world/game_clock_service.gd")
 const GameWindServiceScript = preload("res://scripts/world/game_wind_service.gd")
+const GameWeatherServiceScript = preload("res://scripts/world/game_weather_service.gd")
 const WindCastRuntimeScript = preload("res://scripts/world/wind_cast_runtime.gd")
 
 signal location_changed(location: Resource)
@@ -36,6 +37,10 @@ func _mount_environment_services() -> void:
 		var wind: Node = GameWindServiceScript.new()
 		wind.name = "GameWind"
 		root.add_child(wind)
+	if root.get_node_or_null("GameWeather") == null:
+		var weather: Node = GameWeatherServiceScript.new()
+		weather.name = "GameWeather"
+		root.add_child(weather)
 	if root.get_node_or_null("WindCastRuntime") == null:
 		var wind_cast: Node = WindCastRuntimeScript.new()
 		wind_cast.name = "WindCastRuntime"
