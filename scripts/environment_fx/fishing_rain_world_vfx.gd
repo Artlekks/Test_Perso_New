@@ -137,11 +137,23 @@ func _weather_tags() -> PackedStringArray:
 		if is_instance_valid(environment) and environment.has_method("get_active_tags"):
 			var gameplay_tags: PackedStringArray = environment.call("get_active_tags") as PackedStringArray
 			if not gameplay_tags.is_empty():
-				return gameplay_tags
+				# The fishing session can exist before the deferred global weather
+				# provider does. Ignore its provisional Calm default until the
+				# live service actually has a weather source. Real manual/detached
+				# services and injected QA providers keep their previous behavior.
+				var waiting_for_live_source: bool = (
+					environment.has_method("enable_live_weather")
+					and bool(environment.get("_live_weather_enabled"))
+					and not is_instance_valid(environment.get("_weather_source"))
+				)
+				if not waiting_for_live_source:
+					return gameplay_tags
 	# World effects may be active while the fishing controller isn't mounted
 	# (travel, initialization, stand-alone locations). Read the same world
 	# weather provider; never create a second weather simulation here.
-	if get_tree() != null:
+	# Detached scene fixtures are legitimate: get_tree() itself logs an
+	# engine error when called outside a SceneTree. Check first.
+	if is_inside_tree():
 		var weather: Node = get_tree().root.get_node_or_null("GameWeather")
 		if is_instance_valid(weather) and weather.has_method("get_snapshot"):
 			var snapshot: Dictionary = weather.call("get_snapshot") as Dictionary
@@ -151,7 +163,15 @@ func _weather_tags() -> PackedStringArray:
 
 
 func _poll_weather() -> void:
-	var state: String = _resolve_weather(_weather_tags())
+	var tags: PackedStringArray = _weather_tags()
+	# The location can enter the tree before WorldLocations finishes its deferred
+	# GameClock/GameWeather mount. Do not mistake that temporary absence of a
+	# provider for an authored Clear condition: a location joined during Rain or
+	# Tempest should start at the current intensity, not replay a fade-in.
+	# Explicit Inspector preview modes still initialize immediately.
+	if not _weather_initialized and weather_mode == 0 and tags.is_empty():
+		return
+	var state: String = _resolve_weather(tags)
 	_raining = state != "clear"
 	_storm = state == "storm"
 	var target: Vector2 = WeatherPresentationPolicy.target_levels(state)
