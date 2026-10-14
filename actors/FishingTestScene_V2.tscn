@@ -436,7 +436,7 @@ material_override = SubResource("ShaderMaterial_sea_far")
 material_override = SubResource("ShaderMaterial_beach_anim")
 
 [node name="Bottom" parent="World/beach" index="2" unique_id=946622039]
-transform = Transform3D(0.8024675, 0, 0, 0, 0.99999994, 0, 0, 0, 1, 0, 3.9999998, 0)
+transform = Transform3D(0.8024676, 0, 0, 0, 0.99999976, 0, 0, 0, 1, 0, 3.4369457, 2.0487227)
 material_override = SubResource("StandardMaterial3D_myncn")
 
 [node name="DepthFloor" type="StaticBody3D" parent="World" unique_id=383427262]

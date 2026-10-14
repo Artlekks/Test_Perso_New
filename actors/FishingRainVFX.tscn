@@ -1,19 +1,12 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://p5pgprm3fc4i"]
 
-[ext_resource type="Script" path="res://scripts/environment_fx/fishing_rain_world_vfx.gd" id="1_rain"]
+[ext_resource type="Script" uid="uid://btov23p7suxju" path="res://scripts/environment_fx/fishing_rain_world_vfx.gd" id="1_rain"]
 
-[node name="FishingRainVFX" type="Node3D"]
+[node name="FishingRainVFX" type="Node3D" unique_id=213518739]
 script = ExtResource("1_rain")
-weather_mode = 0
-drop_count = 220
+weather_mode = 2
 drop_width = 0.003
-drop_angle_degrees = 0.0
-follow_wind_direction = false
 drop_opacity = 0.7
-rain_color = Color(0.827451, 0.9254902, 1, 1)
-splash_pixel_size = 0.003
-splash_rate_per_second = 80.0
-max_simultaneous_splashes = 100
-water_splash_share = 0.65
-splash_color = Color(0.5568628, 0.6156863, 0.7686275, 0.67058825)
-splash_opacity = 0.38
+follow_wind_direction = true
+wind_angle_influence = 2.05
+splash_color = Color(0.5568628, 0.6156863, 0.76862746, 1)
