@@ -1126,6 +1126,11 @@ func _on_animation_finished(animation_name: StringName) -> void:
 	if animation_name == &"Prep_Fishing":
 		if phase == Phase.PREP:
 			phase = Phase.AIM
+			# Shoreline K can be released during the entrance animation,
+			# before AIM accepts cast-input release events. Re-arm only
+			# if the original physical press is no longer held.
+			if not Input.is_action_pressed("enter_fishing"):
+				cast_input_gate.release(FishingCastInputGate.Stage.AIM)
 			sprite_director.play(&"Fishing_Idle")
 
 			var fishing_forward := player.global_transform.basis.z
@@ -1164,6 +1169,10 @@ func _on_animation_finished(animation_name: StringName) -> void:
 
 		if phase == Phase.CANCEL_THROW:
 			phase = Phase.AIM
+			# The player may release K before the backwards throw
+			# animation completes; preserve that release across AIM.
+			if not Input.is_action_pressed("enter_fishing"):
+				cast_input_gate.release(FishingCastInputGate.Stage.AIM)
 			sprite_director.play(&"Fishing_Idle")
 			aim.resume()
 			return
