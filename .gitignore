@@ -14,3 +14,10 @@
 # OS noise
 .DS_Store
 Thumbs.db
+/qa_sandboxes/
+/.godot/
+/audit_reports/
+/backups/
+/.qa_disposable_copy.json
+/project.godot.qa.lock
+/project.godot.qa.original.json
