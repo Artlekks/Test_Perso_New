@@ -1,13 +1,13 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 var checks := 0
 var failures := PackedStringArray()
 var core_names: PackedStringArray
 
 func _initialize() -> void:
-	var isolated := "CodexSessionCompositionQA-%d" % Time.get_ticks_usec()
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", isolated)
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
+	if not Isolation.verify():
+		quit(1)
+		return
 	call_deferred("run")
 
 func check(ok: bool, label: String) -> void:
@@ -25,6 +25,8 @@ func names(session: Node) -> PackedStringArray:
 	return result
 
 func run() -> void:
+	for frame in range(2): await process_frame
+	if not Isolation.verify_root_clock(self): quit(1); return
 	var fixture := SessionTestFixture.new()
 	var scene := fixture.mount(self)
 	var session := fixture.session
@@ -90,4 +92,9 @@ func run() -> void:
 	await settle()
 	check(Node.get_orphan_node_ids().is_empty(), "borrowed session released only by its actual owner")
 	print("Session Composition Separation QA: %d/%d; 12 alternating host lifetimes; failures=%s" % [checks - failures.size(), checks, failures])
+	Isolation.emit_result("session_composition_separation_qa", checks - failures.size(),
+		checks, failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

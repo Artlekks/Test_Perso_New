@@ -64,23 +64,17 @@ static func portrait_controls(area: Rect2) -> Dictionary:
 const DESKTOP_MIN_WORLD_HEIGHT := 480.0
 const DESKTOP_MAX_WORLD_HEIGHT := 720.0
 const DESKTOP_WORLD_WIDTH := 960.0
-const DESKTOP_COMPACT_BAND_HEIGHT := 66.0
-const DESKTOP_REGULAR_BAND_HEIGHT := 42.0
-const DESKTOP_DASHBOARD_HEIGHT := 88.0
-const DESKTOP_COMPACT_DASHBOARD_HEIGHT := 108.0
-const DESKTOP_MENU_MIN_HEIGHT := 236.0
-const DESKTOP_MENU_MIN_WIDTH := 300.0
+const DESKTOP_COMPACT_BAND_HEIGHT := 58.0
+const DESKTOP_REGULAR_BAND_HEIGHT := 40.0
 
 static func desktop(view: Vector2, previous := Vector2i(640,480), docked := false, locked := false) -> Dictionary:
 	var compact: bool = view.x < 600.0
-	# Header/action bands are precisely equal in height. Both use the same
-	# narrow inset rather than one touching the client border.
+	# One compact dark shell header. Environmental data lives over the world.
 	var band_height: float = DESKTOP_COMPACT_BAND_HEIGHT if compact else DESKTOP_REGULAR_BAND_HEIGHT
 	var gap := 3.0
 	var side := 4.0
-	var summary_height: float = DESKTOP_COMPACT_DASHBOARD_HEIGHT if compact else DESKTOP_DASHBOARD_HEIGHT
-	var header_bottom: float = band_height * 2.0 + gap
-	var usable_height: float = maxf(1.0,view.y-header_bottom-summary_height-gap*3.0)
+	var header_bottom: float = band_height + gap
+	var usable_height: float = maxf(1.0, view.y - header_bottom - gap)
 	var usable_width: float = maxf(1.0,view.x-side*2.0)
 	var resolution := Vector2i(640,480)
 	if not docked:
@@ -95,17 +89,22 @@ static func desktop(view: Vector2, previous := Vector2i(640,480), docked := fals
 	var scale: float = maxf(0.01,minf(usable_width/float(resolution.x),usable_height/float(resolution.y)))
 	var footprint := Vector2(resolution)*scale
 	var free_height: float = maxf(0.0,usable_height-footprint.y)
-	var world := Rect2(Vector2(side+(usable_width-footprint.x)*0.5,header_bottom+free_height*.5),footprint)
-	var summary := Rect2(Vector2(side,world.end.y+gap),Vector2(usable_width,summary_height))
-	var menu_top: float = summary.end.y+gap
-	var menu := Rect2(Vector2(side,menu_top),Vector2(usable_width,maxf(0.0,view.y-menu_top-gap)))
-	var lower_available: bool = menu.size.x >= DESKTOP_MENU_MIN_WIDTH and menu.size.y >= DESKTOP_MENU_MIN_HEIGHT
+	# In a tall dock, anchor the playable image just below the toolbar.
+	# Centering a short 4:3 viewport vertically left a huge empty black area
+	# above the player and made the HUD feel detached from the shell.
+	var world_y := header_bottom if docked else header_bottom + free_height * 0.5
+	var world := Rect2(Vector2(side+(usable_width-footprint.x)*0.5,world_y),footprint)
+	var summary := Rect2(Vector2(side,world.end.y+gap),Vector2(usable_width,0.0))
+	# The J menu owns its authored 640x480 surface; don't reserve a second
+	# desktop region which would change menu geometry on resize.
+	var menu := world
+	var lower_available := false
 	return {
 		"variant":"desktop_compact" if compact else "desktop_regular",
 		"resolution":resolution,
-		"info":Rect2(side,0,usable_width,band_height),
+		"info":Rect2(side,0,0,0),
 		"world":world,"frame":world.grow(2),
-		"toolbar":Rect2(side,band_height,usable_width,band_height),
+		"toolbar":Rect2(side,0,usable_width,band_height),
 		"dashboard":summary,"menu":menu,"lower_menu_available":lower_available,
 		"safe":Rect2(Vector2.ZERO,view),"compact":compact
 	}

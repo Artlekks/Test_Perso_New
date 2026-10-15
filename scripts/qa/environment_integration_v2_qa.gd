@@ -5,6 +5,7 @@ extends SceneTree
 const Policy = preload("res://scripts/environment_fx/environment_weather_presentation_policy.gd")
 const RainScene = preload("res://actors/FishingRainVFX.tscn")
 const LegacyOverlay = preload("res://scripts/environment_fx/environment_overlay.gd")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 class FakeEnvironment:
 	extends Node
@@ -24,6 +25,9 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	if not Isolation.verify():
+		quit(1)
+		return
 	_run.call_deferred()
 
 
@@ -36,6 +40,10 @@ func check(ok: bool, label: String) -> void:
 
 
 func _run() -> void:
+	await process_frame
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	check(Policy.target_levels("clear") == Vector2.ZERO, "clear has no rain or storm")
 	check(Policy.target_levels("rain") == Vector2(1.0, 0.0), "rain has full rain without storm")
 	check(Policy.target_levels("storm") == Vector2.ONE, "tempest visual target has rain and storm")
@@ -124,4 +132,9 @@ func _run() -> void:
 	print("Environmental Integration v2 QA: %d passed, %d failed" % [passed, failures.size()])
 	for failure in failures:
 		print("  FAILED: " + failure)
+	Isolation.emit_result("environment_integration_v2_qa", passed, passed + failures.size(),
+		failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

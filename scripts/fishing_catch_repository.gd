@@ -7,6 +7,7 @@ signal pending_recovery_completed(transaction_id: String)
 const CatchEvaluator = preload(
 	"res://scripts/fishing_catch_evaluator.gd"
 )
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
 
 const PENDING_PATH: String = "user://fishing_catch_pending.json"
 const PENDING_TEMP_PATH: String = "user://fishing_catch_pending.tmp"
@@ -87,6 +88,20 @@ func commit_snapshot(input_snapshot: Dictionary) -> Dictionary:
 			"committed": false,
 			"reason": "empty_snapshot",
 		}
+	if SaveStorage.has_pending_for_store(inventory.get_save_path()):
+		return {"committed": false, "reason": "pending_cross_store_transaction"}
+	if SaveStorage.has_pending_card_maker_for_store(inventory.get_save_path()):
+		return {"committed": false, "reason": "pending_card_maker_transaction"}
+
+	# The single journal slot belongs to its current catch until both stores
+	# have acknowledged it. A failed recovery must never be overwritten.
+	if has_pending_transaction():
+		var recovery: Dictionary = recover_pending_transaction()
+		if not bool(recovery.get("recovered", false)) or has_pending_transaction():
+			return {
+				"committed": false,
+				"reason": "pending_transaction_unresolved",
+			}
 
 	var snapshot: Dictionary = input_snapshot.duplicate(true)
 	var transaction_id: String = str(
@@ -160,7 +175,7 @@ func commit_snapshot(input_snapshot: Dictionary) -> Dictionary:
 	var durable: bool = progress_saved and inventory_saved
 
 	if durable:
-		_clear_pending_file()
+		durable = _clear_pending_file()
 
 	inventory.emit_specimen_commit(
 		str(snapshot.get("species_id", "")),
@@ -191,12 +206,22 @@ func recover_pending_transaction() -> Dictionary:
 			"reason": "repository_unconfigured",
 		}
 
+	if not has_pending_transaction():
+		return {
+			"recovered": false,
+			"reason": "nothing_pending",
+		}
+	if SaveStorage.has_pending_for_store(inventory.get_save_path()):
+		return {"recovered": false, "reason": "pending_cross_store_transaction"}
+	if SaveStorage.has_pending_card_maker_for_store(inventory.get_save_path()):
+		return {"recovered": false, "reason": "pending_card_maker_transaction"}
+
 	var snapshot: Dictionary = _read_pending_snapshot()
 
 	if snapshot.is_empty():
 		return {
 			"recovered": false,
-			"reason": "nothing_pending",
+			"reason": "invalid_pending_journal",
 		}
 
 	var transaction_id: String = str(
@@ -204,7 +229,6 @@ func recover_pending_transaction() -> Dictionary:
 	).strip_edges()
 
 	if transaction_id.is_empty():
-		_clear_pending_file()
 		return {
 			"recovered": false,
 			"reason": "invalid_pending_transaction",
@@ -240,16 +264,10 @@ func recover_pending_transaction() -> Dictionary:
 			}
 		inventory_changed = true
 
-	var progress_saved: bool = (
-		progress.commit_changes()
-		if progress_changed
-		else true
-	)
-	var inventory_saved: bool = (
-		inventory.commit_changes()
-		if inventory_changed
-		else true
-	)
+	# An applied ID proves only runtime state. Retry both disk writes, including
+	# the side that was applied during an earlier failed attempt.
+	var progress_saved: bool = progress.commit_changes()
+	var inventory_saved: bool = inventory.commit_changes()
 
 	if not (progress_saved and inventory_saved):
 		return {
@@ -260,7 +278,12 @@ func recover_pending_transaction() -> Dictionary:
 			"inventory_changed": inventory_changed,
 		}
 
-	_clear_pending_file()
+	if not _clear_pending_file():
+		return {
+			"recovered": false,
+			"reason": "pending_journal_clear_failed",
+			"transaction_id": transaction_id,
+		}
 	pending_recovery_completed.emit(transaction_id)
 
 	return {
@@ -277,11 +300,18 @@ func has_pending_transaction() -> bool:
 
 
 func get_pending_debug_snapshot() -> Dictionary:
+	if not has_pending_transaction():
+		return {
+			"pending": false,
+		}
+
 	var snapshot: Dictionary = _read_pending_snapshot()
 
 	if snapshot.is_empty():
 		return {
-			"pending": false,
+			"pending": true,
+			"valid": false,
+			"reason": "invalid_pending_journal",
 		}
 
 	return {
@@ -327,6 +357,8 @@ func _create_transaction_id() -> String:
 func _write_pending_snapshot(
 	snapshot: Dictionary
 ) -> bool:
+	if has_pending_transaction():
+		return false
 	var payload: Dictionary = {
 		"version": JOURNAL_VERSION,
 		"snapshot": snapshot,
@@ -363,13 +395,6 @@ func _write_pending_snapshot(
 			_pending_path
 		)
 	)
-
-	if FileAccess.file_exists(
-		_pending_path
-	):
-		DirAccess.remove_absolute(
-			final_absolute
-		)
 
 	var rename_error: Error = (
 		DirAccess.rename_absolute(
@@ -411,12 +436,9 @@ func _read_pending_snapshot() -> Dictionary:
 
 	var payload: Dictionary = parsed
 
-	if int(
-		payload.get(
-			"version",
-			0
-		)
-	) > JOURNAL_VERSION:
+	if not (payload.get("version") is float or payload.get("version") is int):
+		return {}
+	if payload.get("version") != JOURNAL_VERSION:
 		return {}
 
 	var raw_snapshot: Variant = (
@@ -429,22 +451,41 @@ func _read_pending_snapshot() -> Dictionary:
 	if not (raw_snapshot is Dictionary):
 		return {}
 
-	return (
-		raw_snapshot as Dictionary
-	).duplicate(true)
+	var snapshot: Dictionary = raw_snapshot
+	if not (snapshot.get("transaction_id") is String) or str(snapshot.get("transaction_id", "")).strip_edges().is_empty():
+		return {}
+	if not (snapshot.get("species_id") is String) or str(snapshot.get("species_id", "")).strip_edges().is_empty():
+		return {}
+	if not (snapshot.get("fish_name") is String):
+		return {}
+	if not (snapshot.get("size") is float or snapshot.get("size") is int):
+		return {}
+	if not (snapshot.get("points") is float or snapshot.get("points") is int):
+		return {}
+	if not (snapshot.get("is_king") is bool):
+		return {}
+	if not (snapshot.get("catch_context", {}) is Dictionary):
+		return {}
+	return snapshot.duplicate(true)
 	
-func _clear_pending_file() -> void:
+func _clear_pending_file() -> bool:
+	# The primary is the only durable intent. Keep it until every auxiliary
+	# journal file has been removed successfully.
 	for path in [
-		_pending_path,
 		_pending_temp_path,
+		_pending_path,
 	]:
 		if not FileAccess.file_exists(
 			path
 		):
 			continue
 
-		DirAccess.remove_absolute(
-			ProjectSettings.globalize_path(
-				path
-			)
-		)
+		if not _remove_journal_file(path):
+			return false
+	return not has_pending_transaction()
+
+
+func _remove_journal_file(path: String) -> bool:
+	return DirAccess.remove_absolute(
+		ProjectSettings.globalize_path(path)
+	) == OK

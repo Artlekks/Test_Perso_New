@@ -2,18 +2,20 @@ extends SceneTree
 
 ## Executable, isolated recovery suite with strict fixture ownership teardown.
 const Recovery = preload("res://scripts/qa/fishing_save_recovery_interruption_qa.gd")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 func _initialize() -> void:
-	var isolated := "CodexArchitectureRecoveryQA-%d" % Time.get_ticks_usec()
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", isolated)
-	if not OS.get_user_data_dir().ends_with(isolated) or DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir()) != OK:
-		push_error("Recovery QA requires isolated userdata")
+	if not Isolation.verify(Recovery.isolation_paths()):
 		quit(1)
 		return
 	call_deferred("run")
 
 func run() -> void:
+	for frame in range(2):
+		await process_frame
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	var scene := preload("res://actors/FishingTestScene_V2.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
@@ -30,4 +32,9 @@ func run() -> void:
 	for id in orphan_ids:
 		push_error("Recovery fixture leaked orphan node %d" % id)
 	print("Recovery teardown orphan count: ", orphan_ids.size())
+	Isolation.emit_result("fishing_save_recovery_runner", report.passed_count,
+		report.test_count, report.failures.size(), orphan_ids.size())
 	quit(0 if report.valid and orphan_ids.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

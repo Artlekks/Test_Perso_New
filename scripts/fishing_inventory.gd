@@ -16,6 +16,15 @@ signal zenny_changed(balance: int)
 
 const SAVE_VERSION: int = 6
 const SAVE_PATH: String = "user://fishing_inventory.json"
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
+const SAVE_KEYS = {
+	"store": "inventory",
+	1: ["version"],
+	-1: ["fish_counts"],
+	2: ["fish_specimens"],
+	6: ["progress_migrated", "next_specimen_id", "lure_counts", "rod_counts",
+		"zenny_balance", "manillo_point_units", "manillo_stamps", "manillo_stamp_cards"],
+}
 
 # Backend defaults only. These are the current starter loadout and are kept
 # here rather than inferred from the active scene so QA/test scenes cannot
@@ -46,6 +55,7 @@ var _dirty: bool = false
 var _next_specimen_id: int = 1
 var _notification_frames: Array[Dictionary] = []
 var _loaded_existing_save: bool = false
+var _load_blocked: bool = false
 
 func configure_save_path(save_path: String) -> void:
 	if _initialized:
@@ -74,18 +84,21 @@ func initialize() -> void:
 
 	_initialized = true
 	load_from_disk()
-	_seed_starter_tackle()
+	if not _load_blocked:
+		_seed_starter_tackle()
 
 
 func ensure_new_game_starting_zenny(
 	amount: int,
 	persist: bool = true
 ) -> bool:
-	if _loaded_existing_save:
+	if _loaded_existing_save or _load_blocked:
 		return false
 	if zenny_balance > 0 or amount <= 0:
 		return false
 	set_zenny(amount, persist)
+	if persist and _dirty:
+		return false
 	_loaded_existing_save = true
 	return true
 
@@ -121,6 +134,8 @@ func bind_progress(
 	listen_for_new_catches: bool = true
 ) -> void:
 	initialize()
+	if _load_blocked:
+		return
 
 	if _bound_progress == progress:
 		return
@@ -1052,6 +1067,8 @@ func commit_changes() -> bool:
 
 
 func save_to_disk() -> bool:
+	if _load_blocked:
+		return false
 	var payload := {
 		"version": SAVE_VERSION,
 		"progress_migrated": _progress_migrated,
@@ -1065,36 +1082,20 @@ func save_to_disk() -> bool:
 		"manillo_stamp_cards": manillo_stamp_cards,
 	}
 
-	var file := FileAccess.open(_save_path, FileAccess.WRITE)
-	if file == null:
-		push_warning("FishingInventory: could not open save file for writing.")
-		return false
-
-	file.store_string(JSON.stringify(payload, "\t"))
-	file.close()
-	return true
+	return SaveStorage.write(_save_path, payload, SAVE_VERSION, SAVE_KEYS)
 
 
 func load_from_disk() -> bool:
 	_reset_runtime_state()
 	_loaded_existing_save = false
-
-	if not FileAccess.file_exists(_save_path):
+	var loaded: Dictionary = SaveStorage.read(_save_path, SAVE_VERSION, SAVE_KEYS)
+	_load_blocked = loaded.status == "blocked" or loaded.status == "unsupported"
+	if _load_blocked:
+		push_warning("FishingInventory: save unavailable; inventory writes blocked.")
+		return false
+	if loaded.status == "new":
 		return true
-
-	var file := FileAccess.open(_save_path, FileAccess.READ)
-	if file == null:
-		push_warning("FishingInventory: could not open save file for reading.")
-		return false
-
-	var parsed = JSON.parse_string(file.get_as_text())
-	file.close()
-
-	if not (parsed is Dictionary):
-		push_warning("FishingInventory: invalid save; starting with an empty inventory.")
-		return false
-
-	var data: Dictionary = parsed
+	var data: Dictionary = loaded.data
 	_loaded_existing_save = true
 	var version := int(data.get("version", 0))
 	if version > SAVE_VERSION:
@@ -1138,16 +1139,17 @@ func load_from_disk() -> bool:
 
 
 func reset_inventory(delete_save: bool = true) -> void:
+	if delete_save and not SaveStorage.erase_known_valid(_save_path, SAVE_VERSION, SAVE_KEYS):
+		push_warning("FishingInventory: reset refused because save files could not be safely removed.")
+		return
 	_reset_runtime_state()
+	_load_blocked = false
 	# Resetting the physical inventory must not immediately recreate all lifetime
 	# catches from FishingProgress. Migration is only for the one-time upgrade from
 	# pre-inventory builds.
 	_progress_migrated = true
 	lure_counts[str(STARTER_LURE_ID)] = 1
 	rod_counts[str(STARTER_ROD_ID)] = 1
-
-	if delete_save and FileAccess.file_exists(_save_path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(_save_path))
 
 	_dirty = true
 	commit_changes()

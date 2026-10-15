@@ -6,12 +6,16 @@ signal item_count_changed(item_id: StringName, count: int)
 
 const SAVE_VERSION: int = 1
 const DEFAULT_SAVE_PATH: String = "user://player_item_inventory.json"
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
+const SAVE_KEYS = {"store": "player_items", "allow_versionless": true,
+	1: ["version", "counts", "metadata"]}
 
 var _counts: Dictionary = {}
 var _metadata: Dictionary = {}
 var _save_path: String = DEFAULT_SAVE_PATH
 var _initialized: bool = false
 var _dirty: bool = false
+var _load_blocked: bool = false
 var _notification_frames: Array[Dictionary] = []
 
 
@@ -255,21 +259,13 @@ func commit_changes() -> bool:
 
 
 func save_to_disk() -> bool:
-	var file := FileAccess.open(_save_path, FileAccess.WRITE)
-	if file == null:
-		push_warning("PlayerItemInventory: could not open save for writing.")
+	if _load_blocked:
 		return false
-	file.store_string(
-		JSON.stringify(
-			{
-				"version": SAVE_VERSION,
-				"counts": _counts,
-				"metadata": _metadata,
-			},
-			"\t"
-		)
-	)
-	file.close()
+	var payload := {"version": SAVE_VERSION, "counts": _counts,
+		"metadata": _metadata}
+	if not SaveStorage.write(_save_path, payload, SAVE_VERSION, SAVE_KEYS):
+		push_warning("PlayerItemInventory: save could not be committed.")
+		return false
 	_dirty = false
 	return true
 
@@ -278,13 +274,14 @@ func load_from_disk() -> bool:
 	_counts.clear()
 	_metadata.clear()
 	_dirty = false
-	if not FileAccess.file_exists(_save_path):
-		return true
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(_save_path))
-	if not (parsed is Dictionary):
-		push_warning("PlayerItemInventory: save is invalid; using empty inventory.")
+	var loaded: Dictionary = SaveStorage.read(_save_path, SAVE_VERSION, SAVE_KEYS)
+	_load_blocked = loaded.status == "blocked" or loaded.status == "unsupported"
+	if _load_blocked:
+		push_warning("PlayerItemInventory: save unavailable; writes blocked.")
 		return false
-	var data: Dictionary = parsed
+	if loaded.status == "new":
+		return true
+	var data: Dictionary = loaded.data
 	var raw_counts = data.get("counts", {})
 	if raw_counts is Dictionary:
 		for raw_id in raw_counts.keys():

@@ -4,7 +4,7 @@
 
 [node name="FishingRainVFX" type="Node3D" unique_id=213518739]
 script = ExtResource("1_rain")
-weather_mode = 2
+weather_mode = 0
 drop_width = 0.003
 drop_opacity = 0.7
 follow_wind_direction = true

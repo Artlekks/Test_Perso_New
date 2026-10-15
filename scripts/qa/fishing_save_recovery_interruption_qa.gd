@@ -71,6 +71,13 @@ const EconomyConfigResource = preload(
 
 const QA_ROOT := "user://fishing_save_recovery_qa_v1"
 
+static func isolation_paths() -> Array:
+	return [QA_ROOT, MATCH_RESOLUTION_PATH, WORLD_REWARD_PATH,
+		PLAYER_ITEM_PATH, SAVE_FAILURE_BLOCKER_PATH, SAVE_FAILURE_PATH,
+		CATCH_PROGRESS_PATH, CATCH_INVENTORY_PATH, CATCH_PENDING_PATH,
+		CATCH_PENDING_TEMP_PATH, CARD_MAKER_PENDING_PATH,
+		CARD_MAKER_PENDING_TEMP_PATH]
+
 const MATCH_RESOLUTION_PATH := (
 	QA_ROOT
 	+ "/triple_triad_match_resolution.cfg"
@@ -1770,6 +1777,8 @@ static func _create_card_maker_inventory(
 static func _cleanup_card_maker_recovery_files() -> void:
 	for path in [
 		CARD_MAKER_INVENTORY_PATH,
+		CARD_MAKER_INVENTORY_PATH + ".bak",
+		CARD_MAKER_INVENTORY_PATH + ".tmp",
 		CARD_MAKER_PENDING_PATH,
 		CARD_MAKER_PENDING_TEMP_PATH,
 	]:

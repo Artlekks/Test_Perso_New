@@ -6,7 +6,9 @@ const WeatherScript = preload("res://scripts/world/game_weather_service.gd")
 const EnvironmentScript = preload("res://scripts/fishing_environment_service.gd")
 const Catalog = preload("res://data/bof4/environment/all_environment_conditions.tres")
 const RainScene = preload("res://actors/FishingRainVFX.tscn")
+const RainPreviewScene = preload("res://actors/FishingRainVFXPreview.tscn")
 const LegacyOverlay = preload("res://scripts/environment_fx/environment_overlay.gd")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 class FakeWeather:
 	extends Node
@@ -26,6 +28,9 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
+	if not Isolation.verify():
+		quit(1)
+		return
 	_run.call_deferred()
 
 
@@ -38,6 +43,10 @@ func check(ok: bool, label: String) -> void:
 
 
 func _run() -> void:
+	await process_frame
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	var weather: Node = WeatherScript.new()
 	var at_start: Dictionary = weather.get_snapshot_at_minutes(480)
 	check(bool(at_start.get("available", false)), "schedule publishes available weather")
@@ -93,9 +102,25 @@ func _run() -> void:
 	check(int(rain.get("weather_mode")) == 0, "approved rain scene remains in Auto mode")
 	check(is_equal_approx(float(rain.get("drop_width")), 0.003), "approved rain thickness untouched")
 	check(is_equal_approx(float(rain.get("splash_pixel_size")), 0.003), "approved ripple size untouched")
+	check(rain.call("_resolve_weather", PackedStringArray(["calm", "clear"])) == "clear", "Auto follows clear gameplay weather")
+	check(rain.call("_resolve_weather", PackedStringArray(["rain"])) == "rain", "Auto follows rainy gameplay weather")
+	check(rain.call("_resolve_weather", PackedStringArray(["tempest", "storm"])) == "storm", "Auto follows tempest gameplay weather")
+	var preview: Node3D = RainPreviewScene.instantiate() as Node3D
+	check(int(preview.get("weather_mode")) == 2 and preview.call("_resolve_weather", PackedStringArray(["calm"])) == "rain", "separate artist preview retains Rain Preview mode")
+	check(is_equal_approx(float(preview.get("drop_width")), float(rain.get("drop_width")))
+		and is_equal_approx(float(preview.get("drop_opacity")), float(rain.get("drop_opacity")))
+		and is_equal_approx(float(preview.get("splash_pixel_size")), float(rain.get("splash_pixel_size")))
+		and bool(preview.get("follow_wind_direction")) == bool(rain.get("follow_wind_direction"))
+		and is_equal_approx(float(preview.get("wind_angle_influence")), float(rain.get("wind_angle_influence"))), "artist preview inherits approved rain appearance")
+	preview.free()
 	rain.free()
 
 	print("Environmental Integration v1 QA: %d passed, %d failed" % [passed, failures.size()])
 	for failure in failures:
 		print("  FAILED: " + failure)
+	Isolation.emit_result("environment_integration_v1_qa", passed, passed + failures.size(),
+		failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

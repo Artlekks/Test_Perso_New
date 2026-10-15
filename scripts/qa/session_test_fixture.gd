@@ -1,5 +1,6 @@
 extends RefCounted
 class_name SessionTestFixture
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 ## Disposable composition wrapper. Free only the scene/session this fixture creates.
 var tree: SceneTree
 var scene: Node
@@ -7,6 +8,9 @@ var session: Node
 var owns_session := false
 
 func mount(target: SceneTree, mobile: bool = false, development: bool = false) -> Node:
+	if not Isolation.verify() or not Isolation.verify_root_clock(target):
+		target.quit(1)
+		return null
 	tree = target
 	var previous := tree.root.get_node_or_null("FishingSessionServices")
 	if previous == null and tree.root.has_meta("pending_fishing_session_services"):

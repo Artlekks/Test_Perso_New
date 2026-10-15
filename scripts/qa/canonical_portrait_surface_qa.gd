@@ -1,4 +1,5 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 const Surface = preload("res://scripts/ui/canonical_game_surface.gd")
 const UI = preload("res://scripts/ui/portrait_ui.gd")
 var checks := 0
@@ -6,15 +7,14 @@ var failures: Array[String] = []
 var fixture: SessionTestFixture
 var rendered := false
 var mobile := false
-var captures := "res://build/mobile-web/portrait-captures"
+var captures := "user://qa_portrait_captures"
 
 func _initialize() -> void:
 	rendered = OS.get_cmdline_user_args().has("--rendered")
 	mobile = OS.get_cmdline_user_args().has("--mobile")
-	var isolated := "CodexCanonicalPortraitQA-%d" % Time.get_ticks_usec()
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", isolated)
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
+	if not Isolation.verify([captures]):
+		quit(1)
+		return
 	DirAccess.make_dir_recursive_absolute(captures)
 	call_deferred("run")
 
@@ -53,6 +53,8 @@ func cards_inside(views: Array, surface: Node, label: String) -> void:
 		check(is_equal_approx(transform.get_scale().x,transform.get_scale().y), label + " uniform card pixels")
 
 func run() -> void:
+	for frame in range(2): await process_frame
+	if not Isolation.verify_root_clock(self): quit(1); return
 	if not mobile:
 		root.content_scale_size = Surface.SIZE
 		root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
@@ -172,6 +174,8 @@ func run() -> void:
 	await settle()
 	check(Node.get_orphan_node_ids().is_empty(), "shared presentation releases with controllers")
 	print("Canonical Portrait QA (%s%s): %d/%d" % ["mobile" if mobile else "desktop", " rendered" if rendered else "",checks-failures.size(),checks])
+	Isolation.emit_result("canonical_portrait_surface_qa", checks - failures.size(),
+		checks, failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
 
 func menu(game: Node, authored: Control, label: String) -> void:
@@ -238,3 +242,6 @@ func key(code: Key) -> InputEventKey:
 	event.pressed = true
 	event.physical_keycode = code
 	return event
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

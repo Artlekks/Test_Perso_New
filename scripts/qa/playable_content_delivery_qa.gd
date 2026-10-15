@@ -1,4 +1,5 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 ## Real scene, Area, router, dialogue, deck and mastery paths; isolated saves.
 const SceneRoot = preload("res://scripts/gameplay_scene_root.gd")
 const Manifest = "res://data/world/provider_bindings_v1.json"
@@ -9,11 +10,9 @@ var session: Node
 var mobile := false
 
 func _initialize() -> void:
-	var isolated := "CodexPlayableContentQA-%d" % Time.get_ticks_usec()
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", isolated)
-	if not OS.get_user_data_dir().ends_with(isolated): quit(1); return
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
+	if not Isolation.verify():
+		quit(1)
+		return
 	mobile = OS.get_cmdline_user_args().has("--mobile")
 	call_deferred("run")
 
@@ -60,7 +59,7 @@ func approach(provider: Node3D, key: int) -> void:
 	check(provider.interaction_area.overlaps_body(player), "physical Area detects player " + str(provider.get_path()))
 	if OS.get_cmdline_user_args().has("--rendered"):
 		await RenderingServer.frame_post_draw
-		var folder := "res://build/mobile-web/content-delivery-rendered"
+		var folder := "user://qa_content_delivery_rendered"
 		DirAccess.make_dir_recursive_absolute(folder)
 		game().get_viewport().get_texture().get_image().save_png(folder.path_join(String(provider.get_parent().name) + ".png"))
 	var event := InputEventKey.new()
@@ -170,6 +169,8 @@ func clear_paths(actor: Node3D) -> void:
 			check(not hits.any(func(hit): return hit.collider == actor), "shop/travel approach axes remain clear")
 
 func run() -> void:
+	for frame in range(2): await process_frame
+	if not Isolation.verify_root_clock(self): quit(1); return
 	fixture = SessionTestFixture.new()
 	fixture.mount(self, mobile, true)
 	await settle()
@@ -236,4 +237,9 @@ func run() -> void:
 	await settle()
 	check(Node.get_orphan_node_ids().is_empty(), "no retained project orphan nodes")
 	print("Playable Content Delivery QA (%s): %d/%d passed" % ["mobile" if mobile else "native", checks - failures.size(), checks])
+	Isolation.emit_result("playable_content_delivery_qa", checks - failures.size(),
+		checks, failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

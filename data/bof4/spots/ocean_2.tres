@@ -11,7 +11,7 @@
 [ext_resource type="Resource" uid="uid://duajalcigas2c" path="res://data/bof4/fish/spearfish.tres" id="8_fish"]
 [ext_resource type="Resource" uid="uid://bm1mbhp7dcyov" path="res://data/bof4/fish/whale.tres" id="9_fish"]
 [ext_resource type="Resource" path="res://data/bof4/ambient_profiles/ocean_2.tres" id="ambient_profile"]
-[ext_resource type="Script" uid="uid://b8cv7hluf70by" path="res://scripts/database/fishing_current_field_definition.gd" id="current_field_script"]
+[ext_resource type="Script" uid="uid://b8cv7h1uf70by" path="res://scripts/database/fishing_current_field_definition.gd" id="current_field_script"]
 [ext_resource type="Resource" path="res://data/bof4/hotspots/ocean_2_spearfish.tres" id="hotspot_1"]
 [ext_resource type="Resource" path="res://data/bof4/hotspots/ocean_2_whale.tres" id="hotspot_2"]
 [ext_resource type="Resource" path="res://data/bof4/hotspots/ocean_2_octopus.tres" id="hotspot_3"]

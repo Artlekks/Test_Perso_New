@@ -38,6 +38,7 @@ var menu_viewport: SubViewport
 var menu_image: TextureRect
 var menu_backdrop: TextureRect
 var image: TextureRect
+var desktop_hud: Control
 var shell: Control
 var shell_fill: ColorRect
 var status: Label
@@ -86,6 +87,9 @@ func _ready() -> void:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(image)
+	desktop_hud = preload("res://scripts/desktop/desktop_gameplay_hud.gd").new()
+	desktop_hud.host = self
+	add_child(desktop_hud)
 	menu_viewport = SubViewport.new()
 	menu_viewport.name = "MenuViewport"
 	menu_viewport.size = Surface.MENU_SIZE
@@ -167,6 +171,9 @@ func _replace_game(packed: PackedScene) -> void:
 	game = packed.instantiate()
 	preload("res://scripts/ui/canonical_game_surface.gd").prepare(game)
 	gameplay_viewport.add_child(game)
+	var exploration_hud: Node = game.get_node_or_null("UI/ExplorationHud")
+	if exploration_hud != null: exploration_hud.call("set_desktop_replacement_enabled", true)
+	desktop_hud.call("bind_game", game)
 	_bind_session_layers()
 	_bind_menu_layers()
 	# Match the projection to the initial world canvas once the game exists.
@@ -370,6 +377,9 @@ func _layout() -> void:
 	image.position = geometry.world.position
 	image.size = geometry.world.size
 	image.visible = not collapsed
+	desktop_hud.position = geometry.world.position
+	desktop_hud.size = geometry.world.size
+	desktop_hud.visible = not collapsed and not _is_fishing_menu_open()
 	if _is_fishing_menu_open() and not collapsed:
 		var menu_rect: Rect2 = geometry.menu if _lower_menu_active else geometry.world
 		var active_menu := _fishing_menu()
@@ -425,8 +435,8 @@ func _layout() -> void:
 		passive.timer_entry.position = geometry.world.position + Vector2(geometry.world.size.x*.35,12)
 		passive.timer_entry.size = Vector2(geometry.world.size.x*.3,44)
 	divider.visible = docked and not collapsed
-	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,CHROME_HEIGHT)
-	divider.size = Vector2(8,maxi(1,get_window().size.y-CHROME_HEIGHT))
+	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,geometry.toolbar.size.y)
+	divider.size = Vector2(8,maxi(1,get_window().size.y-geometry.toolbar.size.y))
 # Every floating size uses one consistent horizontal world-density rule.
 # Gradually increase/decrease vertical camera coverage with the actual
 # SubViewport height rather than flipping between 960x480 and 960x720.

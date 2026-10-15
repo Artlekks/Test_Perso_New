@@ -18,6 +18,8 @@ enum RewardState {
 
 const SAVE_VERSION: int = 2
 const SAVE_PATH: String = "user://fishing_rewards.json"
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
+const SAVE_KEYS = {"store": "rewards", 1: ["version"], 2: ["claimed_reward_keys"]}
 
 var progress: FishingProgress = null
 var inventory: FishingInventory = null
@@ -29,6 +31,7 @@ var _claimed_reward_keys: Dictionary = {}
 var _known_available_keys: Dictionary = {}
 var _claims_in_progress: Dictionary = {}
 var _initialized: bool = false
+var _load_blocked: bool = false
 
 
 func _ready() -> void:
@@ -243,6 +246,8 @@ func get_next_unclaimed_point_reward_status() -> Dictionary:
 func can_claim(
 	reward_key: StringName
 ) -> bool:
+	if _load_blocked:
+		return false
 	if (
 		reward_catalog == null
 		or is_claimed(reward_key)
@@ -274,6 +279,9 @@ func claim_reward(
 		"reward_item_id": &"",
 		"quantity": 0,
 	}
+	if _load_blocked:
+		result["reason"] = "save_unavailable"
+		return result
 
 	if reward_catalog == null:
 		result["reason"] = "catalog_unavailable"
@@ -728,62 +736,28 @@ func _get_state_label(
 
 
 func save_to_disk() -> bool:
+	if _load_blocked:
+		return false
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
 		"claimed_reward_keys": _claimed_reward_keys,
 	}
 
-	var file := FileAccess.open(
-		SAVE_PATH,
-		FileAccess.WRITE
-	)
-
-	if file == null:
-		push_warning(
-			"FishingRewardService: could not open save file for writing."
-		)
-		return false
-
-	file.store_string(
-		JSON.stringify(
-			payload,
-			"\t"
-		)
-	)
-	file.close()
-	return true
+	return SaveStorage.write(SAVE_PATH, payload, SAVE_VERSION, SAVE_KEYS)
 
 
 func load_from_disk() -> bool:
 	_claimed_reward_keys.clear()
 	_known_available_keys.clear()
 
-	if not FileAccess.file_exists(SAVE_PATH):
+	var storage_result: Dictionary = SaveStorage.read(SAVE_PATH, SAVE_VERSION, SAVE_KEYS)
+	_load_blocked = storage_result.status == "blocked" or storage_result.status == "unsupported"
+	if _load_blocked:
+		push_warning("FishingRewardService: save unavailable; claims blocked.")
+		return false
+	if storage_result.status == "new":
 		return true
-
-	var file := FileAccess.open(
-		SAVE_PATH,
-		FileAccess.READ
-	)
-
-	if file == null:
-		push_warning(
-			"FishingRewardService: could not open save file for reading."
-		)
-		return false
-
-	var parsed: Variant = JSON.parse_string(
-		file.get_as_text()
-	)
-	file.close()
-
-	if not (parsed is Dictionary):
-		push_warning(
-			"FishingRewardService: invalid save; starting with no claimed rewards."
-		)
-		return false
-
-	var data: Dictionary = parsed
+	var data: Dictionary = storage_result.data
 
 	if int(data.get("version", 0)) > SAVE_VERSION:
 		push_warning(
@@ -813,20 +787,15 @@ func load_from_disk() -> bool:
 func reset_rewards(
 	delete_save: bool = true
 ) -> void:
+	if delete_save and not SaveStorage.erase_known_valid(SAVE_PATH, SAVE_VERSION, SAVE_KEYS):
+		push_warning("FishingRewardService: reset refused because save files could not be safely removed.")
+		return
 	_claimed_reward_keys.clear()
 	_known_available_keys.clear()
 	_claims_in_progress.clear()
+	_load_blocked = false
 
-	if (
-		delete_save
-		and FileAccess.file_exists(SAVE_PATH)
-	):
-		DirAccess.remove_absolute(
-			ProjectSettings.globalize_path(
-				SAVE_PATH
-			)
-		)
-	elif not delete_save:
+	if not delete_save:
 		save_to_disk()
 
 	evaluate_rewards()

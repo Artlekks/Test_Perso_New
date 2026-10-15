@@ -105,6 +105,7 @@ const GameInventoryFacadeScript = preload(
 const GameItemTransactionServiceScript = preload(
 	"res://scripts/items/game_item_transaction_service.gd"
 )
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
 const BeachGatheringInventoryScript = preload(
 	"res://scripts/beach_gathering_inventory.gd"
 )
@@ -232,6 +233,12 @@ func initialize() -> void:
 		return
 
 	_initializing = true
+	# Inventory migration may write before the transaction service is configured.
+	SaveStorage.register_cross_store_journal(
+		GameItemTransactionServiceScript.DEFAULT_SALE_JOURNAL_PATH,
+		PlayerItemInventoryScript.DEFAULT_SAVE_PATH,
+		FishingInventoryScript.SAVE_PATH,
+		GameItemTransactionServiceScript.SALE_JOURNAL_KEYS)
 	dialogue_service = DialogueServiceScript.new() as DialogueService
 	dialogue_service.name = "DialogueService"
 	add_child(dialogue_service)

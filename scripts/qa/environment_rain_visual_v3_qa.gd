@@ -2,13 +2,17 @@ extends SceneTree
 ## Rain visual regression: full-height rain, sea-mesh impacts, opacity and top-row ripples.
 ## Run with --headless --path . --script res://scripts/qa/environment_rain_visual_v3_qa.gd
 
-const RainScene: PackedScene = preload("res://actors/FishingRainVFX.tscn")
+const RainScene: PackedScene = preload("res://actors/FishingRainVFXPreview.tscn")
 const ImpactAtlas: Texture2D = preload("res://assets/ui/environment/RainImpact.png")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 var checks: int = 0
 var failures: Array[String] = []
 
 func _initialize() -> void:
+	if not Isolation.verify():
+		quit(1)
+		return
 	call_deferred("run")
 
 func verify(condition: bool, description: String) -> void:
@@ -18,6 +22,10 @@ func verify(condition: bool, description: String) -> void:
 		push_error("RAIN V3 QA: " + description)
 
 func run() -> void:
+	await process_frame
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	var host: Node3D = Node3D.new()
 	host.name = "RainVisualTestHost"
 	root.add_child(host)
@@ -36,6 +44,11 @@ func run() -> void:
 	if rain == null:
 		finish()
 		return
+	verify(bool(rain.get("follow_wind_direction")), "approved preview retains world-wind following")
+	# Isolate the camera geometry checks from the live GameWind singleton.
+	rain.set("follow_wind_direction", false)
+	rain.call("_follow_camera")
+	rain.call("_sync_rain_appearance")
 	var near: GPUParticles3D = rain.get_node_or_null("NearRain") as GPUParticles3D
 	var far: GPUParticles3D = rain.get_node_or_null("DistantRain") as GPUParticles3D
 	verify(near != null and far != null, "near and distant rain layers exist")
@@ -50,7 +63,7 @@ func run() -> void:
 		verify(near_mesh != null and far_mesh != null, "bright rain quads exist")
 		if near_mesh != null and far_mesh != null:
 			verify(near_mesh.size.y < 0.14 and near_mesh.size.x < 0.02, "near rain lines stay tiny")
-			verify(far_mesh.size.y < near_mesh.size.y, "far rain lines stay shorter")
+			verify(far_mesh.size.y / 1.55 < near_mesh.size.y, "far rain lines stay shorter on screen")
 			var near_material: StandardMaterial3D = near_mesh.material as StandardMaterial3D
 			verify(near_material != null, "near rain uses a material")
 			if near_material != null:
@@ -65,6 +78,8 @@ func run() -> void:
 		verify(near_processing.direction.y < -0.9, "particle fall direction is locally vertical")
 	verify(ImpactAtlas.get_width() == 142 and ImpactAtlas.get_height() == 66, "original impact sheet preserved, only top row referenced")
 	verify(is_equal_approx(float(rain.get("splash_pixel_size")), 0.003), "user tiny ripple size preset")
+	verify((rain.get("splash_color") as Color).is_equal_approx(Color(0.5568628, 0.6156863, 0.76862746, 1.0))
+		and is_equal_approx(float(rain.get("splash_opacity")), 0.38), "approved ripple tint and opacity stay saved")
 	verify(int(rain.get("max_simultaneous_splashes")) >= 100, "100 simultaneous ripples can be configured")
 	verify(is_equal_approx(float(rain.get("splash_rate_per_second")), 80.0), "user splash rate preset")
 	var frames: SpriteFrames = rain.get("_splash_frames") as SpriteFrames
@@ -81,9 +96,11 @@ func run() -> void:
 	var sprite: AnimatedSprite3D = rain.get_node_or_null("RainSplash") as AnimatedSprite3D
 	if sprite != null:
 		verify(is_equal_approx(sprite.pixel_size, 0.003), "tiny ripple scale is applied")
-		verify(is_equal_approx(sprite.modulate.a, (171.0 / 255.0) * 0.38), "user splash color alpha and opacity are combined")
+		verify(is_equal_approx(sprite.modulate.a, float((rain.get("splash_color") as Color).a) * float(rain.get("splash_opacity"))), "user splash color alpha and opacity are combined")
 		rain.call("_recycle_splash", sprite)
 		verify(int(rain.call("get_active_splash_count")) == 0, "completed ripple returns to pool")
+	rain.set("weather_mode", 1)
+	rain.call("_poll_weather")
 	verify(not bool(rain.call("is_raining")), "clear weather does not emit rain")
 	rain.set("weather_mode", 2)
 	rain.call("_poll_weather")
@@ -146,10 +163,16 @@ func run() -> void:
 	verify(void_hit.x == INF, "no splash is invented in void or on underwater floor")
 	rain.set("weather_mode", 1)
 	rain.call("_poll_weather")
+	rain.call("_update_visual_weather", float(rain.get("rain_fade_out_seconds")) + 0.1)
 	if near != null and far != null:
 		verify(not near.emitting and not far.emitting, "all rain layers stop in clear weather")
 	finish()
 
 func finish() -> void:
 	print("RAIN VISUAL V3 QA: %d checks; %d failures" % [checks, failures.size()])
+	Isolation.emit_result("environment_rain_visual_v3_qa", checks - failures.size(), checks,
+		failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

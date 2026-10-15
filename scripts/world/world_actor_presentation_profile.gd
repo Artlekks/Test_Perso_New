@@ -36,6 +36,12 @@ class_name WorldActorPresentationProfile
 @export var shadow_family_resource: WorldShadowFamily
 ## Reusable profile exception, not a destination-scene instance adjustment.
 @export_range(0.1, 4.0, 0.05) var shadow_scale_multiplier := 1.0
+@export_group("Shadow position (ground plane)")
+## Shift the shared blob shadow without moving the actor or its collision.
+## X moves east/west on the ground; Z moves north/south in world space.
+## Small adjustments can be previewed live in an open Godot scene.
+@export_range(-0.5, 0.5, 0.005) var shadow_offset_x: float = 0.0
+@export_range(-0.5, 0.5, 0.005) var shadow_offset_z: float = 0.0
 @export_group("World marker")
 @export var marker_height := 0.72
 

@@ -26,7 +26,9 @@ const RANK_BADGE_DIRECTORY := "res://assets/ui/fishing_menu/ranks"
 const DEFAULT_RANK_BADGE_PATH := "res://assets/ui/fishing_menu/ranks/Rank_Beginner.png"
 # Rank art is authored at its final 640x480 HUD size. Keep it under Root so it
 # never inherits CatchFrame's 2x transform. This is the requested final position.
+# These authored coordinates belong to the original 640x480 catch design.
 const RANK_BADGE_ROOT_POSITION := Vector2(280.0, 274.0)
+const CATCH_MARGIN := 12.0
 
 func _ready() -> void:
 	_rest_position = root.position
@@ -90,14 +92,28 @@ func show_catch(
 	_move_tween.tween_callback(_on_show_finished)
 
 func composed_result_rect() -> Rect2:
+	# Include the rank and total-point caption below the main frame; otherwise
+	# the frame is centered but the actual visual composition drifts down/right.
 	var frame := root.get_node("CatchFrame") as TextureRect
-	return Rect2(frame.position, frame.size * frame.scale)
+	var result := Rect2(frame.position, frame.size * frame.scale)
+	for item in [fish_portrait, fish_name_label, fish_size_label,
+		fish_points_label, record_badge, rank_badge, _record_label]:
+		if item == null:
+			continue
+		var rect := Rect2(item.position, item.size * item.scale)
+		result = result.merge(rect)
+	return result
 
 func _center_composed_result() -> void:
-	# The shell can publish its visible gameplay rectangle (never its controls
-	# or chrome). Move the common Root once; retain every child's composition.
-	var surface: Rect2 = get_meta("gameplay_presentation_rect", Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size))
-	_rest_position = surface.get_center() - composed_result_rect().get_center()
+	# This layer is rendered into the real game SubViewport. Layout must be in
+	# that viewport's logical coordinates, not the OS window or toolbar rect.
+	var surface := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
+	var artwork := composed_result_rect()
+	var maximum_scale := minf(1.0,
+		minf((surface.size.x - 2.0 * CATCH_MARGIN) / maxf(1.0, artwork.size.x),
+			(surface.size.y - 2.0 * CATCH_MARGIN) / maxf(1.0, artwork.size.y)))
+	root.scale = Vector2.ONE * maxf(0.1, maximum_scale)
+	_rest_position = surface.get_center() - (artwork.position + artwork.size * 0.5) * root.scale
 
 
 func _create_record_label() -> void:
@@ -111,7 +127,7 @@ func _create_record_label() -> void:
 	_record_label.scale = record_text_scale
 	_record_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_record_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_record_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_record_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_record_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Reuse the exact same font family as the catch frame instead of
@@ -166,7 +182,7 @@ func _setup_rank_badge() -> void:
 		rank_badge.reparent(root, false)
 
 	rank_badge.position = RANK_BADGE_ROOT_POSITION
-	rank_badge.scale = Vector2.ONE
+	rank_badge.scale = Vector2(2.0, 2.0)
 	rank_badge.pivot_offset = Vector2.ZERO
 	rank_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rank_badge.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -203,7 +219,7 @@ func _update_rank_badge(record_result: Dictionary) -> void:
 		rank_badge.size = badge_texture.get_size()
 
 	rank_badge.position = RANK_BADGE_ROOT_POSITION
-	rank_badge.scale = Vector2.ONE
+	rank_badge.scale = Vector2(2.0, 2.0)
 	rank_badge.visible = rank_badge.texture != null
 
 

@@ -1,4 +1,5 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 ## Actual Caster/Bait/input integration, isolated persistence; no combat simulation replacement.
 var checks := 0
 var failures: Array[String] = []
@@ -12,10 +13,9 @@ var base_pose: Transform3D
 const STEP := 1.0 / 60.0
 
 func _initialize() -> void:
-	var isolated := "CodexEmptyLureQA-%d" % Time.get_ticks_usec()
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", isolated)
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
+	if not Isolation.verify():
+		quit(1)
+		return
 	run.call_deferred()
 
 func check(ok: bool, message: String) -> void:
@@ -60,6 +60,8 @@ func spawn(pixel: Vector2) -> void:
 	check(camera.global_transform.is_equal_approx(before_camera), "ANCHORED acquisition preserves exact landing shot")
 
 func run() -> void:
+	for frame in range(2): await process_frame
+	if not Isolation.verify_root_clock(self): quit(1); return
 	root.size = Vector2i(640,480)
 	root.content_scale_size = Vector2i(640,480)
 	fixture = SessionTestFixture.new()
@@ -330,11 +332,13 @@ func run() -> void:
 	fixture.release()
 	for frame in range(12): await process_frame
 	print("EMPTY LURE RETRIEVAL QA: ",checks-failures.size(),"/",checks," failures=",failures)
+	Isolation.emit_result("empty_lure_retrieval_qa", checks - failures.size(),
+		checks, failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
 
 func FishingScreenLateralForQA(active_camera: Camera3D, position_world: Vector3, inward: Vector3) -> Vector3:
 	var right: Vector3 = preload("res://scripts/fishing_screen_lateral.gd").right(active_camera,position_world,Vector3.RIGHT)
 	return (right-inward*right.dot(inward)).normalized()
 
-
-
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

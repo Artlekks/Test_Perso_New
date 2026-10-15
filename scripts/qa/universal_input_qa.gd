@@ -1,12 +1,13 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 var checks := 0
 var failures: Array[String] = []
 var bindings: UniversalInput
 func _initialize() -> void:
-	ProjectSettings.set_setting("application/config/use_custom_user_dir",true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name","UniversalInputQA-%d" % Time.get_ticks_usec())
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
-	DirAccess.make_dir_recursive_absolute("res://build/mobile-web/input-qa")
+	if not Isolation.verify(["user://qa_universal_input"]):
+		quit(1)
+		return
+	DirAccess.make_dir_recursive_absolute("user://qa_universal_input")
 	run.call_deferred()
 func check(ok: bool,label: String) -> void:
 	checks+=1
@@ -17,8 +18,14 @@ func key(code: int,down := true) -> InputEventKey:
 func settle() -> void:
 	await create_timer(.35).timeout
 func run() -> void:
+	for frame in range(2): await process_frame
+	if not Isolation.verify_root_clock(self): quit(1); return
 	bindings=root.get_node("InputBindings")
-	bindings.store_path="res://build/mobile-web/input-qa/preferences-%d.json" % Time.get_ticks_usec()
+	bindings.store_path="user://qa_universal_input/preferences-%d.json" % Time.get_ticks_usec()
+	if not Isolation.verify([bindings.store_path,
+		"user://qa_universal_input/missing-directory/preferences.json"]):
+		quit(1)
+		return
 	bindings.reset_defaults(false)
 	for action in bindings.DEFINITIONS:
 		var default_key: int = bindings.DEFINITIONS[action].key
@@ -50,7 +57,7 @@ func run() -> void:
 	check(bindings.reset_defaults(),"recover then save canonical defaults")
 	var canonical := bindings.store_path
 	var before := bindings.bindings.duplicate()
-	bindings.store_path="res://build/mobile-web/input-qa/missing-directory/preferences.json"
+	bindings.store_path="user://qa_universal_input/missing-directory/preferences.json"
 	check(not bindings.rebind(&"enter_fishing",KEY_P) and bindings.bindings == before,"failed commit preserves current mapping")
 	check(not bindings.reset_defaults() and bindings.bindings == before and bindings.status.contains("Could not save"),"failed defaults write remains visible and does not mutate bindings")
 	bindings.store_path=canonical
@@ -93,10 +100,12 @@ func run() -> void:
 	await desktop_controls()
 	await mobile_settings()
 	print("UNIVERSAL INPUT QA: ",checks-failures.size(),"/",checks," ",failures)
+	Isolation.emit_result("universal_input_qa", checks - failures.size(),
+		checks, failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
 
 func desktop_controls() -> void:
-	OS.set_environment("FISHING_COMPANION_IPC",ProjectSettings.globalize_path("res://build/mobile-web/input-qa/ipc"))
+	OS.set_environment("FISHING_COMPANION_IPC",ProjectSettings.globalize_path("user://qa_universal_input/ipc"))
 	var host: Control = load("res://actors/desktop/DesktopCompanion.tscn").instantiate()
 	root.add_child(host); current_scene=host; await settle()
 	check(host.get_script() != null,"desktop script loaded before counting controls tests")
@@ -143,7 +152,7 @@ func desktop_controls() -> void:
 			check(bindings.capture_action == &"" and menu.is_open(),"clickable back cancels capture without menu exit")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png("res://build/mobile-web/input-qa/settings-desktop.png")
+		root.get_texture().get_image().save_png("user://qa_universal_input/settings-desktop.png")
 	controls.press(KEY_I); await process_frame; controls.release(KEY_I); await settle()
 	controls.press(KEY_I); await process_frame; controls.release(KEY_I); await settle()
 	check(not menu.is_open() and fishing.game_mode.is_exploration(),"clickable back closes modal without entering fishing")
@@ -173,7 +182,7 @@ func desktop_controls() -> void:
 		check(not Input.is_action_pressed("enter_fishing"),"release ends reel hold")
 		if DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
-			root.get_texture().get_image().save_png("res://build/mobile-web/input-qa/desktop-controls-fishing.png")
+			root.get_texture().get_image().save_png("user://qa_universal_input/desktop-controls-fishing.png")
 	bindings.reset_defaults(false)
 	var session := root.get_node_or_null("FishingSessionServices")
 	host.queue_free(); await settle()
@@ -229,7 +238,9 @@ func mobile_settings() -> void:
 		check(bindings.bindings == bindings.defaults() and bindings._read(bindings.store_path) == bindings.defaults(),"actual mobile touch resets and persists defaults")
 		if DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
-			root.get_texture().get_image().save_png("res://build/mobile-web/input-qa/settings-mobile-%dx%d.png" % [dimensions.x,dimensions.y])
+			root.get_texture().get_image().save_png("user://qa_universal_input/settings-mobile-%dx%d.png" % [dimensions.x,dimensions.y])
 		menu.close_menu(); await settle()
 	fixture.release(); await settle()
 
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

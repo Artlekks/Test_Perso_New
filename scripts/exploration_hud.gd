@@ -43,6 +43,14 @@ var help_panel_home: Vector2
 var hud_tween: Tween
 var location_label: Label
 var _location_fish_zone: Node = null
+var _desktop_replacement_enabled := false
+
+func set_desktop_replacement_enabled(enabled: bool) -> void:
+	# Keep the exploration signals, cast state, menu hints and camera heading
+	# callbacks alive. Only the two duplicate desktop artwork groups are hidden.
+	_desktop_replacement_enabled = enabled
+	if is_instance_valid(compass): compass.visible = not enabled
+	if is_instance_valid(location): location.visible = not enabled
 
 func _ready() -> void:
 	set_cast_available(false)

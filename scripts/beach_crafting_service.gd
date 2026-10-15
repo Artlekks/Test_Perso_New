@@ -1,11 +1,14 @@
 extends Node
 class_name BeachCraftingService
 
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
+
 signal crafted_lure_created(lure: BaitData, record: Dictionary)
 signal crafted_lures_reloaded(count: int)
 
 const SAVE_VERSION: int = 1
 const SAVE_PATH: String = "user://beach_crafted_lures.json"
+const RECORD_KEYS = {"store": "beach_crafted_lures", 1: ["version", "next_instance_number", "records"]}
 
 const SCORE_MIN: int = -4
 const SCORE_MAX: int = 4
@@ -46,9 +49,17 @@ func configure(
 	_tackle_catalog = tackle_catalog
 	_catalog = catalog
 	_configured = true
+	if _item_transaction_service != null and _player_item_inventory != null:
+		SaveStorage.register_cross_store_journal(
+			_item_transaction_service.get_cross_store_journal_path(),
+			_player_item_inventory.get_save_path(),
+			_fishing_inventory.get_save_path(),
+			GameItemTransactionService.SALE_JOURNAL_KEYS, SAVE_PATH)
 
 	load_from_disk()
-	_register_all_saved_lures()
+	var recovery := recover_pending_craft()
+	if str(recovery.get("reason", "")) != "craft_completed":
+		_register_all_saved_lures()
 
 
 func bind_loadout(loadout) -> void:
@@ -584,6 +595,16 @@ func craft(
 	core_id: StringName,
 	accent_id: StringName = &""
 ) -> Dictionary:
+	if _item_transaction_service == null or _player_item_inventory == null or _fishing_inventory == null:
+		return _failure("item_backend_unavailable")
+	if _item_transaction_service.has_pending_sale():
+		var recovery := recover_pending_craft()
+		return {"success": false, "reason": "pending_transaction_recovered" if bool(recovery.get("recovered", false)) and not _item_transaction_service.has_pending_sale() else "pending_transaction_unresolved",
+			"transaction_id": recovery.get("transaction_id", "")}
+	if _item_transaction_service.has_pending_catch_transaction():
+		return _failure("pending_catch_unresolved")
+	if _card_maker_journal_pending():
+		return _failure("pending_card_maker_unresolved")
 	var preview: Dictionary = preview_craft(
 		recipe_id,
 		body_id,
@@ -609,37 +630,31 @@ func craft(
 	if canonical_costs.is_empty():
 		return _failure("material_cost_mapping_failed")
 
-	var player_snapshot: Dictionary = (
-		_player_item_inventory.create_transaction_snapshot()
-	)
-	var fishing_snapshot: Dictionary = (
-		_fishing_inventory.create_transaction_snapshot()
-	)
-	var records_snapshot: Array[Dictionary] = []
-	for existing_record in _records:
-		records_snapshot.append(
-			existing_record.duplicate(true)
-		)
-	var next_instance_snapshot: int = _next_instance_number
-
-	var consume_result: Dictionary = (
-		_item_transaction_service.consume_player_items(
-			canonical_costs,
-			false,
-			&"beach_crafting"
-		)
-	)
+	if not _ensure_craft_baseline():
+		return _failure("craft_store_unavailable")
+	var before := _disk_craft_state()
+	if before.status != "valid":
+		return _failure("craft_store_unavailable")
+	var player_snapshot: Dictionary = _player_item_inventory.create_transaction_snapshot()
+	var fishing_snapshot: Dictionary = _fishing_inventory.create_transaction_snapshot()
+	var record_snapshot: Dictionary = _record_snapshot()
+	if _phase(player_snapshot, before.player, before.player) == "unknown" or _phase(fishing_snapshot, before.fish, before.fish) == "unknown" or _phase(record_snapshot, before.record, before.record) == "unknown":
+		return _failure("craft_store_changed")
+	var consume_result: Dictionary = _player_item_inventory.consume_costs(canonical_costs, false)
 	if not bool(consume_result.get("success", false)):
-		return {
-			"success": false,
-			"reason": "material_consume_failed",
-			"missing": consume_result.get("missing", {}),
-		}
+		return _failure("material_consume_failed")
 
 	var lure_id := StringName(
 		"crafted_%s_%03d"
 		% [String(recipe_id), _next_instance_number]
 	)
+	if _fishing_inventory.get_lure_count(lure_id) > 0:
+		_restore_craft_memory(player_snapshot, fishing_snapshot, record_snapshot)
+		return _failure("crafted_lure_id_conflict")
+	for existing_record in _records:
+		if str(existing_record.get("lure_id", "")) == String(lure_id):
+			_restore_craft_memory(player_snapshot, fishing_snapshot, record_snapshot)
+			return _failure("crafted_lure_id_conflict")
 	_next_instance_number += 1
 
 	var record := {
@@ -658,13 +673,7 @@ func craft(
 
 	var lure: BaitData = _build_runtime_lure(record)
 	if lure == null:
-		_restore_craft_transaction(
-			player_snapshot,
-			fishing_snapshot,
-			records_snapshot,
-			next_instance_snapshot,
-			false
-		)
+		_restore_craft_memory(player_snapshot, fishing_snapshot, record_snapshot)
 		return _failure("runtime_lure_build_failed")
 
 	var lure_count_after: int = _fishing_inventory.grant_lure(
@@ -673,44 +682,62 @@ func craft(
 		false
 	)
 	if lure_count_after <= 0:
-		_restore_craft_transaction(
-			player_snapshot,
-			fishing_snapshot,
-			records_snapshot,
-			next_instance_snapshot,
-			false
-		)
+		_restore_craft_memory(player_snapshot, fishing_snapshot, record_snapshot)
 		return _failure("lure_grant_failed")
-
-	if not save_to_disk():
-		_restore_craft_transaction(
-			player_snapshot,
-			fishing_snapshot,
-			records_snapshot,
-			next_instance_snapshot,
-			false
-		)
+	var transaction_id := Crypto.new().generate_random_bytes(16).hex_encode()
+	var journal_path := _item_transaction_service.get_cross_store_journal_path()
+	var intent := {
+		"version": GameItemTransactionService.SALE_JOURNAL_VERSION,
+		"kind": "beach_craft",
+		"transaction_id": transaction_id,
+		"item_save_path": _player_item_inventory.get_save_path(),
+		"wallet_save_path": _fishing_inventory.get_save_path(),
+		"record_save_path": SAVE_PATH,
+		"lure_id": String(lure_id),
+		"material_costs": canonical_costs.duplicate(true),
+		"crafted_record": record.duplicate(true),
+		"player_before": before.player,
+		"player_after": _player_item_inventory.create_transaction_snapshot(),
+		"wallet_before": before.fish,
+		"wallet_after": _fishing_inventory.create_transaction_snapshot(),
+		"record_before": before.record,
+		"record_after": _record_snapshot(),
+	}
+	if _qa_craft_failure("fail_intent") or not SaveStorage.write(journal_path, intent,
+		GameItemTransactionService.SALE_JOURNAL_VERSION,
+		GameItemTransactionService.SALE_JOURNAL_KEYS):
+		_restore_craft_memory(player_snapshot, fishing_snapshot, record_snapshot)
+		return _failure("pending_transaction_unresolved" if _item_transaction_service.has_pending_sale() else "craft_journal_write_failed")
+	_qa_craft_pause("after_intent")
+	SaveStorage.begin_cross_store_write(journal_path, transaction_id)
+	var record_saved := not _qa_craft_failure("fail_record_commit") and save_to_disk()
+	SaveStorage.end_cross_store_write()
+	if not record_saved:
+		_reload_craft_stores()
 		return _failure("crafted_record_save_failed")
-
-	if not _player_item_inventory.commit_changes():
-		_restore_craft_transaction(
-			player_snapshot,
-			fishing_snapshot,
-			records_snapshot,
-			next_instance_snapshot,
-			true
-		)
+	_qa_craft_pause("after_record_commit")
+	SaveStorage.begin_cross_store_write(journal_path, transaction_id)
+	var player_saved := not _qa_craft_failure("fail_item_commit") and _player_item_inventory.commit_changes()
+	SaveStorage.end_cross_store_write()
+	if not player_saved:
+		_reload_craft_stores()
 		return _failure("material_save_failed")
-
-	if not _fishing_inventory.commit_changes():
-		_restore_craft_transaction(
-			player_snapshot,
-			fishing_snapshot,
-			records_snapshot,
-			next_instance_snapshot,
-			true
-		)
+	_qa_craft_pause("after_item_commit")
+	SaveStorage.begin_cross_store_write(journal_path, transaction_id)
+	var fish_saved := not _qa_craft_failure("fail_fish_commit") and _fishing_inventory.commit_changes()
+	SaveStorage.end_cross_store_write()
+	if not fish_saved:
+		_reload_craft_stores()
 		return _failure("fishing_inventory_save_failed")
+	_qa_craft_pause("after_fish_commit")
+	var committed := _disk_craft_state()
+	if committed.status != "valid" or _phase(committed.player, intent.player_before, intent.player_after) != "after" or _phase(committed.fish, intent.wallet_before, intent.wallet_after) != "after" or _phase(committed.record, intent.record_before, intent.record_after) != "after":
+		_reload_craft_stores()
+		return _failure("craft_commit_unverified")
+	_qa_craft_pause("before_cleanup")
+	var cleanup_pending := _qa_craft_failure("fail_cleanup") or not SaveStorage.erase_known_valid(journal_path,
+		GameItemTransactionService.SALE_JOURNAL_VERSION,
+		GameItemTransactionService.SALE_JOURNAL_KEYS)
 
 	# Register presentation/runtime data only after all persistent stores agree.
 	_register_runtime_lure(lure)
@@ -722,6 +749,8 @@ func craft(
 	result["display_name"] = lure.display_name
 	result["record"] = record.duplicate(true)
 	result["lure_count_after"] = lure_count_after
+	result["transaction_id"] = transaction_id
+	result["journal_cleanup_pending"] = cleanup_pending
 	crafted_lure_created.emit(
 		lure,
 		record.duplicate(true)
@@ -774,35 +803,160 @@ func _can_afford_material_costs(costs: Dictionary) -> bool:
 	return _material_inventory.can_afford(costs)
 
 
-func _restore_craft_transaction(
-	player_snapshot: Dictionary,
-	fishing_snapshot: Dictionary,
-	records_snapshot: Array[Dictionary],
-	next_instance_snapshot: int,
-	rewrite_disk: bool
-) -> void:
+func _record_snapshot() -> Dictionary:
+	return {"version": SAVE_VERSION, "next_instance_number": _next_instance_number,
+		"records": get_crafted_records()}
+
+
+func _restore_craft_memory(player: Dictionary, fish: Dictionary, record_state: Dictionary) -> void:
+	_player_item_inventory.restore_transaction_snapshot(player, false)
+	_fishing_inventory.restore_transaction_snapshot(fish)
 	_records.clear()
-	for old_record in records_snapshot:
-		_records.append(old_record.duplicate(true))
-	_next_instance_number = maxi(
-		1,
-		next_instance_snapshot
-	)
+	for entry in record_state.get("records", []):
+		_records.append((entry as Dictionary).duplicate(true))
+	_next_instance_number = int(record_state.get("next_instance_number", 1))
 
-	_player_item_inventory.restore_transaction_snapshot(
-		player_snapshot,
-		false
-	)
-	_fishing_inventory.restore_transaction_snapshot(
-		fishing_snapshot
-	)
 
-	if rewrite_disk:
-		# One of the stores may already have committed before a later store
-		# failed. Rewrite all restored snapshots so disk converges too.
-		save_to_disk()
-		_player_item_inventory.save_to_disk()
-		_fishing_inventory.save_to_disk()
+func _reload_craft_stores() -> void:
+	_player_item_inventory.load_from_disk()
+	_fishing_inventory.load_from_disk()
+	load_from_disk()
+	_register_all_saved_lures()
+
+
+func _phase(actual: Dictionary, before: Dictionary, after: Dictionary) -> String:
+	var comparable := actual.duplicate(true)
+	comparable.erase("dirty")
+	var before_copy := before.duplicate(true)
+	before_copy.erase("dirty")
+	var after_copy := after.duplicate(true)
+	after_copy.erase("dirty")
+	var token := JSON.stringify(JSON.parse_string(JSON.stringify(comparable)))
+	if token == JSON.stringify(JSON.parse_string(JSON.stringify(after_copy))):
+		return "after"
+	if token == JSON.stringify(JSON.parse_string(JSON.stringify(before_copy))):
+		return "before"
+	return "unknown"
+
+
+func _ensure_craft_baseline() -> bool:
+	if not _player_item_inventory.commit_changes() or not _fishing_inventory.commit_changes():
+		return false
+	if SaveStorage.read(_player_item_inventory.get_save_path(), PlayerItemInventory.SAVE_VERSION, PlayerItemInventory.SAVE_KEYS).status == "new" and not _player_item_inventory.save_to_disk():
+		return false
+	if SaveStorage.read(_fishing_inventory.get_save_path(), FishingInventory.SAVE_VERSION, FishingInventory.SAVE_KEYS).status == "new" and not _fishing_inventory.save_to_disk():
+		return false
+	if SaveStorage.read(SAVE_PATH, SAVE_VERSION, RECORD_KEYS).status == "new" and not save_to_disk():
+		return false
+	return _disk_craft_state().status == "valid"
+
+
+func _disk_craft_state() -> Dictionary:
+	var player_state := SaveStorage.read(_player_item_inventory.get_save_path(), PlayerItemInventory.SAVE_VERSION, PlayerItemInventory.SAVE_KEYS)
+	var fish_state := SaveStorage.read(_fishing_inventory.get_save_path(), FishingInventory.SAVE_VERSION, FishingInventory.SAVE_KEYS)
+	var record_state := SaveStorage.read(SAVE_PATH, SAVE_VERSION, RECORD_KEYS)
+	if player_state.status != "valid" or fish_state.status != "valid" or record_state.status != "valid":
+		return {"status": "unavailable"}
+	var player_copy := PlayerItemInventory.new()
+	player_copy.configure(_player_item_inventory.get_save_path())
+	var fish_copy := FishingInventory.new()
+	fish_copy.configure_save_path(_fishing_inventory.get_save_path())
+	var loaded := player_copy.load_from_disk() and fish_copy.load_from_disk()
+	var result := {"status": "unavailable"}
+	if loaded:
+		result = {"status": "valid", "player": player_copy.create_transaction_snapshot(),
+			"fish": fish_copy.create_transaction_snapshot(), "record": record_state.data.duplicate(true)}
+	player_copy.free()
+	fish_copy.free()
+	return result
+
+
+func recover_pending_craft() -> Dictionary:
+	if _item_transaction_service == null or _player_item_inventory == null or _fishing_inventory == null:
+		return {"recovered": false, "reason": "item_backend_unavailable"}
+	var journal_path := _item_transaction_service.get_cross_store_journal_path()
+	var pending := SaveStorage.read(journal_path,
+		GameItemTransactionService.SALE_JOURNAL_VERSION,
+		GameItemTransactionService.SALE_JOURNAL_KEYS)
+	if pending.status == "new":
+		return {"recovered": true, "reason": "nothing_pending"}
+	if pending.status != "valid":
+		return {"recovered": false, "reason": "invalid_or_unsupported_journal"}
+	var intent: Dictionary = pending.data
+	if intent.get("kind", "sale") != "beach_craft":
+		return {"recovered": false, "reason": "other_transaction_pending",
+			"transaction_id": intent.get("transaction_id", "")}
+	var id := str(intent.transaction_id)
+	if _item_transaction_service.has_pending_catch_transaction():
+		return {"recovered": false, "reason": "pending_catch_unresolved", "transaction_id": id}
+	if _card_maker_journal_pending():
+		return {"recovered": false, "reason": "pending_card_maker_unresolved", "transaction_id": id}
+	if intent.item_save_path != _player_item_inventory.get_save_path() or intent.wallet_save_path != _fishing_inventory.get_save_path() or intent.record_save_path != SAVE_PATH:
+		return {"recovered": false, "reason": "craft_store_mismatch", "transaction_id": id}
+	var disk := _disk_craft_state()
+	if disk.status != "valid":
+		return {"recovered": false, "reason": "craft_store_unavailable", "transaction_id": id}
+	for part in [["record", "record_before", "record_after"], ["player", "player_before", "player_after"], ["fish", "wallet_before", "wallet_after"]]:
+		if _phase(disk[part[0]], intent[part[1]], intent[part[2]]) == "unknown":
+			return {"recovered": false, "reason": "craft_state_ambiguous", "transaction_id": id}
+	if _phase(disk.record, intent.record_before, intent.record_after) == "before":
+		SaveStorage.begin_cross_store_write(journal_path, id)
+		var saved := not _qa_craft_failure("fail_record_recovery") and SaveStorage.write(SAVE_PATH, intent.record_after, SAVE_VERSION, RECORD_KEYS)
+		SaveStorage.end_cross_store_write()
+		if not saved:
+			return {"recovered": false, "reason": "record_recovery_save_failed", "transaction_id": id}
+	if _phase(disk.player, intent.player_before, intent.player_after) == "before":
+		var player_copy := PlayerItemInventory.new()
+		player_copy.configure(_player_item_inventory.get_save_path())
+		player_copy.load_from_disk()
+		player_copy.restore_transaction_snapshot(intent.player_after, false)
+		SaveStorage.begin_cross_store_write(journal_path, id)
+		var saved := not _qa_craft_failure("fail_item_recovery") and player_copy.save_to_disk()
+		SaveStorage.end_cross_store_write()
+		player_copy.free()
+		if not saved:
+			return {"recovered": false, "reason": "item_recovery_save_failed", "transaction_id": id}
+	if _phase(disk.fish, intent.wallet_before, intent.wallet_after) == "before":
+		var fish_copy := FishingInventory.new()
+		fish_copy.configure_save_path(_fishing_inventory.get_save_path())
+		fish_copy.load_from_disk()
+		fish_copy.restore_transaction_snapshot(intent.wallet_after)
+		SaveStorage.begin_cross_store_write(journal_path, id)
+		var saved := not _qa_craft_failure("fail_fish_recovery") and fish_copy.save_to_disk()
+		SaveStorage.end_cross_store_write()
+		fish_copy.free()
+		if not saved:
+			return {"recovered": false, "reason": "fish_recovery_save_failed", "transaction_id": id}
+	var committed := _disk_craft_state()
+	if committed.status != "valid" or _phase(committed.player, intent.player_before, intent.player_after) != "after" or _phase(committed.fish, intent.wallet_before, intent.wallet_after) != "after" or _phase(committed.record, intent.record_before, intent.record_after) != "after":
+		return {"recovered": false, "reason": "craft_commit_unverified", "transaction_id": id}
+	if _qa_craft_failure("fail_cleanup") or not SaveStorage.erase_known_valid(journal_path,
+		GameItemTransactionService.SALE_JOURNAL_VERSION,
+		GameItemTransactionService.SALE_JOURNAL_KEYS):
+		return {"recovered": false, "reason": "craft_journal_cleanup_failed", "transaction_id": id}
+	_reload_craft_stores()
+	return {"recovered": true, "reason": "craft_completed", "transaction_id": id}
+
+
+func _qa_craft_failure(stage: String) -> bool:
+	return not OS.get_environment("FISHING_QA_RUN_ID").is_empty() and OS.get_environment("FISHING_QA_CRAFT_FAULT") == stage
+
+
+func _card_maker_journal_pending() -> bool:
+	return (SaveStorage.has_pending_card_maker_for_store(_fishing_inventory.get_save_path())
+		or FileAccess.file_exists(FishingCardMakerService.PENDING_PATH)
+		or FileAccess.file_exists(FishingCardMakerService.PENDING_TEMP_PATH)
+		or DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(FishingCardMakerService.PENDING_PATH))
+		or DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(FishingCardMakerService.PENDING_TEMP_PATH)))
+
+
+func _qa_craft_pause(stage: String) -> void:
+	if not OS.get_environment("FISHING_QA_RUN_ID").is_empty() and OS.get_environment("FISHING_QA_CRAFT_PAUSE") == stage:
+		var marker := FileAccess.open("user://craft_fault.marker", FileAccess.WRITE)
+		if marker != null:
+			marker.store_string(stage)
+			marker.close()
+		OS.delay_msec(15000)
 
 
 func grant_qa_material_bundle(amount: int = 10) -> Dictionary:
@@ -847,21 +1001,7 @@ func get_debug_snapshot() -> Dictionary:
 
 
 func save_to_disk() -> bool:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
-		return false
-	file.store_string(
-		JSON.stringify(
-			{
-				"version": SAVE_VERSION,
-				"next_instance_number": _next_instance_number,
-				"records": _records,
-			},
-			"\t"
-		)
-	)
-	file.close()
-	return true
+	return SaveStorage.write(SAVE_PATH, _record_snapshot(), SAVE_VERSION, RECORD_KEYS)
 
 
 func load_from_disk() -> bool:
@@ -869,33 +1009,25 @@ func load_from_disk() -> bool:
 	_runtime_lures.clear()
 	_next_instance_number = 1
 
-	if not FileAccess.file_exists(SAVE_PATH):
+	var loaded := SaveStorage.read(SAVE_PATH, SAVE_VERSION, RECORD_KEYS)
+	if loaded.status == "new":
 		return true
-
-	var parsed = JSON.parse_string(
-		FileAccess.get_file_as_string(SAVE_PATH)
-	)
-	if not (parsed is Dictionary):
+	if loaded.status != "valid":
 		push_warning("BeachCraftingService: crafted-lure save is invalid.")
 		return false
-
-	var data: Dictionary = parsed
-	_next_instance_number = maxi(
-		1,
-		int(data.get("next_instance_number", 1))
-	)
-
-	var raw_records = data.get("records", [])
-	if raw_records is Array:
-		for raw_record in raw_records:
-			if not (raw_record is Dictionary):
-				continue
-			var record: Dictionary = (
-				raw_record as Dictionary
-			).duplicate(true)
-			if str(record.get("lure_id", "")).is_empty():
-				continue
-			_records.append(record)
+	var data: Dictionary = loaded.data
+	if not SaveStorage.valid_beach_crafted_records(data, int(data.get("version", 0))):
+		push_warning("BeachCraftingService: crafted-lure records cannot be interpreted.")
+		return false
+	var checked_records: Array[Dictionary] = []
+	for raw_record in data.records:
+		var record: Dictionary = (raw_record as Dictionary).duplicate(true)
+		if _configured and _build_runtime_lure(record) == null:
+			push_warning("BeachCraftingService: crafted-lure record cannot be built: " + str(record.lure_id))
+			return false
+		checked_records.append(record)
+	_next_instance_number = int(data.next_instance_number)
+	_records = checked_records
 	return true
 
 

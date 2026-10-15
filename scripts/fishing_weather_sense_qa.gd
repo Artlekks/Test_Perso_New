@@ -113,6 +113,7 @@ static func run(
 
 	environment.activate_condition(&"rain")
 	var rain := environment.get_weather_sense_snapshot(5.0, 10.0)
+	var rain_resolved: Dictionary = rain.get("resolved", {})
 	_record(
 		report,
 		"Rain replaces calm inside the weather group",
@@ -122,21 +123,28 @@ static func run(
 	)
 	_record(
 		report,
-		"Rain reports active feeding",
-		rain.get("activity", &"") == Policy.ACTIVITY_ACTIVE,
-		"The authored rain bite/depth multipliers should become useful player information."
+		"Rain reports a restrained feeding change",
+		rain.get("activity", &"") == Policy.ACTIVITY_NORMAL
+		and float(rain_resolved.get("bite_activity_multiplier", 0.0)) > 1.0
+		and float(rain_resolved.get("bite_activity_multiplier", 0.0)) < 1.08,
+		"Rain slightly changes bite activity without advertising a universal feeding window."
 	)
 	_record(
 		report,
-		"Rain favors deeper water",
-		rain.get("favored_depth", &"") == Policy.DEPTH_DEEP,
-		"Depth advice should come from the authored surface/mid/deep multipliers."
+		"Rain reports a nearly even water column",
+		rain.get("favored_depth", &"") == Policy.DEPTH_EVEN
+		and float(rain_resolved.get("deep_activity_multiplier", 0.0)) > float(rain_resolved.get("surface_activity_multiplier", 0.0))
+		and float(rain_resolved.get("deep_activity_multiplier", 0.0)) - float(rain_resolved.get("surface_activity_multiplier", 0.0)) <= Policy.DEPTH_EVEN_TOLERANCE,
+		"A small authored deep-water difference should remain below the advice threshold."
 	)
 	_record(
 		report,
-		"Rain reports promising specimens",
-		rain.get("specimen_outlook", &"") == Policy.SPECIMEN_PROMISING,
-		"The existing extra natural quality roll should become legible without guaranteeing a record."
+		"Rain keeps ordinary specimen outlook",
+		rain.get("specimen_outlook", &"") == Policy.SPECIMEN_NORMAL
+		and float(rain_resolved.get("quality_bonus_roll_chance", 0.0)) > 0.0
+		and float(rain_resolved.get("quality_bonus_roll_chance", 0.0)) < 0.04
+		and int(rain_resolved.get("quality_bonus_rolls", 0)) == 1,
+		"A small extra quality-roll chance should not promise better specimens."
 	)
 	_record(
 		report,
@@ -147,17 +155,25 @@ static func run(
 
 	environment.activate_condition(&"tempest")
 	var tempest := environment.get_weather_sense_snapshot(5.0, 10.0)
+	var tempest_resolved: Dictionary = tempest.get("resolved", {})
 	_record(
 		report,
-		"Tempest reports very active water",
-		tempest.get("activity", &"") == Policy.ACTIVITY_VERY_ACTIVE,
-		"The strongest authored weather window needs a distinct read from ordinary rain."
+		"Tempest avoids a universal feeding promise",
+		tempest.get("activity", &"") == Policy.ACTIVITY_NORMAL
+		and float(tempest_resolved.get("bite_activity_multiplier", 0.0)) >= 0.93
+		and float(tempest_resolved.get("bite_activity_multiplier", 0.0)) < 1.08
+		and float(tempest_resolved.get("bite_activity_multiplier", 0.0)) < float(rain_resolved.get("bite_activity_multiplier", 0.0)),
+		"Severe weather shifts depth and tackle risk without making all fish feed faster."
 	)
 	_record(
 		report,
-		"Tempest reports excellent specimen conditions",
-		tempest.get("specimen_outlook", &"") == Policy.SPECIMEN_EXCELLENT,
-		"High-risk weather should clearly communicate its quality opportunity."
+		"Tempest reports limited specimen opportunity",
+		tempest.get("specimen_outlook", &"") == Policy.SPECIMEN_PROMISING
+		and float(tempest_resolved.get("quality_bonus_roll_chance", 0.0)) >= 0.04
+		and float(tempest_resolved.get("quality_bonus_roll_chance", 0.0)) < 0.15
+		and float(tempest_resolved.get("quality_bonus_roll_chance", 0.0)) > float(rain_resolved.get("quality_bonus_roll_chance", 0.0))
+		and int(tempest_resolved.get("quality_bonus_rolls", 0)) == 1,
+		"A modest quality chance is promising, not an exceptional-specimen guarantee."
 	)
 	_record(
 		report,

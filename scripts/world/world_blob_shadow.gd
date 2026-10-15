@@ -61,8 +61,14 @@ func update_ground_transform() -> void:
 	var presentation := anchor.get_parent() as Node3D
 	if presentation != null:
 		foot_position = presentation.global_position
-	var ground_y: float = foot_position.y
+	# The original renderer always snapped to the physical feet and ignored
+	# ShadowAnchor.position. Profile offsets provide editable visual correction
+	# while leaving the actor, collisions and physics ground contact untouched.
+	var horizontal := Vector2.ZERO
+	var grounded := presentation as GroundPresentation
+	if grounded != null and grounded.profile != null:
+		horizontal = Vector2(grounded.profile.shadow_offset_x, grounded.profile.shadow_offset_z)
 	global_transform = Transform3D(
 		Basis.IDENTITY,
-		Vector3(foot_position.x, ground_y + ground_offset, foot_position.z)
+		Vector3(foot_position.x + horizontal.x, foot_position.y + ground_offset, foot_position.z + horizontal.y)
 	)

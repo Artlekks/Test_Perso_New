@@ -5,6 +5,7 @@ extends SceneTree
 
 const RainScene = preload("res://actors/FishingRainVFX.tscn")
 const MainScene = preload("res://actors/FishingTestScene_V2.tscn")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 class PendingWorldEnvironment:
 	extends Node
@@ -25,14 +26,9 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	var folder: String = "EnvironmentalIntegrationV3QA-%d" % Time.get_ticks_usec()
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", folder)
-	if not OS.get_user_data_dir().ends_with(folder) or DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir()) != OK:
-		push_error("Environmental Integration v3 QA: isolated userdata unavailable; refusing to run")
+	if not Isolation.verify():
 		quit(1)
 		return
-	print("Environmental Integration v3 isolated userdata: ", OS.get_user_data_dir())
 	_run.call_deferred()
 
 
@@ -134,6 +130,9 @@ func _run() -> void:
 	fixture.free()
 
 	await frames(5)
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	var locations: Node = root.get_node_or_null("WorldLocations")
 	var clock: Node = root.get_node_or_null("GameClock")
 	var wind: Node = root.get_node_or_null("GameWind")
@@ -234,4 +233,9 @@ func _finish() -> void:
 	print("Environmental Integration v3 QA: %d passed, %d failed" % [passed, failures.size()])
 	for failure in failures:
 		print("  FAILED: " + failure)
+	Isolation.emit_result("environment_integration_v3_qa", passed, passed + failures.size(),
+		failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

@@ -1,4 +1,5 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 ## Environmental Integration v4 — Lake/River real-scene gameplay handoff.
 ## No game balance changes. All reads/writes to user:// are isolated to this QA run.
 ## Required baseline: Environmental Integration v1, v2, v3 + v3 QA repair.
@@ -23,14 +24,9 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
-    ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-    var directory: String = "EnvironmentalIntegrationV4QA-%d" % Time.get_ticks_usec()
-    ProjectSettings.set_setting("application/config/custom_user_dir_name", directory)
-    if not OS.get_user_data_dir().ends_with(directory) or DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir()) != OK:
-        push_error("Environmental Integration v4: unable to isolate user data. Aborting without loading gameplay.")
+    if not Isolation.verify():
         quit(1)
         return
-    print("Environmental Integration v4 isolated user data: ", OS.get_user_data_dir())
     _run.call_deferred()
 
 
@@ -212,6 +208,9 @@ func _probe_location(scene: Node3D, location: Resource, target_condition: String
 
 func _run() -> void:
     await frames(6)
+    if not Isolation.verify_root_clock(self):
+        quit(1)
+        return
     var locations: Node = root.get_node_or_null("WorldLocations")
     var clock: Node = root.get_node_or_null("GameClock")
     var weather: Node = root.get_node_or_null("GameWeather")
@@ -256,4 +255,9 @@ func _finish() -> void:
     print("Environmental Integration v4 Lake/River QA: %d passed, %d failed" % [passed, failures.size()])
     for failure in failures:
         print("  FAILED: " + failure)
+    Isolation.emit_result("environment_integration_v4_lake_river_qa", passed, passed + failures.size(),
+        failures.size(), Node.get_orphan_node_ids().size())
     quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+    print("QA_PROCESS_FINALIZED")

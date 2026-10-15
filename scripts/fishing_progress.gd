@@ -27,6 +27,12 @@ signal catch_specimen_recorded(
 
 const SAVE_VERSION: int = 7
 const SAVE_PATH: String = "user://fishing_progress.json"
+const SaveStorage = preload("res://scripts/fishing_save_storage.gd")
+const SAVE_KEYS = {
+	"store": "progress",
+	1: ["version", "species_records"],
+	7: ["fishing_points", "total_catches", "recent_catch_transaction_ids"],
+}
 
 var fishing_points: int = 0
 var total_catches: int = 0
@@ -43,6 +49,7 @@ var record_mercy_policy = DefaultRecordMercyPolicy
 
 var _save_path: String = SAVE_PATH
 var _initialized: bool = false
+var _load_blocked: bool = false
 
 func configure_save_path(save_path: String) -> void:
 	if _initialized:
@@ -622,6 +629,8 @@ func get_species_key(species: FishData) -> String:
 
 
 func save_to_disk() -> bool:
+	if _load_blocked:
+		return false
 	var payload := {
 		"version": SAVE_VERSION,
 		"fishing_points": fishing_points,
@@ -630,56 +639,19 @@ func save_to_disk() -> bool:
 		"recent_catch_transaction_ids": recent_catch_transaction_ids,
 	}
 
-	var file := FileAccess.open(
-		_save_path,
-		FileAccess.WRITE
-	)
-
-	if file == null:
-		push_warning(
-			"FishingProgress: Could not open save file for writing."
-		)
-		return false
-
-	file.store_string(
-		JSON.stringify(
-			payload,
-			"\t"
-		)
-	)
-	file.close()
-	return true
+	return SaveStorage.write(_save_path, payload, SAVE_VERSION, SAVE_KEYS)
 
 
 func load_from_disk() -> bool:
 	_reset_runtime_state()
-
-	if not FileAccess.file_exists(_save_path):
+	var loaded: Dictionary = SaveStorage.read(_save_path, SAVE_VERSION, SAVE_KEYS)
+	_load_blocked = loaded.status == "blocked" or loaded.status == "unsupported"
+	if _load_blocked:
+		push_warning("FishingProgress: save unavailable; progress writes blocked.")
+		return false
+	if loaded.status == "new":
 		return true
-
-	var file := FileAccess.open(
-		_save_path,
-		FileAccess.READ
-	)
-
-	if file == null:
-		push_warning(
-			"FishingProgress: Could not open save file for reading."
-		)
-		return false
-
-	var raw_text := file.get_as_text()
-	file.close()
-
-	var parsed = JSON.parse_string(raw_text)
-
-	if not (parsed is Dictionary):
-		push_warning(
-			"FishingProgress: Save file is invalid; starting with empty records."
-		)
-		return false
-
-	var data: Dictionary = parsed
+	var data: Dictionary = loaded.data
 	var version := int(data.get("version", 0))
 
 	if version > SAVE_VERSION:
@@ -829,13 +801,11 @@ func _trim_recent_catch_transactions() -> void:
 
 
 func reset_all_progress(delete_save: bool = true) -> void:
+	if delete_save and not SaveStorage.erase_known_valid(_save_path, SAVE_VERSION, SAVE_KEYS):
+		push_warning("FishingProgress: reset refused because save files could not be safely removed.")
+		return
 	_reset_runtime_state()
-
-	if delete_save and FileAccess.file_exists(_save_path):
-		var absolute_path := ProjectSettings.globalize_path(
-			_save_path
-		)
-		DirAccess.remove_absolute(absolute_path)
+	_load_blocked = false
 
 	changed.emit()
 

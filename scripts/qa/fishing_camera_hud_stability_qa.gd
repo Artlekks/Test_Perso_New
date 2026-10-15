@@ -1,4 +1,5 @@
 extends SceneTree
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 ## Real mobile scene, physical Caster/Bait and native rendered frame evidence.
 const STEP := 1.0/60.0
 const SIZES := [Vector2i(390,844),Vector2i(932,430),Vector2i(320,568),Vector2i(568,320)]
@@ -11,9 +12,9 @@ var rig: Node3D
 var camera: Camera3D
 
 func _initialize() -> void:
-	ProjectSettings.set_setting("application/config/use_custom_user_dir",true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name","CodexCameraHudQA-%d" % Time.get_ticks_usec())
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
+	if not Isolation.verify(["user://qa_camera_hud"]):
+		quit(1)
+		return
 	run.call_deferred()
 
 func check(ok: bool, label: String) -> void:
@@ -50,15 +51,17 @@ func stable(reference: Dictionary) -> bool:
 	return absf(now.distance-reference.distance)<.0001 and now.fov==reference.fov and now.size==reference.size and absf(now.pitch_axis-reference.pitch_axis)<.00001 and absf(now.roll_axis-reference.roll_axis)<.00001 and now.unorbited_offset.distance_to(reference.unorbited_offset)<.0001 and now.optical_offsets==reference.optical_offsets and now.player.distance_to(reference.player)<.00001
 
 func run() -> void:
+	for frame in range(2): await process_frame
+	if not Isolation.verify_root_clock(self): quit(1); return
 	var desktop := OS.get_cmdline_user_args().has("--desktop")
 	var sizes: Array = [Vector2i(1280,900),Vector2i(640,900)] if desktop else SIZES
-	var output_dir := "res://build/mobile-web/hud-spacing/"+("desktop" if desktop else "mobile")
+	var output_dir := "user://qa_camera_hud/"+("desktop" if desktop else "mobile")
 	DirAccess.make_dir_recursive_absolute(output_dir)
 	root.size = SIZES[0]
 	fixture = SessionTestFixture.new()
 	var host: Control
 	if desktop:
-		OS.set_environment("FISHING_COMPANION_IPC",ProjectSettings.globalize_path("res://build/mobile-web/hud-spacing/desktop-ipc"))
+		OS.set_environment("FISHING_COMPANION_IPC",ProjectSettings.globalize_path("user://qa_camera_hud/desktop-ipc"))
 		host=load("res://actors/desktop/DesktopCompanion.tscn").instantiate()
 		root.add_child(host); current_scene=host
 		fixture.tree=self; fixture.scene=host
@@ -180,4 +183,9 @@ func run() -> void:
 	file.store_string(JSON.stringify(measurements,"  ")); file.close()
 	fixture.release(); await settle()
 	print("CAMERA HUD STABILITY QA: ",checks-failures.size(),"/",checks," failures=",failures)
+	Isolation.emit_result("fishing_camera_hud_stability_qa", checks - failures.size(),
+		checks, failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

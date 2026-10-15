@@ -161,7 +161,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kt4qy"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dlr72"]
 render_priority = -120
@@ -170,7 +170,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_rdhg8"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_koyid"]
 render_priority = -120
@@ -179,7 +179,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_nitc7"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.45, 0.45)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_cmetb"]
 render_priority = -120
@@ -188,7 +188,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_i4bsw"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1pbgi"]
 render_priority = -120
@@ -197,7 +197,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_y5516"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_2je2w"]
 render_priority = -120
@@ -206,7 +206,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_yq0rd"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4ll8x"]
 render_priority = -120
@@ -215,7 +215,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_cmgg1"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_k1a05"]
 render_priority = -120
@@ -224,7 +224,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_swraw"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ywtl2"]
 render_priority = -120
@@ -233,7 +233,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ute8f"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_u362m"]
 render_priority = -120
@@ -242,7 +242,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_v1qqd"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_e0qkl"]
 render_priority = -120
@@ -251,7 +251,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_g1j0k"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_lypwq"]
 render_priority = -120
@@ -260,7 +260,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_y0x53"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4b0sm"]
 render_priority = -120
@@ -269,7 +269,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_4nddp"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vvbh6"]
 render_priority = -120
@@ -278,7 +278,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_hkuew"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_07gd8"]
 render_priority = -120
@@ -287,7 +287,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_eluh3"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_fub5q"]
 render_priority = -120
@@ -296,7 +296,7 @@ shader_parameter/opacity = 0.65
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_0rgj1"]
 material = SubResource("ShaderMaterial_blob")
-size = Vector2(0.5, 0.5)
+size = Vector2(0.475, 0.475)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_a61d1"]
 render_priority = -120
@@ -429,13 +429,13 @@ shape = SubResource("BoxShape3D_m5b5u")
 [node name="beach" parent="World" unique_id=284991885 instance=ExtResource("9_m5b5u")]
 transform = Transform3D(0.45, 0, 0, 0, 0.3, 0, 0, 0, 0.45, -0.0225, -0.1, -1.6714339)
 
-[node name="Sea" parent="World/beach" index="0" unique_id=715569092]
+[node name="Sea" parent="World/beach" index="0" unique_id=1611961521]
 material_override = SubResource("ShaderMaterial_sea_far")
 
-[node name="Beach" parent="World/beach" index="1" unique_id=1706233360]
+[node name="Beach" parent="World/beach" index="1" unique_id=758185710]
 material_override = SubResource("ShaderMaterial_beach_anim")
 
-[node name="Bottom" parent="World/beach" index="2" unique_id=946622039]
+[node name="Bottom" parent="World/beach" index="2" unique_id=1945219488]
 transform = Transform3D(0.8024676, 0, 0, 0, 0.99999976, 0, 0, 0, 1, 0, 3.4369457, 2.0487227)
 material_override = SubResource("StandardMaterial3D_myncn")
 
@@ -461,9 +461,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.949, 0, 0.609)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0, 0.033282578)
 
 [node name="WorldBlobShadow" parent="World/TripleTriadOpponentNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0215464, 0.006, 0.033282578)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9565463, 0.006, -0.07671742)
 material_override = SubResource("ShaderMaterial_txgjr")
 mesh = SubResource("PlaneMesh_kt4qy")
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/TripleTriadOpponentNPC" index="1" unique_id=1090408400]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07442939, 0)
@@ -485,11 +487,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(0, 22)
 
 [node name="WorldBlobShadow" parent="World/BeachCrafterNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.006, 0.6531534)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.865, 0.006, 0.5431534)
 material_override = SubResource("ShaderMaterial_dlr72")
 mesh = SubResource("PlaneMesh_rdhg8")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/BeachCrafterNPC" index="1" unique_id=1538002036]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -511,11 +513,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(0, 29.5)
 
 [node name="WorldBlobShadow" parent="World/FishingCardMakerNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.78892124, 0.006, 0.51951283)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.70392126, 0.006, 0.42451283)
 material_override = SubResource("ShaderMaterial_koyid")
 mesh = SubResource("PlaneMesh_nitc7")
-width = 0.5
-depth = 0.5
+width = 0.45
+depth = 0.45
 
 [node name="CollisionShape3D" parent="World/FishingCardMakerNPC" index="1" unique_id=1054673134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12546021, 0)
@@ -587,11 +589,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterCurrentReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.935, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_cmetb")
 mesh = SubResource("PlaneMesh_i4bsw")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterCurrentReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -613,11 +615,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterDepthReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.55, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.485, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_1pbgi")
 mesh = SubResource("PlaneMesh_y5516")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterDepthReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -639,11 +641,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterStructureHunterNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.15, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.085, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_2je2w")
 mesh = SubResource("PlaneMesh_yq0rd")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterStructureHunterNPC" index="1" unique_id=78913514]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -665,11 +667,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterLineFighterNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6349998, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_4ll8x")
 mesh = SubResource("PlaneMesh_cmgg1")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterLineFighterNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -691,11 +693,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterDeepwaterVeteranNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.185, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_k1a05")
 mesh = SubResource("PlaneMesh_swraw")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterDeepwaterVeteranNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -717,11 +719,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterSurfaceAnglerNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.735001, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_ywtl2")
 mesh = SubResource("PlaneMesh_ute8f")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterSurfaceAnglerNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -743,11 +745,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterLandingGuideNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.285001, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_u362m")
 mesh = SubResource("PlaneMesh_v1qqd")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterLandingGuideNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -769,11 +771,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterWeatherWatcherNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.9, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.835, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_e0qkl")
 mesh = SubResource("PlaneMesh_g1j0k")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterWeatherWatcherNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -795,11 +797,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterTideReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.45, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.385, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_lypwq")
 mesh = SubResource("PlaneMesh_y0x53")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterTideReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -821,11 +823,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterSignReaderNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.935, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_4b0sm")
 mesh = SubResource("PlaneMesh_4nddp")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterSignReaderNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -847,11 +849,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterNatureGuideNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.55, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.484999, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_vvbh6")
 mesh = SubResource("PlaneMesh_hkuew")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterNatureGuideNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -873,11 +875,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(-8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterDriftAnglerNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.1, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.035, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_07gd8")
 mesh = SubResource("PlaneMesh_eluh3")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterDriftAnglerNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
@@ -899,11 +901,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
 offset = Vector2(8, 21)
 
 [node name="WorldBlobShadow" parent="World/FishingMasterGyosilNPC/GroundPresentation/ShadowAnchor" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9062995, 0.006, -0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.97129947, 0.006, -0.21000001)
 material_override = SubResource("ShaderMaterial_fub5q")
 mesh = SubResource("PlaneMesh_0rgj1")
-width = 0.5
-depth = 0.5
+width = 0.475
+depth = 0.475
 
 [node name="BodyCollider" parent="World/FishingMasterGyosilNPC" index="1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)

@@ -130,6 +130,11 @@ func cook_prepared_bait(
 	batch_count: int = 1,
 	persist: bool = true
 ) -> Dictionary:
+	if persist and transaction_service != null and transaction_service.has_pending_sale():
+		var recovery: Dictionary = transaction_service.recover_pending_sale()
+		return {"success": false, "can_cook": false,
+			"reason": "pending_transaction_recovered" if bool(recovery.get("recovered", false)) and not transaction_service.has_pending_sale() else "pending_transaction_unresolved",
+			"transaction": recovery}
 	var result: Dictionary = evaluate_prepared_bait(
 		fish_species_id,
 		batch_count
