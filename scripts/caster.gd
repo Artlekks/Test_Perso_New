@@ -20,11 +20,11 @@ signal bait_snagged(reason: StringName)
 @export var cast_gravity: float = 24.0
 
 @export_category("Cast Feel")
-## 1.0 = original flight duration.
+## 1.0 = original flight duration. Default 0.64 prolongs the visual flight.
 ## Lower values make the bait travel the same path more slowly without
 ## changing the selected power, trajectory, or landing point.
 @export_range(0.5, 1.25, 0.01)
-var cast_flight_playback_speed: float = 0.85
+var cast_flight_playback_speed: float = 0.64
 
 @export_category("Pre-Cast Curve")
 ## Maximum sideways bow while the landing torus is still locked.
@@ -573,42 +573,10 @@ func get_active_bait_surface_position() -> Vector3:
 
 
 func get_active_bait_visual_surface_position() -> Vector3:
-	# Presentation point for surface effects during an underwater fight.
-	# The bait root is the FRONT/head joint of the segmented lure. Project that
-	# exact screen position onto the water plane so the splash remains visually
-	# centered on the bait head even when the lure is several metres deep.
-	if not is_instance_valid(active_bait):
-		return global_position
-
-	var bait_position: Vector3 = active_bait.global_position
-	var surface_y: float = bait_position.y
-
-	if active_bait.has_method("get_water_surface_y"):
-		surface_y = float(active_bait.get_water_surface_y()) + 0.025
-	elif active_bait.has_method("get_surface_position"):
-		var fallback_surface: Vector3 = active_bait.get_surface_position()
-		surface_y = fallback_surface.y
-
-	var camera: Camera3D = get_viewport().get_camera_3d()
-
-	if camera == null:
-		return Vector3(bait_position.x, surface_y, bait_position.z)
-
-	var screen_position: Vector2 = camera.unproject_position(bait_position)
-	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
-	var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
-
-	if absf(ray_direction.y) <= 0.00001:
-		return Vector3(bait_position.x, surface_y, bait_position.z)
-
-	var distance_along_ray: float = (surface_y - ray_origin.y) / ray_direction.y
-
-	if distance_along_ray < 0.0:
-		return Vector3(bait_position.x, surface_y, bait_position.z)
-
-	var projected: Vector3 = ray_origin + ray_direction * distance_along_ray
-	projected.y = surface_y
-	return projected
+	# Water effects occupy the physical surface point above the active lure.
+	# Projecting the deep bait through the camera shifted this point toward the
+	# player as the view moved, even though the water contact did not move.
+	return get_active_bait_surface_position()
 
 func cancel_bait() -> void:
 	if is_instance_valid(active_bait):

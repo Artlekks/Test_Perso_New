@@ -1,0 +1,303 @@
+--- BASE/scripts/ui/seaside_shell_layout.gd
++++ CANDIDATE/scripts/ui/seaside_shell_layout.gd
+@@ -80,19 +80,21 @@
+ 	# vertical camera projection would require a separate dock-specific pass;
+ 	# this correction targets floating/tall F5 windows only.
+ 	var resolution := Vector2i(640, 480)
+-	# A fishing session owns a stable gameplay projection. Resizing the
+-	# decorated host is presentation-only until the session has finished.
+-	# Keeping BOTH dimensions stable prevents the viewport and Camera3D FOV
+-	# from shifting the bait's screen-space steering corridor mid-cast.
+-	if locked:
+-		resolution = previous
+-	elif not docked:
+-		# Explore with continuous vertical coverage when floating. This
+-		# policy applies between fishing sessions, never inside a live cast.
++	# Floating windows may expand the rendered world vertically during fishing.
++	# The fishing simulation owns an invariant reference projection; resizing
++	# the display is never a reason to change physical bait coordinates.
++	# A dock retains the existing canonical 640x480 view, including when
++	# entering/exiting fishing. For a floating session, preserve the authored
++	# logical width and expand only the visible vertical world extent.
++	if docked:
++		if locked:
++			resolution = previous
++	else:
++		var native_width: float = float(previous.x) if locked else DESKTOP_WORLD_WIDTH
+ 		var desired_height: float = clampf(
+-			usable_height * DESKTOP_WORLD_WIDTH / usable_width,
++			usable_height * native_width / usable_width,
+ 			DESKTOP_MIN_WORLD_HEIGHT, DESKTOP_MAX_WORLD_HEIGHT)
+-		resolution = Vector2i(roundi(DESKTOP_WORLD_WIDTH), roundi(desired_height))
++		resolution = Vector2i(roundi(native_width), roundi(desired_height))
+ 	var scale: float = maxf(0.01,minf(usable_width/float(resolution.x),usable_height/float(resolution.y)))
+ 	var footprint := Vector2(resolution)*scale
+ 	var free_height: float = maxf(0.0,usable_height-footprint.y)
+
+--- BASE/scripts/bait_V2.gd
++++ CANDIDATE/scripts/bait_V2.gd
+@@ -1019,11 +1019,12 @@
+ 		if camera != null:
+ 			var viewport_size := camera.get_viewport().get_visible_rect().size
+ 			if viewport_size.x > 0.0:
+-				landing_left = clampf(camera.unproject_position(landing).x / viewport_size.x - FREE_LURE_GUARD, 0.025, left)
++				landing_left = clampf(_free_lure_screen_point(camera, landing, viewport_size).x - FREE_LURE_GUARD, 0.025, left)
+ 		left = lerpf(left, landing_left, release_ratio)
+ 	var region := Rect2(Vector2(left, top), Vector2(maxf(right-left, 0.001), maxf(bottom-top, 0.001)))
+-	if free_lure_region_provider.is_valid():
+-		region = region.intersection(free_lure_region_provider.call())
++	# The camera's live HUD rectangles belong to presentation. They change
++	# with window resizing, and must not change physical retrieve constraints.
++	# The authored free-reel ratios remain the simulation's stable envelope.
+ 	return region
+ 
+ 
+@@ -1031,8 +1032,35 @@
+ 	return Vector3(world_position.x, water_y + 0.025, world_position.z)
+ 
+ 
++func _free_lure_projection_scale(camera: Camera3D, viewport_size: Vector2) -> Vector2:
++	# Logical physics/corridor coordinates use a 960x480 reference lens in
++	# the desktop companion, independent of how tall the displayed viewport
++	# becomes. DesktopCompanion stores the authored FOV before expansion.
++	# Native/mobile without this metadata retain their current projection.
++	if not camera.has_meta("desktop_base_projection"):
++		return Vector2.ONE
++	var baseline: Dictionary = camera.get_meta("desktop_base_projection")
++	var baseline_fov: float = float(baseline.get("fov", camera.fov))
++	if baseline_fov <= 0.01 or viewport_size.y <= 0.0:
++		return Vector2.ONE
++	var focal_scale: float = tan(deg_to_rad(camera.fov) * 0.5) / tan(deg_to_rad(baseline_fov) * 0.5)
++	var current_aspect: float = viewport_size.x / viewport_size.y
++	var reference_aspect: float = 960.0 / 480.0
++	if camera.keep_aspect == Camera3D.KEEP_HEIGHT:
++		return Vector2(focal_scale * current_aspect / reference_aspect, focal_scale)
++	return Vector2(focal_scale, focal_scale * reference_aspect / current_aspect)
++
++
+ func _free_lure_screen_point(camera: Camera3D, world_position: Vector3, viewport_size: Vector2) -> Vector2:
+-	return camera.unproject_position(_free_lure_surface_position(world_position)) / viewport_size
++	# Normalized coordinates in the stable fishing playfield. Changing window
++	# height affects rendering but not these solver limits or steering arcs.
++	var displayed: Vector2 = camera.unproject_position(_free_lure_surface_position(world_position)) / viewport_size
++	return Vector2.ONE * 0.5 + (displayed-Vector2.ONE*0.5) * _free_lure_projection_scale(camera, viewport_size)
++
++
++func _free_lure_reference_ray_pixel(camera: Camera3D, stable: Vector2, viewport_size: Vector2) -> Vector2:
++	var factors: Vector2 = _free_lure_projection_scale(camera, viewport_size)
++	return (Vector2.ONE*0.5 + (stable-Vector2.ONE*0.5) / Vector2(maxf(factors.x,0.00001),maxf(factors.y,0.00001))) * viewport_size
+ 
+ 
+ func _screen_point_on_water(camera: Camera3D, viewport_point: Vector2) -> Vector3:
+@@ -1169,7 +1197,7 @@
+ 		# One screen pixel is a *direction probe* only; the physical motion
+ 		# is still limited to the exact world-space reel distance this frame.
+ 		var probe_screen: Vector2 = start_screen + screen_direction.normalized() * (1.0 / maxf(size.x,size.y))
+-		var probe_water: Vector3 = _screen_point_on_water(camera, probe_screen*size)
++		var probe_water: Vector3 = _screen_point_on_water(camera, _free_lure_reference_ray_pixel(camera, probe_screen, size))
+ 		if not probe_water.is_finite():
+ 			continue
+ 		var trial_delta: Vector2 = Vector2(
+@@ -1186,9 +1214,19 @@
+ 		best_position = candidate["point"] as Vector3
+ 		best_rating = candidate["rating"] as Vector2
+ 
++	# If the water-side landing target is outside the authored screen band,
++	# the old scorer could reject EVERY step: D remained held but the bait
++	# was stationary forever. Allow a bounded, shore-constrained radial step
++	# ONLY when none of the arc/tangent candidates made measurable progress.
++	# This is movement, not a teleport or a fake screen-edge completion.
++	if best_position.distance_squared_to(from_position) < 0.0000000001:
++		var radial: Vector2 = inward_flat.normalized() * minf(step_length, inward_flat.length())
++		var radial_trial: Vector3 = from_position + Vector3(radial.x, 0.0, radial.y)
++		var recovered: Vector3 = _constrain_waterborne_shore_position(radial_trial)
++		if Vector2(recovered.x,recovered.z).distance_to(goal_flat) < inward_flat.length()-0.000001:
++			return recovered
+ 	# An already out-of-bounds landing or camera yaw is allowed to converge
+ 	# over subsequent frames; never teleport the bait across the beach.
+-	# Normal in-bounds movement never creates a new screen violation.
+ 	if best_rating.x < -start_error - 0.0000000001:
+ 		return from_position
+ 	return best_position
+
+--- BASE/scripts/fishing_screen_water_bounds.gd
++++ CANDIDATE/scripts/fishing_screen_water_bounds.gd
+@@ -10,25 +10,18 @@
+ var _fight_phase: int
+ 
+ func _ready() -> void:
++	# Presentation may report a safe screen band, but never directly move
++	# the physical bait. Keep the helper available for legacy QA/preview.
++	set_process(false)
+ 	process_priority = 100
+ 	var phases: Dictionary = fishing.get_script().get_script_constant_map().Phase
+ 	_water_phase = phases.IN_WATER
+ 	_fight_phase = phases.FIGHT
+ 
+ func _process(_delta: float) -> void:
+-	if not is_instance_valid(fishing):
+-		return
+-	var eligible: bool = fishing.phase == _water_phase or (fishing.phase == _fight_phase and fishing.encounter.lifecycle.is_hooked())
+-	if not eligible or not fishing.caster.is_active_bait_in_water():
+-		return
+-	var camera := get_viewport().get_camera_3d()
+-	var bait = fishing.caster.active_bait
+-	if not is_instance_valid(camera) or not is_instance_valid(bait):
+-		return
+-	var top := top_safe_ratio
+-	if is_instance_valid(info_view) and info_view.has_method("get_fishing_covered_bottom_ratio"):
+-		top = maxf(top, info_view.get_fishing_covered_bottom_ratio() + info_margin_ratio)
+-	bait.global_position = constrain_position(camera, bait.global_position, top)
++	# Intentionally does not operate on bait.global_position. The static
++	# constrain_position() geometry helper remains for older QA/visual tools.
++	pass
+ 
+ static func constrain_position(camera: Camera3D, position: Vector3, top: float) -> Vector3:
+ 	if not is_instance_valid(camera) or camera.is_position_behind(position):
+
+--- BASE/scripts/qa/desktop_fishing_resize_contract_qa.gd
++++ CANDIDATE/scripts/qa/desktop_fishing_resize_contract_qa.gd
+@@ -0,0 +1,42 @@
++extends SceneTree
++## Gate 02: floating window growth must also grow the displayed gameplay
++## viewport during an active fishing session. Docking keeps its approved shape.
++const Layout = preload("res://scripts/ui/seaside_shell_layout.gd")
++var checked: int = 0
++var failures: Array[String] = []
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func check(ok: bool, label: String) -> void:
++	checked += 1
++	if not ok:
++		failures.append(label)
++		push_error("RESIZE CONTRACT FAIL: " + label)
++
++func run() -> void:
++	var widths: Array[int] = [640, 960]
++	var shapes: Array[Vector2] = [Vector2(800,560),Vector2(1280,760),Vector2(720,1300),Vector2(1920,1080),Vector2(360,720)]
++	for width in widths:
++		var previous := Vector2i(width,480)
++		for host_size in shapes:
++			var floating: Dictionary = Layout.desktop(host_size,previous,false,true)
++			var resolution: Vector2i = floating["resolution"]
++			var world: Rect2 = floating["world"]
++			check(resolution.x == width,"floating cast keeps world width %s %s" % [width,host_size])
++			check(resolution.y >= 480,"floating cast retains minimum world height %s" % host_size)
++			check(Rect2(Vector2.ZERO,host_size).encloses(world),"floating viewport fits window %s" % host_size)
++			check(world.size.x > 0.0 and world.size.y > 0.0,"floating world is visible %s" % host_size)
++			var repeat: Dictionary = Layout.desktop(host_size,resolution,false,true)
++			check(repeat["resolution"] == resolution,"floating resize idempotent %s" % host_size)
++			var docked: Dictionary = Layout.desktop(host_size,previous,true,true)
++			check(docked["resolution"] == previous,"existing dock layout unchanged %s" % host_size)
++	var short_view: Dictionary = Layout.desktop(Vector2(1128,520),Vector2i(960,480),false,true)
++	var tall_view: Dictionary = Layout.desktop(Vector2(1128,1300),Vector2i(960,480),false,true)
++	var short_resolution: Vector2i = short_view["resolution"]
++	var tall_resolution: Vector2i = tall_view["resolution"]
++	check(tall_resolution.y > short_resolution.y,"active fishing reveals more vertical world in a tall floating window")
++	check(tall_view["world"].size.y > short_view["world"].size.y,"active fishing consumes the extra physical window height")
++	check(Layout.desktop(Vector2(1128,1300),Vector2i(960,480),false,false)["resolution"] == tall_resolution,"fishing and exploration share the tall-world sizing rule")
++	print("FISHING STABILIZATION RESIZE GATE 02: %d/%d passed; failures=%s" % [checked-failures.size(),checked,failures])
++	quit(0 if failures.is_empty() else 1)
+
+--- BASE/scripts/qa/fishing_physics_projection_gate_02_qa.gd
++++ CANDIDATE/scripts/qa/fishing_physics_projection_gate_02_qa.gd
+@@ -0,0 +1,97 @@
++extends SceneTree
++## Isolated production bait + Camera3D check, no save or fishing progression.
++## Dynamic floating-window FOV is allowed; bait physics still uses the same
++## reference projector and retrieves toward its physical water-side target.
++const BAIT_SCENE = preload("res://actors/bait_V2.tscn")
++var checks: int = 0
++var failures: Array[String] = []
++var surface: SubViewport
++var camera: Camera3D
++var bait: Node3D
++var goal: Node3D
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func check(ok: bool, label: String) -> void:
++	checks += 1
++	if not ok:
++		failures.append(label)
++		push_error("PHYSICS PROJECTION FAIL: " + label)
++
++func on_water(pixel: Vector2) -> Vector3:
++	var origin: Vector3 = camera.project_ray_origin(pixel)
++	var direction: Vector3 = camera.project_ray_normal(pixel)
++	return origin+direction*(-origin.y/direction.y)
++
++func run() -> void:
++	surface = SubViewport.new()
++	surface.size = Vector2i(960,480)
++	surface.world_3d = World3D.new()
++	root.add_child(surface)
++	camera = Camera3D.new()
++	surface.add_child(camera)
++	camera.position = Vector3(0.0,7.0,12.0)
++	camera.look_at(Vector3.ZERO,Vector3.UP)
++	camera.current = true
++	camera.keep_aspect = Camera3D.KEEP_HEIGHT
++	camera.fov = 75.0
++	camera.set_meta("desktop_base_projection", {"fov":75.0,"aspect":Camera3D.KEEP_HEIGHT})
++	bait = BAIT_SCENE.instantiate()
++	surface.add_child(bait)
++	bait.set_physics_process(false)
++	bait.simulation_frozen = true
++	bait.water_y = 0.0
++	bait.state = bait.State.IN_WATER
++	goal = Node3D.new()
++	surface.add_child(goal)
++	goal.global_position = on_water(Vector2(350,446))
++	bait.set_reel_target(goal)
++	bait.global_position = on_water(Vector2(650,345))
++	await process_frame
++	var reference_points: Array[Vector3] = [on_water(Vector2(250,140)),on_water(Vector2(650,345)),on_water(Vector2(450,250))]
++	var before: Array[Vector2] = []
++	for point in reference_points:
++		before.append(bait._free_lure_screen_point(camera,point,Vector2(surface.size)))
++	var authored_region: Rect2 = bait._free_lure_screen_region()
++	# Deliberately poisonous HUD provider. Physical corridor must ignore it.
++	bait.free_lure_region_provider = func() -> Rect2: return Rect2(0.49,0.49,0.01,0.01)
++	check(bait._free_lure_screen_region() == authored_region,"live HUD position cannot shrink physical playfield")
++	for height in [560,720,960,1200]:
++		surface.size = Vector2i(960,height)
++		camera.fov = rad_to_deg(2.0*atan(tan(deg_to_rad(75.0)*0.5)*float(height)/480.0))
++		await process_frame
++		for i in range(reference_points.size()):
++			var current: Vector2 = bait._free_lure_screen_point(camera,reference_points[i],Vector2(surface.size))
++			check(current.distance_to(before[i]) < 0.0006,"world-to-physics projection stays fixed at %s, sample %d" % [height,i])
++		var resized_region: Rect2 = bait._free_lure_screen_region()
++		check(resized_region.position.distance_to(authored_region.position) < 0.0006 and resized_region.size.distance_to(authored_region.size) < 0.0006,"authored physical screen bounds survive resize %s" % height)
++	# Explicitly reproduce a water landing *below* the authored bottom band.
++	# This used to reject all candidates and could strand held D indefinitely.
++	surface.size = Vector2i(960,480)
++	camera.fov = 75.0
++	await process_frame
++	bait.global_position = on_water(Vector2(640,365))
++	goal.global_position = on_water(Vector2(340,446))
++	var starting_distance: float = bait.global_position.distance_to(goal.global_position)
++	bait.reel_steering = 1.0
++	bait.reel_steering_target = 1.0
++	var made_progress := true
++	for i in range(120):
++		var previous: Vector3 = bait.global_position
++		var distance_before: float = previous.distance_to(goal.global_position)
++		bait._update_reeling(1.0/60.0,0.45)
++		var distance_after: float = bait.global_position.distance_to(goal.global_position)
++		if distance_after < 0.3:
++			break
++		if distance_after >= distance_before - 0.000001:
++			made_progress = false
++			break
++	check(made_progress,"held D does not stall when landing lies beyond bottom screen corridor")
++	check(bait.global_position.distance_to(goal.global_position) < starting_distance-0.1,"held D makes meaningful inward physical progress")
++	# Ensure the old late-HUD actor can no longer directly change bait position.
++	var bounds_script: Script = load("res://scripts/fishing_screen_water_bounds.gd")
++	var code: String = bounds_script.source_code
++	check(not code.contains("bait.global_position = constrain_position"),"presentation water bounds cannot assign bait world position")
++	print("FISHING STABILIZATION PHYSICS GATE 02: %d/%d passed; failures=%s" % [checks-failures.size(),checks,failures])
++	quit(0 if failures.is_empty() else 1)

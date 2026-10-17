@@ -46,12 +46,33 @@ var _authored_depth_rest := Vector2.ZERO
 var _layout_size := Vector2.ZERO
 var _slide_progress := 0.0
 @export_category("Responsive Fishing Composition")
-## Character-to-bar clearance, expressed in power-bar heights. Independent
-## of shell/breakpoint and animation-frame padding or rod pose.
+## The gauges are screen-space HUD elements. Tune their *shared* resting
+## position in the Inspector; camera/lure/player motion never changes it.
+## Default is slightly right/up from the previous pass; change this property
+## on the PowerMeter node to adjust without editing any script.
+@export var hud_group_offset_pixels: Vector2 = Vector2(40.0, -12.0)
+## Edge clearance when a narrow gameplay viewport cannot show the authored
+## group at its normal resting position.
+@export_range(0.0, 32.0, 1.0) var hud_edge_padding_pixels: float = 8.0
+## Legacy presentation diagnostic only; NOT a layout input. Preserved for
+## existing scenes and scripts that inspect player stance geometry.
 @export_range(0.1,1.0,0.05) var character_to_bar_gap_ratio := 0.25
 var _stance_actor: Node3D
 var _stance_pixels := Vector2.ZERO
-var _last_stance_right := -INF
+var _last_applied_group_offset := Vector2(INF, INF)
+var _wide_inset_group_shift: float = 0.0
+var _last_group_shift: float = INF
+var _authored_character_rest: Vector2 = Vector2.ZERO
+@export_category("Character Inset Group")
+## Legacy Inspector fields retained for scene compatibility. The group must
+## NOT recenter when the character inset becomes visible: its resting X is
+## identical during aim, flight, splash, inset fishing and retrieval.
+@export_range(600, 1400, 10) var wide_inset_layout_min_width: float = 800.0
+@export_range(0.1, 20.0, 0.1) var wide_inset_layout_response: float = 8.0
+
+static func bottom_anchored_rest_y(authored_y: float, viewport_height: float, offset_y: float) -> float:
+	return viewport_height - REFERENCE_VIEWPORT.y + authored_y + offset_y
+
 
 func _ready() -> void:
 	full_scale_x = fill.scale.x
@@ -59,7 +80,9 @@ func _ready() -> void:
 	root.set_anchors_preset(Control.PRESET_TOP_LEFT,true)
 	var depth := get_node_or_null("DepthMeter") as Control
 	if depth != null: _authored_depth_rest = depth.position
-	_update_viewport_layout()
+	var inset := get_node_or_null("../CharacterView") as Control
+	if inset != null: _authored_character_rest = inset.position
+	_update_viewport_layout(0.0)
 
 	power.power_changed.connect(_on_power_changed)
 	power.started.connect(_on_power_started)
@@ -86,34 +109,62 @@ func _on_bait_distance_changed(distance_meters: float) -> void:
 	distance_value.set_text(str(whole))
 	distance_decimal.set_text(str(decimal))
 
-func _process(_delta: float) -> void:
-	_update_viewport_layout()
+func _process(delta: float) -> void:
+	_update_viewport_layout(delta)
 
-func _update_viewport_layout() -> void:
+func _update_viewport_layout(delta: float = 0.0) -> void:
 	var viewport := custom_viewport as Viewport
 	if viewport == null: viewport = get_viewport()
 	var dimensions := viewport.get_visible_rect().size
-	var stance_right := fishing_stance_right_pixels()
-	if dimensions == _layout_size and absf(stance_right-_last_stance_right)<.01: return
-	_layout_size = dimensions
-	_last_stance_right = stance_right
-	# Both gauges share a player-relative translation. The 640 reference only
-	# supplies authored artwork spacing and Y; it never anchors X to a screen edge.
+	if dimensions.x <= 0.0 or dimensions.y <= 0.0: return
 	var background := $Root/PowerBarBG as Sprite2D
-	var bar_height := background.get_rect().size.y*root.scale.y*background.scale.y
-	var wanted_x := stance_right+bar_height*character_to_bar_gap_ratio
-	var group_right := _authored_rest.x+background.get_rect().end.x*root.scale.x
-	var depth := get_node_or_null("DepthMeter")
-	if depth != null:
-		var frame := depth.get_node("Frame") as Control
-		group_right = maxf(group_right,_authored_depth_rest.x+frame.get_rect().end.x*depth.scale.x)
-	# Constrain the intact group only when space is physically unavailable.
-	var margin := bar_height*character_to_bar_gap_ratio
-	var shift_x := clampf(wanted_x-_authored_rest.x,-_authored_rest.x+margin,dimensions.x-margin-group_right)
-	_rest_position = Vector2(_authored_rest.x+shift_x,_authored_rest.y*dimensions.y/REFERENCE_VIEWPORT.y)
+	var depth := get_node_or_null("DepthMeter") as Control
+	var inset := get_node_or_null("../CharacterView") as Control
+	var frame: Control = null
+	if depth != null: frame = depth.get_node_or_null("Frame") as Control
+	var grid: Control = null
+	if inset != null: grid = inset.get_node_or_null("Grid") as Control
+
+	# G17: The power meter is stationary from K to retrieval. The old
+	# inset.visible-dependent recentring moved the power bar, character and
+	# depth meter together AFTER splashdown, exactly the reported HUD jump.
+	# Only a viewport resize or Inspector hud_group_offset_pixels may move
+	# their REST anchors; all three always use the same responsive offset.
+	var target_shift: float = 0.0
+	_wide_inset_group_shift = target_shift
+	if dimensions == _layout_size and hud_group_offset_pixels == _last_applied_group_offset and is_equal_approx(_last_group_shift, _wide_inset_group_shift):
+		return
+	_layout_size = dimensions
+	_last_applied_group_offset = hud_group_offset_pixels
+	_last_group_shift = _wide_inset_group_shift
+	var rest: Vector2 = _authored_rest + hud_group_offset_pixels + Vector2(_wide_inset_group_shift, 0.0)
+	var group_right_edge: float = rest.x + background.get_rect().end.x * root.scale.x
+	if frame != null:
+		group_right_edge = maxf(group_right_edge, _authored_depth_rest.x + hud_group_offset_pixels.x + _wide_inset_group_shift + frame.get_rect().end.x * depth.scale.x)
+	var shift_x: float = 0.0
+	if group_right_edge + hud_edge_padding_pixels > dimensions.x:
+		shift_x = maxf(-rest.x + hud_edge_padding_pixels, dimensions.x - hud_edge_padding_pixels - group_right_edge)
+	var effective_x: float = hud_group_offset_pixels.x + _wide_inset_group_shift + shift_x
+	# Bottom-anchor the complete fishing HUD in *logical viewport pixels*.
+	# Multiplying by viewport height made the gauges creep vertically whenever
+	# a floating desktop window became taller/shorter. Preserve the approved
+	# 480px authored offset from the bottom instead of scaling the offset.
+	_rest_position = Vector2(_authored_rest.x + effective_x,
+		bottom_anchored_rest_y(_authored_rest.y, dimensions.y, hud_group_offset_pixels.y))
 	_set_slide_progress(_slide_progress)
-	if depth != null and depth.has_method("set_layout_rest"):
-		depth.set_layout_rest(Vector2(_authored_depth_rest.x+shift_x,_authored_depth_rest.y*dimensions.y/REFERENCE_VIEWPORT.y),dimensions)
+
+	# Compute the rendered bottom of the BAR artwork at its *rest* (not while
+	# sliding in/out), then align the real depth-frame and inset-grid bottoms.
+	var bar_box: Rect2 = background.get_transform() * background.get_rect()
+	var bar_bottom: float = _rest_position.y + bar_box.end.y * root.scale.y
+	if depth != null and frame != null and depth.has_method("set_layout_rest"):
+		var frame_box: Rect2 = frame.get_transform() * Rect2(Vector2.ZERO, frame.size)
+		var depth_rest_y: float = bar_bottom - frame_box.end.y * depth.scale.y
+		depth.set_layout_rest(Vector2(_authored_depth_rest.x + effective_x, depth_rest_y), dimensions)
+	if inset != null and grid != null and inset.has_method("set_layout_rest"):
+		var inset_box: Rect2 = grid.get_transform() * Rect2(Vector2.ZERO, grid.size)
+		var inset_rest_y: float = bar_bottom - inset_box.end.y
+		inset.set_layout_rest(Vector2(_authored_character_rest.x + effective_x, inset_rest_y))
 
 func fishing_stance_right_pixels() -> float:
 	if not is_instance_valid(caster) or not is_instance_valid(caster.reel_target): return _authored_rest.x

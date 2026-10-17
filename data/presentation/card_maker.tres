@@ -20,3 +20,5 @@ directional_aliases = {
 }
 shadow_family_resource = ExtResource("shared_shadow_family")
 shadow_scale_multiplier = 0.9
+shadow_offset_x = -0.065
+shadow_offset_z = -0.06

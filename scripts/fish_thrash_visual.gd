@@ -11,6 +11,10 @@ class_name FishingThrashVisual
 @export var encounter: Node
 @export var fishing_line_view: Node3D
 @export var caster: Node
+@export_category("Presentation")
+## Disabled until each hooked species has an authored breach visual.
+## Does not affect fight/thrash signals or the separate water splashes.
+@export var enable_generic_fish_jump: bool = false
 @export_range(0.75, 2.5, 0.05) var minimum_scale: float = 1.45
 @export_range(0.75, 2.5, 0.05) var maximum_scale: float = 1.65
 @export_range(8.0, 64.0, 1.0) var jump_height_pixels: float = 30.0
@@ -85,6 +89,8 @@ func _on_fish_aerial_started(snapshot: Dictionary) -> void:
 
 
 func _play_surface_jump(intensity: float) -> void:
+	if not enable_generic_fish_jump:
+		return
 	if animated_sprite == null or animated_sprite.sprite_frames == null:
 		return
 

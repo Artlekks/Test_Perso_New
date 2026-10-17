@@ -28,7 +28,7 @@ func capture(label: String) -> void:
 		var power: Node = fishing.power_meter_view
 		var bg: Sprite2D = power.get_node("Root/PowerBarBG")
 		var bounds: Rect2 = bg.get_global_transform_with_canvas()*bg.get_rect()
-		check(absf(bounds.position.x-power.fishing_stance_right_pixels()-bounds.size.y*power.character_to_bar_gap_ratio)<.01,"same player-relative HUD ratio "+label)
+		check(absf(bounds.position.x-power._rest_position.x)<.01,"power gauge remains screen-anchored "+label)
 		check(absf(fishing.depth_meter_view.rest_position.x-power._rest_position.x-357)<.01,"approved gauge spacing "+label)
 		check(power.root.scale == Vector2(.35,.35) and fishing.depth_meter_view.scale == Vector2(.36,.36),"HUD artwork scale unchanged "+label)
 	check(not host.shell.utility.Inventory.visible and not host.shell.utility.Cards.visible,"menu remains J entry "+label)

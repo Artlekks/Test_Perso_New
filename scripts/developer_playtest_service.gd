@@ -68,14 +68,30 @@ func _ready() -> void:
 	layer.add_child(indicator)
 
 func can_mutate_test_save() -> bool:
-	# Explicit allowlist, rather than assuming all custom userdata is disposable.
+	# F5 is its own persistent developer namespace. Existing mobile/harness
+	# authorization remains required for mobile; ordinary saves stay read-only.
+	if not enabled or not OS.is_debug_build():
+		return false
+	if not bool(ProjectSettings.get_setting("application/config/use_custom_user_dir", false)):
+		return false
 	var user_dir_name := str(ProjectSettings.get_setting("application/config/custom_user_dir_name", ""))
-	var known_test_name := user_dir_name == "FishingGame-MobilePortraitPlaytest" or user_dir_name.begins_with("CodexDeveloperPlaytestQA-")
-	return enabled and _isolated_mobile_save_authorized and ProjectSettings.get_setting("application/config/use_custom_user_dir", false) and known_test_name and (OS.get_name() == "Web" or OS.get_user_data_dir().get_file() == user_dir_name)
+	var project_name := str(ProjectSettings.get_setting("application/config/name", ""))
+	var dedicated_f5 := (
+		user_dir_name == "FishingGame_DEV_F5"
+		and project_name == "FishingGame_DEV_F5"
+	)
+	var authorized_mobile := (
+		_isolated_mobile_save_authorized
+		and (user_dir_name == "FishingGame-MobilePortraitPlaytest"
+		or user_dir_name.begins_with("CodexDeveloperPlaytestQA-"))
+	)
+	if not dedicated_f5 and not authorized_mobile:
+		return false
+	return OS.get_name() == "Web" or OS.get_user_data_dir().get_file() == user_dir_name
 
 func grant_loadout(kind: String) -> Dictionary:
 	if not can_mutate_test_save():
-		return {"success": false, "reason": "Blocked: loadouts require isolated MobilePortraitPlaytest save + DEV"}
+		return {"success": false, "reason": "Blocked: loadouts require authorized isolated F5/mobile save + DEV"}
 	var active_session = self.session if self.session != null else get_parent()
 	match kind:
 		"fishing":

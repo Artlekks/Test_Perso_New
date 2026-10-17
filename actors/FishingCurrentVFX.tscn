@@ -9,7 +9,7 @@ current_tint = Color(0.61, 0.84, 0.95, 1)
 reference_min_turbulence = 0.5
 reference_max_turbulence = 1.5
 playback_speed = 0.3
-water_surface_opacity = 0.85
+water_surface_opacity = 1.0
 sea_coverage = 0.8
 prioritize_shoreline = true
 

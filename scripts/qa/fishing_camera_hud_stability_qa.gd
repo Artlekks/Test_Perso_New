@@ -95,14 +95,25 @@ func run() -> void:
 		root.size = dimensions; await settle(); host._layout(); await settle()
 		var size := Vector2(host.gameplay_viewport.size)
 		var power: Node = fishing.power_meter_view
-		check(is_instance_valid(power._stance_actor),"HUD resolved actor root above reel endpoint; no fallback")
+		check(power._layout_size == size,"HUD measures actual gameplay viewport")
 		var depth: Node = fishing.depth_meter_view
 		var power_rect := visual_rect(power.get_node("Root/PowerBarBG"))
 		var depth_rect := visual_rect(depth.get_node("Frame"))
 		check(Rect2(Vector2.ZERO,size).encloses(power_rect) and Rect2(Vector2.ZERO,size).encloses(depth_rect),"HUD entirely inside actual world viewport")
-		check(absf(power_rect.position.x-power.fishing_stance_right_pixels()-power_rect.size.y*power.character_to_bar_gap_ratio)<.01,"HUD follows stable player stance with the same bar-height ratio")
+		check(absf(power_rect.position.x-power._rest_position.x)<.01,"power gauge fixed to native HUD resting position")
 		check(absf(depth.rest_position.x-power._rest_position.x-357.0)<.0001,"approved gauge gap and artwork scale preserved")
 		check(power.root.scale == Vector2(.35,.35) and depth.scale == Vector2(.36,.36),"no independent texture stretch")
+		var x_before := Vector2(power._rest_position.x, depth.rest_position.x)
+		var original_h_offset: float = camera.h_offset
+		camera.h_offset = original_h_offset + 0.45
+		# Force a fresh layout calculation rather than passing only because
+		# the cache sees an unchanged viewport size.
+		power._layout_size = Vector2.ZERO
+		power._update_viewport_layout()
+		check(Vector2(power._rest_position.x, depth.rest_position.x) == x_before,
+			"camera projection changes cannot shift power or depth gauge")
+		camera.h_offset = original_h_offset
+		power._update_viewport_layout()
 		var metrics := pose_metrics()
 		var physical_start: Vector3 = bait.global_position
 		bait.global_position = camera.project_position(Vector2(size.x*.94,160),8)

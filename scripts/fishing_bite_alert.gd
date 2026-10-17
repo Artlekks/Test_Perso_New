@@ -1,7 +1,6 @@
 extends CanvasLayer
-## Original Exclamation.png bite-window animation, projected above Ryu's actual
-## AnimatedSprite3D into the *same gameplay viewport* as the fishing HUD.
-## A separate world-space sprite was not reliable during fishing camera/docking.
+## The bite-window signal belongs above Ryu's HEAD (not at the splash).
+## When Ryu is offscreen the same cue follows the sliding CharacterView head.
 ## No new animation data or replacement artwork is generated.
 
 const EXCLAMATION_SHEET: Texture2D = preload("res://assets/ui/Exclamation.png")
@@ -11,24 +10,21 @@ const FRAME_HEIGHT: int = 33
 
 @export var alert_fps: float = 11.0
 @export var alert_scale: float = 2.0
-@export var screen_offset: Vector2 = Vector2(-10.0, 10.0)
-@export var head_height_cap_px: float = 68.0
-@export var facing_shift_pixels: float = 7.0
+@export var screen_offset: Vector2 = Vector2(0.0, -8.0)
 
 var _player: Node3D = null
+var _inset: Control = null
+var _player_billboard: AnimatedSprite3D = null
 var _camera: Camera3D = null
-var _player_sprite: AnimatedSprite3D = null
 var _alert_sprite: AnimatedSprite2D = null
 var _active: bool = false
 
-func set_follow_targets(player: Node3D, camera: Camera3D) -> void:
-	_player = player
+func set_follow_targets(player_actor: Node3D, camera: Camera3D, inset: Control = null) -> void:
+	_player = player_actor
 	_camera = camera
-	_player_sprite = null
+	_inset = inset
 	if is_instance_valid(_player):
-		_player_sprite = _player.get_node_or_null(
-			"GroundPresentation/VisualAnchor/AnimatedSprite3D"
-		) as AnimatedSprite3D
+		_player_billboard = _player.get_node_or_null("GroundPresentation/VisualAnchor/AnimatedSprite3D") as AnimatedSprite3D
 
 func _ready() -> void:
 	layer = 40
@@ -87,58 +83,49 @@ func _process(_delta: float) -> void:
 		_update_screen_position()
 
 func _update_screen_position() -> void:
-	if not is_instance_valid(_player):
-		if is_instance_valid(_alert_sprite):
-			_alert_sprite.visible = false
-		return
+	if not is_instance_valid(_alert_sprite) or not is_instance_valid(_player): return
 	if not is_instance_valid(_camera) or not _camera.is_current():
 		_camera = _player.get_viewport().get_camera_3d()
-	if not is_instance_valid(_camera) or not is_instance_valid(_alert_sprite):
-		return
-
-	if not is_instance_valid(_player_sprite):
-		_player_sprite = _player.get_node_or_null(
-			"GroundPresentation/VisualAnchor/AnimatedSprite3D"
-		) as AnimatedSprite3D
-
-	var head_position: Vector3 = _player.global_position + Vector3.UP * 0.85
-	if is_instance_valid(_player_sprite) and _player_sprite.sprite_frames != null:
-		var frames: SpriteFrames = _player_sprite.sprite_frames
-		var pose: StringName = _player_sprite.animation
-		if frames.has_animation(pose):
-			var index: int = clampi(_player_sprite.frame, 0, frames.get_frame_count(pose) - 1)
-			var texture: Texture2D = frames.get_frame_texture(pose, index)
-			if texture != null:
-				# GroundPresentation puts the sprite's feet at the player's
-				# ground anchor by updating sprite.offset on frame changes.
-				# The upper edge is (half height + authored offset) pixels up.
-				# Cap height to Ryu's head: the fishing frame also contains
-				# a raised ROD extending above his head.
-				var pixels_to_top: float = minf(
-					texture.get_height() * 0.5 + _player_sprite.offset.y,
-					head_height_cap_px
-				)
-				var world_up: float = (
-					pixels_to_top * _player_sprite.pixel_size
-					* _player_sprite.global_basis.get_scale().y
-				)
-				head_position = (
-					_player_sprite.global_position + _camera.global_basis.y * world_up
-				)
-
-	if _camera.is_position_behind(head_position):
+	if not is_instance_valid(_camera):
 		_alert_sprite.visible = false
 		return
-
-	# A modest shift toward the player's current facing. The camera projection
-	# is updated each frame, so changes of heading, camera yaw/pitch, docking,
-	# and resolution cannot leave this cue behind.
-	var side: float = clampf(
-		_player.global_basis.z.dot(_camera.global_basis.x), -1.0, 1.0
-	)
-	_alert_sprite.position = (
-		_camera.unproject_position(head_position)
-		+ screen_offset
-		+ Vector2(side * facing_shift_pixels, 0.0)
-	)
+	var point := Vector2.ZERO
+	if is_instance_valid(_inset) and _inset.visible:
+		# Inset Grid shows the whole body but the cue belongs over the sprite's
+		# HEAD, which travels when the inset slides in or out of the left edge.
+		var inset_actor := _inset.get_node_or_null("Character") as AnimatedSprite2D
+		if inset_actor == null:
+			_alert_sprite.visible = false
+			return
+		# AnimatedSprite2D is not Sprite2D: it does NOT implement get_rect().
+		# Sample the current animation-frame texture, including sprite offset
+		# and its centered flag, to anchor the cue to the visible head.
+		var frames: SpriteFrames = inset_actor.sprite_frames
+		if frames == null or not frames.has_animation(inset_actor.animation):
+			_alert_sprite.visible = false
+			return
+		var frame_art: Texture2D = frames.get_frame_texture(inset_actor.animation, inset_actor.frame)
+		if frame_art == null:
+			_alert_sprite.visible = false
+			return
+		var top_y: float = inset_actor.offset.y
+		if inset_actor.centered:
+			top_y -= frame_art.get_height() * 0.5
+		point = inset_actor.get_global_transform_with_canvas() * Vector2(inset_actor.offset.x, top_y)
+	else:
+		if not is_instance_valid(_player_billboard):
+			_alert_sprite.visible = false
+			return
+		var head_world := _player_billboard.global_position
+		var frames := _player_billboard.sprite_frames
+		if frames != null and frames.has_animation(_player_billboard.animation):
+			var texture := frames.get_frame_texture(_player_billboard.animation, _player_billboard.frame)
+			if texture != null:
+				var half_height: float = texture.get_height() * _player_billboard.pixel_size * 0.46
+				head_world += _camera.global_basis.y * half_height * _player_billboard.global_basis.get_scale().y
+		if _camera.is_position_behind(head_world):
+			_alert_sprite.visible = false
+			return
+		point = _camera.unproject_position(head_world)
+	_alert_sprite.position = point.round() + screen_offset
 	_alert_sprite.visible = _active

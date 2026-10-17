@@ -79,7 +79,7 @@ var _playtest_row := 0
 var _travel_index := 0
 var _playtest_panel: VBoxContainer
 var _playtest_rows: Array[Label] = []
-var _playtest_status := "Access is transient; loadouts require isolated mobile save."
+var _playtest_status := "DEV loadouts require an isolated F5 or mobile test save."
 var _travel_submenu := false
 const PLAYTEST_ROW_COUNT := 7
 
@@ -1120,3 +1120,30 @@ func _row_text(row: int, label: String, value: String) -> String:
 		cursor = "> "
 
 	return "%s%-8s < %s >" % [cursor, label, value]
+
+
+func fit_desktop_overlay(window_size: Vector2) -> void:
+	# The CanvasLayer renders in the native desktop viewport. Never use the
+	# 640x480/960x480 world surface or the J-menu surface for QA panels.
+	if root == null:
+		return
+	var panel := root.get_node_or_null("Panel") as Control
+	if panel == null:
+		return
+	var canvas := Vector2(maxf(1.0, window_size.x), maxf(1.0, window_size.y))
+	root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	root.position = Vector2.ZERO
+	root.size = canvas
+	root.scale = Vector2.ONE
+	# The companion toolbar occupies the top strip of the desktop window.
+	var safe_top := 32.0
+	var panel_size := Vector2(620.0, 580.0)
+	var available := Vector2(maxf(1.0, canvas.x - 24.0), maxf(1.0, canvas.y - safe_top - 24.0))
+	var zoom := minf(1.7, minf(available.x / panel_size.x, available.y / panel_size.y))
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.size = panel_size
+	panel.scale = Vector2.ONE * zoom
+	panel.position = Vector2(
+		roundf((canvas.x - panel_size.x * zoom) * 0.5),
+		roundf(safe_top + (canvas.y - safe_top - panel_size.y * zoom) * 0.5)
+	)

@@ -4,6 +4,8 @@ signal cast_started
 
 func request_cast_confirm() -> bool:
 	# Orchestrators use the same gated command path and animation callbacks.
+	# Do not report a successful cast while AIM is waiting for camera recovery.
+	if phase == Phase.AIM and _aim_return_pending: return false
 	if phase not in [Phase.AIM,Phase.CHARGE,Phase.CURVE]: return false
 	var event := InputEventAction.new()
 	event.action = &"enter_fishing"
@@ -174,7 +176,15 @@ var cast_input_gate: FishingCastInputGate = (
 var buffered_prep_power: float = -1.0
 var cast_power_locked: bool = false
 var _quick_cast_cancel_active: bool = false
+## Returning to AIM is a two-stage operation: first recover the home camera
+## pose, then accept a NEW A/D or K press. A held reel/steer cannot spill over.
+var _aim_return_pending: bool = false
 var _fight_splash_cooldown_left: float = 0.0
+# Most recent on-water fight-splash position. The physical lure may already
+# have reached/cleared the shore by the final catch frame; do not spawn its
+# concluding splash under/behind the fisherman.
+var _last_fight_splash_contact: Vector3 = Vector3.ZERO
+var _has_fight_splash_contact: bool = false
 var _bite_alert: CanvasLayer = null
 
 
@@ -188,13 +198,16 @@ func _hide_bite_alert() -> void:
 		_bite_alert.call("hide_bite_window")
 
 func _ready() -> void:
-	# A camera-projected HUD cue follows Ryu's *actual* sprite head.
-	# Its CanvasLayer stays in the gameplay SubViewport during desktop docking.
+	# Bite exclamation belongs above Ryu (or the left CharacterView inset).
+	# Splashes/ripples are separately owned by the live water contact.
 	# The existing Encounter bite-opportunity signal is the only trigger.
 	if is_instance_valid(player):
 		_bite_alert = FishingBiteAlertScript.new() as CanvasLayer
 		_bite_alert.name = "BiteWindowExclamation"
-		_bite_alert.call("set_follow_targets", player, camera_rig.get_node_or_null("Camera3D"))
+		var inset: Control = null
+		if is_instance_valid(power_meter_view):
+			inset = power_meter_view.get_node_or_null("../CharacterView") as Control
+		_bite_alert.call("set_follow_targets", player, camera_rig.get_node_or_null("Camera3D"), inset)
 		player.add_child(_bite_alert)
 	caster.set_free_lure_region_provider(camera_rig.free_lure_viewport_region)
 	# Read-only camera exclusion geometry; presentation/mechanics are unchanged.
@@ -504,6 +517,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# A/D and K are locked until the camera has actually finished returning.
+	# I (put away), the menu, and release events keep their normal owners.
+	if phase == Phase.AIM and _aim_return_pending and (
+		event.is_action_pressed("ds_left")
+		or event.is_action_pressed("ds_right")
+		or event.is_action_pressed("enter_fishing")
+	):
+		get_viewport().set_input_as_handled()
+		return
+
 	# Re-arm only after a genuine physical release.
 	if (
 		_is_cast_input_phase()
@@ -691,6 +714,7 @@ func _on_mode_changed(new_mode) -> void:
 	set_process_unhandled_input(active)
 
 	if not active:
+		_aim_return_pending = false
 		if fishing_prepared_bait_service != null:
 			fishing_prepared_bait_service.clear_cast(&"fishing_exit")
 		if fishing_economy_menu != null and fishing_economy_menu.has_method("is_open"):
@@ -1023,6 +1047,7 @@ func _on_fishing_view_ready() -> void:
 	if phase != Phase.ENTER:
 		return
 
+	_aim_return_pending = false
 	phase = Phase.PREP
 	sprite_director.play(&"Prep_Fishing")
 
@@ -1180,6 +1205,10 @@ func _on_animation_finished(animation_name: StringName) -> void:
 	if animation_name == &"Throw" and phase == Phase.THROW:
 		if bait_landed_during_throw:
 			_enter_in_water()
+			# A fast landing occurred during the throw animation. Capture
+			# IN_WATER's camera baseline before starting the return rail.
+			if camera_rig.has_method("notify_fishing_target_landed"):
+				camera_rig.notify_fishing_target_landed()
 		else:
 			phase = Phase.BAIT_FLYING
 			sprite_director.play(&"Throw_Idle")
@@ -1254,8 +1283,22 @@ func _on_world_player_reentered_fishing_view() -> void:
 	if camera_rig == null:
 		return
 
-	if camera_rig.has_method("begin_fishing_player_return"):
+	# The screen_entered event fires for the notifier bounding box, before
+	# Ryu's body and rod are safely inside. The camera checks their actual
+	# projections each frame and performs the handoff when both are ready.
+	if camera_rig.has_method("is_real_player_handoff_ready") and bool(
+		camera_rig.is_real_player_handoff_ready()
+	) and camera_rig.has_method("begin_fishing_player_return"):
 		camera_rig.begin_fishing_player_return()
+
+
+func _surface_line_contact() -> Vector3:
+	# The fishing line already owns the exact visible air/water intersection.
+	# Splash and ripple feedback must not track a second (deep bait) point.
+	var line: Node = get_node_or_null("FishingLineView")
+	if line != null and line.has_method("has_surface_entry") and bool(line.call("has_surface_entry")):
+		return line.call("get_surface_entry_position") as Vector3
+	return caster.get_active_bait_visual_surface_position()
 
 
 func _on_bait_landed(point: Vector3) -> void:
@@ -1270,18 +1313,18 @@ func _on_bait_landed(point: Vector3) -> void:
 		false
 	)
 
-	# The camera must not infer water contact from lure depth. Tell it exactly
-	# when the cast becomes waterborne so camera ownership is deterministic on
-	# the first cast, second cast, and every cast after that.
-	if camera_rig.has_method("notify_fishing_target_landed"):
-		camera_rig.notify_fishing_target_landed()
-
+	# First capture the airborne camera pose in IN_WATER; only afterwards
+	# notify the return rail. Previously the landing notifier could reclaim
+	# the player view before the water camera saved that pose, creating an
+	# immediate visible jump right when the splash appears.
 	if phase == Phase.THROW:
 		bait_landed_during_throw = true
 		return
 
 	if phase == Phase.BAIT_FLYING:
 		_enter_in_water()
+	if camera_rig.has_method("notify_fishing_target_landed"):
+		camera_rig.notify_fishing_target_landed()
 		
 func _enter_in_water() -> void:
 	_hide_bite_alert()
@@ -1325,6 +1368,39 @@ func _cancel_water_cast_to_aim() -> void:
 	# normal appearance instead of overriding them with an instant reset.
 
 
+func _queue_aim_until_camera_home() -> void:
+	# Do not call aim.resume(): it would immediately read a held A/D axis.
+	# AIM's center is reseeded at the neutral fishing angle after recovery.
+	aim.stop()
+	_aim_return_pending = true
+
+
+func _update_aim_after_camera_return() -> void:
+	if not _aim_return_pending or phase != Phase.AIM:
+		return
+	if camera_rig.has_method("is_fishing_aim_return_complete") and not bool(
+		camera_rig.is_fishing_aim_return_complete()
+	):
+		return
+	# Releasing held A/D/K is required, so a long reel doesn't immediately
+	# swing the camera or begin charging another throw on the recovery frame.
+	if (
+		Input.is_action_pressed("ds_left")
+		or Input.is_action_pressed("ds_right")
+		or Input.is_action_pressed("enter_fishing")
+	):
+		return
+	_aim_return_pending = false
+	var forward: Vector3 = player.global_transform.basis.z
+	forward.y = 0.0
+	if forward.length_squared() <= 0.000001:
+		forward = Vector3.FORWARD
+	else:
+		forward = forward.normalized()
+	camera_rig.start_fishing_aim(forward)
+	aim.start(forward)
+
+
 func _on_bait_returned() -> void:
 	_hide_bite_alert()
 	if phase != Phase.IN_WATER and phase != Phase.FIGHT:
@@ -1360,7 +1436,7 @@ func _on_bait_returned() -> void:
 
 	phase = Phase.AIM
 	sprite_director.play(&"Fishing_Idle")
-	aim.resume()
+	_queue_aim_until_camera_home()
 	
 func _begin_catch_landing() -> void:
 	if phase != Phase.FIGHT:
@@ -1400,9 +1476,9 @@ func _begin_catch_landing() -> void:
 	camera_rig.set_fishing_camera_frozen(true)
 
 	if is_instance_valid(caster.active_bait):
-		var landing_position: Vector3 = (
-			caster.get_active_bait_visual_surface_position()
-		)
+		# The last fight splash is already a validated water-contact cue.
+		# By LANDING the bait can be physically behind the character.
+		var landing_position: Vector3 = _surface_line_contact()
 		_spawn_surface_splash(
 			landing_position,
 			catch_landing_splash_strength,
@@ -1471,6 +1547,7 @@ func _sync_fight_camera_tracking() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_aim_after_camera_return()
 	_sync_fight_camera_tracking()
 	_fight_splash_cooldown_left = maxf(
 		_fight_splash_cooldown_left - delta,
@@ -1579,6 +1656,7 @@ func _on_fish_hooked() -> void:
 	technique_detector.reset()
 	technique_view.clear()
 	phase = Phase.FIGHT
+	_has_fight_splash_contact = false
 	_sync_fight_camera_tracking()
 	fish_resisting = true
 	caster.set_fight_mode(true)
@@ -1781,6 +1859,21 @@ func _on_fish_depth_intent_changed(value: float) -> void:
 	caster.set_fish_depth_intent(value)
 
 
+func _fight_splash_contact() -> Vector3:
+	# The line's *water-entry* is not the visible lure: with depth the entry
+	# can be dozens of pixels toward Ryu, as the user's screenshot shows.
+	# A thrash sprite belongs at the bait head where the visible line ends.
+	# Freeze at its final contact after the bait is freed, not at Ryu's feet.
+	if caster.has_active_bait():
+		var contact: Vector3 = caster.get_active_bait_visual_surface_position()
+		_last_fight_splash_contact = contact
+		_has_fight_splash_contact = true
+		return contact
+	if _has_fight_splash_contact:
+		return _last_fight_splash_contact
+	return _surface_line_contact()
+
+
 func _on_fish_resistance_started_splash() -> void:
 	# The info box calls the beginning of a resistance round "thrashing about".
 	# Guarantee matching visual feedback here instead of relying only on the
@@ -1788,7 +1881,7 @@ func _on_fish_resistance_started_splash() -> void:
 	if phase != Phase.FIGHT:
 		return
 
-	var surface_position: Vector3 = caster.get_active_bait_visual_surface_position()
+	var surface_position: Vector3 = _fight_splash_contact()
 	_spawn_surface_splash(
 		surface_position,
 		maxf(fight_thrash_splash_strength * 0.95, 0.05),
@@ -1804,7 +1897,7 @@ func _on_fish_thrash_started(intensity: float) -> void:
 	# A real FishBehavior thrash should always have a visual cue. Do not let the
 	# generic splash cooldown swallow the event; the signal itself is already
 	# discrete and only fires once per actual thrash choice.
-	var surface_position: Vector3 = caster.get_active_bait_visual_surface_position()
+	var surface_position: Vector3 = _fight_splash_contact()
 	var strength := fight_thrash_splash_strength * lerpf(
 		0.70,
 		1.15,
@@ -1822,7 +1915,7 @@ func _on_fish_aerial_started(snapshot: Dictionary) -> void:
 	# V1 uses the existing surface splash language as the breach cue. The actual
 	# fish shadow remains the underwater ownership/presentation actor; a later art
 	# pass can add a dedicated above-water fish sprite without changing mechanics.
-	var surface_position: Vector3 = caster.get_active_bait_visual_surface_position()
+	var surface_position: Vector3 = _fight_splash_contact()
 	var intensity := clampf(float(snapshot.get("intensity", 0.6)), 0.0, 1.0)
 	var response := StringName(str(snapshot.get("expected_response", "none")))
 	var strength_multiplier := lerpf(0.95, 1.20, intensity)
@@ -1840,6 +1933,9 @@ func _spawn_surface_splash(
 	strength: float,
 	is_fight_splash: bool
 ) -> void:
+	if is_fight_splash and phase == Phase.FIGHT:
+		_last_fight_splash_contact = world_position
+		_has_fight_splash_contact = true
 	if FishingSurfaceSplashScene == null:
 		return
 
@@ -1858,17 +1954,11 @@ func _spawn_surface_splash(
 			is_fight_splash
 		)
 
-	# Fight splashes are a readability cue for the hooked fish, not a persistent
-	# footprint in world space. The bait can move a meaningful distance during
-	# the splash lifetime, so keep the effect visually centered on the bait head.
-	# The splash itself remains on the water plane; only its projected screen
-	# position follows the underwater bait. Landing splashes stay fixed.
-	if (
-		is_fight_splash
-		and splash.has_method("set_follow_target")
-		and is_instance_valid(caster.active_bait)
-	):
-		splash.set_follow_target(caster.active_bait)
+	# Landing remains fixed at impact. A fight splash follows the SAME authored
+	# water-contact provider as the ripple/visible bait, even if the hooked fish
+	# pulls the lure sideways during the sprite-sheet animation.
+	if is_fight_splash and phase == Phase.FIGHT and splash.has_method("set_follow_position_provider"):
+		splash.set_follow_position_provider(Callable(self,"_fight_splash_contact"))
 
 func _on_line_broken() -> void:
 	_resolve_failed_fight(FishingOutcomeServiceScript.OUTCOME_LINE_BREAK)
@@ -1959,8 +2049,10 @@ func _on_result_screen_covered() -> void:
 	if encounter.has_method("reset_cast_session"):
 		encounter.reset_cast_session()
 
+	# Camera is hidden under a FULL black frame here: restore the home
+	# fishing pose instantly rather than visibly rotating after fade-out.
+	camera_rig.restore_fishing_camera_during_fade()
 	camera_rig.set_fishing_camera_frozen(false)
-	camera_rig.return_fishing_follow_to_target(true)
 
 	power_meter_view.reset_to_aim()
 	depth_meter_view.reset_to_aim()
@@ -2009,14 +2101,14 @@ func _on_catch_view_dismissed() -> void:
 	sprite_director.play(&"Fishing_Idle")
 
 	phase = Phase.AIM
-	aim.resume()
+	_queue_aim_until_camera_home()
 	
 func _on_result_screen_revealed() -> void:
 	if phase != Phase.RESULT_TRANSITION:
 		return
 
 	phase = Phase.AIM
-	aim.resume()
+	_queue_aim_until_camera_home()
 
 func _on_power_changed(value: float) -> void:
 	if (

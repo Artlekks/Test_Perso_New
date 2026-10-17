@@ -54,7 +54,7 @@ func configure(session_services) -> void:
 
 
 func get_presets() -> Array:
-	return [
+	var presets: Array = [
 		{
 			"id": "live",
 			"name": "LIVE / Current Save",
@@ -117,6 +117,75 @@ func get_presets() -> Array:
 				"Choose a fishing-heavy, card-heavy or mixed goal and see if all feel valid.",
 				"Test deeper salvage and Rank-2 opponent progression.",
 				"Check that the game presents several goals instead of one mandatory route.",
+			]
+		),
+	]
+	# Keep the canonical six campaign QA rows unchanged in isolated runners.
+	# These additional rows appear ONLY in the named F5 developer save.
+	if _is_dedicated_f5_dev_save():
+		presets.append_array(_f5_developer_presets())
+	return presets
+
+
+func _is_dedicated_f5_dev_save() -> bool:
+	if not OS.is_debug_build():
+		return false
+	if not bool(ProjectSettings.get_setting("application/config/use_custom_user_dir", false)):
+		return false
+	return (
+		str(ProjectSettings.get_setting("application/config/name", "")) == "FishingGame_DEV_F5"
+		and str(ProjectSettings.get_setting("application/config/custom_user_dir_name", "")) == "FishingGame_DEV_F5"
+		and (OS.get_name() == "Web"
+			or OS.get_user_data_dir().get_file() == "FishingGame_DEV_F5")
+	)
+
+
+func _all_rod_ids() -> Array:
+	var ids: Array = []
+	for rod in FishingTackleCatalogResource.rods:
+		if rod != null and rod.rod_id != &"":
+			ids.append(String(rod.rod_id))
+	return ids
+
+
+func _all_lure_ids() -> Array:
+	var ids: Array = []
+	if FishingTackleCatalogResource.lure_catalog == null:
+		return ids
+	for lure in FishingTackleCatalogResource.lure_catalog.lures:
+		if lure != null and lure.lure_id != &"":
+			ids.append(String(lure.lure_id))
+	return ids
+
+
+func _f5_developer_presets() -> Array:
+	return [
+		_preset(
+			"dev_cards_only", "DEV / Cards Only", "F5 Testing",
+			"Starter 5-card deck, initial fishing equipment and no species records.",
+			"starter", 0, 100, ["wooden_rod"], ["straight"], 0,
+			[
+				"Test card collection, deck editing and an early duel.",
+				"Fishing progression remains near fresh-start state.",
+			]
+		),
+		_preset(
+			"dev_fishing_equipment", "DEV / All Fishing Tackle", "F5 Testing",
+			"Every catalog rod and lure, test wallet and fresh card progression.",
+			"fresh", 0, 10000, _all_rod_ids(), _all_lure_ids(), 20,
+			[
+				"Equip the Master's Rod and verify long-cast camera tracking.",
+				"Test lure landing, splash, bite, fight and retrieval.",
+			]
+		),
+		_preset(
+			"dev_full_loadout", "DEV / Broad Unlock", "F5 Testing",
+			"All catalog tackle + full Triple Triad collection, 18 QA species and wallet. Other world/story gates still use DEV access.",
+			"full", SPECIES_SEQUENCE.size(), 50000, _all_rod_ids(), _all_lure_ids(), 50,
+			[
+				"Verify fishing, shopping, deck building and card tournaments.",
+				"Use F10 Developer Mode for gated world travel and interactions.",
+				"This is a broad testing loadout, NOT a 100% story-completion flag.",
 			]
 		),
 	]

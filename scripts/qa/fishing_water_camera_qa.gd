@@ -3,6 +3,7 @@ extends SceneTree
 ## Run with: godot --headless --path . --script res://scripts/qa/fishing_water_camera_qa.gd
 const CameraRig = preload("res://scripts/camera_rig.gd")
 const ScreenLateral = preload("res://scripts/fishing_screen_lateral.gd")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 class SurfaceTarget extends Node3D:
 	var sea_level := 0.0
@@ -19,7 +20,11 @@ var bait: SurfaceTarget
 var camera: Camera3D
 var neutral: Transform3D
 
-func _initialize() -> void: run.call_deferred()
+func _initialize() -> void:
+	if not Isolation.verify():
+		quit(1)
+		return
+	run.call_deferred()
 
 func check(condition: bool, message: String) -> void:
 	checks += 1
@@ -40,6 +45,10 @@ func begin() -> void:
 	check(rig.fishing_camera_state == rig.FishingCameraPresentationState.ANCHORED,"authored player frame anchors when already visible")
 
 func run() -> void:
+	await process_frame
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	viewport = SubViewport.new()
 	viewport.size = Vector2i(640,480)
 	root.add_child(viewport)
@@ -103,4 +112,9 @@ func run() -> void:
 	check(camera.transform.is_equal_approx(neutral),"retrieve restores authored post-aim composition")
 	viewport.free()
 	print("FISHING WATER CAMERA QA: ",checks-failures.size(),"/",checks," failures=",failures)
+	Isolation.emit_result("fishing_water_camera_qa", checks-failures.size(), checks,
+		failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

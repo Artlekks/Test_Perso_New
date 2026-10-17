@@ -10,25 +10,18 @@ var _water_phase: int
 var _fight_phase: int
 
 func _ready() -> void:
+	# Presentation may report a safe screen band, but never directly move
+	# the physical bait. Keep the helper available for legacy QA/preview.
+	set_process(false)
 	process_priority = 100
 	var phases: Dictionary = fishing.get_script().get_script_constant_map().Phase
 	_water_phase = phases.IN_WATER
 	_fight_phase = phases.FIGHT
 
 func _process(_delta: float) -> void:
-	if not is_instance_valid(fishing):
-		return
-	var eligible: bool = fishing.phase == _water_phase or (fishing.phase == _fight_phase and fishing.encounter.lifecycle.is_hooked())
-	if not eligible or not fishing.caster.is_active_bait_in_water():
-		return
-	var camera := get_viewport().get_camera_3d()
-	var bait = fishing.caster.active_bait
-	if not is_instance_valid(camera) or not is_instance_valid(bait):
-		return
-	var top := top_safe_ratio
-	if is_instance_valid(info_view) and info_view.has_method("get_fishing_covered_bottom_ratio"):
-		top = maxf(top, info_view.get_fishing_covered_bottom_ratio() + info_margin_ratio)
-	bait.global_position = constrain_position(camera, bait.global_position, top)
+	# Intentionally does not operate on bait.global_position. The static
+	# constrain_position() geometry helper remains for older QA/visual tools.
+	pass
 
 static func constrain_position(camera: Camera3D, position: Vector3, top: float) -> Vector3:
 	if not is_instance_valid(camera) or camera.is_position_behind(position):

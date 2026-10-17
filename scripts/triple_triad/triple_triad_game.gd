@@ -1393,10 +1393,18 @@ func _accept_input() -> void:
 		viewport.set_input_as_handled()
 
 func _fit_menu_canvas() -> void:
+	# The battle, its HUD and all modals are authored on one 640x864
+	# portrait canvas. Root must NOT expand to the desktop/gameplay viewport:
+	# a FULL_RECT root shifts the surrender popup to the viewport's centre
+	# while the board itself remains centred in this authored surface.
+	var logical := Vector2(preload("res://scripts/ui/canonical_game_surface.gd").MENU_SIZE)
+	if is_instance_valid(root):
+		root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		root.position = Vector2.ZERO
+		root.size = logical
 	if custom_viewport != null:
 		transform = Transform2D.IDENTITY
 		return
 	var canvas := get_viewport().get_visible_rect().size
-	var logical := Vector2(preload("res://scripts/ui/canonical_game_surface.gd").MENU_SIZE)
 	var factor := minf(canvas.x/logical.x, canvas.y/logical.y)
-	transform = Transform2D(0,Vector2.ONE*factor,0,(canvas-logical*factor)*0.5)
+	transform = Transform2D(0, Vector2.ONE*factor, 0, (canvas-logical*factor)*0.5)

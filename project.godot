@@ -14,8 +14,10 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="FishingGame"
-run/main_scene="uid://dqj6ysvar4jsa"
+config/name="FishingGame_DEV_F5"
+run/main_scene="res://actors/desktop/DesktopCompanion.tscn"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="FishingGame_DEV_F5"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 run/main_scene.mobile_portrait="res://actors/mobile/MobilePortraitHarness.tscn"

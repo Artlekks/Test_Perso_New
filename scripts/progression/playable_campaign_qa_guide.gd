@@ -103,7 +103,12 @@ func _apply_selected() -> void:
 
 func _refresh() -> void:
 	var stage_lines := PackedStringArray()
-	for row_index in range(_presets.size()):
+	# The authored parchment has room for six lines, not nine. Slide the
+	# window of visible rows rather than overlapping the objective on the right.
+	var max_visible := 6
+	var first := clampi(_index - 2, 0, maxi(0, _presets.size() - max_visible))
+	var last := mini(first + max_visible, _presets.size())
+	for row_index in range(first, last):
 		var row: Dictionary = _presets[row_index]
 		stage_lines.append(
 			"%s %s" % [
@@ -246,3 +251,30 @@ func _is_key(event: InputEvent, key: Key) -> bool:
 		return false
 	var key_event := event as InputEventKey
 	return key_event.keycode == key or key_event.physical_keycode == key
+
+
+func fit_desktop_overlay(window_size: Vector2) -> void:
+	# The CanvasLayer renders in the native desktop viewport. Never use the
+	# 640x480/960x480 world surface or the J-menu surface for QA panels.
+	if root == null:
+		return
+	var panel := root.get_node_or_null("Panel") as Control
+	if panel == null:
+		return
+	var canvas := Vector2(maxf(1.0, window_size.x), maxf(1.0, window_size.y))
+	root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	root.position = Vector2.ZERO
+	root.size = canvas
+	root.scale = Vector2.ONE
+	# The companion toolbar occupies the top strip of the desktop window.
+	var safe_top := 32.0
+	var panel_size := Vector2(620.0, 450.0)
+	var available := Vector2(maxf(1.0, canvas.x - 24.0), maxf(1.0, canvas.y - safe_top - 24.0))
+	var zoom := minf(1.8, minf(available.x / panel_size.x, available.y / panel_size.y))
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.size = panel_size
+	panel.scale = Vector2.ONE * zoom
+	panel.position = Vector2(
+		roundf((canvas.x - panel_size.x * zoom) * 0.5),
+		roundf(safe_top + (canvas.y - safe_top - panel_size.y * zoom) * 0.5)
+	)

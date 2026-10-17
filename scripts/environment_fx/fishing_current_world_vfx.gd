@@ -41,10 +41,11 @@ extends Node3D
 @export_range(0.2, 1.5, 0.05) var playback_speed: float = 0.30
 
 @export_category("Underwater Appearance")
-@export var submerge_lines: bool = true
+@export var submerge_lines: bool = false
 @export_range(0.005, 0.15, 0.005) var below_water_depth: float = 0.035
 @export_range(0.005, 0.2, 0.005) var above_water_offset: float = 0.055
-@export_range(0.60, 1.0, 0.01) var water_surface_opacity: float = 0.85
+## Legacy scene value retained; the sea shader now draws in the opaque pass.
+@export_range(0.60, 1.0, 0.01) var water_surface_opacity: float = 1.0
 
 const SAMPLE_PERIOD: float = 1.0 / 12.0
 

@@ -1,8 +1,7 @@
 [gd_resource type="Resource" script_class="WorldActorPresentationProfile" format=3 uid="uid://dbcvcvriitrpo"]
 
 [ext_resource type="Script" uid="uid://dybc3m2t1j4c2" path="res://scripts/world/world_actor_presentation_profile.gd" id="1"]
-
-[ext_resource type="Resource" path="res://data/presentation/shadows/player.tres" id="shared_shadow_family"]
+[ext_resource type="Resource" uid="uid://d2jtg70ykt21m" path="res://data/presentation/shadows/player.tres" id="shared_shadow_family"]
 
 [resource]
 script = ExtResource("1")
@@ -11,3 +10,5 @@ shadow_width = 0.18
 shadow_depth = 0.18
 shadow_family = "player"
 shadow_family_resource = ExtResource("shared_shadow_family")
+shadow_offset_x = -0.015000000000000013
+shadow_offset_z = -0.03999999999999998

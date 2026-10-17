@@ -167,7 +167,13 @@ func load_gameplay_scene(path: String) -> Error:
 	return OK
 func _replace_game(packed: PackedScene) -> void:
 	passive.cancel("travel",true)
-	if is_instance_valid(game): game.free()
+	if is_instance_valid(game):
+		# Do not change CanvasLayer.custom_viewport while the old scene is in
+		# the tree. Godot connects child_order_changed on ENTER_TREE and
+		# disconnects it on EXIT_TREE; changing the viewport in between leaves
+		# the old connection behind and produces disconnect errors on free.
+		# The layers already own their desired viewports: free them as-is.
+		game.free()
 	game = packed.instantiate()
 	preload("res://scripts/ui/canonical_game_surface.gd").prepare(game)
 	gameplay_viewport.add_child(game)
@@ -176,16 +182,44 @@ func _replace_game(packed: PackedScene) -> void:
 	desktop_hud.call("bind_game", game)
 	_bind_session_layers()
 	_bind_menu_layers()
+	_fit_desktop_debug_overlays()
 	# Match the projection to the initial world canvas once the game exists.
 	_layout()
 func _node_added(node: Node) -> void:
 	if node is CanvasLayer:
 		_bind_session_layers.call_deferred()
 		_bind_menu_layers.call_deferred()
+		_fit_desktop_debug_overlays.call_deferred()
+func _bind_canvas_layer_to_viewport(layer: CanvasLayer, target: Viewport) -> void:
+	# set_custom_viewport() changes the active viewport immediately, but does
+	# not reconnect the parent's child_order_changed callback. Assign only
+	# while the layer is outside SceneTree; ENTER_TREE then binds correctly.
+	if not is_instance_valid(layer) or not is_instance_valid(target): return
+	if layer.custom_viewport == target: return
+	var parent := layer.get_parent()
+	if parent == null or not layer.is_inside_tree():
+		layer.custom_viewport = target
+		return
+	var old_index := layer.get_index()
+	var old_owner := layer.owner
+	parent.remove_child(layer)
+	layer.custom_viewport = target
+	parent.add_child(layer)
+	parent.move_child(layer, old_index)
+	layer.owner = old_owner
 func _bind_session_layers() -> void:
 	var session := get_node_or_null("/root/FishingSessionServices")
 	if session == null: return
 	for layer in session.find_children("*","CanvasLayer",true,false):
+		# The Shift+F10 guide is owned by the persistent session's QA
+		# controller. Never reparent it: replacing a desktop gameplay scene
+		# would orphan or destroy the controller's modal. Render it into the
+		# desktop window without changing its owner in the scene tree.
+		if layer.name == "PlayableCampaignQAGuide":
+			# Session-owned guide must stay in the session tree, but draw over
+			# the real desktop window, not the rescaled gameplay SubViewport.
+			_bind_canvas_layer_to_viewport(layer, get_viewport())
+			continue
 		if not _bound_layers.has(layer.get_instance_id()): _bound_layers[layer.get_instance_id()] = {"node":weakref(layer),"parent":weakref(layer.get_parent())}
 		if layer.get_parent() != gameplay_viewport: layer.reparent(gameplay_viewport)
 func _bind_menu_layers() -> void:
@@ -193,6 +227,15 @@ func _bind_menu_layers() -> void:
 	var fishing_menu := _fishing_menu()
 	if fishing_menu != null: fishing_menu.set_meta("desktop_companion_mode",true)
 	for layer in gameplay_viewport.find_children("*","CanvasLayer",true,false):
+		# Shift+F10 is a gameplay-view modal, NOT an authored J-menu.
+		# Sending it to the 640x864 menu SubViewport clips/offsets it and
+		# separates its display from the viewport that owns its input.
+		if layer.name in ["PlayableCampaignQAGuide", "FishingDebugMenu"]:
+			# QA menus are window-level modals; the J-menu alone is rendered
+			# through MenuViewport. Otherwise F10 clips in 640x864 and
+			# Shift+F10 vanishes on some desktop window sizes.
+			_bind_canvas_layer_to_viewport(layer, get_viewport())
+			continue
 		if layer is DialogueView or layer.name == "FishingCatchView": continue
 		if not layer.has_method("is_open"): continue
 		if layer.custom_viewport == menu_viewport: continue
@@ -205,6 +248,25 @@ func _bind_menu_layers() -> void:
 		parent.move_child(layer,index)
 		layer.owner = saved_owner
 		if layer.has_method("_fit_menu_canvas"): layer._fit_menu_canvas()
+
+func _fit_desktop_debug_overlays() -> void:
+	# Both debug menus own authored ~620 px panels. Keep their CanvasLayers
+	# on the actual desktop window and fit only their panels; the gameplay
+	# and J-menu SubViewports retain their existing independent sizes.
+	var canvas_size := Vector2(get_window().size)
+	if is_instance_valid(game):
+		for layer in gameplay_viewport.find_children("*", "CanvasLayer", true, false):
+			if layer.name == "FishingDebugMenu":
+				_bind_canvas_layer_to_viewport(layer, get_viewport())
+				if layer.has_method("fit_desktop_overlay"):
+					layer.call("fit_desktop_overlay", canvas_size)
+	var session := get_node_or_null("/root/FishingSessionServices")
+	if session != null:
+		for layer in session.find_children("*", "CanvasLayer", true, false):
+			if layer.name == "PlayableCampaignQAGuide":
+				_bind_canvas_layer_to_viewport(layer, get_viewport())
+				if layer.has_method("fit_desktop_overlay"):
+					layer.call("fit_desktop_overlay", canvas_size)
 
 func cycle_mode() -> void: set_mode(Mode.PASSIVE if mode == Mode.ACTIVE else Mode.ACTIVE)
 func set_mode(next: int) -> void:
@@ -434,6 +496,7 @@ func _layout() -> void:
 	if not collapsed and is_instance_valid(passive.timer_entry):
 		passive.timer_entry.position = geometry.world.position + Vector2(geometry.world.size.x*.35,12)
 		passive.timer_entry.size = Vector2(geometry.world.size.x*.3,44)
+	_fit_desktop_debug_overlays()
 	divider.visible = docked and not collapsed
 	divider.position = Vector2(0 if effective_window_state() == WindowState.DOCK_RIGHT else get_window().size.x-8,geometry.toolbar.size.y)
 	divider.size = Vector2(8,maxi(1,get_window().size.y-geometry.toolbar.size.y))
@@ -457,6 +520,11 @@ func _sync_extended_camera_projection(resolution: Vector2i) -> void:
 			target_fov = rad_to_deg(2.0*atan(tan(half_angle)*float(resolution.y)/480.0))
 		if not is_equal_approx(camera.fov, target_fov):
 			camera.fov = target_fov
+		# World rendering can grow vertically, but home-camera composition is
+		# bottom-anchored rather than centered inside the extra world height.
+		# Only the active rig camera may own this; reference/pose cameras don't.
+		if camera.current and camera.get_parent().has_method("set_desktop_vertical_composition_height"):
+			camera.get_parent().call("set_desktop_vertical_composition_height", resolution.y)
 
 func _input(event: InputEvent) -> void:
 	if menu_image != null and menu_image.is_visible_in_tree():

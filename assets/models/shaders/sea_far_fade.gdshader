@@ -1,5 +1,6 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled;
+// Kept for older material instances; the surface is rendered in the opaque pass.
 uniform float current_water_opacity : hint_range(0.0, 1.0, 0.01) = 1.0;
 
 // Static sea colour/texture from the beach GLB.
@@ -90,5 +91,4 @@ void fragment() {
     final_black = pow(final_black, max(final_black_band_power, 0.001));
 
     ALBEDO = mix(softened, vec3(0.0), final_black);
-    ALPHA = current_water_opacity;
 }

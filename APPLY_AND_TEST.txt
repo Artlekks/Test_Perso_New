@@ -1,0 +1,11 @@
+# Desktop debug menu sizing + Triple Triad modal fit (targeted pass)
+
+Files are relative to FishingGame_QA_Work. Copy with folder structure preserved.
+
+- F10 and Shift+F10 panels: allow zoom above 1 in large desktop windows, constrained by available width/height and capped at 1.7 / 1.8; remain centered with toolbar clearance.
+- Triple Triad: pin the root to the authored MENU_SIZE (640x864) before applying the CanvasLayer layout transform. This makes the surrender popup centre relative to the card board, rather than a wider gameplay viewport.
+- Desktop preset reload: release external CanvasLayer viewport bindings before deleting the old gameplay scene. Intended to prevent stale debug-layer canvas signal errors; runtime confirmation still needed.
+
+Preserve current gameplay, QA profile semantics, save isolation, and camera/shadows.
+
+Important: Static/source checks only; Godot runtime is unavailable here. Test F5, F10, Shift+F10 and Triple Triad surrender in normal/maximized modes. Verify Godot debugger after applying/refreshing QA preset. No auto-commit.

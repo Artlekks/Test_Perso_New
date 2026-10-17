@@ -21,7 +21,7 @@ func _exit_tree() -> void:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process_unhandled_input(true)
+	set_process_input(true)
 
 
 func configure(session_services, progression_director) -> void:
@@ -31,7 +31,7 @@ func configure(session_services, progression_director) -> void:
 	_build_guide()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not OS.is_debug_build() or _guide == null:
 		return
 	if _is_shift_f10(event):
@@ -39,6 +39,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_accept_input()
 		return
 	if bool(_guide.call("is_open")):
+		# Capture input only WHILE the guide is open. A persistent controller
+		# must not capture gameplay after its hosted scene has reloaded.
 		var close_requested: bool = bool(_guide.call("handle_input", event))
 		if close_requested:
 			_close_guide()
@@ -93,11 +95,22 @@ func _on_preset_requested(preset_id: StringName) -> void:
 			"Preset FAILED: %s" % str(result.get("reason", "unknown"))
 		)
 		return
-	_guide.call("set_status", "Preset applied. Reloading scene...")
+	# Close the modal BEFORE replacing gameplay. Once hidden, the persistent
+	# controller MUST let normal input through on the next frame.
+	# Let the desktop wrapper
+	# keep its shell and viewport alive. Reloading the whole SceneTree from
+	# this child is not equivalent to reloading its hosted fishing scene.
+	_close_guide()
+	var host: Node = get_tree().current_scene
+	if is_instance_valid(host) and host.has_method("load_gameplay_scene"):
+		var scene_path: String = str(host.get("gameplay_scene"))
+		if not scene_path.is_empty():
+			host.call_deferred("load_gameplay_scene", scene_path)
+			return
+	# Non-desktop QA scenes retain their original reload behavior.
 	var tree: SceneTree = get_tree()
 	if tree != null:
-		tree.paused = false
-		tree.reload_current_scene()
+		tree.call_deferred("reload_current_scene")
 
 
 func _current_snapshot() -> Dictionary:

@@ -1,6 +1,7 @@
 extends SceneTree
 ## FRESH4 VFX regression. Uses the INSTALLED Nolka scene and a wide fake sea.
 const WorldVfx = preload("res://actors/FishingCurrentVFX.tscn")
+const Isolation = preload("res://scripts/qa/qa_save_isolation.gd")
 
 var checks: int = 0
 var failures: Array[String] = []
@@ -21,6 +22,9 @@ class FakeFishing:
 	var fishing_current_service: FishingCurrentService = null
 
 func _initialize() -> void:
+	if not Isolation.verify():
+		quit(1)
+		return
 	call_deferred("run")
 
 func check(ok: bool, message: String) -> void:
@@ -30,6 +34,10 @@ func check(ok: bool, message: String) -> void:
 		push_error("NOLKA CURRENT VFX QA: " + message)
 
 func run() -> void:
+	await process_frame
+	if not Isolation.verify_root_clock(self):
+		quit(1)
+		return
 	var root_scene: Node3D = Node3D.new()
 	root_scene.name = "FishingTestScene_V2"
 	root.add_child(root_scene)
@@ -125,15 +133,14 @@ func run() -> void:
 	var volume: Vector3 = nolka.get("area")
 	check(maxf(volume.x, volume.z) > 10.0, "visual coverage uses whole sea rather than small fishing bounds")
 	check(volume.y < 0.08, "emission volume is shallow")
-	check(nolka.global_position.y < 0.0, "effect starts below water surface")
+	check(nolka.global_position.y > 0.0, "current lines remain visible above opaque water")
 	var flow: Vector2 = service.sample_spot_at_uv(spot, Vector2(0.5, 0.5))
 	var flow3: Vector3 = Vector3(flow.x, 0.0, flow.y).normalized()
 	check(nolka.global_basis.z.dot(flow3) > 0.99, "Nolka +Z particle velocity matches live current heading")
-	check(sea.material_override != original_material, "instance-only water opacity override")
-	var transparent: ShaderMaterial = sea.material_override as ShaderMaterial
-	check(transparent != null, "sea retains shader material")
-	if transparent != null:
-		check(absf(float(transparent.get_shader_parameter("current_water_opacity")) - 0.85) < 0.001, "sea opacity remains configurable")
+	check(sea.material_override == original_material, "current leaves opaque sea material intact")
+	var sea_shader: ShaderMaterial = sea.material_override as ShaderMaterial
+	check(sea_shader != null and not sea_shader.shader.code.contains("ALPHA ="),
+		"sea shader renders without a transparency output")
 	vfx.set("display_current", false)
 	vfx.call("_update_flow")
 	check(not bool(vfx.call("is_current_display_running")), "visual off switch disables emission")
@@ -143,4 +150,9 @@ func run() -> void:
 
 func _finish() -> void:
 	print("NOLKA FRESH4 VFX QA: %d checks, %d failed" % [checks, failures.size()])
+	Isolation.emit_result("nolka_current_world_v2_qa", checks - failures.size(), checks,
+		failures.size(), Node.get_orphan_node_ids().size())
 	quit(0 if failures.is_empty() else 1)
+
+func _finalize() -> void:
+	print("QA_PROCESS_FINALIZED")

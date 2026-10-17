@@ -37,6 +37,7 @@ var separator_tolerance: float = 0.18
 
 var _fight_variant: bool = false
 var _follow_target: Node3D = null
+var _follow_position_provider: Callable = Callable()
 var _follow_surface_y: float = 0.0
 var _sprite: AnimatedSprite3D = null
 
@@ -57,6 +58,7 @@ func configure(
 ) -> void:
 	_fight_variant = fight_variant
 	_follow_target = null
+	_follow_position_provider = Callable()
 	rotation = Vector3.ZERO
 	rotation.y = randf_range(-PI, PI)
 	global_position = world_position + Vector3.UP * surface_offset
@@ -64,6 +66,14 @@ func configure(
 	visible = true
 	_apply_animation(maxf(strength, 0.05))
 	set_process(_fight_variant)
+
+
+func set_follow_position_provider(provider: Callable) -> void:
+	_follow_position_provider = provider
+	_follow_target = null
+	if _fight_variant:
+		set_process(provider.is_valid())
+		_update_follow_anchor()
 
 
 func set_follow_target(target: Node3D) -> void:
@@ -267,41 +277,19 @@ func _crop_texture(image: Image, rect: Rect2i) -> Texture2D:
 
 
 func _update_follow_anchor() -> void:
-	if not _fight_variant or not is_instance_valid(_follow_target):
+	if not _fight_variant: return
+	if _follow_position_provider.is_valid():
+		# Current splash position is always re-read from the same surface point
+		# used by the live bait/ripple, not the bait node's animation pivot.
+		var water_contact: Vector3 = _follow_position_provider.call()
+		global_position = water_contact + Vector3.UP * (surface_offset + fight_surface_y_bias)
 		return
-
+	if not is_instance_valid(_follow_target): return
 	var bait_position: Vector3 = _follow_target.global_position
 	var surface_y: float = _follow_surface_y
-
-	# Prefer the lure's real water height if exposed by the bait runtime.
 	if _follow_target.has_method("get_water_surface_y"):
-		surface_y = float(_follow_target.get_water_surface_y()) + fight_surface_y_bias
-	else:
-		surface_y += fight_surface_y_bias
-
-	var camera: Camera3D = get_viewport().get_camera_3d()
-	if camera == null:
-		global_position = Vector3(
-			bait_position.x,
-			surface_y + surface_offset,
-			bait_position.z
-		)
-		return
-
-	var screen_position: Vector2 = camera.unproject_position(bait_position)
-	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
-	var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
-
-	if absf(ray_direction.y) <= 0.00001:
-		return
-
-	var distance_along_ray: float = (surface_y - ray_origin.y) / ray_direction.y
-	if distance_along_ray < 0.0:
-		return
-
-	var projected: Vector3 = ray_origin + ray_direction * distance_along_ray
-	projected.y = surface_y + surface_offset
-	global_position = projected
+		surface_y = float(_follow_target.get_water_surface_y())
+	global_position = Vector3(bait_position.x, surface_y + surface_offset + fight_surface_y_bias, bait_position.z)
 
 
 func _on_animation_finished() -> void:

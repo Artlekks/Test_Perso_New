@@ -819,7 +819,7 @@ script = ExtResource("64_fishing_line")
 caster = NodePath("../Caster")
 rod_tip = NodePath("../../../Player/CharacterBody3D/RodTipTracker")
 
-[node name="FishThrashVisual" parent="Game/Fishing" unique_id=149361548 instance=ExtResource("95_fish_thrash_visual")]
+[node name="FishThrashVisual" parent="Game/Fishing" unique_id=149361548 node_paths=PackedStringArray("encounter", "fishing_line_view", "caster") instance=ExtResource("95_fish_thrash_visual")]
 encounter = NodePath("../Encounter")
 fishing_line_view = NodePath("../FishingLineView")
 caster = NodePath("../Caster")

@@ -62,7 +62,7 @@ static func portrait_controls(area: Rect2) -> Dictionary:
 # Fixed 2:1 / 4:3 aspect threshold switches made the fisherman and HUD jump
 # when a floating window was dragged just a few pixels.
 const DESKTOP_MIN_WORLD_HEIGHT := 480.0
-const DESKTOP_MAX_WORLD_HEIGHT := 720.0
+const DESKTOP_MAX_WORLD_HEIGHT := 1280.0
 const DESKTOP_WORLD_WIDTH := 960.0
 const DESKTOP_COMPACT_BAND_HEIGHT := 58.0
 const DESKTOP_REGULAR_BAND_HEIGHT := 40.0
@@ -76,16 +76,25 @@ static func desktop(view: Vector2, previous := Vector2i(640,480), docked := fals
 	var header_bottom: float = band_height + gap
 	var usable_height: float = maxf(1.0, view.y - header_bottom - gap)
 	var usable_width: float = maxf(1.0,view.x-side*2.0)
-	var resolution := Vector2i(640,480)
-	if not docked:
-		# The camera spans a constant logical width; its vertical coverage
-		# grows one pixel at a time until it reaches 150% of the base height.
-		# No switch between predefined wide/tall worlds during resizing.
-		var desired_height: float = clampf(usable_height*DESKTOP_WORLD_WIDTH/usable_width,DESKTOP_MIN_WORLD_HEIGHT,DESKTOP_MAX_WORLD_HEIGHT)
-		resolution = Vector2i(int(DESKTOP_WORLD_WIDTH),roundi(desired_height))
-	if locked:
-		# Fight/cast camera remains untouched while actively fishing.
-		resolution = previous
+	# Keep the existing 640x480 docked camera invariant. Expanding its
+	# vertical camera projection would require a separate dock-specific pass;
+	# this correction targets floating/tall F5 windows only.
+	var resolution := Vector2i(640, 480)
+	# Floating windows may expand the rendered world vertically during fishing.
+	# The fishing simulation owns an invariant reference projection; resizing
+	# the display is never a reason to change physical bait coordinates.
+	# A dock retains the existing canonical 640x480 view, including when
+	# entering/exiting fishing. For a floating session, preserve the authored
+	# logical width and expand only the visible vertical world extent.
+	if docked:
+		if locked:
+			resolution = previous
+	else:
+		var native_width: float = float(previous.x) if locked else DESKTOP_WORLD_WIDTH
+		var desired_height: float = clampf(
+			usable_height * native_width / usable_width,
+			DESKTOP_MIN_WORLD_HEIGHT, DESKTOP_MAX_WORLD_HEIGHT)
+		resolution = Vector2i(roundi(native_width), roundi(desired_height))
 	var scale: float = maxf(0.01,minf(usable_width/float(resolution.x),usable_height/float(resolution.y)))
 	var footprint := Vector2(resolution)*scale
 	var free_height: float = maxf(0.0,usable_height-footprint.y)

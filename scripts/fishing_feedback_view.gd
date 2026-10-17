@@ -29,106 +29,100 @@ enum FeedbackType {
 @export var slide_padding_px: float = 30.0
 @export var screen_transition: Node
 
+@export_category("Responsive Feedback")
+## Logical-pixel adjustment relative to the center of the active gameplay
+## viewport. This is stable in floating/tall/docked windows.
+@export var feedback_center_offset_pixels: Vector2 = Vector2.ZERO
+## Extra size for the fishing prompt and catch, adjustable in Inspector.
+## MISS / HOOK OFF / LINE BREAK keep their previously approved scale.
+@export_range(1.0, 2.0, 0.05) var hit_catch_scale_multiplier: float = 1.30
+var _authored_feedback_scale: Vector2 = Vector2.ONE
+
 var _feedback_tween: Tween = null
 var _rest_position: Vector2 = Vector2.ZERO
+var _feedback_progress: float = 0.0
+var _layout_viewport_size: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
-	_rest_position = feedback_texture.position
+	# Scene-authoring offsets were for the fixed 640x480 surface. Use the
+	# actual gameplay viewport for the center, and retain the original
+	# texture/scale/nearest-filter assets unchanged.
+	feedback_texture.set_anchors_preset(Control.PRESET_TOP_LEFT, true)
+	_authored_feedback_scale = feedback_texture.scale
+	_refresh_feedback_position()
 	feedback_texture.visible = false
 	screen_transition.covered.connect(clear)
-	
+
 	if encounter == null:
 		push_warning("FishingFeedbackView: Encounter is not assigned.")
 		return
+	encounter.bite_triggered.connect(_on_bite_triggered)
+	encounter.bite_missed.connect(_on_bite_missed)
+	encounter.hook_off.connect(_on_hook_off)
+	encounter.line_broken.connect(_on_line_broken)
+	encounter.fish_caught.connect(_on_fish_caught)
 
-	encounter.bite_triggered.connect(
-		_on_bite_triggered
-	)
+func _process(_delta: float) -> void:
+	# Keeps HIT / MISS centered even when resizing midway through its tween.
+	var size: Vector2 = _feedback_viewport_size()
+	if size != _layout_viewport_size:
+		_refresh_feedback_position()
 
-	encounter.bite_missed.connect(
-		_on_bite_missed
-	)
+func _feedback_viewport_size() -> Vector2:
+	var viewport: Viewport = custom_viewport if custom_viewport != null else get_viewport()
+	return viewport.get_visible_rect().size
 
-	encounter.hook_off.connect(
-		_on_hook_off
-	)
+static func centered_feedback_position(viewport_size: Vector2, texture_size: Vector2, draw_scale: Vector2, offset: Vector2) -> Vector2:
+	return (viewport_size - texture_size * draw_scale) * 0.5 + offset
 
-	encounter.line_broken.connect(
-		_on_line_broken
-	)
+func _refresh_feedback_position() -> void:
+	_layout_viewport_size = _feedback_viewport_size()
+	_rest_position = centered_feedback_position(_layout_viewport_size, feedback_texture.size, feedback_texture.scale, feedback_center_offset_pixels)
+	_set_feedback_progress(_feedback_progress)
 
-	encounter.fish_caught.connect(
-		_on_fish_caught
-	)
-
+func _set_feedback_progress(value: float) -> void:
+	_feedback_progress = value
+	var travel: float = _layout_viewport_size.x + feedback_texture.size.x * feedback_texture.scale.x + slide_padding_px
+	feedback_texture.position = _rest_position + Vector2(value * travel, 0.0)
 
 func _on_bite_triggered() -> void:
 	show_feedback(FeedbackType.HIT)
 
-
 func _on_bite_missed() -> void:
 	show_feedback(FeedbackType.MISS)
-
 
 func _on_hook_off() -> void:
 	show_feedback(FeedbackType.HOOK_OFF)
 
-
 func _on_line_broken() -> void:
 	show_feedback(FeedbackType.LINE_BREAK)
-
 
 func _on_fish_caught(_fish: FishInstance) -> void:
 	show_feedback(FeedbackType.CATCH)
 
-
 func show_feedback(type: FeedbackType) -> void:
 	var texture := _get_feedback_texture(type)
-
 	if texture == null:
 		return
-
 	_kill_feedback_tween()
-
 	feedback_texture.texture = texture
+	var size_factor: float = hit_catch_scale_multiplier if type == FeedbackType.HIT or type == FeedbackType.CATCH else 1.0
+	feedback_texture.scale = _authored_feedback_scale * size_factor
 	feedback_texture.modulate.a = 1.0
-	feedback_texture.position = _get_offscreen_right_position()
+	_refresh_feedback_position()
+	_set_feedback_progress(1.0)
 	feedback_texture.visible = true
-
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_OUT)
-
-	# Every feedback enters from the right.
-	tween.tween_property(
-		feedback_texture,
-		"position",
-		_rest_position,
-		slide_time
-	)
-
-	# Hook Off and Line Break stay in the middle.
-	if (
-		type == FeedbackType.HOOK_OFF
-		or type == FeedbackType.LINE_BREAK
-	):
+	tween.tween_method(_set_feedback_progress, 1.0, 0.0, slide_time)
+	if type == FeedbackType.HOOK_OFF or type == FeedbackType.LINE_BREAK:
 		_feedback_tween = tween
 		return
-
-	# HIT / MISS / CATCH stay briefly...
 	tween.tween_interval(display_time)
-
-	# ...then leave through the left.
 	tween.set_ease(Tween.EASE_IN)
-	tween.tween_property(
-		feedback_texture,
-		"position",
-		_get_offscreen_left_position(),
-		slide_time
-	)
-
+	tween.tween_method(_set_feedback_progress, 0.0, -1.0, slide_time)
 	tween.tween_callback(_hide_feedback)
-
 	_feedback_tween = tween
 
 func _get_feedback_texture(type: FeedbackType) -> Texture2D:
@@ -152,39 +146,17 @@ func _get_feedback_texture(type: FeedbackType) -> Texture2D:
 
 func _hide_feedback() -> void:
 	feedback_texture.visible = false
-	feedback_texture.position = _rest_position
+	_set_feedback_progress(0.0)
 	feedback_texture.modulate.a = 1.0
 	_feedback_tween = null
 
 func _kill_feedback_tween() -> void:
-	if (
-		_feedback_tween != null
-		and _feedback_tween.is_valid()
-	):
+	if _feedback_tween != null and _feedback_tween.is_valid():
 		_feedback_tween.kill()
-
 	_feedback_tween = null
 
 func clear() -> void:
 	_kill_feedback_tween()
-
 	feedback_texture.visible = false
-	feedback_texture.position = _rest_position
+	_set_feedback_progress(0.0)
 	feedback_texture.modulate.a = 1.0
-	
-func _get_offscreen_right_position() -> Vector2:
-	var viewport_width := get_viewport().get_visible_rect().size.x
-
-	return _rest_position + Vector2(
-		viewport_width + feedback_texture.size.x + slide_padding_px,
-		0.0
-	)
-
-
-func _get_offscreen_left_position() -> Vector2:
-	var viewport_width := get_viewport().get_visible_rect().size.x
-
-	return _rest_position - Vector2(
-		viewport_width + feedback_texture.size.x + slide_padding_px,
-		0.0
-	)
